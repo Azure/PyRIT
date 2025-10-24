@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -56,9 +57,17 @@ async def _assert_can_send_video_prompt(target):
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective=video_prompt)
 
-    # For video generation, just verify we got a response (video file path)
+    # For video generation, verify we got a successful response
     assert result.last_response is not None
     assert result.last_response.converted_value is not None
+    assert (
+        result.last_response.response_error == "none"
+    ), f"Expected successful response, got error: {result.last_response.response_error}"
+
+    # Validate we got a valid video file path
+    video_path = Path(result.last_response.converted_value)
+    assert video_path.exists(), f"Video file not found at path: {video_path}"
+    assert video_path.is_file(), f"Path exists but is not a file: {video_path}"
 
 
 @pytest.mark.asyncio
@@ -218,7 +227,8 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key):
     [
         ("OPENAI_SORA1_ENDPOINT", "OPENAI_SORA1_KEY", "OPENAI_SORA1_MODEL"),
         ("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL"),
-        ("PLATFORM_OPENAI_SORA_ENDPOINT", "PLATFORM_OPENAI_SORA_KEY", "PLATFORM_OPENAI_SORA_MODEL"),
+        # OpenAI Platform Sora returns HTTP 401 "Missing scopes: api.videos.write" for all requests
+        # ("PLATFORM_OPENAI_SORA_ENDPOINT", "PLATFORM_OPENAI_SORA_KEY", "PLATFORM_OPENAI_SORA_MODEL"),
     ],
 )
 async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
@@ -232,6 +242,64 @@ async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
     )
 
     await _assert_can_send_video_prompt(target)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint_var", "api_key_var", "model_var", "resolution"),
+    [
+        # Sora-1 - test unsupported resolution (should return processing error)
+        ("OPENAI_SORA1_ENDPOINT", "OPENAI_SORA1_KEY", "OPENAI_SORA1_MODEL", "640x360"),
+        # Azure OpenAI Sora-2 - test unsupported resolution (should return processing error)
+        ("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL", "640x360"),
+        # OpenAI Platform Sora - 1024x1792 returns HTTP 401 "Missing scopes: api.videos.write"
+        # ("PLATFORM_OPENAI_SORA_ENDPOINT", "PLATFORM_OPENAI_SORA_KEY", "PLATFORM_OPENAI_SORA_MODEL", "1024x1792"),
+    ],
+)
+async def test_connect_sora_unsupported_resolution_returns_processing_error(
+    sqlite_instance, endpoint_var, api_key_var, model_var, resolution
+):
+    """
+    Test that unsupported resolutions return proper processing errors.
+
+    Sora-1: Tests with 640x360 which is not in the supported resolution list.
+    Sora-2: The API spec claims support for 1024x1792 and 1792x1024, but these are
+            not supported on Azure OpenAI Sora-2 (only on Sora-2-Pro).
+
+    This test verifies that such errors are properly categorized as error="processing"
+    rather than crashing or returning unknown error types.
+    """
+    target = OpenAISoraTarget(
+        endpoint=os.getenv(endpoint_var),
+        api_key=os.getenv(api_key_var),
+        model_name=os.getenv(model_var),
+        resolution_dimensions=resolution,
+        n_seconds=4,  # Supported by v2 (4, 8, or 12s)
+    )
+
+    video_prompt = "A raccoon sailing a pirate ship"
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective=video_prompt)
+
+    # Verify we got a response
+    assert result.last_response is not None
+    assert result.last_response.converted_value is not None
+
+    # This resolution should return a processing error (not supported on this account)
+    assert (
+        result.last_response.response_error == "processing"
+    ), f"Expected error type 'processing' for unsupported resolution, got: {result.last_response.response_error}"
+    assert (
+        result.last_response.original_value_data_type == "error"
+    ), f"Expected response type 'error', got: {result.last_response.original_value_data_type}"
+
+    # Verify the error message contains expected information about invalid resolution
+    error_message = result.last_response.converted_value
+    # Both v1 and v2 APIs return errors mentioning the problem
+    assert any(
+        keyword in error_message.lower()
+        for keyword in ["user error", "video_generation_user_error", "invalid", "unsupported", "not supported"]
+    ), f"Expected error message about invalid/unsupported resolution, got: {error_message}"
 
 
 ##################################################

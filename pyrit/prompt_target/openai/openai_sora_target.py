@@ -1,18 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""
-Unified OpenAI Sora Target supporting both Sora-1 and Sora-2 APIs.
-
-This module provides a single interface for both legacy and new Sora APIs.
-The API version is automatically detected based on the endpoint response format.
-
-Both APIs use unified environment variables:
-- OPENAI_SORA_ENDPOINT
-- OPENAI_SORA_KEY
-- OPENAI_SORA_MODEL
-"""
-
 import json
 import logging
 import os
@@ -43,6 +31,7 @@ class JobStatus(Enum):
     PREPROCESSING = "preprocessing"
     QUEUED = "queued"
     PROCESSING = "processing"
+    IN_PROGRESS = "in_progress"  # For Sora-2 API
     SUCCEEDED = "succeeded"
     COMPLETED = "completed"  # For Sora-2 API
     FAILED = "failed"
@@ -60,29 +49,40 @@ class OpenAISoraTarget(OpenAITarget):
     Unified OpenAI Sora Target supporting both Sora-1 and Sora-2 APIs.
 
     API version is automatically detected from the endpoint URL:
-    - Sora-2: Endpoint contains "openai/v1/videos"
+    - Sora-2: Endpoint contains "v1/videos"
     - Sora-1: All other endpoints
+
+    Provider detection (OpenAI vs Azure OpenAI):
+    - Azure OpenAI: Endpoint contains "azure.com"
+    - OpenAI: All other endpoints (e.g., "openai.com")
 
     Sora-1 API:
     - Uses JSON body with /jobs endpoints
-    - Supported resolutions: 360x360, 640x360, 480x480, 854x480, 720x720, 1280x720, 1080x1080, 1920x1080
+    - Supported resolutions: 480x480, 854x480, 720x720, 1280x720, 1080x1080, 1920x1080
     - Duration: up to 20s (10s for 1080p)
 
     Sora-2 API:
     - Uses multipart form data with direct task endpoints
-    - Supported resolutions: 720x1280, 1280x720, 1080x1920, 1920x1080
+    - Supported resolutions:
+      * Sora-2 (both Azure OpenAI and OpenAI): 720x1280, 1280x720
+      * Sora-2-Pro (OpenAI only): 720x1280, 1280x720, 1024x1792, 1792x1024
     - Duration: 4, 8, or 12 seconds only
 
-    Default resolution (1280x720) works with both APIs.
+    Default resolution (1280x720) works with both APIs on OpenAI.
     Default duration (4s) works with both APIs (v1 supports up to 20s, v2 requires 4/8/12s).
     """
 
     # Maximum number of retries for check_job_status_async()
-    CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS: int = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", "60"))
+    CHECK_JOB_RETRY_MAX_NUM_ATTEMPTS: int = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", "120"))
 
     # Resolution sets
-    V1_RESOLUTIONS = ["360x360", "640x360", "480x480", "854x480", "720x720", "1280x720", "1080x1080", "1920x1080"]
-    V2_RESOLUTIONS = ["720x1280", "1280x720", "1080x1920", "1920x1080"]
+    V1_RESOLUTIONS = ["480x480", "854x480", "720x720", "1280x720", "1080x1080", "1920x1080"]
+
+    # Sora v2 resolutions:
+    # - Sora-2 (both Azure OpenAI and OpenAI): 720x1280, 1280x720
+    # - Sora-2-Pro (OpenAI only): 720x1280, 1280x720, 1024x1792, 1792x1024
+    V2_RESOLUTIONS = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
+
     V2_DURATIONS = [4, 8, 12]
 
     # Utility functions which define when to retry calls to check status and download video
@@ -93,12 +93,18 @@ class OpenAISoraTarget(OpenAITarget):
         """
         content = json.loads(response.content)
         status = content.get("status", None)
-        return status not in [
+        should_retry = status not in [
             JobStatus.SUCCEEDED.value,
             JobStatus.COMPLETED.value,
             JobStatus.FAILED.value,
             JobStatus.CANCELLED.value,
         ]
+
+        # Log detailed information when status check is about to retry or fail
+        if should_retry:
+            logger.debug(f"Job status '{status}' requires retry. Full response: {content}")
+
+        return should_retry
 
     @staticmethod
     def _should_retry_video_download(response: httpx.Response) -> bool:
@@ -133,10 +139,13 @@ class OpenAISoraTarget(OpenAITarget):
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
             resolution_dimensions (str, Optional): Resolution dimensions for the video in WIDTHxHEIGHT format.
-                Defaults to "1280x720" which works with both API versions.
-                Sora-1 supported resolutions are "360x360", "640x360", "480x480", "854x480",
+                Defaults to "1280x720" which works with Sora-1 and Sora-2 on both providers.
+                Sora-1 supported resolutions: "480x480", "854x480",
                 "720x720", "1280x720", "1080x1080", "1920x1080".
-                Sora-2 supported resolutions are "720x1280", "1280x720", "1080x1920", "1920x1080".
+                Sora-2 supported resolutions (both OpenAI and Azure OpenAI per API spec):
+                "720x1280", "1280x720"
+                Sora-2-Pro (OpenAI only) supported resolutions:
+                "720x1280", "1280x720", "1024x1792", "1792x1024"
             n_seconds (int, Optional): The duration of the generated video (in seconds).
                 Defaults to 4 (compatible with both APIs).
                 Sora-1 supports up to 20 seconds (10 seconds max for 1080p resolutions).
@@ -144,7 +153,8 @@ class OpenAISoraTarget(OpenAITarget):
             n_variants (int, Optional): Number of video variants to generate. Defaults to 1.
                 Only supported by Sora-1 API (ignored for Sora-2).
             output_filename (str, Optional): The name of the output file for the generated video.
-                Note: DO NOT SET if using target with PromptSendingAttack.
+                Note: DO NOT SET if using target with PromptSendingAttack as multiple files will be generated
+                and each generated video would override the previous one.
         """
         # Initialize parent class first to get endpoint
         super().__init__(**kwargs)
@@ -153,19 +163,12 @@ class OpenAISoraTarget(OpenAITarget):
         self._detected_api_version = self._detect_api_version()
 
         # Set instance variables
-        self._width, self._height = self._parse_and_validate_resolution(resolution_dimensions=resolution_dimensions)
         self._n_seconds = n_seconds
+        self._validate_duration()
         self._n_variants = n_variants
+        self._width, self._height = self._parse_and_validate_resolution(resolution_dimensions=resolution_dimensions)
         self._output_filename = output_filename
         self._params: Dict[str, Any] = {}
-
-        # Validate parameters
-        self._validate_duration(n_seconds=n_seconds)
-        self._validate_variants(
-            n_variants=n_variants,
-            resolution_dimensions=resolution_dimensions,
-            n_seconds=n_seconds,
-        )
 
     def _set_openai_env_configuration_vars(self) -> None:
         """Set unified environment variable names for both API versions."""
@@ -184,6 +187,15 @@ class OpenAISoraTarget(OpenAITarget):
             return "v2"
         else:
             return "v1"
+
+    def _is_azure_openai(self) -> bool:
+        """
+        Detect whether this is an Azure OpenAI endpoint.
+
+        Returns:
+            bool: True if Azure OpenAI, False if OpenAI.
+        """
+        return "azure.com" in self._endpoint.lower() or "azure" in self._endpoint.lower()
 
     def _parse_and_validate_resolution(self, *, resolution_dimensions: str) -> tuple[str, str]:
         """
@@ -205,7 +217,7 @@ class OpenAISoraTarget(OpenAITarget):
                 "Expected format: 'WIDTHxHEIGHT' (e.g., '1280x720')"
             )
 
-        dimensions = resolution_dimensions.split("x")
+        dimensions = resolution_dimensions.strip().lower().split("x")
         if len(dimensions) != 2:
             raise ValueError(
                 f"Invalid resolution format: '{resolution_dimensions}'. "
@@ -215,15 +227,40 @@ class OpenAISoraTarget(OpenAITarget):
         # Validate resolution based on detected API version
         if self._detected_api_version == "v1":
             if resolution_dimensions not in self.V1_RESOLUTIONS:
-                raise ValueError(
-                    f"Unsupported resolution for Sora-1: '{resolution_dimensions}'. "
-                    f"Supported resolutions: {', '.join(self.V1_RESOLUTIONS)}."
+                endpoint_type = "Azure OpenAI" if self._is_azure_openai() else "OpenAI"
+                logger.warning(
+                    f"Resolution '{resolution_dimensions}' may not be supported for Sora-1 on {endpoint_type}. "
+                    f"Commonly supported resolutions: {', '.join(self.V1_RESOLUTIONS)}. "
+                    "The API may reject this request."
                 )
+
+            if resolution_dimensions in ["1080x1080", "1920x1080"]:
+                # Constraints apply to all 1080p dimensions
+                if self._n_seconds > 10:
+                    raise ValueError(
+                        "n_seconds must be less than or equal to 10 for "
+                        f"resolution dimensions of {resolution_dimensions}."
+                    )
+
+                if self._n_variants > 1:
+                    raise ValueError(
+                        "n_variants must be less than or equal to 1 for "
+                        f"resolution dimensions of {resolution_dimensions}."
+                    )
+            elif resolution_dimensions in ["720x720", "1280x720"]:
+                # Constraints apply to all 720p dimensions
+                if self._n_variants > 2:
+                    raise ValueError(
+                        "n_variants must be less than or equal to 2 for "
+                        f"resolution dimensions of {resolution_dimensions}."
+                    )
         else:  # v2
+            endpoint_type = "Azure OpenAI" if self._is_azure_openai() else "OpenAI"
             if resolution_dimensions not in self.V2_RESOLUTIONS:
-                raise ValueError(
-                    f"Unsupported resolution for Sora-2: '{resolution_dimensions}'. "
-                    f"Supported resolutions: {', '.join(self.V2_RESOLUTIONS)}."
+                logger.warning(
+                    f"Resolution '{resolution_dimensions}' may not be supported for Sora-2 on {endpoint_type}. "
+                    f"Supported resolutions: {', '.join(self.V2_RESOLUTIONS)}. "
+                    "The API may reject this request."
                 )
 
         width = dimensions[0]
@@ -231,82 +268,26 @@ class OpenAISoraTarget(OpenAITarget):
 
         return width, height
 
-    def _validate_duration(self, *, n_seconds: int) -> None:
+    def _validate_duration(self) -> None:
         """
         Validate the video duration based on the detected API version.
-
-        Args:
-            n_seconds (int): The duration of the generated video (in seconds).
 
         Raises:
             ValueError: If the duration is invalid for the detected API version.
         """
         # Basic duration validation
-        if n_seconds <= 0:
-            raise ValueError(f"Invalid duration: {n_seconds}. Duration must be greater than 0 seconds.")
+        if self._n_seconds <= 0:
+            raise ValueError(f"Invalid duration: {self._n_seconds}. Duration must be greater than 0 seconds.")
 
         # API-specific duration validation
         if self._detected_api_version == "v1":
-            if n_seconds > 20:
-                raise ValueError(f"Invalid duration for Sora-1: {n_seconds}. Maximum duration is 20 seconds.")
+            if self._n_seconds > 20:
+                raise ValueError(f"Invalid duration for Sora-1: {self._n_seconds}. Maximum duration is 20 seconds.")
         else:  # v2
-            if n_seconds not in self.V2_DURATIONS:
+            if self._n_seconds not in self.V2_DURATIONS:
                 raise ValueError(
-                    f"Invalid duration for Sora-2: {n_seconds}. "
+                    f"Invalid duration for Sora-2: {self._n_seconds}. "
                     f"Supported durations: {', '.join(map(str, self.V2_DURATIONS))} seconds."
-                )
-
-    def _validate_variants(self, *, n_variants: int, resolution_dimensions: str, n_seconds: int) -> None:
-        """
-        Validate the number of video variants based on the detected API version and resolution.
-
-        Args:
-            n_variants (int): Number of video variants to generate.
-            resolution_dimensions (str): The resolution dimensions in WIDTHxHEIGHT format.
-            n_seconds (int): The duration of the generated video (in seconds).
-
-        Raises:
-            ValueError: If the number of variants is invalid for the detected API version or resolution.
-        """
-        # Only validate constraints for v1 API
-        if self._detected_api_version == "v1":
-            self._validate_v1_video_constraints(
-                resolution_dimensions=resolution_dimensions,
-                n_variants=n_variants,
-                n_seconds=n_seconds,
-            )
-
-    def _validate_v1_video_constraints(self, *, resolution_dimensions: str, n_variants: int, n_seconds: int) -> None:
-        """
-        Validate Sora-1 specific video constraints based on resolution dimensions.
-
-        This checks both n_seconds and n_variants values, which have different constraints for different resolution
-        dimensions. Only called for v1 API.
-
-        Args:
-            resolution_dimensions (str): The resolution dimensions in WIDTHxHEIGHT format.
-            n_variants (int): Number of video variants to generate.
-            n_seconds (int): The duration of the generated video (in seconds).
-
-        Raises:
-            ValueError: If the constraints are not met.
-        """
-        if resolution_dimensions in ["1080x1080", "1920x1080"]:
-            # Constraints apply to all 1080p dimensions
-            if n_seconds > 10:
-                raise ValueError(
-                    f"n_seconds must be less than or equal to 10 for resolution dimensions of {resolution_dimensions}."
-                )
-
-            if n_variants > 1:
-                raise ValueError(
-                    f"n_variants must be less than or equal to 1 for resolution dimensions of {resolution_dimensions}."
-                )
-        elif resolution_dimensions in ["720x720", "1280x720"]:
-            # Constraints apply to all 720p dimensions
-            if n_variants > 2:
-                raise ValueError(
-                    f"n_variants must be less than or equal to 2 for resolution dimensions of {resolution_dimensions}."
                 )
 
     async def _send_httpx_request_async(
@@ -428,11 +409,28 @@ class OpenAISoraTarget(OpenAITarget):
                 is_content_filter=True,
             )
         else:
+            # Determine error type based on error details
+            error_type = "unknown"
+
+            # Check for specific error types that indicate processing/request errors
+            if any(
+                err_type in error_message.lower()
+                for err_type in [
+                    "invalid_request_error",
+                    "video_generation_user_error",
+                    "invalid_value",
+                    "user error",
+                    "resolution",  # Handles "resolution not supported" errors from Sora-1
+                    "not supported",
+                ]
+            ):
+                error_type = "processing"
+
             return construct_response_from_request(
                 request=request,
                 response_text_pieces=[error_message],
                 response_type="error",
-                error="unknown",
+                error=error_type,
             )
 
     async def _send_v1_request_async(self, request: MessagePiece, prompt: str) -> Message:
@@ -555,9 +553,20 @@ class OpenAISoraTarget(OpenAITarget):
         logger.info(f"Handling response for Task ID: {task_id}")
 
         # Check status with retry until task is complete
-        task_response = await self.check_job_status_async(task_id=task_id)
-        task_content = json.loads(task_response.content)
-        status = task_content.get("status")
+        try:
+            task_response = await self.check_job_status_async(task_id=task_id)
+            task_content = json.loads(task_response.content)
+            status = task_content.get("status")
+        except Exception as e:
+            # If status check fails after all retries, log the full error details
+            logger.error(f"Failed to check job status for task {task_id} after all retries. Error: {e}")
+            error_msg = f"Video generation task {task_id} status check failed: {str(e)}"
+            return construct_response_from_request(
+                request=request,
+                response_text_pieces=[error_msg],
+                response_type="error",
+                error="unknown",
+            )
 
         # Handle task based on status
         if status in [JobStatus.SUCCEEDED.value, JobStatus.COMPLETED.value]:
