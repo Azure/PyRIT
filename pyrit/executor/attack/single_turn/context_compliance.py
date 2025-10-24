@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
@@ -24,7 +25,6 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 

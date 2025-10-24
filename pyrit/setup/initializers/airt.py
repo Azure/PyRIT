@@ -9,8 +9,9 @@ AIRT configuration including converters, scorers, and targets using Azure OpenAI
 """
 
 import os
-from typing import Dict, Any, List
+from typing import List
 
+from pyrit.common.apply_defaults import set_default_value, set_global_variable
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -30,8 +31,6 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
 )
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
-from pyrit.common.apply_defaults import set_default_value, set_global_variable
-
 from pyrit.setup.initializers.base import PyRITInitializer
 
 
@@ -46,7 +45,7 @@ class AIRTInitializer(PyRITInitializer):
 
     Required Environment Variables:
     - AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT: Azure OpenAI endpoint for converters and targets
-    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY: Azure OpenAI API key for converters and targets  
+    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY: Azure OpenAI API key for converters and targets
     - AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT2: Azure OpenAI endpoint for scoring
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2: Azure OpenAI API key for scoring
 
@@ -131,10 +130,10 @@ class AIRTInitializer(PyRITInitializer):
 
         # 1. Setup converter target
         self._setup_converter_target(converter_endpoint, converter_api_key)
-        
+
         # 2. Setup scorers
         self._setup_scorers(scorer_endpoint, scorer_api_key)
-        
+
         # 3. Setup adversarial targets
         self._setup_adversarial_targets(converter_endpoint, converter_api_key)
 
@@ -173,9 +172,7 @@ class AIRTInitializer(PyRITInitializer):
                 TrueFalseInverterScorer(
                     scorer=SelfAskRefusalScorer(chat_target=scorer_target),
                 ),
-                FloatScaleThresholdScorer(
-                    scorer=SelfAskScaleScorer(chat_target=scorer_target), threshold=0.7
-                ),
+                FloatScaleThresholdScorer(scorer=SelfAskScaleScorer(chat_target=scorer_target), threshold=0.7),
             ],
         )
 
@@ -189,9 +186,7 @@ class AIRTInitializer(PyRITInitializer):
                 TrueFalseInverterScorer(
                     scorer=SelfAskRefusalScorer(chat_target=scorer_target),
                 ),
-                FloatScaleThresholdScorer(
-                    scorer=SelfAskScaleScorer(chat_target=scorer_target), threshold=0.7
-                ),
+                FloatScaleThresholdScorer(scorer=SelfAskScaleScorer(chat_target=scorer_target), threshold=0.7),
             ],
         )
 
@@ -226,6 +221,9 @@ class AIRTInitializer(PyRITInitializer):
                 temperature=1.2,
             )
         )
+
+        # Set global variable for easy access
+        set_global_variable(name="adversarial_config", value=adversarial_config)
 
         # Set default adversarial configurations for various attack types
         attack_classes = [

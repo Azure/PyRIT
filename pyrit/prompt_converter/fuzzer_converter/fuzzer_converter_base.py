@@ -6,6 +6,7 @@ import logging
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -19,7 +20,6 @@ from pyrit.models import (
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 

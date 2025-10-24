@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, overload
 
 from treelib.tree import Tree
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.exceptions import (
@@ -45,7 +46,6 @@ from pyrit.score import (
     TrueFalseQuestion,
     TrueFalseQuestionPaths,
 )
-from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 

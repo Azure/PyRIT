@@ -12,7 +12,7 @@ import functools
 import inspect
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type, TypeVar, get_type_hints
+from typing import Any, Dict, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,11 @@ T = TypeVar("T")
 class DefaultValueScope:
     """
     Represents a scope for default values with class type, parameter name, and inheritance rules.
-    
+
     This class defines the scope where a default value applies, including whether it should
     be inherited by subclasses.
     """
+
     class_type: Type
     parameter_name: str
     include_subclasses: bool = True
@@ -38,14 +39,14 @@ class DefaultValueScope:
 class GlobalDefaultValues:
     """
     Global registry for default values that can be applied to class constructors.
-    
+
     This singleton class maintains a registry of default values that can be automatically
     applied to class parameters when using the @apply_defaults decorator.
     """
-    
+
     def __init__(self):
         self._default_values: Dict[DefaultValueScope, Any] = {}
-    
+
     def set_default_value(
         self,
         *,
@@ -56,7 +57,7 @@ class GlobalDefaultValues:
     ) -> None:
         """
         Set a default value for a specific class and parameter.
-        
+
         Args:
             class_type: The class type for which to set the default.
             parameter_name: The name of the parameter to set the default for.
@@ -70,7 +71,7 @@ class GlobalDefaultValues:
         )
         self._default_values[scope] = value
         logger.debug(f"Set default value for {class_type.__name__}.{parameter_name} = {value}")
-    
+
     def get_default_value(
         self,
         *,
@@ -79,11 +80,11 @@ class GlobalDefaultValues:
     ) -> tuple[bool, Any]:
         """
         Get the default value for a specific class and parameter.
-        
+
         Args:
             class_type: The class type to get the default for.
             parameter_name: The name of the parameter to get the default for.
-            
+
         Returns:
             Tuple of (found, value) where found indicates if a default was found.
         """
@@ -95,21 +96,23 @@ class GlobalDefaultValues:
         )
         if scope in self._default_values:
             return True, self._default_values[scope]
-        
+
         # Then, check parent classes if include_subclasses is True
         for existing_scope, value in self._default_values.items():
-            if (existing_scope.parameter_name == parameter_name and
-                existing_scope.include_subclasses and
-                issubclass(class_type, existing_scope.class_type)):
+            if (
+                existing_scope.parameter_name == parameter_name
+                and existing_scope.include_subclasses
+                and issubclass(class_type, existing_scope.class_type)
+            ):
                 return True, value
-        
+
         return False, None
-    
+
     def reset_defaults(self) -> None:
         """Reset all default values."""
         self._default_values.clear()
         logger.debug("Reset all default values")
-    
+
     @property
     def all_defaults(self) -> Dict[DefaultValueScope, Any]:
         """Get a copy of all current default values."""
@@ -134,9 +137,9 @@ def set_default_value(
 ) -> None:
     """
     Set a default value for a specific class and parameter.
-    
+
     This is a convenience function that delegates to the global default values registry.
-    
+
     Args:
         class_type: The class type for which to set the default.
         parameter_name: The name of the parameter to set the default for.
@@ -184,7 +187,7 @@ def set_global_variable(*, name: str, value: Any) -> None:
         script runs.
     """
     import sys
-    
+
     # Set the variable in the __main__ module's global namespace
     sys.modules["__main__"].__dict__[name] = value
 
@@ -192,33 +195,34 @@ def set_global_variable(*, name: str, value: Any) -> None:
 def apply_defaults_to_method(method):
     """
     Decorator that applies default values to a method's parameters.
-    
+
     This decorator looks up default values for the method's class and applies them
     to parameters that are None or not provided.
-    
+
     Args:
         method: The method to decorate (typically __init__).
-        
+
     Returns:
         The decorated method.
     """
+
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
         # Get the class of the instance
         cls = self.__class__
-        
+
         # Get method signature
         sig = inspect.signature(method)
-        
+
         # Bind arguments to get parameter names and values
         bound_args = sig.bind(self, *args, **kwargs)
         bound_args.apply_defaults()
-        
+
         # Apply default values for parameters that are None
         for param_name, param_value in bound_args.arguments.items():
-            if param_name == 'self':
+            if param_name == "self":
                 continue
-                
+
             # Only apply defaults if the parameter is None
             if param_value is None:
                 found, default_value = _global_default_values.get_default_value(
@@ -228,22 +232,22 @@ def apply_defaults_to_method(method):
                 if found:
                     bound_args.arguments[param_name] = default_value
                     logger.debug(f"Applied default value for {cls.__name__}.{param_name} = {default_value}")
-        
+
         # Call the original method with updated arguments
         return method(*bound_args.args, **bound_args.kwargs)
-    
+
     return wrapper
 
 
 def apply_defaults(method):
     """
     Decorator that applies default values to a class constructor.
-    
+
     This is an alias for apply_defaults_to_method for backward compatibility.
-    
+
     Args:
         method: The method to decorate (typically __init__).
-        
+
     Returns:
         The decorated method.
     """

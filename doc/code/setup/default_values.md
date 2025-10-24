@@ -1,3 +1,7 @@
+# Default Values
+
+Default values can be set in code, and this is often done in `PyRITInitializers`.
+
 ## How Default Values Work
 
 When an initializer calls `set_default_value`, it registers a default value for a specific class and parameter combination. These defaults are stored in a global registry and are automatically applied when classes are instantiated.

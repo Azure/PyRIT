@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Union
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import (
@@ -38,7 +39,6 @@ from pyrit.models import (
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.score import Scorer
-from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 

@@ -59,7 +59,7 @@ from openai.types.responses import (
     ResponseOutputMessage,
 )
 
-from pyrit.common import SQLITE, initialize_pyrit
+from pyrit.setup import SQLITE, initialize_pyrit
 
 initialize_pyrit(memory_db_type=SQLITE)
 

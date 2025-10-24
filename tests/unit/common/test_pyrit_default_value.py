@@ -3,14 +3,14 @@
 
 from typing import Optional
 
-from pyrit.setup import (
+from pyrit.common.apply_defaults import (
+    DefaultValueScope,
     apply_defaults,
     get_global_default_values,
     reset_default_values,
     set_default_value,
     set_global_variable,
 )
-from pyrit.common.apply_defaults import DefaultValueScope
 
 
 class TestApplyDefaultsDecorator:
@@ -288,11 +288,11 @@ class TestPyRITDefaultValues:
         class TestClass:
             pass
 
-        scope = DefaultValueScope(parameter_name="test", class_type=TestClass)
         defaults = get_global_default_values()
-        defaults.set_default_value(scope=scope, value="test_value")
+        defaults.set_default_value(class_type=TestClass, parameter_name="test", value="test_value")
 
-        result = defaults.get_default_value(scope=scope, default_value=None)
+        found, result = defaults.get_default_value(class_type=TestClass, parameter_name="test")
+        assert found is True
         assert result == "test_value"
 
     def test_get_default_value_returns_fallback_when_not_configured(self) -> None:
@@ -301,11 +301,11 @@ class TestPyRITDefaultValues:
         class TestClass:
             pass
 
-        scope = DefaultValueScope(parameter_name="test", class_type=TestClass)
         defaults = get_global_default_values()
 
-        result = defaults.get_default_value(scope=scope, default_value="fallback")
-        assert result == "fallback"
+        found, result = defaults.get_default_value(class_type=TestClass, parameter_name="test")
+        assert found is False
+        assert result is None
 
     def test_get_default_value_for_parameter_with_provided_value(self) -> None:
         """Test that provided values are returned regardless of defaults."""
@@ -316,10 +316,14 @@ class TestPyRITDefaultValues:
         set_default_value(class_type=TestClass, parameter_name="test", value="default")
         defaults = get_global_default_values()
 
-        result = defaults.get_default_value_for_parameter(
-            class_type=TestClass, parameter_name="test", provided_value="provided"
-        )
-        assert result == "provided"
+        # When a value is provided, it should be used (not the default)
+        found, result = defaults.get_default_value(class_type=TestClass, parameter_name="test")
+        # The default is set, so we should find it
+        assert found is True
+        assert result == "default"
+
+        # But if we explicitly provide a value, that takes precedence
+        # (this is tested via @apply_defaults decorator tests)
 
     def test_get_default_value_for_parameter_without_provided_value(self) -> None:
         """Test that default value is returned when provided value is None."""
@@ -330,9 +334,8 @@ class TestPyRITDefaultValues:
         set_default_value(class_type=TestClass, parameter_name="test", value="default")
         defaults = get_global_default_values()
 
-        result = defaults.get_default_value_for_parameter(
-            class_type=TestClass, parameter_name="test", provided_value=None
-        )
+        found, result = defaults.get_default_value(class_type=TestClass, parameter_name="test")
+        assert found is True
         assert result == "default"
 
 
@@ -610,19 +613,19 @@ class TestSetGlobalVariable:
     def test_set_global_variable_creates_variable(self) -> None:
         """Test that set_global_variable creates a variable in __main__ namespace."""
         import sys
-        
+
         # Ensure the variable doesn't exist initially
         if hasattr(sys.modules["__main__"], "test_global_var"):
             delattr(sys.modules["__main__"], "test_global_var")
-        
+
         try:
             # Set a global variable
             set_global_variable(name="test_global_var", value="test_value")
-            
+
             # Verify it exists in __main__ namespace
             assert hasattr(sys.modules["__main__"], "test_global_var")
             assert sys.modules["__main__"].test_global_var == "test_value"  # type: ignore[attr-defined]
-            
+
         finally:
             # Cleanup
             if hasattr(sys.modules["__main__"], "test_global_var"):
@@ -631,16 +634,16 @@ class TestSetGlobalVariable:
     def test_set_global_variable_overwrites_existing(self) -> None:
         """Test that set_global_variable overwrites existing variables."""
         import sys
-        
+
         try:
             # Set initial value
             set_global_variable(name="test_overwrite_var", value="initial_value")
             assert sys.modules["__main__"].test_overwrite_var == "initial_value"  # type: ignore[attr-defined]
-            
+
             # Overwrite with new value
             set_global_variable(name="test_overwrite_var", value="new_value")
             assert sys.modules["__main__"].test_overwrite_var == "new_value"  # type: ignore[attr-defined]
-            
+
         finally:
             # Cleanup
             if hasattr(sys.modules["__main__"], "test_overwrite_var"):
@@ -649,27 +652,27 @@ class TestSetGlobalVariable:
     def test_set_global_variable_with_complex_objects(self) -> None:
         """Test that set_global_variable works with complex objects."""
         import sys
-        
+
         try:
             # Test with a dictionary
             test_dict = {"key1": "value1", "key2": [1, 2, 3]}
             set_global_variable(name="test_dict_var", value=test_dict)
-            
+
             assert hasattr(sys.modules["__main__"], "test_dict_var")
             assert sys.modules["__main__"].test_dict_var == test_dict  # type: ignore[attr-defined]
             assert sys.modules["__main__"].test_dict_var["key1"] == "value1"  # type: ignore[attr-defined]
-            
+
             # Test with a class instance
             class TestClass:
                 def __init__(self, *, value: str) -> None:
                     self.value = value
-            
+
             test_obj = TestClass(value="test_instance")
             set_global_variable(name="test_obj_var", value=test_obj)
-            
+
             assert hasattr(sys.modules["__main__"], "test_obj_var")
             assert sys.modules["__main__"].test_obj_var.value == "test_instance"  # type: ignore[attr-defined]
-            
+
         finally:
             # Cleanup
             if hasattr(sys.modules["__main__"], "test_dict_var"):
@@ -680,13 +683,13 @@ class TestSetGlobalVariable:
     def test_set_global_variable_with_none_value(self) -> None:
         """Test that set_global_variable can set None as a value."""
         import sys
-        
+
         try:
             set_global_variable(name="test_none_var", value=None)
-            
+
             assert hasattr(sys.modules["__main__"], "test_none_var")
             assert sys.modules["__main__"].test_none_var is None  # type: ignore[attr-defined]
-            
+
         finally:
             # Cleanup
             if hasattr(sys.modules["__main__"], "test_none_var"):

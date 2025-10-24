@@ -2,11 +2,14 @@
 # Licensed under the MIT license.
 
 import sys
-from typing import Dict, Any
 
 import pytest
 
-from pyrit.common.apply_defaults import reset_default_values, set_default_value, set_global_variable
+from pyrit.common.apply_defaults import (
+    reset_default_values,
+    set_default_value,
+    set_global_variable,
+)
 from pyrit.setup.initializers.base import PyRITInitializer
 
 
@@ -350,7 +353,7 @@ class TestGetInfo:
         assert "description" in info
         assert "class" in info
         assert "execution_order" in info
-        
+
         assert info["name"] == "Basic Info"
         assert info["description"] == "Basic description"
         assert info["class"] == "BasicInfoInit"
@@ -438,24 +441,17 @@ class TestGetInfo:
         assert "global_variables" in info
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestGetDynamicDefaultValuesInfo:
     """Tests for get_dynamic_default_values_info method."""
 
     def setup_method(self) -> None:
-        """Clear default values and set up memory before each test."""
+        """Clear default values before each test."""
         reset_default_values()
-        # Initialize memory for sandbox runs
-        from pyrit.memory import CentralMemory, SQLiteMemory
-
-        memory = SQLiteMemory(db_path=":memory:")
-        CentralMemory.set_memory_instance(memory)
 
     def teardown_method(self) -> None:
         """Clean up after each test."""
         reset_default_values()
-        from pyrit.memory import CentralMemory
-
-        CentralMemory.set_memory_instance(None)  # type: ignore
 
     def test_get_dynamic_info_returns_dict(self):
         """Test that method returns a dictionary."""
@@ -517,7 +513,7 @@ class TestGetDynamicDefaultValuesInfo:
 
         init = DefaultsInit()
         info = init.get_dynamic_default_values_info()
-        
+
         # Should capture that a default was set
         assert isinstance(info["default_values"], list)
 
@@ -538,7 +534,7 @@ class TestGetDynamicDefaultValuesInfo:
 
         init = GlobalsInit()
         info = init.get_dynamic_default_values_info()
-        
+
         assert isinstance(info["global_variables"], list)
 
     def test_get_dynamic_info_restores_state(self):
@@ -573,11 +569,15 @@ class TestGetDynamicDefaultValuesInfo:
         # Should only have the original default, not the temporary one
         assert len(registry._default_values) == 1
 
+
+class TestGetDynamicDefaultValuesInfoWithoutMemory:
+    """Tests for get_dynamic_default_values_info method without memory."""
+
     def test_get_dynamic_info_without_memory_returns_message(self):
         """Test that method returns helpful message when memory not initialized."""
         from pyrit.memory import CentralMemory
 
-        # Clear memory
+        # Ensure memory is not set
         CentralMemory.set_memory_instance(None)  # type: ignore
 
         class NoMemoryInit(PyRITInitializer):
@@ -594,7 +594,7 @@ class TestGetDynamicDefaultValuesInfo:
 
         init = NoMemoryInit()
         info = init.get_dynamic_default_values_info()
-        
+
         # Should return helpful messages
         assert "initialize_pyrit()" in str(info["default_values"])
         assert "initialize_pyrit()" in str(info["global_variables"])

@@ -2,22 +2,21 @@
 # Licensed under the MIT license.
 import logging
 import pathlib
-import sys
-from typing import Any, Literal, Optional, Sequence, Union, get_args
+
+# Import PyRITInitializer for type checking (with TYPE_CHECKING to avoid circular imports)
+from typing import TYPE_CHECKING, Any, Literal, Optional, Sequence, Union, get_args
 
 import dotenv
 
 from pyrit.common import path
+from pyrit.common.apply_defaults import reset_default_values
 from pyrit.memory import (
     AzureSQLMemory,
     CentralMemory,
     MemoryInterface,
     SQLiteMemory,
 )
-from pyrit.common.apply_defaults import reset_default_values
 
-# Import PyRITInitializer for type checking (with TYPE_CHECKING to avoid circular imports)
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pyrit.setup.initializers.base import PyRITInitializer
 
@@ -52,7 +51,9 @@ def _load_environment_files() -> None:
         dotenv.load_dotenv(dotenv_path=dotenv.find_dotenv(".env.local"), override=True, verbose=True)
 
 
-def _load_initializers_from_scripts(*, script_paths: Sequence[Union[str, pathlib.Path]]) -> Sequence["PyRITInitializer"]:
+def _load_initializers_from_scripts(
+    *, script_paths: Sequence[Union[str, pathlib.Path]]
+) -> Sequence["PyRITInitializer"]:
     """
     Load PyRITInitializer instances from external Python files.
 
@@ -70,36 +71,11 @@ def _load_initializers_from_scripts(*, script_paths: Sequence[Union[str, pathlib
         ValueError: If a script path is not a Python file or doesn't contain valid initializers.
 
     Example:
-        Script content (my_custom_init.py):
-            from pyrit.setup.initializers.base import PyRITInitializer
-            from pyrit.common.apply_defaults import set_default_value
-            from pyrit.prompt_target import OpenAIChatTarget
-
-            class MyCustomInitializer(PyRITInitializer):
-                @property
-                def name(self) -> str:
-                    return "My Custom Configuration"
-
-                @property 
-                def description(self) -> str:
-                    return "Custom OpenAI configuration"
-
-                def initialize(self) -> None:
-                    set_default_value(
-                        class_type=OpenAIChatTarget,
-                        parameter_name="temperature", 
-                        value=0.9
-                    )
-
-        Usage:
-            initialize_pyrit(
-                memory_db_type="InMemory", 
-                initialization_scripts=["my_custom_init.py"]
-            )
+        Script content should be a subclass of PyRITInitializer e.g. like SimpleInitializer
     """
     # Import here to avoid circular imports
     from pyrit.setup.initializers.base import PyRITInitializer
-    
+
     loaded_initializers = []
 
     for script_path in script_paths:
@@ -118,27 +94,25 @@ def _load_initializers_from_scripts(*, script_paths: Sequence[Union[str, pathlib
 
         # Load the script as a module
         try:
-            import importlib.util
             import importlib.machinery
-            
+            import importlib.util
+
             spec = importlib.util.spec_from_file_location(f"init_script_{script.stem}", script)
             if spec is None or spec.loader is None:
                 raise ValueError(f"Could not load initialization script: {script}")
-                
+
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
 
             # Auto-discover PyRITInitializer subclasses in the module
             script_initializers = []
-            
+
             # Look for all PyRITInitializer subclasses defined in the module
             for name in dir(module):
                 obj = getattr(module, name)
-                # Check if it's a class, is a subclass of PyRITInitializer, 
+                # Check if it's a class, is a subclass of PyRITInitializer,
                 # and is not the base class itself
-                if (isinstance(obj, type) and 
-                    issubclass(obj, PyRITInitializer) and 
-                    obj is not PyRITInitializer):
+                if isinstance(obj, type) and issubclass(obj, PyRITInitializer) and obj is not PyRITInitializer:
                     try:
                         # Instantiate the initializer class
                         initializer = obj()
@@ -147,7 +121,7 @@ def _load_initializers_from_scripts(*, script_paths: Sequence[Union[str, pathlib
                     except Exception as e:
                         logger.warning(f"Could not instantiate {name} from {script.name}: {e}")
                         # Continue to try other classes rather than failing completely
-            
+
             if not script_initializers:
                 raise ValueError(
                     f"Initialization script {script} must contain at least one PyRITInitializer subclass. "
@@ -167,42 +141,45 @@ def _load_initializers_from_scripts(*, script_paths: Sequence[Union[str, pathlib
 def _execute_initializers(*, initializers: Sequence["PyRITInitializer"]) -> None:
     """
     Execute PyRITInitializer instances in execution order.
-    
+
     Initializers are sorted by their execution_order property before execution.
     Lower execution_order values run first.
-    
+
     Args:
         initializers: Sequence of PyRITInitializer instances to execute.
-        
+
     Raises:
         ValueError: If an initializer is not a PyRITInitializer instance.
         Exception: If an initializer's validation or initialization fails.
     """
     # Import here to avoid circular imports
     from pyrit.setup.initializers.base import PyRITInitializer
-    
-    # Sort initializers by execution_order (lower numbers first)
-    sorted_initializers = sorted(initializers, key=lambda x: x.execution_order)
-    
-    for initializer in sorted_initializers:
+
+    # Validate all initializers first before sorting
+    for initializer in initializers:
         if not isinstance(initializer, PyRITInitializer):
             raise ValueError(
                 f"All initializers must be PyRITInitializer instances. "
                 f"Got {type(initializer).__name__}: {initializer}"
             )
-        
+
+    # Sort initializers by execution_order (lower numbers first)
+    sorted_initializers = sorted(initializers, key=lambda x: x.execution_order)
+
+    for initializer in sorted_initializers:
+
         logger.info(f"Executing initializer: {initializer.name}")
         logger.debug(f"Description: {initializer.description}")
-        
+
         try:
             # Validate first
             initializer.validate()
-            
+
             # Then initialize with tracking to capture what was configured
             initializer.initialize_with_tracking()
-            
+
             logger.debug(f"Successfully executed initializer: {initializer.name}")
-            
+
         except Exception as e:
             logger.error(f"Error executing initializer {initializer.name}: {e}")
             raise
@@ -227,30 +204,8 @@ def initialize_pyrit(
         initializers (Optional[Sequence[PyRITInitializer]]): Optional sequence of PyRITInitializer instances
             to execute directly. These provide type-safe, validated configuration with clear documentation.
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
-
-    Example:
-        # Using class-based initializers (recommended)
-        from pyrit.setup import initialize_pyrit
-        from pyrit.setup.initializers import SimpleInitializer
-        
-        initialize_pyrit(
-            memory_db_type="InMemory",
-            initializers=[SimpleInitializer()]
-        )
-
-        # Using external script files containing PyRITInitializer classes
-        initialize_pyrit(
-            memory_db_type="InMemory",
-            initialization_scripts=["c:\\myfiles\\custom_initializers.py"]
-        )
-
-        # Using both together (all initializers are combined and sorted by execution_order)
-        initialize_pyrit(
-            memory_db_type="InMemory",
-            initializers=[SimpleInitializer()],
-            initialization_scripts=["c:\\myfiles\\additional_initializers.py"]
-        )
     """
+
     # Handle DuckDB deprecation before validation
     if memory_db_type == "DuckDB":
         logger.warning(
@@ -290,7 +245,7 @@ def initialize_pyrit(
 
     # Combine directly provided initializers with those loaded from scripts
     all_initializers = list(initializers) if initializers else []
-    
+
     # Load additional initializers from scripts
     if initialization_scripts:
         script_initializers = _load_initializers_from_scripts(script_paths=initialization_scripts)

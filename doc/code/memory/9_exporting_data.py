@@ -18,12 +18,8 @@ from uuid import uuid4
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import CentralMemory
-<<<<<<< HEAD
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.setup import IN_MEMORY, initialize_pyrit
-=======
 from pyrit.models import Message, MessagePiece
->>>>>>> main
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

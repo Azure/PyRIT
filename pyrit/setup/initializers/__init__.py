@@ -8,7 +8,6 @@ from pyrit.setup.initializers.airt import AIRTInitializer
 from pyrit.setup.initializers.simple import SimpleInitializer
 
 
-
 __all__ = [
     "PyRITInitializer",
     "AIRTInitializer",

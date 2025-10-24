@@ -5,6 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -13,7 +14,6 @@ from pyrit.models import (
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.apply_defaults import apply_defaults
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class LLMGenericTextConverter(PromptConverter):
             user_prompt_template_with_objective (SeedPrompt, Optional): The prompt template to set as the user prompt.
                 expects
             kwargs: Additional parameters for the prompt template.
-            
+
         Raises:
             ValueError: If converter_target is not provided and no default has been configured.
         """

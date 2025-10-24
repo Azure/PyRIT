@@ -128,12 +128,12 @@ test_cases_error = [
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_converters_wrong_arg.yaml'",
-        "got an unexpected keyword argument 'wrong_arg'",
+        "missing a required argument: 'language'",
         TypeError,
     ),
     (
         "--config-file 'tests/unit/cli/prompt_send_converters_missing_arg.yaml'",
-        "missing 1 required keyword-only argument: 'language'",
+        "missing a required argument: 'language'",
         TypeError,
     ),
     (

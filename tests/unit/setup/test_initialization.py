@@ -2,16 +2,15 @@
 # Licensed under the MIT license.
 
 import os
-import pathlib
 import sys
 import tempfile
-from typing import List
 from unittest import mock
 
 import pytest
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from pyrit.setup import AZURE_SQL, IN_MEMORY, SQLITE, initialize_pyrit, reset_default_values
+from pyrit.common.apply_defaults import reset_default_values
+from pyrit.setup import AZURE_SQL, IN_MEMORY, SQLITE, initialize_pyrit
 from pyrit.setup.initialization import (
     _execute_initializers,
     _load_environment_files,
@@ -68,21 +67,23 @@ class TestLoadInitializersFromScripts:
         """Test loading a single initializer from a Python script."""
         # Create a temporary script with a simple initializer
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 from pyrit.setup.initializers.base import PyRITInitializer
 
 class TestInitializer(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Test Initializer"
-    
+
     @property
     def description(self) -> str:
         return "Test description"
-    
+
     def initialize(self) -> None:
         pass
-""")
+"""
+            )
             script_path = f.name
 
         try:
@@ -95,18 +96,19 @@ class TestInitializer(PyRITInitializer):
     def test_load_multiple_initializers_from_script(self):
         """Test loading multiple initializers from a single script."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 from pyrit.setup.initializers.base import PyRITInitializer
 
 class TestInitializer1(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Test 1"
-    
+
     @property
     def description(self) -> str:
         return "First test"
-    
+
     def initialize(self) -> None:
         pass
 
@@ -114,14 +116,15 @@ class TestInitializer2(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Test 2"
-    
+
     @property
     def description(self) -> str:
         return "Second test"
-    
+
     def initialize(self) -> None:
         pass
-""")
+"""
+            )
             script_path = f.name
 
         try:
@@ -139,40 +142,44 @@ class TestInitializer2(PyRITInitializer):
         try:
             # Create first script
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-                f.write("""
+                f.write(
+                    """
 from pyrit.setup.initializers.base import PyRITInitializer
 
 class ScriptOneInitializer(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Script One"
-    
+
     @property
     def description(self) -> str:
         return "From script 1"
-    
+
     def initialize(self) -> None:
         pass
-""")
+"""
+                )
                 script_paths.append(f.name)
 
             # Create second script
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-                f.write("""
+                f.write(
+                    """
 from pyrit.setup.initializers.base import PyRITInitializer
 
 class ScriptTwoInitializer(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Script Two"
-    
+
     @property
     def description(self) -> str:
         return "From script 2"
-    
+
     def initialize(self) -> None:
         pass
-""")
+"""
+                )
                 script_paths.append(f.name)
 
             initializers = _load_initializers_from_scripts(script_paths=script_paths)
@@ -205,11 +212,13 @@ class ScriptTwoInitializer(PyRITInitializer):
     def test_script_without_initializers_raises_error(self):
         """Test that ValueError is raised when script has no PyRITInitializer classes."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 # A script with no initializers
 def some_function():
     pass
-""")
+"""
+            )
             script_path = f.name
 
         try:
@@ -221,21 +230,22 @@ def some_function():
     def test_script_with_invalid_initializer(self):
         """Test that invalid initializer classes are skipped with warning."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 from pyrit.setup.initializers.base import PyRITInitializer
 
 class BrokenInitializer(PyRITInitializer):
     def __init__(self):
         raise RuntimeError("Cannot instantiate")
-    
+
     @property
     def name(self) -> str:
         return "Broken"
-    
+
     @property
     def description(self) -> str:
         return "Broken"
-    
+
     def initialize(self) -> None:
         pass
 
@@ -243,14 +253,15 @@ class GoodInitializer(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Good"
-    
+
     @property
     def description(self) -> str:
         return "Good initializer"
-    
+
     def initialize(self) -> None:
         pass
-""")
+"""
+            )
             script_path = f.name
 
         try:
@@ -491,7 +502,8 @@ class TestInitializePyrit:
     def test_initialize_with_scripts(self, mock_load_env, mock_set_memory):
         """Test initialization with script paths."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 from pyrit.setup.initializers.base import PyRITInitializer
 from pyrit.common.apply_defaults import set_global_variable
 
@@ -499,14 +511,15 @@ class ScriptInit(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Script"
-    
+
     @property
     def description(self) -> str:
         return "From script"
-    
+
     def initialize(self) -> None:
         set_global_variable(name="script_executed", value=True)
-""")
+"""
+            )
             script_path = f.name
 
         try:
@@ -536,7 +549,8 @@ class ScriptInit(PyRITInitializer):
                 executed.append("direct")
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("""
+            f.write(
+                """
 from pyrit.setup.initializers.base import PyRITInitializer
 from pyrit.common.apply_defaults import set_global_variable
 
@@ -544,24 +558,27 @@ class ScriptInit(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Script"
-    
+
     @property
     def description(self) -> str:
         return "From script"
-    
+
     def initialize(self) -> None:
         import sys
         # Access the test's executed list through global var
         if hasattr(sys.modules['__main__'], 'test_executed'):
             sys.modules['__main__'].test_executed.append("script")
-""")
+"""
+            )
             script_path = f.name
 
         try:
             # Make executed list accessible to script
             sys.modules["__main__"].test_executed = executed  # type: ignore
 
-            initialize_pyrit(memory_db_type=IN_MEMORY, initializers=[DirectInit()], initialization_scripts=[script_path])
+            initialize_pyrit(
+                memory_db_type=IN_MEMORY, initializers=[DirectInit()], initialization_scripts=[script_path]
+            )
 
             assert "direct" in executed
             mock_load_env.assert_called_once()
@@ -576,19 +593,16 @@ class ScriptInit(PyRITInitializer):
         with pytest.raises(ValueError, match="is not a supported type"):
             initialize_pyrit(memory_db_type="InvalidType")  # type: ignore
 
+    @mock.patch("pyrit.setup.initialization.logger")
     @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
     @mock.patch("pyrit.setup.initialization._load_environment_files")
-    @mock.patch("logging.getLogger")
-    def test_duckdb_deprecated_warning(self, mock_logger, mock_load_env, mock_set_memory):
+    def test_duckdb_deprecated_warning(self, mock_load_env, mock_set_memory, mock_logger):
         """Test that DuckDB shows deprecation warning and uses SQLite."""
-        mock_log = mock.Mock()
-        mock_logger.return_value = mock_log
-
         initialize_pyrit(memory_db_type="DuckDB")  # type: ignore
 
         # Should log warning about DuckDB deprecation
-        mock_log.warning.assert_called()
-        warning_msg = str(mock_log.warning.call_args)
+        mock_logger.warning.assert_called_once()
+        warning_msg = str(mock_logger.warning.call_args)
         assert "DuckDB is no longer supported" in warning_msg
 
     @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")

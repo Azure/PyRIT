@@ -3,7 +3,6 @@
 
 import os
 import sys
-from unittest import mock
 
 import pytest
 
@@ -49,7 +48,7 @@ class TestSimpleInitializer:
         """Test the required_env_vars property."""
         init = SimpleInitializer()
         env_vars = init.required_env_vars
-        
+
         assert isinstance(env_vars, list)
         assert "OPENAI_CHAT_ENDPOINT" in env_vars
         assert "OPENAI_CHAT_KEY" in env_vars
@@ -66,6 +65,7 @@ class TestSimpleInitializer:
         init.validate()
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestSimpleInitializerInitialize:
     """Tests for SimpleInitializer.initialize method."""
 
@@ -105,7 +105,7 @@ class TestSimpleInitializerInitialize:
 
         assert hasattr(sys.modules["__main__"], "default_converter_target")
         converter_target = sys.modules["__main__"].default_converter_target  # type: ignore
-        
+
         # Should be an OpenAIChatTarget
         from pyrit.prompt_target import OpenAIChatTarget
 
@@ -118,7 +118,7 @@ class TestSimpleInitializerInitialize:
 
         converter_target = sys.modules["__main__"].default_converter_target  # type: ignore
         # Simple config uses temperature 1.2 for converters
-        assert converter_target.temperature == 1.2
+        assert converter_target._temperature == 1.2
 
     def test_initialize_sets_default_objective_scorer(self):
         """Test that initialize sets default_objective_scorer global variable."""
@@ -127,7 +127,7 @@ class TestSimpleInitializerInitialize:
 
         assert hasattr(sys.modules["__main__"], "default_objective_scorer")
         scorer = sys.modules["__main__"].default_objective_scorer  # type: ignore
-        
+
         # Should be a TrueFalseCompositeScorer
         from pyrit.score import TrueFalseCompositeScorer
 
@@ -140,7 +140,7 @@ class TestSimpleInitializerInitialize:
 
         assert hasattr(sys.modules["__main__"], "adversarial_config")
         config = sys.modules["__main__"].adversarial_config  # type: ignore
-        
+
         # Should be an AttackAdversarialConfig
         from pyrit.executor.attack import AttackAdversarialConfig
 
@@ -153,7 +153,7 @@ class TestSimpleInitializerInitialize:
 
         config = sys.modules["__main__"].adversarial_config  # type: ignore
         # Simple config uses temperature 1.3 for adversarial targets
-        assert config.target.temperature == 1.3
+        assert config.target._temperature == 1.3
 
     def test_initialize_sets_default_values_for_prompt_converter(self):
         """Test that default values are set for PromptConverter."""
@@ -163,7 +163,7 @@ class TestSimpleInitializerInitialize:
         from pyrit.prompt_converter import PromptConverter
 
         registry = get_global_default_values()
-        
+
         # Should have a default value for PromptConverter.converter_target
         defaults = registry._default_values
         found = False
@@ -171,7 +171,7 @@ class TestSimpleInitializerInitialize:
             if scope.class_type == PromptConverter and scope.parameter_name == "converter_target":
                 found = True
                 break
-        
+
         assert found, "Default value for PromptConverter.converter_target not set"
 
     def test_initialize_sets_default_values_for_attack_classes(self):
@@ -191,7 +191,7 @@ class TestSimpleInitializerInitialize:
 
         # Should have defaults for attack_scoring_config
         attack_classes = [PromptSendingAttack, CrescendoAttack, RedTeamingAttack, TreeOfAttacksWithPruningAttack]
-        
+
         for attack_class in attack_classes:
             found = False
             for scope in defaults:
@@ -216,7 +216,7 @@ class TestSimpleInitializerInitialize:
             if scope.class_type == CrescendoAttack and scope.parameter_name == "attack_adversarial_config":
                 found = True
                 break
-        
+
         assert found, "Default value for CrescendoAttack.attack_adversarial_config not set"
 
 
@@ -231,7 +231,7 @@ class TestSimpleInitializerGetInfo:
 
         memory = SQLiteMemory(db_path=":memory:")
         CentralMemory.set_memory_instance(memory)
-        
+
         # Set up required env vars
         os.environ["OPENAI_CHAT_ENDPOINT"] = "https://test.openai.azure.com"
         os.environ["OPENAI_CHAT_KEY"] = "test_key"
@@ -242,7 +242,7 @@ class TestSimpleInitializerGetInfo:
         from pyrit.memory import CentralMemory
 
         CentralMemory.set_memory_instance(None)  # type: ignore
-        
+
         # Clean up env vars
         for var in ["OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY"]:
             if var in os.environ:
@@ -256,7 +256,7 @@ class TestSimpleInitializerGetInfo:
     def test_get_info_has_basic_fields(self):
         """Test that get_info has name, description, and class."""
         info = SimpleInitializer.get_info()
-        
+
         assert "name" in info
         assert "description" in info
         assert "class" in info
@@ -266,7 +266,7 @@ class TestSimpleInitializerGetInfo:
     def test_get_info_has_required_env_vars(self):
         """Test that get_info includes required environment variables."""
         info = SimpleInitializer.get_info()
-        
+
         assert "required_env_vars" in info
         assert "OPENAI_CHAT_ENDPOINT" in info["required_env_vars"]
         assert "OPENAI_CHAT_KEY" in info["required_env_vars"]
@@ -274,13 +274,13 @@ class TestSimpleInitializerGetInfo:
     def test_get_info_has_execution_order(self):
         """Test that get_info includes execution order."""
         info = SimpleInitializer.get_info()
-        
+
         assert "execution_order" in info
         assert info["execution_order"] == 1
 
     def test_get_info_has_defaults_info(self):
         """Test that get_info includes default values information."""
         info = SimpleInitializer.get_info()
-        
+
         assert "default_values" in info
         assert "global_variables" in info

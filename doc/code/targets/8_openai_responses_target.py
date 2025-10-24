@@ -56,14 +56,10 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This showcases how agentic function execution works with PyRIT + OpenAI Responses API.
 
-# %%
-<<<<<<< HEAD
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-=======
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import Message, MessagePiece
->>>>>>> main
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
+
+# %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

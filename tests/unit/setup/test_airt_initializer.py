@@ -3,7 +3,6 @@
 
 import os
 import sys
-from unittest import mock
 
 import pytest
 
@@ -18,14 +17,24 @@ class TestAIRTInitializer:
         """Set up before each test."""
         reset_default_values()
         # Clean up globals
-        for attr in ["default_converter_target", "default_harm_scorer", "default_objective_scorer", "adversarial_config"]:
+        for attr in [
+            "default_converter_target",
+            "default_harm_scorer",
+            "default_objective_scorer",
+            "adversarial_config",
+        ]:
             if hasattr(sys.modules["__main__"], attr):
                 delattr(sys.modules["__main__"], attr)
 
     def teardown_method(self) -> None:
         """Clean up after each test."""
         reset_default_values()
-        for attr in ["default_converter_target", "default_harm_scorer", "default_objective_scorer", "adversarial_config"]:
+        for attr in [
+            "default_converter_target",
+            "default_harm_scorer",
+            "default_objective_scorer",
+            "adversarial_config",
+        ]:
             if hasattr(sys.modules["__main__"], attr):
                 delattr(sys.modules["__main__"], attr)
 
@@ -49,7 +58,7 @@ class TestAIRTInitializer:
         """Test the required_env_vars property."""
         init = AIRTInitializer()
         env_vars = init.required_env_vars
-        
+
         assert isinstance(env_vars, list)
         assert "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT" in env_vars
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY" in env_vars
@@ -157,7 +166,7 @@ class TestAIRTInitializerValidate:
         init = AIRTInitializer()
         with pytest.raises(ValueError) as exc_info:
             init.validate()
-        
+
         # Should mention multiple missing vars
         error_msg = str(exc_info.value)
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY" in error_msg
@@ -167,12 +176,13 @@ class TestAIRTInitializerValidate:
         init = AIRTInitializer()
         with pytest.raises(ValueError) as exc_info:
             init.validate()
-        
+
         # Should mention environment variables in error
         error_msg = str(exc_info.value)
         assert "environment variables" in error_msg.lower()
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestAIRTInitializerInitialize:
     """Tests for AIRTInitializer.initialize method."""
 
@@ -186,9 +196,14 @@ class TestAIRTInitializerInitialize:
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"] = "test_key2"
         os.environ["AZURE_CONTENT_SAFETY_API_ENDPOINT"] = "https://test.cognitiveservices.azure.com"
         os.environ["AZURE_CONTENT_SAFETY_API_KEY"] = "safety_key"
-        
+
         # Clean up globals
-        for attr in ["default_converter_target", "default_harm_scorer", "default_objective_scorer", "adversarial_config"]:
+        for attr in [
+            "default_converter_target",
+            "default_harm_scorer",
+            "default_objective_scorer",
+            "adversarial_config",
+        ]:
             if hasattr(sys.modules["__main__"], attr):
                 delattr(sys.modules["__main__"], attr)
 
@@ -207,9 +222,14 @@ class TestAIRTInitializerInitialize:
         for var in env_vars:
             if var in os.environ:
                 del os.environ[var]
-        
+
         # Clean up globals
-        for attr in ["default_converter_target", "default_harm_scorer", "default_objective_scorer", "adversarial_config"]:
+        for attr in [
+            "default_converter_target",
+            "default_harm_scorer",
+            "default_objective_scorer",
+            "adversarial_config",
+        ]:
             if hasattr(sys.modules["__main__"], attr):
                 delattr(sys.modules["__main__"], attr)
 
@@ -226,7 +246,7 @@ class TestAIRTInitializerInitialize:
 
         assert hasattr(sys.modules["__main__"], "default_converter_target")
         converter_target = sys.modules["__main__"].default_converter_target  # type: ignore
-        
+
         # Should be an OpenAIChatTarget
         from pyrit.prompt_target import OpenAIChatTarget
 
@@ -238,7 +258,7 @@ class TestAIRTInitializerInitialize:
         init.initialize()
 
         converter_target = sys.modules["__main__"].default_converter_target  # type: ignore
-        assert converter_target.endpoint == "https://test.openai.azure.com"
+        assert converter_target._endpoint == "https://test.openai.azure.com"
 
     def test_initialize_sets_converter_target_with_correct_temperature(self):
         """Test that converter target has correct temperature."""
@@ -247,7 +267,7 @@ class TestAIRTInitializerInitialize:
 
         converter_target = sys.modules["__main__"].default_converter_target  # type: ignore
         # AIRT config uses temperature 1.1 for converters
-        assert converter_target.temperature == 1.1
+        assert converter_target._temperature == 1.1
 
     def test_initialize_sets_default_harm_scorer(self):
         """Test that initialize sets default_harm_scorer global variable."""
@@ -256,7 +276,7 @@ class TestAIRTInitializerInitialize:
 
         assert hasattr(sys.modules["__main__"], "default_harm_scorer")
         scorer = sys.modules["__main__"].default_harm_scorer  # type: ignore
-        
+
         # Should be a TrueFalseCompositeScorer
         from pyrit.score import TrueFalseCompositeScorer
 
@@ -269,7 +289,7 @@ class TestAIRTInitializerInitialize:
 
         assert hasattr(sys.modules["__main__"], "default_objective_scorer")
         scorer = sys.modules["__main__"].default_objective_scorer  # type: ignore
-        
+
         # Should be a TrueFalseCompositeScorer
         from pyrit.score import TrueFalseCompositeScorer
 
@@ -293,7 +313,7 @@ class TestAIRTInitializerInitialize:
 
         config = sys.modules["__main__"].adversarial_config  # type: ignore
         # AIRT config uses temperature 1.2 for adversarial targets
-        assert config.target.temperature == 1.2
+        assert config.target._temperature == 1.2
 
     def test_initialize_sets_default_values_for_prompt_converter(self):
         """Test that default values are set for PromptConverter."""
@@ -303,7 +323,7 @@ class TestAIRTInitializerInitialize:
         from pyrit.prompt_converter import PromptConverter
 
         registry = get_global_default_values()
-        
+
         # Should have a default value for PromptConverter.converter_target
         defaults = registry._default_values
         found = False
@@ -311,7 +331,7 @@ class TestAIRTInitializerInitialize:
             if scope.class_type == PromptConverter and scope.parameter_name == "converter_target":
                 found = True
                 break
-        
+
         assert found, "Default value for PromptConverter.converter_target not set"
 
     def test_initialize_sets_default_values_for_all_attack_classes(self):
@@ -331,7 +351,7 @@ class TestAIRTInitializerInitialize:
 
         # Should have defaults for attack_scoring_config for all attack classes
         attack_classes = [PromptSendingAttack, CrescendoAttack, RedTeamingAttack, TreeOfAttacksWithPruningAttack]
-        
+
         for attack_class in attack_classes:
             found = False
             for scope in defaults:
@@ -357,7 +377,7 @@ class TestAIRTInitializerInitialize:
 
         # Should have defaults for attack_adversarial_config for all attack classes
         attack_classes = [PromptSendingAttack, CrescendoAttack, RedTeamingAttack, TreeOfAttacksWithPruningAttack]
-        
+
         for attack_class in attack_classes:
             found = False
             for scope in defaults:
@@ -378,7 +398,7 @@ class TestAIRTInitializerGetInfo:
 
         memory = SQLiteMemory(db_path=":memory:")
         CentralMemory.set_memory_instance(memory)
-        
+
         # Set up required env vars
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"] = "https://test.openai.azure.com"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"] = "test_key"
@@ -393,7 +413,7 @@ class TestAIRTInitializerGetInfo:
         from pyrit.memory import CentralMemory
 
         CentralMemory.set_memory_instance(None)  # type: ignore
-        
+
         # Clean up env vars
         env_vars = [
             "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT",
@@ -415,7 +435,7 @@ class TestAIRTInitializerGetInfo:
     def test_get_info_has_basic_fields(self):
         """Test that get_info has name, description, and class."""
         info = AIRTInitializer.get_info()
-        
+
         assert "name" in info
         assert "description" in info
         assert "class" in info
@@ -425,7 +445,7 @@ class TestAIRTInitializerGetInfo:
     def test_get_info_has_required_env_vars(self):
         """Test that get_info includes all required environment variables."""
         info = AIRTInitializer.get_info()
-        
+
         assert "required_env_vars" in info
         assert "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT" in info["required_env_vars"]
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY" in info["required_env_vars"]
@@ -437,13 +457,13 @@ class TestAIRTInitializerGetInfo:
     def test_get_info_has_execution_order(self):
         """Test that get_info includes execution order."""
         info = AIRTInitializer.get_info()
-        
+
         assert "execution_order" in info
         assert info["execution_order"] == 1
 
     def test_get_info_has_defaults_info(self):
         """Test that get_info includes default values information."""
         info = AIRTInitializer.get_info()
-        
+
         assert "default_values" in info
         assert "global_variables" in info

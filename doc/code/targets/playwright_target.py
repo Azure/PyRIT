@@ -88,12 +88,7 @@ flask_process = start_flask_app()
 # %%
 from playwright.async_api import Page, async_playwright
 
-<<<<<<< HEAD
-from pyrit.models import PromptRequestPiece
-=======
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import MessagePiece
->>>>>>> main
 from pyrit.prompt_target import PlaywrightTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 

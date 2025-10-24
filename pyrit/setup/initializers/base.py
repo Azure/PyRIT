@@ -8,13 +8,12 @@ This module provides the abstract base class for all PyRIT initializers,
 which are class-based alternatives to initialization scripts.
 """
 
-import copy
 import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import Any, Dict, List, Tuple, Iterator
+from typing import Any, Dict, Iterator, List
 
-from pyrit.common.apply_defaults import get_global_default_values, DefaultValueScope
+from pyrit.common.apply_defaults import get_global_default_values
 
 
 class PyRITInitializer(ABC):
@@ -28,25 +27,6 @@ class PyRITInitializer(ABC):
     All initializers must implement the `name`, `description`, and `initialize`
     properties/methods. The `validate` method can be overridden if custom
     validation logic is needed.
-
-    Example:
-        class MyInitializer(PyRITInitializer):
-            @property
-            def name(self) -> str:
-                return "My Custom Configuration"
-
-            @property
-            def description(self) -> str:
-                return "Sets up custom defaults for my use case"
-
-            @property
-            def execution_order(self) -> int:
-                return 2  # Run after basic setup (default is 1)
-
-            def initialize(self) -> None:
-                # Configuration logic here
-                from pyrit.common.apply_defaults import set_default_value
-                set_default_value(...)
     """
 
     def __init__(self) -> None:
@@ -79,7 +59,7 @@ class PyRITInitializer(ABC):
     def required_env_vars(self) -> List[str]:
         """
         Get list of required environment variables for this initializer.
-        
+
         Override this property to specify which environment variables must be
         set for this initializer to work correctly.
 
@@ -134,19 +114,19 @@ class PyRITInitializer(ABC):
     def initialize_with_tracking(self) -> None:
         """
         Execute initialization while tracking what changes are made.
-        
+
         This method runs initialize() and captures information about what
         default values and global variables were set. The tracking information
         is not cached - it's captured during the actual initialization run.
         """
-        with self._track_initialization_changes() as tracking_info:
+        with self._track_initialization_changes():
             self.initialize()
 
     @contextmanager
     def _track_initialization_changes(self) -> Iterator[Dict[str, Any]]:
         """
         Context manager to track what changes during initialization.
-        
+
         Yields:
             Dict containing tracking info that gets populated during initialization.
         """
@@ -154,24 +134,24 @@ class PyRITInitializer(ABC):
         default_values_registry = get_global_default_values()
         current_default_keys = set(default_values_registry._default_values.keys())
         current_main_dict = dict(sys.modules["__main__"].__dict__)
-        
+
         # Initialize tracking dict
-        tracking_info = {"default_values": [], "global_variables": []}
-        
+        tracking_info: Dict[str, List[str]] = {"default_values": [], "global_variables": []}
+
         try:
             yield tracking_info
         finally:
             # After initialization, capture what changed
             new_defaults = default_values_registry._default_values
             new_main_dict = sys.modules["__main__"].__dict__
-            
+
             # Track default values that were added - just collect class.parameter pairs
             for scope, value in new_defaults.items():
                 if scope not in current_default_keys:
                     class_param = f"{scope.class_type.__name__}.{scope.parameter_name}"
                     if class_param not in tracking_info["default_values"]:
                         tracking_info["default_values"].append(class_param)
-            
+
             # Track global variables that were added - just collect the variable names
             for name in new_main_dict.keys():
                 if name not in current_main_dict and name not in tracking_info["global_variables"]:
@@ -180,7 +160,7 @@ class PyRITInitializer(ABC):
     def get_dynamic_default_values_info(self) -> Dict[str, Any]:
         """
         Get information about what default values and global variables this initializer sets.
-        
+
         Performs a sandbox run in isolation to discover what would be configured,
         then restores the original state. This works regardless of whether the
         initializer has been run before or which instance is queried.
@@ -190,54 +170,52 @@ class PyRITInitializer(ABC):
         """
         # Check if memory is initialized - required for running initialization in sandbox
         from pyrit.memory import CentralMemory
-        
-        original_memory = CentralMemory.get_memory_instance()
-        
+
+        try:
+            CentralMemory.get_memory_instance()
+        except ValueError:
+            # Memory is not initialized - return helpful message
+            return {
+                "default_values": "Call initialize_pyrit() first to see what this initializer configures",
+                "global_variables": "Call initialize_pyrit() first to see what this initializer configures",
+            }
+
         # Capture current state for restoration (before try block so finally can access)
         default_values_registry = get_global_default_values()
         original_default_keys = set(default_values_registry._default_values.keys())
         original_main_keys = set(sys.modules["__main__"].__dict__.keys())
-        
+
         try:
-            if original_memory is None:
-                # Memory is required to run the initialization sandbox
-                # Return a helpful message instead of trying to set up temporary memory
-                return {
-                    "default_values": "Call initialize_pyrit() first to see what this initializer configures",
-                    "global_variables": "Call initialize_pyrit() first to see what this initializer configures"
-                }
-            
+
             # Run initialization in sandbox with tracking
             with self._track_initialization_changes() as tracking_info:
                 self.initialize()
-            
+
             return tracking_info
-            
+
         except Exception as e:
             return {
                 "default_values": f"Error getting defaults info: {str(e)}",
-                "global_variables": f"Error getting globals info: {str(e)}"
+                "global_variables": f"Error getting globals info: {str(e)}",
             }
         finally:
             # Restore original state - remove any defaults that weren't there originally
             current_default_keys = set(default_values_registry._default_values.keys())
-            for key in current_default_keys - original_default_keys:
-                if key in default_values_registry._default_values:
-                    del default_values_registry._default_values[key]
-            
+            for scope_key in current_default_keys - original_default_keys:
+                if scope_key in default_values_registry._default_values:
+                    del default_values_registry._default_values[scope_key]
+
             # Restore main module globals - remove any that were added
             current_main_keys = set(sys.modules["__main__"].__dict__.keys())
-            for key in current_main_keys - original_main_keys:
-                if key in sys.modules["__main__"].__dict__:
-                    del sys.modules["__main__"].__dict__[key]
-            
-
+            for var_name in current_main_keys - original_main_keys:
+                if var_name in sys.modules["__main__"].__dict__:
+                    del sys.modules["__main__"].__dict__[var_name]
 
     @classmethod
     def get_info(cls) -> Dict[str, Any]:
         """
         Get information about this initializer class.
-        
+
         This is a class method so it can be called without instantiating the class:
         SimpleInitializer.get_info() instead of SimpleInitializer().get_info()
 
@@ -246,26 +224,26 @@ class PyRITInitializer(ABC):
         """
         # Create a temporary instance to access properties
         instance = cls()
-        
+
         base_info = {
             "name": instance.name,
             "description": instance.description,
             "class": cls.__name__,
             "execution_order": instance.execution_order,
         }
-        
+
         # Add required environment variables if any are defined
         if instance.required_env_vars:
             base_info["required_env_vars"] = instance.required_env_vars
-        
+
         # Add dynamic default values information
         try:
             defaults_info = instance.get_dynamic_default_values_info()
-            base_info["default_values"] = defaults_info["default_values"] 
+            base_info["default_values"] = defaults_info["default_values"]
             base_info["global_variables"] = defaults_info["global_variables"]
         except Exception as e:
             # If info fails, add error info but don't crash
             base_info["default_values"] = f"Error getting defaults info: {str(e)}"
             base_info["global_variables"] = f"Error getting globals info: {str(e)}"
-        
+
         return base_info

@@ -1,0 +1,138 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
+
+# %% [markdown]
+# # PyRIT Initializers
+#
+# You can configure PyRIT using:
+# 1. **Built-in initializers** - SimpleInitializer, AIRTInitializer
+# 2. **External scripts** - Custom PyRITInitializer classes for project-specific needs
+#
+# ## Execution Order
+#
+# When `initialize_pyrit` is called:
+# 1. Environment files are loaded (`.env`, `.env.local`)
+# 2. Memory database is configured
+# 3. All initializers are sorted by `execution_order` and executed
+#
+# ## Creating an Initializer
+
+# %% [markdown]
+# The following is a minimal `PyRITInitializer` class. It doesn't need much! In this case, it sets the default value for temperature for all OpenAIChatTargets to .9.
+
+# %%
+from pyrit.common.apply_defaults import set_default_value
+from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup.initializers.base import PyRITInitializer
+
+
+class CustomInitializer(PyRITInitializer):
+    @property
+    def name(self) -> str:
+        return "Custom Configuration"
+    
+    @property
+    def execution_order(self) -> int:
+        return 2  # Lower numbers run first (default is 1)
+    
+    def initialize(self) -> None:
+        set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
+
+    @property
+    def description(self) -> str:
+        return "Sets custom temperature for OpenAI targets"
+
+
+# %% [markdown]
+# ## Built-in Initializers
+#
+# PyRIT includes a few built-in initializers that set more intelligent defaults!
+#
+# - **SimpleInitializer**: Requires only OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY
+# - **AIRTInitializer**: Our best guess at defaults, but requires full Azure OpenAI configuration
+#
+# These are easy to include.
+
+# %%
+from pyrit.setup import initialize_pyrit
+from pyrit.setup.initializers import SimpleInitializer
+
+# Using built-in initializer
+initialize_pyrit(
+    memory_db_type="InMemory",
+    initializers=[SimpleInitializer()]
+)
+
+# %% [markdown]
+# ## External Scripts
+#
+# External scripts allow custom configurations without modifying PyRIT. For example, you can write your own library, include them, and never have to check out pyrit in editable mode. Here are some use cases:
+# - Custom targets for security assessments
+# - Project-specific defaults
+# - Organization-specific defaults
+#
+# As an example, say you are building a product, and want to set all your `adversarial_chat` in one place. You can using this!
+#
+# Like the built-in initializers, external scripts have the same format and must contain PyRITInitializer classes. In fact, using something like SimpleInitializer() as a template for your own is not a bad place to start.
+
+# %%
+import os
+import shutil
+import tempfile
+
+from pyrit.setup import initialize_pyrit
+
+temp_dir = tempfile.mkdtemp()
+script_path = os.path.join(temp_dir, "custom_init.py")
+
+# This is the simple custom initializer from earlier
+script_content = '''
+from pyrit.setup.initializers.base import PyRITInitializer
+from pyrit.common.apply_defaults import set_default_value
+from pyrit.prompt_target import OpenAIChatTarget
+
+class CustomInitializer(PyRITInitializer):
+    @property
+    def name(self) -> str:
+        return "Custom Configuration"
+    
+    @property
+    def execution_order(self) -> int:
+        return 2  # Lower numbers run first (default is 1)
+    
+    def initialize(self) -> None:
+        set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
+
+    @property
+    def description(self) -> str:
+        return "Sets custom temperature for OpenAI targets"
+
+'''
+
+with open(script_path, "w") as f:
+    f.write(script_content)
+    
+print(f"Created: {script_path}")
+
+
+initialize_pyrit(
+    memory_db_type="InMemory",
+    initialization_scripts=[temp_dir + "/custom_init.py"]
+)
+
+
+if os.path.exists(temp_dir):
+    shutil.rmtree(temp_dir)
+
+# %% [markdown]
+# ## More information:
+# - [Configuration notebook](0_configuration.ipynb) shows practical examples with custom targets
+# - [Default Values notebook](default_values.ipynb) explains how defaults work
+#

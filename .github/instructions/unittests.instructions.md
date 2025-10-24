@@ -17,6 +17,14 @@ When generating unit tests for PyRIT components, follow these comprehensive guid
 - Use `AsyncMock` instead of `MagicMock` when mocking async methods
 - Properly await all async operations in tests
 
+
+### Using Pre-Configured Settings
+
+Check conftest and mocks.py to see if there are common utilities that can be reused across tests.
+
+One common issue is setting the central database. Use the `patch_central_database` is a common solution.
+
+
 ### Test Organization
 - Group related tests into classes with descriptive names starting with `Test`
 - Place tests in `tests/unit/[module]/test_[component].py`
