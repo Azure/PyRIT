@@ -122,7 +122,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         # Set expected route for URL validation
         # Support multiple valid endpoints (e.g., different API versions)
-        self._expected_route = ["/openai/responses", "/v1/openai/responses"]  # Alternative version path
+        self._expected_route = ["/openai/responses"]
 
         # Validate endpoint URL for OpenAI Response API
         self._warn_if_irregular_endpoint()

@@ -149,9 +149,7 @@ class OpenAISoraTarget(OpenAITarget):
 
         # Set expected routes for URL validation (Sora video generation API)
         self._expected_route = [
-            "/openai/deployments/*/videos/generations",
-            "/v1/videos/generations",
-            "/v2/videos/generations",
+            "/videos/generations",
         ]
         # Validate endpoint URL
         self._warn_if_irregular_endpoint()

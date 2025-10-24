@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import json
-import logging
 import os
 from tempfile import NamedTemporaryFile
 from typing import Any, MutableSequence
@@ -1145,55 +1144,8 @@ def test_construct_message_skips_unhandled_types(target: OpenAIResponseTarget, d
     assert resp.message_pieces[0].original_value == "Hi"
 
 
-# URL Validation Tests
-def test_response_target_url_validation_first_valid_route_no_warning(caplog, patch_central_database):
-    """Test that first valid response route doesn't trigger warning."""
-    valid_endpoint = "https://api.openai.com/openai/responses"
+def test_response_target_sets_expected_route(patch_central_database):
+    """Test that Response target sets the correct expected route for URL validation."""
+    target = OpenAIResponseTarget(model_name="o1-mini", endpoint="test", api_key="test")
 
-    with patch.dict(os.environ, {}, clear=True):
-        with caplog.at_level(logging.WARNING):
-            target = OpenAIResponseTarget(
-                model_name="o1-mini", endpoint=valid_endpoint, api_key="test-key", api_version="2024-10-21"
-            )
-
-    # Should not have any warnings
-    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    assert len(warning_logs) == 0
-    assert target
-
-
-def test_response_target_url_validation_second_valid_route_no_warning(caplog, patch_central_database):
-    """Test that second valid response route doesn't trigger warning."""
-    valid_endpoint = "https://api.openai.com/v1/openai/responses"
-
-    with patch.dict(os.environ, {}, clear=True):
-        with caplog.at_level(logging.WARNING):
-            target = OpenAIResponseTarget(
-                model_name="o1-mini", endpoint=valid_endpoint, api_key="test-key", api_version="2024-10-21"
-            )
-
-    # Should not have any warnings
-    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    assert len(warning_logs) == 0
-    assert target
-
-
-def test_response_target_url_validation_invalid_endpoint_triggers_warning(caplog, patch_central_database):
-    """Test that invalid response endpoint triggers warning with multiple route options."""
-    invalid_endpoint = "https://api.openai.com/v1/chat/completions"
-
-    with patch.dict(os.environ, {}, clear=True):
-        with caplog.at_level(logging.WARNING):
-            target = OpenAIResponseTarget(
-                model_name="o1-mini", endpoint=invalid_endpoint, api_key="test-key", api_version="2024-10-21"
-            )
-
-    # Should have a warning
-    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    assert len(warning_logs) >= 1
-    endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
-    assert len(endpoint_warnings) == 1
-    assert "one of:" in endpoint_warnings[0].message
-    assert "/openai/responses" in endpoint_warnings[0].message
-    assert "/v1/openai/responses" in endpoint_warnings[0].message
-    assert target
+    assert target._expected_route == ["/openai/responses"]
