@@ -29,7 +29,7 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
 )
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
-from pyrit.setup.initializers.base import PyRITInitializer
+from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
 class SimpleInitializer(PyRITInitializer):
@@ -42,7 +42,7 @@ class SimpleInitializer(PyRITInitializer):
     - Adversarial target configurations for attacks
 
     Required Environment Variables:
-    - None (uses OpenAI defaults from environment or explicit configuration)
+    - OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY
 
     This configuration is designed for simple use cases with:
     - Basic OpenAI API integration (uses standard OPENAI_API_KEY env var)

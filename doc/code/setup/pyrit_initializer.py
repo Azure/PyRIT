@@ -30,7 +30,7 @@
 # %%
 from pyrit.common.apply_defaults import set_default_value
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup.initializers.base import PyRITInitializer
+from pyrit.setup.initializers import PyRITInitializer
 
 
 class CustomInitializer(PyRITInitializer):
@@ -89,9 +89,9 @@ from pyrit.setup import initialize_pyrit
 temp_dir = tempfile.mkdtemp()
 script_path = os.path.join(temp_dir, "custom_init.py")
 
-# This is the simple custom initializer from earlier
+# This is the simple custom initializer from the "Creating an Initializer" section of this notebook
 script_content = """
-from pyrit.setup.initializers.base import PyRITInitializer
+from pyrit.setup.initializers import PyRITInitializer
 from pyrit.common.apply_defaults import set_default_value
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -124,6 +124,9 @@ initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[temp_dir + "
 
 if os.path.exists(temp_dir):
     shutil.rmtree(temp_dir)
+
+# %% [markdown]
+# The initialization_scripts argument ultimately uses `pathlib.Path`, so the scripts are loaded relative to the current working directory (where you're executing the script from, not where PyRIT library is). To avoid ambiguity, it is usually better to use full paths if possible.
 
 # %% [markdown]
 # ## More information:

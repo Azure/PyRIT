@@ -43,9 +43,9 @@ initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 import os
 
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target1 = OpenAIChatTarget()
 
@@ -60,6 +60,7 @@ target2 = OpenAIChatTarget(
 target3 = OpenAIChatTarget(
     endpoint=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2"),
     api_key=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"),
+    model_name=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2"),
 )
 
 # %% [markdown]
@@ -126,8 +127,8 @@ from pyrit.setup.initializers import SimpleInitializer
 initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 
 
-# Alternative approach - you can pass the path to the initializer class
-# This is how you provide your own file not part of the repo that defines a PyritInitializer class
+# Alternative approach - you can pass the path to the initializer class.
+# This is how you provide your own file not part of the repo that defines a PyRITInitializer class
 # This is equivalent to loading the class directly as above
 initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"])
 
@@ -173,7 +174,7 @@ for result in results:
 #
 # Imagine you are conducting a security assessment and want to include a new custom target. Yes, you could check out PyRIT in editable mode. But with initialize_scripts you don't have to. And this kind of operation can be used in front ends like GUI, CLI, etc.
 #
-# All you need to do is create a PyRITInitializer class (e.g. myinitializer.py). Then you can use `set_global_variable` and use it everywhere. Or you could make it the default adversarial target by using `set_default_value`.
+# All you need to do is create a `PyRITInitializer` class (e.g. myinitializer.py). Then you can use `set_global_variable` and use it everywhere. Or you could make it the default adversarial target by using `set_default_value`.
 #
 #
 # ## Additional Initializer information

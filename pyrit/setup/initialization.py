@@ -18,7 +18,7 @@ from pyrit.memory import (
 )
 
 if TYPE_CHECKING:
-    from pyrit.setup.initializers.base import PyRITInitializer
+    from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def _load_initializers_from_scripts(
         Script content should be a subclass of PyRITInitializer e.g. like SimpleInitializer
     """
     # Import here to avoid circular imports
-    from pyrit.setup.initializers.base import PyRITInitializer
+    from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
     loaded_initializers = []
 
@@ -94,7 +94,6 @@ def _load_initializers_from_scripts(
 
         # Load the script as a module
         try:
-            import importlib.machinery
             import importlib.util
 
             spec = importlib.util.spec_from_file_location(f"init_script_{script.stem}", script)
@@ -153,7 +152,7 @@ def _execute_initializers(*, initializers: Sequence["PyRITInitializer"]) -> None
         Exception: If an initializer's validation or initialization fails.
     """
     # Import here to avoid circular imports
-    from pyrit.setup.initializers.base import PyRITInitializer
+    from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
     # Validate all initializers first before sorting
     for initializer in initializers:

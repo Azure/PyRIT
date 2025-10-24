@@ -18,7 +18,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
-from pyrit.setup.initialization import MemoryDatabaseType
+from pyrit.setup import MemoryDatabaseType
 
 SupportedExecutionTypes = Literal["local"]
 

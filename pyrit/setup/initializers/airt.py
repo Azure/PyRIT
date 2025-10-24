@@ -31,7 +31,7 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
 )
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
-from pyrit.setup.initializers.base import PyRITInitializer
+from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
 class AIRTInitializer(PyRITInitializer):

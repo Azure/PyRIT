@@ -33,8 +33,7 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import initialize_pyrit
-from pyrit.setup.initialization import IN_MEMORY
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

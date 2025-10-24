@@ -10,7 +10,7 @@ from pyrit.common.apply_defaults import (
     set_default_value,
     set_global_variable,
 )
-from pyrit.setup.initializers.base import PyRITInitializer
+from pyrit.setup.initializers import PyRITInitializer
 
 
 class TestPyRITInitializerBase:
