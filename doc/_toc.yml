@@ -112,7 +112,7 @@ chapters:
       - file: code/memory/5_memory_labels
       - file: code/memory/6_azure_sql_memory
       - file: code/memory/7_azure_sql_memory_attacks
-      - file: code/memory/8_seed_prompt_database
+      - file: code/memory/8_seed_database
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md
       - file: code/memory/11_harm_categories
