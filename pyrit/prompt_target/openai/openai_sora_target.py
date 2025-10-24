@@ -19,6 +19,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     Message,
     MessagePiece,
+    PromptResponseError,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -410,7 +411,7 @@ class OpenAISoraTarget(OpenAITarget):
             )
         else:
             # Determine error type based on error details
-            error_type = "unknown"
+            error_type: PromptResponseError = "unknown"
 
             # Check for specific error types that indicate processing/request errors
             if any(
