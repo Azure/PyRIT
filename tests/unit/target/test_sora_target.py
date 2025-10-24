@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import json
+import logging
 import os
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -468,3 +469,86 @@ async def test_download_video_content_async_exceptions(
             max_attempts = os.getenv("RETRY_MAX_NUM_ATTEMPTS")
             if max_attempts:
                 assert mock_request.call_count == int(max_attempts)
+
+
+# URL Validation Tests
+def test_sora_target_url_validation_valid_azure_endpoint_no_warning(caplog, patch_central_database):
+    """Test that valid Azure Sora endpoint doesn't trigger warning."""
+    valid_endpoint = "https://myservice.openai.azure.com/openai/deployments/sora-1/videos/generations"
+
+    with patch.dict(os.environ, {}, clear=True):
+        with caplog.at_level(logging.WARNING):
+            target = OpenAISoraTarget(endpoint=valid_endpoint, api_key="test-key", api_version="preview")
+
+    # Should not have any warnings
+    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    assert len(warning_logs) == 0
+    assert target
+
+
+def test_sora_target_url_validation_invalid_endpoint_triggers_warning(caplog, patch_central_database):
+    """Test that invalid Sora endpoint triggers warning."""
+    invalid_endpoint = "https://api.openai.com/v1/wrong/path"
+
+    with patch.dict(os.environ, {}, clear=True):
+        with caplog.at_level(logging.WARNING):
+            target = OpenAISoraTarget(endpoint=invalid_endpoint, api_key="test-key", api_version="preview")
+
+    # Should have a warning
+    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    assert len(warning_logs) >= 1
+    endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+    assert len(endpoint_warnings) == 1
+    # Check that warning mentions one of the expected routes
+    warning_message = endpoint_warnings[0].message
+    assert any(
+        route in warning_message
+        for route in ["/openai/deployments/*/videos/generations", "/v1/videos/generations", "/v2/videos/generations"]
+    )
+    assert target
+
+
+def test_sora_target_url_validation_wildcard_pattern_matching(caplog, patch_central_database):
+    """Test wildcard pattern matching with various Azure deployment names."""
+    test_cases = [
+        ("https://service.openai.azure.com/openai/deployments/sora-1/videos/generations", True),
+        ("https://service.openai.azure.com/openai/deployments/my-custom-sora/videos/generations", True),
+        ("https://service.openai.azure.com/openai/deployments/sora-1/wrong/generations", False),
+    ]
+
+    for endpoint, should_be_valid in test_cases:
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                caplog.clear()  # Clear previous logs
+                target = OpenAISoraTarget(endpoint=endpoint, api_key="test-key", api_version="preview")
+
+            warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+
+            if should_be_valid:
+                assert len(warning_logs) == 0, f"Expected no warning for {endpoint}"
+                assert target, f"Target should be created for {endpoint}"
+            else:
+                endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+                assert len(endpoint_warnings) >= 1, f"Expected warning for {endpoint}"
+                assert target, f"Target should be created even with warning for {endpoint}"
+
+
+def test_sora_target_url_validation_versioned_endpoints(caplog, patch_central_database):
+    """Test that versioned endpoints are supported (future-proofing)."""
+    valid_endpoints = [
+        "https://api.openai.com/v1/videos/generations",
+        "https://api.openai.com/v2/videos/generations",
+        "https://service.openai.azure.com/openai/deployments/sora-1/videos/generations",
+    ]
+
+    for endpoint in valid_endpoints:
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                caplog.clear()  # Clear previous logs
+                target = OpenAISoraTarget(endpoint=endpoint, api_key="test-key", api_version="preview")
+
+            # Should not have any warnings for valid endpoints
+            warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+            endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+            assert len(endpoint_warnings) == 0, f"Expected no endpoint warning for {endpoint}"
+            assert target, f"Target should be created for {endpoint}"
