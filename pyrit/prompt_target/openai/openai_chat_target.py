@@ -107,6 +107,15 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
+        # Set expected routes for URL validation (both OpenAI and Azure patterns)
+        self._expected_route = [
+            "/v1/chat/completions",  # Standard OpenAI endpoint
+            "/openai/deployments/*/chat/completions",  # Azure OpenAI wildcard pattern
+        ]
+
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint()
+
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
         self._frequency_penalty = frequency_penalty

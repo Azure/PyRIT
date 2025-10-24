@@ -71,6 +71,12 @@ class OpenAITTSTarget(OpenAITarget):
         if not self._model_name:
             self._model_name = "tts-1"
 
+        # Set expected route for URL validation
+        self._expected_route = "/openai/deployments/*/audio/speech"
+
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint()
+
         self._voice = voice
         self._response_format = response_format
         self._language = language

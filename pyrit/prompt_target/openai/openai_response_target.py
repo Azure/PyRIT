@@ -120,8 +120,12 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         super().__init__(api_version=api_version, temperature=temperature, top_p=top_p, **kwargs)
         self._max_output_tokens = max_output_tokens
 
+        # Set expected route for URL validation
+        # Support multiple valid endpoints (e.g., different API versions)
+        self._expected_route = ["/openai/responses", "/v1/openai/responses"]  # Alternative version path
+
         # Validate endpoint URL for OpenAI Response API
-        self._validate_endpoint_url()
+        self._warn_if_irregular_endpoint()
 
         # Reasoning parameters are not yet supported by PyRIT.
         # See https://platform.openai.com/docs/api-reference/responses/create#responses-create-reasoning
@@ -138,29 +142,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_RESPONSES_KEY"
         return
-
-    def _validate_endpoint_url(self) -> None:
-        """
-        Validate that the endpoint URL ends with the correct path for OpenAI Response API.
-
-        Prints a warning if the endpoint doesn't end with '/openai/responses' for OpenAI or Azure OpenAI endpoints.
-        This validation helps ensure the endpoint is configured correctly for the Response API.
-        """
-        if not self._endpoint:
-            return
-
-        endpoint_lower = self._endpoint.lower()
-
-        # Check if this is an OpenAI or Azure OpenAI endpoint
-        is_openai_endpoint = False
-        if "openai.com" in endpoint_lower or "openai.azure.com" in endpoint_lower or "azure.com" in endpoint_lower:
-            is_openai_endpoint = True
-
-        if is_openai_endpoint and not self._endpoint.endswith("/openai/responses"):
-            logger.warning(
-                f"Warning: Expected endpoint to end with '/openai/responses'. "
-                f"Please verify your endpoint: Your endpoint is '{self._endpoint}'."
-            )
 
     # Helpers kept on the class for reuse + testability
     def _flush_message(self, role: Optional[str], content: List[Dict[str, Any]], output: List[Dict[str, Any]]) -> None:

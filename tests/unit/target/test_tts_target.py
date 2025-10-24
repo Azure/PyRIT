@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
 import os
 import uuid
 from typing import MutableSequence
@@ -36,6 +37,8 @@ def test_tts_initializes(tts_target: OpenAITTSTarget):
 
 def test_tts_initializes_calls_get_required_parameters(patch_central_database):
     with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
+        mock_get_required.side_effect = lambda env_var_name, passed_value: passed_value
+
         target = OpenAITTSTarget(
             model_name="deploymenttest",
             endpoint="endpointtest",
@@ -255,3 +258,82 @@ async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
         await tts_target.send_prompt_async(prompt_request=prompt_request)
 
         tts_target.refresh_auth_headers.assert_called_once()
+
+
+# URL Validation Tests
+def test_tts_target_url_validation_valid_azure_endpoint_no_warning(caplog, patch_central_database):
+    """Test that valid Azure TTS endpoint doesn't trigger warning."""
+    valid_endpoint = "https://myservice.openai.azure.com/openai/deployments/tts-1/audio/speech"
+
+    with patch.dict(os.environ, {}, clear=True):
+        with caplog.at_level(logging.WARNING):
+            target = OpenAITTSTarget(
+                model_name="tts-1", endpoint=valid_endpoint, api_key="test-key", api_version="2024-10-21"
+            )
+
+    # Should not have any warnings
+    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    assert len(warning_logs) == 0
+    assert target
+
+
+def test_tts_target_url_validation_invalid_endpoint_triggers_warning(caplog, patch_central_database):
+    """Test that invalid TTS endpoint triggers warning."""
+    invalid_endpoint = "https://api.openai.com/v1/wrong/path"
+
+    with patch.dict(os.environ, {}, clear=True):
+        with caplog.at_level(logging.WARNING):
+            target = OpenAITTSTarget(
+                model_name="tts-1", endpoint=invalid_endpoint, api_key="test-key", api_version="2024-10-21"
+            )
+
+    # Should have a warning
+    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    assert len(warning_logs) >= 1
+    endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+    assert len(endpoint_warnings) == 1
+    assert "/openai/deployments/*/audio/speech" in endpoint_warnings[0].message
+    assert target
+
+
+def test_tts_target_url_validation_wildcard_pattern_matching(caplog, patch_central_database):
+    """Test wildcard pattern matching with various Azure deployment names."""
+    test_cases = [
+        ("https://service.openai.azure.com/openai/deployments/tts-1/audio/speech", True),
+        ("https://service.openai.azure.com/openai/deployments/my-custom-tts/audio/speech", True),
+        ("https://service.openai.azure.com/openai/deployments/tts-1/wrong/speech", False),
+    ]
+
+    for endpoint, should_be_valid in test_cases:
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                caplog.clear()  # Clear previous logs
+                target = OpenAITTSTarget(
+                    model_name="tts-1", endpoint=endpoint, api_key="test-key", api_version="2024-10-21"
+                )
+
+            warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+
+            if should_be_valid:
+                assert len(warning_logs) == 0, f"Expected no warning for {endpoint}"
+            else:
+                endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+                assert len(endpoint_warnings) >= 1, f"Expected warning for {endpoint}"
+            assert target
+
+
+def test_tts_target_url_validation_trailing_slash_normalization(caplog, patch_central_database):
+    """Test that trailing slashes are normalized correctly."""
+    valid_endpoint = "https://service.openai.azure.com/openai/deployments/tts-1/audio/speech/"
+
+    with patch.dict(os.environ, {}, clear=True):
+        with caplog.at_level(logging.WARNING):
+            target = OpenAITTSTarget(
+                model_name="tts-1", endpoint=valid_endpoint, api_key="test-key", api_version="2024-10-21"
+            )
+
+    # Should not have URL validation warnings (trailing slash normalized)
+    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+    assert len(endpoint_warnings) == 0
+    assert target
