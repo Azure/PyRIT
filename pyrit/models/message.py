@@ -47,22 +47,20 @@ class Message:
 
         return self.message_pieces[n]
 
-
     @property
     def role(self) -> ChatMessageRole:
         """Return the role of the first request piece (they should all be the same)."""
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
-
         return self.message_pieces[0].role
-    
+
     @property
     def conversation_id(self) -> str:
         """Return the conversation ID of the first request piece (they should all be the same)."""
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
         return self.message_pieces[0].conversation_id
-    
+
     @property
     def sequence(self) -> int:
         """Return the sequence of the first request piece (they should all be the same)."""
