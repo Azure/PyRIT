@@ -92,13 +92,11 @@ class PromptNormalizer:
 
         response = None
 
+        self._memory.add_message_to_memory(request=request)
         try:
             response = await target.send_prompt_async(prompt_request=request)
-            self._memory.add_message_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
-            self._memory.add_message_to_memory(request=request)
-
             response = construct_response_from_request(
                 request=request.message_pieces[0],
                 response_text_pieces=[""],
@@ -107,9 +105,6 @@ class PromptNormalizer:
             )
 
         except Exception as ex:
-            # Ensure request to memory before processing exception
-            self._memory.add_message_to_memory(request=request)
-
             error_response = construct_response_from_request(
                 request=request.message_pieces[0],
                 response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],
