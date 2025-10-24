@@ -90,7 +90,7 @@ class Scorer(abc.ABC):
         """
         self._validator.validate(message, objective=objective)
 
-        if role_filter is not None and message.get_role() != role_filter:
+        if role_filter is not None and message.role != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
 
