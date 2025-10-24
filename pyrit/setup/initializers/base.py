@@ -198,6 +198,7 @@ class PyRITInitializer(ABC):
         for var_name in list(sys.modules["__main__"].__dict__.keys()):
             if not var_name.startswith("_"):  # Keep system variables
                 temp_backup_globals[var_name] = sys.modules["__main__"].__dict__[var_name]
+                del sys.modules["__main__"].__dict__[var_name]
 
         try:
 

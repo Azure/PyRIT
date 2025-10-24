@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -17,7 +13,7 @@
 #
 # Before running PyRIT, you need to call the `initialize_pyrit` function which will set up your configuration.
 #
-# What are the configruation steps? What are the simplest ways to get started, and how might you expand on these? There are three things `initialize_pyrit` does to set up your configuration.
+# What are the configuration steps? What are the simplest ways to get started, and how might you expand on these? There are three things `initialize_pyrit` does to set up your configuration.
 #
 # 1. Set up environment variables (recommended)
 # 2. Pick a database (required)
@@ -39,7 +35,7 @@ initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 # %% [markdown]
 # # Setting up Environment Variables
 #
-# The required step to setup PyRIT is that it needs access to secrets and andpoints. These can be loaded in environment variables or put in a `.env` file. See `.env_example` for how this file is formatted.
+# The recommended step to setup PyRIT is that it needs access to secrets and endpoints. These can be loaded in environment variables or put in a `.env` file. See `.env_example` for how this file is formatted.
 #
 # Each target has default environment variables to look for. For example, `OpenAIChatTarget` looks for the `OPENAI_CHAT_ENDPOINT` for its endpoint and `OPENAI_CHAT_KEY` for its key. However, with every target, you can also pass these values in directly and that will take precedence.
 
@@ -53,14 +49,14 @@ initialize_pyrit(memory_db_type="InMemory")
 
 target1 = OpenAIChatTarget()
 
-# This is identical to target1
+# This is identical to target1 because "OPENAI_CHAT_ENDPOINT" are the names of the default environment variables for OpenAIChatTarget
 target2 = OpenAIChatTarget(
     endpoint=os.getenv("OPENAI_CHAT_ENDPOINT"),
     api_key=os.getenv("OPENAI_CHAT_KEY"),
     model_name=os.getenv("OPENAI_CHAT_MODEL"),
 )
 
-# This is different from target1 because the environment variables are different from the default
+# This is (probably) different from target1 because the environment variables are different from the default
 target3 = OpenAIChatTarget(
     endpoint=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2"),
     api_key=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"),
@@ -132,16 +128,16 @@ initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 
 # Alternative approach - you can pass the path to the initializer class
 # This is how you provide your own file not part of the repo that defines a PyritInitializer class
-# This is equivelent to loading the class directly as above
+# This is equivalent to loading the class directly as above
 initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"])
 
 
 # SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY configured
-# It is meant to only require these to env vars to be configured
-# And it can easily be swapped for another default, like AIRTInitializer which is better but requires more env configuration
-# get_info is a class method that can show how this class configures defaults and global variables
+# It is meant to only require these two env vars to be configured
+# It can easily be swapped for another PyRITInitializer, like AIRTInitializer which is better but requires more env configuration
+# get_info() is a class method that shows how this initializer configures defaults and what global variables it sets
 for key, value in SimpleInitializer.get_info().items():
-    print(f"  {key}: {value}")
+    print(f"{key}: {value}")
 
 
 objectives = [
@@ -175,7 +171,7 @@ for result in results:
 #
 # You can also create your own initializers and pass the path to the script in as an argument. This is really powerful. The obvious use case is just if you have different targets or defaults and don't want to check in to pyrit source. However, there are other common use cases.
 #
-# Imagine you are conducing a security assessment and want to include a new custom target. Yes, you could check out PyRIT in editable mode. But with initialize_scripts you don't have to. And this kind of operation can be used in front ends like GUI, CLI, etc.
+# Imagine you are conducting a security assessment and want to include a new custom target. Yes, you could check out PyRIT in editable mode. But with initialize_scripts you don't have to. And this kind of operation can be used in front ends like GUI, CLI, etc.
 #
 # All you need to do is create a PyRITInitializer class (e.g. myinitializer.py). Then you can use `set_global_variable` and use it everywhere. Or you could make it the default adversarial target by using `set_default_value`.
 #

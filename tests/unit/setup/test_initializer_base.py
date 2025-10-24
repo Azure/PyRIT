@@ -442,6 +442,94 @@ class TestGetInfo:
 
 
 @pytest.mark.usefixtures("patch_central_database")
+class TestGetInfoTracking:
+    """Tests for get_info tracking of default values and global variables."""
+
+    def setup_method(self) -> None:
+        """Clear default values and globals before each test."""
+        reset_default_values()
+        # Clean up test globals
+        test_vars = ["test_global_var", "test_converter_target"]
+        for var in test_vars:
+            if hasattr(sys.modules["__main__"], var):
+                delattr(sys.modules["__main__"], var)
+
+    def teardown_method(self) -> None:
+        """Clean up after each test."""
+        reset_default_values()
+        test_vars = ["test_global_var", "test_converter_target"]
+        for var in test_vars:
+            if hasattr(sys.modules["__main__"], var):
+                delattr(sys.modules["__main__"], var)
+
+    def test_get_info_correctly_tracks_defaults_and_globals(self):
+        """Test that get_info correctly tracks both default values and global variables."""
+
+        class DummyTarget:
+            def __init__(self, *, endpoint: str = "default") -> None:
+                self.endpoint = endpoint
+
+        class DummyConverter:
+            def __init__(self, *, target: str = "default") -> None:
+                self.target = target
+
+        class CompleteInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "Complete Tracker"
+
+            @property
+            def description(self) -> str:
+                return "Sets both defaults and globals"
+
+            def initialize(self) -> None:
+                # Set default values
+                set_default_value(class_type=DummyTarget, parameter_name="endpoint", value="custom_endpoint")
+                set_default_value(class_type=DummyConverter, parameter_name="target", value="custom_target")
+
+                # Set global variables
+                set_global_variable(name="test_global_var", value="test_value")
+                set_global_variable(name="test_converter_target", value="converter")
+
+        info = CompleteInit.get_info()
+
+        # Verify default_values tracking - should use "ClassName.parameter_name" format
+        assert isinstance(info["default_values"], list)
+        assert "DummyTarget.endpoint" in info["default_values"]
+        assert "DummyConverter.target" in info["default_values"]
+        assert len(info["default_values"]) == 2
+
+        # Verify global_variables tracking - should list variable names
+        assert isinstance(info["global_variables"], list)
+        assert "test_global_var" in info["global_variables"]
+        assert "test_converter_target" in info["global_variables"]
+        assert len(info["global_variables"]) == 2
+
+    def test_get_info_empty_when_nothing_set(self):
+        """Test that get_info returns empty lists when initializer sets nothing."""
+
+        class EmptyInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "Empty Tracker"
+
+            @property
+            def description(self) -> str:
+                return "Sets nothing"
+
+            def initialize(self) -> None:
+                pass  # Don't set anything
+
+        info = EmptyInit.get_info()
+
+        # Should have empty lists, not error messages
+        assert isinstance(info["default_values"], list)
+        assert isinstance(info["global_variables"], list)
+        assert len(info["default_values"]) == 0
+        assert len(info["global_variables"]) == 0
+
+
+@pytest.mark.usefixtures("patch_central_database")
 class TestGetDynamicDefaultValuesInfo:
     """Tests for get_dynamic_default_values_info method."""
 
