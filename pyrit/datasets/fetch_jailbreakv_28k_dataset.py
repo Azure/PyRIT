@@ -44,8 +44,7 @@ def fetch_jailbreakv_28k_dataset(
 ) -> SeedPromptDataset:
     """
     Fetch examples from the JailBreakV 28k Dataset with optional filtering and create a SeedPromptDataset.
-    Many images are missing from the dataset in HF and the team hosts the full image files in Google Drive.
-    Prioritizes the HF dataset and falls back to a cached download of Google Drive contents.
+    Many images are missing from the dataset in HuggingFace and the team hosts the full image files in Google Drive.
     As of 10/2025 the HF dataset is missing most images, so it is ignored.
     To use this dataset, please fill out this form and download images from Google Drive:
     https://docs.google.com/forms/d/e/1FAIpQLSc_p1kCs3p9z-3FbtSeF7uLYsiQk0tvsGi6F0e_z5xCEmN1gQ/viewform
