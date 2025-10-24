@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -100,3 +104,104 @@ refusal_scorer.get_scorer_metrics(dataset_name="SAMPLE_mixed_objective_refusal")
 
 # Retrieve metrics for the full refusal scorer dataset that have already been computed and saved by the PyRIT team.
 # full_metrics = likert_scorer.get_scorer_metrics(dataset_name="mixed_objective_refusal")
+
+# %% [markdown]
+# In this case we use a `true_false_scorer` which determines whether the responses are harmful or not according to their harm category.
+
+# %%
+from pathlib import Path
+from typing import cast
+
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.common.path import SCORER_EVALS_OBJECTIVE_PATH
+from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.score import (
+    ObjectiveScorerEvaluator,
+    ScorerEvaluator,
+    SelfAskTrueFalseScorer,
+)
+from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
+
+target = OpenAIChatTarget()
+
+# Map harm categories to their respective dataset file paths and evaluation rubric file paths
+# This allows for easy extension to new harm categories by or editing entries in this map.
+# This also allows for easy editing of dataset file paths and evaluation rubric file paths without changing code logic.
+harm_category_map = {
+    "exploit": {
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/exploit_eval_dataset.csv",
+        "dataset_name": "exploit_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "exploits.yaml")),
+    },
+    "hate_speech": {
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/hate_speech_eval_dataset.csv",
+        "dataset_name": "hate_speech_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "hate_speech.yaml")),
+    },
+    "information_integrity": {
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/information_integrity_eval_dataset.csv",
+        "dataset_name": "information_integrity_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "information_integrity.yaml")),
+    },
+    "privacy": {
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/privacy_eval_dataset.csv",
+        "dataset_name": "privacy_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "privacy.yaml")),
+    },
+    "self-harm": {
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/self_harm_eval_dataset.csv",
+        "dataset_name": "self_harm_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "self-harm.yaml")),
+    },
+    "sexual_content": {
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/sexual_content_eval_dataset.csv",
+        "dataset_name": "sexual_content_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "sexual_content.yaml")),
+    },
+    "violence": {
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/violence_eval_dataset.csv",
+        "dataset_name": "violence_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "violence.yaml")),
+    },
+}
+
+# set this list to the categories you want to evaluate
+harm_categories_to_evaluate = ["information_integrity", "self-harm"]
+
+for harm_category in harm_categories_to_evaluate:
+    if harm_category not in harm_category_map:
+        raise ValueError(
+            f"Harm category '{harm_category}' not found in harm_category_map. Please add it to the map with the appropriate dataset and rubric file paths."
+        )
+    eval_rubric_path = harm_category_map[harm_category]["evaluation_rubric_file_path"]
+    csv_path = str(Path(harm_category_map[harm_category]["dataset_file_path"]))
+    dataset_name = harm_category_map[harm_category]["dataset_name"]
+
+    true_false_scorer = SelfAskTrueFalseScorer(true_false_question_path=Path(eval_rubric_path), chat_target=target)
+
+    evaluator = cast(ObjectiveScorerEvaluator, ScorerEvaluator.from_scorer(scorer=true_false_scorer))
+
+    # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
+    # Run evaluation and get metrics directly (this would be in an async context)
+    # metrics = await evaluator.run_evaluation_from_csv_async(
+    #     csv_path=csv_path,
+    #     assistant_response_col_name="assistant_response",
+    #     human_label_col_names=["human_score"],
+    #     objective_or_harm_col_name="objective",
+    #     assistant_response_data_type_col_name="data_type",
+    #     num_scorer_trials=1,
+    # )
+
+    print("Evaluation for harm category:", harm_category)
+    # For demonstration: after running evaluation, get metrics from default location
+    # print(metrics)
+
+    # Alternative: retrieve metrics that were previously saved during evaluation
+    # (only works if evaluation was already run and saved to default location)
+    try:
+        saved_metrics = evaluator.get_scorer_metrics(dataset_name=dataset_name)
+        print(saved_metrics)
+    except FileNotFoundError:
+        print(f"No saved metrics found for dataset {dataset_name}. Run evaluation first.")
