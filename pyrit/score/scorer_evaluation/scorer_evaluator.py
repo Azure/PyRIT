@@ -249,15 +249,22 @@ class ScorerEvaluator(abc.ABC):
 
         # Add the true_label column after all trials, if true_scores is provided
         if true_scores is not None:
-            # Convert true_scores to a list, handling both arrays and scalars
-            try:
-                # If it's a numpy array, convert to list
-                true_label_values = true_scores.tolist()  # type: ignore
-            except AttributeError:
-                # If it's a scalar, create a list with repeated values
-                true_label_values = [true_scores] * len(responses)  # type: ignore
+            # Convert true_scores to a list, handling arrays, lists, and scalars
+            if isinstance(true_scores, np.ndarray):
+                true_label_values = true_scores.tolist()
+            elif isinstance(true_scores, list):
+                true_label_values = true_scores
+            elif isinstance(true_scores, (float, int, np.floating, np.integer)):
+                true_label_values = [true_scores] * len(responses)
+            else:
+                # Fallback: try to convert to list, else repeat as scalar
+                try:
+                    true_label_values = list(true_scores)
+                except (TypeError, ValueError):
+                    true_label_values = [true_scores] * len(responses)
 
-            cols_dict["true_label"] = true_label_values  # type: ignore
+            # Ensure all values are strings for DataFrame compatibility
+            cols_dict["true_label"] = [str(v) for v in true_label_values]
 
         scores_df = pd.DataFrame(cols_dict)
         scores_df.to_csv(file_path, index=False)
