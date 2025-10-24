@@ -83,7 +83,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             comparison_symbol = "<"
         else:
             comparison_symbol = "="
-        scorer_type = self._scorer.get_identifier().get('__type__', 'Unknown')
+        scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
         score.score_rationale = (
             f"based on {scorer_type}\n"
             f"Normalized scale score: {aggregate_value} {comparison_symbol} threshold {self._threshold}\n"

@@ -8,7 +8,6 @@ This module provides the Scenario class that orchestrates the execution of multi
 AttackRun instances sequentially, enabling comprehensive security testing campaigns.
 """
 
-from abc import abstractmethod
 import logging
 from abc import abstractmethod
 from typing import Dict, List, Optional
