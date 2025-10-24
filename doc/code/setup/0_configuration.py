@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -19,7 +23,7 @@
 # 2. Pick a database (required)
 # 3. Set initialization scripts and defaults (recommended)
 #
-# This section goes into each of these steps. But first, the easiest way; this sets up reasonable defaults using and stores the results in memory.
+# This section goes into each of these steps. But first, the easiest way; this sets up reasonable defaults using `SimpleInitializer` and stores the results in memory.
 
 # %%
 # Set OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY environment variables before running this code
@@ -135,6 +139,7 @@ initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PAT
 # SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY configured
 # It is meant to only require these to env vars to be configured
 # And it can easily be swapped for another default, like AIRTInitializer which is better but requires more env configuration
+# get_info is a class method that can show how this class configures defaults and global variables
 for key, value in SimpleInitializer.get_info().items():
     print(f"  {key}: {value}")
 

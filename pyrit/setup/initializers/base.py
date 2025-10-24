@@ -160,6 +160,7 @@ class PyRITInitializer(ABC):
     def get_dynamic_default_values_info(self) -> Dict[str, Any]:
         """
         Get information about what default values and global variables this initializer sets.
+        This is useful for debugging what default_values are set by an initializer.
 
         Performs a sandbox run in isolation to discover what would be configured,
         then restores the original state. This works regardless of whether the
@@ -182,12 +183,25 @@ class PyRITInitializer(ABC):
 
         # Capture current state for restoration (before try block so finally can access)
         default_values_registry = get_global_default_values()
-        original_default_keys = set(default_values_registry._default_values.keys())
         original_main_keys = set(sys.modules["__main__"].__dict__.keys())
+
+        # First, clear any existing values that this initializer might have already set
+        # This ensures we get accurate tracking even if initialize() was called before
+        temp_backup_defaults = {}
+        temp_backup_globals = {}
+
+        # Temporarily remove defaults and globals to start fresh for tracking
+        for scope_key in list(default_values_registry._default_values.keys()):
+            temp_backup_defaults[scope_key] = default_values_registry._default_values[scope_key]
+            del default_values_registry._default_values[scope_key]
+
+        for var_name in list(sys.modules["__main__"].__dict__.keys()):
+            if not var_name.startswith("_"):  # Keep system variables
+                temp_backup_globals[var_name] = sys.modules["__main__"].__dict__[var_name]
 
         try:
 
-            # Run initialization in sandbox with tracking
+            # Run initialization in sandbox with tracking (starting from empty state)
             with self._track_initialization_changes() as tracking_info:
                 self.initialize()
 
@@ -199,17 +213,28 @@ class PyRITInitializer(ABC):
                 "global_variables": f"Error getting globals info: {str(e)}",
             }
         finally:
-            # Restore original state - remove any defaults that weren't there originally
+            # Restore original state completely
+            # First clear everything that was added
             current_default_keys = set(default_values_registry._default_values.keys())
-            for scope_key in current_default_keys - original_default_keys:
+            for scope_key in current_default_keys:
                 if scope_key in default_values_registry._default_values:
                     del default_values_registry._default_values[scope_key]
 
-            # Restore main module globals - remove any that were added
             current_main_keys = set(sys.modules["__main__"].__dict__.keys())
-            for var_name in current_main_keys - original_main_keys:
-                if var_name in sys.modules["__main__"].__dict__:
-                    del sys.modules["__main__"].__dict__[var_name]
+            for var_name in list(current_main_keys):
+                if var_name in temp_backup_globals or var_name in original_main_keys:
+                    if var_name in sys.modules["__main__"].__dict__ and not var_name.startswith("_"):
+                        try:
+                            del sys.modules["__main__"].__dict__[var_name]
+                        except KeyError:
+                            pass
+
+            # Then restore what was there originally
+            for scope_key, value in temp_backup_defaults.items():
+                default_values_registry._default_values[scope_key] = value
+
+            for var_name, value in temp_backup_globals.items():
+                sys.modules["__main__"].__dict__[var_name] = value
 
     @classmethod
     def get_info(cls) -> Dict[str, Any]:
