@@ -14,60 +14,11 @@ from typing import Dict, List, Optional
 
 from tqdm.auto import tqdm
 
-import pyrit
-from pyrit.models import AttackOutcome, AttackResult
+from pyrit.models import AttackResult
 from pyrit.scenarios.attack_run import AttackRun
+from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
 
 logger = logging.getLogger(__name__)
-
-
-class ScenarioIdentifier:
-    def __init__(
-        self,
-        name: str,
-        scenario_version: int = 1,
-        pyrit_version: Optional[str] = None,
-        init_data: Optional[dict] = None,
-    ):
-        """
-        Initialize a ScenarioIdentifier.
-
-        Args:
-            name (str): Name of the scenario.
-            scenario_version (int): Version of the scenario.
-            pyrit_version (Optional[str]): PyRIT version string.
-            init_data (Optional[dict]): Initialization data.
-        """
-        self.name = name
-        self.version = scenario_version
-        self.pyrit_version = pyrit_version if pyrit_version is not None else pyrit.__version__
-        self.init_data = init_data
-
-
-class ScenarioResult:
-    def __init__(
-        self,
-        *,
-        scenario_identifier: ScenarioIdentifier,
-        attack_strategies: List[str],
-        attack_results: List[AttackResult],
-    ) -> None:
-
-        self.scenario_identifier = scenario_identifier
-        self.attack_strategies = attack_strategies
-        self.attack_results = attack_results
-
-    @property
-    def objective_achieved_rate(self) -> int:
-        """Get the success rate of this scenario."""
-
-        total_results = len(self.attack_results)
-        if total_results == 0:
-            return 0
-        successful_results = sum(1 for result in self.attack_results if result.outcome == AttackOutcome.SUCCESS)
-
-        return int((successful_results / total_results) * 100)
-
 
 class Scenario:
     """
@@ -115,9 +66,10 @@ class Scenario:
         *,
         name: str,
         version: int,
-        attack_strategies: List[str],
         max_concurrency: int = 1,
         memory_labels: Optional[Dict[str, str]] = None,
+        objective_target_identifier: Optional[Dict[str, str]] = None,
+        objective_scorer_identifier: Optional[Dict[str, str]] = None,
     ) -> None:
         """
         Initialize a scenario.
@@ -125,8 +77,6 @@ class Scenario:
         Args:
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
-            attack_strategies (List[str]): List of attack strategy names used in this scenario.
-                In the future this will be used for output and grouping results.
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
@@ -140,8 +90,10 @@ class Scenario:
             scenario_version=version,
         )
 
+        self._objective_target_identifier = objective_target_identifier or {}
+        self._objective_scorer_identifier = objective_scorer_identifier or {}
+
         self._name = name
-        self._attack_strategies = attack_strategies
         self._memory_labels = memory_labels or {}
         self._max_concurrency = max_concurrency
         self._attack_runs: List[AttackRun] = []
@@ -227,20 +179,25 @@ class Scenario:
 
         logger.info(f"Starting scenario '{self._name}' execution with {len(self._attack_runs)} attack runs")
 
-        all_results: List[AttackResult] = []
+        all_results: Dict[str, List[AttackResult]] = {}
 
         for i, attack_run in enumerate(tqdm(self._attack_runs, desc=f"Executing {self._name}", unit="attack"), start=1):
             logger.info(f"Executing attack run {i}/{len(self._attack_runs)} in scenario '{self._name}'")
 
             try:
-                results = await attack_run.run_async(max_concurrency=self._max_concurrency)
-                all_results.extend(results)
-                logger.info(f"Attack run {i}/{len(self._attack_runs)} completed with {len(results)} results")
+                attack_run_results = await attack_run.run_async(max_concurrency=self._max_concurrency)
+
+                all_results.setdefault(attack_run.attack_run_name, []).extend(attack_run_results.results)
+                logger.info(f"Attack run {i}/{len(self._attack_runs)} completed with {len(attack_run_results.results)} results")
             except Exception as e:
                 logger.error(f"Attack run {i}/{len(self._attack_runs)} failed in scenario '{self._name}': {str(e)}")
                 raise ValueError(f"Failed to execute attack run {i} in scenario '{self._name}': {str(e)}") from e
 
         logger.info(f"Scenario '{self._name}' completed successfully with {len(all_results)} total results")
+
         return ScenarioResult(
-            scenario_identifier=self._identifier, attack_strategies=self._attack_strategies, attack_results=all_results
+            scenario_identifier=self._identifier,
+            objective_target_identifier=self._objective_target_identifier,
+            objective_scorer_identifier=self._objective_scorer_identifier,
+            attack_results=all_results,
         )

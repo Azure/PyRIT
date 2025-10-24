@@ -288,10 +288,11 @@ class FoundryScenario(Scenario):
 
         super().__init__(
             name="Foundry Scenario",
-            attack_strategies=all_strategies,
             version=self.version,
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
+            objective_target_identifier=objective_target.get_identifier(),
+            objective_scorer_identifier=self._objective_scorer.get_identifier()
         )
 
     def _get_composition_name(self, composition: list[FoundryAttackStrategy]) -> str:
@@ -530,6 +531,7 @@ class FoundryScenario(Scenario):
         attack = self._get_attack(attack_type=attack_type, converters=converters)
 
         return AttackRun(
+            attack_run_name=self._get_composition_name(composite_strategy),
             attack=attack,
             objectives=self._objectives,
             memory_labels=self._memory_labels,

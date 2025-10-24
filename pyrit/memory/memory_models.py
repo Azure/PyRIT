@@ -254,13 +254,34 @@ class ScoreEntry(Base):  # type: ignore
         self.score_category = entry.score_category
         self.score_rationale = entry.score_rationale
         self.score_metadata = entry.score_metadata
-        self.scorer_class_identifier = entry.scorer_class_identifier
+        self.scorer_class_identifier = self._normalize_scorer_identifier(entry.scorer_class_identifier)
         self.prompt_request_response_id = entry.message_piece_id if entry.message_piece_id else None
         self.timestamp = entry.timestamp
         # Store in both columns for backward compatibility
         # New code should only read from objective
         self.task = entry.objective
         self.objective = entry.objective
+
+    @staticmethod
+    def _normalize_scorer_identifier(identifier: Dict) -> Dict[str, str]:
+        """
+        Normalize scorer identifier to ensure all values are strings for database storage.
+        Handles nested sub_identifiers by converting them to JSON strings.
+
+        Args:
+            identifier: The scorer class identifier dictionary.
+
+        Returns:
+            Dict[str, str]: Normalized identifier with all string values.
+        """
+        normalized = {}
+        for key, value in identifier.items():
+            if key == "sub_identifier" and value is not None:
+                # Convert dict or list of dicts to JSON string
+                normalized[key] = json.dumps(value)
+            else:
+                normalized[key] = str(value) if value is not None else None
+        return normalized
 
     def get_score(self) -> Score:
         return Score(
@@ -271,11 +292,34 @@ class ScoreEntry(Base):  # type: ignore
             score_category=self.score_category,
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,
-            scorer_class_identifier=self.scorer_class_identifier,
+            scorer_class_identifier=self._denormalize_scorer_identifier(self.scorer_class_identifier),
             message_piece_id=self.prompt_request_response_id,
             timestamp=self.timestamp,
             objective=self.objective,
         )
+
+    @staticmethod
+    def _denormalize_scorer_identifier(identifier: Dict[str, str]) -> Dict:
+        """
+        Denormalize scorer identifier when reading from database.
+        Parses JSON strings back into dicts/lists for sub_identifier field.
+
+        Args:
+            identifier: The normalized identifier from the database.
+
+        Returns:
+            Dict: Denormalized identifier with proper nested structures.
+        """
+        denormalized = dict(identifier)
+        if "sub_identifier" in denormalized and denormalized["sub_identifier"] is not None:
+            try:
+                # Try to parse as JSON if it's a string
+                if isinstance(denormalized["sub_identifier"], str):
+                    denormalized["sub_identifier"] = json.loads(denormalized["sub_identifier"])
+            except (json.JSONDecodeError, TypeError):
+                # If it fails to parse, keep as-is (backward compatibility)
+                pass
+        return denormalized
 
     def to_dict(self) -> dict:
         return {

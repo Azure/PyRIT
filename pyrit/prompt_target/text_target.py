@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import IO
 
 from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 
 class TextTarget(PromptTarget):

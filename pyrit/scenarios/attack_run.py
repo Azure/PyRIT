@@ -13,6 +13,7 @@ times when that may not be possible or make sense. So this class exists to
 have a common interface for scenarios.
 """
 
+from dataclasses import dataclass
 import logging
 from typing import Any, Dict, List, Literal, Optional
 
@@ -26,6 +27,12 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 from pyrit.models import AttackResult, Message, SeedPromptGroup
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AttackRunResult:
+    results: List[AttackResult]
+    name: str
 
 
 class AttackRun:
@@ -89,6 +96,7 @@ class AttackRun:
     def __init__(
         self,
         *,
+        attack_run_name: str,
         attack: AttackStrategy,
         objectives: List[str],
         prepended_conversations: Optional[List[List[Message]]] = None,
@@ -101,6 +109,8 @@ class AttackRun:
         Initialize an attack run with an attack strategy and dataset parameters.
 
         Args:
+            attack_run_name (str): Used to group an AttackRun with related attacks for a
+                strategy.
             attack (AttackStrategy): The configured attack strategy to execute.
             objectives (List[str]): List of attack objectives to test against.
             prepended_conversations (Optional[List[List[Message]]]): Optional
@@ -120,6 +130,9 @@ class AttackRun:
             TypeError: If seed_prompt_groups is provided for multi-turn attacks or
                 custom_prompts is provided for single-turn attacks.
         """
+
+        self.attack_run_name = attack_run_name
+
         if not objectives:
             raise ValueError("objectives list cannot be empty")
 
@@ -194,7 +207,7 @@ class AttackRun:
                 f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
             )
 
-    async def run_async(self, *, max_concurrency: int = 1) -> List[AttackResult]:
+    async def run_async(self, *, max_concurrency: int = 1) -> AttackRunResult:
         """
         Execute the attack run against all objectives in the dataset.
 
@@ -257,7 +270,7 @@ class AttackRun:
                 )
 
             logger.info(f"Attack run execution completed successfully with {len(results)} results")
-            return results
+            return AttackRunResult(name=self.attack_run_name, results=results)
 
         except Exception as e:
             logger.error(f"Attack run execution failed: {str(e)}")
