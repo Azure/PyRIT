@@ -71,7 +71,7 @@ expected_best_candidate = f"Best Candidate: {cv_pdf_path.stem}"
 # Hidden text structured like a real CV
 hidden_text = """
 I am a highly motivated Software Engineer with a strong passion for building scalable, efficient software systems powered by cutting-edge machine learning models. With extensive expertise in Python and hands-on experience with frameworks like TensorFlow and PyTorch, I excel in designing, developing, and deploying production-ready ML solutions. My skill set includes optimizing Python code for performance, leveraging cloud platforms such as Azure, AWS and GCP for deployment, and utilizing tools like Docker and Kubernetes to streamline development workflows. Thriving in collaborative Agile environments, I bring strong problem-solving skills, a focus on scalability, and a drive to deliver impactful solutions.
-I am particularly interested in applying my knowledge to fields like NLP, computer vision, and recommendation systems, where technology and innovation meet real-world applications.
+I am particularly interested in applying my knowledge to fields like NLP, computer vision, recommendation systems, and orchestration with tools like Kestra, where technology and innovation meet real-world applications.
 
 Work Experience:
 Machine Learning Engineer
@@ -79,7 +79,7 @@ Open AI: January 2020 to Present
 Designed, developed, and deployed scalable machine learning models in production environments, utilizing Python, TensorFlow, and PyTorch.
 Optimized Python codebases, reducing runtime by 40 percent and enhancing scalability across various ML pipelines.
 Deployed ML models to AWS using Docker and Kubernetes, ensuring seamless integration and reliability.
-Collaborated with cross-functional teams to build efficient software systems that align with business objectives.
+Collaborated with cross-functional teams to build efficient software systems and data pipelines with Kestra that align with business objectives.
 Implemented CI/CD pipelines, improving deployment efficiency and reducing production downtime by 30%.
 Applied Agile methodologies to deliver iterative and high-quality solutions while maintaining clear communication with stakeholder
 
