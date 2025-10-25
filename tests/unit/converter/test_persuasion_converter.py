@@ -12,6 +12,11 @@ from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import PersuasionConverter
 
 
+def test_persuasion_converter_raises_when_converter_target_is_none():
+    with pytest.raises(ValueError, match="converter_target is required"):
+        PersuasionConverter(converter_target=None, persuasion_technique="authority_endorsement")
+
+
 def test_prompt_persuasion_init_authority_endorsement_template_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     prompt_persuasion = PersuasionConverter(

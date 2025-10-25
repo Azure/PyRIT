@@ -24,7 +24,6 @@
 # %%
 import os
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -39,6 +38,7 @@ from pyrit.score import (
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
 )
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 
 from pyrit.datasets import TextJailBreak
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedGroup, SeedPrompt
 
 # Read basic HTML file with template slot for the XPIA.
 with open(Path().cwd() / "example" / "index.html", "r") as f:
@@ -39,7 +39,7 @@ xpia_prompt = SeedPrompt(
         "file_name": "index.html",  # This is the file name that will be used when uploading to Azure Blob Storage
     },
 )
-xpia_prompt_group = SeedPromptGroup(prompts=[xpia_prompt])
+xpia_prompt_group = SeedGroup(prompts=[xpia_prompt])
 
 # %% [markdown]
 #
@@ -59,7 +59,7 @@ from openai.types.responses import (
     ResponseOutputMessage,
 )
 
-from pyrit.common import SQLITE, initialize_pyrit
+from pyrit.setup import SQLITE, initialize_pyrit
 
 initialize_pyrit(memory_db_type=SQLITE)
 

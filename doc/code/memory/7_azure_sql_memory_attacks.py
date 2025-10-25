@@ -25,13 +25,13 @@
 import time
 import uuid
 
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import AZURE_SQL, initialize_pyrit
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 
@@ -165,14 +165,14 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 # %%
 import pathlib
 
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
     SingleTurnAttackContext,
 )
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import AZURE_SQL, initialize_pyrit
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
@@ -187,7 +187,7 @@ data = [
 
 # This is a single request with two parts, one image and one text
 
-seed_prompt_group = SeedPromptGroup(
+seed_group = SeedGroup(
     prompts=[
         SeedPrompt(
             value="Describe this picture:",
@@ -203,7 +203,7 @@ seed_prompt_group = SeedPromptGroup(
 attack = PromptSendingAttack(objective_target=azure_openai_gpt4o_chat_target)
 attack_context = SingleTurnAttackContext(
     objective="Describe the picture in detail",
-    seed_prompt_group=seed_prompt_group,
+    seed_group=seed_group,
 )
 
 result = await attack.execute_with_context_async(context=attack_context)  # type: ignore

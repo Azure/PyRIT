@@ -2,7 +2,9 @@
 # Licensed under the MIT license.
 
 import pathlib
+from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
@@ -16,7 +18,10 @@ class FuzzerShortenConverter(FuzzerConverter):
     Generates versions of a prompt with shortened sentences.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
+    @apply_defaults
+    def __init__(
+        self, *, converter_target: Optional[PromptChatTarget] = None, prompt_template: Optional[SeedPrompt] = None
+    ):
         prompt_template = (
             prompt_template
             if prompt_template
