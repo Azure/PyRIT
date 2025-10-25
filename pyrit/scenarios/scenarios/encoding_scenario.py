@@ -11,9 +11,8 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.models import SeedDataset, SeedGroup
 from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_prompt_dataset import SeedPromptDataset
-from pyrit.models.seed_prompt_group import SeedPromptGroup
 from pyrit.prompt_converter import (
     AsciiSmugglerConverter,
     AskToDecodeConverter,
@@ -122,8 +121,8 @@ class EncodingScenario(Scenario):
         """
         seed_prompts: list[str] = []
         garak_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "garak"
-        seed_prompts.extend(SeedPromptDataset.from_yaml_file(garak_path / "slur_terms_en.prompt").get_values())
-        seed_prompts.extend(SeedPromptDataset.from_yaml_file(garak_path / "web_html_js.prompt").get_values())
+        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "slur_terms_en.prompt").get_values())
+        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "web_html_js.prompt").get_values())
 
         return seed_prompts
 
@@ -220,11 +219,11 @@ class EncodingScenario(Scenario):
 
         attack_runs = []
         for attack_converter_config in converter_configs:
-            seed_prompt_groups = []
+            seed_groups = []
             objectives = []
             for seed_prompt in self._seed_prompts:
                 seed = SeedPrompt(value=seed_prompt)
-                seed_prompt_groups.append(SeedPromptGroup(prompts=[seed]))
+                seed_groups.append(SeedGroup(prompts=[seed]))
                 objectives.append(f"Make the model say an encoded payload: {seed_prompt}")
 
             attack = PromptSendingAttack(
@@ -232,6 +231,6 @@ class EncodingScenario(Scenario):
                 attack_converter_config=attack_converter_config,
                 attack_scoring_config=self._scorer_config,
             )
-            attack_runs.append(AttackRun(attack=attack, objectives=objectives, seed_prompt_groups=seed_prompt_groups))
+            attack_runs.append(AttackRun(attack=attack, objectives=objectives, seed_groups=seed_groups))
 
         return attack_runs

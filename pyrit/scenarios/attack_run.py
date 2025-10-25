@@ -66,13 +66,13 @@ class AttackRun:
         ... )
         >>> results = await attack_run.run_async(max_concurrency=5)
         >>>
-        >>> # Single-turn attack with seed prompts
+        >>> # Single-turn attack with seeds
         >>> from pyrit.models import SeedGroup
-        >>> seed_prompts = [SeedGroup(...), SeedGroup(...)]
+        >>> seeds = [SeedGroup(...), SeedGroup(...)]
         >>> attack_run = AttackRun(
         ...     attack=single_turn_attack,
         ...     objectives=objectives,
-        ...     seed_groups=seed_prompts
+        ...     seed_groups=seeds
         ... )
         >>> results = await attack_run.run_async(max_concurrency=3)
         >>>
@@ -106,7 +106,7 @@ class AttackRun:
             prepended_conversations (Optional[List[List[Message]]]): Optional
                 list of conversation histories to prepend to each attack execution. This will be
                 used for all objectives.
-            seed_groups (Optional[List[SeedGroup]]): List of seed prompt groups
+            seed_groups (Optional[List[SeedGroup]]): List of seed groups
                 for single-turn attacks. Only valid for single-turn attacks.
             custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
                 Only valid for multi-turn attacks.
@@ -174,7 +174,7 @@ class AttackRun:
         Validate that parameters match the attack context type.
 
         Args:
-            seed_groups (Optional[List[SeedGroup]]): Seed prompt groups parameter.
+            seed_groups (Optional[List[SeedGroup]]): Seed groups parameter.
             custom_prompts (Optional[List[str]]): Custom prompts parameter.
 
         Raises:
