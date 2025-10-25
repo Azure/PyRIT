@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import IO
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptTarget
 
 
@@ -28,7 +28,7 @@ class TextTarget(PromptTarget):
         super().__init__()
         self._text_stream = text_stream
 
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
 
         self._validate_request(prompt_request=prompt_request)
 
@@ -37,9 +37,9 @@ class TextTarget(PromptTarget):
 
         return None
 
-    def import_scores_from_csv(self, csv_file_path: Path) -> list[PromptRequestPiece]:
+    def import_scores_from_csv(self, csv_file_path: Path) -> list[MessagePiece]:
 
-        request_responses = []
+        message_pieces = []
 
         with open(csv_file_path, newline="") as csvfile:
             csvreader = csv.DictReader(csvfile)
@@ -49,7 +49,7 @@ class TextTarget(PromptTarget):
                 labels_str = row.get("labels", None)
                 labels = json.loads(labels_str) if labels_str else None
 
-                request_response = PromptRequestPiece(
+                message_piece = MessagePiece(
                     role=row["role"],  # type: ignore
                     original_value=row["value"],
                     original_value_data_type=row.get["data_type", None],  # type: ignore
@@ -59,13 +59,13 @@ class TextTarget(PromptTarget):
                     response_error=row.get("response_error", None),  # type: ignore
                     prompt_target_identifier=self.get_identifier(),
                 )
-                request_responses.append(request_response)
+                message_pieces.append(message_piece)
 
-        # This is post validation, so the prompt_request_pieces should be okay and normalized
-        self._memory.add_request_pieces_to_memory(request_pieces=request_responses)
-        return request_responses
+        # This is post validation, so the message_pieces should be okay and normalized
+        self._memory.add_message_pieces_to_memory(message_pieces=message_pieces)
+        return message_pieces
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         pass
 
     async def cleanup_target(self):

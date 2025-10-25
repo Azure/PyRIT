@@ -4,8 +4,8 @@
 from typing import TYPE_CHECKING, Protocol
 
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -22,7 +22,7 @@ class InteractionFunction(Protocol):
     Defines the structure of interaction functions used with PlaywrightTarget.
     """
 
-    async def __call__(self, page: "Page", request_piece: PromptRequestPiece) -> str: ...
+    async def __call__(self, page: "Page", message_piece: MessagePiece) -> str: ...
 
 
 class PlaywrightTarget(PromptTarget):
@@ -44,28 +44,28 @@ class PlaywrightTarget(PromptTarget):
         self._interaction_func = interaction_func
         self._page = page
 
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
         if not self._page:
             raise RuntimeError(
                 "Playwright page is not initialized. Please pass a Page object when initializing PlaywrightTarget."
             )
 
-        request_piece = prompt_request.request_pieces[0]
+        message_piece = prompt_request.message_pieces[0]
 
         try:
-            text = await self._interaction_func(self._page, request_piece)
+            text = await self._interaction_func(self._page, message_piece)
         except Exception as e:
             raise RuntimeError(f"An error occurred during interaction: {str(e)}") from e
 
-        response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[text])
+        response_entry = construct_response_from_request(request=message_piece, response_text_pieces=[text])
         return response_entry
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        n_pieces = len(prompt_request.request_pieces)
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")

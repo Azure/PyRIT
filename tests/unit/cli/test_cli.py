@@ -16,7 +16,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     TreeOfAttacksWithPruningAttack,
 )
-from pyrit.models.attack_result import AttackOutcome, AttackResult
+from pyrit.models import AttackOutcome, AttackResult
 
 test_cases_success = [
     (

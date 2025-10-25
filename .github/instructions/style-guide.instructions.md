@@ -14,11 +14,11 @@ Follow these coding standards to ensure consistent, readable, and maintainable c
 
 ```python
 # CORRECT
-async def send_prompt_async(self, prompt: str) -> PromptResponse:
+async def send_prompt_async(self, prompt: str) -> Message:
     ...
 
 # INCORRECT
-async def send_prompt(self, prompt: str) -> PromptResponse:  # Missing _async suffix
+async def send_prompt(self, prompt: str) -> Message:  # Missing _async suffix
     ...
 ```
 
@@ -230,7 +230,7 @@ from tqdm import tqdm
 
 # Local application imports
 from pyrit.attacks.base import AttackStrategy
-from pyrit.models import AttackResult, PromptResponse
+from pyrit.models import AttackResult
 from pyrit.prompt_target import PromptTarget
 ```
 

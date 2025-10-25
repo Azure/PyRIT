@@ -6,9 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece
-from pyrit.models.chat_message import ChatMessage
-from pyrit.models.score import UnvalidatedScore
+from pyrit.models import ChatMessage, MessagePiece, UnvalidatedScore
 from pyrit.score import LookBackScorer
 
 
@@ -19,16 +17,16 @@ async def test_score_async_success(patch_central_database):
     conversation_id = str(uuid.uuid4())
 
     piece_id = uuid.uuid4()
-    request_piece = PromptRequestPiece(
+    message_piece = MessagePiece(
         original_value="User message",
         role="user",
         conversation_id=conversation_id,
         attack_identifier={"test": "test"},
         id=piece_id,
     )
-    memory.add_request_pieces_to_memory(request_pieces=[request_piece])
-    request_response = MagicMock()
-    request_response.request_pieces = [request_piece]
+    memory.add_message_pieces_to_memory(message_pieces=[message_piece])
+    message = MagicMock()
+    message.message_pieces = [message_piece]
 
     mock_prompt_target = MagicMock()
     unvalidated_score = UnvalidatedScore(
@@ -38,7 +36,7 @@ async def test_score_async_success(patch_central_database):
         score_metadata={"metadata": "test"},
         score_category=["test_category"],
         scorer_class_identifier={"test": "test"},
-        prompt_request_response_id=piece_id,
+        message_piece_id=piece_id,
         objective="test_task",
     )
 
@@ -46,7 +44,7 @@ async def test_score_async_success(patch_central_database):
     scorer._score_value_with_llm = AsyncMock(return_value=unvalidated_score)
 
     # Act
-    scores = await scorer.score_async(request_response)
+    scores = await scorer.score_async(message)
 
     # Assert
     assert len(scores) == 1
@@ -65,18 +63,18 @@ async def test_score_async_conversation_not_found(patch_central_database):
     scorer = LookBackScorer(chat_target=mock_prompt_target, exclude_instruction_prompts=True)
 
     nonexistent_conversation_id = str(uuid.uuid4())
-    request_piece = PromptRequestPiece(
+    message_piece = MessagePiece(
         original_value="User message",
         role="user",
         conversation_id=nonexistent_conversation_id,
         attack_identifier={"test": "test"},
     )
-    request_response = MagicMock()
-    request_response.request_pieces = [request_piece]
+    message = MagicMock()
+    message.message_pieces = [message_piece]
 
     # Act & Assert
     with pytest.raises(ValueError, match=f"Conversation with ID {nonexistent_conversation_id} not found in memory."):
-        await scorer.score_async(request_response)
+        await scorer.score_async(message)
 
 
 @pytest.mark.asyncio
@@ -97,8 +95,8 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
         ChatMessage(role="user", content="Thank you for considering. Let us know if you have any questions."),
         ChatMessage(role="assistant", content="Sure, I'll let you know."),
     ]
-    request_pieces = [
-        PromptRequestPiece(
+    message_pieces = [
+        MessagePiece(
             original_value=message.content,
             role=message.role,
             conversation_id=conversation_id,
@@ -109,16 +107,16 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
         for i, message in enumerate(turns)
     ]
 
-    memory.add_request_pieces_to_memory(request_pieces=request_pieces)
-    assert len(memory.get_prompt_request_pieces(conversation_id=conversation_id)) == len(request_pieces)
+    memory.add_message_pieces_to_memory(message_pieces=message_pieces)
+    assert len(memory.get_message_pieces(conversation_id=conversation_id)) == len(message_pieces)
     assert len(memory.get_conversation(conversation_id=conversation_id)) == len(turns)
 
     mock_prompt_target = MagicMock()
 
-    for rp in request_pieces:
+    for rp in message_pieces:
         if not getattr(rp, "id", None):
             rp.id = uuid.uuid4()
-    request_piece = request_pieces[-1]
+    message_piece = message_pieces[-1]
     unvalidated_score = UnvalidatedScore(
         raw_score_value="0.7",
         score_value_description="Moderate",
@@ -126,7 +124,7 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
         score_metadata={"metadata": "test"},
         score_category=["test_category"],
         scorer_class_identifier={"test": "test"},
-        prompt_request_response_id=request_piece.id,
+        message_piece_id=message_piece.id,
         objective="test_task",
     )
 
@@ -134,9 +132,9 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
     scorer._score_value_with_llm = AsyncMock(return_value=unvalidated_score)
 
     # Act
-    request_response = MagicMock()
-    request_response.request_pieces = [request_piece]
-    scores = await scorer.score_async(request_response)
+    message = MagicMock()
+    message.message_pieces = [message_piece]
+    scores = await scorer.score_async(message)
 
     # Assert
     assert len(scores) == 1

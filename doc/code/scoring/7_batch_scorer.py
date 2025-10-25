@@ -14,7 +14,7 @@
 #
 # The Batch Scorer is built to help with scoring prompts that have been sent using PyRIT. It works by:
 #
-# 1. Getting the `PromptRequestPiece`s into the database. This is done automatically when using any targets (e.g., running any of the demos). Even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or CSVs as described [here](../memory/4_manually_working_with_memory.md).
+# 1. Getting the `MessagePiece`s into the database. This is done automatically when using any targets (e.g., running any of the demos). Even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or CSVs as described [here](../memory/4_manually_working_with_memory.md).
 # 2. Scoring all prompts in the database that meet any criteria.
 #
 # The following example demonstrates this by manually entering prompts into the database and then scoring them.
@@ -52,7 +52,7 @@ memory = CentralMemory.get_memory_instance()
 
 prompt_ids = []
 for id in conversation_ids:
-    pieces = memory.get_prompt_request_pieces(
+    pieces = memory.get_message_pieces(
         conversation_id=id,
     )
 
@@ -88,7 +88,7 @@ scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, prom
 memory = CentralMemory.get_memory_instance()
 
 for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")
 
 # %% [markdown]
@@ -156,5 +156,5 @@ scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, labe
 memory = CentralMemory.get_memory_instance()
 
 for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_message_pieces(prompt_ids=[str(score.message_piece_id)])[0].original_value
     print(f"{score} : {prompt_text}")

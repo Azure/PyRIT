@@ -269,7 +269,7 @@ class TestFuzzerGenerator:
             score_category=[],
             score_rationale="",
             score_metadata={},
-            prompt_request_response_id="",
+            message_piece_id="",
         )
         assert generator._is_jailbreak(true_score) is True
 
@@ -281,7 +281,7 @@ class TestFuzzerGenerator:
             score_category=[],
             score_rationale="",
             score_metadata={},
-            prompt_request_response_id="",
+            message_piece_id="",
         )
         assert generator._is_jailbreak(false_score) is False
 
@@ -306,7 +306,7 @@ class TestFuzzerGenerator:
             score_category=[],
             score_rationale="",
             score_metadata={},
-            prompt_request_response_id="",
+            message_piece_id="",
         )
         assert generator._is_jailbreak(high_score) is True
 
@@ -318,7 +318,7 @@ class TestFuzzerGenerator:
             score_category=[],
             score_rationale="",
             score_metadata={},
-            prompt_request_response_id="",
+            message_piece_id="",
         )
         assert generator._is_jailbreak(low_score) is False
 
