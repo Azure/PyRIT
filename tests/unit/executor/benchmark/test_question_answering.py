@@ -17,8 +17,8 @@ from pyrit.models import (
     MessagePiece,
     QuestionAnsweringEntry,
     QuestionChoice,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_target import PromptTarget
 
@@ -152,11 +152,11 @@ class TestQuestionAnsweringBenchmark:
         assert "Option 0: London" in sample_benchmark_context.generated_question_prompt
         assert "Option 1: Paris" in sample_benchmark_context.generated_question_prompt
 
-        # Check that seed prompt group was created
-        assert sample_benchmark_context.generated_seed_prompt_group is not None
-        assert len(sample_benchmark_context.generated_seed_prompt_group.prompts) == 1
+        # Check that seed group was created
+        assert sample_benchmark_context.generated_seed_group is not None
+        assert len(sample_benchmark_context.generated_seed_group.prompts) == 1
 
-        seed_prompt = sample_benchmark_context.generated_seed_prompt_group.prompts[0]
+        seed_prompt = sample_benchmark_context.generated_seed_group.prompts[0]
         assert seed_prompt.value == sample_benchmark_context.generated_question_prompt
         assert seed_prompt.data_type == "text"
         assert seed_prompt.metadata is not None
@@ -198,21 +198,19 @@ class TestQuestionAnsweringBenchmark:
         assert len(options_lines) == 4
 
     @pytest.mark.asyncio
-    async def test_create_seed_prompt_group(
+    async def test_create_seed_group(
         self, mock_prompt_target: MagicMock, sample_question_entry: QuestionAnsweringEntry
     ) -> None:
-        """Test seed prompt group creation."""
+        """Test seed group creation."""
         benchmark = QuestionAnsweringBenchmark(objective_target=mock_prompt_target)
         question_prompt = "Test question prompt"
 
-        seed_prompt_group = benchmark._create_seed_prompt_group(
-            entry=sample_question_entry, question_prompt=question_prompt
-        )
+        seed_group = benchmark._create_seed_group(entry=sample_question_entry, question_prompt=question_prompt)
 
-        assert isinstance(seed_prompt_group, SeedPromptGroup)
-        assert len(seed_prompt_group.prompts) == 1
+        assert isinstance(seed_group, SeedGroup)
+        assert len(seed_group.prompts) == 1
 
-        seed_prompt = seed_prompt_group.prompts[0]
+        seed_prompt = seed_group.prompts[0]
         assert isinstance(seed_prompt, SeedPrompt)
         assert seed_prompt.value == question_prompt
         assert seed_prompt.data_type == "text"
@@ -246,7 +244,7 @@ class TestQuestionAnsweringBenchmark:
             call_kwargs = mock_attack_instance.execute_async.call_args.kwargs
 
             assert call_kwargs["objective"] == sample_benchmark_context.generated_objective
-            assert call_kwargs["seed_prompt_group"] == sample_benchmark_context.generated_seed_prompt_group
+            assert call_kwargs["seed_group"] == sample_benchmark_context.generated_seed_group
             assert call_kwargs["prepended_conversation"] == sample_benchmark_context.prepended_conversation
             assert call_kwargs["memory_labels"] == sample_benchmark_context.memory_labels
 
@@ -451,7 +449,7 @@ class TestQuestionAnsweringBenchmarkContextIntegration:
 
         assert context.generated_objective == ""
         assert context.generated_question_prompt == ""
-        assert context.generated_seed_prompt_group is None
+        assert context.generated_seed_group is None
 
     @pytest.mark.asyncio
     async def test_full_workflow_integration(
@@ -478,7 +476,7 @@ class TestQuestionAnsweringBenchmarkContextIntegration:
             # Verify all generated fields are populated after setup
             assert context.generated_objective != ""
             assert context.generated_question_prompt != ""
-            assert context.generated_seed_prompt_group is not None
+            assert context.generated_seed_group is not None
 
             # Verify result is correct
             assert result == sample_attack_result

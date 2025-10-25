@@ -6,6 +6,7 @@ import logging
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -32,15 +33,27 @@ class FuzzerConverter(PromptConverter):
     GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None):
+    @apply_defaults
+    def __init__(self, *, converter_target: Optional[PromptChatTarget] = None, prompt_template: SeedPrompt):
         """
         Initializes the converter with the specified chat target and prompt template.
 
         Args:
             converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt.
-            prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
+                Can be omitted if a default has been configured via PyRIT initialization.
+            prompt_template (SeedPrompt): Template to be used instead of the default system prompt with
                 instructions for the chat target.
+
+        Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
         """
+        if converter_target is None:
+            raise ValueError(
+                "converter_target is required for LLM-based converters. "
+                "Either pass it explicitly or configure a default via PyRIT initialization "
+                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
+            )
+
         self.converter_target = converter_target
         self.system_prompt = prompt_template.value
         self.template_label = "TEMPLATE"

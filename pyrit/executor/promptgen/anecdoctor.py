@@ -21,8 +21,8 @@ from pyrit.executor.promptgen.core import (
 )
 from pyrit.models import (
     Message,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -250,7 +250,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         """
         Send the formatted examples to the target model.
 
-        Creates a seed prompt group from the formatted examples and sends it to the
+        Creates a seed group from the formatted examples and sends it to the
         objective target model using the configured converters and normalizer.
 
         Args:
@@ -261,8 +261,8 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             Optional[Message]: The response from the target model,
                 or None if the request failed.
         """
-        # Create seed prompt group containing the formatted examples
-        prompt_group = SeedPromptGroup(
+        # Create seed group containing the formatted examples
+        prompt_group = SeedGroup(
             prompts=[
                 SeedPrompt(
                     value=formatted_examples,
@@ -273,7 +273,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
 
         # Send to target model with configured converters
         return await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=prompt_group,
+            seed_group=prompt_group,
             target=self._objective_target,
             conversation_id=context.conversation_id,
             request_converter_configurations=self._request_converters,
@@ -353,8 +353,8 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         # Format examples for knowledge graph extraction using few-shot format
         formatted_examples = self._format_few_shot_examples(evaluation_data=context.evaluation_data)
 
-        # Create seed prompt group for the processing model
-        kg_prompt_group = SeedPromptGroup(
+        # Create seed group for the processing model
+        kg_prompt_group = SeedGroup(
             prompts=[
                 SeedPrompt(
                     value=formatted_examples,
@@ -365,7 +365,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
 
         # Send to processing model with configured converters
         kg_response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=kg_prompt_group,
+            seed_group=kg_prompt_group,
             target=self._processing_model,
             conversation_id=kg_conversation_id,
             request_converter_configurations=self._request_converters,
