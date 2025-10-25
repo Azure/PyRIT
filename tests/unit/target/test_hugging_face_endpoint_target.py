@@ -3,7 +3,9 @@
 
 import pytest
 
-from pyrit.prompt_target.hugging_face.hugging_face_endpoint_target import HuggingFaceEndpointTarget
+from pyrit.prompt_target.hugging_face.hugging_face_endpoint_target import (
+    HuggingFaceEndpointTarget,
+)
 
 
 @pytest.fixture

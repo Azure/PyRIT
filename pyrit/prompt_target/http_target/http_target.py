@@ -50,11 +50,11 @@ class HTTPTarget(PromptTarget):
         # Initialize attributes needed by parse_raw_http_request before calling it
         self._client = client
         self.use_tls = use_tls
-        
+
         # Parse the URL early to use as endpoint identifier
         # This will fail early if the http_request is malformed
         _, _, endpoint, _, _ = self.parse_raw_http_request(http_request)
-        
+
         super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
         self.http_request = http_request
         self.callback_function = callback_function

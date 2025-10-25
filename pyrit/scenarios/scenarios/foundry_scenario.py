@@ -150,8 +150,6 @@ class FoundryAttackStrategy(ScenarioAttackStrategy):
 
 class FoundryScenario(Scenario):
     """
-    Factory for creating comprehensive Foundry attack test scenarios.
-
     FoundryScenario is a preconfigured scenario that automatically generates multiple
     AttackRun instances based on the specified attack strategies. It supports both
     single-turn attacks (with various converters) and multi-turn attacks (Crescendo,
@@ -162,33 +160,10 @@ class FoundryScenario(Scenario):
 
     Note this is not the same as the Foundry AI Red Teaming Agent. This is a PyRIT contract
     so their library can make use of PyRIT in a consistent way.
-
-    Example:
-        >>> from pyrit.prompt_target import OpenAIChatTarget
-        >>> from pyrit.scenarios import FoundryScenario, FoundryAttackStrategy
-        >>>
-        >>> # Create a scenario with easy-level attacks
-        >>> target = OpenAIChatTarget()
-        >>> scenario = FoundryScenario(
-        ...     objective_target=target,
-        ...     attack_strategies={FoundryAttackStrategy.EASY}
-        ... )
-        >>> print(f"Created {scenario.attack_run_count} attack runs")
-        >>> result = await scenario.run_async()
-        >>>
-        >>> # Or specify individual strategies
-        >>> scenario = FoundryScenario(
-        ...     objective_target=target,
-        ...     attack_strategies={
-        ...         FoundryAttackStrategy.Base64,
-        ...         FoundryAttackStrategy.ROT13,
-        ...         FoundryAttackStrategy.Crescendo
-        ...     },
-        ...     objectives=["How to make a bomb", "Generate harmful content"]
-        ... )
     """
 
     version: int = 1
+    description: str = __doc__ or ""
 
     def __init__(
         self,
@@ -289,10 +264,11 @@ class FoundryScenario(Scenario):
         super().__init__(
             name="Foundry Scenario",
             version=self.version,
+            description=self.description,
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
             objective_target_identifier=objective_target.get_identifier(),
-            objective_scorer_identifier=self._objective_scorer.get_identifier()
+            objective_scorer_identifier=self._objective_scorer.get_identifier(),
         )
 
     def _get_composition_name(self, composition: list[FoundryAttackStrategy]) -> str:

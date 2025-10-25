@@ -124,7 +124,6 @@ class TestScenarioInitialization2:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            attack_strategies=["base64"],
             attack_runs_to_return=mock_attack_runs,
         )
 

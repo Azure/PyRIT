@@ -13,8 +13,8 @@ times when that may not be possible or make sense. So this class exists to
 have a common interface for scenarios.
 """
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy

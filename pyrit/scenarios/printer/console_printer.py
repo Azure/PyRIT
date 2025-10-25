@@ -81,6 +81,7 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         self._print_colored(f"{self._indent}📋 Scenario Details", Style.BRIGHT)
         self._print_colored(f"{self._indent * 2}• Name: {result.scenario_identifier.name}", Fore.CYAN)
         self._print_colored(f"{self._indent * 2}• Scenario Version: {result.scenario_identifier.version}", Fore.CYAN)
+        self._print_colored(f"{self._indent * 2}• Description: {result.scenario_identifier.description}", Fore.CYAN)
         self._print_colored(f"{self._indent * 2}• PyRIT Version: {result.scenario_identifier.pyrit_version}", Fore.CYAN)
 
         # Target information
@@ -109,7 +110,9 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         self._print_colored(f"{self._indent}📈 Summary", Style.BRIGHT)
         self._print_colored(f"{self._indent * 2}• Total Strategies: {total_strategies}", Fore.GREEN)
         self._print_colored(f"{self._indent * 2}• Total Attack Results: {total_results}", Fore.GREEN)
-        self._print_colored(f"{self._indent * 2}• Overall Success Rate: {overall_rate}%", self._get_rate_color(overall_rate))
+        self._print_colored(
+            f"{self._indent * 2}• Overall Success Rate: {overall_rate}%", self._get_rate_color(overall_rate)
+        )
 
         objectives = result.get_objectives()
         self._print_colored(f"{self._indent * 2}• Unique Objectives: {len(objectives)}", Fore.GREEN)
@@ -118,16 +121,15 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         self._print_section_header("Per-Strategy Breakdown")
         strategies = result.get_strategies_used()
 
-        for i, strategy in enumerate(strategies, 1):
+        for strategy in strategies:
             results_for_strategy = result.attack_results[strategy]
             strategy_rate = result.objective_achieved_rate(attack_run_name=strategy)
-            
+
             print()
-            self._print_colored(f"{self._indent}🔸 Strategy {i}: {strategy}", Style.BRIGHT)
+            self._print_colored(f"{self._indent}🔸 Strategy: {strategy}", Style.BRIGHT)
             self._print_colored(f"{self._indent * 2}• Number of Results: {len(results_for_strategy)}", Fore.YELLOW)
             self._print_colored(
-                f"{self._indent * 2}• Success Rate: {strategy_rate}%",
-                self._get_rate_color(strategy_rate)
+                f"{self._indent * 2}• Success Rate: {strategy_rate}%", self._get_rate_color(strategy_rate)
             )
 
         # Print footer
@@ -161,12 +163,12 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         Args:
             scorer_identifier (dict): The scorer identifier dictionary.
             indent_level (int): Current indentation level for nested display.
-        """        
+        """
         scorer_type = scorer_identifier.get("__type__", "Unknown")
         indent = self._indent * indent_level
-        
+
         self._print_colored(f"{indent}• Scorer Type: {scorer_type}", Fore.CYAN)
-        
+
         # Check for sub_identifier
         sub_identifier = scorer_identifier.get("sub_identifier")
         if sub_identifier:

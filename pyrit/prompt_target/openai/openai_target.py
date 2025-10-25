@@ -83,13 +83,10 @@ class OpenAITarget(PromptChatTarget):
         endpoint_value = default_values.get_required_value(
             env_var_name=self.endpoint_environment_variable, passed_value=endpoint
         ).rstrip("/")
-        
+
         # Initialize parent with endpoint and model_name
         PromptChatTarget.__init__(
-            self, 
-            max_requests_per_minute=max_requests_per_minute, 
-            endpoint=endpoint_value,
-            model_name=self._model_name
+            self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value, model_name=self._model_name
         )
 
         self._api_key = api_key

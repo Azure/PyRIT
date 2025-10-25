@@ -20,6 +20,7 @@ from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
 
 logger = logging.getLogger(__name__)
 
+
 class Scenario:
     """
     Groups and executes multiple AttackRun instances sequentially.
@@ -66,6 +67,7 @@ class Scenario:
         *,
         name: str,
         version: int,
+        description: str = "",
         max_concurrency: int = 1,
         memory_labels: Optional[Dict[str, str]] = None,
         objective_target_identifier: Optional[Dict[str, str]] = None,
@@ -77,6 +79,7 @@ class Scenario:
         Args:
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
+            description (str): Description of the scenario.
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
@@ -86,8 +89,7 @@ class Scenario:
             subclass's _get_attack_runs_async() method.
         """
         self._identifier = ScenarioIdentifier(
-            name=type(self).__name__,
-            scenario_version=version,
+            name=type(self).__name__, scenario_version=version, description=description
         )
 
         self._objective_target_identifier = objective_target_identifier or {}
@@ -188,7 +190,9 @@ class Scenario:
                 attack_run_results = await attack_run.run_async(max_concurrency=self._max_concurrency)
 
                 all_results.setdefault(attack_run.attack_run_name, []).extend(attack_run_results.results)
-                logger.info(f"Attack run {i}/{len(self._attack_runs)} completed with {len(attack_run_results.results)} results")
+                logger.info(
+                    f"Attack run {i}/{len(self._attack_runs)} completed with {len(attack_run_results.results)} results"
+                )
             except Exception as e:
                 logger.error(f"Attack run {i}/{len(self._attack_runs)} failed in scenario '{self._name}': {str(e)}")
                 raise ValueError(f"Failed to execute attack run {i} in scenario '{self._name}': {str(e)}") from e

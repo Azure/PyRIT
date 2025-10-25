@@ -529,6 +529,29 @@ API Reference
     TrueFalseScoreAggregator
     TrueFalseScorer
 
+:py:mod:`pyrit.scenarios`
+=========================
+
+.. automodule:: pyrit.scenarios
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    AttackRun
+    AttackRunResult
+    ConsoleScenarioResultPrinter
+    EncodingScenario
+    FoundryAttackStrategy
+    FoundryScenario
+    Scenario
+    ScenarioAttackStrategy
+    ScenarioIdentifier
+    ScenarioResult
+    ScenarioResultPrinter
+
 :py:mod:`pyrit.setup`
 =====================
 

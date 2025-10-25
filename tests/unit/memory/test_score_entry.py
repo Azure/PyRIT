@@ -15,9 +15,9 @@ def test_normalize_scorer_identifier_simple():
         "__module__": "pyrit.score",
         "sub_identifier": None,
     }
-    
+
     result = ScoreEntry._normalize_scorer_identifier(identifier)
-    
+
     assert result["__type__"] == "SelfAskScorer"
     assert result["__module__"] == "pyrit.score"
     assert result["sub_identifier"] is None
@@ -34,12 +34,12 @@ def test_normalize_scorer_identifier_with_dict():
             "sub_identifier": None,
         },
     }
-    
+
     result = ScoreEntry._normalize_scorer_identifier(identifier)
-    
+
     assert result["__type__"] == "FloatScaleThresholdScorer"
     assert isinstance(result["sub_identifier"], str)
-    
+
     # Verify it's valid JSON and preserves structure
     parsed = json.loads(result["sub_identifier"])
     assert parsed["__type__"] == "SelfAskScorer"
@@ -55,11 +55,11 @@ def test_normalize_scorer_identifier_with_list():
             {"__type__": "ScorerB", "__module__": "pyrit.score", "sub_identifier": None},
         ],
     }
-    
+
     result = ScoreEntry._normalize_scorer_identifier(identifier)
-    
+
     assert isinstance(result["sub_identifier"], str)
-    
+
     # Verify it's valid JSON and preserves list
     parsed = json.loads(result["sub_identifier"])
     assert isinstance(parsed, list)
@@ -73,15 +73,15 @@ def test_denormalize_scorer_identifier_with_dict():
         "__module__": "pyrit.score",
         "sub_identifier": None,
     }
-    
+
     identifier = {
         "__type__": "FloatScaleThresholdScorer",
         "__module__": "pyrit.score",
         "sub_identifier": json.dumps(sub_id_dict),
     }
-    
+
     result = ScoreEntry._denormalize_scorer_identifier(identifier)
-    
+
     assert isinstance(result["sub_identifier"], dict)
     assert result["sub_identifier"]["__type__"] == "SelfAskScorer"
 
@@ -98,7 +98,7 @@ def test_score_entry_roundtrip():
             "sub_identifier": None,
         },
     }
-    
+
     message_piece_id = uuid.uuid4()
     original_score = Score(
         score_value="0.85",
@@ -111,16 +111,16 @@ def test_score_entry_roundtrip():
         message_piece_id=message_piece_id,
         objective="test objective",
     )
-    
+
     # Create ScoreEntry (normalizes on init)
     score_entry = ScoreEntry(entry=original_score)
-    
+
     # Verify normalization happened
     assert isinstance(score_entry.scorer_class_identifier["sub_identifier"], str)
-    
+
     # Get score back (denormalizes)
     retrieved_score = score_entry.get_score()
-    
+
     # Verify denormalization restored the structure
     assert isinstance(retrieved_score.scorer_class_identifier["sub_identifier"], dict)
     assert retrieved_score.scorer_class_identifier["sub_identifier"]["__type__"] == "SelfAskScorer"  # type: ignore
@@ -137,7 +137,7 @@ def test_score_entry_roundtrip_with_list():
             {"__type__": "ScorerB", "__module__": "pyrit.score", "sub_identifier": None},
         ],
     }
-    
+
     message_piece_id = uuid.uuid4()
     original_score = Score(
         score_value="True",
@@ -150,18 +150,17 @@ def test_score_entry_roundtrip_with_list():
         message_piece_id=message_piece_id,
         objective="test objective",
     )
-    
+
     # Create ScoreEntry (normalizes on init)
     score_entry = ScoreEntry(entry=original_score)
-    
+
     # Verify normalization happened
     assert isinstance(score_entry.scorer_class_identifier["sub_identifier"], str)
-    
+
     # Get score back (denormalizes)
     retrieved_score = score_entry.get_score()
-    
+
     # Verify denormalization restored the list structure
     assert isinstance(retrieved_score.scorer_class_identifier["sub_identifier"], list)
     assert len(retrieved_score.scorer_class_identifier["sub_identifier"]) == 2
     assert retrieved_score.scorer_class_identifier["sub_identifier"][0]["__type__"] == "ScorerA"  # type: ignore
-

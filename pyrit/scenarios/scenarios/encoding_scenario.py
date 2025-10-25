@@ -57,6 +57,7 @@ class EncodingScenario(Scenario):
     """
 
     version: int = 1
+    description: str = __doc__ or ""
 
     def __init__(
         self,
@@ -101,10 +102,12 @@ class EncodingScenario(Scenario):
 
         super().__init__(
             name="Encoding Scenario",
-            attack_strategies=self._attack_strategies,
+            description=self.description,
             version=self.version,
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
+            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_target_identifier=objective_target.get_identifier(),
         )
 
     # Use the same as Garak by default
@@ -231,6 +234,8 @@ class EncodingScenario(Scenario):
                 attack_converter_config=attack_converter_config,
                 attack_scoring_config=self._scorer_config,
             )
-            attack_runs.append(AttackRun(attack=attack, objectives=objectives, seed_groups=seed_groups))
+            attack_runs.append(
+                AttackRun(attack_run_name=encoding_name, attack=attack, objectives=objectives, seed_groups=seed_groups)
+            )
 
         return attack_runs

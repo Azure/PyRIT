@@ -70,6 +70,7 @@ class TestAttackRunInitialization:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
+            attack_run_name="Test Attack Run",
         )
 
         assert attack_run._attack == mock_attack
@@ -86,6 +87,7 @@ class TestAttackRunInitialization:
             attack=mock_attack,
             objectives=sample_objectives,
             memory_labels=memory_labels,
+            attack_run_name="Test Attack Run",
         )
 
         assert attack_run._memory_labels == memory_labels
@@ -96,6 +98,7 @@ class TestAttackRunInitialization:
             attack=mock_attack,
             objectives=sample_objectives,
             prepended_conversations=sample_conversation,
+            attack_run_name="Test Attack Run",
         )
 
         assert attack_run._prepended_conversations == sample_conversation
@@ -107,6 +110,7 @@ class TestAttackRunInitialization:
             objectives=sample_objectives,
             max_retries=5,
             custom_param="value",
+            attack_run_name="Test Attack Run",
         )
 
         assert attack_run._attack_execute_params["max_retries"] == 5
@@ -123,6 +127,7 @@ class TestAttackRunInitialization:
             memory_labels=memory_labels,
             batch_size=10,
             timeout=30,
+            attack_run_name="Test Attack Run",
         )
 
         assert attack_run._attack == mock_attack
@@ -138,6 +143,7 @@ class TestAttackRunInitialization:
             AttackRun(
                 attack=mock_attack,
                 objectives=[],
+                attack_run_name="Test Attack Run",
             )
 
 
@@ -151,16 +157,17 @@ class TestAttackRunExecution:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
+            attack_run_name="Test Attack Run",
         )
 
         # Mock the executor
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = sample_attack_results
 
-            results = await attack_run.run_async()
+            result = await attack_run.run_async()
 
-            assert len(results) == 3
-            assert results == sample_attack_results
+            assert len(result.results) == 3
+            assert result.results == sample_attack_results
             mock_exec.assert_called_once()
 
             # Verify the attack was passed correctly
@@ -173,6 +180,7 @@ class TestAttackRunExecution:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
+            attack_run_name="Test Attack Run",
         )
 
         with patch.object(AttackExecutor, "__init__", return_value=None) as mock_init:
@@ -181,10 +189,10 @@ class TestAttackRunExecution:
             ) as mock_exec:
                 mock_exec.return_value = sample_attack_results
 
-                results = await attack_run.run_async(max_concurrency=5)
+                result = await attack_run.run_async(max_concurrency=5)
 
                 mock_init.assert_called_once_with(max_concurrency=5)
-                assert len(results) == 3
+                assert len(result.results) == 3
 
     @pytest.mark.asyncio
     async def test_run_async_with_default_concurrency(self, mock_attack, sample_objectives, sample_attack_results):
@@ -192,6 +200,7 @@ class TestAttackRunExecution:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
+            attack_run_name="Test Attack Run",
         )
 
         with patch.object(AttackExecutor, "__init__", return_value=None) as mock_init:
@@ -200,7 +209,7 @@ class TestAttackRunExecution:
             ) as mock_exec:
                 mock_exec.return_value = sample_attack_results
 
-                await attack_run.run_async()
+                result = await attack_run.run_async()
 
                 mock_init.assert_called_once_with(max_concurrency=1)
 
@@ -213,6 +222,7 @@ class TestAttackRunExecution:
             attack=mock_attack,
             objectives=sample_objectives,
             memory_labels=memory_labels,
+            attack_run_name="Test Attack Run",
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
@@ -231,6 +241,7 @@ class TestAttackRunExecution:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
+            attack_run_name="Test Attack Run",
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
@@ -252,6 +263,7 @@ class TestAttackRunExecution:
             attack=mock_attack,
             objectives=sample_objectives,
             prepended_conversations=sample_conversation,
+            attack_run_name="Test Attack Run",
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
@@ -274,6 +286,7 @@ class TestAttackRunExecution:
             objectives=sample_objectives,
             custom_param="value",
             max_retries=3,
+            attack_run_name="Test Attack Run",
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
@@ -299,6 +312,7 @@ class TestAttackRunExecution:
             prepended_conversations=sample_conversation,
             memory_labels=memory_labels,
             batch_size=5,
+            attack_run_name="Test Attack Run",
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
@@ -322,6 +336,7 @@ class TestAttackRunExecution:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
+            attack_run_name="Test Attack Run",
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
@@ -346,6 +361,7 @@ class TestAttackRunIntegration:
             prepended_conversations=sample_conversation,
             memory_labels=memory_labels,
             batch_size=2,
+            attack_run_name="Test Attack Run",
         )
 
         # Create mock results
@@ -363,11 +379,11 @@ class TestAttackRunIntegration:
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = mock_results
 
-            results = await attack_run.run_async(max_concurrency=3)
+            attack_run_result = await attack_run.run_async(max_concurrency=3)
 
             # Verify results
-            assert len(results) == 3
-            for i, result in enumerate(results):
+            assert len(attack_run_result.results) == 3
+            for i, result in enumerate(attack_run_result.results):
                 assert result.objective == f"objective{i+1}"
                 assert result.outcome == AttackOutcome.SUCCESS
 
@@ -387,6 +403,7 @@ class TestAttackRunIntegration:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=sample_objectives,
+            attack_run_name="Test Attack Run",
         )
 
         mock_results = [
@@ -403,10 +420,10 @@ class TestAttackRunIntegration:
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = mock_results
 
-            results = await attack_run.run_async()
+            attack_run_result = await attack_run.run_async()
 
             # Verify results
-            assert len(results) == 3
+            assert len(attack_run_result.results) == 3
 
             # Verify the call was made with minimal parameters
             call_kwargs = mock_exec.call_args.kwargs
@@ -422,6 +439,7 @@ class TestAttackRunIntegration:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=["single_objective"],
+            attack_run_name="Test Attack Run",
         )
 
         mock_result = [
@@ -437,10 +455,10 @@ class TestAttackRunIntegration:
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = mock_result
 
-            results = await attack_run.run_async()
+            attack_run_result = await attack_run.run_async()
 
-            assert len(results) == 1
-            assert results[0].objective == "single_objective"
+            assert len(attack_run_result.results) == 1
+            assert attack_run_result.results[0].objective == "single_objective"
 
     @pytest.mark.asyncio
     async def test_attack_run_with_many_objectives(self, mock_attack):
@@ -450,6 +468,7 @@ class TestAttackRunIntegration:
         attack_run = AttackRun(
             attack=mock_attack,
             objectives=many_objectives,
+            attack_run_name="Test Attack Run",
         )
 
         mock_results = [
@@ -466,9 +485,9 @@ class TestAttackRunIntegration:
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = mock_results
 
-            results = await attack_run.run_async()
+            attack_run_result = await attack_run.run_async()
 
-            assert len(results) == 20
+            assert len(attack_run_result.results) == 20
 
             # Verify objectives were passed correctly
             call_kwargs = mock_exec.call_args.kwargs
