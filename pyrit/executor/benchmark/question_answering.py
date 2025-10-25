@@ -19,8 +19,8 @@ from pyrit.models import (
     AttackResult,
     Message,
     QuestionAnsweringEntry,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -46,8 +46,8 @@ class QuestionAnsweringBenchmarkContext(StrategyContext):
     generated_objective: str = field(default_factory=str)
     # The generated question prompt for the benchmark
     generated_question_prompt: str = field(default_factory=str)
-    # The generated seed prompt group for the benchmark
-    generated_seed_prompt_group: Optional[SeedPromptGroup] = None
+    # The generated seed group for the benchmark
+    generated_seed_group: Optional[SeedGroup] = None
 
 
 class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, AttackResult]):
@@ -170,7 +170,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         context.generated_question_prompt = self._format_question_prompt(entry)
 
         # Create the seed prompt with metadata
-        context.generated_seed_prompt_group = self._create_seed_prompt_group(
+        context.generated_seed_group = self._create_seed_group(
             entry=entry, question_prompt=context.generated_question_prompt
         )
 
@@ -187,7 +187,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         # Execute the attack using PromptSendingAttack
         return await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
-            seed_prompt_group=context.generated_seed_prompt_group,
+            seed_group=context.generated_seed_group,
             prepended_conversation=context.prepended_conversation,
             memory_labels=context.memory_labels,
         )
@@ -224,16 +224,16 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
 
         return options_text.rstrip()  # Remove trailing newline
 
-    def _create_seed_prompt_group(self, *, entry: QuestionAnsweringEntry, question_prompt: str) -> SeedPromptGroup:
+    def _create_seed_group(self, *, entry: QuestionAnsweringEntry, question_prompt: str) -> SeedGroup:
         """
-        Create a seed prompt group with the formatted question and metadata.
+        Create a seed group with the formatted question and metadata.
 
         Args:
             entry (QuestionAnsweringEntry): The question answering entry.
             question_prompt (str): The formatted question prompt.
 
         Returns:
-            SeedPromptGroup: The seed prompt group for execution.
+            SeedGroup: The seed group for execution.
         """
         seed_prompt = SeedPrompt(
             value=question_prompt,
@@ -244,7 +244,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             },
         )
 
-        return SeedPromptGroup(prompts=[seed_prompt])
+        return SeedGroup(prompts=[seed_prompt])
 
     async def _teardown_async(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """

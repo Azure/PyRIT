@@ -10,6 +10,11 @@ from pyrit.prompt_converter import RandomTranslationConverter
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 
+def test_random_translation_converter_raises_when_converter_target_is_none():
+    with pytest.raises(ValueError, match="converter_target is required"):
+        RandomTranslationConverter(converter_target=None)
+
+
 @pytest.fixture
 def mock_target() -> PromptTarget:
     target = MagicMock()

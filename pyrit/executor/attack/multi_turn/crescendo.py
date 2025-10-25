@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
@@ -37,8 +38,8 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -112,6 +113,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Path(DATASETS_PATH) / "executors" / "crescendo" / "crescendo_variant_1.yaml"
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,
@@ -482,12 +484,10 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Set JSON format in metadata
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_prompt_group = SeedPromptGroup(
-            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
-        )
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
@@ -556,14 +556,14 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Raises:
             ValueError: If no response is received from the objective target.
         """
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
         objective_target_type = self._objective_target.get_identifier()["__type__"]
 
         # Send the generated prompt to the objective target
         self._logger.debug(f"Sending prompt to {objective_target_type}: {attack_prompt[:100]}...")
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,

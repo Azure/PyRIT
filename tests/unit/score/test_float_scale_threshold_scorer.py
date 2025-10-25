@@ -32,6 +32,7 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
             )
         ]
     )
+    scorer.get_identifier = MagicMock(return_value={"__type__": "MockScorer", "__module__": "test.mock"})
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=threshold)
@@ -90,6 +91,7 @@ async def test_float_scale_threshold_scorer_returns_single_score_with_multi_cate
             ),
         ]
     )
+    scorer.get_identifier = MagicMock(return_value={"__type__": "MockScorer", "__module__": "test.mock"})
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=0.5)
