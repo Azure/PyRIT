@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Union
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import (
@@ -32,8 +33,8 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -79,6 +80,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         "that can be passed to the red teaming chat. "
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,
@@ -335,10 +337,10 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         # Send the prompt to the adversarial chat and get the response
         logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
-        prompt_grp = SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+        prompt_grp = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=prompt_grp,
+            seed_group=prompt_grp,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
@@ -463,7 +465,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         """
         Send a prompt to the target system.
 
-        Constructs a seed prompt group, sends it to the target via the prompt normalizer,
+        Constructs a seed group, sends it to the target via the prompt normalizer,
         and returns the response as a Message.
 
         Args:
@@ -475,13 +477,13 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         """
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 
-        # Create a seed prompt group from the prompt
+        # Create a seed group from the prompt
         seed_prompt = SeedPrompt(value=prompt, data_type="text")
-        seed_prompt_group = SeedPromptGroup(prompts=[seed_prompt])
+        seed_group = SeedGroup(prompts=[seed_prompt])
 
         # Send the prompt to the target
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,

@@ -15,7 +15,7 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
-from pyrit.models import Message, SeedPromptGroup
+from pyrit.models import Message, SeedGroup
 
 
 class AttackExecutor:
@@ -97,7 +97,7 @@ class AttackExecutor:
         *,
         attack: AttackStrategy[_SingleTurnContextT, AttackStrategyResultT],
         objectives: List[str],
-        seed_prompt_groups: Optional[List[SeedPromptGroup]] = None,
+        seed_groups: Optional[List[SeedGroup]] = None,
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
     ) -> List[AttackStrategyResultT]:
@@ -111,8 +111,8 @@ class AttackExecutor:
             attack (AttackStrategy[_SingleTurnContextT, AttackStrategyResultT]): The single-turn attack strategy to use,
                 the context must be a SingleTurnAttackContext or a subclass of it.
             objectives (List[str]): List of attack objectives to test.
-            seed_prompt_groups (Optional[List[SeedPromptGroup]]): List of seed prompt groups to use for this execution.
-                If provided, must match the length of objectives. Seed prompt group will be sent along the objective
+            seed_groups (Optional[List[SeedGroup]]): List of seed groups to use for this execution.
+                If provided, must match the length of objectives. Seed group will be sent along the objective
                 with the same list index.
             prepended_conversations (Optional[List[List[Message]]]): Conversations to prepend to each
                 objective. If provided, must match the length of objectives. Conversation will be sent along the
@@ -127,7 +127,7 @@ class AttackExecutor:
             >>> results = await executor.execute_single_turn_batch_async(
             ...     attack=single_turn_attack,
             ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ...     seed_prompts=[SeedPromptGroup(...), SeedPromptGroup(...)]
+            ...     seed_prompts=[SeedGroup(...), SeedGroup(...)]
             ... )
         """
 
@@ -140,8 +140,8 @@ class AttackExecutor:
         # Validate input parameters using shared validation logic
         self._validate_attack_batch_parameters(
             objectives=objectives,
-            optional_list=seed_prompt_groups,
-            optional_list_name="seed_prompt_groups",
+            optional_list=seed_groups,
+            optional_list_name="seed_groups",
             prepended_conversations=prepended_conversations,
         )
 
@@ -150,25 +150,25 @@ class AttackExecutor:
 
         async def execute_with_semaphore(
             objective: str,
-            seed_prompt_group: Optional[SeedPromptGroup],
+            seed_group: Optional[SeedGroup],
             prepended_conversation: Optional[List[Message]],
         ) -> AttackStrategyResultT:
             async with semaphore:
                 return await attack.execute_async(
                     objective=objective,
                     prepended_conversation=prepended_conversation,
-                    seed_prompt_group=seed_prompt_group,
+                    seed_group=seed_group,
                     memory_labels=memory_labels or {},
                 )
 
         # Create tasks for each objective with its corresponding parameters
         tasks = []
         for i, objective in enumerate(objectives):
-            seed_prompt_group = seed_prompt_groups[i] if seed_prompt_groups else None
+            seed_group = seed_groups[i] if seed_groups else None
             prepended_conversation = prepended_conversations[i] if prepended_conversations else []
 
             task = execute_with_semaphore(
-                objective=objective, seed_prompt_group=seed_prompt_group, prepended_conversation=prepended_conversation
+                objective=objective, seed_group=seed_group, prepended_conversation=prepended_conversation
             )
             tasks.append(task)
 

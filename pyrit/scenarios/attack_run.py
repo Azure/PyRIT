@@ -24,7 +24,7 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
-from pyrit.models import AttackResult, Message, SeedPromptGroup
+from pyrit.models import AttackResult, Message, SeedGroup
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class AttackRun:
 
     The AttackRun automatically detects whether the attack is single-turn or multi-turn
     and calls the appropriate executor method. For single-turn attacks, you can provide
-    seed_prompt_groups. For multi-turn attacks, you can provide custom_prompts.
+    seed_groups. For multi-turn attacks, you can provide custom_prompts.
 
     Example:
         >>> from pyrit.scenarios import AttackRun
@@ -74,12 +74,12 @@ class AttackRun:
         >>> results = await attack_run.run_async(max_concurrency=5)
         >>>
         >>> # Single-turn attack with seed prompts
-        >>> from pyrit.models import SeedPromptGroup
-        >>> seed_prompts = [SeedPromptGroup(...), SeedPromptGroup(...)]
+        >>> from pyrit.models import SeedGroup
+        >>> seed_prompts = [SeedGroup(...), SeedGroup(...)]
         >>> attack_run = AttackRun(
         ...     attack=single_turn_attack,
         ...     objectives=objectives,
-        ...     seed_prompt_groups=seed_prompts
+        ...     seed_groups=seed_prompts
         ... )
         >>> results = await attack_run.run_async(max_concurrency=3)
         >>>
@@ -100,7 +100,7 @@ class AttackRun:
         attack: AttackStrategy,
         objectives: List[str],
         prepended_conversations: Optional[List[List[Message]]] = None,
-        seed_prompt_groups: Optional[List[SeedPromptGroup]] = None,
+        seed_groups: Optional[List[SeedGroup]] = None,
         custom_prompts: Optional[List[str]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_execute_params: Any,
@@ -116,7 +116,7 @@ class AttackRun:
             prepended_conversations (Optional[List[List[Message]]]): Optional
                 list of conversation histories to prepend to each attack execution. This will be
                 used for all objectives.
-            seed_prompt_groups (Optional[List[SeedPromptGroup]]): List of seed prompt groups
+            seed_groups (Optional[List[SeedGroup]]): List of seed prompt groups
                 for single-turn attacks. Only valid for single-turn attacks.
             custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
                 Only valid for multi-turn attacks.
@@ -127,7 +127,7 @@ class AttackRun:
 
         Raises:
             ValueError: If objectives list is empty.
-            TypeError: If seed_prompt_groups is provided for multi-turn attacks or
+            TypeError: If seed_groups is provided for multi-turn attacks or
                 custom_prompts is provided for single-turn attacks.
         """
 
@@ -144,13 +144,13 @@ class AttackRun:
 
         # Validate attack context type and parameters
         self._validate_parameters(
-            seed_prompt_groups=seed_prompt_groups,
+            seed_groups=seed_groups,
             custom_prompts=custom_prompts,
         )
 
         self._objectives = objectives
         self._prepended_conversations = prepended_conversations
-        self._seed_prompt_groups = seed_prompt_groups
+        self._seed_groups = seed_groups
         self._custom_prompts = custom_prompts
         self._memory_labels = memory_labels or {}
         self._attack_execute_params = attack_execute_params
@@ -180,23 +180,23 @@ class AttackRun:
     def _validate_parameters(
         self,
         *,
-        seed_prompt_groups: Optional[List[SeedPromptGroup]],
+        seed_groups: Optional[List[SeedGroup]],
         custom_prompts: Optional[List[str]],
     ) -> None:
         """
         Validate that parameters match the attack context type.
 
         Args:
-            seed_prompt_groups (Optional[List[SeedPromptGroup]]): Seed prompt groups parameter.
+            seed_groups (Optional[List[SeedGroup]]): Seed prompt groups parameter.
             custom_prompts (Optional[List[str]]): Custom prompts parameter.
 
         Raises:
             TypeError: If parameters don't match the attack context type.
         """
-        # Validate seed_prompt_groups is only used with single-turn attacks
-        if seed_prompt_groups is not None and self._context_type != "single_turn":
+        # Validate seed_groups is only used with single-turn attacks
+        if seed_groups is not None and self._context_type != "single_turn":
             raise TypeError(
-                f"seed_prompt_groups can only be used with single-turn attacks. "
+                f"seed_groups can only be used with single-turn attacks. "
                 f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
             )
 
@@ -246,7 +246,7 @@ class AttackRun:
                 results = await executor.execute_single_turn_attacks_async(
                     attack=self._attack,
                     objectives=self._objectives,
-                    seed_prompt_groups=self._seed_prompt_groups,
+                    seed_groups=self._seed_groups,
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
                 )

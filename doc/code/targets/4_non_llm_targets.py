@@ -29,9 +29,9 @@
 # %%
 import os
 
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import AzureBlobStorageTarget
+from pyrit.setup import AZURE_SQL, initialize_pyrit
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 

@@ -11,6 +11,7 @@ from sqlalchemy import (
     ARRAY,
     INTEGER,
     JSON,
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -38,6 +39,8 @@ from pyrit.models import (
     MessagePiece,
     PromptDataType,
     Score,
+    Seed,
+    SeedObjective,
     SeedPrompt,
 )
 
@@ -352,7 +355,7 @@ class EmbeddingMessageWithSimilarity(BaseModel):
     score: float = 0.0
 
 
-class SeedPromptEntry(Base):
+class SeedEntry(Base):
     """
     Represents the raw prompt or prompt template data as found in open datasets.
 
@@ -386,6 +389,7 @@ class SeedPromptEntry(Base):
         sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
         role (str): The role of the prompt (e.g., user, system, assistant).
+        is_objective (bool): Whether this prompt is used as an objective.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -411,12 +415,15 @@ class SeedPromptEntry(Base):
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
+    is_objective: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
-    def __init__(self, *, entry: SeedPrompt):
+    def __init__(self, *, entry: Seed):
+        is_objective = isinstance(entry, SeedObjective)
+
         self.id = entry.id
         self.value = entry.value
         self.value_sha256 = entry.value_sha256
-        self.data_type = entry.data_type
+        self.data_type = entry.data_type  # type: ignore
         self.name = entry.name
         self.dataset_name = entry.dataset_name
         self.harm_categories = entry.harm_categories  # type: ignore
@@ -426,13 +433,32 @@ class SeedPromptEntry(Base):
         self.source = entry.source
         self.date_added = entry.date_added
         self.added_by = entry.added_by
-        self.prompt_metadata = entry.metadata
-        self.parameters = entry.parameters  # type: ignore
+        self.prompt_metadata = entry.metadata  # type: ignore
+        self.parameters = None if is_objective else entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
-        self.sequence = entry.sequence
-        self.role = entry.role
+        self.sequence = None if is_objective else entry.sequence  # type: ignore
+        self.role = None if is_objective else entry.role  # type: ignore
+        self.is_objective = is_objective
 
-    def get_seed_prompt(self) -> SeedPrompt:
+    def get_seed(self) -> Seed:
+        if self.is_objective:
+            return SeedObjective(
+                id=self.id,
+                value=self.value,
+                value_sha256=self.value_sha256,
+                data_type=self.data_type,
+                name=self.name,
+                dataset_name=self.dataset_name,
+                harm_categories=self.harm_categories,
+                description=self.description,
+                authors=self.authors,
+                groups=self.groups,
+                source=self.source,
+                date_added=self.date_added,
+                added_by=self.added_by,
+                metadata=self.prompt_metadata,
+                prompt_group_id=self.prompt_group_id,
+            )
         return SeedPrompt(
             id=self.id,
             value=self.value,

@@ -63,7 +63,7 @@ flowchart LR
     subgraph AttackContext["AttackContext(StrategyContext) <br>(attack/core/attack_strategy.py)"]
         C_s["SingleTurnAttackContext <br>(attack/single_turn/single_turn_attack_strategy.py)"]
         a["conversation_id"]
-        b["seed_prompt_group"]
+        b["seed_group"]
         c["..."]
         C_m["MultiTurnAttackContext <br>(attack/multi_turn/multi_turn_attack_strategy.py)"]
         A["custom_prompt"]

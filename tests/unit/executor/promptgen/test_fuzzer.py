@@ -16,8 +16,8 @@ from pyrit.executor.promptgen.fuzzer import (
 )
 from pyrit.models import (
     Score,
+    SeedDataset,
     SeedPrompt,
-    SeedPromptDataset,
 )
 from pyrit.prompt_converter import (
     FuzzerConverter,
@@ -43,7 +43,7 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def simple_prompts(self) -> list[str]:
         """Sample prompts for testing."""
-        prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+        prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
         return [p.value for p in prompts.prompts]
 
     @pytest.fixture
