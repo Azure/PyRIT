@@ -19,8 +19,8 @@
 # ## Target Initialization
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import RealtimeTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -95,7 +95,6 @@ for result in results:
 # %%
 import logging
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -105,6 +104,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, RealtimeTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

@@ -6,6 +6,7 @@ import logging
 import pathlib
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -51,6 +52,7 @@ class RolePlayAttack(PromptSendingAttack):
     and multiple scorer types.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,

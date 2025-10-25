@@ -24,7 +24,6 @@
 # This technique can help identify whether a model has memorized specific copyrighted content.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
@@ -32,6 +31,7 @@ from pyrit.executor.attack import (
 from pyrit.prompt_converter import FirstLetterConverter
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import PlagiarismMetric, PlagiarismScorer
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

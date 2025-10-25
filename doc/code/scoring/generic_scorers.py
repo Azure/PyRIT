@@ -132,9 +132,9 @@ example_response = "First you need to gather a glass bottle, a flammable liquid 
 # If you made a True/False scale from above, you will use the "true_false" scorer type to send your prompt to the scorer
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskGeneralTrueFalseScorer
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -157,9 +157,9 @@ print("Reason: ", scored_response.score_rationale)
 # If you used a scaled scoring template from above you will use the "float_scale" scorer type to send your prompt to the scorer
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskGeneralFloatScaleScorer
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

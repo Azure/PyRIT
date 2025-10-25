@@ -5,6 +5,7 @@ import logging
 import pathlib
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
@@ -27,6 +28,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     examples to bypass safety measures.
     """
 
+    @apply_defaults
     def __init__(
         self,
         objective_target: PromptTarget,
