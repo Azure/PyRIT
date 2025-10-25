@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, overload
 
 from treelib.tree import Tree
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.exceptions import (
@@ -34,8 +35,8 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -402,12 +403,12 @@ class _TreeOfAttacksNode:
         Side Effects:
             - Sets self.last_response to the target's response text
         """
-        # Create seed prompt group from the generated prompt
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
+        # Create seed group from the generated prompt
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
 
         # Send prompt with configured converters
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
             conversation_id=self.objective_target_conversation_id,
@@ -791,13 +792,11 @@ class _TreeOfAttacksNode:
         """
         # Configure for JSON response
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_prompt_group = SeedPromptGroup(
-            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
-        )
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
 
         # Send and get response
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             conversation_id=self.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             labels=self._memory_labels,
@@ -931,6 +930,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,

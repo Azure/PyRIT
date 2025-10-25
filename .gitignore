@@ -180,6 +180,7 @@ doc/_autosummary/
 
 # ignore all VSCode settings
 .vscode/*
+.vscode
 
 # ignore jetbrains IDE settings
 .idea/
