@@ -19,8 +19,14 @@ class PromptChatTarget(PromptTarget):
     Realtime chat targets or OpenAI completions are NOT PromptChatTargets. You don't send the conversation history.
     """
 
-    def __init__(self, *, max_requests_per_minute: Optional[int] = None) -> None:
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
+    def __init__(
+        self,
+        *,
+        max_requests_per_minute: Optional[int] = None,
+        endpoint: str = "",
+        model_name: str = "",
+    ) -> None:
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
 
     def set_system_prompt(
         self,

@@ -77,7 +77,10 @@ class AzureMLChatTarget(PromptChatTarget):
                 model-dependent. If a model does not accept a certain parameter that is passed in, it will be skipped
                 without throwing an error.
         """
-        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
+        endpoint_value = default_values.get_required_value(
+            env_var_name=self.endpoint_uri_environment_variable, passed_value=endpoint
+        )
+        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
 
         self._initialize_vars(endpoint=endpoint, api_key=api_key)
 

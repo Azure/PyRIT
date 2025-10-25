@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Optional, Protocol
 
 from pyrit.models import (
     Message,
     MessagePiece,
     construct_response_from_request,
 )
-from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 # Avoid errors for users who don't have playwright installed
 if TYPE_CHECKING:
@@ -39,11 +39,24 @@ class PlaywrightTarget(PromptTarget):
         *,
         interaction_func: InteractionFunction,
         page: "Page",
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__()
+        """
+        Initialize the Playwright target.
+
+        Args:
+            interaction_func (InteractionFunction): The function that defines how to interact with the page.
+            page (Page): The Playwright page object to use for interaction.
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
+        """
+        endpoint = page.url if page else ""
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
         self._interaction_func = interaction_func
         self._page = page
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
         if not self._page:

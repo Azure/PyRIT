@@ -79,11 +79,11 @@ class PromptShieldTarget(PromptTarget):
                 will be capped at the value provided.
         """
 
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
-
-        self._endpoint = default_values.get_required_value(
+        endpoint_value = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
+
         self._api_version = api_version
         if use_entra_auth:
             if api_key:

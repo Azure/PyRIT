@@ -579,9 +579,10 @@ class TestFoundryScenarioProperties:
         )
 
         assert scenario.name == "Foundry Scenario"
-        # Strategies are stored in attack_strategies list
-        assert "base64" in scenario._attack_strategies
-        assert "rot13" in scenario._attack_strategies
+        # Verify the scenario was initialized with the attack strategies
+        assert len(scenario._foundry_strategy_compositions) == 2
+        assert any("base64" in str(comp).lower() for comp in scenario._foundry_strategy_compositions)
+        assert any("rot13" in str(comp).lower() for comp in scenario._foundry_strategy_compositions)
 
     @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(

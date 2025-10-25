@@ -48,6 +48,21 @@ def test_initilization_with_parameters(mock_http_target, mock_callback_function)
     assert mock_http_target.callback_function == mock_callback_function
 
 
+def test_http_target_sets_endpoint_and_rate_limit(mock_callback_function, sqlite_instance):
+    sample_request = (
+        'POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{"prompt": "{PLACEHOLDER_PROMPT}"}'
+    )
+    target = HTTPTarget(
+        http_request=sample_request,
+        prompt_regex_string="{PLACEHOLDER_PROMPT}",
+        callback_function=mock_callback_function,
+        max_requests_per_minute=25,
+    )
+    identifier = target.get_identifier()
+    assert identifier["endpoint"] == "https://example.com/"
+    assert target._max_requests_per_minute == 25
+
+
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.request")
 async def test_send_prompt_async(mock_request, mock_http_target, mock_http_response):

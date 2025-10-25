@@ -43,12 +43,21 @@ def mock_interaction_func():
 
 @pytest.fixture
 def mock_page():
-    return AsyncMock(name="MockPage")
+    page = AsyncMock(name="MockPage")
+    page.url = "https://example.com/test"
+    return page
 
 
 def test_playwright_initializes(mock_interaction_func, mock_page):
     target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
     assert target._interaction_func == mock_interaction_func
+
+
+def test_playwright_sets_endpoint_and_rate_limit(mock_interaction_func, mock_page):
+    target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page, max_requests_per_minute=20)
+    identifier = target.get_identifier()
+    assert identifier["endpoint"] == "https://example.com/test"
+    assert target._max_requests_per_minute == 20
 
 
 @pytest.mark.asyncio

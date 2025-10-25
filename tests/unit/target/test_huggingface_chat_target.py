@@ -304,3 +304,16 @@ async def test_optional_kwargs_args_passed_when_loading_model(mock_transformers)
 def test_is_json_response_supported():
     hf_chat = HuggingFaceChatTarget(model_id="dummy", use_cuda=False, trust_remote_code=True)
     assert hf_chat.is_json_response_supported() is False
+
+
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+def test_hugging_face_chat_sets_endpoint_and_rate_limit():
+    target = HuggingFaceChatTarget(
+        model_id="test_model",
+        use_cuda=False,
+        max_requests_per_minute=30,
+    )
+    identifier = target.get_identifier()
+    # HuggingFaceChatTarget doesn't set an endpoint (it's local), so it shouldn't be in identifier
+    assert "endpoint" not in identifier
+    assert target._max_requests_per_minute == 30
