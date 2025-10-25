@@ -147,6 +147,13 @@ class OpenAISoraTarget(OpenAITarget):
         self._params = {}
         self._params["api-version"] = self._api_version
 
+        # Set expected routes for URL validation (Sora video generation API)
+        self._expected_route = [
+            "/videos/generations",
+        ]
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint()
+
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_SORA_MODEL"
         self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"

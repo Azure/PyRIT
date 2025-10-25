@@ -468,3 +468,10 @@ async def test_download_video_content_async_exceptions(
             max_attempts = os.getenv("RETRY_MAX_NUM_ATTEMPTS")
             if max_attempts:
                 assert mock_request.call_count == int(max_attempts)
+
+
+def test_sora_target_sets_expected_route(patch_central_database):
+    """Test that Sora target sets the correct expected route for URL validation."""
+    target = OpenAISoraTarget(endpoint="test", api_key="test")
+
+    assert target._expected_route == ["/videos/generations"]
