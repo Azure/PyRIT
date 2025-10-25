@@ -141,3 +141,9 @@ chapters:
     - file: blog/2025_01_27
     - file: blog/2025_01_14
     - file: blog/2024_12_3
+  - file: tests/integration/ai_recruiter/ai_recruiter_integration_test.fr
+    title: "AI Recruiter Integration Test (FR)"
+  - file: tests/integration/ai_recruiter/freebsd_guide.fr
+    title: "FreeBSD Guide (FR)"
+  - file: pyrit/memory/on_site_guide.fr
+    title: "On-Site Deployment Guide (FR)"
