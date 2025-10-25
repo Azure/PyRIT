@@ -1,15 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import logging
-import struct
 from contextlib import closing
-from datetime import datetime, timedelta, timezone
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from azure.core.credentials import AccessToken
-from sqlalchemy import create_engine, event, text
-from sqlalchemy.engine.base import Engine
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
@@ -17,6 +15,7 @@ from sqlalchemy.orm.session import Session
 from pyrit.auth.azure_auth import AzureAuth
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
+from pyrit.common.path import PYRIT_PATH
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import (
     AttackResultEntry,
@@ -24,10 +23,7 @@ from pyrit.memory.memory_models import (
     EmbeddingDataEntry,
     PromptMemoryEntry,
 )
-from pyrit.models import (
-    AzureBlobStorageIO,
-    MessagePiece,
-)
+from pyrit.models import MessagePiece, LocalFileStorageIO
 
 logger = logging.getLogger(__name__)
 
@@ -36,100 +32,47 @@ Model = TypeVar("Model")
 
 class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     """
-    A class to manage conversation memory using Azure SQL Server as the backend database. It leverages SQLAlchemy Base
-    models for creating tables and provides CRUD operations to interact with the tables.
+    A class to manage conversation memory using a SQLAlchemy-compatible database as the backend.
+    It can be configured to use various databases like PostgreSQL, SQL Server, or SQLite for on-premises deployments.
 
     This class encapsulates the setup of the database connection, table creation based on SQLAlchemy models,
     and session management to perform database operations.
     """
 
-    # Azure SQL configuration
-    SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
-    TOKEN_URL = "https://database.windows.net/.default"  # The token URL for any Azure SQL database
-    AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
-
-    # Azure Storage Account Container datasets and results environment variables
-    AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL: str = "AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL"
-    AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN: str = "AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN"
+    # Default to a local SQLite database if no connection string is provided.
+    # This is ideal for "on-site" or local-first development.
+    DEFAULT_SQLITE_DB_PATH = os.path.join(PYRIT_PATH, "db", "pyrit.db")
+    DEFAULT_CONNECTION_STRING = f"sqlite:///{DEFAULT_SQLITE_DB_PATH}"
+    DB_CONNECTION_STRING = "DB_CONNECTION_STRING"
 
     def __init__(
         self,
         *,
         connection_string: Optional[str] = None,
-        results_container_url: Optional[str] = None,
-        results_sas_token: Optional[str] = None,
         verbose: bool = False,
     ):
-        self._connection_string = default_values.get_required_value(
-            env_var_name=self.AZURE_SQL_DB_CONNECTION_STRING, passed_value=connection_string
+        self._connection_string = default_values.get_value(
+            env_var_name=self.DB_CONNECTION_STRING, passed_value=connection_string, default_value=self.DEFAULT_CONNECTION_STRING
         )
 
-        self._results_container_url: str = default_values.get_required_value(
-            env_var_name=self.AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL, passed_value=results_container_url
-        )
-
-        self._results_container_sas_token: Optional[str] = self._resolve_sas_token(
-            self.AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN, results_sas_token
-        )
-
-        self._auth_token: Optional[AccessToken] = None
-        self._auth_token_expiry: Optional[int] = None
-
-        self.results_path = self._results_container_url
+        if self._connection_string.startswith("sqlite"):
+            db_path = self._connection_string.split("///")[1]
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            logger.info(f"Using SQLite database at: {db_path}")
 
         self.engine = self._create_engine(has_echo=verbose)
-
-        # Generate the initial auth token
-        self._create_auth_token()
-        # Enable token-based authorization
-        self._enable_azure_authorization()
 
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
 
         super(AzureSQLMemory, self).__init__()
 
-    @staticmethod
-    def _resolve_sas_token(env_var_name: str, passed_value: Optional[str] = None) -> Optional[str]:
-        """
-        Resolve the SAS token value, allowing a fallback to None for delegation SAS.
-
-        Args:
-            env_var_name (str): The environment variable name to look up.
-            passed_value (Optional[str]): A passed-in value for the SAS token.
-
-        Returns:
-            Optional[str]: Resolved SAS token or None if not provided.
-        """
-        try:
-            return default_values.get_required_value(env_var_name=env_var_name, passed_value=passed_value)
-        except ValueError:
-            return None
-
     def _init_storage_io(self):
-        # Handle for Azure Blob Storage when using Azure SQL memory.
-        self.results_storage_io = AzureBlobStorageIO(
-            container_url=self._results_container_url, sas_token=self._results_container_sas_token
-        )
-
-    def _create_auth_token(self) -> None:
-        """
-        Creates an Azure Entra ID access token.
-        Stores the token and its expiry time.
-        """
-        azure_auth = AzureAuth(token_scope=self.TOKEN_URL)
-        self._auth_token = azure_auth.access_token
-        self._auth_token_expiry = azure_auth.access_token.expires_on
-
-    def _refresh_token_if_needed(self) -> None:
-        """
-        Refresh the access token if it is close to expiry (within 5 minutes).
-        """
-        if datetime.now(timezone.utc) >= datetime.fromtimestamp(self._auth_token_expiry, tz=timezone.utc) - timedelta(
-            minutes=5
-        ):
-            logger.info("Refreshing Microsoft Entra ID access token...")
-            self._create_auth_token()
+        # For on-site, default to local file system storage.
+        # The path can be configured via environment variables if needed.
+        self.results_path = os.path.join(PYRIT_PATH, "results")
+        os.makedirs(self.results_path, exist_ok=True)
+        self.results_storage_io = LocalFileStorageIO(base_path=self.results_path)
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
         """Creates the SQLAlchemy engine for Azure SQL Server.
@@ -153,34 +96,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except SQLAlchemyError as e:
             logger.exception(f"Error creating the engine for the database: {e}")
             raise
-
-    def _enable_azure_authorization(self) -> None:
-        """
-        The following is necessary because of how SQLAlchemy and PyODBC handle connection creation. In PyODBC, the
-        token is passed outside the connection string in the `connect()` method. Since SQLAlchemy lazy-loads
-        its connections, we need to set this as a separate argument to the `connect()` method. In SQLALchemy
-        we do this by hooking into the `do_connect` event, which is fired when a connection is created.
-
-        For further details, see:
-        * <https://docs.sqlalchemy.org/en/20/dialects/mssql.html#connecting-to-databases-with-access-tokens>
-        * <https://learn.microsoft.com/en-us/azure/azure-sql/database/azure-sql-python-quickstart
-        """
-
-        @event.listens_for(self.engine, "do_connect")
-        def provide_token(_dialect, _conn_rec, cargs, cparams):
-            # Refresh token if it's close to expiry
-            self._refresh_token_if_needed()
-
-            # remove the "Trusted_Connection" parameter that SQLAlchemy adds
-            cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
-
-            # encode the token
-            azure_token = self._auth_token.token
-            azure_token_bytes = azure_token.encode("utf-16-le")
-            packed_azure_token = struct.pack(f"<I{len(azure_token_bytes)}s", len(azure_token_bytes), azure_token_bytes)
-
-            # add the encoded token
-            cparams["attrs_before"] = {self.SQL_COPT_SS_ACCESS_TOKEN: packed_azure_token}
 
     def _create_tables_if_not_exist(self):
         """
