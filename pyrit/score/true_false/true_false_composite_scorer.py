@@ -112,3 +112,12 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
+
+    def _get_sub_identifier(self):
+        """
+        Returns the identifiers of all constituent scorers.
+
+        Returns:
+            list[dict]: A list of identifier dictionaries from all wrapped scorers.
+        """
+        return [scorer.get_identifier() for scorer in self._scorers]

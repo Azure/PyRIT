@@ -56,7 +56,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
-from pyrit.scenarios.attack_run import AttackRun
+from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_attack_strategy import ScenarioAttackStrategy
 from pyrit.score import (
@@ -150,10 +150,8 @@ class FoundryAttackStrategy(ScenarioAttackStrategy):
 
 class FoundryScenario(Scenario):
     """
-    Factory for creating comprehensive Foundry attack test scenarios.
-
     FoundryScenario is a preconfigured scenario that automatically generates multiple
-    AttackRun instances based on the specified attack strategies. It supports both
+    AtomicAttack instances based on the specified attack strategies. It supports both
     single-turn attacks (with various converters) and multi-turn attacks (Crescendo,
     RedTeaming), making it easy to quickly test a target against multiple attack vectors.
 
@@ -162,30 +160,6 @@ class FoundryScenario(Scenario):
 
     Note this is not the same as the Foundry AI Red Teaming Agent. This is a PyRIT contract
     so their library can make use of PyRIT in a consistent way.
-
-    Example:
-        >>> from pyrit.prompt_target import OpenAIChatTarget
-        >>> from pyrit.scenarios import FoundryScenario, FoundryAttackStrategy
-        >>>
-        >>> # Create a scenario with easy-level attacks
-        >>> target = OpenAIChatTarget()
-        >>> scenario = FoundryScenario(
-        ...     objective_target=target,
-        ...     attack_strategies={FoundryAttackStrategy.EASY}
-        ... )
-        >>> print(f"Created {scenario.attack_run_count} attack runs")
-        >>> result = await scenario.run_async()
-        >>>
-        >>> # Or specify individual strategies
-        >>> scenario = FoundryScenario(
-        ...     objective_target=target,
-        ...     attack_strategies={
-        ...         FoundryAttackStrategy.Base64,
-        ...         FoundryAttackStrategy.ROT13,
-        ...         FoundryAttackStrategy.Crescendo
-        ...     },
-        ...     objectives=["How to make a bomb", "Generate harmful content"]
-        ... )
     """
 
     version: int = 1
@@ -213,7 +187,8 @@ class FoundryScenario(Scenario):
                 Aggregate strategies (EASY, MODERATE, DIFFICULT, ALL) are automatically
                 expanded into individual strategies - they cannot be composed with others.
 
-                Examples:
+                Examples::
+
                     # Single strategies (will be expanded from EASY)
                     [[FoundryAttackStrategy.EASY]]
 
@@ -229,6 +204,7 @@ class FoundryScenario(Scenario):
                         [FoundryAttackStrategy.Base64, FoundryAttackStrategy.ROT13],  # Composed
                         [FoundryAttackStrategy.Crescendo]  # Single multi-turn
                     ]
+
             adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
                 like Crescendo and RedTeaming. Additionally used for scoring defaults.
                 If not provided, a default OpenAI target will be created using environment variables.
@@ -288,10 +264,11 @@ class FoundryScenario(Scenario):
 
         super().__init__(
             name="Foundry Scenario",
-            attack_strategies=all_strategies,
             version=self.version,
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
+            objective_target_identifier=objective_target.get_identifier(),
+            objective_scorer_identifier=self._objective_scorer.get_identifier(),
         )
 
     def _get_composition_name(self, composition: list[FoundryAttackStrategy]) -> str:
@@ -413,17 +390,17 @@ class FoundryScenario(Scenario):
 
         return normalized_compositions
 
-    async def _get_attack_runs_async(self) -> List[AttackRun]:
+    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
-        Retrieve the list of AttackRun instances in this scenario.
+        Retrieve the list of AtomicAttack instances in this scenario.
 
         Returns:
-            List[AttackRun]: The list of AttackRun instances in this scenario.
+            List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
-        attack_runs = []
+        atomic_attacks = []
         for composition in self._foundry_strategy_compositions:
-            attack_runs.append(self._get_attack_from_strategy(composition))
-        return attack_runs
+            atomic_attacks.append(self._get_attack_from_strategy(composition))
+        return atomic_attacks
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
@@ -448,9 +425,9 @@ class FoundryScenario(Scenario):
             ],
         )
 
-    def _get_attack_from_strategy(self, composite_strategy: list[FoundryAttackStrategy]) -> AttackRun:
+    def _get_attack_from_strategy(self, composite_strategy: list[FoundryAttackStrategy]) -> AtomicAttack:
         """
-        Get an attack run for the specified strategy composition.
+        Get an atomic attack for the specified strategy composition.
 
         Args:
             composite_strategy (list[FoundryAttackStrategy]): List of attack strategies to compose together.
@@ -458,7 +435,7 @@ class FoundryScenario(Scenario):
                 (e.g., Base64, ROT13) that will be applied to the same prompts.
 
         Returns:
-            AttackRun: The configured attack run.
+            AtomicAttack: The configured atomic attack.
 
         Raises:
             ValueError: If the strategy composition is invalid (e.g., multiple workflow strategies).
@@ -529,7 +506,8 @@ class FoundryScenario(Scenario):
 
         attack = self._get_attack(attack_type=attack_type, converters=converters)
 
-        return AttackRun(
+        return AtomicAttack(
+            atomic_attack_name=self._get_composition_name(composite_strategy),
             attack=attack,
             objectives=self._objectives,
             memory_labels=self._memory_labels,

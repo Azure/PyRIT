@@ -26,6 +26,7 @@ from pyrit.models import (
     PromptDataType,
     PromptResponseError,
 )
+from pyrit.prompt_target import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
 
 logger = logging.getLogger(__name__)
@@ -348,6 +349,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         return Message(message_pieces=extracted_response_pieces)
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Send prompt, handle agentic tool calls (function_call), return assistant output.
