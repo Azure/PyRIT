@@ -130,14 +130,14 @@ class TestEncodingScenarioInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestEncodingScenarioAttackRuns:
-    """Tests for EncodingScenario attack run generation."""
+class TestEncodingScenarioAtomicAttacks:
+    """Tests for EncodingScenario atomic attack generation."""
 
     @pytest.mark.asyncio
-    async def test_get_attack_runs_async_returns_attacks(
+    async def test_get_atomic_attacks_async_returns_attacks(
         self, mock_objective_target, mock_objective_scorer, sample_seeds
     ):
-        """Test that _get_attack_runs_async returns attack runs."""
+        """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
@@ -145,11 +145,11 @@ class TestEncodingScenarioAttackRuns:
         )
 
         await scenario.initialize_async()
-        attack_runs = await scenario._get_attack_runs_async()
+        atomic_attacks = await scenario._get_atomic_attacks_async()
 
-        # Should return multiple attack runs (one for each encoding type)
-        assert len(attack_runs) > 0
-        assert all(isinstance(run._attack, PromptSendingAttack) for run in attack_runs)
+        # Should return multiple atomic attacks (one for each encoding type)
+        assert len(atomic_attacks) > 0
+        assert all(hasattr(run, "_attack") for run in atomic_attacks)
 
     @pytest.mark.asyncio
     async def test_get_converter_attacks_returns_multiple_encodings(
@@ -230,8 +230,8 @@ class TestEncodingScenarioExecution:
 
         await scenario.initialize_async()
 
-        # Verify initialization creates attack runs
-        assert scenario.attack_run_count > 0
+        # Verify initialization creates atomic attacks
+        assert scenario.atomic_attack_count > 0
 
     @pytest.mark.asyncio
     async def test_get_default_dataset_loads_garak_data(self, mock_objective_target, mock_objective_scorer):

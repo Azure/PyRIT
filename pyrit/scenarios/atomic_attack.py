@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 """
-AttackRun class for executing single attack configurations against datasets.
+AtomicAttack class for executing single attack configurations against datasets.
 
-This module provides the AttackRun class that represents an atomic test combining
-an attack, a dataset, and execution parameters. Multiple AttackRuns can be grouped
+This module provides the AtomicAttack class that represents an atomic test combining
+an attack, a dataset, and execution parameters. Multiple AtomicAttacks can be grouped
 together into larger test scenarios for comprehensive security testing.
 
 Eventually it's a good goal to unify attacks as much as we can. But there are
@@ -14,6 +14,7 @@ have a common interface for scenarios.
 """
 
 import logging
+from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
@@ -28,20 +29,26 @@ from pyrit.models import AttackResult, Message, SeedGroup
 logger = logging.getLogger(__name__)
 
 
-class AttackRun:
+@dataclass
+class AtomicAttackResult:
+    results: List[AttackResult]
+    name: str
+
+
+class AtomicAttack:
     """
     Represents a single atomic attack test combining an attack strategy and dataset.
 
-    An AttackRun is an executable unit that executes a configured attack against
-    all objectives in a dataset. Multiple AttackRuns can be grouped together into
+    An AtomicAttack is an executable unit that executes a configured attack against
+    all objectives in a dataset. Multiple AtomicAttacks can be grouped together into
     larger test scenarios for comprehensive security testing and evaluation.
 
-    The AttackRun automatically detects whether the attack is single-turn or multi-turn
+    The AtomicAttack automatically detects whether the attack is single-turn or multi-turn
     and calls the appropriate executor method. For single-turn attacks, you can provide
     seed_groups. For multi-turn attacks, you can provide custom_prompts.
 
     Example:
-        >>> from pyrit.scenarios import AttackRun
+        >>> from pyrit.scenarios import AtomicAttack
         >>> from pyrit.attacks import PromptAttack
         >>> from pyrit.prompt_target import OpenAIChatTarget
         >>>
@@ -49,46 +56,47 @@ class AttackRun:
         >>> attack = PromptAttack(objective_target=target)
         >>> objectives = ["how to make a bomb", "how to hack a system"]
         >>>
-        >>> attack_run = AttackRun(
+        >>> atomic_attack = AtomicAttack(
         ...     attack=attack,
         ...     objectives=objectives,
         ...     memory_labels={"test": "run1"}
         ... )
-        >>> results = await attack_run.run_async(max_concurrency=5)
+        >>> results = await atomic_attack.run_async(max_concurrency=5)
         >>>
         >>> # With prepended conversations
         >>> from pyrit.models import Message
         >>> conversation = [Message(...)]
-        >>> attack_run = AttackRun(
+        >>> atomic_attack = AtomicAttack(
         ...     attack=attack,
         ...     objectives=objectives,
         ...     prepended_conversations=[conversation]
         ... )
-        >>> results = await attack_run.run_async(max_concurrency=5)
+        >>> results = await atomic_attack.run_async(max_concurrency=5)
         >>>
         >>> # Single-turn attack with seeds
         >>> from pyrit.models import SeedGroup
         >>> seeds = [SeedGroup(...), SeedGroup(...)]
-        >>> attack_run = AttackRun(
+        >>> atomic_attack = AtomicAttack(
         ...     attack=single_turn_attack,
         ...     objectives=objectives,
         ...     seed_groups=seeds
         ... )
-        >>> results = await attack_run.run_async(max_concurrency=3)
+        >>> results = await atomic_attack.run_async(max_concurrency=3)
         >>>
         >>> # Multi-turn attack with custom prompts
         >>> custom_prompts = ["Tell me about chemistry", "Explain system administration"]
-        >>> attack_run = AttackRun(
+        >>> atomic_attack = AtomicAttack(
         ...     attack=multi_turn_attack,
         ...     objectives=objectives,
         ...     custom_prompts=custom_prompts
         ... )
-        >>> results = await attack_run.run_async(max_concurrency=3)
+        >>> results = await atomic_attack.run_async(max_concurrency=3)
     """
 
     def __init__(
         self,
         *,
+        atomic_attack_name: str,
         attack: AttackStrategy,
         objectives: List[str],
         prepended_conversations: Optional[List[List[Message]]] = None,
@@ -98,9 +106,11 @@ class AttackRun:
         **attack_execute_params: Any,
     ) -> None:
         """
-        Initialize an attack run with an attack strategy and dataset parameters.
+        Initialize an atomic attack with an attack strategy and dataset parameters.
 
         Args:
+            atomic_attack_name (str): Used to group an AtomicAttack with related attacks for a
+                strategy.
             attack (AttackStrategy): The configured attack strategy to execute.
             objectives (List[str]): List of attack objectives to test against.
             prepended_conversations (Optional[List[List[Message]]]): Optional
@@ -111,7 +121,7 @@ class AttackRun:
             custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
                 Only valid for multi-turn attacks.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
-                These labels help track and categorize the attack run in memory.
+                These labels help track and categorize the atomic attack in memory.
             **attack_execute_params (Any): Additional parameters to pass to the attack
                 execution method (e.g., batch_size).
 
@@ -120,6 +130,9 @@ class AttackRun:
             TypeError: If seed_groups is provided for multi-turn attacks or
                 custom_prompts is provided for single-turn attacks.
         """
+
+        self.atomic_attack_name = atomic_attack_name
+
         if not objectives:
             raise ValueError("objectives list cannot be empty")
 
@@ -143,7 +156,7 @@ class AttackRun:
         self._attack_execute_params = attack_execute_params
 
         logger.info(
-            f"Initialized attack run with {len(self._objectives)} objectives, "
+            f"Initialized atomic attack with {len(self._objectives)} objectives, "
             f"attack type: {type(attack).__name__}, context type: {self._context_type}"
         )
 
@@ -194,9 +207,9 @@ class AttackRun:
                 f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
             )
 
-    async def run_async(self, *, max_concurrency: int = 1) -> List[AttackResult]:
+    async def run_async(self, *, max_concurrency: int = 1) -> AtomicAttackResult:
         """
-        Execute the attack run against all objectives in the dataset.
+        Execute the atomic attack against all objectives in the dataset.
 
         This method uses AttackExecutor to run the configured attack against
         all objectives from the dataset. It automatically detects whether to use
@@ -207,7 +220,7 @@ class AttackRun:
                 Defaults to 1 for sequential execution.
 
         Returns:
-            List[AttackResult]: List of attack results, one for each objective.
+            AtomicAttackResult: Result containing list of attack results, one for each objective.
 
         Raises:
             ValueError: If the attack execution fails.
@@ -222,7 +235,7 @@ class AttackRun:
         prepended_conversations = self._prepended_conversations
 
         logger.info(
-            f"Starting attack run execution with {len(self._objectives)} objectives "
+            f"Starting atomic attack execution with {len(self._objectives)} objectives "
             f"and max_concurrency={max_concurrency}"
         )
 
@@ -256,9 +269,9 @@ class AttackRun:
                     **self._attack_execute_params,
                 )
 
-            logger.info(f"Attack run execution completed successfully with {len(results)} results")
-            return results
+            logger.info(f"Atomic attack execution completed successfully with {len(results)} results")
+            return AtomicAttackResult(name=self.atomic_attack_name, results=results)
 
         except Exception as e:
-            logger.error(f"Attack run execution failed: {str(e)}")
-            raise ValueError(f"Failed to execute attack run: {str(e)}") from e
+            logger.error(f"Atomic attack execution failed: {str(e)}")
+            raise ValueError(f"Failed to execute atomic attack: {str(e)}") from e
