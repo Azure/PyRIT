@@ -352,43 +352,6 @@ class OpenAISoraTarget(OpenAITarget):
         else:
             return await self._send_v2_request_async(request, prompt)
 
-    def _parse_http_error(self, error: httpx.HTTPStatusError) -> tuple[str, bool]:
-        """
-        Parse HTTP error response and extract detailed error information.
-
-        Args:
-            error: The HTTPStatusError to parse.
-
-        Returns:
-            tuple: (error_message, is_content_filter)
-        """
-        error_details = [f"HTTP {error.response.status_code}"]
-
-        try:
-            error_content = error.response.json()
-            if "error" in error_content:
-                error_info = error_content["error"]
-                if isinstance(error_info, dict):
-                    for key in ["message", "type", "code", "param"]:
-                        if key in error_info:
-                            error_details.append(f"{key.capitalize()}: {error_info[key]}")
-                else:
-                    error_details.append(f"Error: {error_info}")
-            else:
-                error_details.append(f"Response: {error_content}")
-        except Exception:
-            error_details.append(f"Raw response: {error.response.text}")
-
-        error_message = "; ".join(error_details)
-
-        # Check if it's a content filtering error
-        is_content_filter = error.response.status_code == 400 and any(
-            keyword in error_message.lower()
-            for keyword in ["content", "policy", "moderation", "filter", "inappropriate", "violation"]
-        )
-
-        return error_message, is_content_filter
-
     def _handle_http_error(self, error: httpx.HTTPStatusError, request: MessagePiece) -> Message:
         """
         Handle HTTP errors with standardized error parsing and response construction.
@@ -400,7 +363,18 @@ class OpenAISoraTarget(OpenAITarget):
         Returns:
             Message: The error response entry.
         """
-        error_message, is_content_filter = self._parse_http_error(error)
+        # Extract error content from HTTP response
+        try:
+            error_dict = error.response.json()
+        except Exception:
+            error_dict = {"error": error.response.text}
+
+        error_details, is_content_filter = self._extract_error_info(
+            error_dict=error_dict,
+            status_code=error.response.status_code,
+        )
+
+        error_message = "; ".join(error_details)
         logger.error(f"HTTP error during prompt send: {error_message}")
 
         if is_content_filter:
@@ -612,8 +586,8 @@ class OpenAISoraTarget(OpenAITarget):
             Message: The error response entry.
         """
         failure_reason = task_content.get("failure_reason", None)
-        error_details = self._extract_error_details(
-            task_content=task_content,
+        error_details, is_content_filter = self._extract_error_info(
+            error_dict=task_content,
             failure_reason=failure_reason,
         )
 
@@ -621,7 +595,7 @@ class OpenAISoraTarget(OpenAITarget):
         logger.error(failure_message)
 
         # Check if failure was due to content moderation
-        if failure_reason in [FailureReason.INPUT_MODERATION.value, FailureReason.OUTPUT_MODERATION.value]:
+        if is_content_filter:
             return handle_bad_request_exception(
                 response_text=failure_message,
                 request=request,
@@ -635,45 +609,63 @@ class OpenAISoraTarget(OpenAITarget):
                 error="unknown",
             )
 
-    def _extract_error_details(
+    def _extract_error_info(
         self,
         *,
-        task_content: dict,
-        failure_reason: Optional[str],
-    ) -> list[str]:
+        error_dict: dict,
+        failure_reason: Optional[str] = None,
+        status_code: Optional[int] = None,
+    ) -> tuple[list[str], bool]:
         """
-        Extract detailed error information from the task response.
+        Extract error information from error response or task content.
 
         Args:
-            task_content (dict): The response content from the status check.
-            failure_reason (Optional[str]): The failure reason if available.
+            error_dict (dict): Dictionary containing error information.
+            failure_reason (Optional[str]): Failure reason from task status.
+            status_code (Optional[int]): HTTP status code if from HTTP error.
 
         Returns:
-            list[str]: List of error detail strings.
+            tuple[list[str], bool]: (error_details, is_content_filter)
         """
         error_details = []
+        is_content_filter = False
 
+        # Add status code if present
+        if status_code:
+            error_details.append(f"HTTP {status_code}")
+
+        # Add failure reason if present (from task status)
         if failure_reason:
             error_details.append(f"Failure reason: {failure_reason}")
+            # Check if it's a moderation failure
+            if failure_reason in [FailureReason.INPUT_MODERATION.value, FailureReason.OUTPUT_MODERATION.value]:
+                is_content_filter = True
 
-        # Look for additional error information in the response
-        if "error" in task_content:
-            error_info = task_content["error"]
+        # Extract error details from error dict
+        if "error" in error_dict:
+            error_info = error_dict["error"]
             if isinstance(error_info, dict):
-                if "message" in error_info:
-                    error_details.append(f"Error message: {error_info['message']}")
-                if "type" in error_info:
-                    error_details.append(f"Error type: {error_info['type']}")
-                if "code" in error_info:
-                    error_details.append(f"Error code: {error_info['code']}")
+                for key in ["message", "type", "code", "param"]:
+                    if key in error_info:
+                        error_details.append(f"{key.capitalize()}: {error_info[key]}")
             else:
                 error_details.append(f"Error: {error_info}")
 
-        # Include raw task content for debugging if no specific errors found
-        if not error_details:
-            error_details.append(f"Raw response: {task_content}")
+        # Fallback to raw content if no structured errors
+        if not error_details or (len(error_details) == 1 and status_code):
+            error_details.append(f"Raw response: {error_dict}")
 
-        return error_details
+        # Build error message for content filter keyword check
+        error_message = "; ".join(error_details).lower()
+
+        # Check for content filtering keywords (for HTTP errors)
+        if status_code == 400 or not is_content_filter:
+            is_content_filter = is_content_filter or any(
+                keyword in error_message
+                for keyword in ["content", "policy", "moderation", "filter", "inappropriate", "violation"]
+            )
+
+        return error_details, is_content_filter
 
     def _handle_processing_task(
         self,
