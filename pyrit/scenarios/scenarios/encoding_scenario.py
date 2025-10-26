@@ -33,7 +33,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_target import PromptTarget
-from pyrit.scenarios.attack_run import AttackRun
+from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.score import TrueFalseScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
@@ -57,7 +57,6 @@ class EncodingScenario(Scenario):
     """
 
     version: int = 1
-    description: str = __doc__ or ""
 
     def __init__(
         self,
@@ -102,7 +101,6 @@ class EncodingScenario(Scenario):
 
         super().__init__(
             name="Encoding Scenario",
-            description=self.description,
             version=self.version,
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
@@ -129,21 +127,21 @@ class EncodingScenario(Scenario):
 
         return seed_prompts
 
-    async def _get_attack_runs_async(self) -> List[AttackRun]:
+    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
-        Retrieve the list of AttackRun instances in this scenario.
+        Retrieve the list of AtomicAttack instances in this scenario.
 
         Returns:
-            List[AttackRun]: The list of AttackRun instances in this scenario.
+            List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
         return self._get_converter_attacks()
 
     # These are the same as Garak encoding attacks
-    def _get_converter_attacks(self) -> list[AttackRun]:
+    def _get_converter_attacks(self) -> list[AtomicAttack]:
         """
-        Get all converter-based attack runs.
+        Get all converter-based atomic attacks.
 
-        Creates attack runs for each encoding scheme tested in Garak, including:
+        Creates atomic attacks for each encoding scheme tested in Garak, including:
         - Base64 (multiple variants)
         - Base2048, Base16, Base32
         - ASCII85
@@ -156,7 +154,7 @@ class EncodingScenario(Scenario):
         Each encoding scheme is tested both with and without explicit decoding instructions.
 
         Returns:
-            list[AttackRun]: List of all attack runs to execute.
+            list[AtomicAttack]: List of all atomic attacks to execute.
         """
         converters_with_encodings: list[tuple[list[PromptConverter], str]] = [
             ([Base64Converter()], "Base64"),
@@ -182,16 +180,16 @@ class EncodingScenario(Scenario):
             ([AsciiSmugglerConverter()], "Ascii in Unicode tags"),
         ]
 
-        attack_runs = []
+        atomic_attacks = []
         for conv, name in converters_with_encodings:
-            attack_runs.extend(self._get_prompt_attacks(converters=conv, encoding_name=name))
-        return attack_runs
+            atomic_attacks.extend(self._get_prompt_attacks(converters=conv, encoding_name=name))
+        return atomic_attacks
 
-    def _get_prompt_attacks(self, *, converters: list[PromptConverter], encoding_name: str) -> list[AttackRun]:
+    def _get_prompt_attacks(self, *, converters: list[PromptConverter], encoding_name: str) -> list[AtomicAttack]:
         """
-        Create attack runs for a specific encoding scheme.
+        Create atomic attacks for a specific encoding scheme.
 
-        For each seed prompt (the text to be decoded), creates attack runs that:
+        For each seed prompt (the text to be decoded), creates atomic attacks that:
         1. Encode the seed prompt using the specified converter(s)
         2. Optionally add a decoding instruction template
         3. Send to the target model
@@ -202,7 +200,7 @@ class EncodingScenario(Scenario):
             encoding_name (str): Human-readable name of the encoding scheme (e.g., "Base64", "ROT13").
 
         Returns:
-            list[AttackRun]: List of attack runs for this encoding scheme.
+            list[AtomicAttack]: List of atomic attacks for this encoding scheme.
         """
 
         converter_configs = [
@@ -220,7 +218,7 @@ class EncodingScenario(Scenario):
                 )
             )
 
-        attack_runs = []
+        atomic_attacks = []
         for attack_converter_config in converter_configs:
             seed_groups = []
             objectives = []
@@ -234,8 +232,10 @@ class EncodingScenario(Scenario):
                 attack_converter_config=attack_converter_config,
                 attack_scoring_config=self._scorer_config,
             )
-            attack_runs.append(
-                AttackRun(attack_run_name=encoding_name, attack=attack, objectives=objectives, seed_groups=seed_groups)
+            atomic_attacks.append(
+                AtomicAttack(
+                    atomic_attack_name=encoding_name, attack=attack, objectives=objectives, seed_groups=seed_groups
+                )
             )
 
-        return attack_runs
+        return atomic_attacks

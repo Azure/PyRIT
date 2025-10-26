@@ -41,7 +41,9 @@ class HuggingFaceEndpointTarget(PromptTarget):
             max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
             verbose (bool, Optional): Flag to enable verbose logging. Defaults to False.
         """
-        super().__init__(max_requests_per_minute=max_requests_per_minute, verbose=verbose, endpoint=endpoint)
+        super().__init__(
+            max_requests_per_minute=max_requests_per_minute, verbose=verbose, endpoint=endpoint, model_name=model_id
+        )
         self.hf_token = hf_token
         self.endpoint = endpoint
         self.model_id = model_id

@@ -15,13 +15,13 @@
 #
 # ## What is a Scenario?
 #
-# A `Scenario` represents a comprehensive testing campaign composed of multiple atomic attack tests. It orchestrates the execution of multiple `AttackRun`instances sequentially and aggregates the results into a single `ScenarioResult`.
+# A `Scenario` represents a comprehensive testing campaign composed of multiple atomic attack tests. It orchestrates the execution of multiple `AtomicAttack` instances sequentially and aggregates the results into a single `ScenarioResult`.
 #
 # ### Key Components
 #
-# - **Scenario**: The top-level orchestrator that groups and executes multiple attack runs
-# - **AttackRun**: An atomic test unit combining an attack strategy, objectives, and execution parameters
-# - **ScenarioResult**: Contains the aggregated results from all attack runs and scenario metadata
+# - **Scenario**: The top-level orchestrator that groups and executes multiple atomic attacks
+# - **AtomicAttack**: An atomic test unit combining an attack strategy, objectives, and execution parameters
+# - **ScenarioResult**: Contains the aggregated results from all atomic attacks and scenario metadata
 #
 # ## Use Cases
 #
@@ -36,10 +36,10 @@
 #
 # ## How It Works
 #
-# Each `Scenario` contains a collection of `AttackRun` objects. When executed:
+# Each `Scenario` contains a collection of `AtomicAttack` objects. When executed:
 #
-# 1. Each `AttackRun` is executed sequentially
-# 2. Every `AttackRun` tests its configured attack against all specified objectives and datasets
+# 1. Each `AtomicAttack` is executed sequentially
+# 2. Every `AtomicAttack` tests its configured attack against all specified objectives and datasets
 # 3. Results are aggregated into a single `ScenarioResult` with all attack outcomes
 # 4. Optional memory labels help track and categorize the scenario execution
 #

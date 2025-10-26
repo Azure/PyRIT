@@ -78,7 +78,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
             attn_implementation (Optional[str]): Attention implementation type.
             max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
         """
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
+        model_name = model_id if model_id else model_path if model_path else ""
+
+        super().__init__(max_requests_per_minute=max_requests_per_minute, model_name=model_name)
 
         if not model_id and not model_path:
             raise ValueError("Either `model_id` or `model_path` must be provided.")

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ScenarioIdentifier:
     """
-    Scenario result class for aggregating results from multiple AttackRuns.
+    Scenario result class for aggregating results from multiple AtomicAttacks.
     """
 
     def __init__(
@@ -61,13 +61,13 @@ class ScenarioResult:
         """Get the list of strategies used in this scenario."""
         return list(self.attack_results.keys())
 
-    def get_objectives(self, *, attack_run_name: Optional[str] = None) -> List[str]:
+    def get_objectives(self, *, atomic_attack_name: Optional[str] = None) -> List[str]:
         """
         Get the list of unique objectives for this scenario.
 
         Args:
-            attack_run_name (Optional[str]): Name of specific attack run to include.
-                If None, includes objectives from all attack runs. Defaults to None.
+            atomic_attack_name (Optional[str]): Name of specific atomic attack to include.
+                If None, includes objectives from all atomic attacks. Defaults to None.
 
         Returns:
             List[str]: Deduplicated list of objectives.
@@ -75,13 +75,13 @@ class ScenarioResult:
         objectives: List[str] = []
         strategies_to_process: List[List[AttackResult]]
 
-        if not attack_run_name:
-            # Include all attack runs
+        if not atomic_attack_name:
+            # Include all atomic attacks
             strategies_to_process = list(self.attack_results.values())
         else:
-            # Include only specified attack run
-            if attack_run_name in self.attack_results:
-                strategies_to_process = [self.attack_results[attack_run_name]]
+            # Include only specified atomic attack
+            if atomic_attack_name in self.attack_results:
+                strategies_to_process = [self.attack_results[atomic_attack_name]]
             else:
                 strategies_to_process = []
 
@@ -91,26 +91,26 @@ class ScenarioResult:
 
         return list(set(objectives))
 
-    def objective_achieved_rate(self, *, attack_run_name: Optional[str] = None) -> int:
+    def objective_achieved_rate(self, *, atomic_attack_name: Optional[str] = None) -> int:
         """
         Get the success rate of this scenario.
 
         Args:
-            attack_run_name (Optional[str]): Name of specific attack run to calculate rate for.
-                If None, calculates rate across all attack runs. Defaults to None.
+            atomic_attack_name (Optional[str]): Name of specific atomic attack to calculate rate for.
+                If None, calculates rate across all atomic attacks. Defaults to None.
 
         Returns:
             int: Success rate as a percentage (0-100).
         """
-        if not attack_run_name:
-            # Calculate rate across all attack runs
+        if not atomic_attack_name:
+            # Calculate rate across all atomic attacks
             all_results = []
             for results in self.attack_results.values():
                 all_results.extend(results)
         else:
-            # Calculate rate for specific attack run
-            if attack_run_name in self.attack_results:
-                all_results = self.attack_results[attack_run_name]
+            # Calculate rate for specific atomic attack
+            if atomic_attack_name in self.attack_results:
+                all_results = self.attack_results[atomic_attack_name]
             else:
                 return 0
 

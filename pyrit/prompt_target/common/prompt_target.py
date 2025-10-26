@@ -59,7 +59,7 @@ class PromptTarget(abc.ABC, Identifier):
 
     def dispose_db_engine(self) -> None:
         """
-        Dispose DuckDB database engine to release database connections and resources.
+        Dispose database engine to release database connections and resources.
         """
         self._memory.dispose_engine()
 

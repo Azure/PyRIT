@@ -45,6 +45,7 @@ class HTTPTarget(PromptTarget):
         callback_function: Optional[Callable] = None,
         max_requests_per_minute: Optional[int] = None,
         client: Optional[httpx.AsyncClient] = None,
+        model_name: str = "",
         **httpx_client_kwargs: Any,
     ) -> None:
         # Initialize attributes needed by parse_raw_http_request before calling it
@@ -55,7 +56,7 @@ class HTTPTarget(PromptTarget):
         # This will fail early if the http_request is malformed
         _, _, endpoint, _, _ = self.parse_raw_http_request(http_request)
 
-        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string

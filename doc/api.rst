@@ -540,9 +540,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    AttackRun
-    AttackRunResult
-    ConsoleScenarioResultPrinter
+    AtomicAttack
+    AtomicAttackResult
     EncodingScenario
     FoundryAttackStrategy
     FoundryScenario
@@ -550,7 +549,6 @@ API Reference
     ScenarioAttackStrategy
     ScenarioIdentifier
     ScenarioResult
-    ScenarioResultPrinter
 
 :py:mod:`pyrit.setup`
 =====================

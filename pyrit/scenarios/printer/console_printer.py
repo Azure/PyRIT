@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import textwrap
+
 from colorama import Fore, Style
 
 from pyrit.scenarios.printer.scenario_result_printer import ScenarioResultPrinter
@@ -81,8 +83,20 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         self._print_colored(f"{self._indent}📋 Scenario Details", Style.BRIGHT)
         self._print_colored(f"{self._indent * 2}• Name: {result.scenario_identifier.name}", Fore.CYAN)
         self._print_colored(f"{self._indent * 2}• Scenario Version: {result.scenario_identifier.version}", Fore.CYAN)
-        self._print_colored(f"{self._indent * 2}• Description: {result.scenario_identifier.description}", Fore.CYAN)
         self._print_colored(f"{self._indent * 2}• PyRIT Version: {result.scenario_identifier.pyrit_version}", Fore.CYAN)
+
+        # Format description with text wrapping at 120 characters
+        if result.scenario_identifier.description:
+            self._print_colored(f"{self._indent * 2}• Description:", Fore.CYAN)
+            desc_indent = self._indent * 4
+            # Calculate available width for description text (total 120 - indent)
+            available_width = 120 - len(desc_indent)
+            # Wrap the description text and print each line
+            wrapped_lines = textwrap.wrap(
+                result.scenario_identifier.description, width=available_width, break_long_words=False
+            )
+            for line in wrapped_lines:
+                self._print_colored(f"{desc_indent}{line}", Fore.CYAN)
 
         # Target information
         print()
@@ -123,7 +137,7 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
 
         for strategy in strategies:
             results_for_strategy = result.attack_results[strategy]
-            strategy_rate = result.objective_achieved_rate(attack_run_name=strategy)
+            strategy_rate = result.objective_achieved_rate(atomic_attack_name=strategy)
 
             print()
             self._print_colored(f"{self._indent}🔸 Strategy: {strategy}", Style.BRIGHT)
