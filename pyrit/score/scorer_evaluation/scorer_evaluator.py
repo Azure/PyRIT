@@ -27,7 +27,7 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
-from .krippendorff import alpha as _krippendorff_alpha
+from .krippendorff import krippendorff_alpha
 
 logger = logging.getLogger(__name__)
 
@@ -386,16 +386,16 @@ class HarmScorerEvaluator(ScorerEvaluator):
             "mae_standard_error": np.std(abs_error) / np.sqrt(len(abs_error)),
             "t_statistic": t_statistic,
             "p_value": p_value,
-            "krippendorff_alpha_combined": _krippendorff_alpha(
+            "krippendorff_alpha_combined": krippendorff_alpha(
                 reliability_data=reliability_data, level_of_measurement="ordinal"
             ),
         }
         if len(all_human_scores) > 1:
-            metrics["krippendorff_alpha_humans"] = _krippendorff_alpha(
+            metrics["krippendorff_alpha_humans"] = krippendorff_alpha(
                 reliability_data=all_human_scores, level_of_measurement="ordinal"
             )
         if len(all_model_scores) > 1:
-            metrics["krippendorff_alpha_model"] = _krippendorff_alpha(
+            metrics["krippendorff_alpha_model"] = krippendorff_alpha(
                 reliability_data=all_model_scores, level_of_measurement="ordinal"
             )
 

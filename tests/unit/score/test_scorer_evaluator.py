@@ -335,7 +335,7 @@ def test_compute_harm_metrics_perfect_agreement(mock_harm_scorer):
     all_human_scores = np.array([[0.1, 0.2], [0.1, 0.2], [0.1, 0.2]])
     # 2 model trials
     all_model_scores = np.array([[0.1, 0.2], [0.1, 0.2]])
-    # Patch krippendorff.alpha to return 1.0 for all calls
+    # Patch krippendorff.krippendorff_alpha to return 1.0 for all calls
     metrics = evaluator._compute_harm_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     assert metrics.mean_absolute_error == 0.0
     assert metrics.mae_standard_error == 0.0
