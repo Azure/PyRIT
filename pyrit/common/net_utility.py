@@ -32,6 +32,7 @@ async def make_request_and_raise_if_error_async(
     debug: bool = False,
     params: Optional[dict[str, str]] = None,
     request_body: Optional[dict[str, object]] = None,
+    files: Optional[dict[str, tuple]] = None,
     headers: Optional[dict[str, str]] = None,
     **httpx_client_kwargs: Optional[Any],
 ) -> httpx.Response:
@@ -46,8 +47,9 @@ async def make_request_and_raise_if_error_async(
             method=method,
             params=params,
             url=endpoint_uri,
-            json=request_body if request_body and post_type == "json" else None,
-            data=request_body if request_body and post_type != "json" else None,
+            json=request_body if request_body and post_type == "json" and not files else None,
+            data=request_body if request_body and post_type != "json" and not files else None,
+            files=files if files else None,
             headers=headers,
         )
 
