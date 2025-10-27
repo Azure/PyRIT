@@ -230,6 +230,8 @@ for idx, piece in enumerate(unconstrained_result.message_pieces):
     if piece.original_value_data_type != "reasoning":
         print(f"{idx} | {piece.role}: {piece.original_value}")
 
+print()
+
 print("Constrained Response:")
 for idx, piece in enumerate(result.message_pieces):
     if piece.original_value_data_type != "reasoning":
