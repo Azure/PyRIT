@@ -9,9 +9,7 @@ import pytest
 
 from pyrit.executor.attack.printer.markdown_printer import MarkdownAttackResultPrinter
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackOutcome, AttackResult, Score
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import AttackOutcome, AttackResult, Message, MessagePiece, Score
 
 
 @pytest.fixture
@@ -37,7 +35,7 @@ def sample_boolean_score():
         score_value_description="Test true score",
         score_rationale="Line 1\nLine 2\nLine 3",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -51,7 +49,7 @@ def sample_float_score():
         score_value_description="Other score",
         score_rationale="Other rationale",
         score_metadata="{}",
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
     )
 
@@ -73,22 +71,22 @@ def sample_attack_result():
             score_value_description="Other score",
             score_rationale="Other rationale",
             score_metadata="{}",
-            prompt_request_response_id=str(uuid.uuid4()),
+            message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
         ),
     )
 
 
 @pytest.fixture
-def sample_prompt_piece():
-    return PromptRequestPiece(
+def sample_message_piece():
+    return MessagePiece(
         role="user", original_value="Original text", converted_value="Converted text", converted_value_data_type="text"
     )
 
 
 @pytest.fixture
-def sample_prompt_response(sample_prompt_piece):
-    return PromptRequestResponse(request_pieces=[sample_prompt_piece])
+def sample_message(sample_message_piece):
+    return Message(message_pieces=[sample_message_piece])
 
 
 def test_init(mock_memory):
@@ -148,55 +146,55 @@ def test_format_audio_content(markdown_printer):
     assert "Your browser does not support the audio element." in formatted
 
 
-def test_format_error_content(markdown_printer, sample_prompt_piece):
+def test_format_error_content(markdown_printer, sample_message_piece):
     """Test error content formatting."""
-    sample_prompt_piece.response_error = "TestError"
-    formatted = markdown_printer._format_error_content(piece=sample_prompt_piece)
+    sample_message_piece.response_error = "TestError"
+    formatted = markdown_printer._format_error_content(piece=sample_message_piece)
     assert "**Error Response:**\n" in formatted
     assert "*Error Type: TestError*\n" in formatted
     assert "```json" in formatted
 
 
-def test_format_text_content_with_conversion(markdown_printer, sample_prompt_piece):
+def test_format_text_content_with_conversion(markdown_printer, sample_message_piece):
     """Test text content formatting when original and converted values differ."""
-    formatted = markdown_printer._format_text_content(piece=sample_prompt_piece, show_original=True)
+    formatted = markdown_printer._format_text_content(piece=sample_message_piece, show_original=True)
     assert "**Original:**\n" in formatted
     assert "Original text\n" in formatted
     assert "\n**Converted:**\n" in formatted
     assert "Converted text\n" in formatted
 
 
-def test_format_text_content_without_conversion(markdown_printer, sample_prompt_piece):
+def test_format_text_content_without_conversion(markdown_printer, sample_message_piece):
     """Test text content formatting when values are the same."""
-    sample_prompt_piece.converted_value = sample_prompt_piece.original_value
-    formatted = markdown_printer._format_text_content(piece=sample_prompt_piece, show_original=True)
+    sample_message_piece.converted_value = sample_message_piece.original_value
+    formatted = markdown_printer._format_text_content(piece=sample_message_piece, show_original=True)
     assert "**Original:**" not in formatted
-    assert sample_prompt_piece.original_value + "\n" in formatted
+    assert sample_message_piece.original_value + "\n" in formatted
 
 
 @pytest.mark.asyncio
-async def test_format_piece_content_image(markdown_printer, sample_prompt_piece):
+async def test_format_piece_content_image(markdown_printer, sample_message_piece):
     """Test piece content formatting for images."""
-    sample_prompt_piece.converted_value_data_type = "image_path"
-    sample_prompt_piece.converted_value = "test.png"
-    formatted = await markdown_printer._format_piece_content_async(piece=sample_prompt_piece, show_original=False)
+    sample_message_piece.converted_value_data_type = "image_path"
+    sample_message_piece.converted_value = "test.png"
+    formatted = await markdown_printer._format_piece_content_async(piece=sample_message_piece, show_original=False)
     assert any("![Image]" in line for line in formatted)
 
 
 @pytest.mark.asyncio
-async def test_format_piece_content_audio(markdown_printer, sample_prompt_piece):
+async def test_format_piece_content_audio(markdown_printer, sample_message_piece):
     """Test piece content formatting for audio."""
-    sample_prompt_piece.converted_value_data_type = "audio_path"
-    sample_prompt_piece.converted_value = "test.wav"
-    formatted = await markdown_printer._format_piece_content_async(piece=sample_prompt_piece, show_original=False)
+    sample_message_piece.converted_value_data_type = "audio_path"
+    sample_message_piece.converted_value = "test.wav"
+    formatted = await markdown_printer._format_piece_content_async(piece=sample_message_piece, show_original=False)
     assert any("<audio controls>" in line for line in formatted)
 
 
 @pytest.mark.asyncio
-async def test_format_piece_content_error(markdown_printer, sample_prompt_piece):
+async def test_format_piece_content_error(markdown_printer, sample_message_piece):
     """Test piece content formatting for errors."""
-    sample_prompt_piece.response_error = "TestError"
-    formatted = await markdown_printer._format_piece_content_async(piece=sample_prompt_piece, show_original=False)
+    sample_message_piece.response_error = "TestError"
+    formatted = await markdown_printer._format_piece_content_async(piece=sample_message_piece, show_original=False)
     assert any("**Error Response:**" in line for line in formatted)
 
 

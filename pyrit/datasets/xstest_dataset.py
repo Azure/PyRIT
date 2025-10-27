@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt
 
 
 def fetch_xstest_dataset(
@@ -14,9 +13,9 @@ def fetch_xstest_dataset(
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
-    Fetch XSTest examples and create a SeedPromptDataset.
+    Fetch XSTest examples and create a SeedDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the exaggerated-safety repository.
@@ -25,7 +24,7 @@ def fetch_xstest_dataset(
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -57,6 +56,6 @@ def fetch_xstest_dataset(
         for example in prompts
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(prompts=seed_prompts)
 
-    return seed_prompt_dataset
+    return seed_dataset

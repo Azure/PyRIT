@@ -8,8 +8,13 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import VariationConverter
+
+
+def test_variation_converter_raises_when_converter_target_is_none():
+    with pytest.raises(ValueError, match="converter_target is required"):
+        VariationConverter(converter_target=None)
 
 
 def test_prompt_variation_init_templates_not_null(sqlite_instance):
@@ -33,9 +38,9 @@ async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
 
     with patch("unit.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
 
-        prompt_req_resp = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
+        message = Message(
+            message_pieces=[
+                MessagePiece(
                     role="user",
                     conversation_id="12345679",
                     original_value="test input",
@@ -49,7 +54,7 @@ async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
             ]
         )
 
-        mock_create.return_value = prompt_req_resp
+        mock_create.return_value = message
 
         with pytest.raises(InvalidJsonException):
             await prompt_variation.convert_async(prompt="testing", input_type="text")

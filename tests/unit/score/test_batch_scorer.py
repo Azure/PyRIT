@@ -9,12 +9,12 @@ import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.score import BatchScorer
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestResponse]:
+def sample_conversations() -> MutableSequence[Message]:
     return get_sample_conversations()
 
 
@@ -50,11 +50,11 @@ class TestBatchScorerScoreResponsesByFilters:
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_basic_functionality(
-        self, sample_conversations: MutableSequence[PromptRequestResponse]
+        self, sample_conversations: MutableSequence[Message]
     ) -> None:
         """Test basic scoring functionality with filters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
+        memory.get_message_pieces.return_value = [sample_conversations[1].message_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -65,17 +65,17 @@ class TestBatchScorerScoreResponsesByFilters:
 
             scores = await batch_scorer.score_responses_by_filters_async(scorer=scorer, attack_id=str(uuid.uuid4()))
 
-            memory.get_prompt_request_pieces.assert_called_once()
+            memory.get_message_pieces.assert_called_once()
             scorer.score_prompts_batch_async.assert_called_once()
             assert scores[0] == test_score
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_with_all_parameters(
-        self, sample_conversations: MutableSequence[PromptRequestResponse]
+        self, sample_conversations: MutableSequence[Message]
     ) -> None:
         """Test scoring with all filter parameters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
+        memory.get_message_pieces.return_value = [sample_conversations[1].message_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -101,7 +101,7 @@ class TestBatchScorerScoreResponsesByFilters:
             )
 
             # Should call memory with all parameters including None for unspecified ones
-            memory.get_prompt_request_pieces.assert_called_once_with(
+            memory.get_message_pieces.assert_called_once_with(
                 attack_id=test_attack_id,
                 conversation_id=test_conversation_id,
                 prompt_ids=test_prompt_ids,
@@ -119,7 +119,7 @@ class TestBatchScorerScoreResponsesByFilters:
     async def test_score_responses_by_filters_raises_error_no_matching_filters(self) -> None:
         """Test that ValueError is raised when no entries match filters."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = []
+        memory.get_message_pieces.return_value = []
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             batch_scorer = BatchScorer()
@@ -136,7 +136,7 @@ class TestBatchScorerUtilityMethods:
     """Test utility methods of BatchScorer."""
 
     def test_remove_duplicates(self) -> None:
-        """Test removal of duplicate prompt request pieces."""
+        """Test removal of duplicate message pieces."""
         prompt_id1 = uuid.uuid4()
         prompt_id2 = uuid.uuid4()
 
@@ -144,28 +144,28 @@ class TestBatchScorerUtilityMethods:
             batch_scorer = BatchScorer()
 
             pieces = [
-                PromptRequestPiece(
+                MessagePiece(
                     id=prompt_id1,
                     role="user",
                     original_value="original prompt text",
                     converted_value="Hello, how are you?",
                     sequence=0,
                 ),
-                PromptRequestPiece(
+                MessagePiece(
                     id=prompt_id2,
                     role="assistant",
                     original_value="original prompt text",
                     converted_value="I'm fine, thank you!",
                     sequence=1,
                 ),
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value="original prompt text",
                     converted_value="Hello, how are you?",
                     sequence=0,
                     original_prompt_id=prompt_id1,
                 ),
-                PromptRequestPiece(
+                MessagePiece(
                     role="assistant",
                     original_value="original prompt text",
                     converted_value="I'm fine, thank you!",
@@ -188,11 +188,11 @@ class TestBatchScorerErrorHandling:
 
     @pytest.mark.asyncio
     async def test_score_responses_by_filters_no_filters_provided(
-        self, sample_conversations: MutableSequence[PromptRequestResponse]
+        self, sample_conversations: MutableSequence[Message]
     ) -> None:
         """Test scoring when no filters are provided."""
         memory = MagicMock()
-        memory.get_prompt_request_pieces.return_value = [sample_conversations[1].request_pieces[0]]
+        memory.get_message_pieces.return_value = [sample_conversations[1].message_pieces[0]]
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -203,7 +203,7 @@ class TestBatchScorerErrorHandling:
             await batch_scorer.score_responses_by_filters_async(scorer=scorer)
 
             # Should call memory with all None parameters
-            memory.get_prompt_request_pieces.assert_called_once_with(
+            memory.get_message_pieces.assert_called_once_with(
                 attack_id=None,
                 conversation_id=None,
                 prompt_ids=None,
@@ -224,25 +224,25 @@ class TestBatchScorerErrorHandling:
 
         # Create pieces from different conversations
         pieces = [
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 conversation_id="conv1",
                 sequence=0,
                 original_value="Conv1 message",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 conversation_id="conv1",
                 sequence=1,
                 original_value="Conv1 response",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 conversation_id="conv2",
                 sequence=0,
                 original_value="Conv2 message",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 conversation_id="conv2",
                 sequence=1,
@@ -250,7 +250,7 @@ class TestBatchScorerErrorHandling:
             ),
         ]
 
-        memory.get_prompt_request_pieces.return_value = pieces
+        memory.get_message_pieces.return_value = pieces
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -267,10 +267,10 @@ class TestBatchScorerErrorHandling:
             # Should successfully group by conversation and sequence
             scorer.score_prompts_batch_async.assert_called_once()
             call_args = scorer.score_prompts_batch_async.call_args
-            request_responses = call_args.kwargs["request_responses"]
+            messages = call_args.kwargs["messages"]
 
             # Should have 4 groups: 2 sequences from conv1, 2 sequences from conv2
-            assert len(request_responses) == 4
+            assert len(messages) == 4
             assert len(scores) == 4
 
     @pytest.mark.asyncio
@@ -280,25 +280,25 @@ class TestBatchScorerErrorHandling:
 
         # Create multiple pieces in the same sequence
         pieces = [
-            PromptRequestPiece(
+            MessagePiece(
                 role="system",
                 conversation_id="conv1",
                 sequence=0,
                 original_value="System prompt",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 conversation_id="conv1",
                 sequence=1,
                 original_value="User message 1",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 conversation_id="conv1",
                 sequence=1,
                 original_value="User message 2",
             ),
-            PromptRequestPiece(
+            MessagePiece(
                 role="assistant",
                 conversation_id="conv1",
                 sequence=2,
@@ -306,7 +306,7 @@ class TestBatchScorerErrorHandling:
             ),
         ]
 
-        memory.get_prompt_request_pieces.return_value = pieces
+        memory.get_message_pieces.return_value = pieces
 
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
             scorer = MagicMock()
@@ -318,10 +318,10 @@ class TestBatchScorerErrorHandling:
 
             # Verify grouping
             call_args = scorer.score_prompts_batch_async.call_args
-            request_responses = call_args.kwargs["request_responses"]
+            messages = call_args.kwargs["messages"]
 
             # Should have 3 groups: sequence 0 (with 1 pieces) and sequence 1 (with 2 pieces)
-            assert len(request_responses) == 3
-            assert len(request_responses[0].request_pieces) == 1
-            assert len(request_responses[1].request_pieces) == 2
-            assert len(request_responses[2].request_pieces) == 1
+            assert len(messages) == 3
+            assert len(messages[0].message_pieces) == 1
+            assert len(messages[1].message_pieces) == 2
+            assert len(messages[2].message_pieces) == 1

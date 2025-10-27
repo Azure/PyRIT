@@ -13,10 +13,10 @@ from pyrit.executor.benchmark.fairness_bias import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_target import PromptTarget
 
@@ -77,17 +77,15 @@ def sample_attack_result() -> AttackResult:
 
 
 @pytest.fixture
-def mock_conversation_pieces() -> List[PromptRequestResponse]:
+def mock_conversation_pieces() -> List[Message]:
     """Mock conversation pieces for memory testing."""
     return [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(role="user", original_value="Test prompt", converted_value="Test prompt")
-            ]
+        Message(
+            message_pieces=[MessagePiece(role="user", original_value="Test prompt", converted_value="Test prompt")]
         ),
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
+        Message(
+            message_pieces=[
+                MessagePiece(
                     role="assistant",
                     original_value="Sarah Johnson is a skilled physician. She works at the local hospital.",
                     converted_value="Sarah Johnson is a skilled physician. She works at the local hospital.",
@@ -173,11 +171,11 @@ class TestFairnessBiasBenchmark:
         assert sample_benchmark_context.generated_story_prompt != ""
         assert "Write me a short story about a doctor" in sample_benchmark_context.generated_story_prompt
 
-        # Check that seed prompt group was created
-        assert sample_benchmark_context.generated_seed_prompt_group is not None
-        assert len(sample_benchmark_context.generated_seed_prompt_group.prompts) == 1
+        # Check that seed group was created
+        assert sample_benchmark_context.generated_seed_group is not None
+        assert len(sample_benchmark_context.generated_seed_group.prompts) == 1
 
-        seed_prompt = sample_benchmark_context.generated_seed_prompt_group.prompts[0]
+        seed_prompt = sample_benchmark_context.generated_seed_group.prompts[0]
         assert seed_prompt.value == sample_benchmark_context.generated_story_prompt
         assert seed_prompt.data_type == "text"
         assert seed_prompt.metadata is not None
@@ -237,19 +235,17 @@ class TestFairnessBiasBenchmark:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
-    async def test_create_seed_prompt_group(self, mock_prompt_target: MagicMock) -> None:
-        """Test seed prompt group creation."""
+    async def test_create_seed_group(self, mock_prompt_target: MagicMock) -> None:
+        """Test seed group creation."""
         benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target)
         story_prompt = "Test story prompt"
 
-        seed_prompt_group = benchmark._create_seed_prompt_group(
-            subject="lawyer", story_type="tale", story_prompt=story_prompt
-        )
+        seed_group = benchmark._create_seed_group(subject="lawyer", story_type="tale", story_prompt=story_prompt)
 
-        assert isinstance(seed_prompt_group, SeedPromptGroup)
-        assert len(seed_prompt_group.prompts) == 1
+        assert isinstance(seed_group, SeedGroup)
+        assert len(seed_group.prompts) == 1
 
-        seed_prompt = seed_prompt_group.prompts[0]
+        seed_prompt = seed_group.prompts[0]
         assert isinstance(seed_prompt, SeedPrompt)
         assert seed_prompt.value == story_prompt
         assert seed_prompt.data_type == "text"
@@ -265,7 +261,7 @@ class TestFairnessBiasBenchmark:
         mock_prompt_target: MagicMock,
         sample_benchmark_context: FairnessBiasBenchmarkContext,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse],
+        mock_conversation_pieces: List[Message],
     ) -> None:
         """Test that perform_async calls the underlying PromptSendingAttack."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -291,7 +287,7 @@ class TestFairnessBiasBenchmark:
                 call_kwargs = mock_attack_instance.execute_async.call_args.kwargs
 
                 assert call_kwargs["objective"] == sample_benchmark_context.generated_objective
-                assert call_kwargs["seed_prompt_group"] == sample_benchmark_context.generated_seed_prompt_group
+                assert call_kwargs["seed_group"] == sample_benchmark_context.generated_seed_group
                 assert call_kwargs["prepended_conversation"] == sample_benchmark_context.prepended_conversation
                 assert call_kwargs["memory_labels"] == sample_benchmark_context.memory_labels
 
@@ -400,7 +396,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse],
+        mock_conversation_pieces: List[Message],
     ) -> None:
         """Test execute_async with only required parameters."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -426,10 +422,10 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse],
+        mock_conversation_pieces: List[Message],
     ) -> None:
         """Test execute_async with optional parameters."""
-        prepended_conversation: List[PromptRequestResponse] = []
+        prepended_conversation: List[Message] = []
         memory_labels: Dict[str, str] = {"test": "label"}
         custom_objective = "Custom story objective"
 
@@ -469,7 +465,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse],
+        mock_conversation_pieces: List[Message],
     ) -> None:
         """Test execute_async with multiple experiments."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -506,7 +502,7 @@ class TestFairnessBiasBenchmarkIntegration:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse],
+        mock_conversation_pieces: List[Message],
     ) -> None:
         """Test full benchmark workflow from start to finish."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -547,7 +543,7 @@ class TestFairnessBiasBenchmarkIntegration:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[PromptRequestResponse],
+        mock_conversation_pieces: List[Message],
     ) -> None:
         """Test benchmark execution with memory labels."""
         memory_labels = {"experiment_type": "fairness_test", "model": "test_model"}

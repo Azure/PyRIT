@@ -62,7 +62,6 @@
 # %%
 import logging
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -72,6 +71,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 logging.basicConfig(level=logging.WARNING)
@@ -120,14 +120,14 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 import os
 
 from pyrit.datasets import TextJailBreak
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 
 jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
 
 prepended_conversation = [
-    PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+    Message(
+        message_pieces=[
+            MessagePiece(
                 role="system",
                 original_value=jailbreak.get_jailbreak_system_prompt(),
             )
@@ -163,9 +163,9 @@ prepended_conversation = conversation_history
 # To customize the last user message sent to the objective target:
 """
 prepended_conversation.append(
-    PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+    Message(
+        message_pieces=[
+            MessagePiece(
                 role="user",
                 original_value="Custom message to continue the conversation with the objective target",
             )
@@ -255,7 +255,6 @@ results = AttackExecutor().execute_multi_turn_attacks_async(
 # %%
 import logging
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -265,6 +264,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 logging.basicConfig(level=logging.WARNING)

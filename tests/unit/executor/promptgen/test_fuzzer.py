@@ -16,8 +16,8 @@ from pyrit.executor.promptgen.fuzzer import (
 )
 from pyrit.models import (
     Score,
+    SeedDataset,
     SeedPrompt,
-    SeedPromptDataset,
 )
 from pyrit.prompt_converter import (
     FuzzerConverter,
@@ -43,7 +43,7 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def simple_prompts(self) -> list[str]:
         """Sample prompts for testing."""
-        prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+        prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
         return [p.value for p in prompts.prompts]
 
     @pytest.fixture
@@ -269,7 +269,7 @@ class TestFuzzerGenerator:
             score_category=[],
             score_rationale="",
             score_metadata={},
-            prompt_request_response_id="",
+            message_piece_id="",
         )
         assert generator._is_jailbreak(true_score) is True
 
@@ -281,7 +281,7 @@ class TestFuzzerGenerator:
             score_category=[],
             score_rationale="",
             score_metadata={},
-            prompt_request_response_id="",
+            message_piece_id="",
         )
         assert generator._is_jailbreak(false_score) is False
 
@@ -306,7 +306,7 @@ class TestFuzzerGenerator:
             score_category=[],
             score_rationale="",
             score_metadata={},
-            prompt_request_response_id="",
+            message_piece_id="",
         )
         assert generator._is_jailbreak(high_score) is True
 
@@ -318,7 +318,7 @@ class TestFuzzerGenerator:
             score_category=[],
             score_rationale="",
             score_metadata={},
-            prompt_request_response_id="",
+            message_piece_id="",
         )
         assert generator._is_jailbreak(low_score) is False
 

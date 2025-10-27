@@ -2,13 +2,13 @@
 
 There are several types of data you can retrieve from memory at any point in time using the `MemoryInterface`.
 
-## PromptRequestPiece and PromptRequestResponse
+## MessagePiece and Message
 
-One of the most fundamental data structures in PyRIT is [PromptRequestPiece](../../../pyrit/models/prompt_request_piece.py) and [PromptRequestResponse](../../../pyrit/models/prompt_request_response.py). These classes provide the foundation for multi-modal interaction tracking throughout the framework.
+One of the most fundamental data structures in PyRIT is [MessagePiece](../../../pyrit/models/message_piece.py) and [Message](../../../pyrit/models/message.py). These classes provide the foundation for multi-modal interaction tracking throughout the framework.
 
-### PromptRequestPiece
+### MessagePiece
 
-`PromptRequestPiece` represents a single piece of a request to a target. It is the atomic unit that is stored in the database and contains comprehensive metadata about each interaction.
+`MessagePiece` represents a single piece of a request to a target. It is the atomic unit that is stored in the database and contains comprehensive metadata about each interaction.
 
 **Key Fields:**
 
@@ -34,35 +34,53 @@ One of the most fundamental data structures in PyRIT is [PromptRequestPiece](../
 
 This rich context allows PyRIT to track the full lifecycle of each interaction, including transformations, targeting, scoring, and error handling.
 
-### PromptRequestResponse
+### Message
 
-`PromptRequestResponse` represents a single request or response to a target and can contain multiple `PromptRequestPieces`. This allows for multi-modal interactions where, for example, you send both text and an image in a single request.
+`Message` represents a single request or response to a target and can contain multiple `MessagePieces`. This allows for multi-modal interactions where, for example, you send both text and an image in a single request.
 
 **Examples:**
-- A text-only message: 1 `PromptRequestResponse` containing 1 `PromptRequestPiece`
-- An image with caption: 1 `PromptRequestResponse` containing 2 `PromptRequestPieces` (text + image)
-- A conversation: Multiple `PromptRequestResponses` linked by the same `conversation_id`
+- A text-only message: 1 `Message` containing 1 `MessagePiece`
+- An image with caption: 1 `Message` containing 2 `MessagePieces` (text + image)
+- A conversation: Multiple `Messages` linked by the same `conversation_id`
 
 **Validation Rules:**
-- All `PromptRequestPieces` in a `PromptRequestResponse` must share the same
+- All `MessagePieces` in a `Message` must share the same
    -  `conversation_id`
    - `sequence` number
    - `role`
-- All `PromptRequestPieces` have a non-null `converted_value`
+- All `MessagePieces` have a non-null `converted_value`
 
 ### Conversation Structure
 
-A conversation is a list of `PromptRequestResponses` that share the same `conversation_id`. The sequence of the `PromptRequestPieces` and their corresponding `PromptRequestResponses` dictates the order of the conversation.
+A conversation is a list of `Messages` that share the same `conversation_id`. The sequence of the `MessagePieces` and their corresponding `Messages` dictates the order of the conversation.
 
-Here is a sample conversation made up of three `PromptRequestResponses` which all share the same conversation ID. The first `PromptRequestResponse` in the image contains two parts—a text `PromptRequestPiece` and an image `PromptRequestPiece`.
+Here is a sample conversation made up of three `Messages` which all share the same conversation ID. The first `Message` is the `system` message, followed by a multi-modal `user` prompt with a text `MessagePiece` and an image `MessagePiece`, and finally the `assistant` response in the form of a text `MessagePiece`.
 
-![PromptRequestPiece and PromptRequestResponse architecture](../../../assets/prompt_request_piece.png)
+```{mermaid}
+flowchart
+   subgraph Conversation: 001
+      subgraph Message: sequence 2
+         subgraph "MessagePiece: <br>sequence: 2<br>conversation_id: 001<br>role: assistant<br>value: The image shows a wave ..."
+         end
+      end
+      subgraph Message: sequence 1
+         subgraph "MessagePiece: <br>sequence: 1<br>conversation_id: 001<br>role: user<br>value: tell me what's in this image"
+         end
+         subgraph "MessagePiece: <br>sequence: 1<br>conversation_id: 001<br>role: user<br>value: data/wave.png"
+         end
+      end
+      subgraph Message: sequence 0
+         subgraph "MessagePiece: <br>sequence: 0<br>conversation_id: 001<br>role: system<br>value: be a helpful assistant"
+         end
+      end
+   end
+```
 
-This architecture is plumbed throughout PyRIT, providing flexibility to interact with various modalities seamlessly. All pieces are stored in the database as individual `PromptRequestPieces` and are reassembled when needed. The `PromptNormalizer` automatically adds these to the database as prompts are sent.
+This architecture is plumbed throughout PyRIT, providing flexibility to interact with various modalities seamlessly. All pieces are stored in the database as individual `MessagePieces` and are reassembled when needed. The `PromptNormalizer` automatically adds these to the database as prompts are sent.
 
 ## SeedPrompts
 
-[`SeedPrompt`](../../../pyrit/models/seed_prompt.py) objects represent the starting points of conversations or attack objectives. They are used to assemble and initiate attacks, and can be translated to and from `PromptRequestPieces`.
+[`SeedPrompt`](../../../pyrit/models/seed_prompt.py) objects represent the starting points of conversations or attack objectives. They are used to assemble and initiate attacks, and can be translated to and from `MessagePieces`.
 
 **Key Fields:**
 
@@ -81,7 +99,7 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 
 ## Scores
 
-[`Score`](../../../pyrit/models/score.py) objects represent evaluations of prompts or responses. Scores are generated by scorer components and attached to `PromptRequestPieces` to track the success or characteristics of attacks. When a prompt is scored, it is added to the database and can be queried later.
+[`Score`](../../../pyrit/models/score.py) objects represent evaluations of prompts or responses. Scores are generated by scorer components and attached to `MessagePieces` to track the success or characteristics of attacks. When a prompt is scored, it is added to the database and can be queried later.
 
 **Key Fields:**
 
@@ -91,7 +109,7 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 - **`score_category`**: Categories the score applies to (e.g., `["hate", "violence"]`)
 - **`score_rationale`**: Explanation of why the score was assigned
 - **`scorer_class_identifier`**: Information about the scorer that generated this score
-- **`prompt_request_response_id`**: The ID of the piece/response being scored
+- **`message_piece_id`**: The ID of the piece/response being scored
 - **`task`**: The original attacker's objective being evaluated
 - **`score_metadata`**: Custom metadata specific to the scorer
 
@@ -106,7 +124,7 @@ Scores enable automated evaluation of attack success, content harmfulness, and o
 - **`conversation_id`**: The conversation that produced this result
 - **`objective`**: Natural-language description of the attacker's goal
 - **`attack_identifier`**: Information identifying the attack strategy used
-- **`last_response`**: The final `PromptRequestPiece` generated in the attack
+- **`last_response`**: The final `MessagePiece` generated in the attack
 - **`last_score`**: The final score assigned to the last response
 - **`executed_turns`**: Number of turns executed in the attack
 - **`execution_time_ms`**: Total execution time in milliseconds

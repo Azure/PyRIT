@@ -16,10 +16,10 @@ from pyrit.executor.workflow.core import (
 )
 from pyrit.memory import CentralMemory
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
-    SeedPromptGroup,
+    SeedGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -59,8 +59,8 @@ class XPIAContext(WorkflowContext):
     Immutable objects like targets and scorers are stored in the workflow instance.
     """
 
-    # The attack content as a seed prompt group containing the attack content
-    attack_content: SeedPromptGroup
+    # The attack content as a seed group containing the attack content
+    attack_content: SeedGroup
 
     # Callback to execute after the attack prompt is positioned in the attack location
     processing_callback: Optional[XPIAProcessingCallback] = None
@@ -72,7 +72,7 @@ class XPIAContext(WorkflowContext):
     processing_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # The prompt to send to the processing target (for test workflow)
-    processing_prompt: Optional[SeedPromptGroup] = None
+    processing_prompt: Optional[SeedGroup] = None
 
     # Additional labels that can be applied throughout the workflow
     memory_labels: Dict[str, str] = field(default_factory=dict)
@@ -186,40 +186,39 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         Raises:
             ValueError: If the context is invalid (missing attack_content or processing_callback).
         """
-        self._validate_seed_prompt_group(field_name="attack_content", seed_prompt_group=context.attack_content)
+        self._validate_seed_group(field_name="attack_content", seed_group=context.attack_content)
 
         if not context.processing_callback:
             raise ValueError("processing_callback is required")
 
     @staticmethod
-    def _validate_seed_prompt_group(*, field_name: str, seed_prompt_group: SeedPromptGroup) -> None:
+    def _validate_seed_group(*, field_name: str, seed_group: SeedGroup) -> None:
         """
-        Validate the seed prompt group before execution.
+        Validate the seed group before execution.
 
-        This method ensures that the seed prompt group is well-formed and contains
+        This method ensures that the seed group is well-formed and contains
         all required prompts.
 
         Args:
-            seed_prompt_group (SeedPromptGroup): The seed prompt group to validate.
+            seed_group (SeedGroup): The seed group to validate.
             field_name (str): The name of the field being validated.
 
         Raises:
-            ValueError: If the seed prompt group is invalid.
+            ValueError: If the seed group is invalid.
         """
-        if not seed_prompt_group or not seed_prompt_group.prompts:
+        if not seed_group or not seed_group.prompts:
             raise ValueError(
-                f"{field_name}: SeedPromptGroup must be provided with at least one prompt. "
-                f"Received: {seed_prompt_group}"
+                f"{field_name}: SeedGroup must be provided with at least one prompt. " f"Received: {seed_group}"
             )
 
-        if len(seed_prompt_group.prompts) != 1:
+        if len(seed_group.prompts) != 1:
             raise ValueError(
                 f"{field_name}: Exactly one seed prompt must be provided. "
-                f"Received {len(seed_prompt_group.prompts)} prompts."
+                f"Received {len(seed_group.prompts)} prompts."
             )
 
         # Validate each prompt in the group
-        prompt = seed_prompt_group.prompts[0]
+        prompt = seed_group.prompts[0]
         if prompt.data_type != "text":
             raise ValueError(
                 f"{field_name}: Prompt must be of type 'text'. "
@@ -295,7 +294,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         )
 
         setup_response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=context.attack_content,
+            seed_group=context.attack_content,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
             target=self._attack_setup_target,
@@ -323,10 +322,10 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
             str: The response from the processing target.
         """
         processing_response = await context.processing_callback()
-        self._memory.add_request_response_to_memory(
-            request=PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
+        self._memory.add_message_to_memory(
+            request=Message(
+                message_pieces=[
+                    MessagePiece(
                         conversation_id=context.processing_conversation_id,
                         original_value=processing_response,
                         original_value_data_type="text",
@@ -386,9 +385,9 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
     async def execute_async(
         self,
         *,
-        attack_content: SeedPromptGroup,
+        attack_content: SeedGroup,
         processing_callback: Optional[XPIAProcessingCallback] = None,
-        processing_prompt: Optional[SeedPromptGroup] = None,
+        processing_prompt: Optional[SeedGroup] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> XPIAResult:
@@ -396,11 +395,11 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         Execute the XPIA workflow strategy asynchronously with the provided parameters.
 
         Args:
-            attack_content (SeedPromptGroup): The content to use for the attack.
+            attack_content (SeedGroup): The content to use for the attack.
             processing_callback (ProcessingCallback): The callback to execute after the attack prompt is positioned
                 in the attack location. This is generic on purpose to allow for flexibility. The callback should
                 return the processing response.
-            processing_prompt (Optional[SeedPromptGroup]): The prompt to send to the processing target. This should
+            processing_prompt (Optional[SeedGroup]): The prompt to send to the processing target. This should
                 include placeholders to invoke plugins (if any).
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.
@@ -423,11 +422,11 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         """
         Execute the XPIA workflow strategy asynchronously with the provided parameters.
         """
-        attack_content = get_kwarg_param(kwargs=kwargs, param_name="attack_content", expected_type=SeedPromptGroup)
+        attack_content = get_kwarg_param(kwargs=kwargs, param_name="attack_content", expected_type=SeedGroup)
 
         # _validate_context takes care of the validation
         processing_prompt = get_kwarg_param(
-            kwargs=kwargs, param_name="processing_prompt", expected_type=SeedPromptGroup, required=False
+            kwargs=kwargs, param_name="processing_prompt", expected_type=SeedGroup, required=False
         )
 
         processing_callback = kwargs.get("processing_callback")
@@ -508,7 +507,7 @@ class XPIATestWorkflow(XPIAWorkflow):
             raise ValueError("processing_prompt with at least one prompt is required")
 
         # Skip the base validation for processing_callback since we'll set it ourselves
-        self._validate_seed_prompt_group(field_name="attack_content", seed_prompt_group=context.attack_content)
+        self._validate_seed_group(field_name="attack_content", seed_group=context.attack_content)
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """
@@ -529,7 +528,7 @@ class XPIATestWorkflow(XPIAWorkflow):
             # processing_prompt is validated to be non-None in _validate_context
             assert context.processing_prompt is not None
             response = await self._prompt_normalizer.send_prompt_async(
-                seed_prompt_group=context.processing_prompt,
+                seed_group=context.processing_prompt,
                 target=self._processing_target,
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
@@ -604,7 +603,7 @@ class XPIAManualProcessingWorkflow(XPIAWorkflow):
             ValueError: If the context is invalid (missing attack_content).
         """
         # Skip the base validation for processing_callback since we'll set it ourselves
-        self._validate_seed_prompt_group(field_name="attack_content", seed_prompt_group=context.attack_content)
+        self._validate_seed_group(field_name="attack_content", seed_group=context.attack_content)
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """

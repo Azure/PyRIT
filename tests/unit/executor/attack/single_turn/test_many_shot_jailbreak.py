@@ -15,8 +15,8 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     SeedPrompt,
 )
 from pyrit.prompt_converter import Base64Converter
@@ -258,10 +258,10 @@ class TestManyShotJailbreakAttackExecution:
             )
 
             # Verify the seed prompt was set correctly
-            assert basic_context.seed_prompt_group is not None
-            assert len(basic_context.seed_prompt_group.prompts) == 1
-            assert basic_context.seed_prompt_group.prompts[0].value == rendered_prompt
-            assert basic_context.seed_prompt_group.prompts[0].data_type == "text"
+            assert basic_context.seed_group is not None
+            assert len(basic_context.seed_group.prompts) == 1
+            assert basic_context.seed_group.prompts[0].value == rendered_prompt
+            assert basic_context.seed_group.prompts[0].data_type == "text"
 
             # Verify parent method was called
             mock_perform.assert_called_once_with(context=basic_context)
@@ -367,9 +367,7 @@ class TestManyShotJailbreakAttackLifecycle:
 
         # Context with prepended conversation (not allowed)
         basic_context.prepended_conversation = [
-            PromptRequestResponse(
-                request_pieces=[PromptRequestPiece(role="user", original_value="Test prepended conversation")]
-            )
+            Message(message_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")])
         ]
 
         attack._setup_async = AsyncMock()
@@ -434,9 +432,9 @@ class TestManyShotJailbreakAttackWithConverters:
 
             result = await attack._perform_async(context=basic_context)
 
-            # Verify seed prompt group was created
-            assert basic_context.seed_prompt_group is not None
-            assert len(basic_context.seed_prompt_group.prompts) == 1
+            # Verify seed group was created
+            assert basic_context.seed_group is not None
+            assert len(basic_context.seed_group.prompts) == 1
 
             # Verify parent method was called
             mock_perform.assert_called_once_with(context=basic_context)

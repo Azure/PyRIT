@@ -8,8 +8,7 @@ from typing import Optional, Union
 import yaml
 
 from pyrit.common.path import SCORER_CONFIG_PATH
-from pyrit.models import PromptRequestPiece, SeedPrompt
-from pyrit.models.score import Score, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -113,14 +112,12 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Scores the given request piece using "self-ask" for the chat target.
+        Scores the given message piece using "self-ask" for the chat target.
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            message_piece (MessagePiece): The message piece containing the text to be scored.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
 
@@ -134,12 +131,12 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=request_piece.converted_value,
-            prompt_request_data_type=request_piece.converted_value_data_type,
-            scored_prompt_id=request_piece.id,
+            prompt_request_value=message_piece.converted_value,
+            prompt_request_data_type=message_piece.converted_value_data_type,
+            scored_prompt_id=message_piece.id,
             category=self._score_category,
             objective=objective,
-            attack_identifier=request_piece.attack_identifier,
+            attack_identifier=message_piece.attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")

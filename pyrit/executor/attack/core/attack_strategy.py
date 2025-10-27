@@ -23,7 +23,7 @@ from pyrit.models import (
     AttackOutcome,
     AttackResult,
     ConversationReference,
-    PromptRequestResponse,
+    Message,
 )
 
 AttackStrategyContextT = TypeVar("AttackStrategyContextT", bound="AttackContext")
@@ -47,7 +47,7 @@ class AttackContext(StrategyContext, ABC):
     related_conversations: set[ConversationReference] = field(default_factory=set)
 
     # Conversation that is automatically prepended to the target model
-    prepended_conversation: list[PromptRequestResponse] = field(default_factory=list)
+    prepended_conversation: list[Message] = field(default_factory=list)
 
 
 class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyContextT, AttackStrategyResultT]):
@@ -182,7 +182,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         self,
         *,
         objective: str,
-        prepended_conversation: Optional[list[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[list[Message]] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
     ) -> AttackStrategyResultT:
@@ -190,7 +190,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         Execute the attack strategy asynchronously with the provided parameters.
         Args:
             objective (str): The objective of the attack.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend.
+            prepended_conversation (Optional[List[Message]]): Conversation to prepend.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.
         Returns:

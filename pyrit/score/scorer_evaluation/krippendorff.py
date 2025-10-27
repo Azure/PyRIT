@@ -2,8 +2,12 @@
 # Licensed under the MIT license.
 """Krippendorff's alpha for ordinal data.
 
-This module exposes an ordinal-only implementation of Krippendorff's alpha used by
-the harm scorer evaluation.
+This implementation follows the standard Krippendorff's alpha formulation and
+is inspired by LightTag/simpledorff's clean decomposition of expected/observed
+disagreement with a pluggable distance metric:
+https://github.com/LightTag/simpledorff
+
+The ordinal distance metric follows Krippendorff's specification.
 """
 
 from __future__ import annotations
