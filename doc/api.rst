@@ -12,6 +12,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    analyze_results
+    AttackStats
     ConversationAnalytics
 
 :py:mod:`pyrit.auth`
@@ -82,9 +84,12 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    apply_defaults
+    apply_defaults_to_method
     combine_dict
     combine_list
     convert_local_image_to_data_url
+    DefaultValueScope
     deprecation_message
     display_image_response
     download_chunk
@@ -92,15 +97,17 @@ API Reference
     download_files
     download_specific_files
     get_available_files
+    get_global_default_values
     get_httpx_client
     get_kwarg_param
     get_non_required_value
     get_random_indices
     get_required_value
-    initialize_pyrit
     is_in_ipython_session
     make_request_and_raise_if_error_async
     print_chat_messages_with_color
+    reset_default_values
+    set_default_value
     Singleton
     warn_if_set
     YamlLoadable
@@ -280,7 +287,7 @@ API Reference
     MemoryEmbedding
     MemoryExporter
     PromptMemoryEntry
-    SeedPromptEntry
+    SeedEntry
     SQLiteMemory
 
 :py:mod:`pyrit.models`
@@ -312,22 +319,21 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
-    group_conversation_request_pieces_by_sequence
+    group_conversation_message_pieces_by_sequence
     Identifier
     ImagePathDataTypeSerializer
-    PromptRequestPiece
-    PromptResponse
-    PromptResponseError
+    Message
+    MessagePiece
     PromptDataType
-    PromptRequestResponse
+    PromptResponseError
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
     Score
     ScoreType
     SeedPrompt
-    SeedPromptDataset
-    SeedPromptGroup
+    SeedDataset
+    SeedGroup
     StorageIO
     StrategyResult
     TextDataTypeSerializer
@@ -522,3 +528,55 @@ API Reference
     TrueFalseQuestionPaths
     TrueFalseScoreAggregator
     TrueFalseScorer
+
+:py:mod:`pyrit.scenarios`
+=========================
+
+.. automodule:: pyrit.scenarios
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    AtomicAttack
+    AtomicAttackResult
+    EncodingScenario
+    FoundryAttackStrategy
+    FoundryScenario
+    Scenario
+    ScenarioAttackStrategy
+    ScenarioIdentifier
+    ScenarioResult
+
+:py:mod:`pyrit.setup`
+=====================
+
+.. automodule:: pyrit.setup
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    initialize_pyrit
+    AZURE_SQL
+    SQLITE
+    IN_MEMORY
+
+:py:mod:`pyrit.setup.initializers`
+==================================
+
+.. automodule:: pyrit.setup.initializers
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    PyRITInitializer
+    AIRTInitializer
+    SimpleInitializer

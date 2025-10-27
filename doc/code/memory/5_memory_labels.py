@@ -27,14 +27,13 @@
 # %%
 import uuid
 
-from pyrit.common import initialize_pyrit
-from pyrit.common.initialization import IN_MEMORY
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -65,9 +64,9 @@ from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import TextTarget
 
 memory = CentralMemory.get_memory_instance()
-prompts = memory.get_prompt_request_pieces(labels={"prompt_group": group1})
+prompts = memory.get_message_pieces(labels={"prompt_group": group1})
 
-# Print original values of queried prompt request pieces (including responses)
+# Print original values of queried message pieces (including responses)
 for piece in prompts:
     print(piece.original_value)
 

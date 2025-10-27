@@ -15,7 +15,7 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
-from pyrit.models import PromptRequestResponse, SeedPromptGroup
+from pyrit.models import Message, SeedGroup
 
 
 class AttackExecutor:
@@ -50,7 +50,7 @@ class AttackExecutor:
         *,
         attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
         objectives: List[str],
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_params,
     ) -> List[AttackStrategyResultT]:
@@ -64,7 +64,7 @@ class AttackExecutor:
         Args:
             attack (AttackStrategy[ContextT, AttackStrategyResultT]): The attack strategy to use for all objectives.
             objectives (List[str]): List of attack objectives to test.
-            prepended_conversation (Optional[List[PromptRequestResponse]]): Conversation to prepend to the target model.
+            prepended_conversation (Optional[List[Message]]): Conversation to prepend to the target model.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
             **attack_params: Additional parameters specific to the attack strategy.
 
@@ -97,8 +97,8 @@ class AttackExecutor:
         *,
         attack: AttackStrategy[_SingleTurnContextT, AttackStrategyResultT],
         objectives: List[str],
-        seed_prompt_groups: Optional[List[SeedPromptGroup]] = None,
-        prepended_conversations: Optional[List[List[PromptRequestResponse]]] = None,
+        seed_groups: Optional[List[SeedGroup]] = None,
+        prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
     ) -> List[AttackStrategyResultT]:
         """
@@ -111,10 +111,10 @@ class AttackExecutor:
             attack (AttackStrategy[_SingleTurnContextT, AttackStrategyResultT]): The single-turn attack strategy to use,
                 the context must be a SingleTurnAttackContext or a subclass of it.
             objectives (List[str]): List of attack objectives to test.
-            seed_prompt_groups (Optional[List[SeedPromptGroup]]): List of seed prompt groups to use for this execution.
-                If provided, must match the length of objectives. Seed prompt group will be sent along the objective
+            seed_groups (Optional[List[SeedGroup]]): List of seed groups to use for this execution.
+                If provided, must match the length of objectives. Seed group will be sent along the objective
                 with the same list index.
-            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend to each
+            prepended_conversations (Optional[List[List[Message]]]): Conversations to prepend to each
                 objective. If provided, must match the length of objectives. Conversation will be sent along the
                 objective with the same list index.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
@@ -127,7 +127,7 @@ class AttackExecutor:
             >>> results = await executor.execute_single_turn_batch_async(
             ...     attack=single_turn_attack,
             ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ...     seed_prompts=[SeedPromptGroup(...), SeedPromptGroup(...)]
+            ...     seed_prompts=[SeedGroup(...), SeedGroup(...)]
             ... )
         """
 
@@ -140,8 +140,8 @@ class AttackExecutor:
         # Validate input parameters using shared validation logic
         self._validate_attack_batch_parameters(
             objectives=objectives,
-            optional_list=seed_prompt_groups,
-            optional_list_name="seed_prompt_groups",
+            optional_list=seed_groups,
+            optional_list_name="seed_groups",
             prepended_conversations=prepended_conversations,
         )
 
@@ -150,25 +150,25 @@ class AttackExecutor:
 
         async def execute_with_semaphore(
             objective: str,
-            seed_prompt_group: Optional[SeedPromptGroup],
-            prepended_conversation: Optional[List[PromptRequestResponse]],
+            seed_group: Optional[SeedGroup],
+            prepended_conversation: Optional[List[Message]],
         ) -> AttackStrategyResultT:
             async with semaphore:
                 return await attack.execute_async(
                     objective=objective,
                     prepended_conversation=prepended_conversation,
-                    seed_prompt_group=seed_prompt_group,
+                    seed_group=seed_group,
                     memory_labels=memory_labels or {},
                 )
 
         # Create tasks for each objective with its corresponding parameters
         tasks = []
         for i, objective in enumerate(objectives):
-            seed_prompt_group = seed_prompt_groups[i] if seed_prompt_groups else None
+            seed_group = seed_groups[i] if seed_groups else None
             prepended_conversation = prepended_conversations[i] if prepended_conversations else []
 
             task = execute_with_semaphore(
-                objective=objective, seed_prompt_group=seed_prompt_group, prepended_conversation=prepended_conversation
+                objective=objective, seed_group=seed_group, prepended_conversation=prepended_conversation
             )
             tasks.append(task)
 
@@ -181,7 +181,7 @@ class AttackExecutor:
         attack: AttackStrategy[_MultiTurnContextT, AttackStrategyResultT],
         objectives: List[str],
         custom_prompts: Optional[List[str]] = None,
-        prepended_conversations: Optional[List[List[PromptRequestResponse]]] = None,
+        prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
     ) -> List[AttackStrategyResultT]:
         """
@@ -197,7 +197,7 @@ class AttackExecutor:
             custom_prompts (Optional[List[str]]): List of custom prompts to use for this execution.
                 If provided, must match the length of objectives. custom prompts will be sent along the objective
                 with the same list index.
-            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend to each
+            prepended_conversations (Optional[List[List[Message]]]): Conversations to prepend to each
                 objective. If provided, must match the length of objectives. Conversation will be sent along the
                 objective with the same list index.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
@@ -232,7 +232,7 @@ class AttackExecutor:
         semaphore = asyncio.Semaphore(self._max_concurrency)
 
         async def execute_with_semaphore(
-            objective: str, custom_prompt: Optional[str], prepended_conversation: Optional[List[PromptRequestResponse]]
+            objective: str, custom_prompt: Optional[str], prepended_conversation: Optional[List[Message]]
         ) -> AttackStrategyResultT:
             async with semaphore:
                 return await attack.execute_async(
@@ -262,7 +262,7 @@ class AttackExecutor:
         objectives: List[str],
         optional_list: Optional[List[Any]] = None,
         optional_list_name: str = "optional_list",
-        prepended_conversations: Optional[List[List[PromptRequestResponse]]] = None,
+        prepended_conversations: Optional[List[List[Message]]] = None,
     ) -> None:
         """
         Validate common parameters for batch attack execution methods.
@@ -271,7 +271,7 @@ class AttackExecutor:
             objectives (List[str]): List of attack objectives to test.
             optional_list (Optional[List[any]]): Optional list parameter to validate length against objectives.
             optional_list_name (str): Name of the optional list parameter for error messages.
-            prepended_conversations (Optional[List[List[PromptRequestResponse]]]): Conversations to prepend.
+            prepended_conversations (Optional[List[List[Message]]]): Conversations to prepend.
 
         Raises:
             ValueError: If validation fails.

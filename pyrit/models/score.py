@@ -35,10 +35,10 @@ class Score:
     # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
     scorer_class_identifier: Dict[str, str]
 
-    # This is the prompt_request_response_id that the score is scoring
+    # This is the ID of the MessagePiece that the score is scoring
     # Note a scorer can generate an additional request. This is NOT that, but
     # the ID associated with what we're scoring.
-    prompt_request_response_id: uuid.UUID | str
+    message_piece_id: uuid.UUID | str
 
     # Timestamp of when the score was created
     timestamp: datetime
@@ -56,7 +56,7 @@ class Score:
         score_category: Optional[List[str]] = None,
         score_rationale: str,
         score_metadata: Optional[Dict[str, Union[str, int]]],
-        prompt_request_response_id: str | uuid.UUID,
+        message_piece_id: str | uuid.UUID,
         scorer_class_identifier: Optional[Dict[str, str]] = None,
         timestamp: Optional[datetime] = None,
         objective: Optional[str] = None,
@@ -77,7 +77,7 @@ class Score:
         self.score_rationale = score_rationale
         self.score_metadata = score_metadata
         self.scorer_class_identifier = scorer_class_identifier or {}
-        self.prompt_request_response_id = prompt_request_response_id
+        self.message_piece_id = message_piece_id
         self.objective = objective
 
     def get_value(self):
@@ -123,7 +123,7 @@ class Score:
             "score_rationale": self.score_rationale,
             "score_metadata": self.score_metadata,
             "scorer_class_identifier": self.scorer_class_identifier,
-            "prompt_request_response_id": str(self.prompt_request_response_id),
+            "message_piece_id": str(self.message_piece_id),
             "timestamp": self.timestamp.isoformat(),
             "objective": self.objective,
         }
@@ -152,7 +152,7 @@ class UnvalidatedScore:
     score_rationale: str
     score_metadata: Optional[Dict[str, Union[str, int]]]
     scorer_class_identifier: Dict[str, str]
-    prompt_request_response_id: uuid.UUID | str
+    message_piece_id: uuid.UUID | str
     objective: Optional[str]
     id: Optional[uuid.UUID | str] = None
     timestamp: Optional[datetime] = None
@@ -167,7 +167,7 @@ class UnvalidatedScore:
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
-            prompt_request_response_id=self.prompt_request_response_id,
+            message_piece_id=self.message_piece_id,
             timestamp=self.timestamp,
             objective=self.objective,
         )

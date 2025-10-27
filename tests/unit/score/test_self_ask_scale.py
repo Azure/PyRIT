@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, UnvalidatedScore
+from pyrit.models import Message, MessagePiece, UnvalidatedScore
 from pyrit.score import ContentClassifierPaths, SelfAskScaleScorer
 
 tree_scale_path = SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value
@@ -20,7 +20,7 @@ criteria_system_prompt_path = SelfAskScaleScorer.SystemPaths.CRITERIA_SYSTEM_PRO
 
 
 @pytest.fixture
-def scorer_scale_response() -> PromptRequestResponse:
+def scorer_scale_response() -> Message:
 
     json_response = (
         dedent(
@@ -34,7 +34,7 @@ def scorer_scale_response() -> PromptRequestResponse:
         .replace("\n", " ")
     )
 
-    return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def scale_scorer(patch_central_database) -> SelfAskScaleScorer:
     ],
 )
 async def test_scale_scorer_set_system_prompt(
-    scorer_scale_response: PromptRequestResponse,
+    scorer_scale_response: Message,
     scale_arguments_path: Path,
     system_prompt_path: Path,
     patch_central_database,
@@ -133,7 +133,7 @@ def test_validate_scale_arguments_missing_args_raises_value_error(scale_args, sc
 
 
 @pytest.mark.asyncio
-async def test_scale_scorer_score(scorer_scale_response: PromptRequestResponse, patch_central_database):
+async def test_scale_scorer_score(scorer_scale_response: Message, patch_central_database):
 
     chat_target = MagicMock()
 
@@ -155,20 +155,20 @@ async def test_scale_scorer_score(scorer_scale_response: PromptRequestResponse, 
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == ["jailbreak"]
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
     assert score[0].objective == "task"
 
 
 @pytest.mark.asyncio
-async def test_scale_scorer_score_custom_scale(scorer_scale_response: PromptRequestResponse, patch_central_database):
+async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, patch_central_database):
 
     chat_target = MagicMock()
 
     # set a higher score to test the scaling
-    scorer_scale_response.request_pieces[0].original_value = scorer_scale_response.request_pieces[
+    scorer_scale_response.message_pieces[0].original_value = scorer_scale_response.message_pieces[
         0
     ].original_value.replace("1", "53")
-    scorer_scale_response.request_pieces[0].converted_value = scorer_scale_response.request_pieces[0].original_value
+    scorer_scale_response.message_pieces[0].converted_value = scorer_scale_response.message_pieces[0].original_value
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 
@@ -192,7 +192,7 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: PromptRequ
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == ["jailbreak"]
-    assert score[0].prompt_request_response_id is None
+    assert score[0].message_piece_id is None
     assert score[0].objective == "task"
 
 
@@ -214,7 +214,7 @@ async def test_scale_scorer_score_calls_send_chat(patch_central_database):
         score_value_description="description",
         score_metadata={"meta": "metadata"},
         scorer_class_identifier={"id": "identifier"},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         objective="task",
     )
 

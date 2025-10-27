@@ -17,7 +17,7 @@ from pyrit.common.path import (
     SCORER_EVALS_HARM_PATH,
     SCORER_EVALS_OBJECTIVE_PATH,
 )
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import Message
 from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
@@ -323,10 +323,10 @@ class HarmScorerEvaluator(ScorerEvaluator):
                     f"Entry at index {index} is not a HarmHumanLabeledEntry,"
                     " but the HumanLabeledDataset type is HARM."
                 )
-            for request_response in entry.conversation:
-                self.scorer._memory.add_request_response_to_memory(request=request_response)
+            for message in entry.conversation:
+                self.scorer._memory.add_message_to_memory(request=message)
                 # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response)
+                assistant_responses.append(message)
             human_scores_list.append(entry.human_scores)
             harms.append(entry.harm_category)
 
@@ -337,7 +337,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
             scores = await self.scorer.score_prompts_batch_async(
-                request_responses=assistant_responses, infer_objective_from_request=True
+                messages=assistant_responses, infer_objective_from_request=True
             )
 
             score_values = [score.get_value() for score in scores]
@@ -354,7 +354,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name)
             self._save_model_scores_to_csv(
                 objectives_or_harms=harms,
-                responses=PromptRequestResponse.get_all_values(assistant_responses),
+                responses=Message.get_all_values(assistant_responses),
                 all_model_scores=all_model_scores,
                 file_path=csv_results_path,
             )
@@ -491,10 +491,10 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
                     f"Entry at index {index} is not an ObjectiveHumanLabeledEntry,"
                     " but the HumanLabeledDataset type is OBJECTIVE."
                 )
-            for request_response in entry.conversation:
-                self.scorer._memory.add_request_response_to_memory(request=request_response)
+            for message in entry.conversation:
+                self.scorer._memory.add_message_to_memory(request=message)
                 # Logic may need to change for multi-turn scoring
-                assistant_responses.append(request_response.request_pieces[0])
+                assistant_responses.append(message.message_pieces[0])
             human_scores_list.append(entry.human_scores)
             objectives.append(entry.objective)
 
@@ -505,7 +505,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         all_model_scores_list = []
         for _ in range(num_scorer_trials):
             scores = await self.scorer.score_prompts_batch_async(
-                request_responses=[piece.to_prompt_request_response() for piece in assistant_responses],
+                messages=[piece.to_message() for piece in assistant_responses],
                 objectives=objectives,
             )
 

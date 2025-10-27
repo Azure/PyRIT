@@ -4,7 +4,7 @@
 import asyncio
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
     TrueFalseAggregatorFunc,
@@ -43,13 +43,11 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         self._rpc_server = AppRPCServer(open_browser=open_browser)
         self._rpc_server.start()
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
-        """Score a prompt request piece using human input through Gradio interface.
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
+        """Score a message piece using human input through Gradio interface.
 
         Args:
-            request_piece (PromptRequestPiece): The prompt request piece to be scored by a human.
+            message_piece (MessagePiece): The message piece to be scored by a human.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
 
         Returns:
@@ -57,17 +55,17 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         """
 
         try:
-            score = await asyncio.to_thread(self.retrieve_score, request_piece, objective=objective)
+            score = await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
             return score
         except asyncio.CancelledError:
             self._rpc_server.stop()
             raise
 
-    def retrieve_score(self, request_prompt: PromptRequestPiece, *, objective: Optional[str] = None) -> list[Score]:
+    def retrieve_score(self, request_prompt: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """Retrieve a score from the human evaluator through the RPC server.
 
         Args:
-            request_prompt (PromptRequestPiece): The prompt request piece to be scored.
+            request_prompt (MessagePiece): The message piece to be scored.
             objective (Optional[str]): The objective to evaluate against. Defaults to None.
 
         Returns:

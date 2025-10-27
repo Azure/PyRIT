@@ -26,12 +26,13 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
                 score_category=["mock category"],
                 score_rationale="A mock rationale",
                 score_metadata=None,
-                prompt_request_response_id=uuid.uuid4(),
+                message_piece_id=uuid.uuid4(),
                 score_value_description="A mock description",
                 id=uuid.uuid4(),
             )
         ]
     )
+    scorer.get_identifier = MagicMock(return_value={"__type__": "MockScorer", "__module__": "test.mock"})
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=threshold)
@@ -64,7 +65,7 @@ async def test_float_scale_threshold_scorer_returns_single_score_with_multi_cate
                 score_category=["Hate"],
                 score_rationale="Hate rationale",
                 score_metadata={"azure_severity": 2},
-                prompt_request_response_id=prompt_id,
+                message_piece_id=prompt_id,
                 score_value_description="",
                 id=uuid.uuid4(),
             ),
@@ -74,7 +75,7 @@ async def test_float_scale_threshold_scorer_returns_single_score_with_multi_cate
                 score_category=["Violence"],
                 score_rationale="Violence rationale",
                 score_metadata={"azure_severity": 0},
-                prompt_request_response_id=prompt_id,
+                message_piece_id=prompt_id,
                 score_value_description="",
                 id=uuid.uuid4(),
             ),
@@ -84,12 +85,13 @@ async def test_float_scale_threshold_scorer_returns_single_score_with_multi_cate
                 score_category=["Sexual"],
                 score_rationale="Sexual rationale",
                 score_metadata={"azure_severity": 6},
-                prompt_request_response_id=prompt_id,
+                message_piece_id=prompt_id,
                 score_value_description="",
                 id=uuid.uuid4(),
             ),
         ]
     )
+    scorer.get_identifier = MagicMock(return_value={"__type__": "MockScorer", "__module__": "test.mock"})
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=0.5)

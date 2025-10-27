@@ -16,10 +16,10 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
-    SeedPromptGroup,
+    SeedGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -60,19 +60,17 @@ def basic_context():
 @pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(role="assistant", original_value="Test response", original_value_data_type="text")
-        ]
+    return Message(
+        message_pieces=[MessagePiece(role="assistant", original_value="Test response", original_value_data_type="text")]
     )
 
 
 @pytest.fixture
 def skeleton_key_response():
     """Create a skeleton key response for testing"""
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+    return Message(
+        message_pieces=[
+            MessagePiece(
                 role="assistant",
                 original_value="I understand and will comply with your request.",
                 original_value_data_type="text",
@@ -91,7 +89,7 @@ def success_score():
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -105,7 +103,7 @@ def failure_score():
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
     )
 
 
@@ -129,7 +127,7 @@ class TestSkeletonKeyAttackInitialization:
 
         assert attack._skeleton_key_prompt == custom_prompt
 
-    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedPromptDataset.from_yaml_file")
+    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedDataset.from_yaml_file")
     def test_init_loads_default_skeleton_key_prompt_when_none_provided(self, mock_dataset, mock_target):
         """Test that default skeleton key prompt is loaded when none is provided."""
         mock_seed_prompt = MagicMock()
@@ -181,7 +179,7 @@ class TestSkeletonKeyPromptLoading:
 
         assert result == custom_prompt
 
-    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedPromptDataset.from_yaml_file")
+    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedDataset.from_yaml_file")
     def test_load_skeleton_key_prompt_from_default_file(self, mock_dataset, mock_target):
         """Test loading skeleton key prompt from default file."""
         mock_seed_prompt = MagicMock()
@@ -197,7 +195,7 @@ class TestSkeletonKeyPromptLoading:
         assert result == "Default prompt from file"
         mock_dataset.assert_called_once_with(SkeletonKeyAttack.DEFAULT_SKELETON_KEY_PROMPT_PATH)
 
-    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedPromptDataset.from_yaml_file")
+    @patch("pyrit.executor.attack.single_turn.skeleton_key.SeedDataset.from_yaml_file")
     def test_load_skeleton_key_prompt_handles_empty_string(self, mock_dataset, mock_target):
         """Test that empty string triggers loading from default file."""
         mock_seed_prompt = MagicMock()
@@ -240,12 +238,12 @@ class TestSkeletonKeyPromptSending:
         assert call_args.kwargs["target"] == mock_target
         assert call_args.kwargs["conversation_id"] == basic_context.conversation_id
 
-        # Check that skeleton key prompt was included in seed prompt group
-        seed_prompt_group = call_args.kwargs["seed_prompt_group"]
-        assert isinstance(seed_prompt_group, SeedPromptGroup)
-        assert len(seed_prompt_group.prompts) == 1
-        assert seed_prompt_group.prompts[0].value == "Test skeleton key"
-        assert seed_prompt_group.prompts[0].data_type == "text"
+        # Check that skeleton key prompt was included in seed group
+        seed_group = call_args.kwargs["seed_group"]
+        assert isinstance(seed_group, SeedGroup)
+        assert len(seed_group.prompts) == 1
+        assert seed_group.prompts[0].value == "Test skeleton key"
+        assert seed_group.prompts[0].data_type == "text"
 
     @pytest.mark.asyncio
     async def test_send_skeleton_key_prompt_filtered_response(self, mock_target, mock_prompt_normalizer, basic_context):

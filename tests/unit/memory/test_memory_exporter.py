@@ -11,7 +11,7 @@ from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import PromptMemoryEntry
-from pyrit.models import PromptRequestResponse
+from pyrit.models import Message
 
 
 @pytest.fixture
@@ -50,15 +50,15 @@ def test_export_to_json_creates_file(tmp_path, export_type):
     exporter = MemoryExporter()
     file_path = tmp_path / f"conversations.{export_type}"
     conversations = get_sample_conversations()
-    sample_conversation_entries = list(PromptRequestResponse.flatten_to_prompt_request_pieces(conversations))
+    sample_conversation_entries = list(Message.flatten_to_message_pieces(conversations))
     export(export_type=export_type, exporter=exporter, data=sample_conversation_entries, file_path=file_path)
 
     assert file_path.exists()  # Check that the file was created
     content = read_file(file_path=file_path, export_type=export_type)
     # Perform more detailed checks on content if necessary
     assert len(content) == 3  # Simple check for the number of items
-    # Convert each PromptRequestPiece instance to a dictionary
-    expected_content = [prompt_request_piece.to_dict() for prompt_request_piece in sample_conversation_entries]
+    # Convert each MessagePiece instance to a dictionary
+    expected_content = [message_piece.to_dict() for message_piece in sample_conversation_entries]
 
     for expected, actual in zip(expected_content, content):
         assert expected["role"] == actual["role"]
@@ -72,7 +72,7 @@ def test_export_to_json_creates_file(tmp_path, export_type):
 def test_export_to_json_data_with_conversations(tmp_path, export_type):
     exporter = MemoryExporter()
     conversations = get_sample_conversations()
-    sample_conversation_entries = list(PromptRequestResponse.flatten_to_prompt_request_pieces(conversations))
+    sample_conversation_entries = list(Message.flatten_to_message_pieces(conversations))
     conversation_id = sample_conversation_entries[0].conversation_id
 
     # Define the file path using tmp_path
@@ -100,7 +100,7 @@ def test_export_data_creates_file(tmp_path, export_type):
     exporter = MemoryExporter()
     file_path = tmp_path / f"conversations.{export_type}"
     conversations = get_sample_conversations()
-    sample_conversation_entries = list(PromptRequestResponse.flatten_to_prompt_request_pieces(conversations))
+    sample_conversation_entries = list(Message.flatten_to_message_pieces(conversations))
     exporter.export_data(data=sample_conversation_entries, file_path=file_path, export_type=export_type)
 
     assert file_path.exists()

@@ -8,8 +8,8 @@ from typing import Any, Literal, Optional, Sequence
 from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
@@ -79,11 +79,11 @@ class PromptShieldTarget(PromptTarget):
                 will be capped at the value provided.
         """
 
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
-
-        self._endpoint = default_values.get_required_value(
+        endpoint_value = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
+
         self._api_version = api_version
         if use_entra_auth:
             if api_key:
@@ -100,7 +100,7 @@ class PromptShieldTarget(PromptTarget):
         self._force_entry_field: PromptShieldEntryField = field
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Parses the text in prompt_request to separate the userPrompt and documents contents,
         then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
@@ -109,7 +109,7 @@ class PromptShieldTarget(PromptTarget):
 
         self._validate_request(prompt_request=prompt_request)
 
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -150,14 +150,14 @@ class PromptShieldTarget(PromptTarget):
 
         return response_entry
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        message_pieces: Sequence[MessagePiece] = prompt_request.message_pieces
 
-        n_pieces = len(request_pieces)
+        n_pieces = len(message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = request_pieces[0].converted_value_data_type
+        piece_type = message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

@@ -24,7 +24,6 @@
 # %%
 import os
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -39,6 +38,7 @@ from pyrit.score import (
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
 )
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -127,7 +127,7 @@ for objective in conversation_objectives:
 from typing import List
 
 from pyrit.memory import CentralMemory
-from pyrit.models.attack_result import AttackResult
+from pyrit.models import AttackResult
 
 memory = CentralMemory.get_memory_instance()
 
@@ -164,7 +164,7 @@ new_attack = CrescendoAttack(
 # (in this case, we have results in a variable, but you can assume it's from an old session)
 
 memory = CentralMemory.get_memory_instance()
-pieces = memory.get_prompt_request_pieces(labels=memory_labels)
+pieces = memory.get_message_pieces(labels=memory_labels)
 conversation_ids = set(piece.conversation_id for piece in pieces)
 
 attack_results: List[AttackResult] = [
