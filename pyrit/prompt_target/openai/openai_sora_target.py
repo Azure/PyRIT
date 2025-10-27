@@ -65,8 +65,10 @@ class OpenAISoraTarget(OpenAITarget):
     Sora-2 API:
     - Uses multipart form data with direct task endpoints
     - Supported resolutions:
+
       * Sora-2 (both Azure OpenAI and OpenAI): 720x1280, 1280x720
       * Sora-2-Pro (OpenAI only): 720x1280, 1280x720, 1024x1792, 1792x1024
+
     - Duration: 4, 8, or 12 seconds only
 
     Default resolution (1280x720) works with both APIs on OpenAI.
