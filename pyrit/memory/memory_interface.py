@@ -856,6 +856,7 @@ class MemoryInterface(abc.ABC):
 
             all_prompts.extend(prompt_group.prompts)
             if prompt_group.objective:
+                prompt_group.objective.prompt_group_id = prompt_group_id
                 all_prompts.append(prompt_group.objective)
         await self.add_seeds_to_memory_async(prompts=all_prompts, added_by=added_by)
 

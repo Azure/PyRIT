@@ -97,7 +97,7 @@ class SeedDataset(YamlLoadable):
                                 value=p["value"],
                                 data_type="text",
                                 value_sha256=p.get("value_sha256"),
-                                id=p.get("id"),
+                                id=uuid.uuid4(),
                                 name=p.get("name"),
                                 dataset_name=p.get("dataset_name"),
                                 harm_categories=p.get("harm_categories", []),
