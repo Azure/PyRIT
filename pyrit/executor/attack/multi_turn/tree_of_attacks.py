@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, overload
 
 from treelib.tree import Tree
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.exceptions import (
@@ -929,6 +930,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,

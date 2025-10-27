@@ -34,9 +34,18 @@ class GandalfTarget(PromptTarget):
         level: GandalfLevel,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
+        """
+        Initialize the Gandalf target.
 
-        self._endpoint = "https://gandalf-api.lakera.ai/api/send-message"
+        Args:
+            level (GandalfLevel): The Gandalf level to target.
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
+        """
+        endpoint = "https://gandalf-api.lakera.ai/api/send-message"
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
+
         self._defender = level.value
 
     @limit_requests_per_minute

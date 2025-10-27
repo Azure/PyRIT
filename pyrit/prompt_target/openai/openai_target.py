@@ -23,7 +23,6 @@ class OpenAITarget(PromptChatTarget):
     endpoint_environment_variable: str
     api_key_environment_variable: str
 
-    _model_name: Optional[str]
     _azure_auth: Optional[AzureAuth] = None
     _expected_route: Optional[Union[str, List[str]]] = None
 
@@ -64,8 +63,6 @@ class OpenAITarget(PromptChatTarget):
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
         """
-        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
-
         self._headers: dict = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
 
@@ -83,9 +80,14 @@ class OpenAITarget(PromptChatTarget):
         self._model_name: str = default_values.get_non_required_value(
             env_var_name=self.model_name_environment_variable, passed_value=model_name
         )
-        self._endpoint = default_values.get_required_value(
+        endpoint_value = default_values.get_required_value(
             env_var_name=self.endpoint_environment_variable, passed_value=endpoint
         ).rstrip("/")
+
+        # Initialize parent with endpoint and model_name
+        PromptChatTarget.__init__(
+            self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value, model_name=self._model_name
+        )
 
         self._api_key = api_key
 

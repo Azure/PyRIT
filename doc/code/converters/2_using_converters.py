@@ -23,7 +23,8 @@
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+
+
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
@@ -32,6 +33,7 @@ from pyrit.executor.attack import (
 from pyrit.prompt_converter import StringJoinConverter, VariationConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget, TextTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

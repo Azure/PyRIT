@@ -62,7 +62,6 @@
 # %%
 import logging
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -72,6 +71,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 logging.basicConfig(level=logging.WARNING)
@@ -255,7 +255,6 @@ results = AttackExecutor().execute_multi_turn_attacks_async(
 # %%
 import logging
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -265,6 +264,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 logging.basicConfig(level=logging.WARNING)

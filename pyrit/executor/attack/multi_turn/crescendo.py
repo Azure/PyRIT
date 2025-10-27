@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
@@ -112,6 +113,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Path(DATASETS_PATH) / "executors" / "crescendo" / "crescendo_variant_1.yaml"
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,

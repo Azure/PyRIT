@@ -5,6 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
@@ -48,6 +49,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     and multiple scorer types for comprehensive evaluation.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,

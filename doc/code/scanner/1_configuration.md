@@ -569,7 +569,7 @@ After running the scanner, you can analyze results using PyRIT's memory system:
 
 ```python
 from pyrit.memory import CentralMemory
-from pyrit.common import initialize_pyrit
+from pyrit.setup import initialize_pyrit
 
 # Initialize
 initialize_pyrit()

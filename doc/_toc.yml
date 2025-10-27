@@ -118,6 +118,10 @@ chapters:
       - file: code/memory/11_harm_categories
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
+    - file: code/setup/0_configuration
+      sections:
+      - file: code/setup/default_values
+      - file: code/setup/pyrit_initializer
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
