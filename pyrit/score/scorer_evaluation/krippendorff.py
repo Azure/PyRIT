@@ -238,9 +238,7 @@ def krippendorff_alpha(
         ValueError: If ``level_of_measurement`` is not ``"ordinal"``.
     """
     # Validate and prepare data
-    data, valid_mask, categories = _validate_and_prepare_data(
-        reliability_data, level_of_measurement, missing
-    )
+    data, valid_mask, categories = _validate_and_prepare_data(reliability_data, level_of_measurement, missing)
 
     # Check if we have enough data
     valid_ratings = data[valid_mask]
