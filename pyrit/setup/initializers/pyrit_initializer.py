@@ -45,15 +45,17 @@ class PyRITInitializer(ABC):
         pass
 
     @property
-    @abstractmethod
     def description(self) -> str:
         """
         Get a description of what this initializer configures.
 
+        Override this property to provide a custom description.
+        Defaults to returning the name of the initializer.
+
         Returns:
             str: A description of the configuration changes this initializer makes.
         """
-        pass
+        return self.name
 
     @property
     def required_env_vars(self) -> List[str]:
@@ -102,14 +104,20 @@ class PyRITInitializer(ABC):
         """
         Validate the initializer configuration before execution.
 
-        Override this method to add custom validation logic. This method
-        is called before initialize() to catch configuration errors early.
+        This method checks that all required environment variables are set.
+        Subclasses should not override this method.
 
         Raises:
-            ValueError: If the configuration is invalid.
-            RuntimeError: If required dependencies are not available.
+            ValueError: If required environment variables are not set.
         """
-        pass
+        import os
+        
+        missing_vars = [var for var in self.required_env_vars if not os.getenv(var)]
+        if missing_vars:
+            raise ValueError(
+                f"Initializer '{self.name}' requires the following environment variables to be set: "
+                f"{', '.join(missing_vars)}"
+            )
 
     def initialize_with_tracking(self) -> None:
         """

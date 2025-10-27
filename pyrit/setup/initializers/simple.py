@@ -80,15 +80,6 @@ class SimpleInitializer(PyRITInitializer):
             "OPENAI_CHAT_KEY",
         ]
 
-    def validate(self) -> None:
-        """
-        Validate the simple configuration.
-
-        No specific validation needed for simple configuration as it uses
-        OpenAI defaults that will be validated when actually used.
-        """
-        pass
-
     def initialize(self) -> None:
         """
         Execute the complete simple initialization.

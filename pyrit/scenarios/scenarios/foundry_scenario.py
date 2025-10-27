@@ -13,6 +13,7 @@ import os
 from inspect import signature
 from typing import Dict, List, Optional, TypeVar
 
+from pyrit.common import apply_defaults
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
 from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
@@ -164,10 +165,11 @@ class FoundryScenario(Scenario):
 
     version: int = 1
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: Optional[PromptTarget] = None,
         attack_strategies: list[list[FoundryAttackStrategy]] = [[FoundryAttackStrategy.EASY]],
         adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[list[str]] = None,
@@ -236,7 +238,7 @@ class FoundryScenario(Scenario):
             ... )
         """
 
-        self._objective_target = objective_target
+
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
         self._objectives: list[str] = (
@@ -267,7 +269,7 @@ class FoundryScenario(Scenario):
             version=self.version,
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
-            objective_target_identifier=objective_target.get_identifier(),
+            objective_target=objective_target,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
         )
 
