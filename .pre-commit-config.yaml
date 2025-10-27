@@ -55,7 +55,7 @@ repos:
       - id: flake8
         additional_dependencies: ['flake8-copyright']
         types: [python]
-        exclude: (doc/|.github/|pyrit/prompt_converter/morse_converter.py|tests/unit/converter/test_prompt_converter.py|pyrit/prompt_converter/emoji_converter.py|tests/unit/models/test_seed_prompt.py|tests/unit/converter/test_unicode_confusable_converter.py|tests/unit/converter/test_first_letter_converter.py|tests/unit/converter/test_base2048_converter.py|tests/unit/converter/test_ecoji_converter.py|tests/unit/converter/test_bin_ascii_converter.py|pyrit/scenarios/printer/console_printer.py)
+        exclude: (doc/|.github/|pyrit/prompt_converter/morse_converter.py|tests/unit/converter/test_prompt_converter.py|pyrit/prompt_converter/emoji_converter.py|tests/unit/models/test_seed.py|tests/unit/converter/test_unicode_confusable_converter.py|tests/unit/converter/test_first_letter_converter.py|tests/unit/converter/test_base2048_converter.py|tests/unit/converter/test_ecoji_converter.py|tests/unit/converter/test_bin_ascii_converter.py|pyrit/scenarios/printer/console_printer.py)
 
   - repo: local
     hooks:
