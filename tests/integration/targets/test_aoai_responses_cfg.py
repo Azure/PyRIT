@@ -3,6 +3,7 @@
 
 
 import os
+import re
 
 import pytest
 
@@ -18,7 +19,7 @@ async def test_aoai_responses_cfg(sqlite_instance):
 
     lark_grammar = r"""
 start: "I think that it is " SHORTTEXT 
-SHORTTEXT: /[^Pp]{1,8}/
+SHORTTEXT: /[^PpAaRrIiSs]{1,8}/
 """
     grammar_tool = {
         "type": "custom",
@@ -49,7 +50,12 @@ SHORTTEXT: /[^Pp]{1,8}/
 
     result = await target.send_prompt_async(prompt_request=prompt_request)
 
-    for idx, piece in enumerate(result.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+    assert len(result.message_pieces) == 2
 
-    assert False, "Force failure for output inspection"
+    target_piece = result.message_pieces[1]
+    assert target_piece.role == "assistant"
+    response_text = target_piece.original_value
+    assert response_text.startswith("I think that it is ")
+    generation_text = response_text[len("I think that it is ") :]
+    assert re.match(r"[^PpAaRrIiSs]{1,8}", generation_text)
+    assert len(generation_text) <= 8
