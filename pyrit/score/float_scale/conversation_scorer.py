@@ -21,16 +21,23 @@ class ConversationHistoryScorer(FloatScaleScorer):
     feeds it the full conversation history before scoring.
 
     Similar to LookBackScorer, but does not specifically look for behavior changes.
+    It combines the entire conversation and makes the text into one string in order to score the conversation as a whole.
     """
 
-    def __init__(self, scorer: FloatScaleScorer):
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator()
+
+    def __init__(
+        self, 
+        scorer: FloatScaleScorer, 
+        *,
+        validator: Optional[ScorerPromptValidator] = None,
+    ):
         """
         Args:
             scorer: The underlying scorer to use for evaluation (e.g., crisis_scorer)
+            validator: Optional validator. Defaults to base ScorerPromptValidator.
         """
-        # Initialize base Scorer with a default validator
-        super().__init__(validator=ScorerPromptValidator())
-
+        super().__init__(validator=validator or self._default_validator)
         self._scorer = scorer
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -57,6 +64,7 @@ class ConversationHistoryScorer(FloatScaleScorer):
         # Sort by timestamp to get chronological order
         sorted_conversation = sorted(conversation, key=lambda x: x.message_pieces[0].timestamp)
 
+        # Goes through each message in the conversation and appends user and assistant messages
         for message in sorted_conversation:
             for piece in message.message_pieces:
                 if piece.role == "user":
@@ -94,20 +102,4 @@ class ConversationHistoryScorer(FloatScaleScorer):
         return scores
 
     async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
-        """
-        For direct text scoring, just delegate to the underlying scorer.
-        This is called when scoring outside of a conversation context.
-        """
         return await self._scorer.score_text_async(text=text, objective=objective)
-
-    def validate(self, message: Message):
-        """Validate using the underlying scorer's validation"""
-        # Use the validator directly since scorers don't have a validate method
-        return self._validator.validate(message, objective=None)
-
-    def validate_return_scores(self, scores: list[Score]):
-        """
-        Validate the scores returned by the scorer.
-        Delegates to the underlying scorer's validation logic.
-        """
-        return self._scorer.validate_return_scores(scores)
