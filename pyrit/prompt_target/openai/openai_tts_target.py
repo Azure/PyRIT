@@ -71,6 +71,9 @@ class OpenAITTSTarget(OpenAITarget):
         if not self._model_name:
             self._model_name = "tts-1"
 
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint(self.TTS_URL_REGEX)
+
         self._voice = voice
         self._response_format = response_format
         self._language = language

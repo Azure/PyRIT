@@ -158,6 +158,9 @@ class OpenAISoraTarget(OpenAITarget):
         # Detect API version
         self._detected_api_version = self._detect_api_version()
 
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint(self.SORA_URL_REGEX)
+
         # Set instance variables
         self._n_seconds = n_seconds
         self._validate_duration()

@@ -121,6 +121,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         super().__init__(api_version=api_version, temperature=temperature, top_p=top_p, **kwargs)
         self._max_output_tokens = max_output_tokens
 
+        # Validate endpoint URL for OpenAI Response API
+        self._warn_if_irregular_endpoint(self.RESPONSE_URL_REGEX)
+
         # Reasoning parameters are not yet supported by PyRIT.
         # See https://platform.openai.com/docs/api-reference/responses/create#responses-create-reasoning
         # for more information.

@@ -36,6 +36,8 @@ def test_tts_initializes(tts_target: OpenAITTSTarget):
 
 def test_tts_initializes_calls_get_required_parameters(patch_central_database):
     with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
+        mock_get_required.side_effect = lambda env_var_name, passed_value: passed_value
+
         target = OpenAITTSTarget(
             model_name="deploymenttest",
             endpoint="endpointtest",

@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import json
+import logging
 import os
 from tempfile import NamedTemporaryFile
 from typing import MutableSequence
@@ -806,3 +807,60 @@ def test_set_auth_headers_with_api_key(patch_central_database):
     assert target._api_key == "test_api_key_456"
     assert target._headers["Api-Key"] == "test_api_key_456"
     assert target._headers["Authorization"] == "Bearer test_api_key_456"
+
+
+def test_url_validation_warning_for_incorrect_endpoint(caplog, patch_central_database):
+    """Test that URL validation warns for incorrect endpoints."""
+    with patch.dict(os.environ, {}, clear=True):
+        with caplog.at_level(logging.WARNING):
+            target = OpenAIChatTarget(
+                model_name="gpt-4",
+                endpoint="https://api.openai.com/v1/wrong/path",  # Incorrect endpoint
+                api_key="test-key",
+                api_version="2024-10-21",
+            )
+
+    # Should have a warning about incorrect endpoint
+    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    assert len(warning_logs) >= 1
+    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
+    assert len(endpoint_warnings) == 1
+    assert "/v1/chat/completions" in endpoint_warnings[0].message
+    assert "/openai/deployments/*/chat/completions" in endpoint_warnings[0].message
+    assert target
+
+
+def test_url_validation_no_warning_for_correct_azure_endpoint(caplog, patch_central_database):
+    """Test that URL validation doesn't warn for correct Azure endpoints."""
+    with patch.dict(os.environ, {}, clear=True):
+        with caplog.at_level(logging.WARNING):
+            target = OpenAIChatTarget(
+                model_name="gpt-4",
+                endpoint="https://myservice.openai.azure.com/openai/deployments/gpt-4/chat/completions",
+                api_key="test-key",
+                api_version="2024-10-21",
+            )
+
+    # Should not have URL validation warnings
+    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
+    assert len(endpoint_warnings) == 0
+    assert target
+
+
+def test_url_validation_no_warning_for_correct_openai_endpoint(caplog, patch_central_database):
+    """Test that URL validation doesn't warn for correct OpenAI endpoints."""
+    with patch.dict(os.environ, {}, clear=True):
+        with caplog.at_level(logging.WARNING):
+            target = OpenAIChatTarget(
+                model_name="gpt-4",
+                endpoint="https://api.openai.com/v1/chat/completions",
+                api_key="test-key",
+                api_version="2024-10-21",
+            )
+
+    # Should not have URL validation warnings
+    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
+    assert len(endpoint_warnings) == 0
+    assert target
