@@ -12,15 +12,23 @@ from pyrit.prompt_target import OpenAIResponseTarget
 
 
 @pytest.mark.asyncio
-async def test_aoai_responses_cfg(sqlite_instance):
-    endpoint = os.getenv("AZURE_OPENAI_RESPONSES_ENDPOINT")
-    model_name = os.getenv("AZURE_OPENAI_RESPONSES_MODEL")
-    api_version = os.getenv("AZURE_OPENAI_RESPONSES_API_VERSION")
-
+@pytest.mark.parametrize(
+    ("endpoint", "api_key", "model_name"),
+    [
+        (
+            "PLATFORM_OPENAI_RESPONSES_ENDPOINT",
+            "PLATFORM_OPENAI_RESPONSES_KEY",
+            "PLATFORM_OPENAI_RESPONSES_MODEL",
+        ),
+        ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL"),
+    ],
+)
+async def test_aoai_responses_cfg(sqlite_instance, endpoint, api_key, model_name):
     lark_grammar = r"""
 start: "I think that it is " SHORTTEXT 
 SHORTTEXT: /[^PpAaRrIiSs]{1,8}/
 """
+
     grammar_tool = {
         "type": "custom",
         "name": "CitiesGrammar",
@@ -32,14 +40,16 @@ SHORTTEXT: /[^PpAaRrIiSs]{1,8}/
         },
     }
 
-    target = OpenAIResponseTarget(
-        endpoint=endpoint,
-        model_name=model_name,
-        use_entra_auth=True,
-        api_version=api_version,
-        extra_body_parameters={"tools": [grammar_tool], "tool_choice": "required"},
-        temperature=1.0,
-    )
+    args = {
+        "endpoint": os.getenv(endpoint),
+        "api_key": os.getenv(api_key),
+        "model_name": os.getenv(model_name),
+        "api_version": "2025-03-01-preview",
+        "extra_body_parameters": {"tools": [grammar_tool], "tool_choice": "required"},
+        "temperature": 1.0,
+    }
+
+    target = OpenAIResponseTarget(**args)
 
     message_piece = MessagePiece(
         role="user",
