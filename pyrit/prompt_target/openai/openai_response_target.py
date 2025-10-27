@@ -131,6 +131,19 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         self._custom_functions: Dict[str, ToolExecutor] = custom_functions or {}
         self._fail_on_missing_function: bool = fail_on_missing_function
 
+        # Extract the grammar 'tool' if one is present
+        # See
+        # https://platform.openai.com/docs/guides/function-calling#context-free-grammars
+        self._grammar_name: str | None = None
+        if extra_body_parameters:
+            tools = extra_body_parameters.get("tools", [])
+            for tool in tools:
+                if tool.get("type") == "custom" and tool.get("format", {}).get("type") == "grammar":
+                    tool_name = tool.get("name")
+                    logger.debug("Detected grammar tool: %s", tool_name)
+                    self._grammar_name = tool_name
+                    break
+
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
         self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
@@ -437,6 +450,13 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             # Forward web_search_call verbatim as a tool_call
             piece_value = json.dumps(section, separators=(",", ":"))
             piece_type = "tool_call"
+
+        elif section_type == "custom_tool_call":
+            # Had a Lark grammar (hopefully)
+            assert self._grammar_name == section.get("name"), "Mismatched grammar name in custom_tool_call"
+            piece_value = section.get("input", [])
+            if len(piece_value) == 0:
+                raise EmptyResponseException(message="The chat returned an empty message section.")
 
         else:
             # Other possible types are not yet handled in PyRIT
