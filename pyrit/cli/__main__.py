@@ -84,7 +84,7 @@ Examples:
     parser.add_argument(
         "--list-initializers",
         action="store_true",
-        help="List all available built-in initializers and exit",
+        help="List all available scenario initializers and exit",
     )
 
     # Scenario name as positional argument
@@ -162,9 +162,9 @@ def list_scenarios(*, registry: ScenarioRegistry) -> None:
 
 def list_initializers() -> None:
     """
-    Print all available built-in initializers to the console.
+    Print all available scenario initializers to the console.
 
-    Discovers initializers from pyrit/setup/initializers directory.
+    Discovers initializers from pyrit/setup/initializers/scenarios directory.
     """
     import importlib.util
     import inspect
@@ -172,16 +172,17 @@ def list_initializers() -> None:
     from pyrit.common.path import PYRIT_PATH
     from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
-    initializers_path = Path(PYRIT_PATH) / "setup" / "initializers"
+    # Only look in the scenarios subdirectory
+    initializers_path = Path(PYRIT_PATH) / "setup" / "initializers" / "scenarios"
 
     if not initializers_path.exists():
-        print("No initializers directory found.")
+        print("No scenarios initializers directory found.")
         return
 
-    # Discover all Python files in the initializers directory
+    # Discover all Python files in the scenarios initializers directory
     initializer_info: list[InitializerInfo] = []
 
-    def discover_in_directory(directory: Path, prefix: str = ""):
+    def discover_in_directory(directory: Path, prefix: str = "scenarios"):
         """Recursively discover initializers in a directory."""
         for item in directory.iterdir():
             if item.is_file() and item.suffix == ".py" and item.stem != "__init__":
@@ -241,7 +242,7 @@ def list_initializers() -> None:
     # Sort by execution order, then by name
     initializer_info.sort(key=lambda x: (x["execution_order"], x["name"]))
 
-    print("\nAvailable Built-in Initializers:")
+    print("\nAvailable Scenario Initializers:")
     print("=" * 80)
 
     for info in initializer_info:
