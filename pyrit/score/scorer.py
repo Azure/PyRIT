@@ -90,7 +90,7 @@ class Scorer(abc.ABC):
         """
         self._validator.validate(message, objective=objective)
 
-        if role_filter is not None and message.get_role() != role_filter:
+        if role_filter is not None and message.role != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
 
@@ -345,8 +345,18 @@ class Scorer(abc.ABC):
         identifier = {}
         identifier["__type__"] = self.__class__.__name__
         identifier["__module__"] = self.__class__.__module__
-        identifier["sub_identifier"] = None
+        identifier["sub_identifier"] = self._get_sub_identifier()
         return identifier
+
+    def _get_sub_identifier(self) -> Optional[Union[Dict, List[Dict]]]:
+        """
+        Returns the sub-identifier for composite scorers.
+        Override this method in subclasses that wrap other scorers.
+
+        Returns:
+            None, dict, or list[dict]: The sub-identifier(s) of wrapped scorer(s), or None for non-composite scorers.
+        """
+        return None
 
     @pyrit_json_retry
     async def _score_value_with_llm(

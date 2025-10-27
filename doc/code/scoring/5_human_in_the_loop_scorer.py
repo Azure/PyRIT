@@ -14,9 +14,9 @@
 # This example shows how to use the Gradio UI to perform human-in-the-loop scoring. This is in beta but will be extended.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.score import HumanInTheLoopScorerGradio
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 # This will start the Gradio UI and can only be created once per notebook. If you restart the kernel, run this cell again.

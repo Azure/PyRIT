@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -22,20 +26,20 @@
 # %%
 import pathlib
 
-from pyrit.common.initialization import initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
+from pyrit.setup import initialize_pyrit
 
 # Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
 initialize_pyrit(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()
 
-seed_prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
-await memory.add_seed_prompts_to_memory_async(prompts=seed_prompts.prompts, added_by="rlundeen")  # type: ignore
+seed_prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="rlundeen")  # type: ignore
 
-groups = memory.get_seed_prompt_groups()
+groups = memory.get_seed_groups()
 print(len(groups))
 
 # %% [markdown]
@@ -58,7 +62,7 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.models import Message, SeedPromptGroup
+from pyrit.models import Message, SeedGroup
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -75,7 +79,7 @@ from pyrit.score import (
 
 # Configure this to load the prompts loaded in the previous step.
 # In the last section, they were in the illegal.prompt file (which has a configured name of "2025_06_pyrit_illegal_example")
-prompt_groups = memory.get_seed_prompt_groups(dataset_name="2025_06_pyrit_illegal_example")
+prompt_groups = memory.get_seed_groups(dataset_name="2025_06_pyrit_illegal_example")
 
 # Configure the labels you want to send
 # These should be unique to this test to make it easier to retrieve
@@ -137,7 +141,7 @@ prepended_prompt = Message.from_system_prompt(system_prompt)
 
 
 objectives = []
-seed_prompt_list: list[SeedPromptGroup] = []
+seed_prompt_list: list[SeedGroup] = []
 prepended_prompts = []
 
 for prompt_group in prompt_groups:
@@ -152,7 +156,7 @@ for prompt_group in prompt_groups:
 results = await AttackExecutor().execute_single_turn_attacks_async(  # type: ignore
     attack=attack,
     objectives=objectives,
-    seed_prompt_groups=seed_prompt_list,
+    seed_groups=seed_prompt_list,
     prepended_conversations=prepended_prompts,
     memory_labels=memory_labels,
 )
@@ -194,7 +198,7 @@ attack = PromptSendingAttack(
 new_results = await AttackExecutor().execute_single_turn_attacks_async(  # type: ignore
     attack=attack,
     objectives=objectives,
-    seed_prompt_groups=seed_prompt_list,
+    seed_groups=seed_prompt_list,
     prepended_conversations=prepended_prompts,
     memory_labels=memory_labels,
 )
@@ -241,7 +245,7 @@ print(f"Found {len(interesting_prompts)} interesting prompts")
 new_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=OpenAIChatTarget())
 
 for prompt in interesting_prompts:
-    new_results = await new_scorer.score_prompts_batch_async(request_responses=interesting_prompts)  # type: ignore
+    new_results = await new_scorer.score_prompts_batch_async(messages=interesting_prompts)  # type: ignore
 
 for result in new_results:
     print(f"Added score: {result}")
