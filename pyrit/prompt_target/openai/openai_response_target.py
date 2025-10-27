@@ -459,7 +459,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             logger.debug("Detected custom_tool_call in response, assuming grammar constraint.")
             extracted_grammar_name = section.get("name")
             if extracted_grammar_name != self._grammar_name:
-                msg = f"Mismatched grammar name in custom_tool_call (expected {self._grammar_name}, got {extracted_grammar_name})"
+                msg = "Mismatched grammar name in custom_tool_call "
+                msg += f"(expected {self._grammar_name}, got {extracted_grammar_name})"
                 logger.error(msg)
                 raise ValueError(msg)
             piece_value = section.get("input", "")
