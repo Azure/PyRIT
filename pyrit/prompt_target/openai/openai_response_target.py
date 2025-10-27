@@ -456,7 +456,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             # See
             # https://platform.openai.com/docs/guides/function-calling#context-free-grammars
             assert self._grammar_name == section.get("name"), "Mismatched grammar name in custom_tool_call"
-            piece_value = section.get("input", [])
+            piece_value = section.get("input", "")
             if len(piece_value) == 0:
                 raise EmptyResponseException(message="The chat returned an empty message section.")
 
