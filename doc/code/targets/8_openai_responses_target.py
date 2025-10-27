@@ -163,3 +163,74 @@ for idx, piece in enumerate(response.message_pieces):
     # They are excluded here for a cleaner output.
     if piece.original_value_data_type != "reasoning":
         print(f"{idx} | {piece.role}: {piece.original_value}")
+
+# %% [markdown]
+# ## Grammar-Constrained Generation
+#
+# OpenAI models also support constrained generation in the [Responses API](https://platform.openai.com/docs/guides/function-calling#context-free-grammars). This forces the LLM to produce output which conforms to the given grammar, which is useful when specific syntax is required in the output.
+#
+# In this example, we will define a simple Lark grammar which prevents the model from giving a correct answer to a simple question, and compare that to the unconstrained model.
+
+
+from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
+
+# %%
+from pyrit.setup import IN_MEMORY, initialize_pyrit
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
+
+lark_grammar = r"""
+start: "I think that it is " SHORTTEXT 
+SHORTTEXT: /[^RrOoMmEe]{1,8}/
+"""
+
+grammar_tool = {
+    "type": "custom",
+    "name": "CitiesGrammar",
+    "description": "Constrains generation.",
+    "format": {
+        "type": "grammar",
+        "syntax": "lark",
+        "definition": lark_grammar,
+    },
+}
+
+
+message_piece = MessagePiece(
+    role="user",
+    original_value="What is the capital of Italy?",
+    original_value_data_type="text",
+)
+prompt_request = Message(message_pieces=[message_piece])
+
+target = OpenAIResponseTarget(
+    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
+    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
+    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-4.1-mini"),
+    api_version="2025-03-01-preview",
+    extra_body_parameters={"tools": [grammar_tool], "tool_choice": "required"},
+    temperature=1.0,
+)
+
+unconstrained_target = OpenAIResponseTarget(
+    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
+    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
+    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-4.1-mini"),
+    api_version="2025-03-01-preview",
+    temperature=1.0,
+)
+
+unconstrained_result = await unconstrained_target.send_prompt_async(prompt_request=prompt_request)
+
+result = await target.send_prompt_async(prompt_request=prompt_request)
+
+print("Unconstrained Response:")
+for idx, piece in enumerate(unconstrained_result.message_pieces):
+    if piece.original_value_data_type != "reasoning":
+        print(f"{idx} | {piece.role}: {piece.original_value}")
+
+print("Constrained Response:")
+for idx, piece in enumerate(result.message_pieces):
+    if piece.original_value_data_type != "reasoning":
+        print(f"{idx} | {piece.role}: {piece.original_value}")
