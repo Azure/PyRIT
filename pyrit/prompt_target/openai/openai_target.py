@@ -20,10 +20,10 @@ class OpenAITarget(PromptChatTarget):
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
-    # Expected URL regex patterns for different OpenAI targets
+    # Expected URL regex patterns for different OpenAI and AOAI targets
     CHAT_URL_REGEX = [
         r"/v1/chat/completions$",  # Standard OpenAI & Anthropic endpoints
-        r"/openai/deployments/[^/]+/chat/completions$",  # Azure OpenAI pattern
+        r"/openai/deployments/[^/]+/chat/completions$",  # AOAI pattern
         r"/openai/chat/completions$",  # Gemini endpoint
     ]
     SORA_URL_REGEX = [
