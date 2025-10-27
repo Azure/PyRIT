@@ -9,7 +9,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import List, Optional, Set, Tuple, Type, TypeVar, Union, cast
 
-import krippendorff
 import numpy as np
 import pandas as pd
 from scipy.stats import ttest_1samp
@@ -27,6 +26,8 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
 )
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+
+from .krippendorff import krippendorff_alpha
 
 logger = logging.getLogger(__name__)
 
@@ -441,16 +442,16 @@ class HarmScorerEvaluator(ScorerEvaluator):
             "mae_standard_error": np.std(abs_error) / np.sqrt(len(abs_error)),
             "t_statistic": t_statistic,
             "p_value": p_value,
-            "krippendorff_alpha_combined": krippendorff.alpha(
+            "krippendorff_alpha_combined": krippendorff_alpha(
                 reliability_data=reliability_data, level_of_measurement="ordinal"
             ),
         }
         if len(all_human_scores) > 1:
-            metrics["krippendorff_alpha_humans"] = krippendorff.alpha(
+            metrics["krippendorff_alpha_humans"] = krippendorff_alpha(
                 reliability_data=all_human_scores, level_of_measurement="ordinal"
             )
         if len(all_model_scores) > 1:
-            metrics["krippendorff_alpha_model"] = krippendorff.alpha(
+            metrics["krippendorff_alpha_model"] = krippendorff_alpha(
                 reliability_data=all_model_scores, level_of_measurement="ordinal"
             )
 

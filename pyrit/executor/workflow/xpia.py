@@ -7,8 +7,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Optional, Protocol, overload
 
-from aioconsole import ainput
-
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.executor.workflow.core import (
@@ -621,7 +619,8 @@ class XPIAManualProcessingWorkflow(XPIAWorkflow):
 
         # Create the manual input callback
         async def manual_input_async() -> str:
-            return await ainput("Please trigger the processing target's execution and paste the output here: ")
+            prompt = "Please trigger the processing target's execution and paste the output here:"
+            return input(prompt)
 
         # Set the processing callback on the context
         context.processing_callback = manual_input_async
