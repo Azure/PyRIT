@@ -119,8 +119,6 @@ class OpenAISoraTarget(OpenAITarget):
         *,
         resolution_dimensions: str = "1280x720",
         n_seconds: int = 4,
-        n_variants: int = 1,
-        output_filename: Optional[str] = None,
         **kwargs,
     ):
         """Initialize the unified OpenAI Sora Target.
@@ -151,11 +149,6 @@ class OpenAISoraTarget(OpenAITarget):
                 Defaults to 4 (compatible with both APIs).
                 Sora-1 supports up to 20 seconds (10 seconds max for 1080p resolutions).
                 Sora-2 supports exactly 4, 8, or 12 seconds.
-            n_variants (int, Optional): Number of video variants to generate. Defaults to 1.
-                Only supported by Sora-1 API (ignored for Sora-2).
-            output_filename (str, Optional): The name of the output file for the generated video.
-                Note: DO NOT SET if using target with PromptSendingAttack as multiple files will be generated
-                and each generated video would override the previous one.
         """
         # Initialize parent class first to get endpoint
         super().__init__(**kwargs)
@@ -166,9 +159,7 @@ class OpenAISoraTarget(OpenAITarget):
         # Set instance variables
         self._n_seconds = n_seconds
         self._validate_duration()
-        self._n_variants = n_variants
         self._width, self._height = self._parse_and_validate_resolution(resolution_dimensions=resolution_dimensions)
-        self._output_filename = output_filename
         self._params: Dict[str, Any] = {}
 
     def _set_openai_env_configuration_vars(self) -> None:
@@ -235,26 +226,11 @@ class OpenAISoraTarget(OpenAITarget):
                     "The API may reject this request."
                 )
 
-            if resolution_dimensions in ["1080x1080", "1920x1080"]:
-                # Constraints apply to all 1080p dimensions
-                if self._n_seconds > 10:
-                    raise ValueError(
-                        "n_seconds must be less than or equal to 10 for "
-                        f"resolution dimensions of {resolution_dimensions}."
-                    )
-
-                if self._n_variants > 1:
-                    raise ValueError(
-                        "n_variants must be less than or equal to 1 for "
-                        f"resolution dimensions of {resolution_dimensions}."
-                    )
-            elif resolution_dimensions in ["720x720", "1280x720"]:
-                # Constraints apply to all 720p dimensions
-                if self._n_variants > 2:
-                    raise ValueError(
-                        "n_variants must be less than or equal to 2 for "
-                        f"resolution dimensions of {resolution_dimensions}."
-                    )
+            if resolution_dimensions in ["1080x1080", "1920x1080"] and self._n_seconds > 10:
+                raise ValueError(
+                    "n_seconds must be less than or equal to 10 for "
+                    f"resolution dimensions of {resolution_dimensions}."
+                )
         else:  # v2
             endpoint_type = "Azure OpenAI" if self._is_azure_openai() else "OpenAI"
             if resolution_dimensions not in self.V2_RESOLUTIONS:
@@ -717,12 +693,10 @@ class OpenAISoraTarget(OpenAITarget):
         # Download video content
         video_response = await self.download_video_content_async(task_id=task_id, generation_id=generation_id)
 
-        # Determine final file name
-        file_name = self._output_filename if self._output_filename else file_name_suffix
-
+        # Use task/generation IDs as file name to ensure uniqueness
         return await self._save_video_to_storage_async(
             data=video_response.content,
-            file_name=file_name,
+            file_name=file_name_suffix,
             request=request,
         )
 
@@ -766,7 +740,6 @@ class OpenAISoraTarget(OpenAITarget):
             "height": self._height,
             "width": self._width,
             "n_seconds": self._n_seconds,
-            "n_variants": self._n_variants,
         }
         return {k: v for k, v in body_parameters.items() if v is not None}
 

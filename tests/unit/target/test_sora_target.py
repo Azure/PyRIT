@@ -45,7 +45,6 @@ def video_generation_response_success() -> dict:
             }
         ],
         "prompt": "test_success",
-        "n_variants": 1,
         "n_seconds": 5,
         "height": 480,
         "width": 480,
@@ -74,7 +73,6 @@ def video_generation_response_failure_moderation() -> dict:
             }
         ],
         "prompt": "test_failure",
-        "n_variants": 1,
         "n_seconds": 5,
         "height": 480,
         "width": 480,
@@ -103,7 +101,6 @@ def video_generation_response_failure_unknown() -> dict:
             }
         ],
         "prompt": "test_failure",
-        "n_variants": 1,
         "n_seconds": 5,
         "height": 480,
         "width": 480,
@@ -121,7 +118,6 @@ def video_generation_response() -> dict:
         "finished_at": None,
         "generations": [],
         "prompt": "test",
-        "n_variants": 1,
         "n_seconds": 5,
         "height": 480,
         "width": 480,
@@ -140,8 +136,6 @@ def test_initialization_with_required_parameters(sora_target: OpenAISoraTarget):
     assert sora_target._height == "720"
     assert sora_target._width == "1280"
     assert sora_target._n_seconds == 4
-    assert sora_target._n_variants == 1
-    assert sora_target._output_filename is None
     # API version is detected from endpoint URL at initialization
     assert sora_target._detected_api_version == "v1"  # Default test endpoint doesn't contain "openai/v1/videos"
 

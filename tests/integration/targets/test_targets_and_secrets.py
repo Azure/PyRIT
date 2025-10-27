@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pyrit.executor.attack import PromptSendingAttack
+from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
 from pyrit.prompt_target import (
     AzureMLChatTarget,
     OpenAIChatTarget,
@@ -300,6 +300,71 @@ async def test_connect_sora_unsupported_resolution_returns_processing_error(
         keyword in error_message.lower()
         for keyword in ["user error", "video_generation_user_error", "invalid", "unsupported", "not supported"]
     ), f"Expected error message about invalid/unsupported resolution, got: {error_message}"
+
+
+@pytest.mark.asyncio
+async def test_sora_multiple_prompts_create_separate_files(sqlite_instance):
+    """
+    Test that sending multiple prompts to Sora-1 using PromptSendingAttack
+    creates separate video files and doesn't override previous files.
+
+    This verifies that each video generation creates a unique file based on
+    the task_id/generation_id mechanism.
+    """
+    target = OpenAISoraTarget(
+        endpoint=os.getenv("OPENAI_SORA1_ENDPOINT"),
+        api_key=os.getenv("OPENAI_SORA1_KEY"),
+        model_name=os.getenv("OPENAI_SORA1_MODEL"),
+        resolution_dimensions="1280x720",
+        n_seconds=4,
+    )
+
+    attack = PromptSendingAttack(objective_target=target)
+    executor = AttackExecutor()
+
+    # Send two prompts using execute_multi_objective_attack_async
+    objectives = ["A cat walking on a beach", "A dog running in a park"]
+    results = await executor.execute_multi_objective_attack_async(attack=attack, objectives=objectives)
+
+    # Verify we got 2 results
+    assert len(results) == 2, f"Expected 2 results, got {len(results)}"
+
+    # Verify both prompts succeeded
+    result1 = results[0]
+    result2 = results[1]
+
+    assert result1.last_response is not None
+    assert result1.last_response.response_error == "none", (
+        f"First prompt failed with error: {result1.last_response.response_error}. "
+        f"Response: {result1.last_response.converted_value}"
+    )
+
+    assert result2.last_response is not None
+    assert result2.last_response.response_error == "none", (
+        f"Second prompt failed with error: {result2.last_response.response_error}. "
+        f"Response: {result2.last_response.converted_value}"
+    )
+
+    # Extract video paths
+    video_path1 = Path(result1.last_response.converted_value)
+    video_path2 = Path(result2.last_response.converted_value)
+
+    # Verify both files exist
+    assert video_path1.exists(), f"First video file not found at path: {video_path1}"
+    assert video_path1.is_file(), f"First path exists but is not a file: {video_path1}"
+
+    assert video_path2.exists(), f"Second video file not found at path: {video_path2}"
+    assert video_path2.is_file(), f"Second path exists but is not a file: {video_path2}"
+
+    # Verify they are different files (not overridden)
+    assert video_path1 != video_path2, (
+        f"Both prompts resulted in the same file path: {video_path1}. " "Expected separate files for different prompts."
+    )
+
+    # Verify both files still exist (first wasn't overridden)
+    assert video_path1.exists(), (
+        f"First video file was overridden or deleted. " f"File 1: {video_path1}, File 2: {video_path2}"
+    )
 
 
 ##################################################
