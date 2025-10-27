@@ -189,4 +189,3 @@ class ScenarioStrategy(Enum):
                 normalized_strategies.update(cls.get_strategies_by_tag(aggregate_tag))
 
         return normalized_strategies
-
