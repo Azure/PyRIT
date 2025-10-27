@@ -83,7 +83,9 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             comparison_symbol = "<"
         else:
             comparison_symbol = "="
+        scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
         score.score_rationale = (
+            f"based on {scorer_type}\n"
             f"Normalized scale score: {aggregate_value} {comparison_symbol} threshold {self._threshold}\n"
             f"Rationale for scale score: {score.score_rationale}"
         )
@@ -92,7 +94,6 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
 
         score.id = uuid.uuid4()
         score.scorer_class_identifier = self.get_identifier()
-        score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
         return [score]
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -106,3 +107,12 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
+
+    def _get_sub_identifier(self):
+        """
+        Returns the identifier of the underlying float scale scorer.
+
+        Returns:
+            dict: The identifier dictionary of the wrapped scorer.
+        """
+        return self._scorer.get_identifier()

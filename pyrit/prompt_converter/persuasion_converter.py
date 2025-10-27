@@ -5,7 +5,9 @@ import json
 import logging
 import pathlib
 import uuid
+from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -43,19 +45,29 @@ class PersuasionConverter(PromptConverter):
             Presenting oneself or an issue in a way that's not genuine or true.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, persuasion_technique: str):
+    @apply_defaults
+    def __init__(self, *, converter_target: Optional[PromptChatTarget] = None, persuasion_technique: str):
         """
         Initializes the converter with the specified target and prompt template.
 
         Args:
             converter_target (PromptChatTarget): The chat target used to perform rewriting on user prompts.
+                Can be omitted if a default has been configured via PyRIT initialization.
             persuasion_technique (str): Persuasion technique to be used by the converter, determines the system prompt
                 to be used to generate new prompts. Must be one of "authority_endorsement", "evidence_based",
                 "expert_endorsement", "logical_appeal", "misrepresentation".
 
         Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
             ValueError: If the persuasion technique is not supported or does not exist.
         """
+        if converter_target is None:
+            raise ValueError(
+                "converter_target is required for LLM-based converters. "
+                "Either pass it explicitly or configure a default via PyRIT initialization "
+                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
+            )
+
         self.converter_target = converter_target
 
         try:

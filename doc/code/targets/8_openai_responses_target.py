@@ -25,9 +25,9 @@
 # - model_name: The model to use (`OPENAI_RESPONSES_MODEL` environment variable). For OpenAI, these are any available model name and are listed here: "https://platform.openai.com/docs/models".
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIResponseTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -56,10 +56,11 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This showcases how agentic function execution works with PyRIT + OpenAI Responses API.
 
-# %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
+
+# %%
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -131,10 +132,10 @@ for idx, piece in enumerate(response.message_pieces):
 # %%
 import os
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.tool_configs import web_search_tool
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
