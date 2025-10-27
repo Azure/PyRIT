@@ -13,8 +13,7 @@ from PIL import Image
 from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedDataset, SeedGroup, SeedPrompt
-from pyrit.models.seed_objective import SeedObjective
+from pyrit.models import SeedDataset, SeedGroup, SeedObjective, SeedPrompt
 
 
 @pytest.fixture
@@ -35,6 +34,28 @@ def seed_prompt_fixture():
         prompt_group_id=uuid.uuid4(),
         sequence=1,
     )
+
+@pytest.fixture
+def seed_objective_fixture():
+    return SeedObjective(
+        value="Test objective",
+        data_type="text",
+        name="Test Name",
+        dataset_name="Test Dataset",
+        harm_categories=["category1", "category2"],
+        description="Test Description",
+        authors=["Author1"],
+        groups=["Group1"],
+        source="Test Source",
+        added_by="Tester",
+        metadata={"key": "value"},
+        prompt_group_id=uuid.uuid4(),
+    )
+
+def test_seed_objective_initialization(seed_objective_fixture):
+    assert isinstance(seed_objective_fixture.id, uuid.UUID)
+    assert seed_objective_fixture.value == "Test objective"
+    assert seed_objective_fixture.data_type == "text"
 
 
 def test_seed_prompt_initialization(seed_prompt_fixture):
@@ -130,6 +151,23 @@ def test_seed_dataset_initialization(seed_prompt_fixture):
     dataset = SeedDataset(prompts=[seed_prompt_fixture])
     assert len(dataset.prompts) == 1
     assert dataset.prompts[0].value == "Test prompt"
+
+
+def test_seed_dataset_initialization_with_objective():
+    seed_objective = SeedObjective(value="Test objective")
+    dataset = SeedDataset(prompts=[seed_objective])
+    assert len(dataset.objectives) == 1
+    assert dataset.objectives[0].value == "Test objective"
+
+
+def test_seed_dataset_initialization_with_yaml_objective():
+    dataset = SeedDataset.from_yaml_file(
+        pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-objective-group.prompt"
+    )
+    assert len(dataset.objectives) == 1
+    assert dataset.objectives[0].value == "Use this image as inspiration"
+
+    assert len(dataset.prompts) == 3
 
 
 def test_seed_dataset_get_values():
