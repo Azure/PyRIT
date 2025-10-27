@@ -25,7 +25,9 @@ logger = logging.getLogger(__name__)
 
 class OpenAIChatTarget(OpenAIChatTargetBase):
     """
-    The OpenAI Chat Target that supports chat completion endpoint
+    This class facilitates multimodal (image and text) input and text output generation
+
+    This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
 
     Args:
         api_key (str): The api key for the OpenAI API

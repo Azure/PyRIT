@@ -823,10 +823,8 @@ def test_url_validation_warning_for_incorrect_endpoint(caplog, patch_central_dat
     # Should have a warning about incorrect endpoint
     warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
     assert len(warning_logs) >= 1
-    endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
     assert len(endpoint_warnings) == 1
-    # Should mention both valid routes
-    assert "one of:" in endpoint_warnings[0].message
     assert "/v1/chat/completions" in endpoint_warnings[0].message
     assert "/openai/deployments/*/chat/completions" in endpoint_warnings[0].message
     assert target
@@ -845,7 +843,7 @@ def test_url_validation_no_warning_for_correct_azure_endpoint(caplog, patch_cent
 
     # Should not have URL validation warnings
     warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
     assert len(endpoint_warnings) == 0
     assert target
 
@@ -863,6 +861,6 @@ def test_url_validation_no_warning_for_correct_openai_endpoint(caplog, patch_cen
 
     # Should not have URL validation warnings
     warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    endpoint_warnings = [log for log in warning_logs if "Please verify your endpoint" in log.message]
+    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
     assert len(endpoint_warnings) == 0
     assert target

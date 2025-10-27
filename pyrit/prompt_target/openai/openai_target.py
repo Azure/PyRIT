@@ -22,13 +22,18 @@ class OpenAITarget(PromptChatTarget):
 
     # Expected URL regex patterns for different OpenAI targets
     CHAT_URL_REGEX = [
-        r"/v1/chat/completions$",  # Standard OpenAI endpoint
+        r"/v1/chat/completions$",  # Standard OpenAI & Anthropic endpoints
         r"/openai/deployments/[^/]+/chat/completions$",  # Azure OpenAI pattern
+        r"/openai/chat/completions$",  # Gemini endpoint
     ]
-    SORA_URL_REGEX = [r"/videos/generations$"]
+    SORA_URL_REGEX = [
+        r"/videos/v1/video/generations$",  # Azure sora1 endpoint
+        r"/videos/v1/videos$",  # Azure sora2 endpoint
+        r"/v1/videos$",  # oai sora2 endpoint
+    ]
     DALLE_URL_REGEX = [r"/images/generations$"]
     TTS_URL_REGEX = [r"/audio/speech$"]
-    RESPONSE_URL_REGEX = [r"/openai/responses$"]
+    RESPONSE_URL_REGEX = [r"/openai/responses$", r"v1/responses$"]
 
     model_name_environment_variable: str
     endpoint_environment_variable: str
@@ -169,9 +174,9 @@ class OpenAITarget(PromptChatTarget):
             expected_routes_str = f"one of: {', '.join(readable_patterns)}"
 
         logger.warning(
-            f"Expected endpoint to end with {expected_routes_str} "
-            f"Please verify your endpoint URL: '{self._endpoint}'."
-            f"For more details and guidance, please see the `.env_example` file."
+            f"The provided endpoint URL {parsed_url} does not match any of the expected formats: {expected_routes_str}."
+            f"This may be intentional, especially if you are using an endpoint other than Azure or OpenAI."
+            f"For more details and guidance, please see the .env_example file in the repository."
         )
 
     @abstractmethod
