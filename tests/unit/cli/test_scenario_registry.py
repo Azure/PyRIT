@@ -5,7 +5,6 @@
 Unit tests for the ScenarioRegistry module.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 from pyrit.cli.scenario_registry import ScenarioRegistry
@@ -26,13 +25,13 @@ class TestScenarioRegistry:
         """Test discovery of built-in scenarios."""
         # Create a registry which will automatically discover built-in scenarios
         registry = ScenarioRegistry()
-        
+
         # Verify that some scenarios were discovered
         scenario_names = registry.get_scenario_names()
         # We should find at least the built-in scenarios
         # Note: This is an integration test that depends on actual scenario files existing
         assert len(scenario_names) >= 0  # May be 0 if run in isolation
-        
+
         # If scenarios were found, verify they're Scenario subclasses
         for name in scenario_names:
             scenario_class = registry.get_scenario(name)
@@ -161,6 +160,7 @@ class TestScenarioRegistry:
 
         # Need to patch sys.modules which is imported inside the function
         import sys
+
         original_modules = sys.modules.copy()
         try:
             sys.modules["user_module"] = mock_module

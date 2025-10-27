@@ -5,10 +5,11 @@
 Unit tests for the PyRIT CLI main module.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from pyrit.cli.__main__ import parse_args, list_scenarios, list_initializers, main
+import pytest
+
+from pyrit.cli.__main__ import list_scenarios, main, parse_args
 
 
 class TestParseArgs:
@@ -53,9 +54,7 @@ class TestParseArgs:
 
     def test_parse_args_scenario_with_initialization_scripts(self):
         """Test parsing scenario with initialization scripts."""
-        args = parse_args(
-            ["foundry_scenario", "--initialization-scripts", "script1.py", "script2.py"]
-        )
+        args = parse_args(["foundry_scenario", "--initialization-scripts", "script1.py", "script2.py"])
         assert args.scenario_name == "foundry_scenario"
         assert args.initialization_scripts == ["script1.py", "script2.py"]
 
@@ -174,7 +173,7 @@ class TestMain:
         mock_registry = MagicMock()
         mock_registry.list_scenarios.return_value = []
         mock_registry_class.return_value = mock_registry
-        
+
         # Mock path to exist
         mock_path_instance = MagicMock()
         mock_path_instance.exists.return_value = True
@@ -221,10 +220,10 @@ class TestMain:
             mock_script_path.exists.return_value = False
             mock_script_path.is_absolute.return_value = False
             mock_script_path.absolute.return_value = "C:\\fake\\path\\missing.py"
-            
+
             # Mock Path() to return our script path
             mock_path_class.return_value = mock_script_path
-            
+
             # Mock Path.cwd() to return a base path
             mock_cwd = MagicMock()
             mock_path_class.cwd.return_value = mock_cwd
@@ -265,14 +264,14 @@ class TestMain:
         self, mock_registry_class, mock_init_pyrit, mock_asyncio_run, capsys
     ):
         """Test main with scenario and invalid initializer name."""
-        
+
         # Mock Path to make the invalid initializer file not exist
         with patch("pyrit.common.path.PYRIT_PATH", "/fake/pyrit"):
             with patch("pyrit.cli.__main__.Path") as mock_path_class:
                 # Create a mock that handles the path chain properly
                 mock_initializer_file = MagicMock()
                 mock_initializer_file.exists.return_value = False
-                
+
                 # Make the Path() call and all divisions return objects that support further division
                 # Path(PYRIT_PATH) -> ... / "setup" -> ... / "initializers" -> ... / "invalid.py" -> mock_file
                 def path_truediv(self_arg, other):
@@ -283,11 +282,11 @@ class TestMain:
                     next_mock.__truediv__ = path_truediv
                     next_mock.with_suffix = lambda x: mock_initializer_file
                     return next_mock
-                
+
                 mock_path_instance = MagicMock()
                 mock_path_instance.__truediv__ = path_truediv
                 mock_path_class.return_value = mock_path_instance
-                
+
                 result = main(["encoding_scenario", "--initializers", "invalid"])
 
         assert result == 1

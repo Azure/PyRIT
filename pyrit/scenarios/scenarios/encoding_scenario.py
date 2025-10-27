@@ -89,7 +89,6 @@ class EncodingScenario(Scenario):
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
         """
 
-
         # There is currently only one strategy, but this class could encorporate more in the future
         self._attack_strategies = ["Garak basic"]
 

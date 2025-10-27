@@ -12,23 +12,21 @@ they will be configured here.
 
 from typing import List
 
-from pyrit.scenarios import Scenario
 from pyrit.common.apply_defaults import set_default_value
+from pyrit.scenarios import Scenario
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
 class ScenarioObjectiveList(PyRITInitializer):
 
-
     @property
     def name(self) -> str:
         return "Simple Objective List Configuration for Scenarios"
-    
+
     @property
     def execution_order(self) -> int:
         "should be executed after most initializers"
         return 10
-
 
     @property
     def required_env_vars(self) -> List[str]:

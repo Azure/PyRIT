@@ -111,7 +111,7 @@ class PyRITInitializer(ABC):
             ValueError: If required environment variables are not set.
         """
         import os
-        
+
         missing_vars = [var for var in self.required_env_vars if not os.getenv(var)]
         if missing_vars:
             raise ValueError(

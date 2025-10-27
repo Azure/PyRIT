@@ -59,7 +59,7 @@ from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_attack_strategy import ScenarioAttackStrategy
+from pyrit.scenarios.scenario_strategy import ScenarioStrategy
 from pyrit.score import (
     AzureContentFilterScorer,
     FloatScaleThresholdScorer,
@@ -73,7 +73,7 @@ from pyrit.score import (
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
 
-class FoundryAttackStrategy(ScenarioAttackStrategy):
+class FoundryStrategy(ScenarioStrategy):
     """
     Strategies for attacks with tag-based categorization.
 
@@ -88,18 +88,18 @@ class FoundryAttackStrategy(ScenarioAttackStrategy):
     into all strategies with that tag.
 
     Example:
-        >>> strategy = FoundryAttackStrategy.Base64
+        >>> strategy = FoundryStrategy.Base64
         >>> print(strategy.value)  # "base64"
         >>> print(strategy.tags)  # {"easy", "converter"}
         >>>
         >>> # Get all easy strategies
-        >>> easy_strategies = FoundryAttackStrategy.get_strategies_by_tag("easy")
+        >>> easy_strategies = FoundryStrategy.get_strategies_by_tag("easy")
         >>>
         >>> # Get all converter strategies
-        >>> converter_strategies = FoundryAttackStrategy.get_strategies_by_tag("converter")
+        >>> converter_strategies = FoundryStrategy.get_strategies_by_tag("converter")
         >>>
         >>> # Expand EASY to all easy strategies
-        >>> scenario = FoundryScenario(target, attack_strategies={FoundryAttackStrategy.EASY})
+        >>> scenario = FoundryScenario(target, attack_strategies={FoundryStrategy.EASY})
     """
 
     # Aggregate members (special markers that expand to strategies with matching tags)
@@ -170,7 +170,7 @@ class FoundryScenario(Scenario):
         self,
         *,
         objective_target: Optional[PromptTarget] = None,
-        attack_strategies: list[list[FoundryAttackStrategy]] = [[FoundryAttackStrategy.EASY]],
+        attack_strategies: list[list[FoundryStrategy]] = [[FoundryStrategy.EASY]],
         adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
@@ -182,7 +182,7 @@ class FoundryScenario(Scenario):
 
         Args:
             objective_target (PromptTarget): The target system to attack.
-            attack_strategies (list[list[FoundryAttackStrategy]]): List of strategy compositions.
+            attack_strategies (list[list[FoundryStrategy]]): List of strategy compositions.
                 Each inner list represents a composition of strategies to apply together.
                 The outer list contains all strategy combinations to test.
 
@@ -192,19 +192,19 @@ class FoundryScenario(Scenario):
                 Examples::
 
                     # Single strategies (will be expanded from EASY)
-                    [[FoundryAttackStrategy.EASY]]
+                    [[FoundryStrategy.EASY]]
 
                     # Multiple single strategies
-                    [[FoundryAttackStrategy.Base64], [FoundryAttackStrategy.ROT13]]
+                    [[FoundryStrategy.Base64], [FoundryStrategy.ROT13]]
 
                     # Composed strategies (Base64 then Atbash on same prompt)
-                    [[FoundryAttackStrategy.Base64, FoundryAttackStrategy.Atbash]]
+                    [[FoundryStrategy.Base64, FoundryStrategy.Atbash]]
 
                     # Mix of single and composed
                     [
-                        [FoundryAttackStrategy.Base64],  # Single
-                        [FoundryAttackStrategy.Base64, FoundryAttackStrategy.ROT13],  # Composed
-                        [FoundryAttackStrategy.Crescendo]  # Single multi-turn
+                        [FoundryStrategy.Base64],  # Single
+                        [FoundryStrategy.Base64, FoundryStrategy.ROT13],  # Composed
+                        [FoundryStrategy.Crescendo]  # Single multi-turn
                     ]
 
             adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
@@ -225,19 +225,18 @@ class FoundryScenario(Scenario):
             >>> # Single strategies from easy category
             >>> scenario = FoundryScenario(
             ...     objective_target=my_target,
-            ...     attack_strategies=[[FoundryAttackStrategy.EASY]]
+            ...     attack_strategies=[[FoundryStrategy.EASY]]
             ... )
             >>>
             >>> # Composed strategies
             >>> scenario = FoundryScenario(
             ...     objective_target=my_target,
             ...     attack_strategies=[
-            ...         [FoundryAttackStrategy.Base64, FoundryAttackStrategy.Atbash],
-            ...         [FoundryAttackStrategy.ROT13, FoundryAttackStrategy.Leetspeak]
+            ...         [FoundryStrategy.Base64, FoundryStrategy.Atbash],
+            ...         [FoundryStrategy.ROT13, FoundryStrategy.Leetspeak]
             ...     ]
             ... )
         """
-
 
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
@@ -273,7 +272,7 @@ class FoundryScenario(Scenario):
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
         )
 
-    def _get_composition_name(self, composition: list[FoundryAttackStrategy]) -> str:
+    def _get_composition_name(self, composition: list[FoundryStrategy]) -> str:
         """
         Get a name for a strategy composition.
 
@@ -282,7 +281,7 @@ class FoundryScenario(Scenario):
         then converters in alphabetical order.
 
         Args:
-            composition: A list of FoundryAttackStrategy instances.
+            composition: A list of FoundryStrategy instances.
 
         Returns:
             A string name for the composition.
@@ -304,8 +303,8 @@ class FoundryScenario(Scenario):
             return f"ComposedStrategy({strategy_names})"
 
     def _normalize_strategy_compositions(
-        self, attack_strategies: list[list[FoundryAttackStrategy]]
-    ) -> list[list[FoundryAttackStrategy]]:
+        self, attack_strategies: list[list[FoundryStrategy]]
+    ) -> list[list[FoundryStrategy]]:
         """
         Normalize strategy compositions by expanding aggregates while preserving concrete compositions.
 
@@ -340,8 +339,8 @@ class FoundryScenario(Scenario):
         if not attack_strategies:
             raise ValueError("attack_strategies cannot be empty")
 
-        aggregate_tags = set(FoundryAttackStrategy.get_aggregate_tags())
-        normalized_compositions: list[list[FoundryAttackStrategy]] = []
+        aggregate_tags = set(FoundryStrategy.get_aggregate_tags())
+        normalized_compositions: list[list[FoundryStrategy]] = []
 
         for composition in attack_strategies:
             if not composition:
@@ -379,7 +378,7 @@ class FoundryScenario(Scenario):
             # If composition has an aggregate, expand it into individual strategies
             if aggregates_in_composition:
                 aggregate = aggregates_in_composition[0]
-                expanded = FoundryAttackStrategy.normalize_strategies({aggregate})
+                expanded = FoundryStrategy.normalize_strategies({aggregate})
                 # Each expanded strategy becomes its own composition
                 for strategy in expanded:
                     normalized_compositions.append([strategy])
@@ -427,12 +426,12 @@ class FoundryScenario(Scenario):
             ],
         )
 
-    def _get_attack_from_strategy(self, composite_strategy: list[FoundryAttackStrategy]) -> AtomicAttack:
+    def _get_attack_from_strategy(self, composite_strategy: list[FoundryStrategy]) -> AtomicAttack:
         """
         Get an atomic attack for the specified strategy composition.
 
         Args:
-            composite_strategy (list[FoundryAttackStrategy]): List of attack strategies to compose together.
+            composite_strategy (list[FoundryStrategy]): List of attack strategies to compose together.
                 Can include workflow strategies (e.g., Crescendo, MultiTurn) and converter strategies
                 (e.g., Base64, ROT13) that will be applied to the same prompts.
 
@@ -453,54 +452,54 @@ class FoundryScenario(Scenario):
 
         attack_type: type[AttackStrategy] = PromptSendingAttack
         if len(workflows) == 1:
-            if workflows[0] == FoundryAttackStrategy.Crescendo:
+            if workflows[0] == FoundryStrategy.Crescendo:
                 attack_type = CrescendoAttack
-            elif workflows[0] == FoundryAttackStrategy.MultiTurn:
+            elif workflows[0] == FoundryStrategy.MultiTurn:
                 attack_type = RedTeamingAttack
 
         converters: list[PromptConverter] = []
         for strategy in converters_strategies:
-            if strategy == FoundryAttackStrategy.AnsiAttack:
+            if strategy == FoundryStrategy.AnsiAttack:
                 converters.append(AnsiAttackConverter())
-            elif strategy == FoundryAttackStrategy.AsciiArt:
+            elif strategy == FoundryStrategy.AsciiArt:
                 converters.append(AsciiArtConverter())
-            elif strategy == FoundryAttackStrategy.AsciiSmuggler:
+            elif strategy == FoundryStrategy.AsciiSmuggler:
                 converters.append(AsciiSmugglerConverter())
-            elif strategy == FoundryAttackStrategy.Atbash:
+            elif strategy == FoundryStrategy.Atbash:
                 converters.append(AtbashConverter())
-            elif strategy == FoundryAttackStrategy.Base64:
+            elif strategy == FoundryStrategy.Base64:
                 converters.append(Base64Converter())
-            elif strategy == FoundryAttackStrategy.Binary:
+            elif strategy == FoundryStrategy.Binary:
                 converters.append(BinaryConverter())
-            elif strategy == FoundryAttackStrategy.Caesar:
+            elif strategy == FoundryStrategy.Caesar:
                 converters.append(CaesarConverter(caesar_offset=3))
-            elif strategy == FoundryAttackStrategy.CharacterSpace:
+            elif strategy == FoundryStrategy.CharacterSpace:
                 converters.append(CharacterSpaceConverter())
-            elif strategy == FoundryAttackStrategy.CharSwap:
+            elif strategy == FoundryStrategy.CharSwap:
                 converters.append(CharSwapConverter())
-            elif strategy == FoundryAttackStrategy.Diacritic:
+            elif strategy == FoundryStrategy.Diacritic:
                 converters.append(DiacriticConverter())
-            elif strategy == FoundryAttackStrategy.Flip:
+            elif strategy == FoundryStrategy.Flip:
                 converters.append(FlipConverter())
-            elif strategy == FoundryAttackStrategy.Leetspeak:
+            elif strategy == FoundryStrategy.Leetspeak:
                 converters.append(LeetspeakConverter())
-            elif strategy == FoundryAttackStrategy.Morse:
+            elif strategy == FoundryStrategy.Morse:
                 converters.append(MorseConverter())
-            elif strategy == FoundryAttackStrategy.ROT13:
+            elif strategy == FoundryStrategy.ROT13:
                 converters.append(ROT13Converter())
-            elif strategy == FoundryAttackStrategy.SuffixAppend:
+            elif strategy == FoundryStrategy.SuffixAppend:
                 converters.append(SuffixAppendConverter(suffix="!!!"))
-            elif strategy == FoundryAttackStrategy.StringJoin:
+            elif strategy == FoundryStrategy.StringJoin:
                 converters.append(StringJoinConverter())
-            elif strategy == FoundryAttackStrategy.Tense:
+            elif strategy == FoundryStrategy.Tense:
                 converters.append(TenseConverter(tense="past", converter_target=self._adversarial_chat))
-            elif strategy == FoundryAttackStrategy.UnicodeConfusable:
+            elif strategy == FoundryStrategy.UnicodeConfusable:
                 converters.append(UnicodeConfusableConverter())
-            elif strategy == FoundryAttackStrategy.UnicodeSubstitution:
+            elif strategy == FoundryStrategy.UnicodeSubstitution:
                 converters.append(UnicodeSubstitutionConverter())
-            elif strategy == FoundryAttackStrategy.Url:
+            elif strategy == FoundryStrategy.Url:
                 converters.append(UrlConverter())
-            elif strategy == FoundryAttackStrategy.Jailbreak:
+            elif strategy == FoundryStrategy.Jailbreak:
                 jailbreak_template = TextJailBreak(random_template=True)
                 converters.append(TextJailbreakConverter(jailbreak_template=jailbreak_template))
             else:

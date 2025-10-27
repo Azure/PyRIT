@@ -189,7 +189,9 @@ class TestScenarioExecution:
         assert result.attack_results["attack_run_3"][0] == sample_attack_results[2]
 
     @pytest.mark.asyncio
-    async def test_run_async_with_custom_concurrency(self, mock_atomic_attacks, sample_attack_results, mock_objective_target):
+    async def test_run_async_with_custom_concurrency(
+        self, mock_atomic_attacks, sample_attack_results, mock_objective_target
+    ):
         """Test that max_concurrency from init is passed to each atomic attack."""
         for i, run in enumerate(mock_atomic_attacks):
             run.run_async = AsyncMock(
@@ -216,7 +218,9 @@ class TestScenarioExecution:
         assert len(result.attack_results) == 3
 
     @pytest.mark.asyncio
-    async def test_run_async_aggregates_multiple_results(self, mock_atomic_attacks, sample_attack_results, mock_objective_target):
+    async def test_run_async_aggregates_multiple_results(
+        self, mock_atomic_attacks, sample_attack_results, mock_objective_target
+    ):
         """Test that results from multiple atomic attacks are properly aggregated."""
         # Configure runs to return different numbers of results
         mock_atomic_attacks[0].run_async = AsyncMock(
@@ -298,7 +302,9 @@ class TestScenarioExecution:
             await scenario.run_async()
 
     @pytest.mark.asyncio
-    async def test_run_async_returns_scenario_result_with_identifier(self, mock_atomic_attacks, sample_attack_results, mock_objective_target):
+    async def test_run_async_returns_scenario_result_with_identifier(
+        self, mock_atomic_attacks, sample_attack_results, mock_objective_target
+    ):
         """Test that run_async returns ScenarioResult with proper identifier."""
         for i, run in enumerate(mock_atomic_attacks):
             run.run_async = AsyncMock(

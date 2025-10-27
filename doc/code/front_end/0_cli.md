@@ -1,6 +1,6 @@
 # The PyRIT CLI
 
-The PyRIT cli tool that allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategries and [configuration](../setup/0_configuration.ipynb). 
+The PyRIT cli tool that allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategries and [configuration](../setup/0_configuration.ipynb).
 
 ## Quick Start
 
@@ -126,10 +126,10 @@ Baisc usage will look something like:
 pyrit_scan <scenario> --initializers <initializer1> <initializer2>
 ```
 
-Example with a basic configuration that runs the Foundry scenario against the objective target defined in `scenarios.objective_target` (which just is an OpenAIChatTarget with `OPENAI_CLI_ENDPOINT` and `OPEN_CLI_KEY`).
+Example with a basic configuration that runs the Foundry scenario against the objective target defined in `scenarios.openai_objective_target` (which just is an OpenAIChatTarget with `OPENAI_CLI_ENDPOINT` and `OPEN_CLI_KEY`).
 
 ```bash
-pyrit_scan foundry_scenario --initializers scenarios.objective_target
+pyrit_scan foundry_scenario --initializers scenarios.openai_objective_target
 ```
 
 Or with all options and multiple initializers:
@@ -156,16 +156,16 @@ from pyrit.common.apply_defaults import apply_defaults
 @apply_defaults
 class MyCustomScenario(Scenario):
     """My custom scenario that does XYZ."""
-    
+
     def __init__(self, objective_target=None):
         super().__init__(name="My Custom Scenario", version="1.0")
         self.objective_target = objective_target
         # ... your initialization code
-    
+
     async def initialize_async(self):
         # Load your atomic attacks
         pass
-    
+
     # ... implement other required methods
 ```
 
@@ -208,8 +208,8 @@ The scanner is ideal for:
 
 For comprehensive documentation about initialization files and setting defaults see:
 
-- **Configuration**: See [configuration.](../doc/code/setup/0_configuration.ipynb)
-- **Setting Default Values**: See [default values](../doc/code/setup/default_values.md)
-- **Writing Initializers**: See [Initializers](../doc/code/setup/pyrit_initializer.ipynb)
+- **Configuration**: See [configuration.](../setup/0_configuration.ipynb)
+- **Setting Default Values**: See [default values](../setup/default_values.md)
+- **Writing Initializers**: See [Initializers](../setup/pyrit_initializer.ipynb)
 
 Or visit the [PyRIT documentation website](https://azure.github.io/PyRIT/)
