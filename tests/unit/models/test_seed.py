@@ -35,6 +35,7 @@ def seed_prompt_fixture():
         sequence=1,
     )
 
+
 @pytest.fixture
 def seed_objective_fixture():
     return SeedObjective(
@@ -51,6 +52,7 @@ def seed_objective_fixture():
         metadata={"key": "value"},
         prompt_group_id=uuid.uuid4(),
     )
+
 
 def test_seed_objective_initialization(seed_objective_fixture):
     assert isinstance(seed_objective_fixture.id, uuid.UUID)
