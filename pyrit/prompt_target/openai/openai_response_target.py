@@ -139,10 +139,11 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             tools = extra_body_parameters.get("tools", [])
             for tool in tools:
                 if tool.get("type") == "custom" and tool.get("format", {}).get("type") == "grammar":
+                    if self._grammar_name is not None:
+                        raise ValueError("Multiple grammar tools detected; only one is supported.")
                     tool_name = tool.get("name")
                     logger.debug("Detected grammar tool: %s", tool_name)
                     self._grammar_name = tool_name
-                    break
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
