@@ -180,6 +180,15 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
+
+message_piece = MessagePiece(
+    role="user",
+    original_value="What is the capital of Italy?",
+    original_value_data_type="text",
+)
+prompt_request = Message(message_pieces=[message_piece])
+
+# Define a grammar that prevents "Rome" from being generated
 lark_grammar = r"""
 start: "I think that it is " SHORTTEXT 
 SHORTTEXT: /[^RrOoMmEe]{1,8}/
@@ -196,13 +205,6 @@ grammar_tool = {
     },
 }
 
-
-message_piece = MessagePiece(
-    role="user",
-    original_value="What is the capital of Italy?",
-    original_value_data_type="text",
-)
-prompt_request = Message(message_pieces=[message_piece])
 
 target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
