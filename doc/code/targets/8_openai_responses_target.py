@@ -205,11 +205,10 @@ grammar_tool = {
     },
 }
 
-
 target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
     api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
-    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-4.1-mini"),
+    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-5"),
     api_version="2025-03-01-preview",
     extra_body_parameters={"tools": [grammar_tool], "tool_choice": "required"},
     temperature=1.0,
@@ -218,7 +217,7 @@ target = OpenAIResponseTarget(
 unconstrained_target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
     api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
-    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-4.1-mini"),
+    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-5"),
     api_version="2025-03-01-preview",
     temperature=1.0,
 )
