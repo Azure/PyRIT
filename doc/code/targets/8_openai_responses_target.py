@@ -222,9 +222,9 @@ unconstrained_target = OpenAIResponseTarget(
     temperature=1.0,
 )
 
-unconstrained_result = await unconstrained_target.send_prompt_async(prompt_request=prompt_request)
+unconstrained_result = await unconstrained_target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
-result = await target.send_prompt_async(prompt_request=prompt_request)
+result = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
 print("Unconstrained Response:")
 for idx, piece in enumerate(unconstrained_result.message_pieces):
