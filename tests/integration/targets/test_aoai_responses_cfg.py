@@ -57,5 +57,5 @@ SHORTTEXT: /[^PpAaRrIiSs]{1,8}/
     response_text = target_piece.original_value
     assert response_text.startswith("I think that it is ")
     generation_text = response_text[len("I think that it is ") :]
-    assert re.match(r"[^PpAaRrIiSs]{1,8}", generation_text)
     assert len(generation_text) <= 8
+    assert re.match(r"[^PpAaRrIiSs]{1,8}", generation_text)
