@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -20,25 +16,35 @@
 #
 # You can also retrieve metrics from a specific evaluation or from an evaluation that was previously saved using the `get_scorer_metrics` method and passing in the name of the dataset (`dataset_name`) that the evaluation was run on.
 
+# %%
+# Imports:
+
+from dataclasses import asdict
+from pathlib import Path
+
+from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PATH
+from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.score import (
+    LikertScalePaths,
+    MetricsType,
+    ObjectiveScorerEvaluator,
+    ScorerEvaluator,
+    SelfAskLikertScorer,
+    SelfAskRefusalScorer,
+    SelfAskTrueFalseScorer,
+)
+from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
+from pyrit.setup import IN_MEMORY, initialize_pyrit
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
+target = OpenAIChatTarget()
+
+
 # %% [markdown]
 # ## Running Harm Scorer Evaluation
 # The following cell demonstrates how to run a custom harm scoring evaluation on a `Scorer` using a dataset of LLM assistant responses and human labels stored as a CSV file. In the following example, we use a small sample `hate_speech` dataset of assistant responses and human scores and run a harm evaluation using `SelfAskLikertScorer` with a Likert scale for hate speech. Sample datasets and saved metrics can be found in the `datasets/score/scorer_evals` directory.
 
 # %%
-from dataclasses import asdict
-
-from pyrit.common.path import SCORER_EVALS_HARM_PATH
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import (
-    LikertScalePaths,
-    MetricsType,
-    ScorerEvaluator,
-    SelfAskLikertScorer,
-)
-from pyrit.setup import IN_MEMORY, initialize_pyrit
-
-initialize_pyrit(memory_db_type=IN_MEMORY)
-
 target = OpenAIChatTarget()
 likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=LikertScalePaths.HATE_SPEECH_SCALE.value)
 
@@ -78,17 +84,13 @@ likert_scorer.get_scorer_metrics(dataset_name="SAMPLE_hate_speech", metrics_type
 # The following cell demonstrates how to run a custom objective evaluation on a `Scorer` using a dataset of LLM assistant responses and human labels stored as a CSV file. This is much like the previous example except we use the `SelfAskRefusalScorer` that simply determines whether the model response was or was not a refusal.
 
 # %%
-from pyrit.common.path import SCORER_EVALS_OBJECTIVE_PATH
-from pyrit.score import SelfAskRefusalScorer
-
-target = OpenAIChatTarget()
 refusal_scorer = SelfAskRefusalScorer(chat_target=target)
 
 # factory method that creates an ObjectiveScorerEvaluator in this case because the refusal scorer is a true/false scorer.
 evaluator = ScorerEvaluator.from_scorer(scorer=refusal_scorer)
-csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/SAMPLE_mixed_objective_refusal.csv"
+csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_09_22_2025/SAMPLE_mixed_objective_refusal.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
-# csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/mixed_objective_refusal.csv"
+# csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}//evaluation_datasets_09_22_2025/mixed_objective_refusal.csv"
 
 # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
 metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
@@ -109,23 +111,6 @@ refusal_scorer.get_scorer_metrics(dataset_name="SAMPLE_mixed_objective_refusal")
 # In this case we use a `true_false_scorer` which determines whether the responses are harmful or not according to their harm category.
 
 # %%
-from pathlib import Path
-from typing import cast
-
-from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.common.path import SCORER_EVALS_OBJECTIVE_PATH
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import (
-    ObjectiveScorerEvaluator,
-    ScorerEvaluator,
-    SelfAskTrueFalseScorer,
-)
-from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
-
-initialize_pyrit(memory_db_type=IN_MEMORY)
-
-target = OpenAIChatTarget()
-
 # Map harm categories to their respective dataset file paths and evaluation rubric file paths
 # This allows for easy extension to new harm categories by or editing entries in this map.
 # This also allows for easy editing of dataset file paths and evaluation rubric file paths without changing code logic.
@@ -168,7 +153,7 @@ harm_category_map = {
 }
 
 # set this list to the categories you want to evaluate
-harm_categories_to_evaluate = ["information_integrity", "self-harm"]
+harm_categories_to_evaluate = ["information_integrity"]
 
 for harm_category in harm_categories_to_evaluate:
     if harm_category not in harm_category_map:
@@ -181,27 +166,17 @@ for harm_category in harm_categories_to_evaluate:
 
     true_false_scorer = SelfAskTrueFalseScorer(true_false_question_path=Path(eval_rubric_path), chat_target=target)
 
-    evaluator = cast(ObjectiveScorerEvaluator, ScorerEvaluator.from_scorer(scorer=true_false_scorer))
+    evaluator: ObjectiveScorerEvaluator = ScorerEvaluator.from_scorer(scorer=true_false_scorer)  # type: ignore
 
     # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
-    # Run evaluation and get metrics directly (this would be in an async context)
-    # metrics = await evaluator.run_evaluation_from_csv_async(
-    #     csv_path=csv_path,
-    #     assistant_response_col_name="assistant_response",
-    #     human_label_col_names=["human_score"],
-    #     objective_or_harm_col_name="objective",
-    #     assistant_response_data_type_col_name="data_type",
-    #     num_scorer_trials=1,
-    # )
+    metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
+        csv_path=csv_path,
+        assistant_response_col_name="assistant_response",
+        human_label_col_names=["human_score"],
+        objective_or_harm_col_name="objective",
+        assistant_response_data_type_col_name="data_type",
+        num_scorer_trials=1,
+    )
 
     print("Evaluation for harm category:", harm_category)
-    # For demonstration: after running evaluation, get metrics from default location
-    # print(metrics)
-
-    # Alternative: retrieve metrics that were previously saved during evaluation
-    # (only works if evaluation was already run and saved to default location)
-    try:
-        saved_metrics = evaluator.get_scorer_metrics(dataset_name=dataset_name)
-        print(saved_metrics)
-    except FileNotFoundError:
-        print(f"No saved metrics found for dataset {dataset_name}. Run evaluation first.")
+    print(asdict(metrics))
