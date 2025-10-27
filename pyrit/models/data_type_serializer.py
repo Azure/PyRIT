@@ -54,8 +54,8 @@ def data_serializer_factory(
             f"The 'category' argument is mandatory and must be one of the following: {get_args(AllowedCategories)}."
         )
     if value is not None:
-        if data_type in ["text", "reasoning"]:
-            return TextDataTypeSerializer(prompt_text=value)
+        if data_type in ["text", "reasoning", "function_call", "tool_call", "function_call_output"]:
+            return TextDataTypeSerializer(prompt_text=value, data_type=data_type)
         elif data_type == "image_path":
             return ImagePathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "audio_path":
@@ -297,9 +297,8 @@ class DataTypeSerializer(abc.ABC):
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
-
-    def __init__(self, *, prompt_text: str):
-        self.data_type = "text"
+    def __init__(self, *, prompt_text: str, data_type: PromptDataType = "text"):
+        self.data_type = data_type
         self.value = prompt_text
 
     def data_on_disk(self) -> bool:
