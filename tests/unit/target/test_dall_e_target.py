@@ -348,10 +348,3 @@ async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
         await dalle_target.send_prompt_async(prompt_request=prompt_request)
 
         dalle_target.refresh_auth_headers.assert_called_once()
-
-
-def test_dalle_target_sets_expected_route(patch_central_database):
-    """Test that DALL-E target sets the correct expected route for URL validation."""
-    target = OpenAIDALLETarget(model_name="dall-e-3", endpoint="test", api_key="test")
-
-    assert target._expected_route == "/openai/deployments/*/images/generations"

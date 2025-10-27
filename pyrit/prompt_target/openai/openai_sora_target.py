@@ -158,6 +158,9 @@ class OpenAISoraTarget(OpenAITarget):
         # Detect API version
         self._detected_api_version = self._detect_api_version()
 
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint(self.SORA_URL_REGEX)
+
         # Set instance variables
         self._n_seconds = n_seconds
         self._validate_duration()
@@ -166,35 +169,6 @@ class OpenAISoraTarget(OpenAITarget):
 
     def _set_openai_env_configuration_vars(self) -> None:
         """Set unified environment variable names for both API versions."""
-        dimensions = resolution_dimensions or self.DEFAULT_RESOLUTION_DIMENSIONS
-        temp = dimensions.split("x")
-        self._height = temp[1]
-        self._width = temp[0]
-
-        self._n_seconds = n_seconds or self.DEFAULT_N_SECONDS
-        self._n_variants = n_variants or self.DEFAULT_N_VARIANTS
-        self._api_version = api_version or self.DEFAULT_API_VERSION
-
-        # Validate input based on resolution dimensions
-        self._validate_video_constraints(
-            resolution_dimensions=dimensions,
-            n_seconds=self._n_seconds,
-            n_variants=self._n_variants,
-        )
-
-        self._output_filename = output_filename
-
-        self._params = {}
-        self._params["api-version"] = self._api_version
-
-        # Set expected routes for URL validation (Sora video generation API)
-        self._expected_route = [
-            "/videos/generations",
-        ]
-        # Validate endpoint URL
-        self._warn_if_irregular_endpoint()
-
-    def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_SORA_MODEL"
         self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_SORA_KEY"

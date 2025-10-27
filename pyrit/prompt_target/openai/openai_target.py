@@ -3,8 +3,9 @@
 
 import json
 import logging
+import re
 from abc import abstractmethod
-from typing import List, Optional, Union
+from typing import Optional
 from urllib.parse import urlparse
 
 from pyrit.auth import AzureAuth
@@ -19,12 +20,21 @@ class OpenAITarget(PromptChatTarget):
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
+    # Expected URL regex patterns for different OpenAI targets
+    CHAT_URL_REGEX = [
+        r"/v1/chat/completions$",  # Standard OpenAI endpoint
+        r"/openai/deployments/[^/]+/chat/completions$",  # Azure OpenAI pattern
+    ]
+    SORA_URL_REGEX = [r"/videos/generations$"]
+    DALLE_URL_REGEX = [r"/images/generations$"]
+    TTS_URL_REGEX = [r"/audio/speech$"]
+    RESPONSE_URL_REGEX = [r"/openai/responses$"]
+
     model_name_environment_variable: str
     endpoint_environment_variable: str
     api_key_environment_variable: str
 
     _azure_auth: Optional[AzureAuth] = None
-    _expected_route: Optional[Union[str, List[str]]] = None
 
     def __init__(
         self,
@@ -93,9 +103,6 @@ class OpenAITarget(PromptChatTarget):
 
         self._set_auth_headers(use_entra_auth=use_entra_auth, passed_api_key=api_key)
 
-        # Validate endpoint URL format
-        self._warn_if_irregular_endpoint()
-
     def _set_auth_headers(self, use_entra_auth, passed_api_key) -> None:
         if use_entra_auth:
             if passed_api_key:
@@ -129,63 +136,43 @@ class OpenAITarget(PromptChatTarget):
         """
         raise NotImplementedError
 
-    def _warn_if_irregular_endpoint(self) -> None:
+    def _warn_if_irregular_endpoint(self, expected_url_regex) -> None:
         """
         Validate that the endpoint URL ends with one of the expected routes for this OpenAI target.
+
+        Args:
+            expected_url_regex: Expected regex pattern(s) for this target. Should be a list of regex strings.
 
         Prints a warning if the endpoint doesn't match any of the expected routes.
         This validation helps ensure the endpoint is configured correctly for the specific API.
         """
-        if not self._endpoint or not self._expected_route:
+        if not self._endpoint or not expected_url_regex:
             return
 
         # Use urllib to extract the path part and normalize it
         parsed_url = urlparse(self._endpoint)
         normalized_route = parsed_url.path.lower().rstrip("/")
 
-        # Handle both single route (string) and multiple routes (list)
-        expected_routes = self._expected_route if isinstance(self._expected_route, list) else [self._expected_route]
-
-        # Check if the endpoint matches any of the expected routes
-        for expected_route in expected_routes:
-            if expected_route is None:
-                continue
-
-            expected_route = expected_route.lower().rstrip("/")
-
-            # Handle wildcard patterns like "/openai/deployments/*/chat/completions"
-            if "*" in expected_route:
-                if self._matches_wildcard_pattern(normalized_route, expected_route):
-                    return
-            else:
-                # Exact matching for routes without wildcards
-                if normalized_route == expected_route:
-                    return
+        # Check if the endpoint matches any of the expected regex patterns
+        for regex_pattern in expected_url_regex:
+            if re.search(regex_pattern, normalized_route):
+                return
 
         # No matches found, log warning
-        expected_routes_str = (
-            str(self._expected_route)
-            if isinstance(self._expected_route, str)
-            else f"one of: {', '.join(self._expected_route)}"
-        )
+        if len(expected_url_regex) == 1:
+            # Convert regex back to human-readable format for the warning
+            pattern_str = expected_url_regex[0].replace(r"[^/]+", "*").replace("$", "")
+            expected_routes_str = pattern_str
+        else:
+            # Convert all regex patterns to human-readable format
+            readable_patterns = [p.replace(r"[^/]+", "*").replace("$", "") for p in expected_url_regex]
+            expected_routes_str = f"one of: {', '.join(readable_patterns)}"
+
         logger.warning(
-            f"Expected endpoint to end with  {expected_routes_str} "
+            f"Expected endpoint to end with {expected_routes_str} "
             f"Please verify your endpoint URL: '{self._endpoint}'."
+            f"For more details and guidance, please see the `.env_example` file."
         )
-
-    def _matches_wildcard_pattern(self, route: str, pattern: str) -> bool:
-        """Check if a route matches a wildcard pattern."""
-        pattern_parts = pattern.split("/")
-        route_parts = route.split("/")
-
-        if len(pattern_parts) != len(route_parts):
-            return False
-
-        for pattern_part, route_part in zip(pattern_parts, route_parts):
-            if pattern_part != "*" and pattern_part != route_part:
-                return False
-
-        return True
 
     @abstractmethod
     def is_json_response_supported(self) -> bool:

@@ -257,10 +257,3 @@ async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
         await tts_target.send_prompt_async(prompt_request=prompt_request)
 
         tts_target.refresh_auth_headers.assert_called_once()
-
-
-def test_tts_target_sets_expected_route(patch_central_database):
-    """Test that TTS target sets the correct expected route for URL validation."""
-    target = OpenAITTSTarget(model_name="tts-1", endpoint="test", api_key="test")
-
-    assert target._expected_route == "/openai/deployments/*/audio/speech"

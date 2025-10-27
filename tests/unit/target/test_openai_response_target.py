@@ -1142,10 +1142,3 @@ def test_construct_message_skips_unhandled_types(target: OpenAIResponseTarget, d
     # Only the 'message' section becomes a piece; image_generation_call is skipped
     assert len(resp.message_pieces) == 1
     assert resp.message_pieces[0].original_value == "Hi"
-
-
-def test_response_target_sets_expected_route(patch_central_database):
-    """Test that Response target sets the correct expected route for URL validation."""
-    target = OpenAIResponseTarget(model_name="o1-mini", endpoint="test", api_key="test")
-
-    assert target._expected_route == ["/openai/responses"]

@@ -1001,10 +1001,3 @@ def test_validate_request_non_text_type(
 def test_is_json_response_supported(sora_target: OpenAISoraTarget):
     """Test that JSON response is not supported."""
     assert sora_target.is_json_response_supported() is False
-
-
-def test_sora_target_sets_expected_route(patch_central_database):
-    """Test that Sora target sets the correct expected route for URL validation."""
-    target = OpenAISoraTarget(endpoint="test", api_key="test")
-
-    assert target._expected_route == ["/videos/generations"]
