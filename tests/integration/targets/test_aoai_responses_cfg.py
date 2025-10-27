@@ -25,7 +25,7 @@ from pyrit.prompt_target import OpenAIResponseTarget
 )
 async def test_aoai_responses_cfg(sqlite_instance, endpoint, api_key, model_name):
     lark_grammar = r"""
-start: "I think that it is " SHORTTEXT 
+start: "I think that it is " SHORTTEXT
 SHORTTEXT: /[^PpAaRrIiSs]{1,8}/
 """
 

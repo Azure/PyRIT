@@ -56,10 +56,8 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This showcases how agentic function execution works with PyRIT + OpenAI Responses API.
 
-from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
-
 # %%
+from pyrit.models import Message, MessagePiece
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -93,7 +91,6 @@ function_tool = {
 
 # Let the model auto-select tools
 target = OpenAIResponseTarget(
-    model_name="o4-mini",
     custom_functions={"get_current_weather": get_current_weather},
     extra_body_parameters={
         "tools": [function_tool],
@@ -140,10 +137,6 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = OpenAIResponseTarget(
-    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
-    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
-    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-4o-mini"),
-    api_version=None,
     extra_body_parameters={
         "tools": [web_search_tool()],
         "tool_choice": "auto",
@@ -190,7 +183,7 @@ prompt_request = Message(message_pieces=[message_piece])
 
 # Define a grammar that prevents "Rome" from being generated
 lark_grammar = r"""
-start: "I think that it is " SHORTTEXT 
+start: "I think that it is " SHORTTEXT
 SHORTTEXT: /[^RrOoMmEe]{1,8}/
 """
 
