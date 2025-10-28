@@ -29,7 +29,7 @@ datasets:
 
 - **Type**: List of strings
 - **Required**: Yes
-- **Description**: Paths to YAML files containing seed prompts. Each file should follow the `SeedPromptDataset` format.
+- **Description**: Paths to YAML files containing seed prompts. Each file should follow the `SeedDataset` format.
 
 ## Scenarios
 
@@ -569,14 +569,14 @@ After running the scanner, you can analyze results using PyRIT's memory system:
 
 ```python
 from pyrit.memory import CentralMemory
-from pyrit.common import initialize_pyrit
+from pyrit.setup import initialize_pyrit
 
 # Initialize
 initialize_pyrit()
 memory = CentralMemory.get_memory_instance()
 
 # Query by operation label
-results = memory.get_prompt_request_pieces(
+results = memory.get_message_pieces(
     labels={"operation": "your_operation_name"}
 )
 

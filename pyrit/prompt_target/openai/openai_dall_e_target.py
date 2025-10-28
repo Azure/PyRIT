@@ -14,8 +14,8 @@ from pyrit.exceptions import (
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
+    Message,
     PromptDataType,
-    PromptRequestResponse,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -96,6 +96,9 @@ class OpenAIDALLETarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint(self.DALLE_URL_REGEX)
+
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_DALLE_MODEL"
         self.endpoint_environment_variable = "OPENAI_DALLE_ENDPOINT"
@@ -106,19 +109,19 @@ class OpenAIDALLETarget(OpenAITarget):
     async def send_prompt_async(
         self,
         *,
-        prompt_request: PromptRequestResponse,
-    ) -> PromptRequestResponse:
+        prompt_request: Message,
+    ) -> Message:
         """
         Send a prompt to the DALL-E target and return the response.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request to send.
+            prompt_request (Message): The prompt request to send.
 
         Returns:
-            PromptRequestResponse: The response from the DALL-E target.
+            Message: The response from the DALL-E target.
         """
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -203,12 +206,12 @@ class OpenAIDALLETarget(OpenAITarget):
 
         return image_generation_args
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        n_pieces = len(prompt_request.request_pieces)
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

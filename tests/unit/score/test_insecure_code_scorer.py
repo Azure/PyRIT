@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece, Score, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import InsecureCodeScorer
 
@@ -31,20 +31,18 @@ async def test_insecure_code_scorer_valid_response(mock_chat_target):
         score_rationale="This code has potential vulnerabilities.",
         score_metadata=None,
         scorer_class_identifier={"scorer_name": "InsecureCodeScorer"},
-        prompt_request_response_id="12345",
+        message_piece_id="12345",
         objective=None,
     )
 
     # Patch _memory.add_scores_to_memory to prevent sqlite errors and check for call
     with patch.object(scorer._memory, "add_scores_to_memory", new=MagicMock()) as mock_add_scores:
         with patch.object(scorer, "_score_value_with_llm", new=AsyncMock(return_value=unvalidated_score)):
-            # Create a request_response object
-            request_response = PromptRequestPiece(
-                role="user", original_value="sample code"
-            ).to_prompt_request_response()
+            # Create a message piece object
+            message = MessagePiece(role="user", original_value="sample code").to_message()
 
             # Call the score_async method
-            scores = await scorer.score_async(request_response)
+            scores = await scorer.score_async(message)
 
             # Assertions
             assert len(scores) == 1
@@ -66,12 +64,10 @@ async def test_insecure_code_scorer_invalid_json(mock_chat_target):
         with patch.object(
             scorer, "_score_value_with_llm", new=AsyncMock(side_effect=InvalidJsonException(message="Invalid JSON"))
         ):
-            request_response = PromptRequestPiece(
-                role="user", original_value="sample code"
-            ).to_prompt_request_response()
+            message = MessagePiece(role="user", original_value="sample code").to_message()
 
             with pytest.raises(InvalidJsonException, match="Invalid JSON"):
-                await scorer.score_async(request_response)
+                await scorer.score_async(message)
 
             # Ensure memory functions were not called
             mock_add_scores.assert_not_called()
@@ -83,12 +79,12 @@ async def test_insecure_code_scorer_validate(mock_chat_target):
         chat_target=mock_chat_target,
     )
 
-    request = PromptRequestPiece(
+    request = MessagePiece(
         role="assistant",
         original_value="image_data",
         converted_value="image_data",
         converted_value_data_type="image_path",
-    ).to_prompt_request_response()
+    ).to_message()
 
     with pytest.raises(ValueError, match="There are no valid pieces to score"):
         await scorer.score_async(request)

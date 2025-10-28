@@ -17,11 +17,11 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -74,9 +74,9 @@ def basic_context():
 @pytest.fixture
 def sample_response():
     """Create a sample response for testing"""
-    return PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(
+    return Message(
+        message_pieces=[
+            MessagePiece(
                 role="assistant",
                 original_value="Test response",
                 original_value_data_type="text",
@@ -97,7 +97,7 @@ def success_score():
         score_value_description="Test success score",
         score_rationale="Test rationale for success",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -112,7 +112,7 @@ def failure_score():
         score_value_description="Test failure score",
         score_rationale="Test rationale for failure",
         score_metadata={},
-        prompt_request_response_id=str(uuid.uuid4()),
+        message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
     )
 
@@ -260,7 +260,7 @@ class TestPromptSending:
             ),
         )
 
-        prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value="test prompt", data_type="text")])
+        prompt_group = SeedGroup(prompts=[SeedPrompt(value="test prompt", data_type="text")])
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
         result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
@@ -274,7 +274,7 @@ class TestPromptSending:
 
         attack = MultiPromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
-        prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value="test prompt", data_type="text")])
+        prompt_group = SeedGroup(prompts=[SeedPrompt(value="test prompt", data_type="text")])
 
         result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
 
@@ -353,15 +353,15 @@ class TestAttackExecution:
     async def test_perform_async_stops_on_failed_prompt(self, mock_target, mock_prompt_normalizer, basic_context):
         # First prompt succeeds, second fails
         mock_prompt_normalizer.send_prompt_async.side_effect = [
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(role="assistant", original_value="response1", original_value_data_type="text")
+            Message(
+                message_pieces=[
+                    MessagePiece(role="assistant", original_value="response1", original_value_data_type="text")
                 ]
             ),
             None,  # Failed prompt
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(role="assistant", original_value="response3", original_value_data_type="text")
+            Message(
+                message_pieces=[
+                    MessagePiece(role="assistant", original_value="response3", original_value_data_type="text")
                 ]
             ),
         ]
@@ -560,7 +560,7 @@ class TestEdgeCasesAndErrorHandling:
     """Tests for edge cases and error handling scenarios"""
 
     @pytest.mark.asyncio
-    async def test_perform_attack_with_empty_prompt_responses(
+    async def test_perform_attack_with_empty_messages(
         self, mock_target, mock_prompt_normalizer, mock_true_false_scorer, basic_context
     ):
         mock_prompt_normalizer.send_prompt_async.return_value = None

@@ -12,13 +12,13 @@
 # %% [markdown]
 # # 3. Audio Converters
 #
-# Converters can also be multi-modal. Because it's an abstract function used interchangeably on a single `PromptRequestPiece`, it can only deal with one input value and type per time, and have one output value and type per time. Below is an example of using `AzureSpeechTextToAudioConverter`, which has an input type of `text` and an output type of `audio_path`.
+# Converters can also be multi-modal. Because it's an abstract function used interchangeably on a single `MessagePiece`, it can only deal with one input value and type per time, and have one output value and type per time. Below is an example of using `AzureSpeechTextToAudioConverter`, which has an input type of `text` and an output type of `audio_path`.
 
 # %%
 import os
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

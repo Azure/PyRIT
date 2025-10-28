@@ -4,9 +4,7 @@
 import uuid
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, Score
-from pyrit.models.literals import ChatMessageRole
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
@@ -31,7 +29,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
     async def _score_async(
         self,
-        request_response: PromptRequestResponse,
+        message: Message,
         *,
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
@@ -39,7 +37,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         """Scores the piece using the underlying true-false scorer and returns the inverted score.
 
         Args:
-            request_response (PromptRequestResponse): The prompt request response to score.
+            message (Message): The message to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
                 Defaults to None.
             role_filter (Optional[ChatMessageRole]): Optional filter for message roles. Defaults to None.
@@ -48,7 +46,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
             list[Score]: A list containing a single Score object with the inverted true/false value.
         """
         scores = await self._scorer.score_async(
-            request_response,
+            message,
             objective=objective,
             role_filter=role_filter,
         )
@@ -58,26 +56,35 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
         inv_score.score_value = str(True) if not inv_score.get_value() else str(False)
         inv_score.score_value_description = "Inverted score: " + str(inv_score.score_value_description)
-        inv_score.score_rationale = f"Inverted score: {inv_score.score_value}\n{inv_score.score_rationale}"
+
+        scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
+        inv_score.score_rationale = (
+            f"Inverted score from {scorer_type} result: {inv_score.score_value}\n" f"{inv_score.score_rationale}"
+        )
 
         inv_score.id = uuid.uuid4()
 
         inv_score.scorer_class_identifier = self.get_identifier()
-        # Store a string representation to satisfy type expectations
-        inv_score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
 
         return [inv_score]
 
-    async def _score_piece_async(
-        self, request_piece: PromptRequestPiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """True False Inverter scorers do not support piecewise scoring.
 
         Args:
-            request_piece (PromptRequestPiece): Unused.
+            message_piece (MessagePiece): Unused.
             objective (Optional[str]): Unused.
 
         Raises:
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
+
+    def _get_sub_identifier(self):
+        """
+        Returns the identifier of the underlying true/false scorer.
+
+        Returns:
+            dict: The identifier dictionary of the wrapped scorer.
+        """
+        return self._scorer.get_identifier()

@@ -16,7 +16,7 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     ChatMessage,
-    PromptRequestResponse,
+    Message,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
@@ -77,7 +77,10 @@ class AzureMLChatTarget(PromptChatTarget):
                 model-dependent. If a model does not accept a certain parameter that is passed in, it will be skipped
                 without throwing an error.
         """
-        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
+        endpoint_value = default_values.get_required_value(
+            env_var_name=self.endpoint_uri_environment_variable, passed_value=endpoint
+        )
+        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
 
         self._initialize_vars(endpoint=endpoint, api_key=api_key)
 
@@ -154,10 +157,10 @@ class AzureMLChatTarget(PromptChatTarget):
         self._extra_parameters = param_kwargs
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
 
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         messages = list(self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id))
 
@@ -264,12 +267,12 @@ class AzureMLChatTarget(PromptChatTarget):
 
         return headers
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        n_pieces = len(prompt_request.request_pieces)
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.request_pieces[0].converted_value_data_type
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

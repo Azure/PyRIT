@@ -12,12 +12,12 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
 )
 from pyrit.models import (
+    ChatMessage,
     ChatMessageListDictContent,
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
 )
-from pyrit.models.chat_message import ChatMessage
 from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,33 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
     This class facilitates multimodal (image and text) input and text output generation
 
     This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
+
+    Args:
+        api_key (str): The api key for the OpenAI API
+        endpoint (str): The endpoint for the OpenAI API
+        model_name (str): The model name for the OpenAI API
+        deployment_name (str): For Azure, the deployment name
+        api_version (str): The api version for the OpenAI API
+        temperature (float): The temperature for the completion
+        max_completion_tokens (int): The maximum number of tokens to be returned by the model.
+            The total length of input tokens and generated tokens is limited by
+            the model's context length.
+        max_tokens (int): Deprecated. Use max_completion_tokens instead
+        top_p (float): The nucleus sampling probability.
+        frequency_penalty (float): Number between -2.0 and 2.0. Positive values
+            penalize new tokens based on their existing frequency in the text so far,
+            decreasing the model's likelihood to repeat the same line verbatim.
+        presence_penalty (float): Number between -2.0 and 2.0. Positive values
+            penalize new tokens based on whether they appear in the text so far,
+            increasing the model's likelihood to talk about new topics.
+        seed (int): This feature is in Beta. If specified, our system will make a best effort to sample
+            deterministically, such that repeated requests with the same seed
+            and parameters should return the same result.
+        n (int): How many chat completion choices to generate for each input message.
+            Note that you will be charged based on the number of generated tokens across all
+            of the choices. Keep n as 1 to minimize costs.
+        extra_body_parameters (dict): Additional parameters to send in the request body
+
     """
 
     def __init__(
@@ -107,6 +134,9 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint(self.CHAT_URL_REGEX)
+
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
         self._frequency_penalty = frequency_penalty
@@ -120,11 +150,11 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
 
-    async def _build_chat_messages_async(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
-        """Builds chat messages based on prompt request response entries.
+    async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
+        """Builds chat messages based on message entries.
 
         Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+            conversation (list[Message]): A list of Message objects.
 
         Returns:
             list[dict]: The list of constructed chat messages.
@@ -134,95 +164,89 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         else:
             return await self._build_chat_messages_for_multi_modal_async(conversation)
 
-    def _is_text_message_format(self, conversation: MutableSequence[PromptRequestResponse]) -> bool:
-        """Checks if the request piece is in text message format.
+    def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
+        """Checks if the message piece is in text message format.
 
         Args:
-            conversation list[PromptRequestResponse]: The conversation
+            conversation list[Message]: The conversation
 
         Returns:
-            bool: True if the request piece is in text message format, False otherwise.
+            bool: True if the message piece is in text message format, False otherwise.
         """
         for turn in conversation:
-            if len(turn.request_pieces) != 1:
+            if len(turn.message_pieces) != 1:
                 return False
-            if turn.request_pieces[0].converted_value_data_type != "text":
+            if turn.message_pieces[0].converted_value_data_type != "text":
                 return False
         return True
 
-    def _build_chat_messages_for_text(self, conversation: MutableSequence[PromptRequestResponse]) -> list[dict]:
+    def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on prompt request response entries. This is needed because many
+        Builds chat messages based on message entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted)
 
         Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+            conversation (list[Message]): A list of Message objects.
 
         Returns:
             list[dict]: The list of constructed chat messages.
         """
         chat_messages: list[dict] = []
-        for prompt_req_resp_entry in conversation:
+        for message in conversation:
             # validated to only have one text entry
 
-            if len(prompt_req_resp_entry.request_pieces) != 1:
-                raise ValueError("_build_chat_messages_for_text only supports a single prompt request piece.")
+            if len(message.message_pieces) != 1:
+                raise ValueError("_build_chat_messages_for_text only supports a single message piece.")
 
-            prompt_request_piece = prompt_req_resp_entry.request_pieces[0]
+            message_piece = message.message_pieces[0]
 
-            if prompt_request_piece.converted_value_data_type != "text":
+            if message_piece.converted_value_data_type != "text":
                 raise ValueError("_build_chat_messages_for_text only supports text.")
 
-            message = ChatMessage(role=prompt_request_piece.role, content=prompt_request_piece.converted_value)
-            chat_messages.append(message.model_dump(exclude_none=True))
+            chat_message = ChatMessage(role=message_piece.role, content=message_piece.converted_value)
+            chat_messages.append(chat_message.model_dump(exclude_none=True))
 
         return chat_messages
 
-    async def _build_chat_messages_for_multi_modal_async(
-        self, conversation: MutableSequence[PromptRequestResponse]
-    ) -> list[dict]:
+    async def _build_chat_messages_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on prompt request response entries.
+        Builds chat messages based on message entries.
 
         Args:
-            conversation (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
+            conversation (list[Message]): A list of Message objects.
 
         Returns:
             list[dict]: The list of constructed chat messages.
         """
         chat_messages: list[dict] = []
-        for prompt_req_resp_entry in conversation:
-            prompt_request_pieces = prompt_req_resp_entry.request_pieces
+        for message in conversation:
+            message_pieces = message.message_pieces
 
             content = []
             role = None
-            for prompt_request_piece in prompt_request_pieces:
-                role = prompt_request_piece.role
-                if prompt_request_piece.converted_value_data_type == "text":
-                    entry = {"type": "text", "text": prompt_request_piece.converted_value}
+            for message_piece in message_pieces:
+                role = message_piece.role
+                if message_piece.converted_value_data_type == "text":
+                    entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)
-                elif prompt_request_piece.converted_value_data_type == "image_path":
-                    data_base64_encoded_url = await convert_local_image_to_data_url(
-                        prompt_request_piece.converted_value
-                    )
+                elif message_piece.converted_value_data_type == "image_path":
+                    data_base64_encoded_url = await convert_local_image_to_data_url(message_piece.converted_value)
                     image_url_entry = {"url": data_base64_encoded_url}
                     entry = {"type": "image_url", "image_url": image_url_entry}  # type: ignore
                     content.append(entry)
                 else:
                     raise ValueError(
-                        f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
+                        f"Multimodal data type {message_piece.converted_value_data_type} is not yet supported."
                     )
 
             if not role:
-                raise ValueError("No role could be determined from the prompt request pieces.")
+                raise ValueError("No role could be determined from the message pieces.")
 
             chat_message = ChatMessageListDictContent(role=role, content=content)  # type: ignore
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(
-        self, conversation: MutableSequence[PromptRequestResponse], is_json_response: bool
-    ) -> dict:
+    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
         messages = await self._build_chat_messages_async(conversation)
 
         body_parameters = {
@@ -247,12 +271,12 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _construct_prompt_response_from_openai_json(
+    def _construct_message_from_openai_json(
         self,
         *,
         open_ai_str_response: str,
-        request_piece: PromptRequestPiece,
-    ) -> PromptRequestResponse:
+        message_piece: MessagePiece,
+    ) -> Message:
 
         try:
             response = json.loads(open_ai_str_response)
@@ -274,26 +298,26 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             # Content filter with status 200 indicates that the model output was filtered
             # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
             return handle_bad_request_exception(
-                response_text=open_ai_str_response, request=request_piece, error_code=200, is_content_filter=True
+                response_text=open_ai_str_response, request=message_piece, error_code=200, is_content_filter=True
             )
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
 
-        return construct_response_from_request(request=request_piece, response_text_pieces=[extracted_response])
+        return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Raises:
-            ValueError: If more than two request pieces are provided.
-            ValueError: If any of the request pieces have a data type other than 'text' or 'image_path'.
+            ValueError: If more than two message pieces are provided.
+            ValueError: If any of the message pieces have a data type other than 'text' or 'image_path'.
         """
 
         converted_prompt_data_types = [
-            request_piece.converted_value_data_type for request_piece in prompt_request.request_pieces
+            message_piece.converted_value_data_type for message_piece in prompt_request.message_pieces
         ]
 
         # Some models may not support all of these

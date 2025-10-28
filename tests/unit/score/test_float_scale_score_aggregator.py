@@ -3,7 +3,7 @@
 
 from typing import Optional
 
-from pyrit.models.score import Score
+from pyrit.models import Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleScoreAggregator,
     FloatScaleScorerAllCategories,
@@ -20,7 +20,7 @@ def _mk_score(val: float, *, category: Optional[list[str]] = None, prr_id: str =
         score_category=category,
         score_rationale=rationale,
         score_metadata=None,
-        prompt_request_response_id=prr_id,
+        message_piece_id=prr_id,
         scorer_class_identifier={"__type__": "UnitTestScorer"},
         objective=None,
     )

@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt
 
 
 def fetch_harmbench_dataset(
@@ -17,9 +16,9 @@ def fetch_harmbench_dataset(
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
-    Fetch HarmBench examples and create a SeedPromptDataset.
+    Fetch HarmBench examples and create a SeedDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the HarmBench repository.
@@ -28,7 +27,7 @@ def fetch_harmbench_dataset(
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -45,8 +44,8 @@ def fetch_harmbench_dataset(
     required_keys = {"Behavior", "SemanticCategory"}
 
     # Initialize containers for prompts and semantic categories
-    prompts = []
-    semantic_categories = set()
+    prompt_data = []
+    all_semantic_categories = set()
 
     # Fetch the examples using the provided `fetch_examples` function
     examples = fetch_examples(source, source_type, cache, data_home)
@@ -58,23 +57,30 @@ def fetch_harmbench_dataset(
         if missing_keys:
             raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
 
-        # Extract and append the data to respective containers
-        prompts.append(example["Behavior"])
-        semantic_categories.add(example["SemanticCategory"])
+        # Extract and append the data with its specific category
+        category = example["SemanticCategory"]
+        prompt_data.append(
+            {
+                "behavior": example["Behavior"],
+                "category": category,
+            }
+        )
+        all_semantic_categories.add(category)
 
     seed_prompts = [
         SeedPrompt(
-            value=example,
+            value=item["behavior"],
             data_type="text",
             name="HarmBench Examples",
             dataset_name="HarmBench Examples",
-            harm_categories=list(semantic_categories),
+            harm_categories=[item["category"]],
             description="A dataset of HarmBench examples containing various categories such as chemical,"
             "biological, illegal activities, etc.",
         )
-        for example in prompts
+        for item in prompt_data
     ]
-
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(
+        prompts=seed_prompts,
+        harm_categories=list(all_semantic_categories),
+    )
+    return seed_dataset
