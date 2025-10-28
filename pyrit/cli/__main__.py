@@ -9,34 +9,22 @@ It supports running scenarios with configurable database backends and
 initialization scripts.
 """
 
+# Standard library imports
 import asyncio
 import logging
 import sys
-from argparse import (
-    ArgumentParser,
-    Namespace,
-    RawDescriptionHelpFormatter,
-)
+from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
 from pathlib import Path
-from typing import TypedDict
 
+# Local application imports
+from pyrit.cli.initializer_registry import InitializerInfo, InitializerRegistry
 from pyrit.cli.scenario_registry import ScenarioRegistry
+from pyrit.common.path import PYRIT_PATH
 from pyrit.scenarios import Scenario
 from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
 from pyrit.setup import AZURE_SQL, IN_MEMORY, SQLITE, initialize_pyrit
 
 logger = logging.getLogger(__name__)
-
-
-class InitializerInfo(TypedDict):
-    """Type definition for initializer information dictionary."""
-
-    name: str
-    class_name: str
-    initializer_name: str
-    description: str
-    required_env_vars: list[str]
-    execution_order: int
 
 
 def parse_args(args=None) -> Namespace:
@@ -59,7 +47,7 @@ Examples:
   pyrit_scan --list-initializers
 
   # Run a scenario with built-in initializers
-  pyrit_scan foundry_scenario --initializers simple scenarios.objective_target
+  pyrit_scan foundry_scenario --initializers simple objective_target
 
   # Run with custom initialization scripts
   pyrit_scan encoding_scenario --initialization-scripts ./my_config.py
@@ -107,7 +95,7 @@ Examples:
         "--initializers",
         type=str,
         nargs="+",
-        help="Built-in initializer names (e.g., simple, airt, scenarios.objective_target)",
+        help="Built-in initializer names (e.g., simple, objective_target, objective_list)",
     )
     parser.add_argument(
         "--initialization-scripts",
@@ -136,24 +124,7 @@ def list_scenarios(*, registry: ScenarioRegistry) -> None:
     print("=" * 80)
 
     for scenario_info in scenarios:
-        print(f"\n  {scenario_info['name']}")
-        print(f"    Class: {scenario_info['class_name']}")
-        print("    Description:")
-        # Word wrap the description to 80 characters (accounting for indentation)
-        description = scenario_info["description"]
-        words = description.split()
-        line = "      "
-        for word in words:
-            if len(line) + len(word) + 1 > 74:  # 80 - 6 for indentation
-                print(line)
-                line = "      " + word
-            else:
-                if line == "      ":
-                    line += word
-                else:
-                    line += " " + word
-        if line.strip():
-            print(line)
+        _format_scenario_info(scenario_info=scenario_info)
 
     print("\n" + "=" * 80)
     print(f"\nTotal scenarios: {len(scenarios)}")
@@ -164,116 +135,23 @@ def list_initializers() -> None:
     """
     Print all available scenario initializers to the console.
 
-    Discovers initializers from pyrit/setup/initializers/scenarios directory.
+    Discovers initializers from pyrit/setup/initializers/scenarios directory only.
+    Note that other initializers (like 'simple' from the base directory) can still
+    be used with --initializers, they just won't appear in this listing.
     """
-    import importlib.util
-    import inspect
-
-    from pyrit.common.path import PYRIT_PATH
-    from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
-
-    # Only look in the scenarios subdirectory
-    initializers_path = Path(PYRIT_PATH) / "setup" / "initializers" / "scenarios"
-
-    if not initializers_path.exists():
-        print("No scenarios initializers directory found.")
-        return
-
-    # Discover all Python files in the scenarios initializers directory
-    initializer_info: list[InitializerInfo] = []
-
-    def discover_in_directory(directory: Path, prefix: str = "scenarios"):
-        """Recursively discover initializers in a directory."""
-        for item in directory.iterdir():
-            if item.is_file() and item.suffix == ".py" and item.stem != "__init__":
-                # Calculate the initializer name (e.g., "simple" or "scenarios.objective_target")
-                if prefix:
-                    name = f"{prefix}.{item.stem}"
-                else:
-                    name = item.stem
-
-                # Try to load the module and find PyRITInitializer subclasses
-                try:
-                    spec = importlib.util.spec_from_file_location(f"pyrit.setup.initializers.{name}", item)
-                    if spec and spec.loader:
-                        module = importlib.util.module_from_spec(spec)
-                        spec.loader.exec_module(module)
-
-                        # Find all PyRITInitializer subclasses in the module
-                        for attr_name in dir(module):
-                            attr = getattr(module, attr_name)
-                            if (
-                                inspect.isclass(attr)
-                                and issubclass(attr, PyRITInitializer)
-                                and attr != PyRITInitializer
-                            ):
-
-                                # Instantiate to get name and description
-                                try:
-                                    instance = attr()
-                                    initializer_info.append(
-                                        {
-                                            "name": name,
-                                            "class_name": attr.__name__,
-                                            "initializer_name": instance.name,
-                                            "description": instance.description,
-                                            "required_env_vars": instance.required_env_vars,
-                                            "execution_order": instance.execution_order,
-                                        }
-                                    )
-                                except Exception:
-                                    # Skip initializers that can't be instantiated
-                                    pass
-                except Exception:
-                    # Skip files that can't be loaded
-                    pass
-
-            elif item.is_dir() and item.name != "__pycache__":
-                # Recursively discover in subdirectories
-                subdir_prefix = f"{prefix}.{item.name}" if prefix else item.name
-                discover_in_directory(item, subdir_prefix)
-
-    discover_in_directory(initializers_path)
+    scenarios_path = Path(PYRIT_PATH) / "setup" / "initializers" / "scenarios"
+    registry = InitializerRegistry(discovery_path=scenarios_path)
+    initializer_info = registry.list_initializers()
 
     if not initializer_info:
         print("No initializers found.")
         return
 
-    # Sort by execution order, then by name
-    initializer_info.sort(key=lambda x: (x["execution_order"], x["name"]))
-
     print("\nAvailable Scenario Initializers:")
     print("=" * 80)
 
     for info in initializer_info:
-        print(f"\n  {info['name']}")
-        print(f"    Class: {info['class_name']}")
-        print(f"    Name: {info['initializer_name']}")
-        print(f"    Execution Order: {info['execution_order']}")
-
-        if info["required_env_vars"]:
-            print("    Required Environment Variables:")
-            for env_var in info["required_env_vars"]:
-                print(f"      - {env_var}")
-        else:
-            print("    Required Environment Variables: None")
-
-        print("    Description:")
-        # Word wrap the description
-        description = info["description"]
-        words = description.split()
-        line = "      "
-        for word in words:
-            if len(line) + len(word) + 1 > 74:
-                print(line)
-                line = "      " + word
-            else:
-                if line == "      ":
-                    line += word
-                else:
-                    line += " " + word
-        if line.strip():
-            print(line)
+        _format_initializer_info(info=info)
 
     print("\n" + "=" * 80)
     print(f"\nTotal initializers: {len(initializer_info)}")
@@ -325,12 +203,6 @@ async def run_scenario_async(
                 f"To fix this, provide an initialization script with --initialization-scripts that:\n"
                 f"1. Sets default values for the required parameters using set_default_value()\n"
                 f"2. Or sets global variables that can be used by the scenario\n\n"
-                f"Example initialization script:\n"
-                f"  from pyrit.common.apply_defaults import set_default_value\n"
-                f"  from pyrit.prompt_target import OpenAIChatTarget\n"
-                f"  \n"
-                f"  target = OpenAIChatTarget()\n"
-                f"  set_default_value('{scenario_class.__name__}', 'objective_target', target)\n\n"
                 f"Original error: {error_msg}"
             ) from e
         else:
@@ -344,7 +216,7 @@ async def run_scenario_async(
 
     logger.info(f"Initializing scenario: {scenario.name}")
 
-    # Initialize the scenario (load atomic attacks)
+    # Initialize the scenario
     try:
         await scenario.initialize_async()
     except Exception as e:
@@ -364,6 +236,177 @@ async def run_scenario_async(
         raise ValueError(f"Failed to run scenario '{scenario_name}'.\n" f"Error: {e}") from e
 
 
+def _format_wrapped_text(*, text: str, indent: str = "      ", max_width: int = 80) -> None:
+    """
+    Print text with word wrapping at the specified indentation level.
+
+    Args:
+        text (str): The text to wrap and print.
+        indent (str): The indentation string to use for each line.
+        max_width (int): The maximum line width including indentation.
+    """
+    words = text.split()
+    line = indent
+
+    for word in words:
+        if len(line) + len(word) + 1 > max_width:
+            print(line)
+            line = indent + word
+        else:
+            if line == indent:
+                line += word
+            else:
+                line += " " + word
+
+    if line.strip():
+        print(line)
+
+
+def _format_scenario_info(*, scenario_info: dict[str, str]) -> None:
+    """
+    Print formatted information about a scenario.
+
+    Args:
+        scenario_info (dict[str, str]): Dictionary containing scenario information.
+    """
+    print(f"\n  {scenario_info['name']}")
+    print(f"    Class: {scenario_info['class_name']}")
+    print("    Description:")
+    _format_wrapped_text(text=scenario_info["description"], indent="      ")
+
+
+def _format_initializer_info(*, info: InitializerInfo) -> None:
+    """
+    Print formatted information about an initializer.
+
+    Args:
+        info (InitializerInfo): Dictionary containing initializer information.
+    """
+    print(f"\n  {info['name']}")
+    print(f"    Class: {info['class_name']}")
+    print(f"    Name: {info['initializer_name']}")
+    print(f"    Execution Order: {info['execution_order']}")
+
+    if info["required_env_vars"]:
+        print("    Required Environment Variables:")
+        for env_var in info["required_env_vars"]:
+            print(f"      - {env_var}")
+    else:
+        print("    Required Environment Variables: None")
+
+    print("    Description:")
+    _format_wrapped_text(text=info["description"], indent="      ")
+
+
+def _collect_initialization_scripts(*, parsed_args: Namespace) -> list[Path] | None:
+    """
+    Collect all initialization scripts from built-in initializers and custom scripts.
+
+    Args:
+        parsed_args (Namespace): Parsed command-line arguments.
+
+    Returns:
+        list[Path] | None: List of script paths, or None if no scripts.
+
+    Raises:
+        ValueError: If initializer lookup fails.
+        FileNotFoundError: If custom script path does not exist.
+    """
+    initialization_scripts = []
+
+    # Handle built-in initializers
+    if hasattr(parsed_args, "initializers") and parsed_args.initializers:
+        registry = InitializerRegistry()
+        paths = registry.resolve_initializer_paths(initializer_names=parsed_args.initializers)
+        initialization_scripts.extend(paths)
+
+    # Handle custom initialization scripts
+    if hasattr(parsed_args, "initialization_scripts") and parsed_args.initialization_scripts:
+        paths = InitializerRegistry.resolve_script_paths(script_paths=parsed_args.initialization_scripts)
+        initialization_scripts.extend(paths)
+
+    return initialization_scripts if initialization_scripts else None
+
+
+def _handle_list_scenarios(*, parsed_args: Namespace) -> int:
+    """
+    Handle the --list-scenarios flag.
+
+    Args:
+        parsed_args (Namespace): Parsed command-line arguments.
+
+    Returns:
+        int: Exit code (0 for success, 1 for error).
+    """
+    initialization_scripts = None
+
+    if hasattr(parsed_args, "initialization_scripts") and parsed_args.initialization_scripts:
+        try:
+            initialization_scripts = InitializerRegistry.resolve_script_paths(
+                script_paths=parsed_args.initialization_scripts
+            )
+
+            database = parsed_args.database if hasattr(parsed_args, "database") else SQLITE
+            initialize_pyrit(
+                memory_db_type=database,
+                initialization_scripts=initialization_scripts,
+            )
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+            return 1
+
+    registry = ScenarioRegistry()
+    if initialization_scripts:
+        registry.discover_user_scenarios()
+    list_scenarios(registry=registry)
+    return 0
+
+
+def _run_scenario(*, parsed_args: Namespace) -> int:
+    """
+    Run the specified scenario with the given configuration.
+
+    Args:
+        parsed_args (Namespace): Parsed command-line arguments.
+
+    Returns:
+        int: Exit code (0 for success, 1 for error).
+    """
+    try:
+        # Collect all initialization scripts
+        initialization_scripts = _collect_initialization_scripts(parsed_args=parsed_args)
+
+        # Initialize PyRIT
+        database = parsed_args.database if hasattr(parsed_args, "database") else SQLITE
+        logger.info(f"Initializing PyRIT with database type: {database}")
+
+        initialize_pyrit(
+            memory_db_type=database,
+            initialization_scripts=initialization_scripts,
+        )
+
+        # Create scenario registry and discover user scenarios
+        registry = ScenarioRegistry()
+        registry.discover_user_scenarios()
+
+        # Run the scenario
+        asyncio.run(
+            run_scenario_async(
+                scenario_name=parsed_args.scenario_name,
+                registry=registry,
+            )
+        )
+        return 0
+
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}")
+        return 1
+    except Exception as e:
+        logger.error(f"Error: {e}", exc_info=True)
+        print(f"\nError: {e}")
+        return 1
+
+
 def main(args=None) -> int:
     """
     Main entry point for the PyRIT scanner CLI.
@@ -374,133 +417,33 @@ def main(args=None) -> int:
     Returns:
         int: Exit code (0 for success, 1 for error).
     """
-    # Parse arguments first to check for verbose flag
+    # Parse arguments
     try:
         parsed_args = parse_args(args)
     except SystemExit as e:
         return e.code if isinstance(e.code, int) else 1
 
-    # Configure logging based on verbose flag
+    # Configure logging
     if parsed_args.verbose:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     else:
-        # Suppress most logging unless it's a warning or error
         logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 
-    # Handle discovery/help flags (these exit after displaying info)
+    # Handle discovery flags
     if parsed_args.list_scenarios:
-        # If user provides initialization scripts, we need to initialize PyRIT first
-        # to allow discovery of user-defined scenarios
-        if hasattr(parsed_args, "initialization_scripts") and parsed_args.initialization_scripts:
-            initialization_scripts = []
-
-            for script in parsed_args.initialization_scripts:
-                script_path = Path(script)
-                if not script_path.is_absolute():
-                    script_path = Path.cwd() / script_path
-
-                if not script_path.exists():
-                    print(f"Error: Initialization script not found: {script_path}")
-                    print(f"  Looked in: {script_path.absolute()}")
-                    return 1
-
-                initialization_scripts.append(script_path)
-
-            # Initialize PyRIT to load user scripts
-            database = parsed_args.database if hasattr(parsed_args, "database") else SQLITE
-            initialize_pyrit(
-                memory_db_type=database,
-                initialization_scripts=initialization_scripts,
-            )
-
-        registry = ScenarioRegistry()
-        # Discover user scenarios if initialization scripts were provided
-        if hasattr(parsed_args, "initialization_scripts") and parsed_args.initialization_scripts:
-            registry.discover_user_scenarios()
-        list_scenarios(registry=registry)
-        return 0
+        return _handle_list_scenarios(parsed_args=parsed_args)
 
     if parsed_args.list_initializers:
         list_initializers()
         return 0
 
-    # Check if a scenario was provided
+    # Verify scenario was provided
     if not parsed_args.scenario_name:
         print("Error: No scenario specified. Use --help for usage information.")
         return 1
 
-    try:
-        # Run the scenario
-        initialization_scripts = []
-
-        # Handle built-in initializers
-        if hasattr(parsed_args, "initializers") and parsed_args.initializers:
-            from pyrit.common.path import PYRIT_PATH
-
-            initializers_path = Path(PYRIT_PATH) / "setup" / "initializers"
-
-            for initializer_name in parsed_args.initializers:
-                # Convert dot notation to path (e.g., "scenarios.objective_target" -> "scenarios/objective_target.py")
-                # Also support simple names (e.g., "simple" -> "simple.py")
-                name_parts = initializer_name.split(".")
-                initializer_file = initializers_path
-                for part in name_parts:
-                    initializer_file = initializer_file / part
-                initializer_file = initializer_file.with_suffix(".py")
-
-                if not initializer_file.exists():
-                    print(f"Error: Built-in initializer '{initializer_name}' not found.")
-                    print("Available initializers: simple, airt, scenarios.objective_target, scenarios.objective_list")
-                    return 1
-
-                initialization_scripts.append(initializer_file)
-
-        # Handle custom initialization scripts
-        if hasattr(parsed_args, "initialization_scripts") and parsed_args.initialization_scripts:
-            for script in parsed_args.initialization_scripts:
-                script_path = Path(script)
-
-                # If path is not absolute, resolve it relative to current working directory
-                if not script_path.is_absolute():
-                    script_path = Path.cwd() / script_path
-
-                # Validate that script exists
-                if not script_path.exists():
-                    print(f"Error: Initialization script not found: {script_path}")
-                    print(f"  Looked in: {script_path.absolute()}")
-                    return 1
-
-                initialization_scripts.append(script_path)
-
-        # Convert to None if empty
-        initialization_scripts = initialization_scripts if initialization_scripts else None
-
-        database = parsed_args.database if hasattr(parsed_args, "database") else SQLITE
-        logger.info(f"Initializing PyRIT with database type: {database}")
-
-        initialize_pyrit(
-            memory_db_type=database,
-            initialization_scripts=initialization_scripts,
-        )
-
-        # Create scenario registry
-        registry = ScenarioRegistry()
-
-        # Discover user scenarios from initialization scripts
-        registry.discover_user_scenarios()
-
-        asyncio.run(
-            run_scenario_async(
-                scenario_name=parsed_args.scenario_name,
-                registry=registry,
-            )
-        )
-        return 0
-
-    except Exception as e:
-        logger.error(f"Error: {e}", exc_info=True)
-        print(f"\nError: {e}")
-        return 1
+    # Run the scenario
+    return _run_scenario(parsed_args=parsed_args)
 
 
 if __name__ == "__main__":

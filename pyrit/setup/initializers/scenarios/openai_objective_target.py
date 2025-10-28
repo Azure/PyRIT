@@ -42,15 +42,16 @@ class ScenarioObjectiveTargetInitializer(PyRITInitializer):
     def required_env_vars(self) -> List[str]:
         """Get list of required environment variables."""
         return [
-            "OPENAI_CLI_ENDPOINT",
-            "OPENAI_CLI_KEY",
+            "DEFAULT_OPENAI_FRONTEND_ENDPOINT",
+            "DEFAULT_OPENAI_FRONTEND_KEY",
         ]
 
     def initialize(self) -> None:
 
         objective_target = OpenAIChatTarget(
-            endpoint=os.getenv("OPENAI_CLI_ENDPOINT"),
-            api_key=os.getenv("OPENAI_CLI_KEY"),
+            endpoint=os.getenv("DEFAULT_OPENAI_FRONTEND_ENDPOINT"),
+            api_key=os.getenv("DEFAULT_OPENAI_FRONTEND_KEY"),
+            model=os.getenv("DEFAULT_OPENAI_FRONTEND_MODEL"),
         )
 
         set_default_value(

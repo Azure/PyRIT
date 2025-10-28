@@ -97,6 +97,38 @@ def test_init_with_passed_api_key_and_use_entra_auth_raises(patch_central_databa
         )
 
 
+def test_init_is_json_supported_defaults_to_true(patch_central_database):
+    target = OpenAIChatTarget(
+        model_name="gpt-4",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        api_version="some_version",
+    )
+    assert target.is_json_response_supported() is True
+
+
+def test_init_is_json_supported_can_be_set_to_false(patch_central_database):
+    target = OpenAIChatTarget(
+        model_name="gpt-4",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        api_version="some_version",
+        is_json_supported=False,
+    )
+    assert target.is_json_response_supported() is False
+
+
+def test_init_is_json_supported_can_be_set_to_true(patch_central_database):
+    target = OpenAIChatTarget(
+        model_name="gpt-4",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        api_version="some_version",
+        is_json_supported=True,
+    )
+    assert target.is_json_response_supported() is True
+
+
 @pytest.mark.asyncio()
 async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
 

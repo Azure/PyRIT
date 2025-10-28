@@ -3,8 +3,13 @@
 
 """
 Unit tests for the PyRIT CLI main module.
+
+Tests command-line argument parsing, scenario listing, and main entry point.
+For InitializerRegistry tests, see test_initializer_registry.py.
+For ScenarioRegistry tests, see test_scenario_registry.py.
 """
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -166,20 +171,18 @@ class TestMain:
         mock_registry.list_scenarios.assert_called_once()
 
     @patch("pyrit.cli.__main__.initialize_pyrit")
-    @patch("pyrit.cli.__main__.Path")
+    @patch("pyrit.cli.__main__.InitializerRegistry")
     @patch("pyrit.cli.__main__.ScenarioRegistry")
-    def test_main_list_scenarios_with_scripts(self, mock_registry_class, mock_path_class, mock_init_pyrit, capsys):
+    def test_main_list_scenarios_with_scripts(
+        self, mock_registry_class, mock_init_registry_class, mock_init_pyrit, capsys
+    ):
         """Test main with --list-scenarios and initialization scripts."""
         mock_registry = MagicMock()
         mock_registry.list_scenarios.return_value = []
         mock_registry_class.return_value = mock_registry
 
-        # Mock path to exist
-        mock_path_instance = MagicMock()
-        mock_path_instance.exists.return_value = True
-        mock_path_instance.is_absolute.return_value = False
-        mock_path_class.return_value = mock_path_instance
-        mock_path_class.cwd.return_value = mock_path_instance
+        # Mock the resolve_script_paths static method
+        mock_init_registry_class.resolve_script_paths.return_value = [Path("/fake/custom.py")]
 
         result = main(["--list-scenarios", "--initialization-scripts", "custom.py"])
 
@@ -212,47 +215,39 @@ class TestMain:
 
     @patch("pyrit.cli.__main__.initialize_pyrit")
     @patch("pyrit.cli.__main__.ScenarioRegistry")
-    def test_main_scenario_with_missing_script(self, mock_registry_class, mock_init_pyrit, capsys):
+    @patch("pyrit.cli.__main__.InitializerRegistry")
+    def test_main_scenario_with_missing_script(
+        self, mock_init_registry_class, mock_registry_class, mock_init_pyrit, capsys
+    ):
         """Test main with scenario and missing initialization script."""
-        with patch("pyrit.cli.__main__.Path") as mock_path_class:
-            # Create a mock path instance that says the file doesn't exist
-            mock_script_path = MagicMock()
-            mock_script_path.exists.return_value = False
-            mock_script_path.is_absolute.return_value = False
-            mock_script_path.absolute.return_value = "C:\\fake\\path\\missing.py"
+        # Make resolve_script_paths raise FileNotFoundError
+        mock_init_registry_class.resolve_script_paths.side_effect = FileNotFoundError(
+            "Initialization script not found: /fake/path/missing.py"
+        )
 
-            # Mock Path() to return our script path
-            mock_path_class.return_value = mock_script_path
+        result = main(["encoding_scenario", "--initialization-scripts", "missing.py"])
 
-            # Mock Path.cwd() to return a base path
-            mock_cwd = MagicMock()
-            mock_path_class.cwd.return_value = mock_cwd
-            mock_cwd.__truediv__ = lambda self, other: mock_script_path
-
-            result = main(["encoding_scenario", "--initialization-scripts", "missing.py"])
-
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "Initialization script not found" in captured.out
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "Initialization script not found" in captured.out
 
     @patch("pyrit.cli.__main__.asyncio.run")
-    @patch("pyrit.cli.__main__.Path")
     @patch("pyrit.cli.__main__.initialize_pyrit")
     @patch("pyrit.cli.__main__.ScenarioRegistry")
+    @patch("pyrit.cli.__main__.InitializerRegistry")
     def test_main_scenario_with_initializers(
-        self, mock_registry_class, mock_init_pyrit, mock_path_class, mock_asyncio_run
+        self, mock_init_registry_class, mock_registry_class, mock_init_pyrit, mock_asyncio_run
     ):
         """Test main with scenario and built-in initializers."""
         mock_registry = MagicMock()
         mock_registry_class.return_value = mock_registry
 
-        # Mock the Path object and its methods
-        mock_path_instance = MagicMock()
-        mock_path_instance.exists.return_value = True
-        mock_path_class.return_value = mock_path_instance
+        # Mock the resolve_initializer_paths method
+        mock_init_registry_instance = MagicMock()
+        mock_init_registry_instance.resolve_initializer_paths.return_value = [Path("/fake/simple.py")]
+        mock_init_registry_class.return_value = mock_init_registry_instance
 
-        with patch("pyrit.common.path.PYRIT_PATH", "/fake/pyrit"):
-            result = main(["encoding_scenario", "--initializers", "simple"])
+        result = main(["encoding_scenario", "--initializers", "simple"])
 
         assert result == 0
         mock_init_pyrit.assert_called_once()
@@ -260,34 +255,19 @@ class TestMain:
     @patch("pyrit.cli.__main__.asyncio.run")
     @patch("pyrit.cli.__main__.initialize_pyrit")
     @patch("pyrit.cli.__main__.ScenarioRegistry")
+    @patch("pyrit.cli.__main__.InitializerRegistry")
     def test_main_scenario_with_invalid_initializer(
-        self, mock_registry_class, mock_init_pyrit, mock_asyncio_run, capsys
+        self, mock_init_registry_class, mock_registry_class, mock_init_pyrit, mock_asyncio_run, capsys
     ):
         """Test main with scenario and invalid initializer name."""
+        # Mock the registry instance to raise ValueError
+        mock_init_registry_instance = MagicMock()
+        mock_init_registry_instance.resolve_initializer_paths.side_effect = ValueError(
+            "Built-in initializer 'invalid' not found"
+        )
+        mock_init_registry_class.return_value = mock_init_registry_instance
 
-        # Mock Path to make the invalid initializer file not exist
-        with patch("pyrit.common.path.PYRIT_PATH", "/fake/pyrit"):
-            with patch("pyrit.cli.__main__.Path") as mock_path_class:
-                # Create a mock that handles the path chain properly
-                mock_initializer_file = MagicMock()
-                mock_initializer_file.exists.return_value = False
-
-                # Make the Path() call and all divisions return objects that support further division
-                # Path(PYRIT_PATH) -> ... / "setup" -> ... / "initializers" -> ... / "invalid.py" -> mock_file
-                def path_truediv(self_arg, other):
-                    if other == "invalid.py":
-                        return mock_initializer_file
-                    # Return a mock that also supports truediv for chaining
-                    next_mock = MagicMock()
-                    next_mock.__truediv__ = path_truediv
-                    next_mock.with_suffix = lambda x: mock_initializer_file
-                    return next_mock
-
-                mock_path_instance = MagicMock()
-                mock_path_instance.__truediv__ = path_truediv
-                mock_path_class.return_value = mock_path_instance
-
-                result = main(["encoding_scenario", "--initializers", "invalid"])
+        result = main(["encoding_scenario", "--initializers", "invalid"])
 
         assert result == 1
         captured = capsys.readouterr()

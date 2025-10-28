@@ -17,7 +17,7 @@ from pyrit.scenarios import Scenario
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
-class ScenarioObjectiveList(PyRITInitializer):
+class ScenarioObjectiveListInitializer(PyRITInitializer):
 
     @property
     def name(self) -> str:
