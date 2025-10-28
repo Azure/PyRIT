@@ -188,7 +188,10 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 image paths.
         """
         if piece.converted_value_data_type == "text":
-            return {"type": "input_text" if piece.role == "user" else "output_text", "text": piece.converted_value}
+            return {
+                "type": "input_text" if piece.role in ["developer", "user"] else "output_text",
+                "text": piece.converted_value,
+            }
         if piece.converted_value_data_type == "image_path":
             data_url = await convert_local_image_to_data_url(piece.converted_value)
             return {"type": "input_image", "image_url": {"url": data_url}}
