@@ -4,7 +4,7 @@
 from typing import Optional, cast
 from uuid import UUID
 
-from pyrit.models import Message, MessagePiece, Score
+from pyrit.models import MessagePiece, Score
 from pyrit.models.literals import PromptResponseError
 from pyrit.models.message_piece import Originator
 from pyrit.score import FloatScaleScorer
@@ -21,14 +21,15 @@ class ConversationHistoryScorer(FloatScaleScorer):
     feeds it the full conversation history before scoring.
 
     Similar to LookBackScorer, but does not specifically look for behavior changes.
-    It combines the entire conversation and makes the text into one string in order to score the conversation as a whole.
+    It combines the entire conversation and makes the text into one string
+    in order to score the conversation as a whole.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator()
 
     def __init__(
-        self, 
-        scorer: FloatScaleScorer, 
+        self,
+        scorer: FloatScaleScorer,
         *,
         validator: Optional[ScorerPromptValidator] = None,
     ):
