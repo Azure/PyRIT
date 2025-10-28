@@ -12,7 +12,7 @@ from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenarios import AtomicAttack, FoundryAttackStrategy, FoundryScenario
+from pyrit.scenarios import AtomicAttack, FoundryScenario, FoundryStrategy
 from pyrit.score import TrueFalseScorer
 
 
@@ -61,7 +61,7 @@ class TestFoundryScenarioInitialization:
 
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
             objective_scorer=mock_objective_scorer,
         )
 
@@ -85,9 +85,9 @@ class TestFoundryScenarioInitialization:
         mock_harmbench.return_value = mock_dataset
 
         strategies = [
-            [FoundryAttackStrategy.Base64],
-            [FoundryAttackStrategy.ROT13],
-            [FoundryAttackStrategy.Leetspeak],
+            [FoundryStrategy.Base64],
+            [FoundryStrategy.ROT13],
+            [FoundryStrategy.Leetspeak],
         ]
 
         scenario = FoundryScenario(
@@ -113,7 +113,7 @@ class TestFoundryScenarioInitialization:
         """Test initialization with custom objectives."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -136,7 +136,7 @@ class TestFoundryScenarioInitialization:
         """Test initialization with custom adversarial target."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
@@ -158,7 +158,7 @@ class TestFoundryScenarioInitialization:
         """Test initialization with custom objective scorer."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
             objective_scorer=mock_objective_scorer,
             objectives=sample_objectives,
         )
@@ -181,7 +181,7 @@ class TestFoundryScenarioInitialization:
 
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
             memory_labels=memory_labels,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
@@ -213,7 +213,7 @@ class TestFoundryScenarioInitialization:
 
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
         )
 
         # Verify default scorer was created
@@ -243,7 +243,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that EASY strategy expands to easy attack strategies."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.EASY]],
+            attack_strategies=[[FoundryStrategy.EASY]],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -267,7 +267,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that MODERATE strategy expands to moderate attack strategies."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.MODERATE]],
+            attack_strategies=[[FoundryStrategy.MODERATE]],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -291,7 +291,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that DIFFICULT strategy expands to difficult attack strategies."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.DIFFICULT]],
+            attack_strategies=[[FoundryStrategy.DIFFICULT]],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -315,7 +315,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that multiple difficulty levels expand correctly."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.EASY], [FoundryAttackStrategy.MODERATE]],
+            attack_strategies=[[FoundryStrategy.EASY], [FoundryStrategy.MODERATE]],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -340,8 +340,8 @@ class TestFoundryScenarioStrategyNormalization:
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
             attack_strategies=[
-                [FoundryAttackStrategy.EASY],
-                [FoundryAttackStrategy.Base64],  # Specific strategy
+                [FoundryStrategy.EASY],
+                [FoundryStrategy.Base64],  # Specific strategy
             ],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
@@ -370,12 +370,12 @@ class TestFoundryScenarioAttackCreation:
         """Test creating an attack from a single-turn strategy."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        atomic_attack = scenario._get_attack_from_strategy([FoundryAttackStrategy.Base64])
+        atomic_attack = scenario._get_attack_from_strategy([FoundryStrategy.Base64])
 
         assert isinstance(atomic_attack, AtomicAttack)
         assert atomic_attack._objectives == sample_objectives
@@ -394,13 +394,13 @@ class TestFoundryScenarioAttackCreation:
         """Test creating a multi-turn attack strategy."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Crescendo]],
+            attack_strategies=[[FoundryStrategy.Crescendo]],
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        atomic_attack = scenario._get_attack_from_strategy([FoundryAttackStrategy.Crescendo])
+        atomic_attack = scenario._get_attack_from_strategy([FoundryStrategy.Crescendo])
 
         assert isinstance(atomic_attack, AtomicAttack)
         assert atomic_attack._objectives == sample_objectives
@@ -424,7 +424,7 @@ class TestFoundryScenarioGetAttack:
         """Test creating a single-turn attack with converters."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -450,7 +450,7 @@ class TestFoundryScenarioGetAttack:
         """Test creating a multi-turn attack."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Crescendo]],
+            attack_strategies=[[FoundryStrategy.Crescendo]],
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
@@ -479,27 +479,27 @@ class TestFoundryScenarioAllStrategies:
     @pytest.mark.parametrize(
         "strategy",
         [
-            FoundryAttackStrategy.AnsiAttack,
-            FoundryAttackStrategy.AsciiArt,
-            FoundryAttackStrategy.AsciiSmuggler,
-            FoundryAttackStrategy.Atbash,
-            FoundryAttackStrategy.Base64,
-            FoundryAttackStrategy.Binary,
-            FoundryAttackStrategy.Caesar,
-            FoundryAttackStrategy.CharacterSpace,
-            FoundryAttackStrategy.CharSwap,
-            FoundryAttackStrategy.Diacritic,
-            FoundryAttackStrategy.Flip,
-            FoundryAttackStrategy.Leetspeak,
-            FoundryAttackStrategy.Morse,
-            FoundryAttackStrategy.ROT13,
-            FoundryAttackStrategy.SuffixAppend,
-            FoundryAttackStrategy.StringJoin,
-            FoundryAttackStrategy.Tense,
-            FoundryAttackStrategy.UnicodeConfusable,
-            FoundryAttackStrategy.UnicodeSubstitution,
-            FoundryAttackStrategy.Url,
-            FoundryAttackStrategy.Jailbreak,
+            FoundryStrategy.AnsiAttack,
+            FoundryStrategy.AsciiArt,
+            FoundryStrategy.AsciiSmuggler,
+            FoundryStrategy.Atbash,
+            FoundryStrategy.Base64,
+            FoundryStrategy.Binary,
+            FoundryStrategy.Caesar,
+            FoundryStrategy.CharacterSpace,
+            FoundryStrategy.CharSwap,
+            FoundryStrategy.Diacritic,
+            FoundryStrategy.Flip,
+            FoundryStrategy.Leetspeak,
+            FoundryStrategy.Morse,
+            FoundryStrategy.ROT13,
+            FoundryStrategy.SuffixAppend,
+            FoundryStrategy.StringJoin,
+            FoundryStrategy.Tense,
+            FoundryStrategy.UnicodeConfusable,
+            FoundryStrategy.UnicodeSubstitution,
+            FoundryStrategy.Url,
+            FoundryStrategy.Jailbreak,
         ],
     )
     def test_all_single_turn_strategies_create_attack_runs(
@@ -527,8 +527,8 @@ class TestFoundryScenarioAllStrategies:
     @pytest.mark.parametrize(
         "strategy",
         [
-            FoundryAttackStrategy.MultiTurn,
-            FoundryAttackStrategy.Crescendo,
+            FoundryStrategy.MultiTurn,
+            FoundryStrategy.Crescendo,
         ],
     )
     def test_all_multi_turn_strategies_create_attack_runs(
@@ -569,7 +569,7 @@ class TestFoundryScenarioProperties:
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that scenario name is set correctly."""
-        strategies = [[FoundryAttackStrategy.Base64], [FoundryAttackStrategy.ROT13]]
+        strategies = [[FoundryStrategy.Base64], [FoundryStrategy.ROT13]]
 
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
@@ -598,7 +598,7 @@ class TestFoundryScenarioProperties:
         """Test that scenario version is properly set."""
         scenario = FoundryScenario(
             objective_target=mock_objective_target,
-            attack_strategies=[[FoundryAttackStrategy.Base64]],
+            attack_strategies=[[FoundryStrategy.Base64]],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -619,9 +619,9 @@ class TestFoundryScenarioProperties:
     ):
         """Test that atomic attack count is reasonable for the number of strategies."""
         strategies = [
-            [FoundryAttackStrategy.Base64],
-            [FoundryAttackStrategy.ROT13],
-            [FoundryAttackStrategy.Leetspeak],
+            [FoundryStrategy.Base64],
+            [FoundryStrategy.ROT13],
+            [FoundryStrategy.Leetspeak],
         ]
 
         scenario = FoundryScenario(

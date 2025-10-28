@@ -88,24 +88,6 @@ class AIRTInitializer(PyRITInitializer):
             "AZURE_CONTENT_SAFETY_API_KEY",
         ]
 
-    def validate(self) -> None:
-        """
-        Validate that all required environment variables are set.
-
-        Raises:
-            ValueError: If any required environment variables are missing.
-        """
-        missing_vars = []
-        for env_var in self.required_env_vars:
-            if not os.getenv(env_var):
-                missing_vars.append(env_var)
-
-        if missing_vars:
-            raise ValueError(
-                f"AIRT configuration requires the following environment variables: "
-                f"{', '.join(missing_vars)}. Please set these in your .env file."
-            )
-
     def initialize(self) -> None:
         """
         Execute the complete AIRT initialization.

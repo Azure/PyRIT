@@ -8,17 +8,17 @@ from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
 
 from pyrit.scenarios.scenarios.encoding_scenario import EncodingScenario
-from pyrit.scenarios.scenarios.foundry_scenario import FoundryAttackStrategy, FoundryScenario
-from pyrit.scenarios.scenario_attack_strategy import ScenarioAttackStrategy
+from pyrit.scenarios.scenarios.foundry_scenario import FoundryStrategy, FoundryScenario
+from pyrit.scenarios.scenario_strategy import ScenarioStrategy
 
 __all__ = [
     "AtomicAttack",
     "AtomicAttackResult",
     "EncodingScenario",
-    "FoundryAttackStrategy",
+    "FoundryStrategy",
     "FoundryScenario",
     "Scenario",
-    "ScenarioAttackStrategy",
+    "ScenarioStrategy",
     "ScenarioIdentifier",
     "ScenarioResult",
 ]

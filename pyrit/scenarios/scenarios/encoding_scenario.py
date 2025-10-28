@@ -5,6 +5,7 @@
 import pathlib
 from typing import Dict, List, Optional, Sequence
 
+from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
@@ -58,6 +59,7 @@ class EncodingScenario(Scenario):
 
     version: int = 1
 
+    @apply_defaults
     def __init__(
         self,
         *,
@@ -87,8 +89,6 @@ class EncodingScenario(Scenario):
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
         """
 
-        self._objective_target = objective_target
-
         # There is currently only one strategy, but this class could encorporate more in the future
         self._attack_strategies = ["Garak basic"]
 
@@ -105,7 +105,7 @@ class EncodingScenario(Scenario):
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
             objective_scorer_identifier=objective_scorer.get_identifier(),
-            objective_target_identifier=objective_target.get_identifier(),
+            objective_target=objective_target,
         )
 
     # Use the same as Garak by default
