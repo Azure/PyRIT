@@ -14,10 +14,9 @@ from pyrit.prompt_target import OpenAIResponseTarget
 @pytest.mark.asyncio
 async def test_openai_responses_gpt5(sqlite_instance):
     args = {
-        "endpoint": os.getenv("AZURE_OPENAI_RESPONSES_ENDPOINT"),
-        "model_name": os.getenv("AZURE_OPENAI_RESPONSES_MODEL"),
-        "use_entra_auth": True,
-        "api_version": os.getenv("AZURE_OPENAI_RESPONSES_API_VERSION"),
+        "endpoint": os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
+        "model_name": os.getenv("AZURE_OPENAI_GPT5_MODEL"),
+        "api_key": os.getenv("AZURE_OPENAI_GPT5_RESPONSES_KEY"),
     }
 
     target = OpenAIResponseTarget(**args)
