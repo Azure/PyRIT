@@ -96,6 +96,9 @@ class OpenAIDALLETarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint(self.DALLE_URL_REGEX)
+
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_DALLE_MODEL"
         self.endpoint_environment_variable = "OPENAI_DALLE_ENDPOINT"

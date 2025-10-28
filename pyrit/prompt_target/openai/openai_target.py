@@ -3,13 +3,13 @@
 
 import json
 import logging
+import re
 from abc import abstractmethod
 from typing import Optional
+from urllib.parse import urlparse
 
-from pyrit.auth.azure_auth import (
-    AzureAuth,
-    get_default_scope,
-)
+from pyrit.auth import AzureAuth
+from pyrit.auth.azure_auth import get_default_scope
 from pyrit.common import default_values
 from pyrit.prompt_target import PromptChatTarget
 
@@ -19,6 +19,21 @@ logger = logging.getLogger(__name__)
 class OpenAITarget(PromptChatTarget):
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
+
+    # Expected URL regex patterns for different OpenAI and AOAI targets
+    CHAT_URL_REGEX = [
+        r"/v1/chat/completions$",  # Standard OpenAI & Anthropic endpoints
+        r"/openai/deployments/[^/]+/chat/completions$",  # AOAI pattern
+        r"/openai/chat/completions$",  # Gemini endpoint
+    ]
+    SORA_URL_REGEX = [
+        r"/videos/v1/video/generations$",  # Azure sora1 endpoint
+        r"/videos/v1/videos$",  # Azure sora2 endpoint
+        r"/v1/videos$",  # oai sora2 endpoint
+    ]
+    DALLE_URL_REGEX = [r"/images/generations$"]
+    TTS_URL_REGEX = [r"/audio/speech$"]
+    RESPONSE_URL_REGEX = [r"/openai/responses$", r"v1/responses$"]
 
     model_name_environment_variable: str
     endpoint_environment_variable: str
@@ -125,6 +140,44 @@ class OpenAITarget(PromptChatTarget):
         which are read from .env
         """
         raise NotImplementedError
+
+    def _warn_if_irregular_endpoint(self, expected_url_regex) -> None:
+        """
+        Validate that the endpoint URL ends with one of the expected routes for this OpenAI target.
+
+        Args:
+            expected_url_regex: Expected regex pattern(s) for this target. Should be a list of regex strings.
+
+        Prints a warning if the endpoint doesn't match any of the expected routes.
+        This validation helps ensure the endpoint is configured correctly for the specific API.
+        """
+        if not self._endpoint or not expected_url_regex:
+            return
+
+        # Use urllib to extract the path part and normalize it
+        parsed_url = urlparse(self._endpoint)
+        normalized_route = parsed_url.path.lower().rstrip("/")
+
+        # Check if the endpoint matches any of the expected regex patterns
+        for regex_pattern in expected_url_regex:
+            if re.search(regex_pattern, normalized_route):
+                return
+
+        # No matches found, log warning
+        if len(expected_url_regex) == 1:
+            # Convert regex back to human-readable format for the warning
+            pattern_str = expected_url_regex[0].replace(r"[^/]+", "*").replace("$", "")
+            expected_routes_str = pattern_str
+        else:
+            # Convert all regex patterns to human-readable format
+            readable_patterns = [p.replace(r"[^/]+", "*").replace("$", "") for p in expected_url_regex]
+            expected_routes_str = f"one of: {', '.join(readable_patterns)}"
+
+        logger.warning(
+            f"The provided endpoint URL {parsed_url} does not match any of the expected formats: {expected_routes_str}."
+            f"This may be intentional, especially if you are using an endpoint other than Azure or OpenAI."
+            f"For more details and guidance, please see the .env_example file in the repository."
+        )
 
     @abstractmethod
     def is_json_response_supported(self) -> bool:

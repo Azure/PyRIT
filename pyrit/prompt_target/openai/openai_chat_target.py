@@ -28,6 +28,33 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
     This class facilitates multimodal (image and text) input and text output generation
 
     This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
+
+    Args:
+        api_key (str): The api key for the OpenAI API
+        endpoint (str): The endpoint for the OpenAI API
+        model_name (str): The model name for the OpenAI API
+        deployment_name (str): For Azure, the deployment name
+        api_version (str): The api version for the OpenAI API
+        temperature (float): The temperature for the completion
+        max_completion_tokens (int): The maximum number of tokens to be returned by the model.
+            The total length of input tokens and generated tokens is limited by
+            the model's context length.
+        max_tokens (int): Deprecated. Use max_completion_tokens instead
+        top_p (float): The nucleus sampling probability.
+        frequency_penalty (float): Number between -2.0 and 2.0. Positive values
+            penalize new tokens based on their existing frequency in the text so far,
+            decreasing the model's likelihood to repeat the same line verbatim.
+        presence_penalty (float): Number between -2.0 and 2.0. Positive values
+            penalize new tokens based on whether they appear in the text so far,
+            increasing the model's likelihood to talk about new topics.
+        seed (int): This feature is in Beta. If specified, our system will make a best effort to sample
+            deterministically, such that repeated requests with the same seed
+            and parameters should return the same result.
+        n (int): How many chat completion choices to generate for each input message.
+            Note that you will be charged based on the number of generated tokens across all
+            of the choices. Keep n as 1 to minimize costs.
+        extra_body_parameters (dict): Additional parameters to send in the request body
+
     """
 
     def __init__(
@@ -106,6 +133,9 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
+
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint(self.CHAT_URL_REGEX)
 
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
