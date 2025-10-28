@@ -136,7 +136,12 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
+# Note: web search is not yet supported by Azure OpenAI endpoints so we'll use OpenAI from here on.
 target = OpenAIResponseTarget(
+    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
+    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
+    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL"),
+    api_version=None,
     extra_body_parameters={
         "tools": [web_search_tool()],
         "tool_choice": "auto",
@@ -152,8 +157,6 @@ prompt_request = Message(message_pieces=[message_piece])
 response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
 for idx, piece in enumerate(response.message_pieces):
-    # Reasoning traces are necessary to be sent back to the endpoint for function calling even if they're empty.
-    # They are excluded here for a cleaner output.
     if piece.original_value_data_type != "reasoning":
         print(f"{idx} | {piece.role}: {piece.original_value}")
 
@@ -163,10 +166,8 @@ for idx, piece in enumerate(response.message_pieces):
 # OpenAI models also support constrained generation in the [Responses API](https://platform.openai.com/docs/guides/function-calling#context-free-grammars). This forces the LLM to produce output which conforms to the given grammar, which is useful when specific syntax is required in the output.
 #
 # In this example, we will define a simple Lark grammar which prevents the model from giving a correct answer to a simple question, and compare that to the unconstrained model.
-
-
-from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
+#
+# Note that as of October 2025, this is only supported by OpenAI (not Azure) on "gpt-5"
 
 # %%
 from pyrit.setup import IN_MEMORY, initialize_pyrit
@@ -201,8 +202,8 @@ grammar_tool = {
 target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
     api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
-    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-5"),
-    api_version="2025-03-01-preview",
+    model_name="gpt-5",
+    api_version=None,
     extra_body_parameters={"tools": [grammar_tool], "tool_choice": "required"},
     temperature=1.0,
 )
@@ -210,8 +211,8 @@ target = OpenAIResponseTarget(
 unconstrained_target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
     api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
-    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL", "gpt-5"),
-    api_version="2025-03-01-preview",
+    model_name="gpt-5",
+    api_version=None,
     temperature=1.0,
 )
 
@@ -230,3 +231,5 @@ print("Constrained Response:")
 for idx, piece in enumerate(result.message_pieces):
     if piece.original_value_data_type != "reasoning":
         print(f"{idx} | {piece.role}: {piece.original_value}")
+
+# %%
