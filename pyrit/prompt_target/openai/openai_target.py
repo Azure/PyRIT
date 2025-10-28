@@ -32,7 +32,7 @@ class OpenAITarget(PromptChatTarget):
         r"/v1/videos$",  # oai sora2 endpoint
         r"/openai/v1/video/generations$",  # Azure OpenAI Sora endpoint pattern
     ]
-    
+
     DALLE_URL_REGEX = [r"/images/generations$"]
     TTS_URL_REGEX = [r"/audio/speech$"]
     RESPONSE_URL_REGEX = [r"/openai/responses$", r"v1/responses$"]
