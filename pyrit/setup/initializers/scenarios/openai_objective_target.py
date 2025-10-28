@@ -51,7 +51,7 @@ class ScenarioObjectiveTargetInitializer(PyRITInitializer):
         objective_target = OpenAIChatTarget(
             endpoint=os.getenv("DEFAULT_OPENAI_FRONTEND_ENDPOINT"),
             api_key=os.getenv("DEFAULT_OPENAI_FRONTEND_KEY"),
-            model=os.getenv("DEFAULT_OPENAI_FRONTEND_MODEL"),
+            model_name=os.getenv("DEFAULT_OPENAI_FRONTEND_MODEL"),
         )
 
         set_default_value(

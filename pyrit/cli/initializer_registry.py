@@ -52,10 +52,10 @@ class InitializerRegistry:
         """
         self._initializers: Dict[str, InitializerInfo] = {}
         self._initializer_paths: Dict[str, Path] = {}  # Track file paths for collision detection
-        
+
         if discovery_path is None:
             discovery_path = Path(PYRIT_PATH) / "setup" / "initializers"
-        
+
         self._discovery_path = discovery_path
         self._discover_initializers()
 
@@ -119,9 +119,7 @@ class InitializerRegistry:
         module_name = ".".join(module_parts)
 
         try:
-            spec = importlib.util.spec_from_file_location(
-                f"pyrit.setup.initializers.{module_name}", file_path
-            )
+            spec = importlib.util.spec_from_file_location(f"pyrit.setup.initializers.{module_name}", file_path)
             if not spec or not spec.loader:
                 return
 
@@ -132,9 +130,7 @@ class InitializerRegistry:
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
                 if inspect.isclass(attr) and issubclass(attr, PyRITInitializer) and attr != PyRITInitializer:
-                    self._try_register_initializer(
-                        initializer_class=attr, short_name=short_name, file_path=file_path
-                    )
+                    self._try_register_initializer(initializer_class=attr, short_name=short_name, file_path=file_path)
 
         except Exception as e:
             logger.warning(f"Failed to load initializer module {short_name}: {e}")

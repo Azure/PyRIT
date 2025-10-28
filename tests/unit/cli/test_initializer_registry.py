@@ -6,7 +6,7 @@ Unit tests for the InitializerRegistry module.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -68,7 +68,7 @@ class TestInitializerRegistry:
         mock_path.exists.return_value = False
         mock_path.is_file.return_value = False
         mock_path.is_dir.return_value = False
-        
+
         # Make Path() constructor and division operations return the mock path
         mock_path_class.return_value = mock_path
         mock_path.__truediv__ = MagicMock(return_value=mock_path)
@@ -368,9 +368,7 @@ class TestInitializerRegistry:
         registry._initializers.clear()
         registry._initializer_paths.clear()
 
-        registry._try_register_initializer(
-            initializer_class=MockInitializer, short_name="test", file_path=mock_path
-        )
+        registry._try_register_initializer(initializer_class=MockInitializer, short_name="test", file_path=mock_path)
 
         assert "test" in registry._initializers
         info = registry._initializers["test"]

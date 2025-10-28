@@ -41,7 +41,7 @@
 #
 # ## Initializers
 #
-# PyRITInitializers are how you can configure the CLI scanner. PyRIT includes several built-in initializers you can use with the `--initializers` flag. 
+# PyRITInitializers are how you can configure the CLI scanner. PyRIT includes several built-in initializers you can use with the `--initializers` flag.
 #
 # The `--list-initializers` command shows all available initializers. Initializers are referenced by their filename (e.g., `objective_target`, `objective_list`, `simple`) regardless of which subdirectory they're in.
 #
@@ -70,7 +70,7 @@
 # !pyrit_scan foundry_scenario --initializers simple openai_objective_target
 # ```
 #
-# Example with a basic configuration that runs the Foundry scenario against the objective target defined in `openai_objective_target` (which just is an OpenAIChatTarget with `OPENAI_CLI_ENDPOINT` and `OPENAI_CLI_KEY`).
+# Example with a basic configuration that runs the Foundry scenario against the objective target defined in `openai_objective_target` (which just is an OpenAIChatTarget with `DEFAULT_OPENAI_FRONTEND_ENDPOINT` and `DEFAULT_OPENAI_FRONTEND_KEY`).
 
 # %%
 # !pyrit_scan foundry_scenario --initializers openai_objective_target
