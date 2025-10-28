@@ -29,11 +29,11 @@
 #    - This deployment name can be acquired from the Azure ML managed online endpoint, as illustrated in image below.
 #    <br> <img src="./../../assets/aml_deployment_name.png" alt="AML Deployment Name" height="400"/> <br>
 #
-# 2. **AZURE_ML_SCORE_URI**
-#    - To obtain the score URI, navigate through the Azure ML workspace by selecting 'Launch Studio', then 'Endpoints' on the left side, followed by 'Consume'. Copy the REST endpoint as depicted below.
+# 2. **AZURE_ML_MANAGED_ENDPOINT**
+#    - To obtain the managed endpoint, navigate through the Azure ML workspace by selecting 'Launch Studio', then 'Endpoints' on the left side, followed by 'Consume'. Copy the REST endpoint as depicted below.
 #     <br> <img src="./../../assets/aml_score_uri.png" alt="AML Score URI" height="400"/> <br>
 #
-# 3. **AZURE_ML_SCORE_API_KEY**
+# 3. **AZURE_ML_KEY**
 #    - Navigate through the Azure ML workspace by selecting 'Launch Studio', then 'Endpoints' on the left side, followed by 'Consume'. The primary key can be obtained as shown in the subsequent image.
 #    <br> <img src="./../../assets/aml_score_key.png" alt="AML Score Key" height="400"/> <br>
 #
@@ -47,10 +47,10 @@ from dotenv import load_dotenv
 load_dotenv()
 deployment_name = os.getenv("AZURE_ML_SCORE_DEPLOYMENT_NAME")  # ex., "mistralai-mixtral-8x7b-instru-1"
 # The URL for the request
-url = os.getenv("AZURE_ML_SCORE_URI")
+url = os.getenv("AZURE_ML_MANAGED_ENDPOINT")
 
 # Replace this with your API key or token
-api_key = os.getenv("AZURE_ML_SCORE_API_KEY")
+api_key = os.getenv("AZURE_ML_KEY")
 
 # %%
 print(f"Deployment name {deployment_name}")
