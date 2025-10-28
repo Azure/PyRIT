@@ -10,6 +10,7 @@ import pytest
 from pyrit.models import MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget
 
+
 @pytest.mark.asyncio
 async def test_openai_responses_gpt5(sqlite_instance):
     args = {
