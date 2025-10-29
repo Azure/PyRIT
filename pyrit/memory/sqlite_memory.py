@@ -22,6 +22,7 @@ from pyrit.memory.memory_models import (
     Base,
     EmbeddingDataEntry,
     PromptMemoryEntry,
+    ScenarioResultEntry,
 )
 from pyrit.models import DiskStorageIO, MessagePiece
 

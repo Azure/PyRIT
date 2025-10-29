@@ -38,6 +38,8 @@ from pyrit.models import (
     ConversationType,
     MessagePiece,
     PromptDataType,
+    ScenarioIdentifier,
+    ScenarioResult,
     Score,
     Seed,
     SeedObjective,
@@ -651,3 +653,109 @@ class AttackResultEntry(Base):
             related_conversations=related_conversations,
             metadata=self.attack_metadata or {},
         )
+
+
+class ScenarioResultEntry(Base):
+    """
+    Represents the scenario result data in the database.
+
+    Parameters:
+        __tablename__ (str): The name of the database table.
+        __table_args__ (dict): Additional arguments for the database table.
+        id (Uuid): The unique identifier for the scenario result entry.
+        scenario_name (str): Name of the scenario.
+        scenario_description (str): Description of the scenario.
+        scenario_version (int): Version of the scenario.
+        pyrit_version (str): PyRIT version string.
+        scenario_init_data (dict): Initialization data for the scenario.
+        objective_target_identifier (dict): Identifier for the objective target.
+        objective_scorer_identifier (dict): Identifier for the objective scorer.
+        attack_results_json (str): JSON-serialized dict mapping atomic attack names to lists of conversation_ids.
+            The full AttackResult objects are stored in AttackResultEntries and can be queried by conversation_id.
+        timestamp (DateTime): The timestamp of the scenario result entry.
+
+    Methods:
+        get_scenario_result(memory_interface): Returns a ScenarioResult object with AttackResults populated
+            from the database if memory_interface is provided.
+        __str__(): Returns a string representation of the scenario result entry.
+    """
+
+    __tablename__ = "ScenarioResultEntries"
+    __table_args__ = {"extend_existing": True}
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
+    scenario_name = mapped_column(String, nullable=False)
+    scenario_description = mapped_column(Unicode, nullable=True)
+    scenario_version = mapped_column(INTEGER, nullable=False, default=1)
+    pyrit_version = mapped_column(String, nullable=False)
+    scenario_init_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    objective_target_identifier: Mapped[dict] = mapped_column(JSON, nullable=False)
+    objective_scorer_identifier: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    attack_results_json: Mapped[str] = mapped_column(Unicode, nullable=False)
+    labels: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    completion_time = mapped_column(DateTime, nullable=False)
+    timestamp = mapped_column(DateTime, nullable=False)
+
+    def __init__(self, *, entry: ScenarioResult):
+        self.id = uuid.uuid4()
+        self.scenario_name = entry.scenario_identifier.name
+        self.scenario_description = entry.scenario_identifier.description
+        self.scenario_version = entry.scenario_identifier.version
+        self.pyrit_version = entry.scenario_identifier.pyrit_version
+        self.scenario_init_data = entry.scenario_identifier.init_data
+        self.objective_target_identifier = entry.objective_target_identifier
+        self.objective_scorer_identifier = entry.objective_scorer_identifier
+        self.labels = entry.labels
+        self.completion_time = entry.completion_time
+        
+        # Serialize attack_results: dict[str, List[AttackResult]] -> dict[str, List[str]]
+        # Store only conversation_ids - the full AttackResults can be queried from the database
+        serialized_attack_results = {}
+        for attack_name, results in entry.attack_results.items():
+            serialized_attack_results[attack_name] = [result.conversation_id for result in results]
+        self.attack_results_json = json.dumps(serialized_attack_results)
+        
+        self.timestamp = datetime.now()
+
+    def get_scenario_result(self) -> ScenarioResult:
+        """
+        Convert the database entry back to a ScenarioResult object.
+        
+        Note: This returns a ScenarioResult with empty attack_results.
+        Use memory_interface.get_scenario_results() to automatically populate
+        the full AttackResults by querying the database.
+
+        Returns:
+            ScenarioResult object with scenario metadata but empty attack_results
+        """
+        # Recreate ScenarioIdentifier with the stored pyrit_version
+        scenario_identifier = ScenarioIdentifier(
+            name=self.scenario_name,
+            description=self.scenario_description or "",
+            scenario_version=self.scenario_version,
+            init_data=self.scenario_init_data,
+            pyrit_version=self.pyrit_version,
+        )
+
+        # Return empty attack_results - will be populated by memory_interface
+        attack_results = {}
+
+        return ScenarioResult(
+            scenario_identifier=scenario_identifier,
+            objective_target_identifier=self.objective_target_identifier,
+            attack_results=attack_results,
+            objective_scorer_identifier=self.objective_scorer_identifier,
+            labels=self.labels,
+            completion_time=self.completion_time,
+        )
+    
+    def get_conversation_ids_by_attack_name(self) -> dict[str, list[str]]:
+        """
+        Get the conversation IDs grouped by attack name.
+        
+        Returns:
+            Dictionary mapping attack names to lists of conversation IDs
+        """
+        return json.loads(self.attack_results_json)
+
+    def __str__(self):
+        return f"ScenarioResultEntry: {self.scenario_name} (version {self.scenario_version})"
