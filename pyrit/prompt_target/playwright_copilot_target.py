@@ -9,8 +9,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, List, Tuple, Union
 
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -144,16 +144,16 @@ class PlaywrightCopilotTarget(PromptTarget):
                 file_picker_selector='span.fui-MenuItem__content:has-text("Upload images and files")',
             )
 
-    async def send_prompt_async(self, *, message: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """
         Send a prompt request to Microsoft Copilot and return the response.
 
         Args:
-            message (PromptRequestResponse): The prompt request to send. Can contain multiple pieces
+            message (Message): The prompt request to send. Can contain multiple pieces
                 of type 'text' or 'image_path'.
 
         Returns:
-            PromptRequestResponse: The response from Copilot. May contain multiple
+            Message: The response from Copilot. May contain multiple
                 pieces if the response includes both text and images.
         """
         self._validate_request(message=message)
@@ -164,7 +164,7 @@ class PlaywrightCopilotTarget(PromptTarget):
             raise RuntimeError(f"An error occurred during interaction: {str(e)}") from e
 
         # For response construction, we'll use the first piece as reference
-        request_piece = message.request_pieces[0]
+        request_piece = message.message_pieces[0]
 
         if isinstance(response_content, str):
             # Single text response (backward compatibility)
@@ -173,34 +173,34 @@ class PlaywrightCopilotTarget(PromptTarget):
             )
         else:
             # Multimodal response with text and/or images
-            response_request_pieces = []
+            response_message_pieces = []
             for piece_data, piece_type in response_content:
-                response_piece = PromptRequestPiece(
+                response_piece = MessagePiece(
                     role="assistant",
                     original_value=piece_data,
                     conversation_id=request_piece.conversation_id,
                     labels=request_piece.labels,
                     prompt_target_identifier=request_piece.prompt_target_identifier,
-                    orchestrator_identifier=request_piece.orchestrator_identifier,
+                    attack_identifier=request_piece.attack_identifier,
                     original_value_data_type=piece_type,
                     converted_value_data_type=piece_type,
                     prompt_metadata=request_piece.prompt_metadata,
                     response_error="none",
                 )
-                response_request_pieces.append(response_piece)
+                response_message_pieces.append(response_piece)
 
-            response_entry = PromptRequestResponse(request_pieces=response_request_pieces)
+            response_entry = Message(message_pieces=response_message_pieces)
 
         return response_entry
 
     async def _interact_with_copilot_async(
-        self, message: PromptRequestResponse
+        self, message: Message
     ) -> Union[str, List[Tuple[str, PromptDataType]]]:
         """Interact with Microsoft Copilot interface to send multimodal prompts."""
         selectors = self._get_selectors()
 
         # Handle multimodal input - process all pieces in the request
-        for piece in message.request_pieces:
+        for piece in message.message_pieces:
             if piece.converted_value_data_type == "text":
                 await self._send_text_async(text=piece.converted_value, input_selector=selectors.input_selector)
             elif piece.converted_value_data_type == "image_path":
@@ -766,13 +766,13 @@ class PlaywrightCopilotTarget(PromptTarget):
         if sign_in_header_present:
             raise RuntimeError("Login required to access advanced features in Consumer Copilot.")
 
-    def _validate_request(self, *, message: PromptRequestResponse) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """Validate that the prompt request is compatible with Copilot."""
-        if not message.request_pieces:
+        if not message.message_pieces:
             raise ValueError("This target requires at least one prompt request piece.")
 
         # Validate that all pieces are supported types
-        for i, piece in enumerate(message.request_pieces):
+        for i, piece in enumerate(message.message_pieces):
             piece_type = piece.converted_value_data_type
             if piece_type not in self.SUPPORTED_DATA_TYPES:
                 supported_types = ", ".join(self.SUPPORTED_DATA_TYPES)

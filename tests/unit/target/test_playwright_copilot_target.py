@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import pytest
 
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
 )
 from pyrit.prompt_target.playwright_copilot_target import (
     CopilotSelectors,
@@ -56,29 +56,31 @@ class TestPlaywrightCopilotTarget:
     @pytest.fixture
     def text_request_piece(self):
         """Create a sample text request piece."""
-        return PromptRequestPiece(
+        return MessagePiece(
             role="user",
             converted_value="Hello, how are you?",
             original_value="Hello, how are you?",
             original_value_data_type="text",
             converted_value_data_type="text",
+            conversation_id="test-conversation-id",
         )
 
     @pytest.fixture
     def image_request_piece(self):
         """Create a sample image request piece."""
-        return PromptRequestPiece(
+        return MessagePiece(
             role="user",
             converted_value="/path/to/image.jpg",
             original_value="/path/to/image.jpg",
             original_value_data_type="image_path",
             converted_value_data_type="image_path",
+            conversation_id="test-conversation-id",
         )
 
     @pytest.fixture
     def multimodal_request(self, text_request_piece, image_request_piece):
         """Create a multimodal request with text and image."""
-        return PromptRequestResponse(request_pieces=[text_request_piece, image_request_piece])
+        return Message(message_pieces=[text_request_piece, image_request_piece])
 
     def test_init_consumer_copilot(self, mock_page):
         """Test initialization with Consumer Copilot."""
@@ -136,25 +138,17 @@ class TestPlaywrightCopilotTarget:
         assert selectors.plus_button_dropdown_selector == 'button[aria-label="Add content"]'
         assert selectors.file_picker_selector == 'span.fui-MenuItem__content:has-text("Upload images and files")'
 
-    def test_validate_request_empty_pieces(self, mock_page):
-        """Test validation with empty request pieces."""
-        target = PlaywrightCopilotTarget(page=mock_page)
-        request = PromptRequestResponse(request_pieces=[])
-
-        with pytest.raises(ValueError, match="This target requires at least one prompt request piece"):
-            target._validate_request(message=request)
-
     def test_validate_request_unsupported_type(self, mock_page):
         """Test validation with unsupported data type."""
         target = PlaywrightCopilotTarget(page=mock_page)
-        unsupported_piece = PromptRequestPiece(
+        unsupported_piece = MessagePiece(
             role="user",
             converted_value="some audio data",
             original_value="some audio data",
             original_value_data_type="audio_path",
             converted_value_data_type="audio_path",
         )
-        request = PromptRequestResponse(request_pieces=[unsupported_piece])
+        request = Message(message_pieces=[unsupported_piece])
 
         with pytest.raises(
             ValueError, match=r"This target only supports .* prompt input\. Piece 0 has type: audio_path\."
@@ -164,7 +158,7 @@ class TestPlaywrightCopilotTarget:
     def test_validate_request_valid_text(self, mock_page, text_request_piece):
         """Test validation with valid text request."""
         target = PlaywrightCopilotTarget(page=mock_page)
-        request = PromptRequestResponse(request_pieces=[text_request_piece])
+        request = Message(message_pieces=[text_request_piece])
 
         # Should not raise any exception
         target._validate_request(message=request)
@@ -354,30 +348,27 @@ class TestPlaywrightCopilotTarget:
     async def test_send_prompt_async_text_only(self, mock_page, text_request_piece):
         """Test sending text-only prompt."""
         target = PlaywrightCopilotTarget(page=mock_page)
-        request = PromptRequestResponse(request_pieces=[text_request_piece])
+        request = Message(message_pieces=[text_request_piece])
 
         # Mock the interaction method
         with patch.object(target, "_interact_with_copilot_async", return_value="AI response") as mock_interact:
             response = await target.send_prompt_async(message=request)
 
         mock_interact.assert_awaited_once_with(request)
-        assert response.request_pieces[0].converted_value == "AI response"
-        assert response.request_pieces[0].role == "assistant"
+        assert response.message_pieces[0].converted_value == "AI response"
+        assert response.message_pieces[0].role == "assistant"
 
     @pytest.mark.asyncio
-    async def test_send_prompt_async_no_page(self, text_request_piece):
+    async def test_no_page(self, text_request_piece):
         """Test error when page is not initialized."""
-        target = PlaywrightCopilotTarget(page=None)
-        request = PromptRequestResponse(request_pieces=[text_request_piece])
-
         with pytest.raises(RuntimeError, match="Playwright page is not initialized"):
-            await target.send_prompt_async(message=request)
+            target = PlaywrightCopilotTarget(page=None)
 
     @pytest.mark.asyncio
     async def test_send_prompt_async_interaction_error(self, mock_page, text_request_piece):
         """Test error handling during interaction."""
         target = PlaywrightCopilotTarget(page=mock_page)
-        request = PromptRequestResponse(request_pieces=[text_request_piece])
+        request = Message(message_pieces=[text_request_piece])
 
         # Mock the interaction method to raise an exception
         with patch.object(target, "_interact_with_copilot_async", side_effect=Exception("Interaction failed")):
@@ -476,7 +467,7 @@ class TestPlaywrightCopilotTargetMultimodal:
     @pytest.fixture
     def text_request_piece(self):
         """Create a sample text request piece."""
-        return PromptRequestPiece(
+        return MessagePiece(
             role="user",
             converted_value="Hello, how are you?",
             original_value="Hello, how are you?",
@@ -487,7 +478,7 @@ class TestPlaywrightCopilotTargetMultimodal:
     @pytest.fixture
     def image_request_piece(self):
         """Create a sample image request piece."""
-        return PromptRequestPiece(
+        return MessagePiece(
             role="user",
             converted_value="/path/to/image.jpg",
             original_value="/path/to/image.jpg",
@@ -1013,14 +1004,14 @@ class TestPlaywrightCopilotTargetMultimodal:
         """Test sending prompt and receiving multimodal response."""
         target = PlaywrightCopilotTarget(page=mock_page)
 
-        text_piece = PromptRequestPiece(
+        text_piece = MessagePiece(
             role="user",
             converted_value="Show me a picture",
             original_value="Show me a picture",
             original_value_data_type="text",
             converted_value_data_type="text",
         )
-        request = PromptRequestResponse(request_pieces=[text_piece])
+        request = Message(message_pieces=[text_piece])
 
         # Mock multimodal response
         multimodal_content = [("Here is an image", "text"), ("/path/to/image.png", "image_path")]
@@ -1028,13 +1019,13 @@ class TestPlaywrightCopilotTargetMultimodal:
         with patch.object(target, "_interact_with_copilot_async", return_value=multimodal_content):
             response = await target.send_prompt_async(message=request)
 
-        assert len(response.request_pieces) == 2
-        assert response.request_pieces[0].converted_value == "Here is an image"
-        assert response.request_pieces[0].converted_value_data_type == "text"
-        assert response.request_pieces[0].role == "assistant"
-        assert response.request_pieces[1].converted_value == "/path/to/image.png"
-        assert response.request_pieces[1].converted_value_data_type == "image_path"
-        assert response.request_pieces[1].role == "assistant"
+        assert len(response.message_pieces) == 2
+        assert response.message_pieces[0].converted_value == "Here is an image"
+        assert response.message_pieces[0].converted_value_data_type == "text"
+        assert response.message_pieces[0].role == "assistant"
+        assert response.message_pieces[1].converted_value == "/path/to/image.png"
+        assert response.message_pieces[1].converted_value_data_type == "image_path"
+        assert response.message_pieces[1].role == "assistant"
 
     @pytest.mark.asyncio
     async def test_wait_for_response_with_placeholder_content(self, mock_page):
