@@ -129,7 +129,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             json.JSONDecodeError: If the response from the target is not valid JSON.
             Exception: If the request fails for any other reason.
         """
-        super().__init__(temperature=temperature, top_p=top_p, **kwargs)
+        super().__init__(temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs)
 
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")

@@ -66,20 +66,6 @@ class TestPyRITInitializerBase:
         with pytest.raises(TypeError):
             MissingName()  # type: ignore
 
-    def test_description_property_is_abstract(self):
-        """Test that description property must be implemented."""
-
-        class MissingDescription(PyRITInitializer):
-            @property
-            def name(self) -> str:
-                return "Missing description"
-
-            def initialize(self) -> None:
-                pass
-
-        with pytest.raises(TypeError):
-            MissingDescription()  # type: ignore
-
     def test_initialize_method_is_abstract(self):
         """Test that initialize method must be implemented."""
 

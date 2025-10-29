@@ -13,10 +13,10 @@ from enum import Enum
 from typing import Set, TypeVar
 
 # TypeVar for the enum subclass itself
-T = TypeVar("T", bound="ScenarioAttackStrategy")
+T = TypeVar("T", bound="ScenarioStrategy")
 
 
-class ScenarioAttackStrategy(Enum):
+class ScenarioStrategy(Enum):
     """
     Base class for attack strategies with tag-based categorization and aggregation.
 
@@ -42,7 +42,7 @@ class ScenarioAttackStrategy(Enum):
     3. Handles the special "all" tag by expanding to all non-aggregate strategies
 
     Example:
-        >>> class MyAttackStrategy(ScenarioAttackStrategy):
+        >>> class MyAttackStrategy(ScenarioStrategy):
         ...     '''Attack strategies for my scenario.'''
         ...
         ...     # Aggregate members (special markers that expand)
@@ -79,16 +79,16 @@ class ScenarioAttackStrategy(Enum):
 
     _tags: set[str]
 
-    def __new__(cls, value: str, tags: set[str] | None = None) -> "ScenarioAttackStrategy":
+    def __new__(cls, value: str, tags: set[str] | None = None):
         """
-        Create a new ScenarioAttackStrategy with value and tags.
+        Create a new ScenarioStrategy with value and tags.
 
         Args:
-            value (str): The strategy identifier/name.
-            tags (set[str] | None): Tags for categorization (e.g., {"easy", "converter", "encoding"}).
+            value: The strategy value/name.
+            tags: Optional set of tags for categorization.
 
         Returns:
-            ScenarioAttackStrategy: The new enum member.
+            ScenarioStrategy: The new enum member.
         """
         obj = object.__new__(cls)
         obj._value_ = value

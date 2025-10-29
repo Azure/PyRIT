@@ -6,4 +6,10 @@
 from pyrit.setup.initialization import initialize_pyrit, AZURE_SQL, SQLITE, IN_MEMORY, MemoryDatabaseType
 
 
-__all__ = ["AZURE_SQL", "SQLITE", "IN_MEMORY", "initialize_pyrit", "MemoryDatabaseType"]
+__all__ = [
+    "AZURE_SQL",
+    "SQLITE",
+    "IN_MEMORY",
+    "initialize_pyrit",
+    "MemoryDatabaseType",
+]
