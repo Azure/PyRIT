@@ -67,17 +67,55 @@ class PlaywrightCopilotTarget(PromptTarget):
     RETRY_ATTEMPTS: int = 5
     RETRY_DELAY_MS: int = 500
 
+    # Wait time constants for image loading
+    MIN_IMAGE_WAIT_SECONDS: int = 3
+    MAX_IMAGE_WAIT_SECONDS: int = 15
+    IMAGE_STABILITY_ITERATIONS: int = 3
+
     # Supported data types
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
+
+    # Placeholder text constants
+    PLACEHOLDER_GENERATING_RESPONSE: str = "generating response"
+    PLACEHOLDER_GENERATING: str = "generating"
+    PLACEHOLDER_THINKING: str = "thinking"
+
+    # DOM selector constants
+    SELECTOR_IFRAME: str = "iframe"
+    SELECTOR_IMAGE: str = "img"
+    ARIA_LABEL_THUMBNAIL: str = 'button[aria-label*="Thumbnail"] img'
+
+    # HTML attribute constants
+    ATTR_SRC: str = "src"
+    ATTR_ID: str = "id"
+
+    # Image data URL prefix
+    IMAGE_DATA_URL_PREFIX: str = "data:image/"
+
+    # URL identifiers
+    M365_URL_IDENTIFIER: str = "m365"
+
+    # Element states
+    STATE_VISIBLE: str = "visible"
+    STATE_ATTACHED: str = "attached"
+
+    # Login requirement message
+    LOGIN_REQUIRED_HEADER: str = "Sign in for the full experience"
 
     def __init__(self, *, page: "Page", copilot_type: CopilotType = CopilotType.CONSUMER) -> None:
         super().__init__()
         self._page = page
         self._type = copilot_type
 
-        if page and "m365" in page.url and copilot_type != CopilotType.M365:
+        if not page:
+            raise RuntimeError(
+                "Playwright page is not initialized. "
+                "Please pass a Page object when initializing PlaywrightCopilotTarget."
+            )
+
+        if page and self.M365_URL_IDENTIFIER in page.url and copilot_type != CopilotType.M365:
             raise ValueError("The provided page URL indicates M365 Copilot, but the type is set to consumer.")
-        if page and "m365" not in page.url and copilot_type == CopilotType.M365:
+        if page and self.M365_URL_IDENTIFIER not in page.url and copilot_type == CopilotType.M365:
             raise ValueError("The provided page URL does not indicate M365 Copilot, but the type is set to m365.")
 
     def _get_selectors(self) -> CopilotSelectors:
@@ -119,12 +157,6 @@ class PlaywrightCopilotTarget(PromptTarget):
                 pieces if the response includes both text and images.
         """
         self._validate_request(message=message)
-
-        if not self._page:
-            raise RuntimeError(
-                "Playwright page is not initialized. "
-                "Please pass a Page object when initializing PlaywrightCopilotTarget."
-            )
 
         try:
             response_content = await self._interact_with_copilot_async(message)
@@ -211,7 +243,11 @@ class PlaywrightCopilotTarget(PromptTarget):
                     content_ready = False
 
                     # Check for placeholder text
-                    placeholder_texts = ["generating response", "generating", "thinking"]
+                    placeholder_texts = [
+                        self.PLACEHOLDER_GENERATING_RESPONSE,
+                        self.PLACEHOLDER_GENERATING,
+                        self.PLACEHOLDER_THINKING,
+                    ]
 
                     if isinstance(test_content, str):
                         text_lower = test_content.strip().lower()
@@ -269,7 +305,11 @@ class PlaywrightCopilotTarget(PromptTarget):
         Returns:
             Filtered list without placeholder text
         """
-        placeholder_texts = ["generating response", "generating", "thinking"]
+        placeholder_texts = [
+            self.PLACEHOLDER_GENERATING_RESPONSE,
+            self.PLACEHOLDER_GENERATING,
+            self.PLACEHOLDER_THINKING,
+        ]
         return [text for text in text_parts if text.lower() not in placeholder_texts]
 
     async def _count_images_in_groups(self, message_groups: list) -> int:
@@ -284,18 +324,18 @@ class PlaywrightCopilotTarget(PromptTarget):
         image_count = 0
         for msg_group in message_groups:
             # Check iframes
-            iframes = await msg_group.query_selector_all("iframe")
+            iframes = await msg_group.query_selector_all(self.SELECTOR_IFRAME)
             for iframe_element in iframes:
                 try:
                     content_frame = await iframe_element.content_frame()
                     if content_frame:
-                        iframe_imgs = await content_frame.query_selector_all('button[aria-label*="Thumbnail"] img')
+                        iframe_imgs = await content_frame.query_selector_all(self.ARIA_LABEL_THUMBNAIL)
                         image_count += len(iframe_imgs)
                 except Exception:
                     pass
 
             # Check direct images
-            imgs = await msg_group.query_selector_all('button[aria-label*="Thumbnail"] img')
+            imgs = await msg_group.query_selector_all(self.ARIA_LABEL_THUMBNAIL)
             image_count += len(imgs)
 
         return image_count
@@ -327,11 +367,11 @@ class PlaywrightCopilotTarget(PromptTarget):
             initial_group_count: Number of message groups before this response (to filter out old groups)
 
         Returns:
-            Updated list of NEW message groups after waiting
+            Updated list of new message groups after waiting
         """
         logger.debug("Waiting for images to render...")
-        min_wait = 3  # Always wait at least 3 seconds for images to appear
-        max_wait = 15  # But don't wait more than 15 seconds total
+        min_wait = self.MIN_IMAGE_WAIT_SECONDS  # Always wait at least 3 seconds for images to appear
+        max_wait = self.MAX_IMAGE_WAIT_SECONDS  # But don't wait more than 15 seconds total
 
         # Always wait minimum time first (images often take 2-5 seconds)
         await self._wait_minimum_time(min_wait)
@@ -346,7 +386,7 @@ class PlaywrightCopilotTarget(PromptTarget):
             all_groups = await self._page.query_selector_all(selectors.ai_messages_group_selector)
             new_groups = all_groups[initial_group_count:]
             current_count = len(new_groups)
-            logger.debug(f"After {min_wait + i + 1}s total, NEW message group count: {current_count}")
+            logger.debug(f"After {min_wait + i + 1}s total, new message group count: {current_count}")
 
             # Check for images in both iframes and direct elements
             image_count = await self._count_images_in_groups(new_groups)
@@ -361,8 +401,8 @@ class PlaywrightCopilotTarget(PromptTarget):
             # Track DOM stability
             if current_count == last_stable_count:
                 stable_iterations += 1
-                if stable_iterations >= 3:
-                    logger.debug(f"DOM stable for 3 iterations at {current_count} groups, no images found")
+                if stable_iterations >= self.IMAGE_STABILITY_ITERATIONS:
+                    logger.debug(f"DOM stable for {self.IMAGE_STABILITY_ITERATIONS} iterations at {current_count} groups, no images found")
                     break
             else:
                 stable_iterations = 0
@@ -371,7 +411,7 @@ class PlaywrightCopilotTarget(PromptTarget):
         if not images_found:
             logger.debug(f"No images found after waiting up to {max_wait}s")
 
-        # Return latest NEW message groups (re-slice to exclude historical groups)
+        # Return latest new message groups (re-slice to exclude historical groups)
         all_groups = await self._page.query_selector_all(selectors.ai_messages_group_selector)
         return all_groups[initial_group_count:]
 
@@ -387,17 +427,17 @@ class PlaywrightCopilotTarget(PromptTarget):
         iframe_images = []
 
         for group_idx, msg_group in enumerate(ai_message_groups):
-            iframes = await msg_group.query_selector_all("iframe")
+            iframes = await msg_group.query_selector_all(self.SELECTOR_IFRAME)
             logger.debug(f"Found {len(iframes)} iframes in message group {group_idx+1}")
 
             for idx, iframe_element in enumerate(iframes):
                 try:
-                    iframe_id = await iframe_element.get_attribute("id")
+                    iframe_id = await iframe_element.get_attribute(self.ATTR_ID)
                     logger.debug(f"Checking iframe {idx+1} in group {group_idx+1} with id: {iframe_id}")
 
                     content_frame = await iframe_element.content_frame()
                     if content_frame:
-                        iframe_imgs = await content_frame.query_selector_all('button[aria-label*="Thumbnail"] img')
+                        iframe_imgs = await content_frame.query_selector_all(self.ARIA_LABEL_THUMBNAIL)
                         logger.debug(
                             f"Found {len(iframe_imgs)} thumbnail images in iframe {idx+1} of group {group_idx+1}"
                         )
@@ -424,7 +464,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         # Search in message groups
         for idx, msg_group in enumerate(ai_message_groups):
-            imgs = await msg_group.query_selector_all('button[aria-label*="Thumbnail"] img')
+            imgs = await msg_group.query_selector_all(self.ARIA_LABEL_THUMBNAIL)
             if imgs:
                 logger.debug(f"Found {len(imgs)} img elements in message group {idx+1}")
                 image_elements.extend(imgs)
@@ -439,7 +479,7 @@ class PlaywrightCopilotTarget(PromptTarget):
             if all_ai_messages:
                 # Try each AI message for images with M365 button selector
                 for idx, ai_message in enumerate(all_ai_messages):
-                    imgs = await ai_message.query_selector_all('button[aria-label*="Thumbnail"] img')
+                    imgs = await ai_message.query_selector_all(self.ARIA_LABEL_THUMBNAIL)
                     if imgs:
                         logger.debug(f"Found {len(imgs)} img elements in AI message {idx+1}")
                         image_elements.extend(imgs)
@@ -449,7 +489,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                 # Fallback to generic img selector for Consumer Copilot
                 if len(image_elements) == 0:
                     for idx, ai_message in enumerate(all_ai_messages):
-                        imgs = await ai_message.query_selector_all("img")
+                        imgs = await ai_message.query_selector_all(self.SELECTOR_IMAGE)
                         if imgs:
                             logger.debug(f"Found {len(imgs)} img elements using generic selector in message {idx+1}")
                             image_elements.extend(imgs)
@@ -468,12 +508,12 @@ class PlaywrightCopilotTarget(PromptTarget):
         image_pieces: List[Tuple[str, PromptDataType]] = []
 
         for i, img_elem in enumerate(image_elements):
-            src = await img_elem.get_attribute("src")
+            src = await img_elem.get_attribute(self.ATTR_SRC)
             logger.debug(f"Image {i+1} src: {src[:100] if src else None}...")
 
             if src:
                 try:
-                    if src.startswith("data:image/"):
+                    if src.startswith(self.IMAGE_DATA_URL_PREFIX):
                         logger.debug(f"Processing data URL image {i+1}")
                         # Extract base64 data from data URL
                         header, data = src.split(",", 1)
@@ -503,15 +543,15 @@ class PlaywrightCopilotTarget(PromptTarget):
             selectors: The selectors for the Copilot interface
             initial_group_count: Number of message groups before this response (to filter out old groups)
         """
-        # Get only NEW message groups from this response
+        # Get only new message groups from this response
         all_ai_message_groups = await self._page.query_selector_all(selectors.ai_messages_group_selector)
         logger.debug(f"Found {len(all_ai_message_groups)} total AI message groups")
 
         ai_message_groups = all_ai_message_groups[initial_group_count:]
-        logger.debug(f"Processing {len(ai_message_groups)} NEW message groups (skipping first {initial_group_count})")
+        logger.debug(f"Processing {len(ai_message_groups)} new message groups (skipping first {initial_group_count})")
 
         if not ai_message_groups:
-            logger.debug("No NEW AI message groups found!")
+            logger.debug("No new AI message groups found!")
             return ""
 
         response_pieces: List[Tuple[str, PromptDataType]] = []
@@ -533,7 +573,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         # Wait for images to appear and DOM to stabilize
         ai_message_groups = await self._wait_for_images_to_stabilize(selectors, ai_message_groups, initial_group_count)
-        logger.debug(f"Final NEW message group count for image search: {len(ai_message_groups)}")
+        logger.debug(f"Final new message group count for image search: {len(ai_message_groups)}")
 
         # Try to extract images from iframes first (M365 uses iframes for generated images)
         iframe_images = await self._extract_images_from_iframes(ai_message_groups)
@@ -584,7 +624,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         # Wait for dropdown to appear with the file picker button
         add_files_button = self._page.locator(selectors.file_picker_selector)
-        await add_files_button.wait_for(state="visible", timeout=5000)
+        await add_files_button.wait_for(state=self.STATE_VISIBLE, timeout=5000)
 
         # Click the button and handle the file picker
         async with self._page.expect_file_chooser() as fc_info:
@@ -601,7 +641,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         # First, wait for the button to potentially appear
         try:
-            await add_content_button.wait_for(state="attached", timeout=3000)
+            await add_content_button.wait_for(state=self.STATE_ATTACHED, timeout=3000)
         except Exception:
             pass  # Continue with retry logic if wait fails
 
@@ -634,8 +674,7 @@ class PlaywrightCopilotTarget(PromptTarget):
     async def _check_login_requirement_async(self) -> None:
         """Check if login is required for Consumer Copilot features."""
         # In Consumer Copilot we can't submit pictures which will surface by prompting for login
-        sign_in_header = "Sign in for the full experience"
-        sign_in_header_count = await self._page.locator(f'h1:has-text("{sign_in_header}")').count()
+        sign_in_header_count = await self._page.locator(f'h1:has-text("{self.LOGIN_REQUIRED_HEADER}")').count()
         sign_in_header_present = sign_in_header_count > 0
         if sign_in_header_present:
             raise RuntimeError("Login required to access advanced features in Consumer Copilot.")
