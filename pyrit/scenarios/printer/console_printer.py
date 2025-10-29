@@ -6,7 +6,7 @@ import textwrap
 from colorama import Fore, Style
 
 from pyrit.scenarios.printer.scenario_result_printer import ScenarioResultPrinter
-from pyrit.scenarios.scenario_result import ScenarioResult
+from pyrit.models.scenario_result import ScenarioResult
 
 
 class ConsoleScenarioResultPrinter(ScenarioResultPrinter):

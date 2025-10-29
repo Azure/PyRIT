@@ -17,7 +17,7 @@ from tqdm.auto import tqdm
 from pyrit.models import AttackResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
+from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 
 logger = logging.getLogger(__name__)
 
