@@ -697,7 +697,7 @@ class ScenarioResultEntry(Base):
     timestamp = mapped_column(DateTime, nullable=False)
 
     def __init__(self, *, entry: ScenarioResult):
-        self.id = uuid.uuid4()
+        self.id = entry.id
         self.scenario_name = entry.scenario_identifier.name
         self.scenario_description = entry.scenario_identifier.description
         self.scenario_version = entry.scenario_identifier.version
@@ -707,20 +707,20 @@ class ScenarioResultEntry(Base):
         self.objective_scorer_identifier = entry.objective_scorer_identifier
         self.labels = entry.labels
         self.completion_time = entry.completion_time
-        
+
         # Serialize attack_results: dict[str, List[AttackResult]] -> dict[str, List[str]]
         # Store only conversation_ids - the full AttackResults can be queried from the database
         serialized_attack_results = {}
         for attack_name, results in entry.attack_results.items():
             serialized_attack_results[attack_name] = [result.conversation_id for result in results]
         self.attack_results_json = json.dumps(serialized_attack_results)
-        
+
         self.timestamp = datetime.now()
 
     def get_scenario_result(self) -> ScenarioResult:
         """
         Convert the database entry back to a ScenarioResult object.
-        
+
         Note: This returns a ScenarioResult with empty attack_results.
         Use memory_interface.get_scenario_results() to automatically populate
         the full AttackResults by querying the database.
@@ -738,9 +738,10 @@ class ScenarioResultEntry(Base):
         )
 
         # Return empty attack_results - will be populated by memory_interface
-        attack_results = {}
+        attack_results: dict[str, list[AttackResult]] = {}
 
         return ScenarioResult(
+            id=self.id,
             scenario_identifier=scenario_identifier,
             objective_target_identifier=self.objective_target_identifier,
             attack_results=attack_results,
@@ -748,11 +749,11 @@ class ScenarioResultEntry(Base):
             labels=self.labels,
             completion_time=self.completion_time,
         )
-    
+
     def get_conversation_ids_by_attack_name(self) -> dict[str, list[str]]:
         """
         Get the conversation IDs grouped by attack name.
-        
+
         Returns:
             Dictionary mapping attack names to lists of conversation IDs
         """

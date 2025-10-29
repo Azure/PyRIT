@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_, exists, func
+from sqlalchemy import MetaData, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
@@ -205,10 +205,10 @@ class MemoryInterface(abc.ABC):
         """
         Returns a database-specific condition for filtering AttackResults by targeted harm categories
         in the associated PromptMemoryEntry records.
-        
+
         Args:
             targeted_harm_categories: List of harm categories that must ALL be present.
-            
+
         Returns:
             Database-specific SQLAlchemy condition.
         """
@@ -218,10 +218,10 @@ class MemoryInterface(abc.ABC):
         """
         Returns a database-specific condition for filtering AttackResults by labels
         in the associated PromptMemoryEntry records.
-        
+
         Args:
             labels: Dictionary of labels that must ALL be present.
-            
+
         Returns:
             Database-specific SQLAlchemy condition.
         """
@@ -230,10 +230,10 @@ class MemoryInterface(abc.ABC):
     def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
         Returns a database-specific condition for filtering ScenarioResults by labels.
-        
+
         Args:
             labels: Dictionary of labels that must ALL be present.
-            
+
         Returns:
             Database-specific SQLAlchemy condition.
         """
@@ -242,10 +242,10 @@ class MemoryInterface(abc.ABC):
     def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
         """
         Returns a database-specific condition for filtering ScenarioResults by target endpoint.
-        
+
         Args:
             endpoint: Endpoint substring to search for (case-insensitive).
-            
+
         Returns:
             Database-specific SQLAlchemy condition.
         """
@@ -254,10 +254,10 @@ class MemoryInterface(abc.ABC):
     def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
         """
         Returns a database-specific condition for filtering ScenarioResults by target model name.
-        
+
         Args:
             model_name: Model name substring to search for (case-insensitive).
-            
+
         Returns:
             Database-specific SQLAlchemy condition.
         """
@@ -1091,11 +1091,11 @@ class MemoryInterface(abc.ABC):
             conditions.append(
                 self._get_attack_result_harm_category_condition(targeted_harm_categories=targeted_harm_categories)
             )
-        
+
         if labels:
             # Use database-specific JSON query method
             conditions.append(self._get_attack_result_label_condition(labels=labels))
-        
+
         try:
             entries: Sequence[AttackResultEntry] = self._query_entries(
                 AttackResultEntry, conditions=and_(*conditions) if conditions else None
@@ -1162,56 +1162,52 @@ class MemoryInterface(abc.ABC):
                 # Empty list means no results
                 return []
             conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))
-        
+
         if scenario_name:
             conditions.append(ScenarioResultEntry.scenario_name.contains(scenario_name))
-        
+
         if scenario_version is not None:
             conditions.append(ScenarioResultEntry.scenario_version == scenario_version)
-        
+
         if pyrit_version:
             conditions.append(ScenarioResultEntry.pyrit_version == pyrit_version)
-        
+
         if after_time:
             conditions.append(ScenarioResultEntry.completion_time >= after_time)
-        
+
         if before_time:
             conditions.append(ScenarioResultEntry.completion_time <= before_time)
-        
+
         if labels:
             # Use database-specific JSON query method
             conditions.append(self._get_scenario_result_label_condition(labels=labels))
-        
+
         if objective_target_endpoint:
             # Use database-specific JSON query method
-            conditions.append(
-                self._get_scenario_result_target_endpoint_condition(endpoint=objective_target_endpoint)
-            )
-        
+            conditions.append(self._get_scenario_result_target_endpoint_condition(endpoint=objective_target_endpoint))
+
         if objective_target_model_name:
             # Use database-specific JSON query method
-            conditions.append(
-                self._get_scenario_result_target_model_condition(model_name=objective_target_model_name)
-            )
+            conditions.append(self._get_scenario_result_target_model_condition(model_name=objective_target_model_name))
 
         try:
             entries: Sequence[ScenarioResultEntry] = self._query_entries(
                 ScenarioResultEntry, conditions=and_(*conditions) if conditions else None
             )
-            
+
             # Convert entries to ScenarioResults and populate attack_results efficiently
             scenario_results = []
             for entry in entries:
                 scenario_result = entry.get_scenario_result()
-                
+
                 # Get conversation IDs grouped by attack name
                 conversation_ids_by_attack = entry.get_conversation_ids_by_attack_name()
-                
+
                 # Collect all conversation IDs to query in a single batch
                 all_conversation_ids = []
                 for conv_ids in conversation_ids_by_attack.values():
                     all_conversation_ids.extend(conv_ids)
-                
+
                 # Query all AttackResults in a single batch if there are any
                 if all_conversation_ids:
                     # Build condition to query multiple conversation IDs at once
@@ -1219,21 +1215,19 @@ class MemoryInterface(abc.ABC):
                     attack_entries: Sequence[AttackResultEntry] = self._query_entries(
                         AttackResultEntry, conditions=and_(*attack_conditions)
                     )
-                    
+
                     # Build a dict for quick lookup
-                    attack_results_dict = {entry.conversation_id: entry.get_attack_result() 
-                                          for entry in attack_entries}
-                    
+                    attack_results_dict = {entry.conversation_id: entry.get_attack_result() for entry in attack_entries}
+
                     # Populate attack_results by attack name, preserving order
                     scenario_result.attack_results = {}
                     for attack_name, conv_ids in conversation_ids_by_attack.items():
                         scenario_result.attack_results[attack_name] = [
-                            attack_results_dict[conv_id] for conv_id in conv_ids 
-                            if conv_id in attack_results_dict
+                            attack_results_dict[conv_id] for conv_id in conv_ids if conv_id in attack_results_dict
                         ]
-                
+
                 scenario_results.append(scenario_result)
-            
+
             return scenario_results
         except Exception as e:
             logger.exception(f"Failed to retrieve scenario results with error {e}")

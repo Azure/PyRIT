@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
+import uuid
 from datetime import datetime
 from typing import List, Optional
 
@@ -55,7 +56,9 @@ class ScenarioResult:
         objective_scorer_identifier: Optional[dict] = None,
         labels: Optional[dict[str, str]] = None,
         completion_time: Optional[datetime] = None,
+        id: Optional[uuid.UUID] = None,
     ) -> None:
+        self.id = id if id is not None else uuid.uuid4()
         self.scenario_identifier = scenario_identifier
         self.objective_target_identifier = objective_target_identifier
         self.objective_scorer_identifier = objective_scorer_identifier

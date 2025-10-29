@@ -22,7 +22,6 @@ from pyrit.memory.memory_models import (
     Base,
     EmbeddingDataEntry,
     PromptMemoryEntry,
-    ScenarioResultEntry,
 )
 from pyrit.models import DiskStorageIO, MessagePiece
 
@@ -399,8 +398,9 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         Uses json_extract() function specific to SQLite.
         """
         from sqlalchemy import and_, exists, func
-        from pyrit.memory.memory_models import PromptMemoryEntry, AttackResultEntry
-        
+
+        from pyrit.memory.memory_models import AttackResultEntry, PromptMemoryEntry
+
         targeted_harm_categories_subquery = exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
@@ -424,17 +424,15 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         Uses json_extract() function specific to SQLite.
         """
         from sqlalchemy import and_, exists, func
-        from pyrit.memory.memory_models import PromptMemoryEntry, AttackResultEntry
-        
+
+        from pyrit.memory.memory_models import AttackResultEntry, PromptMemoryEntry
+
         labels_subquery = exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 PromptMemoryEntry.labels.isnot(None),
                 and_(
-                    *[
-                        func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value
-                        for key, value in labels.items()
-                    ]
+                    *[func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value for key, value in labels.items()]
                 ),
             )
         )
@@ -446,14 +444,12 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         Uses json_extract() function specific to SQLite.
         """
         from sqlalchemy import and_, func
+
         from pyrit.memory.memory_models import ScenarioResultEntry
-        
+
         # Return a combined condition that checks ALL labels must be present
         return and_(
-            *[
-                func.json_extract(ScenarioResultEntry.labels, f"$.{key}") == value
-                for key, value in labels.items()
-            ]
+            *[func.json_extract(ScenarioResultEntry.labels, f"$.{key}") == value for key, value in labels.items()]
         )
 
     def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
@@ -462,11 +458,12 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         Uses json_extract() function specific to SQLite.
         """
         from sqlalchemy import func
+
         from pyrit.memory.memory_models import ScenarioResultEntry
-        
-        return func.lower(
-            func.json_extract(ScenarioResultEntry.objective_target_identifier, "$.endpoint")
-        ).like(f"%{endpoint.lower()}%")
+
+        return func.lower(func.json_extract(ScenarioResultEntry.objective_target_identifier, "$.endpoint")).like(
+            f"%{endpoint.lower()}%"
+        )
 
     def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
         """
@@ -474,8 +471,9 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         Uses json_extract() function specific to SQLite.
         """
         from sqlalchemy import func
+
         from pyrit.memory.memory_models import ScenarioResultEntry
-        
-        return func.lower(
-            func.json_extract(ScenarioResultEntry.objective_target_identifier, "$.model_name")
-        ).like(f"%{model_name.lower()}%")
+
+        return func.lower(func.json_extract(ScenarioResultEntry.objective_target_identifier, "$.model_name")).like(
+            f"%{model_name.lower()}%"
+        )

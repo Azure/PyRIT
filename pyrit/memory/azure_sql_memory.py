@@ -240,8 +240,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Uses JSON_QUERY() function specific to SQL Azure to check if categories exist in the JSON array.
         """
         from sqlalchemy import and_, exists, text
-        from pyrit.memory.memory_models import PromptMemoryEntry, AttackResultEntry
-        
+
+        from pyrit.memory.memory_models import AttackResultEntry, PromptMemoryEntry
+
         # For SQL Azure, we need to use JSON_QUERY to check if a value exists in a JSON array
         # OPENJSON can parse the array and we check if the category exists
         # Using parameterized queries for safety
@@ -254,16 +255,16 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 f"EXISTS(SELECT 1 FROM OPENJSON(targeted_harm_categories) WHERE value = :{param_name})"
             )
             bindparams_dict[param_name] = category
-        
+
         combined_conditions = " AND ".join(harm_conditions)
-        
+
         targeted_harm_categories_subquery = exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 PromptMemoryEntry.targeted_harm_categories.isnot(None),
                 PromptMemoryEntry.targeted_harm_categories != "",
                 PromptMemoryEntry.targeted_harm_categories != "[]",
-                text(f"ISJSON(targeted_harm_categories) = 1 AND {combined_conditions}").bindparams(**bindparams_dict)
+                text(f"ISJSON(targeted_harm_categories) = 1 AND {combined_conditions}").bindparams(**bindparams_dict),
             )
         )
         return targeted_harm_categories_subquery
@@ -274,8 +275,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Uses JSON_VALUE() function specific to SQL Azure with parameterized queries.
         """
         from sqlalchemy import and_, exists, text
-        from pyrit.memory.memory_models import PromptMemoryEntry, AttackResultEntry
-        
+
+        from pyrit.memory.memory_models import AttackResultEntry, PromptMemoryEntry
+
         # Build JSON conditions for all labels with parameterized queries
         label_conditions = []
         bindparams_dict = {}
@@ -283,14 +285,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             param_name = f"label_{key}"
             label_conditions.append(f"JSON_VALUE(labels, '$.{key}') = :{param_name}")
             bindparams_dict[param_name] = str(value)
-        
+
         combined_conditions = " AND ".join(label_conditions)
-        
+
         labels_subquery = exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 PromptMemoryEntry.labels.isnot(None),
-                text(f"ISJSON(labels) = 1 AND {combined_conditions}").bindparams(**bindparams_dict)
+                text(f"ISJSON(labels) = 1 AND {combined_conditions}").bindparams(**bindparams_dict),
             )
         )
         return labels_subquery
@@ -301,13 +303,13 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Uses JSON_VALUE() function specific to SQL Azure.
         """
         from sqlalchemy import and_, text
-        
+
         # Return combined conditions for all labels
         conditions = []
         for key, value in labels.items():
-            condition = text(
-                f"ISJSON(labels) = 1 AND JSON_VALUE(labels, '$.{key}') = :{key}"
-            ).bindparams(**{key: str(value)})
+            condition = text(f"ISJSON(labels) = 1 AND JSON_VALUE(labels, '$.{key}') = :{key}").bindparams(
+                **{key: str(value)}
+            )
             conditions.append(condition)
         return and_(*conditions)
 
@@ -317,9 +319,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Uses JSON_VALUE() function specific to SQL Azure.
         """
         from sqlalchemy import text
-        
+
         return text(
-            """ISJSON(objective_target_identifier) = 1 
+            """ISJSON(objective_target_identifier) = 1
             AND LOWER(JSON_VALUE(objective_target_identifier, '$.endpoint')) LIKE :endpoint"""
         ).bindparams(endpoint=f"%{endpoint.lower()}%")
 
@@ -329,9 +331,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Uses JSON_VALUE() function specific to SQL Azure.
         """
         from sqlalchemy import text
-        
+
         return text(
-            """ISJSON(objective_target_identifier) = 1 
+            """ISJSON(objective_target_identifier) = 1
             AND LOWER(JSON_VALUE(objective_target_identifier, '$.model_name')) LIKE :model_name"""
         ).bindparams(model_name=f"%{model_name.lower()}%")
 
