@@ -7,10 +7,12 @@ Base class for scenario attack strategies with group-based aggregation.
 This module provides a generic base class for creating enum-based attack strategy
 hierarchies where strategies can be grouped by categories (e.g., complexity, encoding type)
 and automatically expanded during scenario initialization.
+
+It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
 
 from enum import Enum
-from typing import Set, TypeVar
+from typing import List, Sequence, Set, TypeVar
 
 # TypeVar for the enum subclass itself
 T = TypeVar("T", bound="ScenarioStrategy")
@@ -189,3 +191,74 @@ class ScenarioStrategy(Enum):
                 normalized_strategies.update(cls.get_strategies_by_tag(aggregate_tag))
 
         return normalized_strategies
+
+
+class ScenarioCompositeStrategy:
+    """
+    Represents a composition of one or more attack strategies.
+
+    This class encapsulates a collection of ScenarioStrategy instances along with
+    a descriptive name, making it easy to represent both single strategies and
+    composed multi-strategy attacks.
+
+    For single strategies, the name typically matches the strategy's value.
+    For composed strategies, the name describes the combination (e.g., "ComposedStrategy(base64, rot13)").
+
+    Attributes:
+        name (str): The name of the composite strategy.
+        strategies (List[ScenarioStrategy]): The list of strategies in this composition.
+
+    Example:
+        >>> # Single strategy composition
+        >>> single = ScenarioCompositeStrategy(
+        ...     name="base64",
+        ...     strategies=[FoundryStrategy.Base64]
+        ... )
+        >>>
+        >>> # Multi-strategy composition
+        >>> composed = ScenarioCompositeStrategy(
+        ...     name="ComposedStrategy(base64, rot13)",
+        ...     strategies=[FoundryStrategy.Base64, FoundryStrategy.ROT13]
+        ... )
+    """
+
+    def __init__(self, *, name: str, strategies: Sequence[ScenarioStrategy]) -> None:
+        """
+        Initialize a ScenarioCompositeStrategy.
+
+        Args:
+            name (str): The name of the composite strategy.
+            strategies (Sequence[ScenarioStrategy]): The sequence of strategies in this composition.
+                Must contain at least one strategy.
+
+        Raises:
+            ValueError: If strategies list is empty.
+        """
+        if not strategies:
+            raise ValueError("strategies list cannot be empty")
+
+        self._name = name
+        self._strategies = list(strategies)
+
+    @property
+    def name(self) -> str:
+        """Get the name of the composite strategy."""
+        return self._name
+
+    @property
+    def strategies(self) -> List[ScenarioStrategy]:
+        """Get the list of strategies in this composition."""
+        return self._strategies
+
+    @property
+    def is_single_strategy(self) -> bool:
+        """Check if this composition contains only a single strategy."""
+        return len(self._strategies) == 1
+
+    def __repr__(self) -> str:
+        """Get string representation of the composite strategy."""
+        return f"ScenarioCompositeStrategy(name='{self._name}', strategies={self._strategies})"
+
+    def __str__(self) -> str:
+        """Get human-readable string representation."""
+        return self._name

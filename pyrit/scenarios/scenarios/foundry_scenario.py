@@ -59,7 +59,7 @@ from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
 from pyrit.score import (
     AzureContentFilterScorer,
     FloatScaleThresholdScorer,
@@ -255,13 +255,17 @@ class FoundryScenario(Scenario):
         # Normalize and validate strategy compositions
         self._foundry_strategy_compositions = self._normalize_strategy_compositions(attack_strategies)
 
-        # Create deterministic string representations for compositions
-        all_strategies = [
-            self._get_composition_name(composition) for composition in self._foundry_strategy_compositions
+        # Convert to ScenarioCompositeStrategy instances for parent class visibility
+        composite_strategies = [
+            ScenarioCompositeStrategy(
+                name=self._get_composition_name(composition),
+                strategies=composition,
+            )
+            for composition in self._foundry_strategy_compositions
         ]
 
-        # Sort all strategies for consistent ordering
-        all_strategies = sorted(all_strategies)
+        # Sort composite strategies by name for consistent ordering
+        composite_strategies = sorted(composite_strategies, key=lambda cs: cs.name)
 
         super().__init__(
             name="Foundry Scenario",
@@ -270,6 +274,7 @@ class FoundryScenario(Scenario):
             max_concurrency=max_concurrency,
             objective_target=objective_target,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
+            scenario_strategies=composite_strategies,
         )
 
     def _get_composition_name(self, composition: list[FoundryStrategy]) -> str:

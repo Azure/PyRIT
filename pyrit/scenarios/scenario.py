@@ -17,6 +17,7 @@ from tqdm.auto import tqdm
 from pyrit.models import AttackResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
+from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy
 from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,7 @@ class Scenario:
         memory_labels: Optional[Dict[str, str]] = None,
         objective_target: Optional[PromptTarget] = None,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
+        scenario_strategies: Optional[List[ScenarioCompositeStrategy]] = None,
     ) -> None:
         """
         Initialize a scenario.
@@ -82,6 +84,11 @@ class Scenario:
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
+            objective_target (Optional[PromptTarget]): The target system to attack.
+            objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
+            scenario_strategies (Optional[List[ScenarioCompositeStrategy]]): List of composite strategies
+                used in this scenario. This provides visibility into the attack strategies for tools
+                like the CLI to list and inspect them.
 
         Note:
             Attack runs are populated by calling initialize_async(), which invokes the
@@ -109,11 +116,17 @@ class Scenario:
         self._memory_labels = memory_labels or {}
         self._max_concurrency = max_concurrency
         self._atomic_attacks: List[AtomicAttack] = []
+        self._scenario_strategies: List[ScenarioCompositeStrategy] = scenario_strategies or []
 
     @property
     def name(self) -> str:
         """Get the name of the scenario."""
         return self._name
+
+    @property
+    def scenario_strategies(self) -> List[ScenarioCompositeStrategy]:
+        """Get the list of composite strategies in this scenario."""
+        return self._scenario_strategies
 
     @property
     def atomic_attack_count(self) -> int:

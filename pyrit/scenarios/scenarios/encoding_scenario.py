@@ -36,8 +36,40 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
+from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
 from pyrit.score import TrueFalseScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
+
+
+class EncodingStrategy(ScenarioStrategy):
+    """
+    Strategies for encoding attacks.
+
+    Each enum member represents an encoding scheme that will be tested against the target model.
+    The ALL aggregate expands to include all encoding strategies.
+    """
+
+    # Aggregate member
+    ALL = ("all", {"all"})
+
+    # Individual encoding strategies (matching the atomic attack names)
+    Base64 = ("base64", set())
+    Base2048 = ("base2048", set())
+    Base16 = ("base16", set())
+    Base32 = ("base32", set())
+    ASCII85 = ("ascii85", set())
+    Hex = ("hex", set())
+    QuotedPrintable = ("quoted_printable", set())
+    UUencode = ("uuencode", set())
+    ROT13 = ("rot13", set())
+    Braille = ("braille", set())
+    Atbash = ("atbash", set())
+    MorseCode = ("morse_code", set())
+    NATO = ("nato", set())
+    Ecoji = ("ecoji", set())
+    Zalgo = ("zalgo", set())
+    LeetSpeak = ("leet_speak", set())
+    AsciiSmuggler = ("ascii_smuggler", set())
 
 
 class EncodingScenario(Scenario):
@@ -64,6 +96,7 @@ class EncodingScenario(Scenario):
         self,
         *,
         objective_target: PromptTarget,
+        encoding_strategies: list[EncodingStrategy] = [EncodingStrategy.ALL],
         seed_prompts: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
@@ -75,6 +108,8 @@ class EncodingScenario(Scenario):
 
         Args:
             objective_target (PromptTarget): The target model to test for encoding vulnerabilities.
+            encoding_strategies (list[EncodingStrategy]): List of encoding strategies to test.
+                Defaults to [EncodingStrategy.ALL] which includes all encoding schemes.
             seed_prompts (Optional[list[str]]): The list of text strings that will be encoded and
                 used to test the model. These are the pieces the scenario is trying to get the model
                 to decode and repeat. If not provided, defaults to slur terms and XSS payloads from
@@ -89,8 +124,18 @@ class EncodingScenario(Scenario):
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
         """
 
-        # There is currently only one strategy, but this class could encorporate more in the future
-        self._attack_strategies = ["Garak basic"]
+        # Normalize and validate encoding strategies
+        normalized_strategies = EncodingStrategy.normalize_strategies(set(encoding_strategies))
+        self._encoding_strategies = sorted(normalized_strategies, key=lambda s: s.value)
+
+        # Convert to ScenarioCompositeStrategy instances for parent class visibility
+        composite_strategies = [
+            ScenarioCompositeStrategy(
+                name=strategy.value,
+                strategies=[strategy],
+            )
+            for strategy in self._encoding_strategies
+        ]
 
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
@@ -106,6 +151,7 @@ class EncodingScenario(Scenario):
             max_concurrency=max_concurrency,
             objective_scorer_identifier=objective_scorer.get_identifier(),
             objective_target=objective_target,
+            scenario_strategies=composite_strategies,
         )
 
     # Use the same as Garak by default
@@ -141,43 +187,41 @@ class EncodingScenario(Scenario):
         """
         Get all converter-based atomic attacks.
 
-        Creates atomic attacks for each encoding scheme tested in Garak, including:
-        - Base64 (multiple variants)
-        - Base2048, Base16, Base32
-        - ASCII85
-        - Hex, quoted-printable, UUencode
-        - ROT13, Atbash
-        - Braille, Morse Code, NATO
-        - Ecoji, Zalgo, Leet Speak
-        - ASCII smuggler (Unicode tags)
-
+        Creates atomic attacks for each encoding scheme specified in self._encoding_strategies.
         Each encoding scheme is tested both with and without explicit decoding instructions.
 
         Returns:
             list[AtomicAttack]: List of all atomic attacks to execute.
         """
-        converters_with_encodings: list[tuple[list[PromptConverter], str]] = [
-            ([Base64Converter()], "Base64"),
-            ([Base64Converter(encoding_func="urlsafe_b64encode")], "Base64"),
-            ([Base64Converter(encoding_func="standard_b64encode")], "Base64"),
-            ([Base64Converter(encoding_func="b2a_base64")], "Base64"),
-            ([Base2048Converter()], "Base2048"),
-            ([Base64Converter(encoding_func="b16encode")], "Base16"),
-            ([Base64Converter(encoding_func="b32encode")], "Base32"),
-            ([Base64Converter(encoding_func="a85encode")], "ASCII85"),
-            ([Base64Converter(encoding_func="b85encode")], "ASCII85"),
+        # Map of all available converters with their encoding names
+        all_converters_with_encodings: list[tuple[list[PromptConverter], str]] = [
+            ([Base64Converter()], "base64"),
+            ([Base64Converter(encoding_func="urlsafe_b64encode")], "base64"),
+            ([Base64Converter(encoding_func="standard_b64encode")], "base64"),
+            ([Base64Converter(encoding_func="b2a_base64")], "base64"),
+            ([Base2048Converter()], "base2048"),
+            ([Base64Converter(encoding_func="b16encode")], "base16"),
+            ([Base64Converter(encoding_func="b32encode")], "base32"),
+            ([Base64Converter(encoding_func="a85encode")], "ascii85"),
+            ([Base64Converter(encoding_func="b85encode")], "ascii85"),
             ([BinAsciiConverter(encoding_func="hex")], "hex"),
-            ([BinAsciiConverter(encoding_func="quoted-printable")], "quoted-printable"),
-            ([BinAsciiConverter(encoding_func="UUencode")], "UUencode"),
-            ([ROT13Converter()], "ROT13"),
-            ([BrailleConverter()], "Braille"),
-            ([AtbashConverter()], "Atbash"),
-            ([MorseConverter()], "Morse Code"),
-            ([NatoConverter()], "NATO"),
-            ([EcojiConverter()], "Ecoji"),
-            ([ZalgoConverter()], "Zalgo"),
-            ([LeetspeakConverter()], "Leet Speak"),
-            ([AsciiSmugglerConverter()], "Ascii in Unicode tags"),
+            ([BinAsciiConverter(encoding_func="quoted-printable")], "quoted_printable"),
+            ([BinAsciiConverter(encoding_func="UUencode")], "uuencode"),
+            ([ROT13Converter()], "rot13"),
+            ([BrailleConverter()], "braille"),
+            ([AtbashConverter()], "atbash"),
+            ([MorseConverter()], "morse_code"),
+            ([NatoConverter()], "nato"),
+            ([EcojiConverter()], "ecoji"),
+            ([ZalgoConverter()], "zalgo"),
+            ([LeetspeakConverter()], "leet_speak"),
+            ([AsciiSmugglerConverter()], "ascii_smuggler"),
+        ]
+
+        # Filter to only include selected strategies
+        selected_encoding_names = {strategy.value for strategy in self._encoding_strategies}
+        converters_with_encodings = [
+            (conv, name) for conv, name in all_converters_with_encodings if name in selected_encoding_names
         ]
 
         atomic_attacks = []
