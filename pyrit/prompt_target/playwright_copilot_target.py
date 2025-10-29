@@ -106,19 +106,19 @@ class PlaywrightCopilotTarget(PromptTarget):
                 file_picker_selector='span.fui-MenuItem__content:has-text("Upload images and files")',
             )
 
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, message: PromptRequestResponse) -> PromptRequestResponse:
         """
         Send a prompt request to Microsoft Copilot and return the response.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request to send. Can contain multiple pieces
+            message (PromptRequestResponse): The prompt request to send. Can contain multiple pieces
                 of type 'text' or 'image_path'.
 
         Returns:
             PromptRequestResponse: The response from Copilot. May contain multiple
                 pieces if the response includes both text and images.
         """
-        self._validate_request(prompt_request=prompt_request)
+        self._validate_request(message=message)
 
         if not self._page:
             raise RuntimeError(
@@ -127,12 +127,12 @@ class PlaywrightCopilotTarget(PromptTarget):
             )
 
         try:
-            response_content = await self._interact_with_copilot_async(prompt_request)
+            response_content = await self._interact_with_copilot_async(message)
         except Exception as e:
             raise RuntimeError(f"An error occurred during interaction: {str(e)}") from e
 
         # For response construction, we'll use the first piece as reference
-        request_piece = prompt_request.request_pieces[0]
+        request_piece = message.request_pieces[0]
 
         if isinstance(response_content, str):
             # Single text response (backward compatibility)
@@ -162,13 +162,13 @@ class PlaywrightCopilotTarget(PromptTarget):
         return response_entry
 
     async def _interact_with_copilot_async(
-        self, prompt_request: PromptRequestResponse
+        self, message: PromptRequestResponse
     ) -> Union[str, List[Tuple[str, PromptDataType]]]:
         """Interact with Microsoft Copilot interface to send multimodal prompts."""
         selectors = self._get_selectors()
 
         # Handle multimodal input - process all pieces in the request
-        for piece in prompt_request.request_pieces:
+        for piece in message.request_pieces:
             if piece.converted_value_data_type == "text":
                 await self._send_text_async(text=piece.converted_value, input_selector=selectors.input_selector)
             elif piece.converted_value_data_type == "image_path":
@@ -640,13 +640,13 @@ class PlaywrightCopilotTarget(PromptTarget):
         if sign_in_header_present:
             raise RuntimeError("Login required to access advanced features in Consumer Copilot.")
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, message: PromptRequestResponse) -> None:
         """Validate that the prompt request is compatible with Copilot."""
-        if not prompt_request.request_pieces:
+        if not message.request_pieces:
             raise ValueError("This target requires at least one prompt request piece.")
 
         # Validate that all pieces are supported types
-        for i, piece in enumerate(prompt_request.request_pieces):
+        for i, piece in enumerate(message.request_pieces):
             piece_type = piece.converted_value_data_type
             if piece_type not in self.SUPPORTED_DATA_TYPES:
                 supported_types = ", ".join(self.SUPPORTED_DATA_TYPES)

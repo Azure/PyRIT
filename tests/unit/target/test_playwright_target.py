@@ -113,7 +113,7 @@ class TestPlaywrightTarget:
         request = Message(request_pieces=[])
 
         with pytest.raises(ValueError, match="This target requires at least one prompt request piece"):
-            target._validate_request(prompt_request=request)
+            target._validate_request(message=request)
 
     def test_validate_request_unsupported_type(self, mock_interaction_func, mock_page):
         """Test validation with unsupported data type."""
@@ -130,7 +130,7 @@ class TestPlaywrightTarget:
         with pytest.raises(
             ValueError, match=r"This target only supports .* prompt input\. Piece 0 has type: audio_path\."
         ):
-            target._validate_request(prompt_request=request)
+            target._validate_request(message=request)
 
     def test_validate_request_valid_text(self, mock_interaction_func, mock_page, text_request_piece):
         """Test validation with valid text request."""
@@ -138,7 +138,7 @@ class TestPlaywrightTarget:
         request = Message(request_pieces=[text_request_piece])
 
         # Should not raise any exception
-        target._validate_request(prompt_request=request)
+        target._validate_request(message=request)
 
     def test_validate_request_valid_image(self, mock_interaction_func, mock_page, image_request_piece):
         """Test validation with valid image request."""
@@ -146,7 +146,7 @@ class TestPlaywrightTarget:
         request = Message(request_pieces=[image_request_piece])
 
         # Should not raise any exception
-        target._validate_request(prompt_request=request)
+        target._validate_request(message=request)
 
     def test_validate_request_mixed_valid_types(
         self, mock_interaction_func, mock_page, text_request_piece, image_request_piece
@@ -156,7 +156,7 @@ class TestPlaywrightTarget:
         request = Message(request_pieces=[text_request_piece, image_request_piece])
 
         # Should not raise any exception
-        target._validate_request(prompt_request=request)
+        target._validate_request(message=request)
 
     @pytest.mark.asyncio
     async def test_send_prompt_async_single_text(self, mock_interaction_func, mock_page, text_request_piece):
@@ -164,7 +164,7 @@ class TestPlaywrightTarget:
         target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
         request = Message(request_pieces=[text_request_piece])
 
-        response = await target.send_prompt_async(prompt_request=request)
+        response = await target.send_prompt_async(message=request)
 
         # Verify response structure
         assert len(response.request_pieces) == 1
@@ -180,7 +180,7 @@ class TestPlaywrightTarget:
         target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
         request = Message(request_pieces=multiple_text_pieces)
 
-        response = await target.send_prompt_async(prompt_request=request)
+        response = await target.send_prompt_async(message=request)
 
         # Verify response structure
         assert len(response.request_pieces) == 1
@@ -196,7 +196,7 @@ class TestPlaywrightTarget:
         target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
         request = Message(request_pieces=[image_request_piece])
 
-        response = await target.send_prompt_async(prompt_request=request)
+        response = await target.send_prompt_async(message=request)
 
         # Verify response structure
         assert len(response.request_pieces) == 1
@@ -213,34 +213,34 @@ class TestPlaywrightTarget:
         request = Message(request_pieces=[text_request_piece])
 
         with pytest.raises(RuntimeError, match="Playwright page is not initialized"):
-            await target.send_prompt_async(prompt_request=request)
+            await target.send_prompt_async(message=request)
 
     @pytest.mark.asyncio
     async def test_send_prompt_async_interaction_error(self, mock_page, text_request_piece):
         """Test error handling during interaction."""
 
         # Create a failing interaction function
-        async def failing_interaction_func(page, prompt_request):
+        async def failing_interaction_func(page, message):
             raise Exception("Interaction failed")
 
         target = PlaywrightTarget(interaction_func=failing_interaction_func, page=mock_page)
         request = Message(request_pieces=[text_request_piece])
 
         with pytest.raises(RuntimeError, match="An error occurred during interaction: Interaction failed"):
-            await target.send_prompt_async(prompt_request=request)
+            await target.send_prompt_async(message=request)
 
     @pytest.mark.asyncio
     async def test_send_prompt_async_response_construction(self, mock_page, text_request_piece):
         """Test that response is constructed correctly."""
 
         # Create a custom interaction function
-        async def custom_interaction_func(page, prompt_request):
+        async def custom_interaction_func(page, message):
             return "Custom response text"
 
         target = PlaywrightTarget(interaction_func=custom_interaction_func, page=mock_page)
         request = Message(request_pieces=[text_request_piece])
 
-        response = await target.send_prompt_async(prompt_request=request)
+        response = await target.send_prompt_async(message=request)
 
         # Verify response construction matches expected format
         expected_response = construct_response_from_request(
@@ -256,13 +256,13 @@ class TestPlaywrightTarget:
         """Test handling of empty response from interaction function."""
 
         # Create an interaction function that returns empty string
-        async def empty_interaction_func(page, prompt_request):
+        async def empty_interaction_func(page, message):
             return ""
 
         target = PlaywrightTarget(interaction_func=empty_interaction_func, page=mock_page)
         request = Message(request_pieces=[text_request_piece])
 
-        response = await target.send_prompt_async(prompt_request=request)
+        response = await target.send_prompt_async(message=request)
 
         # Verify empty response is handled correctly
         assert len(response.request_pieces) == 1
@@ -281,15 +281,15 @@ class TestPlaywrightTarget:
         """Test that interaction function receives the complete Message."""
         received_request = None
 
-        async def capture_interaction_func(page, prompt_request):
+        async def capture_interaction_func(page, message):
             nonlocal received_request
-            received_request = prompt_request
+            received_request = message
             return "Test response"
 
         target = PlaywrightTarget(interaction_func=capture_interaction_func, page=mock_page)
         request = Message(request_pieces=multiple_text_pieces)
 
-        await target.send_prompt_async(prompt_request=request)
+        await target.send_prompt_async(message=request)
 
         # Verify the interaction function received the complete request
         assert received_request is request
@@ -337,16 +337,16 @@ class TestPlaywrightTargetEdgeCases:
         with pytest.raises(
             ValueError, match=r"This target only supports .* prompt input\. Piece 0 has type: audio_path\."
         ):
-            target._validate_request(prompt_request=request)
+            target._validate_request(message=request)
 
     @pytest.mark.asyncio
     async def test_interaction_function_with_complex_response(self, mock_page):
         """Test interaction function that returns complex response."""
 
-        async def complex_interaction_func(page, prompt_request):
+        async def complex_interaction_func(page, message):
             # Simulate processing all pieces
             processed_values = []
-            for piece in prompt_request.request_pieces:
+            for piece in message.request_pieces:
                 processed_values.append(f"Processed[{piece.converted_value}]")
             return " | ".join(processed_values)
 
@@ -370,6 +370,6 @@ class TestPlaywrightTargetEdgeCases:
         ]
         request = Message(request_pieces=pieces)
 
-        response = await target.send_prompt_async(prompt_request=request)
+        response = await target.send_prompt_async(message=request)
 
         assert response.get_value() == "Processed[First] | Processed[Second]"

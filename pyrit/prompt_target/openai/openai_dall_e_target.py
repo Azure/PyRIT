@@ -109,19 +109,19 @@ class OpenAIDALLETarget(OpenAITarget):
     async def send_prompt_async(
         self,
         *,
-        prompt_request: Message,
+        message: Message,
     ) -> Message:
         """
         Send a prompt to the DALL-E target and return the response.
 
         Args:
-            prompt_request (Message): The prompt request to send.
+            message (Message): The prompt request to send.
 
         Returns:
             Message: The response from the DALL-E target.
         """
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -206,12 +206,12 @@ class OpenAIDALLETarget(OpenAITarget):
 
         return image_generation_args
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        n_pieces = len(prompt_request.message_pieces)
+    def _validate_request(self, *, message: Message) -> None:
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        piece_type = message.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

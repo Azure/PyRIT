@@ -370,36 +370,36 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return Message(message_pieces=extracted_response_pieces)
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """
         Send prompt, handle agentic tool calls (function_call), return assistant output.
 
         Args:
-            prompt_request: The initial prompt from the user.
+            message: The initial prompt from the user.
 
         Returns:
             The final Message with the assistant's answer.
         """
-        conversation: MutableSequence[Message] = [prompt_request]
+        conversation: MutableSequence[Message] = [message]
         send_prompt_async = super().send_prompt_async  # bind for inner function
 
         async def _send_prompt_and_find_tool_call_async(
-            prompt_request: Message,
+            message: Message,
         ) -> Optional[dict[str, Any]]:
             """Send the prompt and return the last pending tool call, if any."""
-            assistant_reply = await send_prompt_async(prompt_request=prompt_request)
+            assistant_reply = await send_prompt_async(message=message)
             conversation.append(assistant_reply)
             return self._find_last_pending_tool_call(assistant_reply)
 
-        tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
+        tool_call_section = await _send_prompt_and_find_tool_call_async(message=message)
         while tool_call_section:
             # Execute the tool/function
             tool_output = await self._execute_call_section(tool_call_section)
 
             # Add the tool result as a tool message to the conversation
             # NOTE: Responses API expects a top-level {type:function_call_output, call_id, output}
-            # Use the first piece from the original prompt_request as reference for conversation context
-            reference_piece = prompt_request.message_pieces[0]
+            # Use the first piece from the original message as reference for conversation context
+            reference_piece = message.message_pieces[0]
             tool_message = self._make_tool_message(
                 tool_output, tool_call_section["call_id"], reference_piece=reference_piece
             )
@@ -411,10 +411,10 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 merged.extend(msg.message_pieces)
 
             # TODO: There is likely a bug here; there are different roles in a single response??
-            prompt_request = Message(message_pieces=merged, skip_validation=True)
+            message = Message(message_pieces=merged, skip_validation=True)
 
             # Send again and check for another tool call
-            tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
+            tool_call_section = await _send_prompt_and_find_tool_call_async(message=message)
 
         # No other tool call found, so assistant message is complete and return last assistant reply!
         return conversation[-1]
@@ -492,11 +492,11 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             response_error=error or "none",
         )
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Raises:
             ValueError: If any of the message pieces have a data type other than supported set.
@@ -504,7 +504,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # Some models may not support all of these; we accept them at the transport layer
         # so the Responses API can decide. We include reasoning and function_call_output now.
         allowed_types = {"text", "image_path", "function_call", "tool_call", "function_call_output", "reasoning"}
-        for message_piece in prompt_request.message_pieces:
+        for message_piece in message.message_pieces:
             if message_piece.converted_value_data_type not in allowed_types:
                 raise ValueError(f"Unsupported data type: {message_piece.converted_value_data_type}")
         return

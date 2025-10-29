@@ -159,10 +159,10 @@ async def test_send_prompt_async():
         converted_value="Hello, how are you?",
         converted_value_data_type="text",
     )
-    prompt_request = Message(message_pieces=[message_piece])
+    message = Message(message_pieces=[message_piece])
 
     # Use await to handle the asynchronous call
-    response = await hf_chat.send_prompt_async(prompt_request=prompt_request)  # type: ignore
+    response = await hf_chat.send_prompt_async(message=message)  # type: ignore
 
     # Access the response text via message_pieces
     assert response.message_pieces[0].original_value == "Assistant's response"
@@ -181,17 +181,17 @@ async def test_missing_chat_template_error():
         converted_value="Hello, how are you?",
         converted_value_data_type="text",
     )
-    prompt_request = Message(message_pieces=[message_piece])
+    message = Message(message_pieces=[message_piece])
 
     with pytest.raises(ValueError) as excinfo:
         # Use await to handle the asynchronous call
-        await hf_chat.send_prompt_async(prompt_request=prompt_request)
+        await hf_chat.send_prompt_async(message=message)
 
     assert "Tokenizer does not have a chat template" in str(excinfo.value)
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_invalid_prompt_request_validation():
+def test_invalid_message_validation():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
 
     # Create an invalid prompt request with multiple message pieces
@@ -209,10 +209,10 @@ def test_invalid_prompt_request_validation():
         converted_value_data_type="text",
         conversation_id="123",
     )
-    prompt_request = Message(message_pieces=[message_piece1, message_piece2])
+    message = Message(message_pieces=[message_piece1, message_piece2])
 
     with pytest.raises(ValueError) as excinfo:
-        hf_chat._validate_request(prompt_request=prompt_request)
+        hf_chat._validate_request(message=message)
 
     assert "This target only supports a single message piece." in str(excinfo.value)
 

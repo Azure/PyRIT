@@ -95,27 +95,27 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Returns:
             Message: The updated conversation entry with the response from the prompt target.
         """
 
-        self._validate_request(prompt_request=prompt_request)
+        self._validate_request(message=message)
         self.refresh_auth_headers()
 
-        message_piece: MessagePiece = prompt_request.message_pieces[0]
+        message_piece: MessagePiece = message.message_pieces[0]
 
         is_json_response = self.is_response_format_json(message_piece)
 
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
-        conversation.append(prompt_request)
+        conversation.append(message)
 
-        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
+        logger.info(f"Sending the following prompt to the prompt target: {message}")
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 

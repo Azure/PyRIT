@@ -181,9 +181,9 @@ class RealtimeTarget(OpenAITarget):
         logger.info("Session set up")
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
 
-        convo_id = prompt_request.message_pieces[0].conversation_id
+        convo_id = message.message_pieces[0].conversation_id
         if convo_id not in self._existing_conversation:
             websocket = await self.connect()
             self._existing_conversation[convo_id] = websocket
@@ -196,10 +196,10 @@ class RealtimeTarget(OpenAITarget):
 
         websocket = self._existing_conversation[convo_id]
 
-        self._validate_request(prompt_request=prompt_request)
+        self._validate_request(message=message)
 
         await self.send_config(conversation_id=convo_id)
-        request = prompt_request.message_pieces[0]
+        request = message.message_pieces[0]
         response_type = request.converted_value_data_type
 
         # Order of messages sent varies based on the data format of the prompt
@@ -521,11 +521,11 @@ class RealtimeTarget(OpenAITarget):
         output_audio_path = await self.save_audio(result.audio_bytes, num_channels, sample_width, frame_rate)
         return output_audio_path, result
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Raises:
             ValueError: If more than two message pieces are provided.
@@ -533,11 +533,11 @@ class RealtimeTarget(OpenAITarget):
         """
 
         # Check the number of message pieces
-        n_pieces = len(prompt_request.message_pieces)
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports one message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        piece_type = message.message_pieces[0].converted_value_data_type
         if piece_type not in ["text", "audio_path"]:
             raise ValueError(f"This target only supports text and audio_path prompt input. Received: {piece_type}.")
 

@@ -142,7 +142,7 @@ class TestPlaywrightCopilotTarget:
         request = PromptRequestResponse(request_pieces=[])
 
         with pytest.raises(ValueError, match="This target requires at least one prompt request piece"):
-            target._validate_request(prompt_request=request)
+            target._validate_request(message=request)
 
     def test_validate_request_unsupported_type(self, mock_page):
         """Test validation with unsupported data type."""
@@ -159,7 +159,7 @@ class TestPlaywrightCopilotTarget:
         with pytest.raises(
             ValueError, match=r"This target only supports .* prompt input\. Piece 0 has type: audio_path\."
         ):
-            target._validate_request(prompt_request=request)
+            target._validate_request(message=request)
 
     def test_validate_request_valid_text(self, mock_page, text_request_piece):
         """Test validation with valid text request."""
@@ -167,14 +167,14 @@ class TestPlaywrightCopilotTarget:
         request = PromptRequestResponse(request_pieces=[text_request_piece])
 
         # Should not raise any exception
-        target._validate_request(prompt_request=request)
+        target._validate_request(message=request)
 
     def test_validate_request_valid_multimodal(self, mock_page, multimodal_request):
         """Test validation with valid multimodal request."""
         target = PlaywrightCopilotTarget(page=mock_page)
 
         # Should not raise any exception
-        target._validate_request(prompt_request=multimodal_request)
+        target._validate_request(message=multimodal_request)
 
     @pytest.mark.asyncio
     async def test_send_text_async(self, mock_page):
@@ -358,7 +358,7 @@ class TestPlaywrightCopilotTarget:
 
         # Mock the interaction method
         with patch.object(target, "_interact_with_copilot_async", return_value="AI response") as mock_interact:
-            response = await target.send_prompt_async(prompt_request=request)
+            response = await target.send_prompt_async(message=request)
 
         mock_interact.assert_awaited_once_with(request)
         assert response.request_pieces[0].converted_value == "AI response"
@@ -371,7 +371,7 @@ class TestPlaywrightCopilotTarget:
         request = PromptRequestResponse(request_pieces=[text_request_piece])
 
         with pytest.raises(RuntimeError, match="Playwright page is not initialized"):
-            await target.send_prompt_async(prompt_request=request)
+            await target.send_prompt_async(message=request)
 
     @pytest.mark.asyncio
     async def test_send_prompt_async_interaction_error(self, mock_page, text_request_piece):
@@ -382,7 +382,7 @@ class TestPlaywrightCopilotTarget:
         # Mock the interaction method to raise an exception
         with patch.object(target, "_interact_with_copilot_async", side_effect=Exception("Interaction failed")):
             with pytest.raises(RuntimeError, match="An error occurred during interaction: Interaction failed"):
-                await target.send_prompt_async(prompt_request=request)
+                await target.send_prompt_async(message=request)
 
     @pytest.mark.asyncio
     async def test_interact_with_copilot_async_multimodal(self, mock_page, multimodal_request):
@@ -1026,7 +1026,7 @@ class TestPlaywrightCopilotTargetMultimodal:
         multimodal_content = [("Here is an image", "text"), ("/path/to/image.png", "image_path")]
 
         with patch.object(target, "_interact_with_copilot_async", return_value=multimodal_content):
-            response = await target.send_prompt_async(prompt_request=request)
+            response = await target.send_prompt_async(message=request)
 
         assert len(response.request_pieces) == 2
         assert response.request_pieces[0].converted_value == "Here is an image"

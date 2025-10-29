@@ -364,8 +364,8 @@ class Scorer(abc.ABC):
         *,
         prompt_target: PromptChatTarget,
         system_prompt: str,
-        prompt_request_value: str,
-        prompt_request_data_type: PromptDataType,
+        message_value: str,
+        message_data_type: PromptDataType,
         scored_prompt_id: str,
         category: Optional[Sequence[str] | str] = None,
         objective: Optional[str] = None,
@@ -385,8 +385,8 @@ class Scorer(abc.ABC):
         Args:
             prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
             system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
-            prompt_request_value (str): The actual value or content to be scored by the LLM.
-            prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
+            message_value (str): The actual value or content to be scored by the LLM.
+            message_data_type (PromptDataType): The type of the data being sent in the prompt request.
             scored_prompt_id (str): The ID of the scored prompt.
             category (str, Optional): The category of the score. Can also be parsed from the JSON response if
                 not provided.
@@ -419,9 +419,9 @@ class Scorer(abc.ABC):
             [
                 MessagePiece(
                     role="user",
-                    original_value=prompt_request_value,
-                    original_value_data_type=prompt_request_data_type,
-                    converted_value_data_type=prompt_request_data_type,
+                    original_value=message_value,
+                    original_value_data_type=message_data_type,
+                    converted_value_data_type=message_data_type,
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                     prompt_metadata=prompt_metadata,
@@ -429,7 +429,7 @@ class Scorer(abc.ABC):
             ]
         )
         try:
-            response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
+            response = await prompt_target.send_prompt_async(message=scorer_llm_request)
         except Exception as ex:
             raise Exception(f"Error scoring prompt with original prompt ID: {scored_prompt_id}") from ex
 

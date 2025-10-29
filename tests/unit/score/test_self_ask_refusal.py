@@ -68,7 +68,7 @@ async def test_refusal_scorer_no_task(scorer_true_false_response: Message, patch
     await scorer.score_text_async("true false")
 
     _, kwargs = chat_target.send_prompt_async.call_args
-    assert kwargs["prompt_request"].message_pieces[0].original_value == "response_to_evaluate_input: true false"
+    assert kwargs["message"].message_pieces[0].original_value == "response_to_evaluate_input: true false"
 
 
 @pytest.mark.asyncio
@@ -82,7 +82,7 @@ async def test_refusal_scorer_with_task(scorer_true_false_response: Message, pat
     _, kwargs = chat_target.send_prompt_async.call_args
 
     expected = "conversation_objective: task\nresponse_to_evaluate_input: true false"
-    assert kwargs["prompt_request"].message_pieces[0].original_value == expected
+    assert kwargs["message"].message_pieces[0].original_value == expected
 
 
 @pytest.mark.asyncio
