@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional, Protocol
 
 from pyrit.models import (
     Message,
-    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute

@@ -193,9 +193,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         return response_entry
 
-    async def _interact_with_copilot_async(
-        self, message: Message
-    ) -> Union[str, List[Tuple[str, PromptDataType]]]:
+    async def _interact_with_copilot_async(self, message: Message) -> Union[str, List[Tuple[str, PromptDataType]]]:
         """Interact with Microsoft Copilot interface to send multimodal prompts."""
         selectors = self._get_selectors()
 
@@ -424,7 +422,10 @@ class PlaywrightCopilotTarget(PromptTarget):
             if current_count == last_stable_count:
                 stable_iterations += 1
                 if stable_iterations >= self.IMAGE_STABILITY_ITERATIONS:
-                    logger.debug(f"DOM stable for {self.IMAGE_STABILITY_ITERATIONS} iterations at {current_count} groups, no images found")
+                    logger.debug(
+                        f"DOM stable for {self.IMAGE_STABILITY_ITERATIONS} iterations at {current_count} groups, "
+                        "no images found"
+                    )
                     break
             else:
                 stable_iterations = 0

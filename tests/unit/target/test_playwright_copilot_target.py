@@ -362,7 +362,7 @@ class TestPlaywrightCopilotTarget:
     async def test_no_page(self, text_request_piece):
         """Test error when page is not initialized."""
         with pytest.raises(RuntimeError, match="Playwright page is not initialized"):
-            target = PlaywrightCopilotTarget(page=None)
+            PlaywrightCopilotTarget(page=None)
 
     @pytest.mark.asyncio
     async def test_send_prompt_async_interaction_error(self, mock_page, text_request_piece):

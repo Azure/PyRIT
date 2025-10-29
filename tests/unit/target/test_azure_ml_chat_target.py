@@ -273,9 +273,7 @@ async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: A
         side_effect=RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
     )
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    message = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     with pytest.raises(RateLimitError):
         await aml_online_chat.send_prompt_async(message=message)
@@ -291,9 +289,7 @@ async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureML
     mock_complete_chat_async.return_value = None
 
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    message = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     with pytest.raises(EmptyResponseException):
         await aml_online_chat.send_prompt_async(message=message)

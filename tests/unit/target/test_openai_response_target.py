@@ -309,9 +309,7 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
 
-        message = Message(
-            message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")]
-        )
+        message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
         with pytest.raises(RateLimitException) as rle:
             await target.send_prompt_async(message=message)
@@ -448,9 +446,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResponseTarget):
 
-    message = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     response = MagicMock()
     response.status_code = 429
@@ -474,9 +470,7 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIResponseTarget)
 
     side_effect = BadRequestError("Bad Request Error", response=response, body="Bad request")
 
-    message = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")])
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
         with pytest.raises(BadRequestError) as bre:
