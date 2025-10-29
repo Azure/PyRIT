@@ -290,7 +290,9 @@ async def test_send_prompt_async_converters_response(mock_memory_instance, seed_
 @pytest.mark.asyncio
 async def test_send_prompt_async_image_converter(mock_memory_instance):
     prompt_target = MagicMock(PromptTarget)
-    prompt_target.send_prompt_async = AsyncMock(return_value=MessagePiece(role="assistant", original_value="response").to_message())
+    prompt_target.send_prompt_async = AsyncMock(
+        return_value=MessagePiece(role="assistant", original_value="response").to_message()
+    )
 
     mock_image_converter = MagicMock(PromptConverter)
 
@@ -300,10 +302,12 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
         filename = f.name
         f.write(b"Hello")
 
-        mock_image_converter.convert_tokens_async = AsyncMock(return_value=ConverterResult(
-            output_type="image_path",
-            output_text=filename,
-        ))
+        mock_image_converter.convert_tokens_async = AsyncMock(
+            return_value=ConverterResult(
+                output_type="image_path",
+                output_text=filename,
+            )
+        )
 
         prompt_converters = PromptConverterConfiguration(converters=[mock_image_converter])
 
