@@ -556,6 +556,104 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         return image_pieces
 
+    async def _extract_and_filter_text_async(
+        self, *, ai_message_groups: list, text_selector: str
+    ) -> List[Tuple[str, PromptDataType]]:
+        """Extract and filter text content from message groups.
+
+        Args:
+            ai_message_groups: Message groups to process
+            text_selector: CSS selector for text elements
+
+        Returns:
+            List of text response pieces (empty if no valid text found)
+        """
+        all_text_parts = await self._extract_text_from_message_groups(ai_message_groups, text_selector)
+        logger.debug(f"Extracted text parts from all groups: {all_text_parts}")
+
+        filtered_text_parts = self._filter_placeholder_text(all_text_parts)
+
+        response_pieces: List[Tuple[str, PromptDataType]] = []
+        if filtered_text_parts:
+            text_content = "\n".join(filtered_text_parts).strip()
+            if text_content:
+                logger.debug(f"Final text content (after filtering placeholders): '{text_content}'")
+                response_pieces.append((text_content, "text"))
+        else:
+            logger.debug("All text was placeholder text, no real content yet")
+
+        return response_pieces
+
+    async def _extract_all_images_async(
+        self, *, selectors: CopilotSelectors, ai_message_groups: list, initial_group_count: int
+    ) -> List[Tuple[str, PromptDataType]]:
+        """Extract all images from message groups using iframe and direct methods.
+
+        Args:
+            selectors: Copilot interface selectors
+            ai_message_groups: Message groups to search
+            initial_group_count: Initial group count for stability tracking
+
+        Returns:
+            List of image response pieces
+        """
+        # Wait for images to appear and DOM to stabilize
+        updated_groups = await self._wait_for_images_to_stabilize(selectors, ai_message_groups, initial_group_count)
+        logger.debug(f"Final new message group count for image search: {len(updated_groups)}")
+
+        # Try to extract images from iframes first (M365 uses iframes)
+        iframe_images = await self._extract_images_from_iframes(updated_groups)
+
+        if iframe_images:
+            logger.debug(f"Total {len(iframe_images)} images found in iframes within message groups!")
+            image_elements = iframe_images
+        else:
+            logger.debug("No images found in iframes, searching message groups directly")
+            image_elements = await self._extract_images_from_message_groups(selectors, updated_groups)
+
+        # Process and save images
+        return await self._process_image_elements(image_elements)
+
+    async def _extract_fallback_text_async(self, *, ai_message_groups: list) -> str:
+        """Extract fallback text content when no other content is found.
+
+        Args:
+            ai_message_groups: Message groups to extract from
+
+        Returns:
+            Combined text content from all groups
+        """
+        fallback_parts = []
+        for msg_group in ai_message_groups:
+            fallback_text = await msg_group.text_content()
+            if fallback_text:
+                fallback_parts.append(fallback_text.strip())
+        fallback_result = "\n".join(fallback_parts).strip()
+        logger.debug(f"Using fallback text: '{fallback_result}'")
+        return fallback_result
+
+    def _assemble_response(
+        self, *, response_pieces: List[Tuple[str, PromptDataType]]
+    ) -> Union[str, List[Tuple[str, PromptDataType]]]:
+        """Assemble response pieces into appropriate return format.
+
+        Args:
+            response_pieces: List of (content, data_type) tuples
+
+        Returns:
+            Single text string for backward compatibility, or list for multimodal
+        """
+        if len(response_pieces) == 1 and response_pieces[0][1] == "text":
+            # Single text response - maintain backward compatibility
+            logger.debug(f"Returning single text response: '{response_pieces[0][0]}'")
+            return response_pieces[0][0]
+        elif response_pieces:
+            # Multimodal or multiple pieces
+            logger.debug(f"Returning {len(response_pieces)} response pieces")
+            return response_pieces
+        else:
+            return ""
+
     async def _extract_multimodal_content_async(
         self, selectors: CopilotSelectors, initial_group_count: int = 0
     ) -> Union[str, List[Tuple[str, PromptDataType]]]:
@@ -563,7 +661,10 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         Args:
             selectors: The selectors for the Copilot interface
-            initial_group_count: Number of message groups before this response (to filter out old groups)
+            initial_group_count: Number of message groups before this response
+
+        Returns:
+            Text string or list of (content, type) tuples for multimodal responses
         """
         # Get only new message groups from this response
         all_ai_message_groups = await self._page.query_selector_all(selectors.ai_messages_group_selector)
@@ -576,60 +677,24 @@ class PlaywrightCopilotTarget(PromptTarget):
             logger.debug("No new AI message groups found!")
             return ""
 
-        response_pieces: List[Tuple[str, PromptDataType]] = []
-
-        # Extract and filter text content
-        all_text_parts = await self._extract_text_from_message_groups(
-            ai_message_groups, selectors.text_content_selector
+        # Extract text content
+        text_pieces = await self._extract_and_filter_text_async(
+            ai_message_groups=ai_message_groups, text_selector=selectors.text_content_selector
         )
-        logger.debug(f"Extracted text parts from all groups: {all_text_parts}")
 
-        filtered_text_parts = self._filter_placeholder_text(all_text_parts)
-        if filtered_text_parts:
-            text_content = "\n".join(filtered_text_parts).strip()
-            if text_content:
-                logger.debug(f"Final text content (after filtering placeholders): '{text_content}'")
-                response_pieces.append((text_content, "text"))
+        # Extract image content
+        image_pieces = await self._extract_all_images_async(
+            selectors=selectors, ai_message_groups=ai_message_groups, initial_group_count=initial_group_count
+        )
+
+        # Combine all response pieces
+        response_pieces = text_pieces + image_pieces
+
+        # Return appropriate format, with fallback if needed
+        if response_pieces:
+            return self._assemble_response(response_pieces=response_pieces)
         else:
-            logger.debug("All text was placeholder text, no real content yet")
-
-        # Wait for images to appear and DOM to stabilize
-        ai_message_groups = await self._wait_for_images_to_stabilize(selectors, ai_message_groups, initial_group_count)
-        logger.debug(f"Final new message group count for image search: {len(ai_message_groups)}")
-
-        # Try to extract images from iframes first (M365 uses iframes for generated images)
-        iframe_images = await self._extract_images_from_iframes(ai_message_groups)
-
-        if iframe_images:
-            logger.debug(f"Total {len(iframe_images)} images found in iframes within message groups!")
-            image_elements = iframe_images
-        else:
-            logger.debug("No images found in iframes, searching message groups directly")
-            image_elements = await self._extract_images_from_message_groups(selectors, ai_message_groups)
-
-        # Process and save images
-        image_pieces = await self._process_image_elements(image_elements)
-        response_pieces.extend(image_pieces)
-
-        # Return appropriate format
-        if len(response_pieces) == 1 and response_pieces[0][1] == "text":
-            # Single text response - maintain backward compatibility
-            logger.debug(f"Returning single text response: '{response_pieces[0][0]}'")
-            return response_pieces[0][0]
-        elif response_pieces:
-            # Multimodal or multiple pieces
-            logger.debug(f"Returning {len(response_pieces)} response pieces")
-            return response_pieces
-        else:
-            # Fallback: try to get any text content from all message groups
-            fallback_parts = []
-            for msg_group in ai_message_groups:
-                fallback_text = await msg_group.text_content()
-                if fallback_text:
-                    fallback_parts.append(fallback_text.strip())
-            fallback_result = "\n".join(fallback_parts).strip()
-            logger.debug(f"Using fallback text: '{fallback_result}'")
-            return fallback_result
+            return await self._extract_fallback_text_async(ai_message_groups=ai_message_groups)
 
     async def _send_text_async(self, *, text: str, input_selector: str) -> None:
         """Send text input to Copilot interface."""
