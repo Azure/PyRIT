@@ -78,15 +78,21 @@ def mock_pretrained_config():
         yield
 
 
-class AwaitableMock(AsyncMock):
+class AwaitableTask(AsyncMock):
+    """Mock that can be awaited and acts like an asyncio.Task"""
     def __await__(self):
-        return iter([])
+        # Return a completed future-like object
+        async def _await():
+            return None
+        return _await().__await__()
 
 
 @pytest.fixture(autouse=True)
 def mock_create_task():
-    with patch("asyncio.create_task", return_value=AwaitableMock(spec=Task)):
-        yield
+    with patch("asyncio.create_task") as mock_task:
+        # Return an AwaitableTask that can be awaited
+        mock_task.return_value = AwaitableTask(spec=Task)
+        yield mock_task
 
 
 @pytest.fixture(autouse=True)
