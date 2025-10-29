@@ -234,6 +234,107 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         return self._get_metadata_conditions(prompt_metadata=metadata)[0]
 
+    def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
+        """
+        SQL Azure implementation for filtering AttackResults by targeted harm categories.
+        Uses JSON_QUERY() function specific to SQL Azure to check if categories exist in the JSON array.
+        """
+        from sqlalchemy import and_, exists, text
+        from pyrit.memory.memory_models import PromptMemoryEntry, AttackResultEntry
+        
+        # For SQL Azure, we need to use JSON_QUERY to check if a value exists in a JSON array
+        # OPENJSON can parse the array and we check if the category exists
+        # Using parameterized queries for safety
+        harm_conditions = []
+        bindparams_dict = {}
+        for i, category in enumerate(targeted_harm_categories):
+            param_name = f"harm_cat_{i}"
+            # Check if the JSON array contains the category value
+            harm_conditions.append(
+                f"EXISTS(SELECT 1 FROM OPENJSON(targeted_harm_categories) WHERE value = :{param_name})"
+            )
+            bindparams_dict[param_name] = category
+        
+        combined_conditions = " AND ".join(harm_conditions)
+        
+        targeted_harm_categories_subquery = exists().where(
+            and_(
+                PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                PromptMemoryEntry.targeted_harm_categories.isnot(None),
+                PromptMemoryEntry.targeted_harm_categories != "",
+                PromptMemoryEntry.targeted_harm_categories != "[]",
+                text(f"ISJSON(targeted_harm_categories) = 1 AND {combined_conditions}").bindparams(**bindparams_dict)
+            )
+        )
+        return targeted_harm_categories_subquery
+
+    def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        SQL Azure implementation for filtering AttackResults by labels.
+        Uses JSON_VALUE() function specific to SQL Azure with parameterized queries.
+        """
+        from sqlalchemy import and_, exists, text
+        from pyrit.memory.memory_models import PromptMemoryEntry, AttackResultEntry
+        
+        # Build JSON conditions for all labels with parameterized queries
+        label_conditions = []
+        bindparams_dict = {}
+        for key, value in labels.items():
+            param_name = f"label_{key}"
+            label_conditions.append(f"JSON_VALUE(labels, '$.{key}') = :{param_name}")
+            bindparams_dict[param_name] = str(value)
+        
+        combined_conditions = " AND ".join(label_conditions)
+        
+        labels_subquery = exists().where(
+            and_(
+                PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                PromptMemoryEntry.labels.isnot(None),
+                text(f"ISJSON(labels) = 1 AND {combined_conditions}").bindparams(**bindparams_dict)
+            )
+        )
+        return labels_subquery
+
+    def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        SQL Azure implementation for filtering ScenarioResults by labels.
+        Uses JSON_VALUE() function specific to SQL Azure.
+        """
+        from sqlalchemy import and_, text
+        
+        # Return combined conditions for all labels
+        conditions = []
+        for key, value in labels.items():
+            condition = text(
+                f"ISJSON(labels) = 1 AND JSON_VALUE(labels, '$.{key}') = :{key}"
+            ).bindparams(**{key: str(value)})
+            conditions.append(condition)
+        return and_(*conditions)
+
+    def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
+        """
+        SQL Azure implementation for filtering ScenarioResults by target endpoint.
+        Uses JSON_VALUE() function specific to SQL Azure.
+        """
+        from sqlalchemy import text
+        
+        return text(
+            """ISJSON(objective_target_identifier) = 1 
+            AND LOWER(JSON_VALUE(objective_target_identifier, '$.endpoint')) LIKE :endpoint"""
+        ).bindparams(endpoint=f"%{endpoint.lower()}%")
+
+    def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
+        """
+        SQL Azure implementation for filtering ScenarioResults by target model name.
+        Uses JSON_VALUE() function specific to SQL Azure.
+        """
+        from sqlalchemy import text
+        
+        return text(
+            """ISJSON(objective_target_identifier) = 1 
+            AND LOWER(JSON_VALUE(objective_target_identifier, '$.model_name')) LIKE :model_name"""
+        ).bindparams(model_name=f"%{model_name.lower()}%")
+
     def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
         Inserts a list of message pieces into the memory storage.

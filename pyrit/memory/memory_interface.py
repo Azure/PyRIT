@@ -200,6 +200,68 @@ class MemoryInterface(abc.ABC):
             update_fields (dict): A dictionary of field names and their new values.
         """
 
+    @abc.abstractmethod
+    def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
+        """
+        Returns a database-specific condition for filtering AttackResults by targeted harm categories
+        in the associated PromptMemoryEntry records.
+        
+        Args:
+            targeted_harm_categories: List of harm categories that must ALL be present.
+            
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        Returns a database-specific condition for filtering AttackResults by labels
+        in the associated PromptMemoryEntry records.
+        
+        Args:
+            labels: Dictionary of labels that must ALL be present.
+            
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by labels.
+        
+        Args:
+            labels: Dictionary of labels that must ALL be present.
+            
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by target endpoint.
+        
+        Args:
+            endpoint: Endpoint substring to search for (case-insensitive).
+            
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by target model name.
+        
+        Args:
+            model_name: Model name substring to search for (case-insensitive).
+            
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
     def add_scores_to_memory(self, *, scores: Sequence[Score]) -> None:
         """
         Inserts a list of scores into the memory storage.
@@ -1025,38 +1087,15 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.outcome == outcome)
 
         if targeted_harm_categories:
-            # construct query to ensure ALL categories must be present in the SAME conversation
-            targeted_harm_categories_subquery = exists().where(
-                and_(
-                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
-                    # Exclude empty strings, None, and empty lists
-                    PromptMemoryEntry.targeted_harm_categories.isnot(None),
-                    PromptMemoryEntry.targeted_harm_categories != "",
-                    PromptMemoryEntry.targeted_harm_categories != "[]",
-                    and_(
-                        *[
-                            func.json_extract(PromptMemoryEntry.targeted_harm_categories, "$").like(f'%"{category}"%')
-                            for category in targeted_harm_categories
-                        ]
-                    ),
-                )
+            # Use database-specific JSON query method
+            conditions.append(
+                self._get_attack_result_harm_category_condition(targeted_harm_categories=targeted_harm_categories)
             )
-            conditions.append(targeted_harm_categories_subquery)
+        
         if labels:
-            # ALL labels must be present in the SAME conversation
-            labels_subquery = exists().where(
-                and_(
-                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
-                    PromptMemoryEntry.labels.isnot(None),
-                    and_(
-                        *[
-                            func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value
-                            for key, value in labels.items()
-                        ]
-                    ),
-                )
-            )
-            conditions.append(labels_subquery)
+            # Use database-specific JSON query method
+            conditions.append(self._get_attack_result_label_condition(labels=labels))
+        
         try:
             entries: Sequence[AttackResultEntry] = self._query_entries(
                 AttackResultEntry, conditions=and_(*conditions) if conditions else None
@@ -1140,26 +1179,19 @@ class MemoryInterface(abc.ABC):
             conditions.append(ScenarioResultEntry.completion_time <= before_time)
         
         if labels:
-            # ALL labels must be present
-            for key, value in labels.items():
-                conditions.append(
-                    func.json_extract(ScenarioResultEntry.labels, f"$.{key}") == value
-                )
+            # Use database-specific JSON query method
+            conditions.append(self._get_scenario_result_label_condition(labels=labels))
         
         if objective_target_endpoint:
-            # Case-insensitive substring match on endpoint if it exists
+            # Use database-specific JSON query method
             conditions.append(
-                func.lower(
-                    func.json_extract(ScenarioResultEntry.objective_target_identifier, "$.endpoint")
-                ).like(f"%{objective_target_endpoint.lower()}%")
+                self._get_scenario_result_target_endpoint_condition(endpoint=objective_target_endpoint)
             )
         
         if objective_target_model_name:
-            # Case-insensitive substring match on model_name if it exists
+            # Use database-specific JSON query method
             conditions.append(
-                func.lower(
-                    func.json_extract(ScenarioResultEntry.objective_target_identifier, "$.model_name")
-                ).like(f"%{objective_target_model_name.lower()}%")
+                self._get_scenario_result_target_model_condition(model_name=objective_target_model_name)
             )
 
         try:

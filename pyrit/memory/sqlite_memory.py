@@ -392,3 +392,90 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             file_path = DB_DATA_PATH / f"{table_name}{file_extension}"
             # Convert to list for exporter compatibility
             self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)
+
+    def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
+        """
+        SQLite implementation for filtering AttackResults by targeted harm categories.
+        Uses json_extract() function specific to SQLite.
+        """
+        from sqlalchemy import and_, exists, func
+        from pyrit.memory.memory_models import PromptMemoryEntry, AttackResultEntry
+        
+        targeted_harm_categories_subquery = exists().where(
+            and_(
+                PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                # Exclude empty strings, None, and empty lists
+                PromptMemoryEntry.targeted_harm_categories.isnot(None),
+                PromptMemoryEntry.targeted_harm_categories != "",
+                PromptMemoryEntry.targeted_harm_categories != "[]",
+                and_(
+                    *[
+                        func.json_extract(PromptMemoryEntry.targeted_harm_categories, "$").like(f'%"{category}"%')
+                        for category in targeted_harm_categories
+                    ]
+                ),
+            )
+        )
+        return targeted_harm_categories_subquery
+
+    def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        SQLite implementation for filtering AttackResults by labels.
+        Uses json_extract() function specific to SQLite.
+        """
+        from sqlalchemy import and_, exists, func
+        from pyrit.memory.memory_models import PromptMemoryEntry, AttackResultEntry
+        
+        labels_subquery = exists().where(
+            and_(
+                PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                PromptMemoryEntry.labels.isnot(None),
+                and_(
+                    *[
+                        func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value
+                        for key, value in labels.items()
+                    ]
+                ),
+            )
+        )
+        return labels_subquery
+
+    def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        SQLite implementation for filtering ScenarioResults by labels.
+        Uses json_extract() function specific to SQLite.
+        """
+        from sqlalchemy import and_, func
+        from pyrit.memory.memory_models import ScenarioResultEntry
+        
+        # Return a combined condition that checks ALL labels must be present
+        return and_(
+            *[
+                func.json_extract(ScenarioResultEntry.labels, f"$.{key}") == value
+                for key, value in labels.items()
+            ]
+        )
+
+    def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
+        """
+        SQLite implementation for filtering ScenarioResults by target endpoint.
+        Uses json_extract() function specific to SQLite.
+        """
+        from sqlalchemy import func
+        from pyrit.memory.memory_models import ScenarioResultEntry
+        
+        return func.lower(
+            func.json_extract(ScenarioResultEntry.objective_target_identifier, "$.endpoint")
+        ).like(f"%{endpoint.lower()}%")
+
+    def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
+        """
+        SQLite implementation for filtering ScenarioResults by target model name.
+        Uses json_extract() function specific to SQLite.
+        """
+        from sqlalchemy import func
+        from pyrit.memory.memory_models import ScenarioResultEntry
+        
+        return func.lower(
+            func.json_extract(ScenarioResultEntry.objective_target_identifier, "$.model_name")
+        ).like(f"%{model_name.lower()}%")
