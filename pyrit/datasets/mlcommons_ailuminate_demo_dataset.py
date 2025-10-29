@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt
 
 # https://github.com/mlcommons/ailuminate#hazard-categories-and-abbreviations
 _hazard_categories_map = {
@@ -36,12 +35,12 @@ def fetch_mlcommons_ailuminate_demo_dataset(
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
-    Fetch examples from AILuminate v1.0 DEMO Prompt Set and create a SeedPromptDataset.
+    Fetch examples from AILuminate v1.0 DEMO Prompt Set and create a SeedDataset.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
 
     Note:
         For more information about the dataset and related materials, visit: \n
@@ -70,5 +69,5 @@ def fetch_mlcommons_ailuminate_demo_dataset(
         for example in examples
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset

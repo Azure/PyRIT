@@ -5,13 +5,14 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
 # # 7. Video Converters
 #
 # ## Adding Images to a Video
+#
 # Adds an image to a video.
 # To use this converter you'll need to install opencv which can be done with
 # `pip install pyrit[opencv]`
@@ -19,8 +20,8 @@
 # %%
 import pathlib
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import AddImageVideoConverter
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

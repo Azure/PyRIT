@@ -5,26 +5,22 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
 # # 1. Converters with LLMs
 #
-# Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally preffered.
+# Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally preferred.
 
 # %%
 import pathlib
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import VariationConverter
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

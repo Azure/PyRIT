@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -28,7 +24,7 @@
 # Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+
 from pyrit.prompt_converter import (
     AsciiArtConverter,
     BinaryConverter,
@@ -36,6 +32,7 @@ from pyrit.prompt_converter import (
     RandomCapitalLettersConverter,
     ROT13Converter,
 )
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

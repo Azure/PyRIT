@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -88,15 +88,15 @@ flask_process = start_flask_app()
 # %%
 from playwright.async_api import Page, async_playwright
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import PromptRequestResponse
+from pyrit.models import Message
 from pyrit.prompt_target import PlaywrightTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # Define the interaction function
-async def interact_with_my_app(page: Page, prompt_request: PromptRequestResponse) -> str:
+async def interact_with_my_app(page: Page, message: Message) -> str:
     # Define selectors
     input_selector = "#message-input"
     send_button_selector = "#send-button"
@@ -110,7 +110,7 @@ async def interact_with_my_app(page: Page, prompt_request: PromptRequestResponse
     await page.wait_for_selector(input_selector)
 
     # Send the prompt text (get from first request piece)
-    prompt_text = prompt_request.request_pieces[0].converted_value
+    prompt_text = message.message_pieces[0].converted_value
     await page.fill(input_selector, prompt_text)
     await page.click(send_button_selector)
 

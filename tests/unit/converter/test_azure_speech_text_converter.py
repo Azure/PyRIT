@@ -27,9 +27,10 @@ class TestAzureSpeechAudioToTextConverter:
         converter = AzureSpeechAudioToTextConverter(
             azure_speech_region="dummy_region", azure_speech_key="dummy_key", recognition_language="es-ES"
         )
+        assert converter._recognition_language == "es-ES"
         assert converter._azure_speech_region == "dummy_region"
         assert converter._azure_speech_key == "dummy_key"
-        assert converter._recognition_language == "es-ES"
+        assert converter.done is False
 
     @patch("azure.cognitiveservices.speech.SpeechRecognizer")
     @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
@@ -100,3 +101,10 @@ class TestAzureSpeechAudioToTextConverter:
         prompt = "dummy_audio.mp3"
         with pytest.raises(ValueError):
             assert await converter.convert_async(prompt=prompt, input_type="audio_path")
+
+    def test_use_entra_auth_true_with_api_key_raises_error(self):
+        """Test that use_entra_auth=True with api_key raises ValueError."""
+        with pytest.raises(ValueError, match="If using Entra ID auth, please do not specify azure_speech_key"):
+            AzureSpeechAudioToTextConverter(
+                azure_speech_region="test_region", azure_speech_key="test_key", use_entra_auth=True
+            )

@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -27,7 +23,7 @@
 #    - Navigate to the AML Studio.
 #    - Go to the 'Endpoints' section.
 #    - Retrieve the API key and endpoint URI from the 'Consume' tab
-#    <br> <img src="../../../assets/aml_managed_online_endpoint_api_key.png" alt="AML Managed Online Endpoint API Key" height="400"/> <br>
+#    <br> <img src="../../../assets/aml_managed_online_endpoint_api_key.png" alt="aml_managed_online_endpoint_api_key.png" height="400"/> <br>
 #
 # 1. **Set the Environment Variable:**
 #    - Add the obtained API key to an environment variable named `AZURE_ML_KEY`. This is the default API key when the target is instantiated.
@@ -44,11 +40,10 @@
 # possible adjustable parameters can be found here: https://huggingface.co/docs/api-inference/tasks/text-generation but note that not all parameters may have an effect
 # depending on the specific model. The parameters that can be set per model can usually be found in the 'Consume' tab when you navigate to your endpoint in AML Studio.
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-
 # %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import AzureMLChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

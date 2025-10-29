@@ -3,11 +3,10 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt
 
 
-def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedPromptDataset:
+def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedDataset:
     data = load_dataset("LLM-LAT/harmful-dataset", "default")
 
     prompts = [item["prompt"] for item in data["train"]]
@@ -25,5 +24,5 @@ def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedPromptDataset
         for prompt in prompts
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset

@@ -5,6 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
@@ -17,10 +18,10 @@ from pyrit.models import (
     AttackResult,
     ConversationReference,
     ConversationType,
-    PromptRequestResponse,
+    Message,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -48,6 +49,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     and multiple scorer types for comprehensive evaluation.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
@@ -89,8 +91,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
-        if self._objective_scorer and self._objective_scorer.scorer_type != "true_false":
-            raise ValueError("Objective scorer must be a true/false scorer")
 
         # Skip criteria could be set directly in the injected prompt normalizer
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
@@ -219,13 +219,13 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         return result
 
     def _determine_attack_outcome(
-        self, *, response: Optional[PromptRequestResponse], score: Optional[Score], context: SingleTurnAttackContext
+        self, *, response: Optional[Message], score: Optional[Score], context: SingleTurnAttackContext
     ) -> tuple[AttackOutcome, Optional[str]]:
         """
         Determine the outcome of the attack based on the response and score.
 
         Args:
-            response (Optional[PromptRequestResponse]): The last response from the target (if any).
+            response (Optional[Message]): The last response from the target (if any).
             score (Optional[Score]): The objective score (if any).
             context (SingleTurnAttackContext): The attack context containing configuration.
 
@@ -255,42 +255,42 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Nothing to be done here, no-op
         pass
 
-    def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedPromptGroup:
+    def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedGroup:
         """
-        Prepare the seed prompt group for the attack.
+        Prepare the seed group for the attack.
 
-        If a seed_prompt_group is provided in the context, it will be used directly.
-        Otherwise, creates a new SeedPromptGroup with the objective as a text prompt.
+        If a seed_group is provided in the context, it will be used directly.
+        Otherwise, creates a new SeedGroup with the objective as a text prompt.
 
         Args:
             context (SingleTurnAttackContext): The attack context containing the objective
-                and optionally a pre-configured seed_prompt_group.
+                and optionally a pre-configured seed_group.
 
         Returns:
-            SeedPromptGroup: The seed prompt group to be used in the attack.
+            SeedGroup: The seed group to be used in the attack.
         """
-        if context.seed_prompt_group:
-            return context.seed_prompt_group
+        if context.seed_group:
+            return context.seed_group
 
-        return SeedPromptGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
+        return SeedGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
 
     async def _send_prompt_to_objective_target_async(
-        self, *, prompt_group: SeedPromptGroup, context: SingleTurnAttackContext
-    ) -> Optional[PromptRequestResponse]:
+        self, *, prompt_group: SeedGroup, context: SingleTurnAttackContext
+    ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
         Args:
-            prompt_group (SeedPromptGroup): The seed prompt group to send.
+            prompt_group (SeedGroup): The seed group to send.
             context (SingleTurnAttackContext): The attack context containing parameters and labels.
 
         Returns:
-            Optional[PromptRequestResponse]: The model's response if successful, or None if
+            Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
 
         return await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=prompt_group,
+            seed_group=prompt_group,
             target=self._objective_target,
             conversation_id=context.conversation_id,
             request_converter_configurations=self._request_converters,
@@ -302,7 +302,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     async def _evaluate_response_async(
         self,
         *,
-        response: PromptRequestResponse,
+        response: Message,
         objective: str,
     ) -> Optional[Score]:
         """
@@ -312,7 +312,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         metrics, then runs the objective scorer to determine if the attack succeeded.
 
         Args:
-            response (PromptRequestResponse): The response from the model.
+            response (Message): The response from the model.
             objective (str): The natural-language description of the attack's objective.
 
         Returns:
@@ -320,16 +320,19 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
-        scoring_results = await Scorer.score_response_with_objective_async(
+
+        scoring_results = await Scorer.score_response_async(
             response=response,
+            objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
-            objective_scorers=[self._objective_scorer] if self._objective_scorer else None,
             role_filter="assistant",
-            task=objective,
+            objective=objective,
         )
+
+        if not self._objective_scorer:
+            return None
 
         objective_scores = scoring_results["objective_scores"]
         if not objective_scores:
             return None
-
         return objective_scores[0]

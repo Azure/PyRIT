@@ -7,13 +7,14 @@ from unittest.mock import Mock
 import pytest
 from unit.mocks import get_sample_conversations
 
-from pyrit.models import PromptRequestPiece
+from pyrit.models import Message, MessagePiece
 from pyrit.score import PromptShieldScorer
 
 
 @pytest.fixture
-def sample_conversations() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+def sample_conversations() -> MutableSequence[MessagePiece]:
+    conversations = get_sample_conversations()
+    return Message.flatten_to_message_pieces(conversations)
 
 
 @pytest.fixture

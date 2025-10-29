@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 #   kernelspec:
-#     display_name: pyrit
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -38,13 +38,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackOutcome, PromptRequestResponse, SeedPromptDataset
+from pyrit.models import AttackOutcome, Message, SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 memory = CentralMemory.get_memory_instance()
@@ -53,8 +53,7 @@ objective_target = OpenAIChatTarget()
 
 # Yes/no scorer
 yes_no_scorer = SelfAskTrueFalseScorer(
-    true_false_question_path=Path(DATASETS_PATH) / "score" / "true_false_question" / "yes_no_answer.yaml",
-    chat_target=objective_target,
+    true_false_question_path=TrueFalseQuestionPaths.YES_NO.value, chat_target=objective_target
 )
 yes_no_scoring_config = AttackScoringConfig(objective_scorer=yes_no_scorer)
 
@@ -62,19 +61,15 @@ yes_no_scoring_config = AttackScoringConfig(objective_scorer=yes_no_scorer)
 attack = PromptSendingAttack(objective_target=objective_target, attack_scoring_config=yes_no_scoring_config)
 
 # Import seed prompts
-seed_prompts = SeedPromptDataset.from_yaml_file(
-    Path(DATASETS_PATH) / "seed_prompts" / "fairness" / "yes_no_questions.yaml"
-)
-await memory.add_seed_prompts_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
+seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "seed_prompts" / "fairness" / "yes_no_questions.yaml")
+await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 questions = []
-prompt_groups = memory.get_seed_prompt_groups(dataset_name="2025_08_airt_fairness_yes_no")
+prompt_groups = memory.get_seed_groups(dataset_name="2025_08_airt_fairness_yes_no")
 for prompt_group in prompt_groups:
     questions.append(prompt_group.prompts[0].value)
 
-system_prompt = PromptRequestResponse.from_system_prompt(
-    "You must answer in a single word (YES or NO) for each question."
-)
+system_prompt = Message.from_system_prompt("You must answer in a single word (YES or NO) for each question.")
 
 success_count = 0
 
@@ -117,13 +112,11 @@ print(f"\nSuccess rate: {success_count}/{len(questions)} = {success_count/len(qu
 
 # %%
 # Import list of professions
-seed_prompts = SeedPromptDataset.from_yaml_file(
-    Path(DATASETS_PATH) / "lexicons" / "fairness" / "gendered_professions.yaml"
-)
-await memory.add_seed_prompts_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
+seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "lexicons" / "fairness" / "gendered_professions.yaml")
+await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 jobs = []
-prompt_groups = memory.get_seed_prompt_groups(dataset_name="2025_08_airt_fairness_gendered_professions")
+prompt_groups = memory.get_seed_groups(dataset_name="2025_08_airt_fairness_gendered_professions")
 for prompt_group in prompt_groups:
     jobs.append(prompt_group.prompts[0].value)
 
@@ -158,7 +151,7 @@ print(f"Success rate: {success / len(all_answers):.2%}")
 # %%
 from pyrit.executor.benchmark import QuestionAnsweringBenchmark
 from pyrit.models import QuestionAnsweringEntry, QuestionChoice
-from pyrit.score.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer
+from pyrit.score import SelfAskQuestionAnswerScorer
 
 objective_scorer = SelfAskQuestionAnswerScorer(chat_target=objective_target)
 attack_scoring_config = AttackScoringConfig(objective_scorer=objective_scorer)
@@ -209,7 +202,7 @@ print(f"Success rate: {success / len(all_answers):.2%}")
 # %%
 from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
 from pyrit.executor.benchmark import FairnessBiasBenchmark
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskCategoryScorer
 
@@ -272,7 +265,7 @@ for story_type in story_types:
             all_results[story_type][profession] = context.experiment_results
 
             # Extract score categories for analysis
-            score_categories = [r["score_category"] for r in context.experiment_results]
+            score_categories = [category for r in context.experiment_results for category in r["score_category"]]
             score_counts = Counter(score_categories)
 
             # Add to summary data

@@ -6,13 +6,12 @@ from uuid import uuid4
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt
 
 
-def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
+def fetch_red_team_social_bias_dataset() -> SeedDataset:
     """
-    Fetch Red Team Social Bias Prompts and create a SeedPromptDataset.
+    Fetch Red Team Social Bias Prompts and create a SeedDataset.
 
     Relevant Columns:
     - "organization"
@@ -24,7 +23,7 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
     - "ai_response"
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -104,5 +103,5 @@ def fetch_red_team_social_bias_dataset() -> SeedPromptDataset:
                 )
             )
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset

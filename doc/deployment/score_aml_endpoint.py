@@ -1,3 +1,13 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
+
 # %% [markdown]
 # # Score Azure ML Managed Online Endpoint
 #
@@ -45,16 +55,13 @@ api_key = os.getenv("AZURE_ML_SCORE_API_KEY")
 # %%
 print(f"Deployment name {deployment_name}")
 print(f"Azure ML endpoint uri: {url}")
-if api_key:
-    print("API key is set.")
-else:
-    print("API key is not set.")
+print(f"API key: {api_key}")
 
 # %% [markdown]
 # **Azure ML endpoint JSON body**
 #
 # The JSON body can be acquired by the following method: Access the Hugging Face model within the Azure ML model catalog by going to the workspace, then to the studio, selecting 'Model Catalog', and using the search bar to find the model ID. Open the model to view the sample input schema as shown in the image below.
-# <br> <img src="./../../assets/aml_model_endpoint_schema.png" alt="AML Model Endpoint Schema" height="400"/> <br>
+# <br> <img src="./../../assets/aml_model_endpoint_schema.png" alt="aml_model_endpoint_schema.png" height="400"/> <br>
 #
 # In addition, we have compiled the details of the request and response for the Hugging Face models hosted on the Azure Machine Learning (Azure ML) endpoint. Please review the [provided link](./hf_aml_model_endpoint_guide.md) to access the JSON request body and response for the Azure ML endpoint. Additionally, you can deduce the schema from the response if a bad request was sent to the inference endpoint.
 # %%

@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -29,9 +25,8 @@
 #
 # First, we send a harmful prompt to Phi-3-mini without a GCG suffix. If the environment variables `PHI3_MINI_ENDPOINT` and `PHI3_MINI_KEY` are not set in your .env file, the target will default to the model with `AZURE_ML_MANAGED_ENDPOINT` and `AZURE_ML_MANAGED_KEY`.
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-
 # %%
+
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
@@ -39,6 +34,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

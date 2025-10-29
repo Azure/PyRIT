@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -27,16 +27,15 @@
 # %%
 import uuid
 
-from pyrit.common import initialize_pyrit
-from pyrit.common.initialization import SQLITE
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
-initialize_pyrit(memory_db_type=SQLITE)
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = OpenAIChatTarget()
 group1 = str(uuid.uuid4())
@@ -65,9 +64,9 @@ from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import TextTarget
 
 memory = CentralMemory.get_memory_instance()
-prompts = memory.get_prompt_request_pieces(labels={"prompt_group": group1})
+prompts = memory.get_message_pieces(labels={"prompt_group": group1})
 
-# Print original values of queried prompt request pieces (including responses)
+# Print original values of queried message pieces (including responses)
 for piece in prompts:
     print(piece.original_value)
 

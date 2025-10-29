@@ -6,6 +6,7 @@ import pathlib
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
@@ -15,9 +16,9 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 )
 from pyrit.models import (
     AttackResult,
-    PromptRequestResponse,
+    Message,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -34,6 +35,7 @@ class FlipAttack(PromptSendingAttack):
     Essentially, it adds a system prompt to the beginning of the conversation to flip each word in the prompt.
     """
 
+    @apply_defaults
     def __init__(
         self,
         objective_target: PromptChatTarget,
@@ -65,7 +67,7 @@ class FlipAttack(PromptSendingAttack):
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "executors" / "flip_attack.yaml"
         system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
-        self._system_prompt = PromptRequestResponse.from_system_prompt(system_prompt=system_prompt)
+        self._system_prompt = Message.from_system_prompt(system_prompt=system_prompt)
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -114,7 +116,7 @@ class FlipAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
-        context.seed_prompt_group = seed_prompt_group
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
+        context.seed_group = seed_group
 
         return await super()._perform_async(context=context)

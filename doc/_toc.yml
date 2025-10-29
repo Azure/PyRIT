@@ -7,14 +7,16 @@ chapters:
     - file: cookbooks/2_precomputing_turns
     - file: cookbooks/3_copyright_violations
     - file: cookbooks/4_testing_bias
-  - file: setup/install_pyrit
+  - file: setup/1a_install_conda
     sections:
+    - file: setup/1b_install_docker
     - file: setup/jupyter_setup
     - file: setup/populating_secrets
     - file: setup/use_azure_sql_db
   - file: contributing/README
     sections:
-    - file: contributing/1_installation
+    - file: contributing/1a_install_conda
+    - file: contributing/1b_install_devcontainers
     - file: contributing/2_git
     - file: contributing/3_incorporating_research
     - file: contributing/4_style_guide
@@ -49,7 +51,8 @@ chapters:
           - file: code/executor/attack/multi_prompt_sending_attack
         - file: code/executor/workflow/0_workflow
           sections:
-          - file: code/executor/workflow/1_xpia_workflow
+          - file: code/executor/workflow/1_xpia_website
+          - file: code/executor/workflow/2_xpia_ai_recruiter
         - file: code/executor/benchmark/0_benchmark
           sections:
           - file: code/executor/benchmark/1_qa_benchmark
@@ -98,26 +101,32 @@ chapters:
       - file: code/scoring/insecure_code_scorer
       - file: code/scoring/look_back_scorer
       - file: code/scoring/prompt_shield_scorer
-      - file: code/scoring/human_in_the_loop_scorer_gradio
       - file: code/scoring/generic_scorers
       - file: code/scoring/scorer_evals
     - file: code/memory/0_memory
       sections:
       - file: code/memory/1_sqlite_memory
       - file: code/memory/2_basic_memory_programming
-      - file: code/memory/3_prompt_request
+      - file: code/memory/3_memory_data_types
       - file: code/memory/4_manually_working_with_memory
       - file: code/memory/5_memory_labels
       - file: code/memory/6_azure_sql_memory
       - file: code/memory/7_azure_sql_memory_attacks
-      - file: code/memory/8_seed_prompt_database
+      - file: code/memory/8_seed_database
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md
+      - file: code/memory/11_harm_categories
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
+    - file: code/setup/0_configuration
+      sections:
+      - file: code/setup/default_values
+      - file: code/setup/pyrit_initializer
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
+    - file: code/scenarios/scenarios
+    - file: code/front_end/0_cli
   - file: deployment/README
     sections:
     - file: deployment/deploy_hf_model_aml

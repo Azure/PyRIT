@@ -5,10 +5,11 @@ import json
 import logging
 from typing import Any, Literal, Optional, Sequence
 
+from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
@@ -46,7 +47,7 @@ class PromptShieldTarget(PromptTarget):
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_ENDPOINT"
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_KEY"
     _endpoint: str
-    _api_key: str
+    _api_key: str | None
     _api_version: str
     _force_entry_field: PromptShieldEntryField
 
@@ -55,26 +56,51 @@ class PromptShieldTarget(PromptTarget):
         endpoint: Optional[str] = None,
         api_key: Optional[str] = None,
         api_version: Optional[str] = "2024-09-01",
+        use_entra_auth: bool = False,
         field: Optional[PromptShieldEntryField] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
+        """
+        Class that initializes an Azure Content Safety Prompt Shield Target.
 
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
+        Args:
+            endpoint (str, Optional): The endpoint URL for the Azure Content Safety service.
+                Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
+            api_key (str, Optional): The API key for accessing the Azure Content Safety service
+                (only if you're not using Entra auth). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE`
+                environment variable.
+            api_version (str, Optional): The version of the Azure Content Safety API. Defaults to "2024-09-01".
+            use_entra_auth (bool, Optional): Whether to use Entra ID authentication. Defaults to False.
+            field (PromptShieldEntryField, Optional): If "userPrompt", all input is sent to the userPrompt field.
+                If "documents", all input is sent to the documents field. If None, the input is parsed to separate
+                userPrompt and documents. Defaults to None.
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
+        """
 
-        self._endpoint = default_values.get_required_value(
+        endpoint_value = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
-
-        self._api_key = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-        )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
 
         self._api_version = api_version
+        if use_entra_auth:
+            if api_key:
+                raise ValueError("If using Entra ID auth, please do not specify api_key.")
+            scope = get_default_scope(self._endpoint)
+            self._azure_auth = AzureAuth(token_scope=scope)
+            self._api_key = None
+        else:
+            self._api_key = default_values.get_required_value(
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+            )
+            self._azure_auth = None
 
         self._force_entry_field: PromptShieldEntryField = field
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Parses the text in prompt_request to separate the userPrompt and documents contents,
         then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
@@ -83,14 +109,15 @@ class PromptShieldTarget(PromptTarget):
 
         self._validate_request(prompt_request=prompt_request)
 
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
         headers = {
-            "Ocp-Apim-Subscription-Key": self._api_key,
             "Content-Type": "application/json",
         }
+
+        self._add_auth_param_to_headers(headers)
 
         params = {
             "api-version": self._api_version,
@@ -123,14 +150,14 @@ class PromptShieldTarget(PromptTarget):
 
         return response_entry
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        request_pieces: Sequence[PromptRequestPiece] = prompt_request.request_pieces
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        message_pieces: Sequence[MessagePiece] = prompt_request.message_pieces
 
-        n_pieces = len(request_pieces)
+        n_pieces = len(message_pieces)
         if n_pieces != 1:
-            raise ValueError(f"This target only supports a single prompt request piece. Received: {n_pieces} pieces.")
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = request_pieces[0].converted_value_data_type
+        piece_type = message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
@@ -177,3 +204,13 @@ class PromptShieldTarget(PromptTarget):
                         documents.append(contents[0])
 
                 return {"userPrompt": user_prompt, "documents": documents if documents else []}
+
+    def _add_auth_param_to_headers(self, headers: dict) -> None:
+        """
+        Adds the API key or Entra authentication parameters to the headers.
+        """
+        if self._api_key:
+            headers["Ocp-Apim-Subscription-Key"] = self._api_key
+        if self._azure_auth:
+            token = self._azure_auth.refresh_token()
+            headers["Authorization"] = f"Bearer {token}"

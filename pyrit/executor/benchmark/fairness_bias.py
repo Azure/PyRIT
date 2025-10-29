@@ -21,9 +21,9 @@ from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    PromptRequestResponse,
+    Message,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -48,7 +48,7 @@ class FairnessBiasBenchmarkContext(StrategyContext):
     objective: Optional[str] = None
 
     # Prepended conversation for context
-    prepended_conversation: List[PromptRequestResponse] = field(default_factory=list)
+    prepended_conversation: List[Message] = field(default_factory=list)
 
     # Memory labels for tracking
     memory_labels: Dict[str, str] = field(default_factory=dict)
@@ -56,7 +56,7 @@ class FairnessBiasBenchmarkContext(StrategyContext):
     # Generated fields for the benchmark run
     generated_objective: str = field(default_factory=str)
     generated_story_prompt: str = field(default_factory=str)
-    generated_seed_prompt_group: Optional[SeedPromptGroup] = None
+    generated_seed_group: Optional[SeedGroup] = None
     experiment_results: List[Dict[str, str]] = field(default_factory=list)
 
 
@@ -144,7 +144,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         Sets up phase before executing the strategy:
         - Sets the objective (uses provided objective or generates default)
         - Creates the story prompt based on subject and story type
-        - Generates the seed prompt group for the benchmark
+        - Generates the seed group for the benchmark
 
         Args:
             context (FairnessBiasBenchmarkContext): The benchmark context to configure for execution
@@ -162,7 +162,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         context.generated_story_prompt = self._format_story_prompt(
             subject=context.subject, story_type=context.story_type
         )
-        context.generated_seed_prompt_group = self._create_seed_prompt_group(
+        context.generated_seed_group = self._create_seed_group(
             subject=context.subject, story_type=context.story_type, story_prompt=context.generated_story_prompt
         )
 
@@ -218,7 +218,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         """
         attack_result = await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
-            seed_prompt_group=context.generated_seed_prompt_group,
+            seed_group=context.generated_seed_group,
             prepended_conversation=context.prepended_conversation,
             memory_labels=context.memory_labels,
         )
@@ -332,9 +332,9 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                     return " ".join(cap_words)
         return None
 
-    def _create_seed_prompt_group(self, *, subject: str, story_type: str, story_prompt: str) -> SeedPromptGroup:
+    def _create_seed_group(self, *, subject: str, story_type: str, story_prompt: str) -> SeedGroup:
         """
-        Create a seed prompt group with the formatted story prompt and metadata.
+        Create a seed group with the formatted story prompt and metadata.
 
         Args:
             subject (str): The subject of the story
@@ -342,7 +342,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             story_prompt (str): The formatted prompt text
 
         Returns:
-            SeedPromptGroup: A group containing the seed prompt with metadata
+            SeedGroup: A group containing the seed prompt with metadata
         """
         seed_prompt = SeedPrompt(
             value=story_prompt,
@@ -353,7 +353,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 "benchmark": "fairness_bias",
             },
         )
-        return SeedPromptGroup(prompts=[seed_prompt])
+        return SeedGroup(prompts=[seed_prompt])
 
     def get_experiment_summary(self, *, context: FairnessBiasBenchmarkContext) -> Dict[str, Any]:
         """
@@ -413,7 +413,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         story_type: str,
         num_experiments: int = 1,
         objective: Optional[str] = None,
-        prepended_conversation: Optional[List[PromptRequestResponse]] = None,
+        prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> AttackResult: ...
@@ -431,7 +431,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 story_type (str): The type of story to generate
                 num_experiments (int, optional): Number of experiments to run (default: 1)
                 objective (str, optional): Custom objective prompt (default: auto-generated)
-                prepended_conversation (List[PromptRequestResponse], optional): Context conversation
+                prepended_conversation (List[Message], optional): Context conversation
                 memory_labels (Dict[str, str], optional): Labels for memory tracking
 
         Returns:

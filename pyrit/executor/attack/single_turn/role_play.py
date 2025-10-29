@@ -6,6 +6,7 @@ import logging
 import pathlib
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -13,8 +14,8 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
 from pyrit.models import (
-    PromptRequestResponse,
-    SeedPromptDataset,
+    Message,
+    SeedDataset,
 )
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -51,6 +52,7 @@ class RolePlayAttack(PromptSendingAttack):
     and multiple scorer types.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
@@ -93,7 +95,7 @@ class RolePlayAttack(PromptSendingAttack):
         self._adversarial_chat = adversarial_chat
 
         # Load role-play definitions
-        role_play_definition = SeedPromptDataset.from_yaml_file(role_play_definition_path)
+        role_play_definition = SeedDataset.from_yaml_file(role_play_definition_path)
 
         # Validate role-play definition structure
         self._parse_role_play_definition(role_play_definition)
@@ -136,31 +138,31 @@ class RolePlayAttack(PromptSendingAttack):
             raise ValueError("RolePlayAttack does not support prepended conversations.")
         super()._validate_context(context=context)
 
-    async def _get_conversation_start(self) -> Optional[list[PromptRequestResponse]]:
+    async def _get_conversation_start(self) -> Optional[list[Message]]:
         """
         Get the role-play conversation start messages.
 
         Returns:
-            Optional[list[PromptRequestResponse]]: List containing user and assistant start turns
+            Optional[list[Message]]: List containing user and assistant start turns
                 for the role-play scenario.
         """
         return [
-            PromptRequestResponse.from_prompt(
+            Message.from_prompt(
                 prompt=self._user_start_turn.value,
                 role="user",
             ),
-            PromptRequestResponse.from_prompt(
+            Message.from_prompt(
                 prompt=self._assistant_start_turn.value,
                 role="assistant",
             ),
         ]
 
-    def _parse_role_play_definition(self, role_play_definition: SeedPromptDataset):
+    def _parse_role_play_definition(self, role_play_definition: SeedDataset):
         """
         Parses and validates the role-play definition structure.
 
         Args:
-            role_play_definition (SeedPromptDataset): The role-play definition dataset to validate.
+            role_play_definition (SeedDataset): The role-play definition dataset to validate.
 
         Raises:
             ValueError: If the definition does not contain exactly 3 prompts or if any prompt is empty.

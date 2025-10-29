@@ -6,11 +6,9 @@ import random
 import uuid
 from typing import List, Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
-from pyrit.models.literals import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import Message, MessagePiece, PromptDataType, SeedPrompt
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
     FuzzerConverter,
 )
@@ -23,10 +21,11 @@ class FuzzerCrossOverConverter(FuzzerConverter):
     Uses multiple prompt templates to generate new prompts.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         prompt_template: Optional[SeedPrompt] = None,
         prompt_templates: Optional[List[str]] = None,
     ):
@@ -35,6 +34,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
 
         Args:
             converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt.
+                Can be omitted if a default has been configured via PyRIT initialization.
             prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
                 instructions for the chat target.
             prompt_templates (List[str], Optional): List of prompt templates to use in addition to the default one.
@@ -80,9 +80,9 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         )
 
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        request = PromptRequestResponse(
+        request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=formatted_prompt,
                     converted_value=formatted_prompt,

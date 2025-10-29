@@ -164,7 +164,7 @@ converters = [
     ),
     (
         "text",
-        {"type": "TextToHexConverter"},
+        {"type": "BinAsciiConverter", "encoding_func": "hex"},
     ),
     (
         "text",

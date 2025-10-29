@@ -21,18 +21,17 @@
 # In this example, we'll try to convince a chatbot to give instructions to commit check fraud using `RedTeamingAttack`. We will pass three different converters:
 # `TranslationConverter`, `LeetspeakConverter`, and `RandomCapitalLettersConverter` into our `HumanInTheLoopConverter` to potentially use later.
 #
-# Note: Since the target's reponses are sent to the scorer LLM for evaluation, you will see them pop up with the ability to modify them. You likely do not need to modify
+# Note: Since the target's responses are sent to the scorer LLM for evaluation, you will see them pop up with the ability to modify them. You likely do not need to modify
 # them; however, you can if you wish to alter the feedback for generating the next prompt.
 #
 #
-# # Before you begin, ensure you are setup with the correct version of [PyRIT installed](../../setup/install_pyrit.md) and have [secrets configured](../../setup/populating_secrets.md).
+# # Before you begin, ensure you are setup with the correct version of [PyRIT installed](../../index.md#Installation-Guide) and have [secrets configured](../../setup/populating_secrets.md).
 #
 
 # %%
 import logging
 from pathlib import Path
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -50,6 +49,7 @@ from pyrit.prompt_converter import (
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

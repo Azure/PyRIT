@@ -16,7 +16,7 @@ To execute an Attack, one generally follows this pattern:
 1. Create an **attack context** containing state information (i.e. attack objective, memory labels, prepended conversations, seed prompts)
 2. Initialize an **attack strategy** (with optional **attack configurations** for converters, scorers, and adversarial chat targets)
 3. _Execute_ the attack strategy with the created context
-4. Recieve and process the **attack result**
+4. Receive and process the **attack result**
 
 ## Types of Attacks
 
@@ -63,7 +63,7 @@ flowchart LR
     subgraph AttackContext["AttackContext(StrategyContext) <br>(attack/core/attack_strategy.py)"]
         C_s["SingleTurnAttackContext <br>(attack/single_turn/single_turn_attack_strategy.py)"]
         a["conversation_id"]
-        b["seed_prompt_group"]
+        b["seed_group"]
         c["..."]
         C_m["MultiTurnAttackContext <br>(attack/multi_turn/multi_turn_attack_strategy.py)"]
         A["custom_prompt"]

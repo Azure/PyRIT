@@ -11,12 +11,12 @@ import pytest
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
+from pyrit.models import Message, MessagePiece
+from pyrit.score import SelfAskRefusalScorer
 
 
 @pytest.fixture
-def scorer_true_false_response() -> PromptRequestResponse:
+def scorer_true_false_response() -> Message:
 
     json_response = (
         dedent(
@@ -28,11 +28,11 @@ def scorer_true_false_response() -> PromptRequestResponse:
         .replace("\n", " ")
     )
 
-    return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_score(scorer_true_false_response: PromptRequestResponse, patch_central_database):
+async def test_refusal_scorer_score(scorer_true_false_response: Message, patch_central_database):
 
     chat_target = MagicMock()
 
@@ -49,9 +49,7 @@ async def test_refusal_scorer_score(scorer_true_false_response: PromptRequestRes
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_set_system_prompt(
-    scorer_true_false_response: PromptRequestResponse, patch_central_database
-):
+async def test_refusal_scorer_set_system_prompt(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
@@ -62,7 +60,7 @@ async def test_refusal_scorer_set_system_prompt(
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_no_task(scorer_true_false_response: PromptRequestResponse, patch_central_database):
+async def test_refusal_scorer_no_task(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
@@ -70,27 +68,25 @@ async def test_refusal_scorer_no_task(scorer_true_false_response: PromptRequestR
     await scorer.score_text_async("true false")
 
     _, kwargs = chat_target.send_prompt_async.call_args
-    assert kwargs["prompt_request"].request_pieces[0].original_value == "response_to_evaluate_input: true false"
+    assert kwargs["prompt_request"].message_pieces[0].original_value == "response_to_evaluate_input: true false"
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_with_task(scorer_true_false_response: PromptRequestResponse, patch_central_database):
+async def test_refusal_scorer_with_task(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    await scorer.score_text_async("true false", task="task")
+    await scorer.score_text_async("true false", objective="task")
 
     _, kwargs = chat_target.send_prompt_async.call_args
 
     expected = "conversation_objective: task\nresponse_to_evaluate_input: true false"
-    assert kwargs["prompt_request"].request_pieces[0].original_value == expected
+    assert kwargs["prompt_request"].message_pieces[0].original_value == expected
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_image_non_block(
-    scorer_true_false_response: PromptRequestResponse, patch_central_database
-):
+async def test_refusal_scorer_image_non_block(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
@@ -105,7 +101,7 @@ async def test_refusal_scorer_image_non_block(
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: PromptRequestResponse):
+async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
@@ -121,9 +117,7 @@ async def test_refusal_scorer_bad_json_exception_retries(patch_central_database)
 
     chat_target = MagicMock()
 
-    bad_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
-    )
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
@@ -147,9 +141,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
         .replace("\n", " ")
     )
 
-    bad_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
-    )
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
@@ -167,12 +159,12 @@ async def test_score_async_filtered_response(patch_central_database):
     chat_target = MagicMock()
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    request_piece = PromptRequestPiece(role="assistant", original_value="blocked response", response_error="blocked")
-    memory.add_request_pieces_to_memory(request_pieces=[request_piece])
-    scores = await scorer.score_async(request_piece)
+    request = MessagePiece(role="assistant", original_value="blocked response", response_error="blocked").to_message()
+    memory.add_message_pieces_to_memory(message_pieces=request.message_pieces)
+    scores = await scorer.score_async(request)
 
     assert len(scores) == 1
-    assert scores[0].score_value == "True"
+    assert scores[0].score_value == "true"
     assert scores[0].score_value_description == "Refusal detected"
     assert scores[0].score_rationale == "Content was filtered, constituting a refusal."
     assert scores[0].scorer_class_identifier["__type__"] == "SelfAskRefusalScorer"

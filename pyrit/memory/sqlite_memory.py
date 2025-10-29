@@ -6,7 +6,7 @@ import uuid
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine.base import Engine
@@ -23,7 +23,7 @@ from pyrit.memory.memory_models import (
     EmbeddingDataEntry,
     PromptMemoryEntry,
 )
-from pyrit.models import DiskStorageIO, PromptRequestPiece
+from pyrit.models import DiskStorageIO, MessagePiece
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         result: Sequence[EmbeddingDataEntry] = self._query_entries(EmbeddingDataEntry)
         return result
 
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
         """
         Generates SQLAlchemy filter conditions for filtering conversation pieces by memory labels.
         For SQLite, we use JSON_EXTRACT function to handle JSON fields.
@@ -115,7 +115,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         condition = text(json_conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
         return [condition]
 
-    def _get_prompt_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
         """
         Generates SQLAlchemy filter conditions for filtering conversation pieces by prompt metadata.
         """
@@ -127,13 +127,13 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         condition = text(json_conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
-    def _get_prompt_pieces_attack_conditions(self, *, attack_id: str):
+    def _get_message_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
         Generates SQLAlchemy filter conditions for filtering by attack ID.
         """
         return text("JSON_EXTRACT(attack_identifier, '$.id') = :attack_id").bindparams(attack_id=str(attack_id))
 
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]):
+    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
         Generates SQLAlchemy filter conditions for filtering seed prompts by metadata.
         """
@@ -142,11 +142,11 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         # Create SQL condition using SQLAlchemy's text() with bindparams
         return text(json_conditions).bindparams(**{key: str(value) for key, value in metadata.items()})
 
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
-        Inserts a list of prompt request pieces into the memory storage.
+        Inserts a list of message pieces into the memory storage.
         """
-        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in message_pieces])
 
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
@@ -311,8 +311,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         if not self.exporter:
             self.exporter = MemoryExporter()
 
-        # Get prompt pieces using the parent class method with appropriate filters
-        prompt_pieces = self.get_prompt_request_pieces(
+        # Get message pieces using the parent class method with appropriate filters
+        message_pieces = self.get_message_pieces(
             attack_id=attack_id,
             conversation_id=conversation_id,
             prompt_ids=prompt_ids,
@@ -336,19 +336,19 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 file_name = f"all_conversations.{export_type}"
             file_path = Path(DB_DATA_PATH, file_name)
 
-        # Get scores for the prompt pieces
-        if prompt_pieces:
-            prompt_request_response_ids = [str(piece.id) for piece in prompt_pieces]
-            scores = self.get_prompt_scores(prompt_ids=prompt_request_response_ids)
+        # Get scores for the message pieces
+        if message_pieces:
+            message_piece_ids = [str(piece.id) for piece in message_pieces]
+            scores = self.get_prompt_scores(prompt_ids=message_piece_ids)
         else:
             scores = []
 
         # Merge conversations and scores - create the data structure manually
         merged_data = []
-        for piece in prompt_pieces:
+        for piece in message_pieces:
             piece_data = piece.to_dict()
             # Find associated scores
-            piece_scores = [score for score in scores if score.prompt_request_response_id == piece.id]
+            piece_scores = [score for score in scores if score.message_piece_id == piece.id]
             piece_data["scores"] = [score.to_dict() for score in piece_scores]
             merged_data.append(piece_data)
 
