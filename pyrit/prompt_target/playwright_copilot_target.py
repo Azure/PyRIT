@@ -238,32 +238,9 @@ class PlaywrightCopilotTarget(PromptTarget):
                 await self._page.wait_for_timeout(self.RESPONSE_COMPLETE_WAIT_MS)
 
                 # Try to extract content to see if it's ready
-                try:
-                    test_content = await self._extract_multimodal_content_async(selectors, initial_group_count)
-                    content_ready = False
-
-                    # Check for placeholder text
-                    placeholder_texts = [
-                        self.PLACEHOLDER_GENERATING_RESPONSE,
-                        self.PLACEHOLDER_GENERATING,
-                        self.PLACEHOLDER_THINKING,
-                    ]
-
-                    if isinstance(test_content, str):
-                        text_lower = test_content.strip().lower()
-                        # Content is ready if it's not empty and not a placeholder
-                        content_ready = text_lower != "" and text_lower not in placeholder_texts
-                    elif isinstance(test_content, list):
-                        content_ready = len(test_content) > 0
-
-                    if content_ready:
-                        logger.debug("Content is ready!")
-                        return test_content
-                    else:
-                        logger.debug("Message exists but content not ready yet, continuing to wait...")
-                except Exception as e:
-                    # Continue waiting if extraction fails
-                    logger.debug(f"Error checking content readiness: {e}")
+                content = await self._extract_content_if_ready_async(selectors, initial_group_count)
+                if content is not None:
+                    return content
 
             elapsed = time.time() - start_time
             logger.debug(f"Still waiting for response... {elapsed:.1f}s elapsed")
@@ -272,6 +249,51 @@ class PlaywrightCopilotTarget(PromptTarget):
             raise TimeoutError(
                 f"Timed out waiting for AI response. Expected: {expected_ai_messages}, Got: {current_ai_messages}"
             )
+
+    async def _extract_content_if_ready_async(
+        self, selectors: CopilotSelectors, initial_group_count: int
+    ) -> Union[str, List[Tuple[str, PromptDataType]], None]:
+        """
+        Extract content if ready, otherwise return None.
+
+        Checks if the content is ready by extracting it and verifying it's not placeholder text.
+
+        Args:
+            selectors (CopilotSelectors): The selectors for the Copilot interface.
+            initial_group_count (int): Number of message groups before this response.
+
+        Returns:
+            Union[str, List[Tuple[str, PromptDataType]], None]: The extracted content if ready,
+                None if content is not ready yet or extraction fails.
+        """
+        try:
+            test_content = await self._extract_multimodal_content_async(selectors, initial_group_count)
+            content_ready = False
+
+            # Check for placeholder text
+            placeholder_texts = [
+                self.PLACEHOLDER_GENERATING_RESPONSE,
+                self.PLACEHOLDER_GENERATING,
+                self.PLACEHOLDER_THINKING,
+            ]
+
+            if isinstance(test_content, str):
+                text_lower = test_content.strip().lower()
+                # Content is ready if it's not empty and not a placeholder
+                content_ready = text_lower != "" and text_lower not in placeholder_texts
+            elif isinstance(test_content, list):
+                content_ready = len(test_content) > 0
+
+            if content_ready:
+                logger.debug("Content is ready!")
+                return test_content
+            else:
+                logger.debug("Message exists but content not ready yet, continuing to wait...")
+                return None
+        except Exception as e:
+            # Continue waiting if extraction fails
+            logger.debug(f"Error checking content readiness: {e}")
+            return None
 
     async def _extract_text_from_message_groups(self, ai_message_groups: list, text_selector: str) -> List[str]:
         """Extract text content from message groups using the provided selector.
