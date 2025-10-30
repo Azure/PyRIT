@@ -15,6 +15,7 @@ import logging
 import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
 from pathlib import Path
+from typing import Any
 
 # Local application imports
 from pyrit.cli.initializer_registry import InitializerInfo, InitializerRegistry
@@ -51,7 +52,7 @@ Examples:
 
   # Run with custom initialization scripts
   pyrit_scan encoding_scenario --initialization-scripts ./my_config.py
-  
+
   # Run specific strategies
   pyrit_scan encoding_scenario --initializers simple objective_target --scenario-strategies base64 rot13 morse_code
   pyrit_scan foundry_scenario --initializers simple objective_target --scenario-strategies base64 atbash
@@ -205,14 +206,17 @@ async def run_scenario_async(
     # 1. --scenario-strategies CLI flag (if provided)
     # 2. Default values set by initialization scripts via @apply_defaults
     # 3. Global variables set by initialization scripts
+
+    scenario: Scenario
+
     try:
         if scenario_strategies:
             # Import here to avoid circular imports
             from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy
-            
+
             # Get the strategy enum class for this scenario
             strategy_class = scenario_class.get_strategy_class()
-            
+
             # Convert strategy names to ScenarioCompositeStrategy instances
             composite_strategies = []
             for strategy_name in scenario_strategies:
@@ -222,7 +226,7 @@ async def run_scenario_async(
                     if strategy_enum.value == strategy_name:
                         matching_strategy = strategy_enum
                         break
-                
+
                 if matching_strategy is None:
                     available_strategies = [s.value for s in strategy_class]
                     raise ValueError(
@@ -230,20 +234,15 @@ async def run_scenario_async(
                         f"Available strategies: {', '.join(available_strategies)}\n"
                         f"Use 'pyrit_scan --list-scenarios' to see available strategies for each scenario."
                     )
-                
+
                 # Create a ScenarioCompositeStrategy with a single strategy
-                composite_strategies.append(
-                    ScenarioCompositeStrategy(
-                        name=matching_strategy.value,
-                        strategies=[matching_strategy]
-                    )
-                )
-            
+                composite_strategies.append(ScenarioCompositeStrategy(strategies=[matching_strategy]))
+
             # Pass the composite strategies to the scenario
-            scenario: Scenario = scenario_class(scenario_strategies=composite_strategies)  # type: ignore[call-arg]
+            scenario = scenario_class(scenario_strategies=composite_strategies)  # type: ignore[call-arg]
         else:
             # No strategies specified, use scenario defaults
-            scenario: Scenario = scenario_class()  # type: ignore[call-arg]
+            scenario = scenario_class()  # type: ignore[call-arg]
     except TypeError as e:
         # Check if this is a missing parameter error
         error_msg = str(e)
@@ -313,24 +312,25 @@ def _format_wrapped_text(*, text: str, indent: str = "      ", max_width: int = 
         print(line)
 
 
-def _format_scenario_info(*, scenario_info: dict[str, str]) -> None:
+def _format_scenario_info(*, scenario_info: dict[str, Any]) -> None:
     """
     Print formatted information about a scenario.
 
     Args:
-        scenario_info (dict[str, str]): Dictionary containing scenario information.
+        scenario_info (dict[str, Any]): Dictionary containing scenario information.
+            Expected keys: name, class_name, description, aggregate_strategies, all_strategies
     """
     print(f"\n  {scenario_info['name']}")
     print(f"    Class: {scenario_info['class_name']}")
     print("    Description:")
     _format_wrapped_text(text=scenario_info["description"], indent="      ")
-    
+
     # Display aggregate strategies if present
     if scenario_info.get("aggregate_strategies"):
         print("    Aggregate Strategies:")
         for strategy in scenario_info["aggregate_strategies"]:
             print(f"      - {strategy}")
-    
+
     # Display all strategies if present
     if scenario_info.get("all_strategies"):
         print(f"    Available Strategies ({len(scenario_info['all_strategies'])}):")
@@ -453,9 +453,7 @@ def _run_scenario(*, parsed_args: Namespace) -> int:
         registry.discover_user_scenarios()
 
         # Get scenario strategies from CLI args if provided
-        scenario_strategies = (
-            parsed_args.scenario_strategies if hasattr(parsed_args, "scenario_strategies") else None
-        )
+        scenario_strategies = parsed_args.scenario_strategies if hasattr(parsed_args, "scenario_strategies") else None
 
         # Run the scenario
         asyncio.run(

@@ -11,7 +11,7 @@ Foundry attacks against specified datasets.
 
 import os
 from inspect import signature
-from typing import Dict, List, Optional, Sequence, Type, TypeVar, cast
+from typing import Dict, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
@@ -59,7 +59,10 @@ from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
+from pyrit.scenarios.scenario_strategy import (
+    ScenarioCompositeStrategy,
+    ScenarioStrategy,
+)
 from pyrit.score import (
     AzureContentFilterScorer,
     FloatScaleThresholdScorer,
@@ -73,7 +76,7 @@ from pyrit.score import (
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
 
-class FoundryStrategy(ScenarioStrategy):
+class FoundryStrategy(ScenarioStrategy):  # type: ignore[misc]
     """
     Strategies for attacks with tag-based categorization.
 
@@ -233,7 +236,7 @@ class FoundryScenario(Scenario):
 
         Args:
             objective_target (PromptTarget): The target system to attack.
-            scenario_strategies (list[FoundryStrategy | ScenarioCompositeStrategy] | None): 
+            scenario_strategies (list[FoundryStrategy | ScenarioCompositeStrategy] | None):
                 Strategies to test. Can be a list of FoundryStrategy enums (simple case) or
                 ScenarioCompositeStrategy instances (advanced case for composition).
                 If None, defaults to EASY strategies.

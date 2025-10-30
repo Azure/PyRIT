@@ -5,10 +5,23 @@
 Unit tests for the ScenarioRegistry module.
 """
 
+from typing import Type
 from unittest.mock import MagicMock, patch
 
 from pyrit.cli.scenario_registry import ScenarioRegistry
 from pyrit.scenarios.scenario import Scenario
+from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+
+
+class MockStrategy(ScenarioStrategy):
+    """Mock strategy for testing."""
+
+    ALL = ("all", {"all"})
+    TestStrategy = ("test_strategy", {"test"})
+
+    @classmethod
+    def get_aggregate_tags(cls) -> set[str]:
+        return {"all"}
 
 
 class MockScenario(Scenario):
@@ -16,6 +29,10 @@ class MockScenario(Scenario):
 
     async def _get_atomic_attacks_async(self):
         return []
+
+    @classmethod
+    def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+        return MockStrategy
 
 
 class TestScenarioRegistry:
@@ -81,6 +98,10 @@ class TestScenarioRegistry:
             async def _get_atomic_attacks_async(self):
                 return []
 
+            @classmethod
+            def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+                return MockStrategy
+
         registry = ScenarioRegistry()
         registry._scenarios = {
             "test_scenario": DocumentedScenario,
@@ -98,6 +119,11 @@ class TestScenarioRegistry:
 
         class UndocumentedScenario(Scenario):
             async def _get_atomic_attacks_async(self):
+                return []
+
+            @classmethod
+            def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+                return MockStrategy
                 return []
 
         # Remove docstring
@@ -152,6 +178,10 @@ class TestScenarioRegistry:
 
             async def _get_atomic_attacks_async(self):
                 return []
+
+            @classmethod
+            def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+                return MockStrategy
 
         UserScenario.__module__ = "user_module"
 

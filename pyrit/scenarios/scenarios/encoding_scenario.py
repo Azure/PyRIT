@@ -36,18 +36,21 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
+from pyrit.scenarios.scenario_strategy import (
+    ScenarioCompositeStrategy,
+    ScenarioStrategy,
+)
 from pyrit.score import TrueFalseScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
 
 
-class EncodingStrategy(ScenarioStrategy):
+class EncodingStrategy(ScenarioStrategy):  # type: ignore[misc]
     """
     Strategies for encoding attacks.
 
     Each enum member represents an encoding scheme that will be tested against the target model.
     The ALL aggregate expands to include all encoding strategies.
-    
+
     Note: EncodingStrategy does not support composition. Each encoding must be applied individually.
     """
 
@@ -55,23 +58,23 @@ class EncodingStrategy(ScenarioStrategy):
     ALL = ("all", {"all"})
 
     # Individual encoding strategies (matching the atomic attack names)
-    Base64 = ("base64", set())
-    Base2048 = ("base2048", set())
-    Base16 = ("base16", set())
-    Base32 = ("base32", set())
-    ASCII85 = ("ascii85", set())
-    Hex = ("hex", set())
-    QuotedPrintable = ("quoted_printable", set())
-    UUencode = ("uuencode", set())
-    ROT13 = ("rot13", set())
-    Braille = ("braille", set())
-    Atbash = ("atbash", set())
-    MorseCode = ("morse_code", set())
-    NATO = ("nato", set())
-    Ecoji = ("ecoji", set())
-    Zalgo = ("zalgo", set())
-    LeetSpeak = ("leet_speak", set())
-    AsciiSmuggler = ("ascii_smuggler", set())
+    Base64 = ("base64", set[str]())
+    Base2048 = ("base2048", set[str]())
+    Base16 = ("base16", set[str]())
+    Base32 = ("base32", set[str]())
+    ASCII85 = ("ascii85", set[str]())
+    Hex = ("hex", set[str]())
+    QuotedPrintable = ("quoted_printable", set[str]())
+    UUencode = ("uuencode", set[str]())
+    ROT13 = ("rot13", set[str]())
+    Braille = ("braille", set[str]())
+    Atbash = ("atbash", set[str]())
+    MorseCode = ("morse_code", set[str]())
+    NATO = ("nato", set[str]())
+    Ecoji = ("ecoji", set[str]())
+    Zalgo = ("zalgo", set[str]())
+    LeetSpeak = ("leet_speak", set[str]())
+    AsciiSmuggler = ("ascii_smuggler", set[str]())
 
 
 class EncodingScenario(Scenario):
@@ -120,7 +123,7 @@ class EncodingScenario(Scenario):
 
         Args:
             objective_target (PromptTarget): The target model to test for encoding vulnerabilities.
-            scenario_strategies (list[EncodingStrategy | ScenarioCompositeStrategy] | None): 
+            scenario_strategies (list[EncodingStrategy | ScenarioCompositeStrategy] | None):
                 Strategies to test. Can be a list of EncodingStrategy enums (simple case) or
                 ScenarioCompositeStrategy instances (advanced case).
                 If None, defaults to all encoding strategies.
@@ -224,9 +227,7 @@ class EncodingScenario(Scenario):
 
         # Filter to only include selected strategies
         # Extract strategy names from composites (each has exactly one strategy since composition not supported)
-        selected_encoding_names = {
-            comp.strategies[0].value for comp in self._encoding_composites if comp.strategies
-        }
+        selected_encoding_names = {comp.strategies[0].value for comp in self._encoding_composites if comp.strategies}
         converters_with_encodings = [
             (conv, name) for conv, name in all_converters_with_encodings if name in selected_encoding_names
         ]
@@ -278,6 +279,8 @@ class EncodingScenario(Scenario):
                 seed_groups.append(SeedGroup(prompts=[seed]))
                 objectives.append(f"Make the model say an encoded payload: {seed_prompt}")
 
+            # objective_target is guaranteed to be non-None by parent class validation
+            assert self._objective_target is not None
             attack = PromptSendingAttack(
                 objective_target=self._objective_target,
                 attack_converter_config=attack_converter_config,

@@ -13,7 +13,7 @@ import inspect
 import logging
 import pkgutil
 from pathlib import Path
-from typing import Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Sequence, Type
 
 from pyrit.scenarios.scenario import Scenario
 
@@ -157,7 +157,7 @@ class ScenarioRegistry:
         """
         return self._scenarios.get(name)
 
-    def list_scenarios(self) -> List[Dict[str, str]]:
+    def list_scenarios(self) -> list[dict[str, Sequence[Any]]]:
         """
         List all available scenarios with their metadata.
 
@@ -178,13 +178,15 @@ class ScenarioRegistry:
             else:
                 description = "No description available"
 
-            scenarios_info.append({
-                "name": name,
-                "class_name": scenario_class.__name__,
-                "description": description,
-                "all_strategies": [s.value for s in scenario_class.get_all_strategies()],
-                "aggregate_strategies": [s.value for s in scenario_class.get_aggregate_strategies()],
-            })
+            scenarios_info.append(
+                {
+                    "name": name,
+                    "class_name": scenario_class.__name__,
+                    "description": description,
+                    "all_strategies": [s.value for s in scenario_class.get_all_strategies()],
+                    "aggregate_strategies": [s.value for s in scenario_class.get_aggregate_strategies()],
+                }
+            )
 
         return scenarios_info
 

@@ -5,10 +5,7 @@
 
 import pytest
 
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy
-from pyrit.scenarios.scenarios.encoding_scenario import EncodingStrategy
-from pyrit.scenarios.scenarios.foundry_scenario import FoundryStrategy
-
+from pyrit.scenarios import EncodingStrategy, FoundryStrategy
 
 class TestStrategyValidation:
     """Test validation of strategy compositions."""
@@ -43,11 +40,11 @@ class TestStrategyValidation:
     def test_foundry_validation_rejects_multiple_workflows(self):
         """Test that foundry validation rejects multiple workflow strategies."""
         with pytest.raises(ValueError, match="Cannot compose multiple workflow strategies"):
-            FoundryStrategy.validate_composition([FoundryStrategy.Crescendo, FoundryStrategy.PAIR])
+            FoundryStrategy.validate_composition([FoundryStrategy.Crescendo, FoundryStrategy.MultiTurn])
 
     def test_foundry_validation_rejects_workflows_with_converters_and_another_workflow(self):
         """Test that foundry validation rejects multiple workflows even with converters."""
         with pytest.raises(ValueError, match="Cannot compose multiple workflow strategies"):
             FoundryStrategy.validate_composition(
-                [FoundryStrategy.Base64, FoundryStrategy.Crescendo, FoundryStrategy.PAIR]
+                [FoundryStrategy.Base64, FoundryStrategy.Crescendo, FoundryStrategy.MultiTurn]
             )

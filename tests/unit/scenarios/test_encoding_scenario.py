@@ -11,7 +11,7 @@ from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios import EncodingScenario, EncodingStrategy
-from pyrit.score import TrueFalseScorer, DecodingScorer
+from pyrit.score import DecodingScorer, TrueFalseScorer
 
 
 @pytest.fixture
@@ -130,13 +130,13 @@ class TestEncodingScenarioInitialization:
         assert len(scenario._encoding_composites) > 0
         # Verify all composites contain EncodingStrategy instances
         assert all(
-            isinstance(comp.strategies[0], EncodingStrategy) for comp in scenario._encoding_composites if comp.strategies
+            isinstance(comp.strategies[0], EncodingStrategy)
+            for comp in scenario._encoding_composites
+            if comp.strategies
         )
         # Verify none of the strategies are the aggregate "ALL"
         assert all(
-            comp.strategies[0] != EncodingStrategy.ALL 
-            for comp in scenario._encoding_composites 
-            if comp.strategies
+            comp.strategies[0] != EncodingStrategy.ALL for comp in scenario._encoding_composites if comp.strategies
         )
 
 

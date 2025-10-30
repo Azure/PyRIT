@@ -11,7 +11,6 @@ and automatically expanded during scenario initialization.
 It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
 
-from abc import abstractmethod
 from enum import Enum
 from typing import List, Sequence, Set, TypeVar
 

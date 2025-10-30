@@ -67,4 +67,3 @@ class TestScenarioStrategiesParameter:
             # If it's a list, verify it's not empty
             if isinstance(param.default, list):
                 assert len(param.default) > 0, f"{scenario_name} 'scenario_strategies' default list should not be empty"
-
