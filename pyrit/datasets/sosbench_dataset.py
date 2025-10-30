@@ -3,15 +3,15 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedDataset, SeedPrompt
 
 
-def fetch_sosbench_dataset() -> SeedPromptDataset:
+def fetch_sosbench_dataset() -> SeedDataset:
     """
-    Fetch SOSBench dataset and create a SeedPromptDataset.
+    Fetch SOSBench dataset and create a SeedDataset.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
 
     Note:
         For more information about the dataset and related materials, visit: \n
@@ -53,5 +53,5 @@ def fetch_sosbench_dataset() -> SeedPromptDataset:
         for item in data["train"]
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset

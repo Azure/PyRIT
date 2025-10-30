@@ -5,7 +5,7 @@ from typing import Literal, Sequence
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedDataset, SeedPrompt
 
 # These are the available subsets of the EquityMedQA dataset
 DATA_SUBSETS: list[str] = [
@@ -54,9 +54,9 @@ DATASET_COLUMNS: dict = {
 
 def fetch_equitymedqa_dataset_unique_values(
     subset_name: Literal["all"] | str | Sequence[str] = "all",
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
-    Fetches the EquityMedQA dataset from Hugging Face and returns a SeedPromptDataset.
+    Fetches the EquityMedQA dataset from Hugging Face and returns a SeedDataset.
     Args:
         subset_name (str | list): The name(s) of the subset to fetch. Defaults to "all" which returns all values.
 
@@ -94,8 +94,8 @@ def fetch_equitymedqa_dataset_unique_values(
         for prompt in prompts
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset
 
 
 def get_sub_dataset(subset_name: str) -> list:

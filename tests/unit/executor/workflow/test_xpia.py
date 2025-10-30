@@ -12,7 +12,7 @@ from pyrit.executor.workflow.xpia import (
     XPIAStatus,
     XPIAWorkflow,
 )
-from pyrit.models import Message, Score, SeedPrompt, SeedPromptGroup
+from pyrit.models import Message, Score, SeedGroup, SeedPrompt
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
@@ -43,9 +43,9 @@ def mock_prompt_normalizer() -> MagicMock:
 
 
 @pytest.fixture
-def valid_seed_prompt_group() -> SeedPromptGroup:
-    """Create a valid seed prompt group for testing."""
-    return SeedPromptGroup(prompts=[SeedPrompt(value="Test attack content", data_type="text", name="test_prompt")])
+def valid_seed_group() -> SeedGroup:
+    """Create a valid seed group for testing."""
+    return SeedGroup(prompts=[SeedPrompt(value="Test attack content", data_type="text", name="test_prompt")])
 
 
 @pytest.fixture
@@ -57,10 +57,10 @@ def mock_processing_callback() -> AsyncMock:
 
 
 @pytest.fixture
-def valid_context(valid_seed_prompt_group: SeedPromptGroup, mock_processing_callback: AsyncMock) -> XPIAContext:
+def valid_context(valid_seed_group: SeedGroup, mock_processing_callback: AsyncMock) -> XPIAContext:
     """Create a valid XPIA context for testing."""
     return XPIAContext(
-        attack_content=valid_seed_prompt_group,
+        attack_content=valid_seed_group,
         processing_callback=mock_processing_callback,
         memory_labels={"test": "label"},
     )
@@ -91,23 +91,23 @@ class TestXPIAWorkflowValidation:
         """Test that validation fails when attack_content is None."""
         context = XPIAContext(attack_content=None, processing_callback=mock_processing_callback)  # type: ignore
 
-        with pytest.raises(ValueError, match="attack_content: SeedPromptGroup must be provided"):
+        with pytest.raises(ValueError, match="attack_content: SeedGroup must be provided"):
             workflow._validate_context(context=context)
 
-    def test_validate_context_empty_seed_prompt_group_raises_error(
+    def test_validate_context_empty_seed_group_raises_error(
         self, workflow: XPIAWorkflow, mock_processing_callback: AsyncMock
     ) -> None:
-        """Test that validation fails when seed prompt group has invalid prompt."""
+        """Test that validation fails when seed group has invalid prompt."""
         context = XPIAContext(attack_content=None, processing_callback=mock_processing_callback)  # type: ignore
 
-        with pytest.raises(ValueError, match="attack_content: SeedPromptGroup must be provided"):
+        with pytest.raises(ValueError, match="attack_content: SeedGroup must be provided"):
             workflow._validate_context(context=context)
 
     def test_validate_context_multiple_prompts_raises_error(
         self, workflow: XPIAWorkflow, mock_processing_callback: AsyncMock
     ) -> None:
-        """Test that validation fails when seed prompt group has multiple prompts."""
-        multiple_prompts_group = SeedPromptGroup(
+        """Test that validation fails when seed group has multiple prompts."""
+        multiple_prompts_group = SeedGroup(
             prompts=[
                 SeedPrompt(value="First prompt", data_type="text", name="prompt1"),
                 SeedPrompt(value="Second prompt", data_type="text", name="prompt2"),
@@ -122,19 +122,17 @@ class TestXPIAWorkflowValidation:
         self, workflow: XPIAWorkflow, mock_processing_callback: AsyncMock
     ) -> None:
         """Test that validation fails when prompt is not text type."""
-        non_text_group = SeedPromptGroup(
-            prompts=[SeedPrompt(value="image.jpg", data_type="image_path", name="image_prompt")]
-        )
+        non_text_group = SeedGroup(prompts=[SeedPrompt(value="image.jpg", data_type="image_path", name="image_prompt")])
         context = XPIAContext(attack_content=non_text_group, processing_callback=mock_processing_callback)
 
         with pytest.raises(ValueError, match="attack_content: Prompt must be of type 'text'"):
             workflow._validate_context(context=context)
 
     def test_validate_context_missing_processing_callback_raises_error(
-        self, workflow: XPIAWorkflow, valid_seed_prompt_group: SeedPromptGroup
+        self, workflow: XPIAWorkflow, valid_seed_group: SeedGroup
     ) -> None:
         """Test that validation fails when processing_callback is None."""
-        context = XPIAContext(attack_content=valid_seed_prompt_group, processing_callback=None)  # type: ignore
+        context = XPIAContext(attack_content=valid_seed_group, processing_callback=None)  # type: ignore
 
         with pytest.raises(ValueError, match="processing_callback is required"):
             workflow._validate_context(context=context)
@@ -148,7 +146,7 @@ class TestXPIAWorkflowPerform:
     async def test_perform_async_complete_workflow_with_scorer(
         self,
         workflow: XPIAWorkflow,
-        valid_seed_prompt_group: SeedPromptGroup,
+        valid_seed_group: SeedGroup,
         mock_prompt_normalizer: MagicMock,
         mock_scorer: MagicMock,
     ) -> None:
@@ -159,7 +157,7 @@ class TestXPIAWorkflowPerform:
 
         # Create context with the mock callback
         context = XPIAContext(
-            attack_content=valid_seed_prompt_group,
+            attack_content=valid_seed_group,
             processing_callback=mock_processing_callback,
             memory_labels={"test": "label"},
         )
@@ -193,7 +191,7 @@ class TestXPIAWorkflowPerform:
         self,
         mock_attack_setup_target: MagicMock,
         mock_prompt_normalizer: MagicMock,
-        valid_seed_prompt_group: SeedPromptGroup,
+        valid_seed_group: SeedGroup,
     ) -> None:
         """Test workflow execution without scorer."""
         # Create a specific mock processing callback for this test
@@ -202,7 +200,7 @@ class TestXPIAWorkflowPerform:
 
         # Create context with the mock callback
         context = XPIAContext(
-            attack_content=valid_seed_prompt_group,
+            attack_content=valid_seed_group,
             processing_callback=mock_processing_callback,
             memory_labels={"test": "label"},
         )
@@ -301,7 +299,7 @@ class TestXPIAWorkflowPerform:
 
         # Verify prompt normalizer was called with correct parameters
         call_args = mock_prompt_normalizer.send_prompt_async.call_args
-        assert call_args.kwargs["seed_prompt_group"] == valid_context.attack_content
+        assert call_args.kwargs["seed_group"] == valid_context.attack_content
         assert call_args.kwargs["target"] == workflow._attack_setup_target
         assert call_args.kwargs["labels"] == valid_context.memory_labels
         assert call_args.kwargs["conversation_id"] == valid_context.attack_setup_target_conversation_id
@@ -354,7 +352,7 @@ class TestXPIAWorkflowExecution:
         self,
         mock_attack_setup_target: MagicMock,
         mock_scorer: MagicMock,
-        valid_seed_prompt_group: SeedPromptGroup,
+        valid_seed_group: SeedGroup,
         mock_processing_callback: AsyncMock,
     ) -> None:
         """Test execute_async with valid parameters."""
@@ -384,7 +382,7 @@ class TestXPIAWorkflowExecution:
 
                 # Execute workflow
                 result = await workflow.execute_async(
-                    attack_content=valid_seed_prompt_group,
+                    attack_content=valid_seed_group,
                     processing_callback=mock_processing_callback,
                     memory_labels={"test": "label"},
                 )
@@ -413,13 +411,13 @@ class TestXPIAWorkflowExecution:
 
             with pytest.raises(TypeError):
                 await workflow.execute_async(
-                    attack_content="invalid_type",  # Should be SeedPromptGroup
+                    attack_content="invalid_type",  # Should be SeedGroup
                     processing_callback=mock_processing_callback,
                 )
 
     @pytest.mark.asyncio
     async def test_execute_async_invalid_processing_callback_type_raises_error(
-        self, mock_attack_setup_target: MagicMock, mock_scorer: MagicMock, valid_seed_prompt_group: SeedPromptGroup
+        self, mock_attack_setup_target: MagicMock, mock_scorer: MagicMock, valid_seed_group: SeedGroup
     ) -> None:
         """Test that execute_async raises error with invalid processing_callback type."""
         # Create workflow with mocked PromptNormalizer
@@ -432,7 +430,7 @@ class TestXPIAWorkflowExecution:
 
             with pytest.raises(TypeError, match="processing_callback must be callable"):
                 await workflow.execute_async(
-                    attack_content=valid_seed_prompt_group, processing_callback="not_callable"  # Should be callable
+                    attack_content=valid_seed_group, processing_callback="not_callable"  # Should be callable
                 )
 
     @pytest.mark.asyncio
@@ -440,7 +438,7 @@ class TestXPIAWorkflowExecution:
         self,
         mock_attack_setup_target: MagicMock,
         mock_scorer: MagicMock,
-        valid_seed_prompt_group: SeedPromptGroup,
+        valid_seed_group: SeedGroup,
         mock_processing_callback: AsyncMock,
     ) -> None:
         """Test that execute_async raises error with invalid memory_labels type."""
@@ -454,7 +452,7 @@ class TestXPIAWorkflowExecution:
 
             with pytest.raises(TypeError):
                 await workflow.execute_async(
-                    attack_content=valid_seed_prompt_group,
+                    attack_content=valid_seed_group,
                     processing_callback=mock_processing_callback,
                     memory_labels="invalid_type",  # Should be dict
                 )
@@ -480,11 +478,11 @@ class TestXPIAWorkflowExecution:
 
     @pytest.mark.asyncio
     async def test_setup_async_generates_conversation_ids(
-        self, workflow: XPIAWorkflow, valid_seed_prompt_group: SeedPromptGroup, mock_processing_callback: AsyncMock
+        self, workflow: XPIAWorkflow, valid_seed_group: SeedGroup, mock_processing_callback: AsyncMock
     ) -> None:
         """Test that setup_async generates conversation IDs and combines memory labels."""
         context = XPIAContext(
-            attack_content=valid_seed_prompt_group,
+            attack_content=valid_seed_group,
             processing_callback=mock_processing_callback,
             memory_labels={"test": "label"},
         )
@@ -508,10 +506,10 @@ class TestXPIAWorkflowExecution:
 
     @pytest.mark.asyncio
     async def test_teardown_async_completes_successfully(
-        self, workflow: XPIAWorkflow, valid_seed_prompt_group: SeedPromptGroup, mock_processing_callback: AsyncMock
+        self, workflow: XPIAWorkflow, valid_seed_group: SeedGroup, mock_processing_callback: AsyncMock
     ) -> None:
         """Test that teardown_async completes without errors."""
-        context = XPIAContext(attack_content=valid_seed_prompt_group, processing_callback=mock_processing_callback)
+        context = XPIAContext(attack_content=valid_seed_group, processing_callback=mock_processing_callback)
 
         # Should not raise any exception
         await workflow._teardown_async(context=context)

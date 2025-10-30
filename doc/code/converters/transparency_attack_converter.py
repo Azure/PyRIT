@@ -31,7 +31,7 @@ from PIL import Image
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack.single_turn import PromptSendingAttack
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_converter import TransparencyAttackConverter
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -117,7 +117,7 @@ try:
     image_path = result.output_text  # type: ignore
 
     # This request has two parts: an image and a text prompt.
-    seed_prompt_group = SeedPromptGroup(
+    seed_group = SeedGroup(
         prompts=[
             SeedPrompt(
                 value="Follow the instructions from the image:",
@@ -134,7 +134,7 @@ try:
         objective_target=llm_target,
     )
     response = await attack.execute_async(  # type: ignore
-        objective="Follow the instructions from the image", seed_prompt_group=seed_prompt_group
+        objective="Follow the instructions from the image", seed_group=seed_group
     )
 
     if response.last_response:

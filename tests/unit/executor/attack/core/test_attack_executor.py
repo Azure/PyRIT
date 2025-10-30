@@ -13,7 +13,7 @@ from pyrit.executor.attack import (
     MultiTurnAttackContext,
     SingleTurnAttackContext,
 )
-from pyrit.models import AttackOutcome, AttackResult, SeedPrompt, SeedPromptGroup
+from pyrit.models import AttackOutcome, AttackResult, SeedGroup, SeedPrompt
 
 
 @pytest.fixture
@@ -73,12 +73,12 @@ def mock_multi_turn_attack_strategy():
 
 
 @pytest.fixture
-def sample_seed_prompt_groups():
-    """Create sample seed prompt groups for testing"""
+def sample_seed_groups():
+    """Create sample seed groups for testing"""
     return [
-        SeedPromptGroup(prompts=[SeedPrompt(value="First prompt", data_type="text")]),
-        SeedPromptGroup(prompts=[SeedPrompt(value="Second prompt", data_type="text")]),
-        SeedPromptGroup(prompts=[SeedPrompt(value="Third prompt", data_type="text")]),
+        SeedGroup(prompts=[SeedPrompt(value="First prompt", data_type="text")]),
+        SeedGroup(prompts=[SeedPrompt(value="Second prompt", data_type="text")]),
+        SeedGroup(prompts=[SeedPrompt(value="Third prompt", data_type="text")]),
     ]
 
 
@@ -804,9 +804,7 @@ class TestExecuteSingleTurnAttacksAsync:
         assert mock_single_turn_attack_strategy.execute_async.call_count == len(multiple_objectives)
 
     @pytest.mark.asyncio
-    async def test_execute_single_turn_with_seed_prompt_groups(
-        self, mock_single_turn_attack_strategy, sample_seed_prompt_groups
-    ):
+    async def test_execute_single_turn_with_seed_groups(self, mock_single_turn_attack_strategy, sample_seed_groups):
         executor = AttackExecutor(max_concurrency=1)
         objectives = ["Obj1", "Obj2", "Obj3"]
 
@@ -815,12 +813,12 @@ class TestExecuteSingleTurnAttacksAsync:
         await executor.execute_single_turn_attacks_async(
             attack=mock_single_turn_attack_strategy,
             objectives=objectives,
-            seed_prompt_groups=sample_seed_prompt_groups,
+            seed_groups=sample_seed_groups,
         )
 
-        # Verify execute_async was called with correct seed prompt groups
+        # Verify execute_async was called with correct seed groups
         for i, call in enumerate(mock_single_turn_attack_strategy.execute_async.call_args_list):
-            assert call.kwargs["seed_prompt_group"] == sample_seed_prompt_groups[i]
+            assert call.kwargs["seed_group"] == sample_seed_groups[i]
 
     @pytest.mark.asyncio
     async def test_execute_single_turn_validates_context_type(self, mock_multi_turn_attack_strategy):
@@ -844,16 +842,16 @@ class TestExecuteSingleTurnAttacksAsync:
             )
 
     @pytest.mark.asyncio
-    async def test_execute_single_turn_validates_seed_prompt_groups_length(self, mock_single_turn_attack_strategy):
+    async def test_execute_single_turn_validates_seed_groups_length(self, mock_single_turn_attack_strategy):
         executor = AttackExecutor()
         objectives = ["Obj1", "Obj2"]
-        seed_prompt_groups = [SeedPromptGroup(prompts=[SeedPrompt(value="prompt", data_type="text")])]
+        seed_groups = [SeedGroup(prompts=[SeedPrompt(value="prompt", data_type="text")])]
 
-        with pytest.raises(ValueError, match="Number of seed_prompt_groups .* must match number of objectives"):
+        with pytest.raises(ValueError, match="Number of seed_groups .* must match number of objectives"):
             await executor.execute_single_turn_attacks_async(
                 attack=mock_single_turn_attack_strategy,
                 objectives=objectives,
-                seed_prompt_groups=seed_prompt_groups,
+                seed_groups=seed_groups,
             )
 
     @pytest.mark.asyncio

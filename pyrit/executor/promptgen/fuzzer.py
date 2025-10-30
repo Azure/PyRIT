@@ -27,8 +27,8 @@ from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_converter import FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
@@ -977,7 +977,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         for prompt in prompts:
             request = NormalizerRequest(
-                seed_prompt_group=SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")]),
+                seed_group=SeedGroup(prompts=[SeedPrompt(value=prompt, data_type="text")]),
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
             )

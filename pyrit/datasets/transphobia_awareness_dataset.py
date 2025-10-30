@@ -5,7 +5,7 @@ from typing import List
 
 import pandas as pd
 
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedDataset, SeedPrompt
 
 # URLs for the datasets
 RATINGS_URL = "https://zenodo.org/records/15482694/files/Ratings.xlsx?download=1"
@@ -13,9 +13,9 @@ QUESTION_RESPONSE_PAIRS_URL = "https://zenodo.org/records/15482694/files/Questio
 QUORA_QUESTION_LIST_URL = "https://zenodo.org/records/15482694/files/Quora%20Question%20List.xlsx?download=1"
 
 
-def fetch_transphobia_awareness_dataset() -> SeedPromptDataset:
+def fetch_transphobia_awareness_dataset() -> SeedDataset:
     """
-    Load the Transphobia-Awareness Dataset from web URLs and return as a SeedPromptDataset.
+    Load the Transphobia-Awareness Dataset from web URLs and return as a SeedDataset.
 
     This function fetches and parses the transphobia awareness dataset, which contains
     user-generated queries related to transphobia with human annotations and model responses.
@@ -33,7 +33,7 @@ def fetch_transphobia_awareness_dataset() -> SeedPromptDataset:
     ACM Transactions on Computer-Human Interaction (2018).
 
     Returns:
-        SeedPromptDataset: A dataset of prompts with transphobia awareness metadata.
+        SeedDataset: A dataset of prompts with transphobia awareness metadata.
 
     Notes:
         - ratings.xlsx is the main file, with human ratings and model responses.
@@ -82,7 +82,7 @@ def fetch_transphobia_awareness_dataset() -> SeedPromptDataset:
         )
         seed_prompts.append(prompt)
 
-    return SeedPromptDataset(
+    return SeedDataset(
         prompts=seed_prompts,
         name="Transphobia-Awareness",
         dataset_name="Transphobia-Awareness",

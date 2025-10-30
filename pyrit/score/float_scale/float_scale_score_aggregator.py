@@ -2,10 +2,13 @@
 # Licensed under the MIT license.
 
 from collections import defaultdict
-from typing import Callable, Dict, Iterable, List, Union
+from typing import Callable, Dict, Iterable, List
 
-from pyrit.common.utils import combine_dict
 from pyrit.models import Score
+from pyrit.score.aggregator_utils import (
+    combine_metadata_and_categories,
+    format_score_for_rationale,
+)
 from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 
 FloatScaleOp = Callable[[List[float]], float]
@@ -28,32 +31,10 @@ def _build_rationale(scores: List[Score], *, aggregate_description: str) -> tupl
     else:
         description = aggregate_description
         # Only include scores with non-empty rationales
-        sep = "-"
-        rationale_parts = [f"   {sep} {s.score_rationale}" for s in scores if s.score_rationale]
+        rationale_parts = [format_score_for_rationale(s) for s in scores if s.score_rationale]
         rationale = "\n".join(rationale_parts) if rationale_parts else ""
 
     return description, rationale
-
-
-def _combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Union[str, int]], List[str]]:
-    """Combine metadata and categories from multiple scores with deduplication.
-
-    Args:
-        scores: List of Score objects.
-
-    Returns:
-        Tuple of (metadata dict, sorted category list with empty strings filtered).
-    """
-    metadata: Dict[str, Union[str, int]] = {}
-    category_set: set[str] = set()
-
-    for s in scores:
-        metadata = combine_dict(metadata, getattr(s, "score_metadata", None))
-        score_categories = getattr(s, "score_category", None) or []
-        category_set.update([c for c in score_categories if c])
-
-    category = sorted(category_set)
-    return metadata, category
 
 
 def _create_aggregator(
@@ -100,7 +81,7 @@ def _create_aggregator(
         result = max(0.0, min(1.0, result))
 
         description, rationale = _build_rationale(scores_list, aggregate_description=aggregate_description)
-        metadata, category = _combine_metadata_and_categories(scores_list)
+        metadata, category = combine_metadata_and_categories(scores_list)
 
         return [
             ScoreAggregatorResult(
@@ -197,7 +178,7 @@ def _create_aggregator_by_category(
             result = max(0.0, min(1.0, result))
 
             description, rationale = _build_rationale(scores_list, aggregate_description=aggregate_description)
-            metadata, category = _combine_metadata_and_categories(scores_list)
+            metadata, category = combine_metadata_and_categories(scores_list)
 
             return [
                 ScoreAggregatorResult(
@@ -247,7 +228,7 @@ def _create_aggregator_by_category(
                 rationale = _build_rationale(category_scores, aggregate_description="")[1]
 
             # Combine metadata and categories for this group
-            metadata, category_list = _combine_metadata_and_categories(category_scores)
+            metadata, category_list = combine_metadata_and_categories(category_scores)
 
             results.append(
                 ScoreAggregatorResult(

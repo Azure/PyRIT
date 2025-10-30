@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.datasets import fetch_aya_redteaming_dataset
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def test_fetch_aya_redteaming_dataset(mock_fetch_examples, mock_aya_redteaming_d
 
     dataset = fetch_aya_redteaming_dataset()
 
-    assert isinstance(dataset, SeedPromptDataset)
+    assert isinstance(dataset, SeedDataset)
     assert len(dataset.prompts) == 7
 
     first_prompt = dataset.prompts[0]

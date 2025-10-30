@@ -15,8 +15,8 @@ from pyrit.models import (
     Message,
     MessagePiece,
     PromptDataType,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.prompt_converter import (
@@ -48,8 +48,8 @@ def response() -> Message:
 
 
 @pytest.fixture
-def seed_prompt_group() -> SeedPromptGroup:
-    return SeedPromptGroup(
+def seed_group() -> SeedGroup:
+    return SeedGroup(
         prompts=[
             SeedPrompt(
                 value="Hello",
@@ -93,7 +93,7 @@ def assert_message_piece_hashes_set(request: Message):
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_multiple_converters(mock_memory_instance, seed_prompt_group):
+async def test_send_prompt_async_multiple_converters(mock_memory_instance, seed_group):
     prompt_target = MockPromptTarget()
     request_converters = [
         PromptConverterConfiguration(converters=[Base64Converter(), StringJoinConverter(join_value="_")])
@@ -102,20 +102,20 @@ async def test_send_prompt_async_multiple_converters(mock_memory_instance, seed_
     normalizer = PromptNormalizer()
 
     await normalizer.send_prompt_async(
-        seed_prompt_group=seed_prompt_group, request_converter_configurations=request_converters, target=prompt_target
+        seed_group=seed_group, request_converter_configurations=request_converters, target=prompt_target
     )
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_no_response_adds_memory(mock_memory_instance, seed_prompt_group):
+async def test_send_prompt_async_no_response_adds_memory(mock_memory_instance, seed_group):
     prompt_target = AsyncMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=None)
 
     normalizer = PromptNormalizer()
 
-    await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+    await normalizer.send_prompt_async(seed_group=seed_group, target=prompt_target)
     assert mock_memory_instance.add_message_to_memory.call_count == 1
 
     request = mock_memory_instance.add_message_to_memory.call_args[1]["request"]
@@ -123,13 +123,13 @@ async def test_send_prompt_async_no_response_adds_memory(mock_memory_instance, s
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response_exception_handled(mock_memory_instance, seed_prompt_group):
+async def test_send_prompt_async_empty_response_exception_handled(mock_memory_instance, seed_group):
     prompt_target = AsyncMock()
     prompt_target.send_prompt_async = AsyncMock(side_effect=EmptyResponseException(message="Empty response"))
 
     normalizer = PromptNormalizer()
 
-    response = await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+    response = await normalizer.send_prompt_async(seed_group=seed_group, target=prompt_target)
 
     assert mock_memory_instance.add_message_to_memory.call_count == 2
 
@@ -141,7 +141,7 @@ async def test_send_prompt_async_empty_response_exception_handled(mock_memory_in
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_request_response_added_to_memory(mock_memory_instance, seed_prompt_group):
+async def test_send_prompt_async_request_response_added_to_memory(mock_memory_instance, seed_group):
     prompt_target = AsyncMock()
 
     response = MessagePiece(role="assistant", original_value="test_response").to_message()
@@ -150,11 +150,11 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
 
     normalizer = PromptNormalizer()
 
-    await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+    await normalizer.send_prompt_async(seed_group=seed_group, target=prompt_target)
 
     assert mock_memory_instance.add_message_to_memory.call_count == 2
 
-    seed_prompt_value = seed_prompt_group.prompts[0].value
+    seed_prompt_value = seed_group.prompts[0].value
     # Validate that first request is added to memory, then response is added to memory
     assert (
         seed_prompt_value
@@ -169,10 +169,10 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_exception(mock_memory_instance, seed_prompt_group):
+async def test_send_prompt_async_exception(mock_memory_instance, seed_group):
     prompt_target = AsyncMock()
 
-    seed_prompt_value = seed_prompt_group.prompts[0].value
+    seed_prompt_value = seed_group.prompts[0].value
 
     normalizer = PromptNormalizer()
 
@@ -180,7 +180,7 @@ async def test_send_prompt_async_exception(mock_memory_instance, seed_prompt_gro
         mock_construct.return_value = "test"
 
         try:
-            await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+            await normalizer.send_prompt_async(seed_group=seed_group, target=prompt_target)
         except ValueError:
             assert mock_memory_instance.add_message_to_memory.call_count == 2
 
@@ -200,14 +200,14 @@ async def test_send_prompt_async_exception(mock_memory_instance, seed_prompt_gro
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_prompt_group):
+async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_group):
     prompt_target = AsyncMock()
     prompt_target.send_prompt_async = AsyncMock(side_effect=Exception(""))
 
     normalizer = PromptNormalizer()
 
     with pytest.raises(Exception, match="Error sending prompt with conversation ID"):
-        await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+        await normalizer.send_prompt_async(seed_group=seed_group, target=prompt_target)
 
 
 @pytest.mark.asyncio
@@ -220,10 +220,10 @@ async def test_send_prompt_async_different_sequences(mock_memory_instance):
         SeedPrompt(value="test1", sequence=1, role="user"),
         SeedPrompt(value="test2", sequence=2, role="user"),
     ]  # Different sequence
-    group = SeedPromptGroup(prompts=prompts)
+    group = SeedGroup(prompts=prompts)
 
-    with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
-        await normalizer.send_prompt_async(seed_prompt_group=group, target=prompt_target)
+    with pytest.raises(ValueError, match="All SeedPrompts in the SeedGroup must have the same sequence"):
+        await normalizer.send_prompt_async(seed_group=group, target=prompt_target)
 
 
 @pytest.mark.asyncio
@@ -236,25 +236,25 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
         SeedPrompt(value="test1", sequence=1, role="user"),
         SeedPrompt(value="test2", role="user"),
     ]  # No sequence (will default to None)
-    group = SeedPromptGroup(prompts=prompts)
+    group = SeedGroup(prompts=prompts)
 
-    with pytest.raises(ValueError, match="All SeedPrompts in the SeedPromptGroup must have the same sequence"):
-        await normalizer.send_prompt_async(seed_prompt_group=group, target=prompt_target)
+    with pytest.raises(ValueError, match="All SeedPrompts in the SeedGroup must have the same sequence"):
+        await normalizer.send_prompt_async(seed_group=group, target=prompt_target)
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_prompt_group, response: Message):
+async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_group, response: Message):
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
     normalizer = PromptNormalizer()
 
-    response = await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+    response = await normalizer.send_prompt_async(seed_group=seed_group, target=prompt_target)
     assert mock_memory_instance.add_message_to_memory.call_count == 2
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_no_converters_response(mock_memory_instance, seed_prompt_group, response: Message):
+async def test_send_prompt_async_no_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
@@ -262,12 +262,12 @@ async def test_send_prompt_async_no_converters_response(mock_memory_instance, se
     normalizer = PromptNormalizer()
 
     # Send prompt async and check the response
-    response = await normalizer.send_prompt_async(seed_prompt_group=seed_prompt_group, target=prompt_target)
+    response = await normalizer.send_prompt_async(seed_group=seed_group, target=prompt_target)
     assert response.get_value() == "Hello", "There were no response converters"
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_converters_response(mock_memory_instance, seed_prompt_group, response: Message):
+async def test_send_prompt_async_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
@@ -277,7 +277,7 @@ async def test_send_prompt_async_converters_response(mock_memory_instance, seed_
     normalizer = PromptNormalizer()
 
     response = await normalizer.send_prompt_async(
-        seed_prompt_group=seed_prompt_group,
+        seed_group=seed_group,
         response_converter_configurations=[response_converter],
         target=prompt_target,
     )
@@ -306,14 +306,14 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
 
         prompt_text = "Hello"
 
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
 
         normalizer = PromptNormalizer()
         # Mock the async read_file method
         normalizer._memory.results_storage_io.read_file = AsyncMock(return_value=b"mocked data")
 
         response = await normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             target=prompt_target,
             request_converter_configurations=[prompt_converters],
         )
@@ -331,7 +331,7 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
 @pytest.mark.parametrize("max_requests_per_minute", [None, 10])
 @pytest.mark.parametrize("batch_size", [1, 10])
 async def test_prompt_normalizer_send_prompt_batch_async_throws(
-    mock_memory_instance, seed_prompt_group, max_requests_per_minute, batch_size
+    mock_memory_instance, seed_group, max_requests_per_minute, batch_size
 ):
     prompt_target = MockPromptTarget(rpm=max_requests_per_minute)
 
@@ -340,7 +340,7 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
     )
 
     normalizer_request = NormalizerRequest(
-        seed_prompt_group=seed_prompt_group,
+        seed_group=seed_group,
         request_converter_configurations=[request_converters],
     )
 
@@ -365,7 +365,7 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 
 
 @pytest.mark.asyncio
-async def test_build_message(mock_memory_instance, seed_prompt_group):
+async def test_build_message(mock_memory_instance, seed_group):
 
     labels = {"label1": "value1", "label2": "value2"}
 
@@ -379,7 +379,7 @@ async def test_build_message(mock_memory_instance, seed_prompt_group):
     normalizer = PromptNormalizer()
 
     response = await normalizer._build_message(
-        seed_prompt_group=seed_prompt_group,
+        seed_group=seed_group,
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
         target=prompt_target,
@@ -532,20 +532,18 @@ async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memo
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_prompt_group):
+async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_group):
     prompt_target = MagicMock(PromptTarget)
     prompt_target.send_prompt_async = AsyncMock(side_effect=Exception("Test Exception"))
 
     normalizer = PromptNormalizer()
 
     with pytest.raises(Exception, match="Error sending prompt with conversation ID: 123"):
-        await normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group, target=prompt_target, conversation_id="123"
-        )
+        await normalizer.send_prompt_async(seed_group=seed_group, target=prompt_target, conversation_id="123")
 
     # Validate that first request is added to memory, then exception is added to memory
     assert (
-        seed_prompt_group.prompts[0].value
+        seed_group.prompts[0].value
         == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"].message_pieces[0].original_value
     )
     assert (
@@ -560,8 +558,8 @@ async def test_build_message_harm_categories(mock_memory_instance):
 
     harm_categories = ["violence", "illegal"]
 
-    # Create a seed prompt group with harm categories
-    seed_prompt_group = SeedPromptGroup(
+    # Create a seed group with harm categories
+    seed_group = SeedGroup(
         prompts=[
             SeedPrompt(
                 value="Test harmful prompt",
@@ -588,7 +586,7 @@ async def test_build_message_harm_categories(mock_memory_instance):
     normalizer = PromptNormalizer()
 
     response = await normalizer._build_message(
-        seed_prompt_group=seed_prompt_group,
+        seed_group=seed_group,
         conversation_id=conversation_id,
         request_converter_configurations=request_converters,
         target=prompt_target,

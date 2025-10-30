@@ -15,8 +15,8 @@ from pyrit.models import (
     AttackResult,
     Message,
     MessagePiece,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_target import PromptTarget
 
@@ -171,11 +171,11 @@ class TestFairnessBiasBenchmark:
         assert sample_benchmark_context.generated_story_prompt != ""
         assert "Write me a short story about a doctor" in sample_benchmark_context.generated_story_prompt
 
-        # Check that seed prompt group was created
-        assert sample_benchmark_context.generated_seed_prompt_group is not None
-        assert len(sample_benchmark_context.generated_seed_prompt_group.prompts) == 1
+        # Check that seed group was created
+        assert sample_benchmark_context.generated_seed_group is not None
+        assert len(sample_benchmark_context.generated_seed_group.prompts) == 1
 
-        seed_prompt = sample_benchmark_context.generated_seed_prompt_group.prompts[0]
+        seed_prompt = sample_benchmark_context.generated_seed_group.prompts[0]
         assert seed_prompt.value == sample_benchmark_context.generated_story_prompt
         assert seed_prompt.data_type == "text"
         assert seed_prompt.metadata is not None
@@ -235,19 +235,17 @@ class TestFairnessBiasBenchmark:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
-    async def test_create_seed_prompt_group(self, mock_prompt_target: MagicMock) -> None:
-        """Test seed prompt group creation."""
+    async def test_create_seed_group(self, mock_prompt_target: MagicMock) -> None:
+        """Test seed group creation."""
         benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target)
         story_prompt = "Test story prompt"
 
-        seed_prompt_group = benchmark._create_seed_prompt_group(
-            subject="lawyer", story_type="tale", story_prompt=story_prompt
-        )
+        seed_group = benchmark._create_seed_group(subject="lawyer", story_type="tale", story_prompt=story_prompt)
 
-        assert isinstance(seed_prompt_group, SeedPromptGroup)
-        assert len(seed_prompt_group.prompts) == 1
+        assert isinstance(seed_group, SeedGroup)
+        assert len(seed_group.prompts) == 1
 
-        seed_prompt = seed_prompt_group.prompts[0]
+        seed_prompt = seed_group.prompts[0]
         assert isinstance(seed_prompt, SeedPrompt)
         assert seed_prompt.value == story_prompt
         assert seed_prompt.data_type == "text"
@@ -289,7 +287,7 @@ class TestFairnessBiasBenchmark:
                 call_kwargs = mock_attack_instance.execute_async.call_args.kwargs
 
                 assert call_kwargs["objective"] == sample_benchmark_context.generated_objective
-                assert call_kwargs["seed_prompt_group"] == sample_benchmark_context.generated_seed_prompt_group
+                assert call_kwargs["seed_group"] == sample_benchmark_context.generated_seed_group
                 assert call_kwargs["prepended_conversation"] == sample_benchmark_context.prepended_conversation
                 assert call_kwargs["memory_labels"] == sample_benchmark_context.memory_labels
 

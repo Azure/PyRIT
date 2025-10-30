@@ -9,7 +9,7 @@ from typing import List, Literal, Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPrompt, SeedPromptDataset, data_serializer_factory
+from pyrit.models import SeedDataset, SeedPrompt, data_serializer_factory
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,9 @@ async def fetch_harmbench_multimodal_dataset_async(
     cache: bool = True,
     data_home: Optional[Path] = None,
     categories: Optional[List[SemanticCategory]] = None,
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
-    Fetch HarmBench multimodal examples and create a SeedPromptDataset.
+    Fetch HarmBench multimodal examples and create a SeedDataset.
 
     The HarmBench multimodal dataset contains 110 harmful behaviors.
     Each example consists of an image ("image_path") and a behavior string referencing the image ("text").
@@ -54,7 +54,7 @@ async def fetch_harmbench_multimodal_dataset_async(
             to filter examples. If None, all categories are included (default).
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the multimodal examples.
+        SeedDataset: A SeedDataset containing the multimodal examples.
 
     Raises:
         ValueError: If any of the specified categories are invalid.
@@ -177,8 +177,8 @@ async def fetch_harmbench_multimodal_dataset_async(
     if failed_image_count > 0:
         logger.warning(f"Total skipped examples: {failed_image_count} (image fetch failures)")
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=prompts)
+    return seed_dataset
 
 
 async def _fetch_and_save_image_async(image_url: str, behavior_id: str) -> str:
