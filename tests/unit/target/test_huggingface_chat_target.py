@@ -78,15 +78,23 @@ def mock_pretrained_config():
         yield
 
 
-class AwaitableMock(AsyncMock):
+class AwaitableTask(AsyncMock):
+    """Mock that can be awaited and acts like an asyncio.Task"""
+
     def __await__(self):
-        return iter([])
+        # Return a completed future-like object
+        async def _await():
+            return None
+
+        return _await().__await__()
 
 
 @pytest.fixture(autouse=True)
 def mock_create_task():
-    with patch("asyncio.create_task", return_value=AwaitableMock(spec=Task)):
-        yield
+    with patch("asyncio.create_task") as mock_task:
+        # Return an AwaitableTask that can be awaited
+        mock_task.return_value = AwaitableTask(spec=Task)
+        yield mock_task
 
 
 @pytest.fixture(autouse=True)
@@ -124,17 +132,23 @@ async def test_hf_initialization(patch_central_database, mock_download_specific_
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_is_model_id_valid_true():
+@pytest.mark.asyncio
+async def test_is_model_id_valid_true():
     # Simulate valid model ID
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+    # Await the background task to prevent warnings
+    await hf_chat.load_model_and_tokenizer_task
     assert hf_chat.is_model_id_valid()
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_is_model_id_valid_false():
+@pytest.mark.asyncio
+async def test_is_model_id_valid_false():
     # Simulate invalid model ID by causing an exception
     with patch("transformers.PretrainedConfig.from_pretrained", side_effect=Exception("Invalid model")):
         hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+        # Await the background task to prevent warnings
+        await hf_chat.load_model_and_tokenizer_task
         assert not hf_chat.is_model_id_valid()
 
 
@@ -191,8 +205,11 @@ async def test_missing_chat_template_error():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_invalid_prompt_request_validation():
+@pytest.mark.asyncio
+async def test_invalid_prompt_request_validation():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+    # Await the background task to prevent warnings
+    await hf_chat.load_model_and_tokenizer_task
 
     # Create an invalid prompt request with multiple message pieces
     message_piece1 = MessagePiece(
@@ -301,18 +318,24 @@ async def test_optional_kwargs_args_passed_when_loading_model(mock_transformers)
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_is_json_response_supported():
+@pytest.mark.asyncio
+async def test_is_json_response_supported():
     hf_chat = HuggingFaceChatTarget(model_id="dummy", use_cuda=False, trust_remote_code=True)
+    # Await the background task to prevent warnings
+    await hf_chat.load_model_and_tokenizer_task
     assert hf_chat.is_json_response_supported() is False
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_hugging_face_chat_sets_endpoint_and_rate_limit():
+@pytest.mark.asyncio
+async def test_hugging_face_chat_sets_endpoint_and_rate_limit():
     target = HuggingFaceChatTarget(
         model_id="test_model",
         use_cuda=False,
         max_requests_per_minute=30,
     )
+    # Await the background task to prevent warnings
+    await target.load_model_and_tokenizer_task
     identifier = target.get_identifier()
     # HuggingFaceChatTarget doesn't set an endpoint (it's local), so it shouldn't be in identifier
     assert "endpoint" not in identifier
