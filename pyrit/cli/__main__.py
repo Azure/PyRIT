@@ -211,35 +211,26 @@ async def run_scenario_async(
 
     try:
         if scenario_strategies:
-            # Import here to avoid circular imports
-            from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy
-
             # Get the strategy enum class for this scenario
             strategy_class = scenario_class.get_strategy_class()
 
-            # Convert strategy names to ScenarioCompositeStrategy instances
-            composite_strategies = []
+            # Convert strategy names to enum instances
+            strategy_enums = []
             for strategy_name in scenario_strategies:
-                # Find the enum member by value
-                matching_strategy = None
-                for strategy_enum in strategy_class:
-                    if strategy_enum.value == strategy_name:
-                        matching_strategy = strategy_enum
-                        break
-
-                if matching_strategy is None:
+                try:
+                    # Python Enum supports direct construction from value
+                    strategy_enums.append(strategy_class(strategy_name))
+                except ValueError:
                     available_strategies = [s.value for s in strategy_class]
                     raise ValueError(
                         f"Strategy '{strategy_name}' not found in {scenario_class.__name__}.\n"
                         f"Available strategies: {', '.join(available_strategies)}\n"
                         f"Use 'pyrit_scan --list-scenarios' to see available strategies for each scenario."
-                    )
+                    ) from None
 
-                # Create a ScenarioCompositeStrategy with a single strategy
-                composite_strategies.append(ScenarioCompositeStrategy(strategies=[matching_strategy]))
-
-            # Pass the composite strategies to the scenario
-            scenario = scenario_class(scenario_strategies=composite_strategies)  # type: ignore[call-arg]
+            # Pass the strategy enums to the scenario
+            # The scenario's __init__ will call prepare_scenario_strategies() to handle conversion
+            scenario = scenario_class(scenario_strategies=strategy_enums)  # type: ignore[call-arg]
         else:
             # No strategies specified, use scenario defaults
             scenario = scenario_class()  # type: ignore[call-arg]
