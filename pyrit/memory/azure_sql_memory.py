@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
 from azure.core.credentials import AccessToken
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import and_, create_engine, event, exists, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
@@ -202,6 +202,17 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         self._insert_entries(entries=embedding_data)
 
     def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+        """
+        Generate SQL conditions for filtering message pieces by memory labels.
+
+        Uses JSON_VALUE() function specific to SQL Azure to query label fields in JSON format.
+
+        Args:
+            memory_labels (dict[str, str]): Dictionary of label key-value pairs to filter by.
+
+        Returns:
+            list: List containing a single SQLAlchemy text condition with bound parameters.
+        """
         json_validation = "ISJSON(labels) = 1"
         json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
         # Combine both conditions
@@ -213,11 +224,33 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         return [condition]
 
     def _get_message_pieces_attack_conditions(self, *, attack_id: str) -> Any:
+        """
+        Generate SQL condition for filtering message pieces by attack ID.
+
+        Uses JSON_VALUE() function specific to SQL Azure to query the attack identifier.
+
+        Args:
+            attack_id (str): The attack identifier to filter by.
+
+        Returns:
+            Any: SQLAlchemy text condition with bound parameter.
+        """
         return text("ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.id') = :json_id").bindparams(
             json_id=str(attack_id)
         )
 
-    def _get_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]):
+    def _get_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+        """
+        Generate SQL conditions for filtering by prompt metadata.
+
+        Uses JSON_VALUE() function specific to SQL Azure to query metadata fields in JSON format.
+
+        Args:
+            prompt_metadata (dict[str, Union[str, int]]): Dictionary of metadata key-value pairs to filter by.
+
+        Returns:
+            list: List containing a single SQLAlchemy text condition with bound parameters.
+        """
         json_validation = "ISJSON(prompt_metadata) = 1"
         json_conditions = " AND ".join([f"JSON_VALUE(prompt_metadata, '$.{key}') = :{key}" for key in prompt_metadata])
         # Combine both conditions
@@ -229,20 +262,46 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         return [condition]
 
     def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+        """
+        Generate SQL conditions for filtering message pieces by prompt metadata.
+
+        This is a convenience wrapper around _get_metadata_conditions.
+
+        Args:
+            prompt_metadata (dict[str, Union[str, int]]): Dictionary of metadata key-value pairs to filter by.
+
+        Returns:
+            list: List containing SQLAlchemy text conditions with bound parameters.
+        """
         return self._get_metadata_conditions(prompt_metadata=prompt_metadata)
 
     def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
+        """
+        Generate SQL condition for filtering seed prompts by metadata.
+
+        This is a convenience wrapper around _get_metadata_conditions that returns
+        the first (and only) condition.
+
+        Args:
+            metadata (dict[str, Union[str, int]]): Dictionary of metadata key-value pairs to filter by.
+
+        Returns:
+            Any: SQLAlchemy text condition with bound parameters.
+        """
         return self._get_metadata_conditions(prompt_metadata=metadata)[0]
 
     def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
         """
         SQL Azure implementation for filtering AttackResults by targeted harm categories.
+
         Uses JSON_QUERY() function specific to SQL Azure to check if categories exist in the JSON array.
+
+        Args:
+            targeted_harm_categories (Sequence[str]): List of harm category strings to filter by.
+
+        Returns:
+            Any: SQLAlchemy exists subquery condition with bound parameters.
         """
-        from sqlalchemy import and_, exists, text
-
-        from pyrit.memory.memory_models import AttackResultEntry, PromptMemoryEntry
-
         # For SQL Azure, we need to use JSON_QUERY to check if a value exists in a JSON array
         # OPENJSON can parse the array and we check if the category exists
         # Using parameterized queries for safety
@@ -272,12 +331,15 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
         SQL Azure implementation for filtering AttackResults by labels.
+
         Uses JSON_VALUE() function specific to SQL Azure with parameterized queries.
+
+        Args:
+            labels (dict[str, str]): Dictionary of label key-value pairs to filter by.
+
+        Returns:
+            Any: SQLAlchemy exists subquery condition with bound parameters.
         """
-        from sqlalchemy import and_, exists, text
-
-        from pyrit.memory.memory_models import AttackResultEntry, PromptMemoryEntry
-
         # Build JSON conditions for all labels with parameterized queries
         label_conditions = []
         bindparams_dict = {}
@@ -300,10 +362,15 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
         SQL Azure implementation for filtering ScenarioResults by labels.
-        Uses JSON_VALUE() function specific to SQL Azure.
-        """
-        from sqlalchemy import and_, text
 
+        Uses JSON_VALUE() function specific to SQL Azure.
+
+        Args:
+            labels (dict[str, str]): Dictionary of label key-value pairs to filter by.
+
+        Returns:
+            Any: SQLAlchemy combined condition with bound parameters.
+        """
         # Return combined conditions for all labels
         conditions = []
         for key, value in labels.items():
@@ -316,10 +383,15 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
         """
         SQL Azure implementation for filtering ScenarioResults by target endpoint.
-        Uses JSON_VALUE() function specific to SQL Azure.
-        """
-        from sqlalchemy import text
 
+        Uses JSON_VALUE() function specific to SQL Azure.
+
+        Args:
+            endpoint (str): The endpoint URL substring to filter by (case-insensitive).
+
+        Returns:
+            Any: SQLAlchemy text condition with bound parameter.
+        """
         return text(
             """ISJSON(objective_target_identifier) = 1
             AND LOWER(JSON_VALUE(objective_target_identifier, '$.endpoint')) LIKE :endpoint"""
@@ -328,10 +400,15 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
         """
         SQL Azure implementation for filtering ScenarioResults by target model name.
-        Uses JSON_VALUE() function specific to SQL Azure.
-        """
-        from sqlalchemy import text
 
+        Uses JSON_VALUE() function specific to SQL Azure.
+
+        Args:
+            model_name (str): The model name substring to filter by (case-insensitive).
+
+        Returns:
+            Any: SQLAlchemy text condition with bound parameter.
+        """
         return text(
             """ISJSON(objective_target_identifier) = 1
             AND LOWER(JSON_VALUE(objective_target_identifier, '$.model_name')) LIKE :model_name"""
