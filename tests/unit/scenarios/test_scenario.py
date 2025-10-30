@@ -55,6 +55,18 @@ class ConcreteScenario(Scenario):
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
+    @classmethod
+    def get_strategy_class(cls):
+        """Return a mock strategy class for testing."""
+        from typing import Type
+        from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+        
+        # Return a simple mock strategy class for testing
+        class TestStrategy(ScenarioStrategy):
+            TEST = ("test", set())
+        
+        return TestStrategy
+
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return
 

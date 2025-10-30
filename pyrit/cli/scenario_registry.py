@@ -178,7 +178,13 @@ class ScenarioRegistry:
             else:
                 description = "No description available"
 
-            scenarios_info.append({"name": name, "class_name": scenario_class.__name__, "description": description})
+            scenarios_info.append({
+                "name": name,
+                "class_name": scenario_class.__name__,
+                "description": description,
+                "all_strategies": [s.value for s in scenario_class.get_all_strategies()],
+                "aggregate_strategies": [s.value for s in scenario_class.get_aggregate_strategies()],
+            })
 
         return scenarios_info
 

@@ -9,21 +9,21 @@ AtomicAttack instances sequentially, enabling comprehensive security testing cam
 """
 
 import logging
-from abc import abstractmethod
-from typing import Dict, List, Optional
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Type
 
 from tqdm.auto import tqdm
 
 from pyrit.models import AttackResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy
+from pyrit.scenarios.scenario_strategy import ScenarioStrategy
 from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
 
 logger = logging.getLogger(__name__)
 
 
-class Scenario:
+class Scenario(ABC):
     """
     Groups and executes multiple AtomicAttack instances sequentially.
 
@@ -73,7 +73,6 @@ class Scenario:
         memory_labels: Optional[Dict[str, str]] = None,
         objective_target: Optional[PromptTarget] = None,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
-        scenario_strategies: Optional[List[ScenarioCompositeStrategy]] = None,
     ) -> None:
         """
         Initialize a scenario.
@@ -86,9 +85,6 @@ class Scenario:
                 attack runs in the scenario. These help track and categorize the scenario.
             objective_target (Optional[PromptTarget]): The target system to attack.
             objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
-            scenario_strategies (Optional[List[ScenarioCompositeStrategy]]): List of composite strategies
-                used in this scenario. This provides visibility into the attack strategies for tools
-                like the CLI to list and inspect them.
 
         Note:
             Attack runs are populated by calling initialize_async(), which invokes the
@@ -116,7 +112,6 @@ class Scenario:
         self._memory_labels = memory_labels or {}
         self._max_concurrency = max_concurrency
         self._atomic_attacks: List[AtomicAttack] = []
-        self._scenario_strategies: List[ScenarioCompositeStrategy] = scenario_strategies or []
 
     @property
     def name(self) -> str:
@@ -124,14 +119,75 @@ class Scenario:
         return self._name
 
     @property
-    def scenario_strategies(self) -> List[ScenarioCompositeStrategy]:
-        """Get the list of composite strategies in this scenario."""
-        return self._scenario_strategies
-
-    @property
     def atomic_attack_count(self) -> int:
         """Get the number of atomic attacks in this scenario."""
         return len(self._atomic_attacks)
+
+    @classmethod
+    @abstractmethod
+    def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+        """
+        Get the strategy enum class for this scenario.
+
+        This abstract method must be implemented by all scenario subclasses to return
+        the ScenarioStrategy enum class that defines the available attack strategies
+        for the scenario.
+
+        Returns:
+            Type[ScenarioStrategy]: The strategy enum class (e.g., FoundryStrategy, EncodingStrategy).
+
+        Example:
+            >>> class MyScenario(Scenario):
+            ...     @classmethod
+            ...     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+            ...         return MyStrategy
+            >>>
+            >>> # Registry can now discover strategies without instantiation
+            >>> strategy_class = MyScenario.get_strategy_class()
+            >>> all_strategies = list(strategy_class)
+        """
+        pass
+
+    @classmethod
+    def get_all_strategies(cls) -> list[ScenarioStrategy]:
+        """
+        Get all non-aggregate strategies for this scenario.
+
+        This method returns all concrete attack strategies, excluding aggregate markers
+        (like ALL, EASY, MODERATE, DIFFICULT) that are used for grouping.
+
+        Returns:
+            list[ScenarioStrategy]: List of all non-aggregate strategies.
+
+        Example:
+            >>> # Get all concrete strategies for a scenario
+            >>> all_strategies = FoundryScenario.get_all_strategies()
+            >>> # Returns: [Base64, ROT13, Leetspeak, ..., Crescendo]
+            >>> # Excludes: ALL, EASY, MODERATE, DIFFICULT
+        """
+        strategy_class = cls.get_strategy_class()
+        aggregate_tags = strategy_class.get_aggregate_tags()
+        return [s for s in strategy_class if s.value not in aggregate_tags]
+
+    @classmethod
+    def get_aggregate_strategies(cls) -> list[ScenarioStrategy]:
+        """
+        Get all aggregate strategies for this scenario.
+
+        This method returns only the aggregate markers (like ALL, EASY, MODERATE, DIFFICULT)
+        that are used to group concrete strategies by tags.
+
+        Returns:
+            list[ScenarioStrategy]: List of all aggregate strategies.
+
+        Example:
+            >>> # Get all aggregate strategies for a scenario
+            >>> aggregates = FoundryScenario.get_aggregate_strategies()
+            >>> # Returns: [ALL, EASY, MODERATE, DIFFICULT]
+        """
+        strategy_class = cls.get_strategy_class()
+        aggregate_tags = strategy_class.get_aggregate_tags()
+        return [s for s in strategy_class if s.value in aggregate_tags]
 
     async def initialize_async(self) -> None:
         """

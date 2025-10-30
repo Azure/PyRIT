@@ -1,0 +1,53 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+"""Unit tests for strategy composition validation."""
+
+import pytest
+
+from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy
+from pyrit.scenarios.scenarios.encoding_scenario import EncodingStrategy
+from pyrit.scenarios.scenarios.foundry_scenario import FoundryStrategy
+
+
+class TestStrategyValidation:
+    """Test validation of strategy compositions."""
+
+    def test_encoding_validation_allows_single_strategy(self):
+        """Test that encoding validation allows single strategies."""
+        # Should not raise
+        EncodingStrategy.validate_composition([EncodingStrategy.Base64])
+
+    def test_encoding_validation_rejects_composition(self):
+        """Test that encoding validation rejects composed strategies."""
+        with pytest.raises(ValueError, match="EncodingStrategy does not support composition"):
+            EncodingStrategy.validate_composition([EncodingStrategy.Base64, EncodingStrategy.ROT13])
+
+    def test_foundry_validation_allows_single_strategy(self):
+        """Test that foundry validation allows single strategies."""
+        # Should not raise
+        FoundryStrategy.validate_composition([FoundryStrategy.Base64])
+
+    def test_foundry_validation_allows_converter_composition(self):
+        """Test that foundry validation allows multiple converters."""
+        # Should not raise
+        FoundryStrategy.validate_composition([FoundryStrategy.Base64, FoundryStrategy.Atbash])
+
+    def test_foundry_validation_allows_one_workflow_with_converters(self):
+        """Test that foundry validation allows one workflow with converters."""
+        # Should not raise
+        FoundryStrategy.validate_composition(
+            [FoundryStrategy.Base64, FoundryStrategy.Crescendo, FoundryStrategy.Atbash]
+        )
+
+    def test_foundry_validation_rejects_multiple_workflows(self):
+        """Test that foundry validation rejects multiple workflow strategies."""
+        with pytest.raises(ValueError, match="Cannot compose multiple workflow strategies"):
+            FoundryStrategy.validate_composition([FoundryStrategy.Crescendo, FoundryStrategy.PAIR])
+
+    def test_foundry_validation_rejects_workflows_with_converters_and_another_workflow(self):
+        """Test that foundry validation rejects multiple workflows even with converters."""
+        with pytest.raises(ValueError, match="Cannot compose multiple workflow strategies"):
+            FoundryStrategy.validate_composition(
+                [FoundryStrategy.Base64, FoundryStrategy.Crescendo, FoundryStrategy.PAIR]
+            )

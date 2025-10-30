@@ -47,6 +47,8 @@ class EncodingStrategy(ScenarioStrategy):
 
     Each enum member represents an encoding scheme that will be tested against the target model.
     The ALL aggregate expands to include all encoding strategies.
+    
+    Note: EncodingStrategy does not support composition. Each encoding must be applied individually.
     """
 
     # Aggregate member
@@ -91,12 +93,22 @@ class EncodingScenario(Scenario):
 
     version: int = 1
 
+    @classmethod
+    def get_strategy_class(cls) -> type[ScenarioStrategy]:
+        """
+        Get the strategy enum class for this scenario.
+
+        Returns:
+            Type[ScenarioStrategy]: The EncodingStrategy enum class.
+        """
+        return EncodingStrategy
+
     @apply_defaults
     def __init__(
         self,
         *,
         objective_target: PromptTarget,
-        encoding_strategies: list[EncodingStrategy] = [EncodingStrategy.ALL],
+        scenario_strategies: list[EncodingStrategy | ScenarioCompositeStrategy] | None = None,
         seed_prompts: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
@@ -108,8 +120,10 @@ class EncodingScenario(Scenario):
 
         Args:
             objective_target (PromptTarget): The target model to test for encoding vulnerabilities.
-            encoding_strategies (list[EncodingStrategy]): List of encoding strategies to test.
-                Defaults to [EncodingStrategy.ALL] which includes all encoding schemes.
+            scenario_strategies (list[EncodingStrategy | ScenarioCompositeStrategy] | None): 
+                Strategies to test. Can be a list of EncodingStrategy enums (simple case) or
+                ScenarioCompositeStrategy instances (advanced case).
+                If None, defaults to all encoding strategies.
             seed_prompts (Optional[list[str]]): The list of text strings that will be encoded and
                 used to test the model. These are the pieces the scenario is trying to get the model
                 to decode and repeat. If not provided, defaults to slur terms and XSS payloads from
@@ -124,18 +138,9 @@ class EncodingScenario(Scenario):
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
         """
 
-        # Normalize and validate encoding strategies
-        normalized_strategies = EncodingStrategy.normalize_strategies(set(encoding_strategies))
-        self._encoding_strategies = sorted(normalized_strategies, key=lambda s: s.value)
-
-        # Convert to ScenarioCompositeStrategy instances for parent class visibility
-        composite_strategies = [
-            ScenarioCompositeStrategy(
-                name=strategy.value,
-                strategies=[strategy],
-            )
-            for strategy in self._encoding_strategies
-        ]
+        self._encoding_composites = EncodingStrategy.prepare_scenario_strategies(
+            scenario_strategies, default_aggregate=EncodingStrategy.ALL
+        )
 
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
@@ -151,7 +156,6 @@ class EncodingScenario(Scenario):
             max_concurrency=max_concurrency,
             objective_scorer_identifier=objective_scorer.get_identifier(),
             objective_target=objective_target,
-            scenario_strategies=composite_strategies,
         )
 
     # Use the same as Garak by default
@@ -187,7 +191,7 @@ class EncodingScenario(Scenario):
         """
         Get all converter-based atomic attacks.
 
-        Creates atomic attacks for each encoding scheme specified in self._encoding_strategies.
+        Creates atomic attacks for each encoding scheme specified in the scenario strategies.
         Each encoding scheme is tested both with and without explicit decoding instructions.
 
         Returns:
@@ -219,7 +223,10 @@ class EncodingScenario(Scenario):
         ]
 
         # Filter to only include selected strategies
-        selected_encoding_names = {strategy.value for strategy in self._encoding_strategies}
+        # Extract strategy names from composites (each has exactly one strategy since composition not supported)
+        selected_encoding_names = {
+            comp.strategies[0].value for comp in self._encoding_composites if comp.strategies
+        }
         converters_with_encodings = [
             (conv, name) for conv, name in all_converters_with_encodings if name in selected_encoding_names
         ]
