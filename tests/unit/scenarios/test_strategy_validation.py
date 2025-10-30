@@ -7,6 +7,7 @@ import pytest
 
 from pyrit.scenarios import EncodingStrategy, FoundryStrategy
 
+
 class TestStrategyValidation:
     """Test validation of strategy compositions."""
 
