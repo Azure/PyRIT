@@ -135,6 +135,8 @@ chapters:
     - file: deployment/download_and_register_hf_model_aml
     - file: deployment/hf_aml_model_endpoint_guide
     - file: deployment/score_aml_endpoint
+    - file: deployment/llamafile_guide.fr
+      title: "Llamafile Guide (FR)"
     - file: deployment/troubleshooting_guide_hf_azureml
   - file: api.rst
   - file: blog/README
