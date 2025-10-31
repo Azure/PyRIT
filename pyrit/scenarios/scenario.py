@@ -15,6 +15,7 @@ from typing import Dict, List, Optional
 from tqdm.auto import tqdm
 
 from pyrit.models import AttackResult
+from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
 
@@ -69,7 +70,7 @@ class Scenario:
         version: int,
         max_concurrency: int = 1,
         memory_labels: Optional[Dict[str, str]] = None,
-        objective_target_identifier: Optional[Dict[str, str]] = None,
+        objective_target: Optional[PromptTarget] = None,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
     ) -> None:
         """
@@ -96,7 +97,12 @@ class Scenario:
             name=type(self).__name__, scenario_version=version, description=description
         )
 
-        self._objective_target_identifier = objective_target_identifier or {}
+        self._objective_target = objective_target
+
+        if not objective_target:
+            raise ValueError("Objective target must be provided.")
+
+        self._objective_target_identifier = objective_target.get_identifier()
         self._objective_scorer_identifier = objective_scorer_identifier or {}
 
         self._name = name

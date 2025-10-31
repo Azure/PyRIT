@@ -543,10 +543,10 @@ API Reference
     AtomicAttack
     AtomicAttackResult
     EncodingScenario
-    FoundryAttackStrategy
+    FoundryStrategy
     FoundryScenario
     Scenario
-    ScenarioAttackStrategy
+    ScenarioStrategy
     ScenarioIdentifier
     ScenarioResult
 
