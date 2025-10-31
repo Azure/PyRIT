@@ -39,7 +39,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         # Validation is used by sub-scorers
         super().__init__(validator=ScorerPromptValidator())
 
-        if threshold <= 0 or threshold >= 1:
+        if threshold < 0 or threshold > 1:
             raise ValueError("The threshold must be between 0 and 1")
 
     async def _score_async(
