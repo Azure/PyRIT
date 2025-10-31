@@ -34,6 +34,10 @@ class MockScenario(Scenario):
     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
         return MockStrategy
 
+    @classmethod
+    def get_default_strategy(cls) -> ScenarioStrategy:
+        return MockStrategy.ALL
+
 
 class TestScenarioRegistry:
     """Tests for ScenarioRegistry class."""
@@ -102,6 +106,10 @@ class TestScenarioRegistry:
             def get_strategy_class(cls) -> Type[ScenarioStrategy]:
                 return MockStrategy
 
+            @classmethod
+            def get_default_strategy(cls) -> ScenarioStrategy:
+                return MockStrategy.ALL
+
         registry = ScenarioRegistry()
         registry._scenarios = {
             "test_scenario": DocumentedScenario,
@@ -124,7 +132,10 @@ class TestScenarioRegistry:
             @classmethod
             def get_strategy_class(cls) -> Type[ScenarioStrategy]:
                 return MockStrategy
-                return []
+
+            @classmethod
+            def get_default_strategy(cls) -> ScenarioStrategy:
+                return MockStrategy.ALL
 
         # Remove docstring
         UndocumentedScenario.__doc__ = None
@@ -182,6 +193,10 @@ class TestScenarioRegistry:
             @classmethod
             def get_strategy_class(cls) -> Type[ScenarioStrategy]:
                 return MockStrategy
+
+            @classmethod
+            def get_default_strategy(cls) -> ScenarioStrategy:
+                return MockStrategy.ALL
 
         UserScenario.__module__ = "user_module"
 

@@ -219,6 +219,16 @@ class FoundryScenario(Scenario):
         """
         return FoundryStrategy
 
+    @classmethod
+    def get_default_strategy(cls) -> ScenarioStrategy:
+        """
+        Get the default strategy used when no strategies are specified.
+
+        Returns:
+            ScenarioStrategy: FoundryStrategy.EASY (easy difficulty strategies).
+        """
+        return FoundryStrategy.EASY
+
     @apply_defaults
     def __init__(
         self,

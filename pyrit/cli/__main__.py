@@ -309,7 +309,7 @@ def _format_scenario_info(*, scenario_info: dict[str, Any]) -> None:
 
     Args:
         scenario_info (dict[str, Any]): Dictionary containing scenario information.
-            Expected keys: name, class_name, description, aggregate_strategies, all_strategies
+            Expected keys: name, class_name, description, default_strategy, aggregate_strategies, all_strategies
     """
     print(f"\n  {scenario_info['name']}")
     print(f"    Class: {scenario_info['class_name']}")
@@ -327,6 +327,10 @@ def _format_scenario_info(*, scenario_info: dict[str, Any]) -> None:
         print(f"    Available Strategies ({len(scenario_info['all_strategies'])}):")
         strategies_text = ", ".join(scenario_info["all_strategies"])
         _format_wrapped_text(text=strategies_text, indent="      ")
+
+    # Display default strategy if present
+    if scenario_info.get("default_strategy"):
+        print(f"    Default Strategy: {scenario_info['default_strategy']}")
 
 
 def _format_initializer_info(*, info: InitializerInfo) -> None:

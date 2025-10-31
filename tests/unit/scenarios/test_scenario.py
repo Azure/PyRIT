@@ -65,7 +65,16 @@ class ConcreteScenario(Scenario):
         class TestStrategy(ScenarioStrategy):
             TEST = ("test", set())
 
+            @classmethod
+            def get_aggregate_tags(cls) -> set[str]:
+                return set()
+
         return TestStrategy
+
+    @classmethod
+    def get_default_strategy(cls):
+        """Return the default strategy for testing."""
+        return cls.get_strategy_class().TEST
 
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return

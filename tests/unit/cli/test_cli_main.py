@@ -151,11 +151,17 @@ class TestListScenarios:
                 "name": "encoding_scenario",
                 "class_name": "EncodingScenario",
                 "description": "Test encoding attacks on AI models",
+                "default_strategy": "all",
+                "all_strategies": ["base64", "rot13"],
+                "aggregate_strategies": ["all"],
             },
             {
                 "name": "foundry_scenario",
                 "class_name": "FoundryScenario",
                 "description": "Comprehensive security testing scenario",
+                "default_strategy": "easy",
+                "all_strategies": ["base64", "crescendo"],
+                "aggregate_strategies": ["easy", "moderate", "difficult"],
             },
         ]
 
@@ -190,6 +196,9 @@ class TestMain:
                 "name": "encoding_scenario",
                 "class_name": "EncodingScenario",
                 "description": "Test scenario",
+                "default_strategy": "all",
+                "all_strategies": ["base64"],
+                "aggregate_strategies": ["all"],
             }
         ]
         mock_registry_class.return_value = mock_registry

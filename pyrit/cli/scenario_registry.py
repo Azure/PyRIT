@@ -166,6 +166,7 @@ class ScenarioRegistry:
                 - name: Scenario identifier
                 - class_name: Class name
                 - description: Full class docstring
+                - default_strategy: The default strategy used when none specified
         """
         scenarios_info = []
 
@@ -178,13 +179,17 @@ class ScenarioRegistry:
             else:
                 description = "No description available"
 
+            # Get the strategy class for this scenario
+            strategy_class = scenario_class.get_strategy_class()
+
             scenarios_info.append(
                 {
                     "name": name,
                     "class_name": scenario_class.__name__,
                     "description": description,
-                    "all_strategies": [s.value for s in scenario_class.get_all_strategies()],
-                    "aggregate_strategies": [s.value for s in scenario_class.get_aggregate_strategies()],
+                    "default_strategy": scenario_class.get_default_strategy().value,
+                    "all_strategies": [s.value for s in strategy_class.get_all_strategies()],
+                    "aggregate_strategies": [s.value for s in strategy_class.get_aggregate_strategies()],
                 }
             )
 

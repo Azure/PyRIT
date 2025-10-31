@@ -149,45 +149,28 @@ class Scenario(ABC):
         pass
 
     @classmethod
-    def get_all_strategies(cls) -> list[ScenarioStrategy]:
+    @abstractmethod
+    def get_default_strategy(cls) -> ScenarioStrategy:
         """
-        Get all non-aggregate strategies for this scenario.
+        Get the default strategy used when no strategies are specified.
 
-        This method returns all concrete attack strategies, excluding aggregate markers
-        (like ALL, EASY, MODERATE, DIFFICULT) that are used for grouping.
+        This abstract method must be implemented by all scenario subclasses to return
+        the default aggregate strategy (like EASY, ALL) used when scenario_strategies
+        parameter is None.
 
         Returns:
-            list[ScenarioStrategy]: List of all non-aggregate strategies.
+            ScenarioStrategy: The default aggregate strategy (e.g., FoundryStrategy.EASY, EncodingStrategy.ALL).
 
         Example:
-            >>> # Get all concrete strategies for a scenario
-            >>> all_strategies = FoundryScenario.get_all_strategies()
-            >>> # Returns: [Base64, ROT13, Leetspeak, ..., Crescendo]
-            >>> # Excludes: ALL, EASY, MODERATE, DIFFICULT
+            >>> class MyScenario(Scenario):
+            ...     @classmethod
+            ...     def get_default_strategy(cls) -> ScenarioStrategy:
+            ...         return MyStrategy.EASY
+            >>>
+            >>> # Registry can discover default strategy without instantiation
+            >>> default = MyScenario.get_default_strategy()
         """
-        strategy_class = cls.get_strategy_class()
-        aggregate_tags = strategy_class.get_aggregate_tags()
-        return [s for s in strategy_class if s.value not in aggregate_tags]
-
-    @classmethod
-    def get_aggregate_strategies(cls) -> list[ScenarioStrategy]:
-        """
-        Get all aggregate strategies for this scenario.
-
-        This method returns only the aggregate markers (like ALL, EASY, MODERATE, DIFFICULT)
-        that are used to group concrete strategies by tags.
-
-        Returns:
-            list[ScenarioStrategy]: List of all aggregate strategies.
-
-        Example:
-            >>> # Get all aggregate strategies for a scenario
-            >>> aggregates = FoundryScenario.get_aggregate_strategies()
-            >>> # Returns: [ALL, EASY, MODERATE, DIFFICULT]
-        """
-        strategy_class = cls.get_strategy_class()
-        aggregate_tags = strategy_class.get_aggregate_tags()
-        return [s for s in strategy_class if s.value in aggregate_tags]
+        pass
 
     async def initialize_async(self) -> None:
         """

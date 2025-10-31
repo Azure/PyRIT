@@ -111,6 +111,45 @@ class ScenarioStrategy(Enum):
         return {strategy for strategy in cls if tag in strategy.tags and strategy.value not in aggregate_tags}
 
     @classmethod
+    def get_all_strategies(cls: type[T]) -> list[T]:
+        """
+        Get all non-aggregate strategies for this strategy enum.
+
+        This method returns all concrete attack strategies, excluding aggregate markers
+        (like ALL, EASY, MODERATE, DIFFICULT) that are used for grouping.
+
+        Returns:
+            list[T]: List of all non-aggregate strategies.
+
+        Example:
+            >>> # Get all concrete strategies for a strategy enum
+            >>> all_strategies = FoundryStrategy.get_all_strategies()
+            >>> # Returns: [Base64, ROT13, Leetspeak, ..., Crescendo]
+            >>> # Excludes: ALL, EASY, MODERATE, DIFFICULT
+        """
+        aggregate_tags = cls.get_aggregate_tags()
+        return [s for s in cls if s.value not in aggregate_tags]
+
+    @classmethod
+    def get_aggregate_strategies(cls: type[T]) -> list[T]:
+        """
+        Get all aggregate strategies for this strategy enum.
+
+        This method returns only the aggregate markers (like ALL, EASY, MODERATE, DIFFICULT)
+        that are used to group concrete strategies by tags.
+
+        Returns:
+            list[T]: List of all aggregate strategies.
+
+        Example:
+            >>> # Get all aggregate strategies for a strategy enum
+            >>> aggregates = FoundryStrategy.get_aggregate_strategies()
+            >>> # Returns: [ALL, EASY, MODERATE, DIFFICULT]
+        """
+        aggregate_tags = cls.get_aggregate_tags()
+        return [s for s in cls if s.value in aggregate_tags]
+
+    @classmethod
     def normalize_strategies(cls: type[T], strategies: Set[T]) -> Set[T]:
         """
         Normalize a set of attack strategies by expanding aggregate tags.
@@ -145,7 +184,7 @@ class ScenarioStrategy(Enum):
 
             # Special handling for "all" tag - expand to all non-aggregate strategies
             if aggregate_tag == "all":
-                normalized_strategies.update({strategy for strategy in cls if strategy.value not in aggregate_tags})
+                normalized_strategies.update(cls.get_all_strategies())
             else:
                 # Add all strategies with that tag
                 normalized_strategies.update(cls.get_strategies_by_tag(aggregate_tag))

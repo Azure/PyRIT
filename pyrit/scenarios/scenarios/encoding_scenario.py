@@ -106,6 +106,16 @@ class EncodingScenario(Scenario):
         """
         return EncodingStrategy
 
+    @classmethod
+    def get_default_strategy(cls) -> ScenarioStrategy:
+        """
+        Get the default strategy used when no strategies are specified.
+
+        Returns:
+            ScenarioStrategy: EncodingStrategy.ALL (all encoding strategies).
+        """
+        return EncodingStrategy.ALL
+
     @apply_defaults
     def __init__(
         self,
