@@ -297,7 +297,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
         mock_remove_markdown_json.assert_called_once()
 
 
-def test_scorer_path_verification_rejection():
+def test_scorer_path_verification_rejection() -> None:
     """
     Test that the scorer correctly refuses to verify a non-existent path.
     """
@@ -307,7 +307,7 @@ def test_scorer_path_verification_rejection():
         scorer._verify_and_resolve_path(mock_path)
 
 
-def test_scorer_path_verification_confirmation():
+def test_scorer_path_verification_confirmation() -> None:
     """
     Test that the scorer verifies the paths that currently exist
     under the scorer configs.

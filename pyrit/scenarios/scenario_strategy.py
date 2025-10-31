@@ -285,7 +285,7 @@ class ScenarioStrategy(Enum):
         composition is not supported and multiple strategies are provided.
 
         Subclasses that support composition should override this method to define their
-        specific composition rules (e.g., "no more than one workflow strategy").
+        specific composition rules (e.g., "no more than one attack strategy").
 
         Args:
             strategies (Sequence[T]): The strategies to validate for composition.
@@ -301,7 +301,7 @@ class ScenarioStrategy(Enum):
 
             # FoundryStrategy allows composition but with rules
             >>> FoundryStrategy.validate_composition([FoundryStrategy.Crescendo, FoundryStrategy.MultiTurn])
-            ValueError: Cannot compose multiple workflow strategies: ['crescendo', 'multi_turn']
+            ValueError: Cannot compose multiple attack strategies: ['crescendo', 'multi_turn']
         """
         if not strategies:
             raise ValueError("Cannot validate empty strategy list")

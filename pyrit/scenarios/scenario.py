@@ -14,10 +14,11 @@ from typing import Dict, List, Optional, Type
 
 from tqdm.auto import tqdm
 
+from pyrit.memory import CentralMemory
 from pyrit.models import AttackResult
+from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.scenarios.scenario_strategy import ScenarioStrategy
 
 logger = logging.getLogger(__name__)
@@ -110,6 +111,7 @@ class Scenario(ABC):
 
         self._name = name
         self._memory_labels = memory_labels or {}
+        self._memory = CentralMemory.get_memory_instance()
         self._max_concurrency = max_concurrency
         self._atomic_attacks: List[AtomicAttack] = []
 
@@ -266,9 +268,13 @@ class Scenario(ABC):
 
         logger.info(f"Scenario '{self._name}' completed successfully with {len(all_results)} total results")
 
-        return ScenarioResult(
+        result = ScenarioResult(
             scenario_identifier=self._identifier,
             objective_target_identifier=self._objective_target_identifier,
             objective_scorer_identifier=self._objective_scorer_identifier,
+            labels=self._memory_labels,
             attack_results=all_results,
         )
+
+        self._memory.add_scenario_results_to_memory(scenario_results=[result])
+        return result

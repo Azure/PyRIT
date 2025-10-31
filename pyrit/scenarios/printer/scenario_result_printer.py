@@ -3,7 +3,7 @@
 
 from abc import ABC, abstractmethod
 
-from pyrit.scenarios.scenario_result import ScenarioResult
+from pyrit.models.scenario_result import ScenarioResult
 
 
 class ScenarioResultPrinter(ABC):

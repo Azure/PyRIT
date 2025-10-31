@@ -45,7 +45,7 @@ class GlobalDefaultValues:
     applied to class parameters when using the @apply_defaults decorator.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._default_values: Dict[DefaultValueScope, Any] = {}
 
     def set_default_value(

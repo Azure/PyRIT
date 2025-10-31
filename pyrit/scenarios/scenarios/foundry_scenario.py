@@ -137,8 +137,8 @@ class FoundryStrategy(ScenarioStrategy):  # type: ignore[misc]
     Tense = ("tense", {"moderate", "converter"})
 
     # Difficult strategies
-    MultiTurn = ("multi_turn", {"difficult", "workflow"})
-    Crescendo = ("crescendo", {"difficult", "workflow"})
+    MultiTurn = ("multi_turn", {"difficult", "attack"})
+    Crescendo = ("crescendo", {"difficult", "attack"})
 
     @classmethod
     def get_aggregate_tags(cls) -> set[str]:
@@ -149,7 +149,7 @@ class FoundryStrategy(ScenarioStrategy):  # type: ignore[misc]
             set[str]: Set of tags that are aggregate markers.
         """
         # Include base class aggregates ("all") and add Foundry-specific ones
-        return super().get_aggregate_tags() | {"easy", "moderate", "difficult", "converter", "workflow"}
+        return super().get_aggregate_tags() | {"easy", "moderate", "difficult", "converter", "attack"}
 
     @classmethod
     def supports_composition(cls) -> bool:
@@ -167,15 +167,15 @@ class FoundryStrategy(ScenarioStrategy):  # type: ignore[misc]
         Validate whether the given Foundry strategies can be composed together.
 
         Foundry-specific composition rules:
-        - Multiple workflow strategies (e.g., Crescendo, MultiTurn) cannot be composed together
+        - Multiple attack strategies (e.g., Crescendo, MultiTurn) cannot be composed together
         - Converters can be freely composed with each other
-        - At most one workflow can be composed with any number of converters
+        - At most one attack can be composed with any number of converters
 
         Args:
             strategies (Sequence[ScenarioStrategy]): The strategies to validate for composition.
 
         Raises:
-            ValueError: If the composition violates Foundry's rules (e.g., multiple workflows).
+            ValueError: If the composition violates Foundry's rules (e.g., multiple attack).
         """
         if not strategies:
             raise ValueError("Cannot validate empty strategy list")
@@ -183,13 +183,13 @@ class FoundryStrategy(ScenarioStrategy):  # type: ignore[misc]
         # Filter to only FoundryStrategy instances
         foundry_strategies = [s for s in strategies if isinstance(s, FoundryStrategy)]
 
-        # Foundry-specific rule: Cannot compose multiple workflow strategies
-        workflows = [s for s in foundry_strategies if "workflow" in s.tags]
+        # Foundry-specific rule: Cannot compose multiple attack strategies
+        attacks = [s for s in foundry_strategies if "attack" in s.tags]
 
-        if len(workflows) > 1:
+        if len(attacks) > 1:
             raise ValueError(
-                f"Cannot compose multiple workflow strategies together: {[w.value for w in workflows]}. "
-                f"Only one workflow strategy is allowed per composition."
+                f"Cannot compose multiple attack strategies together: {[a.value for a in attacks]}. "
+                f"Only one attack strategy is allowed per composition."
             )
 
 
@@ -334,7 +334,7 @@ class FoundryScenario(Scenario):
 
         Args:
             composite_strategy (ScenarioCompositeStrategy): Composite strategy containing one or more
-                FoundryStrategy enum members to compose together. Can include workflow strategies
+                FoundryStrategy enum members to compose together. Can include attack strategies
                 (e.g., Crescendo, MultiTurn) and converter strategies (e.g., Base64, ROT13) that
                 will be applied to the same prompts.
 
@@ -342,25 +342,25 @@ class FoundryScenario(Scenario):
             AtomicAttack: The configured atomic attack.
 
         Raises:
-            ValueError: If the strategy composition is invalid (e.g., multiple workflow strategies).
+            ValueError: If the strategy composition is invalid (e.g., multiple attack strategies).
         """
         attack: AttackStrategy
 
         # Extract FoundryStrategy enums from the composite
         strategy_list = [s for s in composite_strategy.strategies if isinstance(s, FoundryStrategy)]
 
-        workflows = [s for s in strategy_list if "workflow" in s.tags]
+        attacks = [s for s in strategy_list if "attack" in s.tags]
         converters_strategies = [s for s in strategy_list if "converter" in s.tags]
 
-        # Validate workflow composition
-        if len(workflows) > 1:
-            raise ValueError(f"Cannot compose multiple workflow strategies: {[w.value for w in workflows]}")
+        # Validate attack composition
+        if len(attacks) > 1:
+            raise ValueError(f"Cannot compose multiple attack strategies: {[a.value for a in attacks]}")
 
         attack_type: type[AttackStrategy] = PromptSendingAttack
-        if len(workflows) == 1:
-            if workflows[0] == FoundryStrategy.Crescendo:
+        if len(attacks) == 1:
+            if attacks[0] == FoundryStrategy.Crescendo:
                 attack_type = CrescendoAttack
-            elif workflows[0] == FoundryStrategy.MultiTurn:
+            elif attacks[0] == FoundryStrategy.MultiTurn:
                 attack_type = RedTeamingAttack
 
         converters: list[PromptConverter] = []

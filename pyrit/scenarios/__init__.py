@@ -5,7 +5,7 @@
 
 from pyrit.scenarios.atomic_attack import AtomicAttack, AtomicAttackResult
 from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
+from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 
 from pyrit.scenarios.scenarios.encoding_scenario import EncodingScenario, EncodingStrategy
 from pyrit.scenarios.scenarios.foundry_scenario import FoundryStrategy, FoundryScenario
