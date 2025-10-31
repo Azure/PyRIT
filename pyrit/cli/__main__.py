@@ -15,6 +15,7 @@ import logging
 import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
 from pathlib import Path
+from typing import Any
 
 # Local application imports
 from pyrit.cli.initializer_registry import InitializerInfo, InitializerRegistry
@@ -51,6 +52,10 @@ Examples:
 
   # Run with custom initialization scripts
   pyrit_scan encoding_scenario --initialization-scripts ./my_config.py
+
+  # Run specific strategies
+  pyrit_scan encoding_scenario --initializers simple objective_target --scenario-strategies base64 rot13 morse_code
+  pyrit_scan foundry_scenario --initializers simple objective_target --scenario-strategies base64 atbash
 """,
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -102,6 +107,12 @@ Examples:
         type=str,
         nargs="+",
         help="Paths to custom Python initialization scripts that configure scenarios and defaults",
+    )
+    parser.add_argument(
+        "--scenario-strategies",
+        type=str,
+        nargs="+",
+        help="List of strategy names to run (e.g., base64 rot13 morse_code). If not specified, uses scenario defaults.",
     )
 
     return parser.parse_args(args)
@@ -162,6 +173,7 @@ async def run_scenario_async(
     *,
     scenario_name: str,
     registry: ScenarioRegistry,
+    scenario_strategies: list[str] | None = None,
 ) -> None:
     """
     Run a specific scenario by name.
@@ -169,6 +181,9 @@ async def run_scenario_async(
     Args:
         scenario_name (str): Name of the scenario to run.
         registry (ScenarioRegistry): The scenario registry to query.
+        scenario_strategies (list[str] | None): Optional list of strategy names to run.
+            If provided, these will be converted to ScenarioCompositeStrategy instances
+            and passed to the scenario's __init__.
 
     Raises:
         ValueError: If the scenario is not found or cannot be instantiated.
@@ -186,13 +201,39 @@ async def run_scenario_async(
 
     logger.info(f"Instantiating scenario: {scenario_class.__name__}")
 
-    # Instantiate the scenario without arguments
+    # Instantiate the scenario with optional strategy override
     # The scenario should get its configuration from:
-    # 1. Default values set by initialization scripts via @apply_defaults
-    # 2. Global variables set by initialization scripts
+    # 1. --scenario-strategies CLI flag (if provided)
+    # 2. Default values set by initialization scripts via @apply_defaults
+    # 3. Global variables set by initialization scripts
+
+    scenario: Scenario
+
     try:
-        # Note: Scenario subclasses handle name/version in their __init__, so we can call with no args
-        scenario: Scenario = scenario_class()  # type: ignore[call-arg]
+        if scenario_strategies:
+            # Get the strategy enum class for this scenario
+            strategy_class = scenario_class.get_strategy_class()
+
+            # Convert strategy names to enum instances
+            strategy_enums = []
+            for strategy_name in scenario_strategies:
+                try:
+                    # Python Enum supports direct construction from value
+                    strategy_enums.append(strategy_class(strategy_name))
+                except ValueError:
+                    available_strategies = [s.value for s in strategy_class]
+                    raise ValueError(
+                        f"Strategy '{strategy_name}' not found in {scenario_class.__name__}.\n"
+                        f"Available strategies: {', '.join(available_strategies)}\n"
+                        f"Use 'pyrit_scan --list-scenarios' to see available strategies for each scenario."
+                    ) from None
+
+            # Pass the strategy enums to the scenario
+            # The scenario's __init__ will call prepare_scenario_strategies() to handle conversion
+            scenario = scenario_class(scenario_strategies=strategy_enums)  # type: ignore[call-arg]
+        else:
+            # No strategies specified, use scenario defaults
+            scenario = scenario_class()  # type: ignore[call-arg]
     except TypeError as e:
         # Check if this is a missing parameter error
         error_msg = str(e)
@@ -262,17 +303,34 @@ def _format_wrapped_text(*, text: str, indent: str = "      ", max_width: int = 
         print(line)
 
 
-def _format_scenario_info(*, scenario_info: dict[str, str]) -> None:
+def _format_scenario_info(*, scenario_info: dict[str, Any]) -> None:
     """
     Print formatted information about a scenario.
 
     Args:
-        scenario_info (dict[str, str]): Dictionary containing scenario information.
+        scenario_info (dict[str, Any]): Dictionary containing scenario information.
+            Expected keys: name, class_name, description, default_strategy, aggregate_strategies, all_strategies
     """
     print(f"\n  {scenario_info['name']}")
     print(f"    Class: {scenario_info['class_name']}")
     print("    Description:")
     _format_wrapped_text(text=scenario_info["description"], indent="      ")
+
+    # Display aggregate strategies if present
+    if scenario_info.get("aggregate_strategies"):
+        print("    Aggregate Strategies:")
+        for strategy in scenario_info["aggregate_strategies"]:
+            print(f"      - {strategy}")
+
+    # Display all strategies if present
+    if scenario_info.get("all_strategies"):
+        print(f"    Available Strategies ({len(scenario_info['all_strategies'])}):")
+        strategies_text = ", ".join(scenario_info["all_strategies"])
+        _format_wrapped_text(text=strategies_text, indent="      ")
+
+    # Display default strategy if present
+    if scenario_info.get("default_strategy"):
+        print(f"    Default Strategy: {scenario_info['default_strategy']}")
 
 
 def _format_initializer_info(*, info: InitializerInfo) -> None:
@@ -389,11 +447,15 @@ def _run_scenario(*, parsed_args: Namespace) -> int:
         registry = ScenarioRegistry()
         registry.discover_user_scenarios()
 
+        # Get scenario strategies from CLI args if provided
+        scenario_strategies = parsed_args.scenario_strategies if hasattr(parsed_args, "scenario_strategies") else None
+
         # Run the scenario
         asyncio.run(
             run_scenario_async(
                 scenario_name=parsed_args.scenario_name,
                 registry=registry,
+                scenario_strategies=scenario_strategies,
             )
         )
         return 0

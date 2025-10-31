@@ -55,6 +55,27 @@ class ConcreteScenario(Scenario):
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
+    @classmethod
+    def get_strategy_class(cls):
+        """Return a mock strategy class for testing."""
+
+        from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+
+        # Return a simple mock strategy class for testing
+        class TestStrategy(ScenarioStrategy):
+            TEST = ("test", set())
+
+            @classmethod
+            def get_aggregate_tags(cls) -> set[str]:
+                return set()
+
+        return TestStrategy
+
+    @classmethod
+    def get_default_strategy(cls):
+        """Return the default strategy for testing."""
+        return cls.get_strategy_class().TEST
+
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return
 

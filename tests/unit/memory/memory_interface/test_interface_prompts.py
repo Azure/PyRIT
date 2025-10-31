@@ -16,6 +16,7 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
+    SeedPrompt,
 )
 
 
@@ -967,8 +968,6 @@ async def test_message_piece_hash_stored_and_retrieved(sqlite_instance: MemoryIn
 @pytest.mark.asyncio
 async def test_seed_prompt_hash_stored_and_retrieved(sqlite_instance: MemoryInterface):
     """Test that seed prompt hash values are properly stored and retrieved."""
-    from pyrit.models import SeedPrompt
-
     # Create a seed prompt
     seed_prompt = SeedPrompt(
         value="Test seed prompt",

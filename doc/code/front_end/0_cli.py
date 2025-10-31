@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -57,29 +61,30 @@
 #
 # 1. A Scenario. Many are defined in `pyrit.scenarios.scenarios`. But you can also define your own in initialization_scripts.
 # 2. Initializers (which can be supplied via `--initializers` or `--initialization-scripts`). Scenarios often don't need many arguments, but they can be configured in different ways. And at the very least, most need an `objective_target` (the thing you're running a scan against).
+# 3. Scenario Strategies (optional). These are supplied by the `--scenario-strategies` flag and tell the scenario what to test, but they are always optional. Also note you can obtain these by running `--list-scenarios`
 #
 # Basic usage will look something like:
 #
 # ```shell
-# pyrit_scan <scenario> --initializers <initializer1> <initializer2>
+# pyrit_scan <scenario> --initializers <initializer1> <initializer2> --scenario-strategies <stragegy1> <strategy2>
 # ```
 #
 # Or concretely:
 #
 # ```shell
-# !pyrit_scan foundry_scenario --initializers simple openai_objective_target
+# !pyrit_scan foundry_scenario --initializers simple openai_objective_target --scenario-strategies base64
 # ```
 #
 # Example with a basic configuration that runs the Foundry scenario against the objective target defined in `openai_objective_target` (which just is an OpenAIChatTarget with `DEFAULT_OPENAI_FRONTEND_ENDPOINT` and `DEFAULT_OPENAI_FRONTEND_KEY`).
 
 # %%
-# !pyrit_scan foundry_scenario --initializers openai_objective_target
+# !pyrit_scan foundry_scenario --initializers openai_objective_target --scenario-strategies base64
 
 # %% [markdown]
-# Or with all options and multiple initializers:
+# Or with all options and multiple initializers and multiple strategies:
 #
 # ```shell
-# pyrit_scan foundry_scenario --database InMemory --initializers simple objective_target objective_list
+# pyrit_scan foundry_scenario --database InMemory --initializers simple objective_target objective_list --scenario-strategies easy crescendo
 # ```
 #
 # You can also use custom initialization scripts by passing file paths. It is relative to your current working directory, but to avoid confusion, full paths are always better:

@@ -11,6 +11,7 @@ It's designed to work with PyRIT's initialization system but is kept in common t
 import functools
 import inspect
 import logging
+import sys
 from dataclasses import dataclass
 from typing import Any, Dict, Type, TypeVar
 
@@ -186,7 +187,6 @@ def set_global_variable(*, name: str, value: Any) -> None:
         variable accessible to code that imports or executes after the initialization
         script runs.
     """
-    import sys
 
     # Set the variable in the __main__ module's global namespace
     sys.modules["__main__"].__dict__[name] = value
