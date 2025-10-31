@@ -300,7 +300,7 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
             target._memory = MagicMock(MemoryInterface)
 
             with pytest.raises(EmptyResponseException):
-                await target.send_prompt_async(prompt_request=message)
+                await target.send_prompt_async(message=message)
 
             assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
@@ -322,14 +322,12 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
 
-        prompt_request = Message(
-            message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")]
-        )
+        message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
         with pytest.raises(RateLimitException) as rle:
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_message_to_memory.assert_called_once_with(request=prompt_request)
+            target._memory.add_message_to_memory.assert_called_once_with(request=message)
 
             assert str(rle.value) == "Rate Limit Reached"
 
@@ -342,7 +340,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     target._memory = mock_memory
 
-    prompt_request = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
     response = MagicMock()
     response.status_code = 400
@@ -352,9 +350,9 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
         with pytest.raises(httpx.HTTPStatusError) as bre:
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_message_to_memory.assert_called_once_with(request=prompt_request)
+            target._memory.add_message_to_memory.assert_called_once_with(request=message)
 
             assert str(bre.value) == "Bad Request"
 
@@ -400,7 +398,7 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatT
             openai_mock_return = MagicMock()
             openai_mock_return.text = json.dumps(openai_response_json)
             mock_create.return_value = openai_mock_return
-            response: Message = await target.send_prompt_async(prompt_request=message)
+            response: Message = await target.send_prompt_async(message=message)
             assert len(response.message_pieces) == 1
             assert response.get_value() == "hi"
     os.remove(tmp_file_name)
@@ -453,7 +451,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
             target._memory = MagicMock(MemoryInterface)
 
             with pytest.raises(EmptyResponseException):
-                await target.send_prompt_async(prompt_request=message)
+                await target.send_prompt_async(message=message)
 
             assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
@@ -461,9 +459,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChatTarget):
 
-    prompt_request = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     response = MagicMock()
     response.status_code = 429
@@ -475,7 +471,7 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChat
     ) as mock_request:
 
         with pytest.raises(RateLimitError):
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
@@ -487,13 +483,11 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
 
     side_effect = BadRequestError("Bad Request Error", response=response, body="Bad request")
 
-    prompt_request = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")])
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
         with pytest.raises(BadRequestError) as bre:
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             assert str(bre.value) == "Bad Request Error"
 
 
@@ -512,7 +506,7 @@ async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
         }
     )
 
-    prompt_request = Message(
+    message = Message(
         message_pieces=[
             MessagePiece(
                 role="user",
@@ -527,7 +521,7 @@ async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
     mock_response.text = response_body
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", return_value=mock_response):
-        response = await target.send_prompt_async(prompt_request=prompt_request)
+        response = await target.send_prompt_async(message=message)
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "blocked"
         assert response.message_pieces[0].converted_value_data_type == "error"
@@ -538,7 +532,7 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
 
     image_piece = get_image_message_piece()
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
-    prompt_request = Message(
+    message = Message(
         message_pieces=[
             MessagePiece(
                 role="user",
@@ -551,7 +545,7 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
     )
 
     with pytest.raises(ValueError) as excinfo:
-        target._validate_request(prompt_request=prompt_request)
+        target._validate_request(message=message)
 
     assert "This target only supports text and image_path." in str(
         excinfo.value
@@ -660,7 +654,7 @@ async def test_openai_chat_target_no_api_version(sample_conversations: MutableSe
         mock_request.return_value.status_code = 200
         mock_request.return_value.text = '{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}'
 
-        await target.send_prompt_async(prompt_request=request)
+        await target.send_prompt_async(message=request)
 
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" not in called_params
@@ -677,7 +671,7 @@ async def test_openai_chat_target_default_api_version(sample_conversations: Muta
         mock_request.return_value.status_code = 200
         mock_request.return_value.text = '{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}'
 
-        await target.send_prompt_async(prompt_request=request)
+        await target.send_prompt_async(message=request)
 
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" in called_params
@@ -706,7 +700,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
                 text='{"choices": [{"finish_reason": "stop", "message": {"content": "test response"}}]}'
             )
 
-            prompt_request = Message(
+            message = Message(
                 message_pieces=[
                     MessagePiece(
                         role="user",
@@ -716,7 +710,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
                     )
                 ]
             )
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             mock_refresh.assert_called_once()
 
 
@@ -750,12 +744,12 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
             original_value_data_type="text",
             converted_value_data_type="text",
         )
-        prompt_request = Message(message_pieces=[message_piece])
+        message = Message(message_pieces=[message_piece])
 
         with patch(
             "pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)
         ) as mock_make_request:
-            result = await target.send_prompt_async(prompt_request=prompt_request)
+            result = await target.send_prompt_async(message=message)
 
             assert mock_make_request.call_count == 1
             assert result.message_pieces[0].converted_value_data_type == "error"
@@ -778,7 +772,7 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
         original_value_data_type="text",
         converted_value_data_type="text",
     )
-    prompt_request = Message(message_pieces=[message_piece])
+    message = Message(message_pieces=[message_piece])
     target._memory = MagicMock()
     target._memory.get_conversation.return_value = []
     target.refresh_auth_headers = MagicMock()
@@ -792,7 +786,7 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
     )
 
     with pytest.raises(httpx.HTTPStatusError):
-        await target.send_prompt_async(prompt_request=prompt_request)
+        await target.send_prompt_async(message=message)
 
 
 def test_set_auth_headers_with_entra_auth(patch_central_database):

@@ -27,7 +27,7 @@ async def test_send_prompt_user_no_system(sample_entries: MutableSequence[Messag
     request = sample_entries[0]
     request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
-    await no_op.send_prompt_async(prompt_request=Message(message_pieces=[request]))
+    await no_op.send_prompt_async(message=Message(message_pieces=[request]))
 
     output_stream.seek(0)
     captured_output = output_stream.read()
@@ -44,7 +44,7 @@ async def test_send_prompt_stream(sample_entries: MutableSequence[MessagePiece])
         request = sample_entries[0]
         request.converted_value = prompt
 
-        await no_op.send_prompt_async(prompt_request=Message(message_pieces=[request]))
+        await no_op.send_prompt_async(message=Message(message_pieces=[request]))
 
         tmp_file.seek(0)
         content = tmp_file.read()

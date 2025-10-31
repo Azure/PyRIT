@@ -106,9 +106,9 @@ message_piece = MessagePiece(
     original_value="What is the weather in Boston in celsius? Use the get_current_weather function.",
     original_value_data_type="text",
 )
-prompt_request = Message(message_pieces=[message_piece])
+message = Message(message_pieces=[message_piece])
 
-response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
+response = await target.send_prompt_async(message=message)  # type: ignore
 
 for idx, piece in enumerate(response.message_pieces):
     print(f"{idx} | {piece.role}: {piece.original_value}")
@@ -152,9 +152,9 @@ target = OpenAIResponseTarget(
 message_piece = MessagePiece(
     role="user", original_value="Briefly, what is one positive news story from today?", original_value_data_type="text"
 )
-prompt_request = Message(message_pieces=[message_piece])
+message = Message(message_pieces=[message_piece])
 
-response = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
+response = await target.send_prompt_async(message=message)  # type: ignore
 
 for idx, piece in enumerate(response.message_pieces):
     if piece.original_value_data_type != "reasoning":
@@ -180,7 +180,7 @@ message_piece = MessagePiece(
     original_value="What is the capital of Italy?",
     original_value_data_type="text",
 )
-prompt_request = Message(message_pieces=[message_piece])
+message = Message(message_pieces=[message_piece])
 
 # Define a grammar that prevents "Rome" from being generated
 lark_grammar = r"""
@@ -216,9 +216,9 @@ unconstrained_target = OpenAIResponseTarget(
     temperature=1.0,
 )
 
-unconstrained_result = await unconstrained_target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
+unconstrained_result = await unconstrained_target.send_prompt_async(message=message)  # type: ignore
 
-result = await target.send_prompt_async(prompt_request=prompt_request)  # type: ignore
+result = await target.send_prompt_async(message=message)  # type: ignore
 
 print("Unconstrained Response:")
 for idx, piece in enumerate(unconstrained_result.message_pieces):

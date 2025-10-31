@@ -65,7 +65,7 @@ class PromptShieldScorer(TrueFalseScorer):
         )
 
         # The body of the Prompt Shield response
-        target_response = await self._prompt_target.send_prompt_async(prompt_request=request)
+        target_response = await self._prompt_target.send_prompt_async(message=request)
         response: str = target_response.get_value()
 
         # Whether or not any of the documents or userPrompt got flagged as an attack

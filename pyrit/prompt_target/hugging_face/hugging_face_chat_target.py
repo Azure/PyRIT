@@ -236,15 +236,15 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """
         Sends a normalized prompt asynchronously to the HuggingFace model.
         """
         # Load the model and tokenizer using the encapsulated method
         await self.load_model_and_tokenizer_task
 
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
         prompt_template = request.converted_value
 
         logger.info(f"Sending the following prompt to the HuggingFace model: {prompt_template}")
@@ -328,15 +328,15 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.error(error_message)
             raise ValueError(error_message)
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """
         Validates the provided message.
         """
-        n_pieces = len(prompt_request.message_pieces)
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        piece_type = message.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

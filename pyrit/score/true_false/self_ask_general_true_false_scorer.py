@@ -109,8 +109,8 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         unvalidated: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=system_prompt,
-            prompt_request_value=user_prompt,
-            prompt_request_data_type=message_piece.converted_value_data_type,
+            message_value=user_prompt,
+            message_data_type=message_piece.converted_value_data_type,
             scored_prompt_id=message_piece.id,
             category=self._score_category,
             objective=objective,

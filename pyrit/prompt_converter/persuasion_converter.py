@@ -116,7 +116,7 @@ class PersuasionConverter(PromptConverter):
     @pyrit_json_retry
     async def send_persuasion_prompt_async(self, request):
         """Sends the prompt to the converter target and processes the response."""
-        response = await self.converter_target.send_prompt_async(prompt_request=request)
+        response = await self.converter_target.send_prompt_async(message=request)
 
         response_msg = response.get_value()
         response_msg = remove_markdown_json(response_msg)

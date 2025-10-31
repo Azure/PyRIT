@@ -135,7 +135,7 @@ class AzureBlobStorageTarget(PromptTarget):
         return container_url, blob_prefix
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
@@ -148,8 +148,8 @@ class AzureBlobStorageTarget(PromptTarget):
         Returns:
             blob_url (str): The Blob URL of the created blob within the provided storage container.
         """
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
 
         # default file name is <conversation_id>.txt, but can be overridden by prompt metadata
         file_name = f"{request.conversation_id}.txt"
@@ -167,16 +167,16 @@ class AzureBlobStorageTarget(PromptTarget):
 
         return response
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        n_pieces = len(prompt_request.message_pieces)
+    def _validate_request(self, *, message: Message) -> None:
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received {n_pieces} pieces")
 
-        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        piece_type = message.message_pieces[0].converted_value_data_type
         if piece_type not in ["text", "url"]:
             raise ValueError(f"This target only supports text and url prompt input. Received: {piece_type}.")
 
-        request = prompt_request.message_pieces[0]
+        request = message.message_pieces[0]
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
         if len(messages) > 0:

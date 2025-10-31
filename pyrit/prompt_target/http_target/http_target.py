@@ -106,9 +106,9 @@ class HTTPTarget(PromptTarget):
         return http_request_w_prompt
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+    async def send_prompt_async(self, *, message: Message) -> Message:
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
 
         http_request_w_prompt = self._inject_prompt_into_request(request)
 
@@ -235,8 +235,8 @@ class HTTPTarget(PromptTarget):
         host = headers_dict["host"]
         return f"{http_protocol}{host}{path}"
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        message_pieces: Sequence[MessagePiece] = prompt_request.message_pieces
+    def _validate_request(self, *, message: Message) -> None:
+        message_pieces: Sequence[MessagePiece] = message.message_pieces
 
         n_pieces = len(message_pieces)
         if n_pieces != 1:

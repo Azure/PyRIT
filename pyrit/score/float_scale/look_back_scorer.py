@@ -90,8 +90,8 @@ class LookBackScorer(FloatScaleScorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=conversation_as_text,
-            prompt_request_data_type="text",
+            message_value=conversation_as_text,
+            message_data_type="text",
             scored_prompt_id=conversation[0].message_pieces[0].original_prompt_id,
             category="illegal",
             attack_identifier=conversation[0].message_pieces[0].attack_identifier,

@@ -326,7 +326,7 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
         )
 
         # verify the prompt target received the correct arguments from the normalizer
-        sent_request = prompt_target.send_prompt_async.call_args.kwargs["prompt_request"].message_pieces[0]
+        sent_request = prompt_target.send_prompt_async.call_args.kwargs["message"].message_pieces[0]
         assert sent_request.converted_value == filename
         assert sent_request.converted_value_data_type == "image_path"
 

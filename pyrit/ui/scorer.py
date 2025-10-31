@@ -76,8 +76,8 @@ class GradioApp:
 
     def _send_message(self, value):
         self.rpc_client.send_message(value)
-        prompt_request = self.rpc_client.wait_for_prompt()
-        return str(prompt_request.converted_value)
+        message_piece = self.rpc_client.wait_for_prompt()
+        return str(message_piece.converted_value)
 
     def _on_next_prompt_change(self, next_prompt):
         if next_prompt == "":
@@ -98,8 +98,8 @@ class GradioApp:
     def _main_interface_loaded(self):
         print("Showing main interface")
         self.rpc_client.start()
-        prompt_request = self.rpc_client.wait_for_prompt()
-        next_prompt = str(prompt_request.converted_value)
+        message = self.rpc_client.wait_for_prompt()
+        next_prompt = str(message.converted_value)
         self.connect_status.set_next_prompt(next_prompt)
         self.connect_status.set_ready()
         print("PyRIT connected")

@@ -84,8 +84,8 @@ class SelfAskScaleScorer(FloatScaleScorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            prompt_request_value=scoring_prompt,
-            prompt_request_data_type=message_piece.converted_value_data_type,
+            message_value=scoring_prompt,
+            message_data_type=message_piece.converted_value_data_type,
             scored_prompt_id=message_piece.id,
             category=self._category,
             objective=objective,

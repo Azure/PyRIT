@@ -64,7 +64,7 @@ async def test_prompt_shield_validate_request_length(promptshield_target: Prompt
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await promptshield_target.send_prompt_async(prompt_request=request)
+        await promptshield_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
@@ -72,7 +72,7 @@ async def test_prompt_shield_reject_non_text(
     promptshield_target: PromptShieldTarget, audio_message_piece: MessagePiece
 ):
     with pytest.raises(ValueError):
-        await promptshield_target.send_prompt_async(prompt_request=Message([audio_message_piece]))
+        await promptshield_target.send_prompt_async(message=Message([audio_message_piece]))
 
 
 @pytest.mark.asyncio

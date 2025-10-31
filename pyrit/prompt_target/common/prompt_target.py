@@ -37,13 +37,13 @@ class PromptTarget(abc.ABC, Identifier):
             logging.basicConfig(level=logging.INFO)
 
     @abc.abstractmethod
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """
         Sends a normalized prompt async to the prompt target.
         """
 
     @abc.abstractmethod
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """
         Validates the provided message
         """

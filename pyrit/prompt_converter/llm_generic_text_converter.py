@@ -112,7 +112,7 @@ class LLMGenericTextConverter(PromptConverter):
             ]
         )
 
-        response = await self._converter_target.send_prompt_async(prompt_request=request)
+        response = await self._converter_target.send_prompt_async(message=request)
         return ConverterResult(output_text=response.get_value(), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
