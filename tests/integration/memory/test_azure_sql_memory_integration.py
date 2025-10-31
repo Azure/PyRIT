@@ -624,7 +624,7 @@ async def test_get_scenario_results_combined_filters(azuresql_instance: AzureSQL
         # Test combining version and time filters with test_id
         # Add 1 second buffer to account for SQL Server datetime precision differences
         results = azuresql_instance.get_scenario_results(
-            pyrit_version="0.4.0", before_time=now + timedelta(seconds=1), labels={"test_id": test_id}
+            pyrit_version="0.4.0", added_before=now + timedelta(seconds=1), labels={"test_id": test_id}
         )
         assert len(results) == 2
 

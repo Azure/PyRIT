@@ -423,14 +423,14 @@ def test_filter_by_completion_time(sqlite_instance: MemoryInterface):
     sqlite_instance.add_scenario_results_to_memory(scenario_results=[scenario1, scenario2, scenario3])
 
     # Query scenarios after yesterday
-    results = sqlite_instance.get_scenario_results(after_time=yesterday)
+    results = sqlite_instance.get_scenario_results(added_after=yesterday)
     assert len(results) == 2
     result_names = {r.scenario_identifier.name for r in results}
     assert "Recent Scenario" in result_names
     assert "Yesterday Scenario" in result_names
 
     # Query scenarios before yesterday
-    results = sqlite_instance.get_scenario_results(before_time=yesterday)
+    results = sqlite_instance.get_scenario_results(added_before=yesterday)
     assert len(results) == 2
     result_names = {r.scenario_identifier.name for r in results}
     assert "Yesterday Scenario" in result_names

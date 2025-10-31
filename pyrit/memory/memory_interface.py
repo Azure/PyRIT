@@ -1123,8 +1123,8 @@ class MemoryInterface(abc.ABC):
         scenario_name: Optional[str] = None,
         scenario_version: Optional[int] = None,
         pyrit_version: Optional[str] = None,
-        after_time: Optional[datetime] = None,
-        before_time: Optional[datetime] = None,
+        added_after: Optional[datetime] = None,
+        added_before: Optional[datetime] = None,
         labels: Optional[dict[str, str]] = None,
         objective_target_endpoint: Optional[str] = None,
         objective_target_model_name: Optional[str] = None,
@@ -1139,7 +1139,7 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             scenario_version (Optional[int], optional): The scenario version to filter by. Defaults to None.
             pyrit_version (Optional[str], optional): The PyRIT version to filter by. Defaults to None.
-            after_time (Optional[datetime], optional): Filter for scenarios completed after this datetime.
+            added_after (Optional[datetime], optional): Filter for scenarios completed after this datetime.
                 Defaults to None.
             before_time (Optional[datetime], optional): Filter for scenarios completed before this datetime.
                 Defaults to None.
@@ -1172,11 +1172,11 @@ class MemoryInterface(abc.ABC):
         if pyrit_version:
             conditions.append(ScenarioResultEntry.pyrit_version == pyrit_version)
 
-        if after_time:
-            conditions.append(ScenarioResultEntry.completion_time >= after_time)
+        if added_after:
+            conditions.append(ScenarioResultEntry.completion_time >= added_after)
 
-        if before_time:
-            conditions.append(ScenarioResultEntry.completion_time <= before_time)
+        if added_before:
+            conditions.append(ScenarioResultEntry.completion_time <= added_before)
 
         if labels:
             # Use database-specific JSON query method

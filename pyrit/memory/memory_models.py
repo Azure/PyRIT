@@ -658,27 +658,37 @@ class AttackResultEntry(Base):
 
 class ScenarioResultEntry(Base):
     """
-    Represents the scenario result data in the database.
+    Represents a scenario execution result in the database.
 
-    Parameters:
-        __tablename__ (str): The name of the database table.
+    This class stores the high-level metadata and results of a PyRIT scenario execution,
+    including references to all attack results generated during the scenario run. The actual
+    AttackResult objects are stored separately in AttackResultEntries and can be retrieved
+    using the conversation IDs stored here.
+
+    Attributes:
+        __tablename__ (str): The name of the database table ("ScenarioResultEntries").
         __table_args__ (dict): Additional arguments for the database table.
-        id (Uuid): The unique identifier for the scenario result entry.
-        scenario_name (str): Name of the scenario.
-        scenario_description (str): Description of the scenario.
-        scenario_version (int): Version of the scenario.
-        pyrit_version (str): PyRIT version string.
-        scenario_init_data (dict): Initialization data for the scenario.
-        objective_target_identifier (dict): Identifier for the objective target.
-        objective_scorer_identifier (dict): Identifier for the objective scorer.
-        attack_results_json (str): JSON-serialized dict mapping atomic attack names to lists of conversation_ids.
+        id (Uuid): Unique identifier for this scenario result entry.
+        scenario_name (str): Name of the scenario that was executed.
+        scenario_description (str): Optional detailed description of the scenario.
+        scenario_version (int): Version number of the scenario definition (default: 1).
+        pyrit_version (str): Version of PyRIT framework used during scenario execution.
+        scenario_init_data (dict): Optional initialization parameters used to configure the scenario.
+        objective_target_identifier (dict): Identifier for the target being evaluated in the scenario.
+        objective_scorer_identifier (dict): Optional identifier for the scorer used to evaluate results.
+        attack_results_json (str): JSON-serialized dictionary mapping attack names to conversation IDs.
+            Format: {"attack_name": ["conversation_id1", "conversation_id2", ...]}.
             The full AttackResult objects are stored in AttackResultEntries and can be queried by conversation_id.
-        timestamp (DateTime): The timestamp of the scenario result entry.
+        labels (dict): Optional key-value pairs for categorization and filtering.
+        completion_time (DateTime): When the scenario execution completed.
+        timestamp (DateTime): When this database entry was created.
 
     Methods:
-        get_scenario_result(memory_interface): Returns a ScenarioResult object with AttackResults populated
-            from the database if memory_interface is provided.
-        __str__(): Returns a string representation of the scenario result entry.
+        get_scenario_result(): Returns a ScenarioResult object with scenario metadata.
+            Note: attack_results will be empty. Use memory_interface.get_scenario_results()
+            to automatically populate AttackResults from the database.
+        get_conversation_ids_by_attack_name(): Returns the mapping of attack names to conversation IDs.
+        __str__(): Returns a human-readable string representation.
     """
 
     __tablename__ = "ScenarioResultEntries"
