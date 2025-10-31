@@ -115,7 +115,7 @@ class OpenAIDALLETarget(OpenAITarget):
         Send a prompt to the DALL-E target and return the response.
 
         Args:
-            message (Message): The prompt request to send.
+            message (Message): The message to send.
 
         Returns:
             Message: The response from the DALL-E target.

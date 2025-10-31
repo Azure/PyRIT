@@ -133,7 +133,7 @@ async def test_send_prompt_async_client_kwargs():
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_validation(mock_http_target):
-    # Create an invalid prompt request (missing message_pieces)
+    # Create an invalid message (missing message_pieces)
     invalid_message = MagicMock()
     invalid_message.message_pieces = []
     with pytest.raises(ValueError) as value_error:

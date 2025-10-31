@@ -7,14 +7,10 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.1
 #   kernelspec:
-#     display_name: pyrit-python313-fresh2
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
-
-import asyncio
-import pathlib
-import sys
 
 # %% [markdown]
 # # Playwright Copilot Target - optional
@@ -23,9 +19,12 @@ import sys
 # It is built specifically for testing Microsoft's Copilots (currently supports M365 and Consumer Copilot).
 #
 # %%
+import asyncio
+import pathlib
+import sys
 from playwright.async_api import Page, async_playwright
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -35,7 +34,7 @@ from pyrit.executor.attack import (
     RTASystemPromptPaths,
     SingleTurnAttackContext,
 )
-from pyrit.models import SeedPrompt, SeedPromptGroup
+from pyrit.models import SeedPrompt, SeedGroup
 from pyrit.prompt_target import CopilotType, OpenAIChatTarget, PlaywrightCopilotTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
@@ -45,10 +44,9 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 # ## Connecting to an Existing Browser Session
 #
 # Instead of launching a new browser, you can connect `PlaywrightTarget` to an existing browser session. Here are a few approaches:
-##
-# First, start a browser with remote debugging enabled (outside of Python):
+#
+# First, start a browser (in this case Edge) with remote debugging enabled (outside of Python):
 # ```bash
-# # Edge
 # Start-Process msedge -ArgumentList "--remote-debugging-port=9222", "--user-data-dir=$env:TEMP\edge-debug", "--profile-directory=`"Profile 3`""
 # ```
 # The profile directory is optional but useful if you want to maintain session state (e.g., logged-in users).
@@ -90,7 +88,7 @@ async def connect_to_existing_browser(browser_debug_port, run_function):
 
 
 # %% [markdown]
-# ### Using `PlaywrightCopilotTarget` for Text Interactions
+# ## Using `PlaywrightCopilotTarget` for Text Interactions
 #
 # Now, we can use the `PlaywrightCopilotTarget` which has built-in Copilot functionality.
 # This target automatically handles text inputs without needing custom interaction functions.
@@ -146,14 +144,14 @@ async def run_multimodal(page: Page) -> None:
 
     objective = "Create an image of this raccoon wearing a hat that looks like a slice of pizza, standing in front of the Eiffel Tower."
 
-    seed_prompt_group = SeedPromptGroup(
+    seed_group = SeedGroup(
         prompts=[
             SeedPrompt(value=image_path, data_type="image_path"),
             SeedPrompt(value=objective, data_type="text"),
         ]
     )
     attack_context = SingleTurnAttackContext(
-        seed_prompt_group=seed_prompt_group,
+        seed_group=seed_group,
         objective=objective,
     )
 

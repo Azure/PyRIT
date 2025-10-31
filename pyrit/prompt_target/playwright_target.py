@@ -28,12 +28,12 @@ class PlaywrightTarget(PromptTarget):
     """
     PlaywrightTarget uses Playwright to interact with a web UI.
 
-    The interaction function receives the complete PromptRequestResponse and can process
+    The interaction function receives the complete Message and can process
     multiple pieces as needed. All pieces must be of type 'text' or 'image_path'.
 
     Parameters:
         interaction_func (InteractionFunction): The function that defines how to interact with the page.
-            This function receives the Playwright page and the complete PromptRequestResponse.
+            This function receives the Playwright page and the complete Message.
         page (Page): The Playwright page object to use for interaction.
     """
 

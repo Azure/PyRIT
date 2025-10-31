@@ -95,10 +95,6 @@ class PlaywrightCopilotTarget(PromptTarget):
     # URL identifiers
     M365_URL_IDENTIFIER: str = "m365"
 
-    # Element states
-    STATE_VISIBLE: str = "visible"
-    STATE_ATTACHED: str = "attached"
-
     # Login requirement message
     LOGIN_REQUIRED_HEADER: str = "Sign in for the full experience"
 
@@ -146,10 +142,10 @@ class PlaywrightCopilotTarget(PromptTarget):
 
     async def send_prompt_async(self, *, message: Message) -> Message:
         """
-        Send a prompt request to Microsoft Copilot and return the response.
+        Send a message to Microsoft Copilot and return the response.
 
         Args:
-            message (Message): The prompt request to send. Can contain multiple pieces
+            message (Message): The message to send. Can contain multiple pieces
                 of type 'text' or 'image_path'.
 
         Returns:
@@ -712,7 +708,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         # Wait for dropdown to appear with the file picker button
         add_files_button = self._page.locator(selectors.file_picker_selector)
-        await add_files_button.wait_for(state=self.STATE_VISIBLE, timeout=5000)
+        await add_files_button.wait_for(state="visible", timeout=5000)
 
         # Click the button and handle the file picker
         async with self._page.expect_file_chooser() as fc_info:
@@ -729,7 +725,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         # First, wait for the button to potentially appear
         try:
-            await add_content_button.wait_for(state=self.STATE_ATTACHED, timeout=3000)
+            await add_content_button.wait_for(state="attached", timeout=3000)
         except Exception:
             pass  # Continue with retry logic if wait fails
 
@@ -768,9 +764,9 @@ class PlaywrightCopilotTarget(PromptTarget):
             raise RuntimeError("Login required to access advanced features in Consumer Copilot.")
 
     def _validate_request(self, *, message: Message) -> None:
-        """Validate that the prompt request is compatible with Copilot."""
+        """Validate that the message is compatible with Copilot."""
         if not message.message_pieces:
-            raise ValueError("This target requires at least one prompt request piece.")
+            raise ValueError("This target requires at least one message piece.")
 
         # Validate that all pieces are supported types
         for i, piece in enumerate(message.message_pieces):

@@ -194,7 +194,7 @@ async def test_missing_chat_template_error():
 def test_invalid_message_validation():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
 
-    # Create an invalid prompt request with multiple message pieces
+    # Create an invalid message with multiple message pieces
     message_piece1 = MessagePiece(
         role="user",
         original_value="First piece",

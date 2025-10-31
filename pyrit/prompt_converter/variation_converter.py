@@ -123,7 +123,7 @@ class VariationConverter(PromptConverter):
 
     @pyrit_json_retry
     async def send_variation_prompt_async(self, request):
-        """Sends the prompt request to the converter target and retrieves the response."""
+        """Sends the message to the converter target and retrieves the response."""
         response = await self.converter_target.send_prompt_async(message=request)
 
         response_msg = response.get_value()

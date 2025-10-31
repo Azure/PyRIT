@@ -67,7 +67,7 @@ async def test_send_prompt_async_no_file(mock_request, patch_central_database):
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.request")
 async def test_send_prompt_async_validation(mock_request, patch_central_database):
-    # Create an invalid prompt request (empty message_pieces)
+    # Create an invalid message (empty message_pieces)
     message = MagicMock()
     message.message_pieces = []
     target = HTTPXAPITarget(http_url="http://example.com/validate/", method="POST", timeout=180)

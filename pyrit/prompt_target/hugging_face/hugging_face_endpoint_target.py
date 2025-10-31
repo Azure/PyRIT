@@ -57,7 +57,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         Sends a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
 
         Args:
-            message (Message): The prompt request containing the input data and associated details
+            message (Message): The message containing the input data and associated details
             such as conversation ID and role.
 
         Returns:
@@ -118,7 +118,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         Validates the provided message.
 
         Args:
-            message (Message): The prompt request to validate.
+            message (Message): The message to validate.
 
         Raises:
             ValueError: If the request is not valid for this target.
