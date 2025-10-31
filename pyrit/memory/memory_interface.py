@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_, exists, func
+from sqlalchemy import MetaData, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
@@ -27,6 +27,7 @@ from pyrit.memory.memory_models import (
     Base,
     EmbeddingDataEntry,
     PromptMemoryEntry,
+    ScenarioResultEntry,
     ScoreEntry,
     SeedEntry,
 )
@@ -36,6 +37,7 @@ from pyrit.models import (
     DataTypeSerializer,
     Message,
     MessagePiece,
+    ScenarioResult,
     Score,
     Seed,
     SeedDataset,
@@ -196,6 +198,68 @@ class MemoryInterface(abc.ABC):
         Args:
             entries (Sequence[Base]): A list of SQLAlchemy model instances to be updated.
             update_fields (dict): A dictionary of field names and their new values.
+        """
+
+    @abc.abstractmethod
+    def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
+        """
+        Returns a database-specific condition for filtering AttackResults by targeted harm categories
+        in the associated PromptMemoryEntry records.
+
+        Args:
+            targeted_harm_categories: List of harm categories that must ALL be present.
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        Returns a database-specific condition for filtering AttackResults by labels
+        in the associated PromptMemoryEntry records.
+
+        Args:
+            labels: Dictionary of labels that must ALL be present.
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by labels.
+
+        Args:
+            labels: Dictionary of labels that must ALL be present.
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by target endpoint.
+
+        Args:
+            endpoint: Endpoint substring to search for (case-insensitive).
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by target model name.
+
+        Args:
+            model_name: Model name substring to search for (case-insensitive).
+
+        Returns:
+            Database-specific SQLAlchemy condition.
         """
 
     def add_scores_to_memory(self, *, scores: Sequence[Score]) -> None:
@@ -1023,38 +1087,15 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.outcome == outcome)
 
         if targeted_harm_categories:
-            # construct query to ensure ALL categories must be present in the SAME conversation
-            targeted_harm_categories_subquery = exists().where(
-                and_(
-                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
-                    # Exclude empty strings, None, and empty lists
-                    PromptMemoryEntry.targeted_harm_categories.isnot(None),
-                    PromptMemoryEntry.targeted_harm_categories != "",
-                    PromptMemoryEntry.targeted_harm_categories != "[]",
-                    and_(
-                        *[
-                            func.json_extract(PromptMemoryEntry.targeted_harm_categories, "$").like(f'%"{category}"%')
-                            for category in targeted_harm_categories
-                        ]
-                    ),
-                )
+            # Use database-specific JSON query method
+            conditions.append(
+                self._get_attack_result_harm_category_condition(targeted_harm_categories=targeted_harm_categories)
             )
-            conditions.append(targeted_harm_categories_subquery)
+
         if labels:
-            # ALL labels must be present in the SAME conversation
-            labels_subquery = exists().where(
-                and_(
-                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
-                    PromptMemoryEntry.labels.isnot(None),
-                    and_(
-                        *[
-                            func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value
-                            for key, value in labels.items()
-                        ]
-                    ),
-                )
-            )
-            conditions.append(labels_subquery)
+            # Use database-specific JSON query method
+            conditions.append(self._get_attack_result_label_condition(labels=labels))
+
         try:
             entries: Sequence[AttackResultEntry] = self._query_entries(
                 AttackResultEntry, conditions=and_(*conditions) if conditions else None
@@ -1062,6 +1103,134 @@ class MemoryInterface(abc.ABC):
             return [entry.get_attack_result() for entry in entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
+            return []
+
+    def add_scenario_results_to_memory(self, *, scenario_results: Sequence[ScenarioResult]) -> None:
+        """
+        Inserts a list of scenario results into the memory storage.
+
+        Args:
+            scenario_results: Sequence of ScenarioResult objects to store in the database.
+        """
+        self._insert_entries(
+            entries=[ScenarioResultEntry(entry=scenario_result) for scenario_result in scenario_results]
+        )
+
+    def get_scenario_results(
+        self,
+        *,
+        scenario_result_ids: Optional[Sequence[str]] = None,
+        scenario_name: Optional[str] = None,
+        scenario_version: Optional[int] = None,
+        pyrit_version: Optional[str] = None,
+        added_after: Optional[datetime] = None,
+        added_before: Optional[datetime] = None,
+        labels: Optional[dict[str, str]] = None,
+        objective_target_endpoint: Optional[str] = None,
+        objective_target_model_name: Optional[str] = None,
+    ) -> Sequence[ScenarioResult]:
+        """
+        Retrieves a list of ScenarioResult objects based on the specified filters.
+
+        Args:
+            scenario_result_ids (Optional[Sequence[str]], optional): A list of scenario result IDs.
+                Defaults to None.
+            scenario_name (Optional[str], optional): The scenario name to filter by (substring match).
+                Defaults to None.
+            scenario_version (Optional[int], optional): The scenario version to filter by. Defaults to None.
+            pyrit_version (Optional[str], optional): The PyRIT version to filter by. Defaults to None.
+            added_after (Optional[datetime], optional): Filter for scenarios completed after this datetime.
+                Defaults to None.
+            before_time (Optional[datetime], optional): Filter for scenarios completed before this datetime.
+                Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter by.
+                Defaults to None.
+            objective_target_endpoint (Optional[str], optional): Filter for scenarios where the
+                objective_target_identifier has an endpoint attribute containing this value (case-insensitive).
+                Defaults to None.
+            objective_target_model_name (Optional[str], optional): Filter for scenarios where the
+                objective_target_identifier has a model_name attribute containing this value (case-insensitive).
+                Defaults to None.
+
+        Returns:
+            Sequence[ScenarioResult]: A list of ScenarioResult objects that match the specified filters.
+        """
+        conditions: list[ColumnElement[bool]] = []
+
+        if scenario_result_ids is not None:
+            if len(scenario_result_ids) == 0:
+                # Empty list means no results
+                return []
+            conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))
+
+        if scenario_name:
+            conditions.append(ScenarioResultEntry.scenario_name.contains(scenario_name))
+
+        if scenario_version is not None:
+            conditions.append(ScenarioResultEntry.scenario_version == scenario_version)
+
+        if pyrit_version:
+            conditions.append(ScenarioResultEntry.pyrit_version == pyrit_version)
+
+        if added_after:
+            conditions.append(ScenarioResultEntry.completion_time >= added_after)
+
+        if added_before:
+            conditions.append(ScenarioResultEntry.completion_time <= added_before)
+
+        if labels:
+            # Use database-specific JSON query method
+            conditions.append(self._get_scenario_result_label_condition(labels=labels))
+
+        if objective_target_endpoint:
+            # Use database-specific JSON query method
+            conditions.append(self._get_scenario_result_target_endpoint_condition(endpoint=objective_target_endpoint))
+
+        if objective_target_model_name:
+            # Use database-specific JSON query method
+            conditions.append(self._get_scenario_result_target_model_condition(model_name=objective_target_model_name))
+
+        try:
+            entries: Sequence[ScenarioResultEntry] = self._query_entries(
+                ScenarioResultEntry, conditions=and_(*conditions) if conditions else None
+            )
+
+            # Convert entries to ScenarioResults and populate attack_results efficiently
+            scenario_results = []
+            for entry in entries:
+                scenario_result = entry.get_scenario_result()
+
+                # Get conversation IDs grouped by attack name
+                conversation_ids_by_attack = entry.get_conversation_ids_by_attack_name()
+
+                # Collect all conversation IDs to query in a single batch
+                all_conversation_ids = []
+                for conv_ids in conversation_ids_by_attack.values():
+                    all_conversation_ids.extend(conv_ids)
+
+                # Query all AttackResults in a single batch if there are any
+                if all_conversation_ids:
+                    # Build condition to query multiple conversation IDs at once
+                    attack_conditions = [AttackResultEntry.conversation_id.in_(all_conversation_ids)]
+                    attack_entries: Sequence[AttackResultEntry] = self._query_entries(
+                        AttackResultEntry, conditions=and_(*attack_conditions)
+                    )
+
+                    # Build a dict for quick lookup
+                    attack_results_dict = {entry.conversation_id: entry.get_attack_result() for entry in attack_entries}
+
+                    # Populate attack_results by attack name, preserving order
+                    scenario_result.attack_results = {}
+                    for attack_name, conv_ids in conversation_ids_by_attack.items():
+                        scenario_result.attack_results[attack_name] = [
+                            attack_results_dict[conv_id] for conv_id in conv_ids if conv_id in attack_results_dict
+                        ]
+
+                scenario_results.append(scenario_result)
+
+            return scenario_results
+        except Exception as e:
+            logger.exception(f"Failed to retrieve scenario results with error {e}")
             return []
 
     def print_schema(self):

@@ -101,7 +101,7 @@ class TestInitializerRegistry:
             # Just verify it attempted to process files
             assert registry is not None
 
-    def test_get_initializer_existing(self):
+    def test_get_initializer_existing(self) -> None:
         """Test getting an existing initializer."""
         registry = InitializerRegistry()
         test_info: InitializerInfo = {
@@ -130,7 +130,7 @@ class TestInitializerRegistry:
         names = registry.get_initializer_names()
         assert names == []
 
-    def test_get_initializer_names_sorted(self):
+    def test_get_initializer_names_sorted(self) -> None:
         """Test get_initializer_names returns sorted list."""
         registry = InitializerRegistry()
         test_info: InitializerInfo = {
@@ -442,7 +442,7 @@ class TestInitializerRegistry:
         # Should not be registered
         assert "broken" not in registry._initializers
 
-    def test_initializer_info_typed_dict_structure(self):
+    def test_initializer_info_typed_dict_structure(self) -> None:
         """Test that InitializerInfo TypedDict has correct structure."""
         info: InitializerInfo = {
             "name": "test",
