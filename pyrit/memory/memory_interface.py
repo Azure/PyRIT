@@ -1155,7 +1155,6 @@ class MemoryInterface(abc.ABC):
         scenario_result_id: str,
         atomic_attack_name: str,
         attack_results: Sequence[AttackResult],
-        scenario_run_state: Optional[str] = None,
     ) -> bool:
         """
         Add attack results to an existing scenario result in memory.
@@ -1167,8 +1166,6 @@ class MemoryInterface(abc.ABC):
             scenario_result_id (str): The ID of the scenario result to update.
             atomic_attack_name (str): The name of the atomic attack to add results for.
             attack_results (Sequence[AttackResult]): The attack results to add.
-            scenario_run_state (Optional[str]): Optional new state for the scenario
-                (e.g., "IN_PROGRESS", "COMPLETED", "FAILED"). If None, state is not updated.
 
         Returns:
             bool: True if the update was successful, False otherwise.
@@ -1177,8 +1174,7 @@ class MemoryInterface(abc.ABC):
             >>> memory.add_attack_results_to_scenario(
             ...     scenario_result_id="123e4567-e89b-12d3-a456-426614174000",
             ...     atomic_attack_name="base64_attack",
-            ...     attack_results=[result1, result2],
-            ...     scenario_run_state="IN_PROGRESS"
+            ...     attack_results=[result1, result2]
             ... )
         """
         try:
@@ -1196,10 +1192,6 @@ class MemoryInterface(abc.ABC):
                 scenario_result.attack_results[atomic_attack_name] = []
 
             scenario_result.attack_results[atomic_attack_name].extend(list(attack_results))
-
-            # Update the scenario run state if provided
-            if scenario_run_state is not None:
-                scenario_result.scenario_run_state = scenario_run_state  # type: ignore
 
             # Save updated result back to memory using update
             entry = ScenarioResultEntry(entry=scenario_result)

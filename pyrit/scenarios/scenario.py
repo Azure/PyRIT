@@ -413,7 +413,6 @@ class Scenario(ABC):
                 scenario_result_id=self._scenario_result_id,
                 atomic_attack_name=atomic_attack_name,
                 attack_results=attack_results,
-                scenario_run_state="IN_PROGRESS",
             )
 
             if not success:
@@ -558,6 +557,11 @@ class Scenario(ABC):
         logger.info(
             f"Scenario '{self._name}' has {len(remaining_attacks)} atomic attacks "
             f"with remaining objectives (out of {len(self._atomic_attacks)} total)"
+        )
+
+        # Mark scenario as in progress
+        self._memory.update_scenario_run_state(
+            scenario_result_id=self._scenario_result_id, scenario_run_state="IN_PROGRESS"
         )
 
         # Calculate starting index based on completed attacks
