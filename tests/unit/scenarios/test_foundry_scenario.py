@@ -19,19 +19,25 @@ from pyrit.score import TrueFalseScorer
 @pytest.fixture
 def mock_objective_target():
     """Create a mock objective target for testing."""
-    return MagicMock(spec=PromptTarget)
+    mock = MagicMock(spec=PromptTarget)
+    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    return mock
 
 
 @pytest.fixture
 def mock_adversarial_target():
     """Create a mock adversarial target for testing."""
-    return MagicMock(spec=PromptChatTarget)
+    mock = MagicMock(spec=PromptChatTarget)
+    mock.get_identifier.return_value = {"__type__": "MockAdversarialTarget", "__module__": "test"}
+    return mock
 
 
 @pytest.fixture
 def mock_objective_scorer():
     """Create a mock objective scorer for testing."""
-    return MagicMock(spec=TrueFalseScorer)
+    mock = MagicMock(spec=TrueFalseScorer)
+    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    return mock
 
 
 @pytest.fixture
