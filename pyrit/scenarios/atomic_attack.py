@@ -14,25 +14,18 @@ have a common interface for scenarios.
 """
 
 import logging
-from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional
 
-from pyrit.executor.attack import AttackExecutor, AttackStrategy
-from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
+from pyrit.executor.attack import (
+    AttackExecutor,
+    AttackStrategy,
     MultiTurnAttackContext,
-)
-from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
+from pyrit.executor.attack.core.attack_executor import PartialAttackExecutionResult
 from pyrit.models import AttackResult, Message, SeedGroup
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class AtomicAttackResult:
-    results: List[AttackResult]
-    name: str
 
 
 class AtomicAttack:
@@ -207,7 +200,9 @@ class AtomicAttack:
                 f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
             )
 
-    async def run_async(self, *, max_concurrency: int = 1) -> AtomicAttackResult:
+    async def run_async(
+        self, *, max_concurrency: int = 1, return_partial_on_failure: bool = True
+    ) -> PartialAttackExecutionResult[AttackResult]:
         """
         Execute the atomic attack against all objectives in the dataset.
 
@@ -215,15 +210,27 @@ class AtomicAttack:
         all objectives from the dataset. It automatically detects whether to use
         single-turn or multi-turn execution based on the attack's context type.
 
+        When return_partial_on_failure=True (default), this method will return
+        a PartialAttackExecutionResult containing both completed results and incomplete
+        objectives (those that didn't finish execution due to exceptions). This allows
+        scenarios to save progress and retry only the incomplete objectives.
+
+        Note: "completed" means the execution finished, not that the attack objective
+        was achieved. "incomplete" means execution didn't finish (threw an exception).
+
         Args:
             max_concurrency (int): Maximum number of concurrent attack executions.
                 Defaults to 1 for sequential execution.
+            return_partial_on_failure (bool): If True, returns partial results even when
+                some objectives don't complete execution. If False, raises an exception on
+                any execution failure. Defaults to True.
 
         Returns:
-            AtomicAttackResult: Result containing list of attack results, one for each objective.
+            PartialAttackExecutionResult[AttackResult]: Result containing completed attack results and
+                incomplete objectives (those that didn't finish execution).
 
         Raises:
-            ValueError: If the attack execution fails.
+            ValueError: If the attack execution fails completely and return_partial_on_failure=False.
         """
         # Create the executor with the specified concurrency
         executor = AttackExecutor(max_concurrency=max_concurrency)
@@ -241,36 +248,55 @@ class AtomicAttack:
 
         try:
             # Execute based on context type with common parameters
-            results: List[AttackResult]
             if self._context_type == "single_turn":
-                results = await executor.execute_single_turn_attacks_async(
+                executor_result = await executor.execute_single_turn_attacks_async(
                     attack=self._attack,
                     objectives=self._objectives,
                     seed_groups=self._seed_groups,
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
+                    return_partial_on_failure=return_partial_on_failure,
                 )
             elif self._context_type == "multi_turn":
-                results = await executor.execute_multi_turn_attacks_async(
+                executor_result = await executor.execute_multi_turn_attacks_async(
                     attack=self._attack,
                     objectives=self._objectives,
                     custom_prompts=self._custom_prompts,
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
+                    return_partial_on_failure=return_partial_on_failure,
                 )
             else:
                 # Fall back to generic execute_multi_objective_attack_async
                 # Note: This method uses prepended_conversation (singular) instead of prepended_conversations
-                results = await executor.execute_multi_objective_attack_async(
+                executor_result = await executor.execute_multi_objective_attack_async(
                     attack=self._attack,
                     objectives=self._objectives,
                     prepended_conversation=prepended_conversations[0] if prepended_conversations else None,
                     memory_labels=merged_memory_labels,
+                    return_partial_on_failure=return_partial_on_failure,
                     **self._attack_execute_params,
                 )
 
-            logger.info(f"Atomic attack execution completed successfully with {len(results)} results")
-            return AtomicAttackResult(name=self.atomic_attack_name, results=results)
+            # Ensure we always return PartialAttackExecutionResult for consistent API
+            # If executor returned a plain list (all succeeded), wrap it
+            if isinstance(executor_result, list):
+                results = PartialAttackExecutionResult(completed_results=executor_result, incomplete_objectives=[])
+            else:
+                results = executor_result
+
+            # Log completion status
+            if results.has_incomplete:
+                logger.warning(
+                    f"Atomic attack execution completed with {len(results.completed_results)} completed "
+                    f"and {len(results.incomplete_objectives)} incomplete objectives"
+                )
+            else:
+                logger.info(
+                    f"Atomic attack execution completed successfully with {len(results.completed_results)} results"
+                )
+
+            return results
 
         except Exception as e:
             logger.error(f"Atomic attack execution failed: {str(e)}")

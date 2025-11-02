@@ -3,7 +3,7 @@
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Literal, Optional
 
 import pyrit
@@ -41,7 +41,9 @@ class ScenarioIdentifier:
         self.pyrit_version = pyrit_version if pyrit_version is not None else pyrit.__version__
         self.init_data = init_data
 
+
 ScenarioRunState = Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]
+
 
 class ScenarioResult:
     """
@@ -68,7 +70,7 @@ class ScenarioResult:
         self.scenario_run_state = scenario_run_state
         self.attack_results = attack_results
         self.labels = labels if labels is not None else {}
-        self.completion_time = completion_time if completion_time is not None else datetime.utcnow()
+        self.completion_time = completion_time if completion_time is not None else datetime.now(timezone.utc)
         self.number_tries = number_tries
 
     def get_strategies_used(self) -> List[str]:

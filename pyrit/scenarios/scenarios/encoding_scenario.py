@@ -127,6 +127,7 @@ class EncodingScenario(Scenario):
         memory_labels: Optional[Dict[str, str]] = None,
         encoding_templates: Optional[Sequence[str]] = None,
         max_concurrency: int = 10,
+        max_retries: int = 0,
     ):
         """
         Initialize the EncodingScenario.
@@ -149,6 +150,10 @@ class EncodingScenario(Scenario):
             encoding_templates (Optional[Sequence[str]]): Templates used to construct the decoding
                 prompts. Defaults to AskToDecodeConverter.garak_templates.
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
+            max_retries (int): Maximum number of automatic retries if the scenario fails.
+                Set to 0 (default) for no automatic retries. If set to a positive number,
+                the scenario will automatically retry up to this many times after a failure.
+                For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
         """
 
         self._encoding_composites = EncodingStrategy.prepare_scenario_strategies(
@@ -169,6 +174,7 @@ class EncodingScenario(Scenario):
             max_concurrency=max_concurrency,
             objective_scorer_identifier=objective_scorer.get_identifier(),
             objective_target=objective_target,
+            max_retries=max_retries,
         )
 
     # Use the same as Garak by default

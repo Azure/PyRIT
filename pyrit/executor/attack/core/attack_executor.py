@@ -2,7 +2,8 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import Any, Dict, List, Optional, TypeVar
+from dataclasses import dataclass
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 
 from pyrit.executor.attack.core import (
     AttackStrategy,
@@ -16,6 +17,34 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
 from pyrit.models import Message, SeedGroup
+
+ResultT = TypeVar("ResultT")
+
+
+@dataclass
+class PartialAttackExecutionResult(Generic[ResultT]):
+    """
+    Result containing both completed and incomplete attack executions.
+
+    This class holds results from parallel attack execution where some objectives
+    completed execution while others did not complete (threw exceptions). This enables
+    callers to access completed results even when not all objectives finished executing.
+
+    Note: "completed" means the execution finished, not that the attack objective was achieved.
+    """
+
+    completed_results: List[ResultT]
+    incomplete_objectives: List[tuple[str, BaseException]]  # (objective, exception) pairs
+
+    @property
+    def has_incomplete(self) -> bool:
+        """Check if any objectives didn't complete execution."""
+        return len(self.incomplete_objectives) > 0
+
+    @property
+    def all_completed(self) -> bool:
+        """Check if all objectives completed execution."""
+        return len(self.incomplete_objectives) == 0
 
 
 class AttackExecutor:
@@ -52,8 +81,9 @@ class AttackExecutor:
         objectives: List[str],
         prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
+        return_partial_on_failure: bool = True,
         **attack_params,
-    ) -> List[AttackStrategyResultT]:
+    ) -> Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
         """
         Execute the same attack strategy with multiple objectives against the same target in parallel.
 
@@ -66,10 +96,19 @@ class AttackExecutor:
             objectives (List[str]): List of attack objectives to test.
             prepended_conversation (Optional[List[Message]]): Conversation to prepend to the target model.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
+            return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult with completed results
+                when some objectives don't complete execution. If False, raises the first exception encountered.
+                Defaults to True.
             **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
-            List[AttackStrategyResultT]: List of attack results in the same order as the objectives list.
+            Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+                - List[AttackStrategyResultT] if all objectives complete (in same order as objectives)
+                - PartialAttackExecutionResult[AttackStrategyResultT] if return_partial_on_failure=True and some
+                  objectives don't complete
+
+        Raises:
+            Exception: If return_partial_on_failure=False and any objective doesn't complete execution.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
@@ -90,7 +129,13 @@ class AttackExecutor:
                 )
 
         tasks = [execute_with_semaphore(obj) for obj in objectives]
-        return await asyncio.gather(*tasks)
+        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
+
+        return self._process_execution_results(
+            objectives=objectives,
+            results_or_exceptions=results_or_exceptions,
+            return_partial_on_failure=return_partial_on_failure,
+        )
 
     async def execute_single_turn_attacks_async(
         self,
@@ -100,7 +145,8 @@ class AttackExecutor:
         seed_groups: Optional[List[SeedGroup]] = None,
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
-    ) -> List[AttackStrategyResultT]:
+        return_partial_on_failure: bool = True,
+    ) -> Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
         """
         Execute a batch of single-turn attacks with multiple objectives.
 
@@ -119,8 +165,17 @@ class AttackExecutor:
                 objective with the same list index.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
                 The labels will be the same across all executions.
+            return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult with completed results
+                when some objectives don't complete execution. If False, raises the first exception encountered.
+                Defaults to True.
         Returns:
-            List[AttackStrategyResultT]: List of attack results in the same order as the objectives list.
+            Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+                - List[AttackStrategyResultT] if all objectives complete (in same order as objectives)
+                - PartialAttackExecutionResult[AttackStrategyResultT] if return_partial_on_failure=True and some
+                  objectives don't complete
+
+        Raises:
+            Exception: If return_partial_on_failure=False and any objective doesn't complete execution.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
@@ -173,7 +228,13 @@ class AttackExecutor:
             tasks.append(task)
 
         # Execute all tasks in parallel with concurrency control
-        return await asyncio.gather(*tasks)
+        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
+
+        return self._process_execution_results(
+            objectives=objectives,
+            results_or_exceptions=results_or_exceptions,
+            return_partial_on_failure=return_partial_on_failure,
+        )
 
     async def execute_multi_turn_attacks_async(
         self,
@@ -183,7 +244,8 @@ class AttackExecutor:
         custom_prompts: Optional[List[str]] = None,
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
-    ) -> List[AttackStrategyResultT]:
+        return_partial_on_failure: bool = True,
+    ) -> Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
         """
         Execute a batch of multi-turn attacks with multiple objectives.
 
@@ -202,8 +264,17 @@ class AttackExecutor:
                 objective with the same list index.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
                 The labels will be the same across all executions.
+            return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult with completed results
+                when some objectives don't complete execution. If False, raises the first exception encountered.
+                Defaults to True.
         Returns:
-            List[AttackStrategyResultT]: List of attack results in the same order as the objectives list.
+            Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+                - List[AttackStrategyResultT] if all objectives complete (in same order as objectives)
+                - PartialAttackExecutionResult[AttackStrategyResultT] if return_partial_on_failure=True and some
+                  objectives don't complete
+
+        Raises:
+            Exception: If return_partial_on_failure=False and any objective doesn't complete execution.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
@@ -254,7 +325,13 @@ class AttackExecutor:
             tasks.append(task)
 
         # Execute all tasks in parallel with concurrency control
-        return await asyncio.gather(*tasks)
+        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
+
+        return self._process_execution_results(
+            objectives=objectives,
+            results_or_exceptions=results_or_exceptions,
+            return_partial_on_failure=return_partial_on_failure,
+        )
 
     def _validate_attack_batch_parameters(
         self,
@@ -347,6 +424,55 @@ class AttackExecutor:
         # Run strategies in parallel
         results = await self._execute_parallel_async(attack=attack, contexts=contexts)
         return results
+
+    def _process_execution_results(
+        self,
+        *,
+        objectives: List[str],
+        results_or_exceptions: List[Union[AttackStrategyResultT, BaseException]],
+        return_partial_on_failure: bool,
+    ) -> Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+        """
+        Process results from parallel execution, separating completed from incomplete objectives.
+
+        Args:
+            objectives (List[str]): List of objectives that were executed.
+            results_or_exceptions (List[Union[AttackStrategyResultT, BaseException]]): Results from asyncio.gather
+                with return_exceptions=True.
+            return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult when some objectives
+                don't complete. If False, raises the first exception encountered.
+
+        Returns:
+            Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+                - List[AttackStrategyResultT] if all objectives complete (in same order as objectives)
+                - PartialAttackExecutionResult[AttackStrategyResultT] if return_partial_on_failure=True and some
+                  objectives don't complete
+
+        Raises:
+            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
+        """
+        # Separate completed results from exceptions
+        completed_results: List[AttackStrategyResultT] = []
+        incomplete_objectives: List[tuple[str, BaseException]] = []
+
+        for objective, result_or_exception in zip(objectives, results_or_exceptions):
+            if isinstance(result_or_exception, BaseException):
+                incomplete_objectives.append((objective, result_or_exception))
+            else:
+                completed_results.append(result_or_exception)  # type: ignore[arg-type]
+
+        # If all completed, return list directly (backward compatible)
+        if not incomplete_objectives:
+            return completed_results
+
+        # If some incomplete and return_partial_on_failure is False, raise the first exception
+        if not return_partial_on_failure:
+            raise incomplete_objectives[0][1]
+
+        # Return partial result with both completed and incomplete
+        return PartialAttackExecutionResult(
+            completed_results=completed_results, incomplete_objectives=incomplete_objectives
+        )
 
     async def _execute_parallel_async(
         self,

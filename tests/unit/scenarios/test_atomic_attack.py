@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
+from pyrit.executor.attack.core import PartialAttackExecutionResult
 from pyrit.models import AttackOutcome, AttackResult, Message
 from pyrit.scenarios import AtomicAttack
 
@@ -50,6 +51,11 @@ def sample_attack_results():
             executed_turns=1,
         ),
     ]
+
+
+def wrap_results(results):
+    """Helper to wrap attack results in PartialAttackExecutionResult."""
+    return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
 
 @pytest.fixture
@@ -162,12 +168,13 @@ class TestAtomicAttackExecution:
 
         # Mock the executor
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = sample_attack_results
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
             result = await atomic_attack.run_async()
 
-            assert len(result.results) == 3
-            assert result.results == sample_attack_results
+            assert len(result.completed_results) == 3
+            assert result.completed_results == sample_attack_results
+            assert len(result.incomplete_objectives) == 0
             mock_exec.assert_called_once()
 
             # Verify the attack was passed correctly
@@ -187,12 +194,12 @@ class TestAtomicAttackExecution:
             with patch.object(
                 AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock
             ) as mock_exec:
-                mock_exec.return_value = sample_attack_results
+                mock_exec.return_value = wrap_results(sample_attack_results)
 
                 result = await atomic_attack.run_async(max_concurrency=5)
 
                 mock_init.assert_called_once_with(max_concurrency=5)
-                assert len(result.results) == 3
+                assert len(result.completed_results) == 3
 
     @pytest.mark.asyncio
     async def test_run_async_with_default_concurrency(self, mock_attack, sample_objectives, sample_attack_results):
@@ -207,7 +214,7 @@ class TestAtomicAttackExecution:
             with patch.object(
                 AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock
             ) as mock_exec:
-                mock_exec.return_value = sample_attack_results
+                mock_exec.return_value = wrap_results(sample_attack_results)
 
                 await atomic_attack.run_async()
 
@@ -226,7 +233,7 @@ class TestAtomicAttackExecution:
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = sample_attack_results
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
 
@@ -245,7 +252,7 @@ class TestAtomicAttackExecution:
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = sample_attack_results
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
 
@@ -267,7 +274,7 @@ class TestAtomicAttackExecution:
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = sample_attack_results
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
 
@@ -290,7 +297,7 @@ class TestAtomicAttackExecution:
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = sample_attack_results
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
 
@@ -316,7 +323,7 @@ class TestAtomicAttackExecution:
         )
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = sample_attack_results
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
 
@@ -377,13 +384,13 @@ class TestAtomicAttackIntegration:
         ]
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = mock_results
+            mock_exec.return_value = wrap_results(mock_results)
 
             attack_run_result = await atomic_attack.run_async(max_concurrency=3)
 
             # Verify results
-            assert len(attack_run_result.results) == 3
-            for i, result in enumerate(attack_run_result.results):
+            assert len(attack_run_result.completed_results) == 3
+            for i, result in enumerate(attack_run_result.completed_results):
                 assert result.objective == f"objective{i+1}"
                 assert result.outcome == AttackOutcome.SUCCESS
 
@@ -418,12 +425,12 @@ class TestAtomicAttackIntegration:
         ]
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = mock_results
+            mock_exec.return_value = wrap_results(mock_results)
 
             attack_run_result = await atomic_attack.run_async()
 
             # Verify results
-            assert len(attack_run_result.results) == 3
+            assert len(attack_run_result.completed_results) == 3
 
             # Verify the call was made with minimal parameters
             call_kwargs = mock_exec.call_args.kwargs
@@ -453,12 +460,12 @@ class TestAtomicAttackIntegration:
         ]
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = mock_result
+            mock_exec.return_value = wrap_results(mock_result)
 
             attack_run_result = await atomic_attack.run_async()
 
-            assert len(attack_run_result.results) == 1
-            assert attack_run_result.results[0].objective == "single_objective"
+            assert len(attack_run_result.completed_results) == 1
+            assert attack_run_result.completed_results[0].objective == "single_objective"
 
     @pytest.mark.asyncio
     async def test_atomic_attack_with_many_objectives(self, mock_attack):
@@ -483,11 +490,11 @@ class TestAtomicAttackIntegration:
         ]
 
         with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
-            mock_exec.return_value = mock_results
+            mock_exec.return_value = wrap_results(mock_results)
 
             attack_run_result = await atomic_attack.run_async()
 
-            assert len(attack_run_result.results) == 20
+            assert len(attack_run_result.completed_results) == 20
 
             # Verify objectives were passed correctly
             call_kwargs = mock_exec.call_args.kwargs

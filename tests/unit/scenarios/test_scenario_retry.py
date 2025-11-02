@@ -3,30 +3,109 @@
 
 """Tests for Scenario retry functionality."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from pyrit.executor.attack.core import PartialAttackExecutionResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.atomic_attack import AtomicAttackResult
-from pyrit.scenarios.scenario import ScenarioIdentifier, ScenarioResult
+from pyrit.scenarios.scenario import ScenarioResult
+
+# Test constants
+TEST_ATTACK_TYPE = "TestAttack"
+TEST_MODULE = "test"
+CONV_ID_PREFIX = "conv-"
+OBJECTIVE_PREFIX = "objective"
+ATTACK_NAME_PREFIX = "attack_"
 
 
+# Helper functions
 def save_attack_results_to_memory(attack_results):
     """Helper function to save attack results to memory (mimics what real attacks do)."""
     memory = CentralMemory.get_memory_instance()
     memory.add_attack_results_to_memory(attack_results=attack_results)
 
 
-def create_mock_run_async(attack_result):
-    """Create a mock run_async that saves results to memory before returning."""
+def create_attack_result(
+    index: int,
+    objective: str | None = None,
+    conversation_id: str | None = None,
+    outcome: AttackOutcome = AttackOutcome.SUCCESS,
+    executed_turns: int = 1,
+) -> AttackResult:
+    """Factory function to create AttackResult objects with consistent defaults.
+    
+    Args:
+        index: Numeric identifier for the attack result
+        objective: Objective text (defaults to "objectiveN")
+        conversation_id: Conversation ID (defaults to "conv-N")
+        outcome: Attack outcome (defaults to SUCCESS)
+        executed_turns: Number of executed turns (defaults to 1)
+    
+    Returns:
+        AttackResult instance
+    """
+    return AttackResult(
+        conversation_id=conversation_id or f"{CONV_ID_PREFIX}{index}",
+        objective=objective or f"{OBJECTIVE_PREFIX}{index}",
+        attack_identifier={"__type__": TEST_ATTACK_TYPE, "__module__": TEST_MODULE, "id": str(index)},
+        outcome=outcome,
+        executed_turns=executed_turns,
+    )
+
+
+def create_attack_results_list(count: int, start_index: int = 1) -> list[AttackResult]:
+    """Create a list of AttackResult objects.
+    
+    Args:
+        count: Number of results to create
+        start_index: Starting index for numbering (defaults to 1)
+    
+    Returns:
+        List of AttackResult instances
+    """
+    return [create_attack_result(i) for i in range(start_index, start_index + count)]
+
+
+def create_mock_run_async(attack_results):
+    """Create a mock run_async that saves results to memory before returning.
+    
+    Args:
+        attack_results: List of AttackResult objects to return
+    
+    Returns:
+        AsyncMock configured to return the results
+    """
+
     async def mock_run_async(*args, **kwargs):
         # Save results to memory (mimics what real attacks do)
-        save_attack_results_to_memory(attack_result.results)
-        return attack_result
+        save_attack_results_to_memory(attack_results)
+        return PartialAttackExecutionResult(completed_results=attack_results, incomplete_objectives=[])
+
     return AsyncMock(side_effect=mock_run_async)
+
+
+def create_mock_atomic_attack(
+    name: str, objectives: list[str], run_async_mock: AsyncMock | None = None
+) -> MagicMock:
+    """Factory function to create mock AtomicAttack instances.
+    
+    Args:
+        name: Name for the atomic attack
+        objectives: List of objectives for the attack
+        run_async_mock: Optional pre-configured run_async mock (if None, must be set separately)
+    
+    Returns:
+        MagicMock configured as an AtomicAttack
+    """
+    attack = MagicMock(spec=AtomicAttack)
+    attack.atomic_attack_name = name
+    attack._objectives = objectives
+    if run_async_mock:
+        attack.run_async = run_async_mock
+    return attack
 
 
 class ConcreteScenario(Scenario):
@@ -64,36 +143,24 @@ class ConcreteScenario(Scenario):
 @pytest.fixture
 def mock_atomic_attacks():
     """Create mock AtomicAttack instances for testing."""
-    run1 = MagicMock(spec=AtomicAttack)
-    run1.atomic_attack_name = "attack_run_1"
-    run1._objectives = ["objective1"]  # Add _objectives attribute
-    run2 = MagicMock(spec=AtomicAttack)
-    run2.atomic_attack_name = "attack_run_2"
-    run2._objectives = ["objective2"]  # Add _objectives attribute
-    return [run1, run2]
+    return [
+        create_mock_atomic_attack("attack_run_1", ["objective1"]),
+        create_mock_atomic_attack("attack_run_2", ["objective2"]),
+    ]
 
 
 @pytest.fixture
 def mock_objective_target():
     """Create a mock objective target for testing."""
     target = MagicMock()
-    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test"}
+    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": TEST_MODULE}
     return target
 
 
 @pytest.fixture
 def sample_attack_results():
     """Create sample attack results for testing."""
-    return [
-        AttackResult(
-            conversation_id=f"conv-{i}",
-            objective=f"objective{i}",
-            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
-            outcome=AttackOutcome.SUCCESS,
-            executed_turns=1,
-        )
-        for i in range(3)
-    ]
+    return create_attack_results_list(count=3, start_index=0)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -105,9 +172,7 @@ class TestScenarioRetry:
         """Test that scenario doesn't retry when execution succeeds."""
         # Configure successful execution
         for i, run in enumerate(mock_atomic_attacks):
-            run.run_async = create_mock_run_async(
-                AtomicAttackResult(results=[sample_attack_results[i]], name=run.atomic_attack_name)
-            )
+            run.run_async = create_mock_run_async([sample_attack_results[i]])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -134,21 +199,17 @@ class TestScenarioRetry:
         # Configure first run to fail, second to succeed
         call_count = [0]
 
-        async def mock_run(*args, **kwargs):
+        async def mock_run_with_retry(*args, **kwargs):
             call_count[0] += 1
             if call_count[0] == 1:
-                # First attempt fails
                 raise Exception("Test failure")
-            else:
-                # Retry succeeds
-                results = [sample_attack_results[0]]
-                save_attack_results_to_memory(results)
-                return AtomicAttackResult(results=results, name=mock_atomic_attacks[0].atomic_attack_name)
+            # Retry succeeds
+            results = [sample_attack_results[0]]
+            save_attack_results_to_memory(results)
+            return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
-        mock_atomic_attacks[0].run_async = mock_run
-        mock_atomic_attacks[1].run_async = create_mock_run_async(
-            AtomicAttackResult(results=[sample_attack_results[1]], name=mock_atomic_attacks[1].atomic_attack_name)
-        )
+        mock_atomic_attacks[0].run_async = mock_run_with_retry
+        mock_atomic_attacks[1].run_async = create_mock_run_async([sample_attack_results[1]])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -163,8 +224,7 @@ class TestScenarioRetry:
 
         # Verify scenario succeeded on retry
         assert isinstance(result, ScenarioResult)
-        # Should have executed 2 times (1 initial + 1 retry)
-        assert call_count[0] == 2
+        assert call_count[0] == 2  # Initial attempt + 1 retry
 
     @pytest.mark.asyncio
     async def test_exhausts_retries_and_fails(self, mock_atomic_attacks, mock_objective_target):
@@ -212,27 +272,23 @@ class TestScenarioRetry:
         mock_atomic_attacks[0].run_async.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_number_tries_increments_on_retry(self, mock_atomic_attacks, sample_attack_results, mock_objective_target):
+    async def test_number_tries_increments_on_retry(
+        self, mock_atomic_attacks, sample_attack_results, mock_objective_target
+    ):
         """Test that number_tries field increments with each retry attempt."""
-        # Track how many times we check number_tries
-        tries_values = []
         call_count = [0]
 
-        async def mock_run(*args, **kwargs):
+        async def mock_run_with_multiple_retries(*args, **kwargs):
             call_count[0] += 1
             if call_count[0] <= 2:
-                # First two attempts fail
                 raise Exception("Test failure")
-            else:
-                # Third attempt succeeds
-                results = [sample_attack_results[0]]
-                save_attack_results_to_memory(results)
-                return AtomicAttackResult(results=results, name=mock_atomic_attacks[0].atomic_attack_name)
+            # Third attempt succeeds
+            results = [sample_attack_results[0]]
+            save_attack_results_to_memory(results)
+            return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
-        mock_atomic_attacks[0].run_async = mock_run
-        mock_atomic_attacks[1].run_async = create_mock_run_async(
-            AtomicAttackResult(results=[sample_attack_results[1]], name=mock_atomic_attacks[1].atomic_attack_name)
-        )
+        mock_atomic_attacks[0].run_async = mock_run_with_multiple_retries
+        mock_atomic_attacks[1].run_async = create_mock_run_async([sample_attack_results[1]])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -247,8 +303,7 @@ class TestScenarioRetry:
 
         # Verify scenario succeeded after retries
         assert isinstance(result, ScenarioResult)
-        # number_tries should be 3 (failed twice, succeeded on third)
-        assert result.number_tries == 3
+        assert result.number_tries == 3  # Failed twice, succeeded on third
 
     @pytest.mark.asyncio
     async def test_retry_logs_error_with_exception(
@@ -257,21 +312,17 @@ class TestScenarioRetry:
         """Test that retry failures are logged with exception details."""
         call_count = [0]
 
-        async def mock_run(*args, **kwargs):
+        async def mock_run_with_logged_failure(*args, **kwargs):
             call_count[0] += 1
             if call_count[0] == 1:
-                # First attempt fails
                 raise ValueError("First failure")
-            else:
-                # Retry succeeds
-                results = [sample_attack_results[0]]
-                save_attack_results_to_memory(results)
-                return AtomicAttackResult(results=results, name=mock_atomic_attacks[0].atomic_attack_name)
+            # Retry succeeds
+            results = [sample_attack_results[0]]
+            save_attack_results_to_memory(results)
+            return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
-        mock_atomic_attacks[0].run_async = mock_run
-        mock_atomic_attacks[1].run_async = create_mock_run_async(
-            AtomicAttackResult(results=[sample_attack_results[1]], name=mock_atomic_attacks[1].atomic_attack_name)
-        )
+        mock_atomic_attacks[0].run_async = mock_run_with_logged_failure
+        mock_atomic_attacks[1].run_async = create_mock_run_async([sample_attack_results[1]])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -299,56 +350,31 @@ class TestScenarioResumption:
     """Tests for Scenario resumption after partial failure."""
 
     @pytest.mark.asyncio
-    async def test_resumes_from_partial_completion_single_attack(
-        self, mock_objective_target
-    ):
+    async def test_resumes_from_partial_completion_single_attack(self, mock_objective_target):
         """Test that scenario resumes from where it left off when an atomic attack partially completes."""
-        # Create atomic attack with multiple objectives
-        atomic_attack = MagicMock(spec=AtomicAttack)
-        atomic_attack.atomic_attack_name = "multi_objective_attack"
-        atomic_attack._objectives = ["obj1", "obj2", "obj3", "obj4"]  # Set initial objectives
-        
+        objectives = ["obj1", "obj2", "obj3", "obj4"]
+        atomic_attack = create_mock_atomic_attack("multi_objective_attack", objectives)
+
         # Track which objectives have been executed
         executed_objectives = []
         call_count = [0]
 
-        async def mock_run(*args, **kwargs):
+        async def mock_run_with_partial_completion(*args, **kwargs):
             call_count[0] += 1
             if call_count[0] == 1:
                 # First attempt: complete 2 objectives, then fail
                 executed_objectives.extend(["obj1", "obj2"])
-                results = [
-                    AttackResult(
-                        conversation_id=f"conv-{i}",
-                        objective=f"obj{i}",
-                        attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
-                        outcome=AttackOutcome.SUCCESS,
-                        executed_turns=1,
-                    )
-                    for i in [1, 2]
-                ]
-                # Save partial results before failing (mimics what real attacks do)
+                results = [create_attack_result(i, objective=f"obj{i}") for i in [1, 2]]
                 save_attack_results_to_memory(results)
-                # Return results for first 2, then simulate failure before completing others
                 raise Exception("Failed after 2 objectives")
             else:
                 # Retry: should only execute remaining objectives (obj3, obj4)
                 executed_objectives.extend(["obj3", "obj4"])
-                results = [
-                    AttackResult(
-                        conversation_id=f"conv-{i}",
-                        objective=f"obj{i}",
-                        attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
-                        outcome=AttackOutcome.SUCCESS,
-                        executed_turns=1,
-                    )
-                    for i in [3, 4]
-                ]
-                # Save results to memory (mimics what real attacks do)
+                results = [create_attack_result(i, objective=f"obj{i}") for i in [3, 4]]
                 save_attack_results_to_memory(results)
-                return AtomicAttackResult(results=results, name=atomic_attack.atomic_attack_name)
+                return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
-        atomic_attack.run_async = mock_run
+        atomic_attack.run_async = mock_run_with_partial_completion
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -363,85 +389,46 @@ class TestScenarioResumption:
 
         # Verify scenario succeeded after retry
         assert isinstance(result, ScenarioResult)
-        # Should have attempted twice (initial + 1 retry)
-        assert call_count[0] == 2
+        assert call_count[0] == 2  # Initial attempt + 1 retry
         # All objectives should be executed across both attempts
         assert "obj1" in executed_objectives or "obj3" in executed_objectives
 
     @pytest.mark.asyncio
-    async def test_resumes_skipping_completed_atomic_attacks(
-        self, mock_objective_target
-    ):
+    async def test_resumes_skipping_completed_atomic_attacks(self, mock_objective_target):
         """Test that scenario skips completed atomic attacks on retry."""
         # Create 3 atomic attacks
-        attack1 = MagicMock(spec=AtomicAttack)
-        attack1.atomic_attack_name = "attack_1"
-        attack1._objectives = ["objective1"]
-        
-        attack2 = MagicMock(spec=AtomicAttack)
-        attack2.atomic_attack_name = "attack_2"
-        attack2._objectives = ["objective2"]
-        
-        attack3 = MagicMock(spec=AtomicAttack)
-        attack3.atomic_attack_name = "attack_3"
-        attack3._objectives = ["objective3"]
+        attack1 = create_mock_atomic_attack("attack_1", ["objective1"])
+        attack2 = create_mock_atomic_attack("attack_2", ["objective2"])
+        attack3 = create_mock_atomic_attack("attack_3", ["objective3"])
 
         call_count = {"attack_1": 0, "attack_2": 0, "attack_3": 0}
 
+        # Attack 1: Succeeds immediately
         async def mock_run_attack1(*args, **kwargs):
             call_count["attack_1"] += 1
-            results = [
-                AttackResult(
-                    conversation_id="conv-1",
-                    objective="objective1",
-                    attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "1"},
-                    outcome=AttackOutcome.SUCCESS,
-                    executed_turns=1,
-                )
-            ]
-            # Save results to memory (mimics what real attacks do)
+            results = [create_attack_result(1, objective="objective1")]
             save_attack_results_to_memory(results)
-            return AtomicAttackResult(results=results, name=attack1.atomic_attack_name)
+            return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
+        # Attack 2: Succeeds on first attempt, should not be retried
         async def mock_run_attack2(*args, **kwargs):
             call_count["attack_2"] += 1
             if call_count["attack_2"] == 1:
-                # First attempt: attack2 succeeds
-                results = [
-                    AttackResult(
-                        conversation_id="conv-2",
-                        objective="objective2",
-                        attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "2"},
-                        outcome=AttackOutcome.SUCCESS,
-                        executed_turns=1,
-                    )
-                ]
-                # Save results to memory (mimics what real attacks do)
+                results = [create_attack_result(2, objective="objective2")]
                 save_attack_results_to_memory(results)
-                return AtomicAttackResult(results=results, name=attack2.atomic_attack_name)
+                return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
             else:
-                # Should not be called again on retry
                 raise AssertionError("Attack 2 should not be retried after completion")
 
+        # Attack 3: Fails on first attempt, succeeds on retry
         async def mock_run_attack3(*args, **kwargs):
             call_count["attack_3"] += 1
             if call_count["attack_3"] == 1:
-                # First attempt: attack3 fails
                 raise Exception("Attack 3 failed on first attempt")
             else:
-                # Retry: attack3 succeeds
-                results = [
-                    AttackResult(
-                        conversation_id="conv-3",
-                        objective="objective3",
-                        attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "3"},
-                        outcome=AttackOutcome.SUCCESS,
-                        executed_turns=1,
-                    )
-                ]
-                # Save results to memory (mimics what real attacks do)
+                results = [create_attack_result(3, objective="objective3")]
                 save_attack_results_to_memory(results)
-                return AtomicAttackResult(results=results, name=attack3.atomic_attack_name)
+                return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
         attack1.run_async = mock_run_attack1
         attack2.run_async = mock_run_attack2
@@ -472,86 +459,44 @@ class TestScenarioResumption:
         assert "attack_3" in result.attack_results
 
     @pytest.mark.asyncio
-    async def test_resumes_with_multiple_failures_across_attacks(
-        self, mock_objective_target
-    ):
+    async def test_resumes_with_multiple_failures_across_attacks(self, mock_objective_target):
         """Test resumption when multiple atomic attacks fail at different stages."""
         # Create 4 atomic attacks
-        attacks = []
-        for i in range(1, 5):
-            attack = MagicMock(spec=AtomicAttack)
-            attack.atomic_attack_name = f"attack_{i}"
-            attack._objectives = [f"objective{i}"]
-            attacks.append(attack)
+        attacks = [
+            create_mock_atomic_attack(f"attack_{i}", [f"objective{i}"]) for i in range(1, 5)
+        ]
 
         call_count = {f"attack_{i}": 0 for i in range(1, 5)}
 
         # Attack 1: Succeeds immediately
         async def mock_run_attack1(*args, **kwargs):
             call_count["attack_1"] += 1
-            results = [
-                AttackResult(
-                    conversation_id="conv-1",
-                    objective="objective1",
-                    attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "1"},
-                    outcome=AttackOutcome.SUCCESS,
-                    executed_turns=1,
-                )
-            ]
-            # Save results to memory (mimics what real attacks do)
+            results = [create_attack_result(1, objective="objective1")]
             save_attack_results_to_memory(results)
-            return AtomicAttackResult(results=results, name=attacks[0].atomic_attack_name)
+            return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
         # Attack 2: Fails on first attempt, succeeds on retry
         async def mock_run_attack2(*args, **kwargs):
             call_count["attack_2"] += 1
             if call_count["attack_2"] == 1:
                 raise Exception("Attack 2 failed")
-            results = [
-                AttackResult(
-                    conversation_id="conv-2",
-                    objective="objective2",
-                    attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "2"},
-                    outcome=AttackOutcome.SUCCESS,
-                    executed_turns=1,
-                )
-            ]
-            # Save results to memory (mimics what real attacks do)
+            results = [create_attack_result(2, objective="objective2")]
             save_attack_results_to_memory(results)
-            return AtomicAttackResult(results=results, name=attacks[1].atomic_attack_name)
+            return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
-        # Attack 3: Should not be called on first attempt (stops at attack 2 failure)
-        # Succeeds on retry
+        # Attack 3: Only called on retry (after attack 2 succeeds)
         async def mock_run_attack3(*args, **kwargs):
             call_count["attack_3"] += 1
-            results = [
-                AttackResult(
-                    conversation_id="conv-3",
-                    objective="objective3",
-                    attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "3"},
-                    outcome=AttackOutcome.SUCCESS,
-                    executed_turns=1,
-                )
-            ]
-            # Save results to memory (mimics what real attacks do)
+            results = [create_attack_result(3, objective="objective3")]
             save_attack_results_to_memory(results)
-            return AtomicAttackResult(results=results, name=attacks[2].atomic_attack_name)
+            return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
-        # Attack 4: Should only be called once on retry attempt
+        # Attack 4: Only called on retry
         async def mock_run_attack4(*args, **kwargs):
             call_count["attack_4"] += 1
-            results = [
-                AttackResult(
-                    conversation_id="conv-4",
-                    objective="objective4",
-                    attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "4"},
-                    outcome=AttackOutcome.SUCCESS,
-                    executed_turns=1,
-                )
-            ]
-            # Save results to memory (mimics what real attacks do)
+            results = [create_attack_result(4, objective="objective4")]
             save_attack_results_to_memory(results)
-            return AtomicAttackResult(results=results, name=attacks[3].atomic_attack_name)
+            return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
 
         attacks[0].run_async = mock_run_attack1
         attacks[1].run_async = mock_run_attack2

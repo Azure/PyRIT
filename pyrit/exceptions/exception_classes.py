@@ -152,10 +152,9 @@ def pyrit_target_retry(func: Callable) -> Callable:
 
 def pyrit_json_retry(func: Callable) -> Callable:
     """
-    A decorator to apply retry logic with exponential backoff to a function.
+    A decorator to apply retry logic to a function.
 
-    Retries the function if it raises a JSON error,
-    with a wait time between retries that follows an exponential backoff strategy.
+    Retries the function if it raises a JSON error.
     Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
     Args:
@@ -164,12 +163,11 @@ def pyrit_json_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+    global RETRY_MAX_NUM_ATTEMPTS
 
     return retry(
         reraise=True,
         retry=retry_if_exception_type(InvalidJsonException),
-        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=log_exception,
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)

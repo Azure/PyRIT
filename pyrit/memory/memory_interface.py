@@ -1204,9 +1204,7 @@ class MemoryInterface(abc.ABC):
             return True
 
         except Exception as e:
-            logger.error(
-                f"Failed to add attack results to scenario {scenario_result_id}: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to add attack results to scenario {scenario_result_id}: {str(e)}", exc_info=True)
             return False
 
     def update_scenario_run_state(self, *, scenario_result_id: str, scenario_run_state: str) -> bool:

@@ -229,11 +229,10 @@ class Scenario(ABC):
             >>> results = await resumed_scenario.run_async()  # Resumes from progress
         """
         self._atomic_attacks = await self._get_atomic_attacks_async()
-        
+
         # Store original objectives for each atomic attack (before any mutations during execution)
         self._original_objectives_map = {
-            atomic_attack.atomic_attack_name: list(atomic_attack._objectives)
-            for atomic_attack in self._atomic_attacks
+            atomic_attack.atomic_attack_name: list(atomic_attack._objectives) for atomic_attack in self._atomic_attacks
         }
 
         # Check if we're resuming an existing scenario
@@ -325,9 +324,7 @@ class Scenario(ABC):
 
         try:
             # Retrieve the scenario result from memory
-            scenario_results = self._memory.get_scenario_results(
-                scenario_result_ids=[self._scenario_result_id]
-            )
+            scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
 
             if not scenario_results:
                 return set()
@@ -468,9 +465,7 @@ class Scenario(ABC):
             )
 
         if not self._scenario_result_id:
-            raise ValueError(
-                "Scenario not properly initialized. Call await scenario.initialize_async() first."
-            )
+            raise ValueError("Scenario not properly initialized. Call await scenario.initialize_async() first.")
 
         # Implement retry logic
         last_exception = None
@@ -480,19 +475,19 @@ class Scenario(ABC):
                 return result
             except Exception as e:
                 last_exception = e
-                
+
                 # Get current scenario to check number of tries
                 scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
                 current_tries = scenario_results[0].number_tries if scenario_results else retry_attempt + 1
-                
+
                 # Check if we have more retries available
                 remaining_retries = self._max_retries - retry_attempt
-                
+
                 if remaining_retries > 0:
                     logger.error(
                         f"Scenario '{self._name}' failed on attempt {current_tries} with error: {str(e)}. "
                         f"Retrying... ({remaining_retries} retries remaining)",
-                        exc_info=True
+                        exc_info=True,
                     )
                     # Continue to next iteration for retry
                     continue
@@ -501,7 +496,7 @@ class Scenario(ABC):
                     logger.error(
                         f"Scenario '{self._name}' failed after {current_tries} attempts "
                         f"(initial + {self._max_retries} retries) with error: {str(e)}. Giving up.",
-                        exc_info=True
+                        exc_info=True,
                     )
                     raise
 
@@ -513,7 +508,7 @@ class Scenario(ABC):
     async def _execute_scenario_async(self) -> ScenarioResult:
         """
         Internal method that performs a single execution attempt of the scenario.
-        
+
         This method contains the core execution logic and can be called multiple times
         for retry attempts. It increments the try counter, executes remaining atomic attacks,
         and returns the scenario result.
@@ -584,31 +579,64 @@ class Scenario(ABC):
                 )
 
                 try:
-                    atomic_results = await atomic_attack.run_async(max_concurrency=self._max_concurrency)
-
-                    # Update scenario result immediately after each atomic attack completes (thread-safe)
-                    await self._update_scenario_result_async(
-                        atomic_attack_name=atomic_attack.atomic_attack_name, attack_results=atomic_results.results
+                    atomic_results = await atomic_attack.run_async(
+                        max_concurrency=self._max_concurrency, return_partial_on_failure=True
                     )
 
-                    logger.info(
-                        f"Atomic attack {i}/{len(self._atomic_attacks)} completed with "
-                        f"{len(atomic_results.results)} results"
-                    )
+                    # Always save completed results, even if some objectives didn't complete
+                    if atomic_results.completed_results:
+                        await self._update_scenario_result_async(
+                            atomic_attack_name=atomic_attack.atomic_attack_name,
+                            attack_results=atomic_results.completed_results,
+                        )
+
+                    # Check if there were any incomplete objectives
+                    if atomic_results.has_incomplete:
+                        incomplete_count = len(atomic_results.incomplete_objectives)
+                        completed_count = len(atomic_results.completed_results)
+
+                        logger.error(
+                            f"Atomic attack {i}/{len(self._atomic_attacks)} "
+                            f"('{atomic_attack.atomic_attack_name}') partially completed: "
+                            f"{completed_count} completed, {incomplete_count} incomplete"
+                        )
+
+                        # Log details of each incomplete objective
+                        for obj, exc in atomic_results.incomplete_objectives:
+                            logger.error(f"  Incomplete objective '{obj[:50]}...': {str(exc)}")
+
+                        # Mark scenario as failed
+                        self._memory.update_scenario_run_state(
+                            scenario_result_id=self._scenario_result_id, scenario_run_state="FAILED"
+                        )
+
+                        # Raise exception with detailed information
+                        raise ValueError(
+                            f"Failed to execute atomic attack {i} ('{atomic_attack.atomic_attack_name}') "
+                            f"in scenario '{self._name}': {incomplete_count} of {incomplete_count + completed_count} "
+                            f"objectives incomplete. First failure: {atomic_results.incomplete_objectives[0][1]}"
+                        ) from atomic_results.incomplete_objectives[0][1]
+                    else:
+                        logger.info(
+                            f"Atomic attack {i}/{len(self._atomic_attacks)} completed successfully with "
+                            f"{len(atomic_results.completed_results)} results"
+                        )
+
                 except Exception as e:
+                    # Exception was raised either by run_async or by our check above
                     logger.error(
                         f"Atomic attack {i}/{len(self._atomic_attacks)} "
                         f"('{atomic_attack.atomic_attack_name}') failed in scenario '{self._name}': {str(e)}"
                     )
-                    # Mark scenario as failed
-                    self._memory.update_scenario_run_state(
-                        scenario_result_id=self._scenario_result_id, scenario_run_state="FAILED"
-                    )
 
-                    raise ValueError(
-                        f"Failed to execute atomic attack {i} ('{atomic_attack.atomic_attack_name}') "
-                        f"in scenario '{self._name}': {str(e)}"
-                    ) from e
+                    # Mark scenario as failed if not already done
+                    scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
+                    if scenario_results and scenario_results[0].scenario_run_state != "FAILED":
+                        self._memory.update_scenario_run_state(
+                            scenario_result_id=self._scenario_result_id, scenario_run_state="FAILED"
+                        )
+
+                    raise
 
             logger.info(f"Scenario '{self._name}' completed successfully")
 
