@@ -36,14 +36,14 @@ def create_attack_result(
     executed_turns: int = 1,
 ) -> AttackResult:
     """Factory function to create AttackResult objects with consistent defaults.
-    
+
     Args:
         index: Numeric identifier for the attack result
         objective: Objective text (defaults to "objectiveN")
         conversation_id: Conversation ID (defaults to "conv-N")
         outcome: Attack outcome (defaults to SUCCESS)
         executed_turns: Number of executed turns (defaults to 1)
-    
+
     Returns:
         AttackResult instance
     """
@@ -58,11 +58,11 @@ def create_attack_result(
 
 def create_attack_results_list(count: int, start_index: int = 1) -> list[AttackResult]:
     """Create a list of AttackResult objects.
-    
+
     Args:
         count: Number of results to create
         start_index: Starting index for numbering (defaults to 1)
-    
+
     Returns:
         List of AttackResult instances
     """
@@ -71,10 +71,10 @@ def create_attack_results_list(count: int, start_index: int = 1) -> list[AttackR
 
 def create_mock_run_async(attack_results):
     """Create a mock run_async that saves results to memory before returning.
-    
+
     Args:
         attack_results: List of AttackResult objects to return
-    
+
     Returns:
         AsyncMock configured to return the results
     """
@@ -87,16 +87,14 @@ def create_mock_run_async(attack_results):
     return AsyncMock(side_effect=mock_run_async)
 
 
-def create_mock_atomic_attack(
-    name: str, objectives: list[str], run_async_mock: AsyncMock | None = None
-) -> MagicMock:
+def create_mock_atomic_attack(name: str, objectives: list[str], run_async_mock: AsyncMock | None = None) -> MagicMock:
     """Factory function to create mock AtomicAttack instances.
-    
+
     Args:
         name: Name for the atomic attack
         objectives: List of objectives for the attack
         run_async_mock: Optional pre-configured run_async mock (if None, must be set separately)
-    
+
     Returns:
         MagicMock configured as an AtomicAttack
     """
@@ -462,9 +460,7 @@ class TestScenarioResumption:
     async def test_resumes_with_multiple_failures_across_attacks(self, mock_objective_target):
         """Test resumption when multiple atomic attacks fail at different stages."""
         # Create 4 atomic attacks
-        attacks = [
-            create_mock_atomic_attack(f"attack_{i}", [f"objective{i}"]) for i in range(1, 5)
-        ]
+        attacks = [create_mock_atomic_attack(f"attack_{i}", [f"objective{i}"]) for i in range(1, 5)]
 
         call_count = {f"attack_{i}": 0 for i in range(1, 5)}
 

@@ -52,9 +52,7 @@ class ConcreteScenario(Scenario):
 class TestScenarioPartialAttackCompletion:
     """Tests for Scenario handling PartialAttackExecutionResult from atomic attacks."""
 
-    async def test_atomic_attack_returns_partial_result_with_incomplete_objectives(
-        self, mock_objective_target
-    ):
+    async def test_atomic_attack_returns_partial_result_with_incomplete_objectives(self, mock_objective_target):
         """Test that scenario handles PartialAttackExecutionResult with incomplete objectives properly."""
         # Create atomic attack that returns partial results
         atomic_attack = MagicMock(spec=AtomicAttack)
@@ -80,14 +78,11 @@ class TestScenarioPartialAttackCompletion:
                     for i in [1, 2]
                 ]
                 incomplete = [("obj3", ValueError("Failed to complete obj3"))]
-                
+
                 # Save completed results to memory
                 save_attack_results_to_memory(completed)
-                
-                return PartialAttackExecutionResult(
-                    completed_results=completed,
-                    incomplete_objectives=incomplete
-                )
+
+                return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=incomplete)
             else:
                 # Retry: complete the remaining objective
                 completed = [
@@ -100,10 +95,7 @@ class TestScenarioPartialAttackCompletion:
                     )
                 ]
                 save_attack_results_to_memory(completed)
-                return PartialAttackExecutionResult(
-                    completed_results=completed,
-                    incomplete_objectives=[]
-                )
+                return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run
 
@@ -121,7 +113,7 @@ class TestScenarioPartialAttackCompletion:
         # Verify scenario succeeded after retry
         assert isinstance(result, ScenarioResult)
         assert call_count[0] == 2  # Called twice
-        
+
         # All 3 results should be saved
         assert len(result.attack_results["partial_attack"]) == 3
         objectives_completed = [r.objective for r in result.attack_results["partial_attack"]]
@@ -129,9 +121,7 @@ class TestScenarioPartialAttackCompletion:
         assert "obj2" in objectives_completed
         assert "obj3" in objectives_completed
 
-    async def test_scenario_saves_partial_results_before_failure(
-        self, mock_objective_target
-    ):
+    async def test_scenario_saves_partial_results_before_failure(self, mock_objective_target):
         """Test that scenario saves partial results even when attack fails."""
         atomic_attack = MagicMock(spec=AtomicAttack)
         atomic_attack.atomic_attack_name = "partial_save_attack"
@@ -149,18 +139,12 @@ class TestScenarioPartialAttackCompletion:
                 )
                 for i in [1, 2]
             ]
-            incomplete = [
-                ("obj3", RuntimeError("Failed obj3")),
-                ("obj4", RuntimeError("Failed obj4"))
-            ]
-            
+            incomplete = [("obj3", RuntimeError("Failed obj3")), ("obj4", RuntimeError("Failed obj4"))]
+
             # Save completed results to memory
             save_attack_results_to_memory(completed)
-            
-            return PartialAttackExecutionResult(
-                completed_results=completed,
-                incomplete_objectives=incomplete
-            )
+
+            return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=incomplete)
 
         atomic_attack.run_async = mock_run
 
@@ -187,9 +171,7 @@ class TestScenarioPartialAttackCompletion:
         assert saved_results[0].objective == "obj1"
         assert saved_results[1].objective == "obj2"
 
-    async def test_scenario_resumes_with_only_incomplete_objectives(
-        self, mock_objective_target
-    ):
+    async def test_scenario_resumes_with_only_incomplete_objectives(self, mock_objective_target):
         """Test that on retry, scenario only passes incomplete objectives to atomic attack."""
         atomic_attack = MagicMock(spec=AtomicAttack)
         atomic_attack.atomic_attack_name = "resume_attack"
@@ -200,11 +182,11 @@ class TestScenarioPartialAttackCompletion:
 
         async def mock_run(*args, **kwargs):
             call_count[0] += 1
-            
+
             # Track which objectives are being executed
             current_objectives = atomic_attack._objectives.copy()
             executed_objectives.append(current_objectives)
-            
+
             if call_count[0] == 1:
                 # First attempt: complete first 3, fail last 2
                 completed = [
@@ -217,17 +199,11 @@ class TestScenarioPartialAttackCompletion:
                     )
                     for i in [1, 2, 3]
                 ]
-                incomplete = [
-                    ("obj4", Exception("Failed obj4")),
-                    ("obj5", Exception("Failed obj5"))
-                ]
-                
+                incomplete = [("obj4", Exception("Failed obj4")), ("obj5", Exception("Failed obj5"))]
+
                 save_attack_results_to_memory(completed)
-                
-                return PartialAttackExecutionResult(
-                    completed_results=completed,
-                    incomplete_objectives=incomplete
-                )
+
+                return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=incomplete)
             else:
                 # Retry: complete remaining objectives
                 completed = [
@@ -240,13 +216,10 @@ class TestScenarioPartialAttackCompletion:
                     )
                     for i in [4, 5]
                 ]
-                
+
                 save_attack_results_to_memory(completed)
-                
-                return PartialAttackExecutionResult(
-                    completed_results=completed,
-                    incomplete_objectives=[]
-                )
+
+                return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run
 
@@ -264,22 +237,20 @@ class TestScenarioPartialAttackCompletion:
         # Verify scenario succeeded
         assert isinstance(result, ScenarioResult)
         assert call_count[0] == 2
-        
+
         # Verify first attempt had all 5 objectives
         assert len(executed_objectives[0]) == 5
-        
+
         # Verify retry only had the 2 incomplete objectives
         assert len(executed_objectives[1]) == 2
         assert "obj4" in executed_objectives[1]
         assert "obj5" in executed_objectives[1]
         assert "obj1" not in executed_objectives[1]  # Should not retry completed ones
-        
+
         # All 5 results should be in final scenario result
         assert len(result.attack_results["resume_attack"]) == 5
 
-    async def test_multiple_atomic_attacks_with_partial_results(
-        self, mock_objective_target
-    ):
+    async def test_multiple_atomic_attacks_with_partial_results(self, mock_objective_target):
         """Test scenario with multiple atomic attacks that return partial results."""
         # Create 3 atomic attacks
         attack1 = MagicMock(spec=AtomicAttack)
@@ -299,7 +270,7 @@ class TestScenarioPartialAttackCompletion:
         async def make_mock_run(attack_name, objectives):
             async def mock_run(*args, **kwargs):
                 call_counts[attack_name] += 1
-                
+
                 if attack_name == "attack_2" and call_counts[attack_name] == 1:
                     # Attack 2 fails partially on first attempt
                     completed = [
@@ -311,17 +282,11 @@ class TestScenarioPartialAttackCompletion:
                             executed_turns=1,
                         )
                     ]
-                    incomplete = [
-                        ("a2_obj2", Exception("Failed a2_obj2")),
-                        ("a2_obj3", Exception("Failed a2_obj3"))
-                    ]
-                    
+                    incomplete = [("a2_obj2", Exception("Failed a2_obj2")), ("a2_obj3", Exception("Failed a2_obj3"))]
+
                     save_attack_results_to_memory(completed)
-                    
-                    return PartialAttackExecutionResult(
-                        completed_results=completed,
-                        incomplete_objectives=incomplete
-                    )
+
+                    return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=incomplete)
                 else:
                     # All other attempts succeed fully
                     completed = [
@@ -332,17 +297,20 @@ class TestScenarioPartialAttackCompletion:
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
                         )
-                        for obj in getattr(attack1 if attack_name == "attack_1" else 
-                                         (attack2 if attack_name == "attack_2" else attack3), "_objectives")
+                        for obj in getattr(
+                            (
+                                attack1
+                                if attack_name == "attack_1"
+                                else (attack2 if attack_name == "attack_2" else attack3)
+                            ),
+                            "_objectives",
+                        )
                     ]
-                    
+
                     save_attack_results_to_memory(completed)
-                    
-                    return PartialAttackExecutionResult(
-                        completed_results=completed,
-                        incomplete_objectives=[]
-                    )
-            
+
+                    return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=[])
+
             return mock_run
 
         attack1.run_async = await make_mock_run("attack_1", attack1._objectives)
@@ -362,14 +330,14 @@ class TestScenarioPartialAttackCompletion:
 
         # Verify scenario succeeded after retry
         assert isinstance(result, ScenarioResult)
-        
+
         # Attack 1 should run once (succeeds)
         assert call_counts["attack_1"] == 1
         # Attack 2 should run twice (fails partially, then succeeds)
         assert call_counts["attack_2"] == 2
         # Attack 3 should run once (after attack 2 succeeds on retry)
         assert call_counts["attack_3"] == 1
-        
+
         # All results should be present
         assert len(result.attack_results["attack_1"]) == 2
         assert len(result.attack_results["attack_2"]) == 3

@@ -99,7 +99,7 @@
 #
 # ### What is Scenario-Level Retry?
 #
-# Scenario-level retry is the **highest-level** retry mechanism in PyRIT. When enabled via the `max_retries` parameter, it allows an entire scenario execution to automatically retry if any failure occurs during the workflow. 
+# Scenario-level retry is the **highest-level** retry mechanism in PyRIT. When enabled via the `max_retries` parameter, it allows an entire scenario execution to automatically retry if any failure occurs during the workflow.
 #
 # But also note, if you rerun the same scenario manually, that follows the same logic and is always an option.
 #
@@ -185,7 +185,7 @@ print(f"Total results: {len(result.attack_results)}")
 #     result = await scenario.run_async()  # type: ignore
 # except Exception as e:
 #     print(f"Scenario failed: {e}")
-#     
+#
 # # Simply call run_async() again - resumes from where it left off
 # result = await scenario.run_async()  # type: ignore
 # ```
@@ -232,14 +232,11 @@ print(f"Total results: {len(result.attack_results)}")
 # - No wasted work - only the remaining 40 objectives are attempted
 
 # %% [markdown]
-#
-
-# %% [markdown]
 # ## Understanding the Retry Hierarchy
 #
 # The five retry mechanisms work at different levels, with three core mechanisms handling most scenarios:
 #
-# ### Core Retry Mechanisms (The Main Three)
+# ### Core Retry Mechanisms
 #
 # ```
 # ┌─────────────────────────────────────────────────────────────┐
@@ -284,7 +281,7 @@ print(f"Total results: {len(result.attack_results)}")
 # Scenario attempts objective 1:
 #   └─> Scorer call with JSON retry
 #       └─> Target call: Rate limit error → target retry 1 → success ✓
-#   
+#
 # Scenario attempts objective 2:
 #   └─> Scorer call with JSON retry
 #       └─> Target call: Rate limit error → target retry 1-10 → all fail ✗

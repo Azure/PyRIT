@@ -123,9 +123,6 @@ chapters:
       - file: code/setup/1_resiliency
       - file: code/setup/default_values
       - file: code/setup/pyrit_initializer
-      sections:
-      - file: code/setup/default_values
-      - file: code/setup/pyrit_initializer
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml

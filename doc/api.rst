@@ -215,6 +215,7 @@ API Reference
     MultiPromptSendingAttack
     MultiPromptSendingAttackContext
     MultiTurnAttackContext
+    PartialAttackExecutionResult
     PromptSendingAttack
     RTASystemPromptPaths
     RedTeamingAttack
@@ -541,7 +542,6 @@ API Reference
     :toctree: _autosummary/
 
     AtomicAttack
-    AtomicAttackResult
     EncodingScenario
     FoundryStrategy
     FoundryScenario

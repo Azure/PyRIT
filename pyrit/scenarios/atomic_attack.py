@@ -249,7 +249,7 @@ class AtomicAttack:
         try:
             # Execute based on context type with common parameters
             if self._context_type == "single_turn":
-                executor_result = await executor.execute_single_turn_attacks_async(
+                results = await executor.execute_single_turn_attacks_async(
                     attack=self._attack,
                     objectives=self._objectives,
                     seed_groups=self._seed_groups,
@@ -258,7 +258,7 @@ class AtomicAttack:
                     return_partial_on_failure=return_partial_on_failure,
                 )
             elif self._context_type == "multi_turn":
-                executor_result = await executor.execute_multi_turn_attacks_async(
+                results = await executor.execute_multi_turn_attacks_async(
                     attack=self._attack,
                     objectives=self._objectives,
                     custom_prompts=self._custom_prompts,
@@ -269,7 +269,7 @@ class AtomicAttack:
             else:
                 # Fall back to generic execute_multi_objective_attack_async
                 # Note: This method uses prepended_conversation (singular) instead of prepended_conversations
-                executor_result = await executor.execute_multi_objective_attack_async(
+                results = await executor.execute_multi_objective_attack_async(
                     attack=self._attack,
                     objectives=self._objectives,
                     prepended_conversation=prepended_conversations[0] if prepended_conversations else None,
@@ -277,13 +277,6 @@ class AtomicAttack:
                     return_partial_on_failure=return_partial_on_failure,
                     **self._attack_execute_params,
                 )
-
-            # Ensure we always return PartialAttackExecutionResult for consistent API
-            # If executor returned a plain list (all succeeded), wrap it
-            if isinstance(executor_result, list):
-                results = PartialAttackExecutionResult(completed_results=executor_result, incomplete_objectives=[])
-            else:
-                results = executor_result
 
             # Log completion status
             if results.has_incomplete:

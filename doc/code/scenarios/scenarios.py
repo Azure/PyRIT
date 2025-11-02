@@ -83,6 +83,7 @@ scenario_strategies = [
     ScenarioCompositeStrategy(strategies=[FoundryStrategy.Caesar, FoundryStrategy.CharSwap]),  # Composed strategy
 ]
 
+
 # Create a scenario from the pre-configured Foundry scenario
 foundry_scenario = FoundryScenario(
     objective_target=objective_target,
@@ -97,3 +98,22 @@ print(f"Created scenario: {foundry_scenario.name}")
 # Execute the entire scenario
 foundry_results = await foundry_scenario.run_async()  # type: ignore
 await printer.print_summary_async(foundry_results)  # type: ignore
+
+# %% [markdown]
+# ## Resiliency
+#
+# Scenarios can run for a long time, and because of that, things can go wrong. Network issues, rate limits, or other transient failures can interrupt execution. PyRIT provides built-in resiliency features to handle these situations gracefully.
+#
+# ### Automatic Resume
+#
+# If you re-run a `scenario`, it will automatically start where it left off. The framework tracks completed attacks and objectives in memory, so you won't lose progress if something interrupts your scenario execution. This means you can safely stop and restart scenarios without duplicating work.
+#
+# ### Retry Mechanism
+#
+# You can utilize the `max_retries` parameter to handle transient failures. If any unknown exception occurs during execution, PyRIT will automatically retry the failed operation (starting where it left off) up to the specified number of times. This helps ensure your scenario completes successfully even in the face of temporary issues.
+#
+# ### Dynamic Configuration
+#
+# During a long-running scenario, you may want to adjust parameters like `max_concurrency` to manage resource usage, or switch your scorer to use a different target. PyRIT's resiliency features make it safe to stop, reconfigure, and continue scenarios as needed.
+#
+# For more information, see [resiliency](../setup/1_resiliency.ipynb)

@@ -24,17 +24,31 @@ ResultT = TypeVar("ResultT")
 @dataclass
 class PartialAttackExecutionResult(Generic[ResultT]):
     """
-    Result containing both completed and incomplete attack executions.
+    Result container for attack execution that may have partial completion.
 
-    This class holds results from parallel attack execution where some objectives
-    completed execution while others did not complete (threw exceptions). This enables
-    callers to access completed results even when not all objectives finished executing.
+    This class holds results from parallel attack execution. It is iterable and
+    behaves like a list in the common case where all objectives complete successfully.
+
+    When some objectives don't complete (throw exceptions), access incomplete_objectives
+    to retrieve the failures, or use raise_if_incomplete() to raise the first exception.
 
     Note: "completed" means the execution finished, not that the attack objective was achieved.
     """
 
     completed_results: List[ResultT]
-    incomplete_objectives: List[tuple[str, BaseException]]  # (objective, exception) pairs
+    incomplete_objectives: List[tuple[str, BaseException]]
+
+    def __iter__(self):
+        """Iterate over completed results."""
+        return iter(self.completed_results)
+
+    def __len__(self) -> int:
+        """Return number of completed results."""
+        return len(self.completed_results)
+
+    def __getitem__(self, index: int) -> ResultT:
+        """Access completed results by index."""
+        return self.completed_results[index]
 
     @property
     def has_incomplete(self) -> bool:
@@ -45,6 +59,29 @@ class PartialAttackExecutionResult(Generic[ResultT]):
     def all_completed(self) -> bool:
         """Check if all objectives completed execution."""
         return len(self.incomplete_objectives) == 0
+
+    def raise_if_incomplete(self) -> None:
+        """
+        Raise the first exception if any objectives are incomplete.
+
+        Raises:
+            BaseException: The first exception from incomplete objectives.
+        """
+        if self.incomplete_objectives:
+            raise self.incomplete_objectives[0][1]
+
+    def get_results(self) -> List[ResultT]:
+        """
+        Get completed results, raising if any incomplete.
+
+        Returns:
+            List[ResultT]: All completed results.
+
+        Raises:
+            BaseException: The first exception from incomplete objectives.
+        """
+        self.raise_if_incomplete()
+        return self.completed_results
 
 
 class AttackExecutor:
@@ -81,9 +118,9 @@ class AttackExecutor:
         objectives: List[str],
         prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
-        return_partial_on_failure: bool = True,
+        return_partial_on_failure: bool = False,
         **attack_params,
-    ) -> Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+    ) -> PartialAttackExecutionResult[AttackStrategyResultT]:
         """
         Execute the same attack strategy with multiple objectives against the same target in parallel.
 
@@ -97,18 +134,17 @@ class AttackExecutor:
             prepended_conversation (Optional[List[Message]]): Conversation to prepend to the target model.
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
             return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult with completed results
-                when some objectives don't complete execution. If False, raises the first exception encountered.
-                Defaults to True.
+                even when some objectives don't complete execution. If False, raises the first exception encountered.
+                Defaults to False (raise on failure).
             **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
-            Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
-                - List[AttackStrategyResultT] if all objectives complete (in same order as objectives)
-                - PartialAttackExecutionResult[AttackStrategyResultT] if return_partial_on_failure=True and some
-                  objectives don't complete
+            PartialAttackExecutionResult[AttackStrategyResultT]: Result container with completed results and
+                any incomplete objectives. The result is iterable and behaves like a list of completed results.
+                Use .has_incomplete or .raise_if_incomplete() to handle failures.
 
         Raises:
-            Exception: If return_partial_on_failure=False and any objective doesn't complete execution.
+            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
@@ -116,6 +152,9 @@ class AttackExecutor:
             ...     attack=red_teaming_attack,
             ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
             ... )
+            >>> # Iterate directly over results
+            >>> for result in results:
+            ...     print(result)
         """
         semaphore = asyncio.Semaphore(self._max_concurrency)
 
@@ -145,8 +184,8 @@ class AttackExecutor:
         seed_groups: Optional[List[SeedGroup]] = None,
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
-        return_partial_on_failure: bool = True,
-    ) -> Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+        return_partial_on_failure: bool = False,
+    ) -> PartialAttackExecutionResult[AttackStrategyResultT]:
         """
         Execute a batch of single-turn attacks with multiple objectives.
 
@@ -166,23 +205,22 @@ class AttackExecutor:
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
                 The labels will be the same across all executions.
             return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult with completed results
-                when some objectives don't complete execution. If False, raises the first exception encountered.
-                Defaults to True.
+                even when some objectives don't complete execution. If False, raises the first exception encountered.
+                Defaults to False (raise on failure).
+
         Returns:
-            Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
-                - List[AttackStrategyResultT] if all objectives complete (in same order as objectives)
-                - PartialAttackExecutionResult[AttackStrategyResultT] if return_partial_on_failure=True and some
-                  objectives don't complete
+            PartialAttackExecutionResult[AttackStrategyResultT]: Result container with completed results and
+                any incomplete objectives. The result is iterable and behaves like a list of completed results.
 
         Raises:
-            Exception: If return_partial_on_failure=False and any objective doesn't complete execution.
+            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_single_turn_batch_async(
+            >>> results = await executor.execute_single_turn_attacks_async(
             ...     attack=single_turn_attack,
             ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ...     seed_prompts=[SeedGroup(...), SeedGroup(...)]
+            ...     seed_groups=[SeedGroup(...), SeedGroup(...)]
             ... )
         """
 
@@ -244,8 +282,8 @@ class AttackExecutor:
         custom_prompts: Optional[List[str]] = None,
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
-        return_partial_on_failure: bool = True,
-    ) -> Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+        return_partial_on_failure: bool = False,
+    ) -> PartialAttackExecutionResult[AttackStrategyResultT]:
         """
         Execute a batch of multi-turn attacks with multiple objectives.
 
@@ -265,16 +303,15 @@ class AttackExecutor:
             memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
                 The labels will be the same across all executions.
             return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult with completed results
-                when some objectives don't complete execution. If False, raises the first exception encountered.
-                Defaults to True.
+                even when some objectives don't complete execution. If False, raises the first exception encountered.
+                Defaults to False (raise on failure).
+
         Returns:
-            Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
-                - List[AttackStrategyResultT] if all objectives complete (in same order as objectives)
-                - PartialAttackExecutionResult[AttackStrategyResultT] if return_partial_on_failure=True and some
-                  objectives don't complete
+            PartialAttackExecutionResult[AttackStrategyResultT]: Result container with completed results and
+                any incomplete objectives. The result is iterable and behaves like a list of completed results.
 
         Raises:
-            Exception: If return_partial_on_failure=False and any objective doesn't complete execution.
+            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
@@ -431,7 +468,7 @@ class AttackExecutor:
         objectives: List[str],
         results_or_exceptions: List[Union[AttackStrategyResultT, BaseException]],
         return_partial_on_failure: bool,
-    ) -> Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
+    ) -> PartialAttackExecutionResult[AttackStrategyResultT]:
         """
         Process results from parallel execution, separating completed from incomplete objectives.
 
@@ -439,14 +476,12 @@ class AttackExecutor:
             objectives (List[str]): List of objectives that were executed.
             results_or_exceptions (List[Union[AttackStrategyResultT, BaseException]]): Results from asyncio.gather
                 with return_exceptions=True.
-            return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult when some objectives
+            return_partial_on_failure (bool): If True, returns PartialAttackExecutionResult even when some objectives
                 don't complete. If False, raises the first exception encountered.
 
         Returns:
-            Union[List[AttackStrategyResultT], PartialAttackExecutionResult[AttackStrategyResultT]]:
-                - List[AttackStrategyResultT] if all objectives complete (in same order as objectives)
-                - PartialAttackExecutionResult[AttackStrategyResultT] if return_partial_on_failure=True and some
-                  objectives don't complete
+            PartialAttackExecutionResult[AttackStrategyResultT]: Result container with completed results and
+                any incomplete objectives. Always returns this type regardless of success/failure status.
 
         Raises:
             BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
@@ -461,15 +496,11 @@ class AttackExecutor:
             else:
                 completed_results.append(result_or_exception)  # type: ignore[arg-type]
 
-        # If all completed, return list directly (backward compatible)
-        if not incomplete_objectives:
-            return completed_results
-
         # If some incomplete and return_partial_on_failure is False, raise the first exception
-        if not return_partial_on_failure:
+        if incomplete_objectives and not return_partial_on_failure:
             raise incomplete_objectives[0][1]
 
-        # Return partial result with both completed and incomplete
+        # Always return PartialAttackExecutionResult (even when all succeeded)
         return PartialAttackExecutionResult(
             completed_results=completed_results, incomplete_objectives=incomplete_objectives
         )

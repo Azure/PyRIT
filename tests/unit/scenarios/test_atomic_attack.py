@@ -352,6 +352,46 @@ class TestAtomicAttackExecution:
             with pytest.raises(ValueError, match="Failed to execute atomic attack"):
                 await atomic_attack.run_async()
 
+    @pytest.mark.asyncio
+    async def test_run_async_passes_return_partial_on_failure_true_by_default(
+        self, mock_attack, sample_objectives, sample_attack_results
+    ):
+        """Test that atomic attack passes return_partial_on_failure=True by default."""
+        atomic_attack = AtomicAttack(
+            attack=mock_attack,
+            objectives=sample_objectives,
+            atomic_attack_name="Test Attack Run",
+        )
+
+        with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = wrap_results(sample_attack_results)
+
+            await atomic_attack.run_async()
+
+            call_kwargs = mock_exec.call_args.kwargs
+            assert "return_partial_on_failure" in call_kwargs
+            assert call_kwargs["return_partial_on_failure"] is True
+
+    @pytest.mark.asyncio
+    async def test_run_async_respects_explicit_return_partial_on_failure(
+        self, mock_attack, sample_objectives, sample_attack_results
+    ):
+        """Test that explicit return_partial_on_failure parameter is passed through."""
+        atomic_attack = AtomicAttack(
+            attack=mock_attack,
+            objectives=sample_objectives,
+            atomic_attack_name="Test Attack Run",
+        )
+
+        with patch.object(AttackExecutor, "execute_multi_objective_attack_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = wrap_results(sample_attack_results)
+
+            await atomic_attack.run_async(return_partial_on_failure=False)
+
+            call_kwargs = mock_exec.call_args.kwargs
+            assert "return_partial_on_failure" in call_kwargs
+            assert call_kwargs["return_partial_on_failure"] is False
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestAtomicAttackIntegration:
