@@ -80,5 +80,5 @@
     }
   },
   "postCreateCommand": "/bin/bash -i .devcontainer/devcontainer_setup.sh",
-  "forwardPorts": [4213, 8888]
+  "forwardPorts": [4213, 5000, 8888]
 }
