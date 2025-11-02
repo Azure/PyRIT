@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.executor.attack.core import PartialAttackExecutionResult
+from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenarios import AtomicAttack, Scenario
@@ -26,7 +26,7 @@ def create_mock_run_async(attack_results):
     async def mock_run_async(*args, **kwargs):
         # Save results to memory (mimics what real attacks do)
         save_attack_results_to_memory(attack_results)
-        return PartialAttackExecutionResult(completed_results=attack_results, incomplete_objectives=[])
+        return AttackExecutorResult(completed_results=attack_results, incomplete_objectives=[])
 
     return AsyncMock(side_effect=mock_run_async)
 

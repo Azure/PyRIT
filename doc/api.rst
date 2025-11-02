@@ -215,7 +215,7 @@ API Reference
     MultiPromptSendingAttack
     MultiPromptSendingAttackContext
     MultiTurnAttackContext
-    PartialAttackExecutionResult
+    AttackExecutorResult
     PromptSendingAttack
     RTASystemPromptPaths
     RedTeamingAttack

@@ -14,7 +14,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 
-from pyrit.executor.attack.core.attack_executor import AttackExecutor, PartialAttackExecutionResult
+from pyrit.executor.attack.core.attack_executor import AttackExecutor, AttackExecutorResult
 
 __all__ = [
     "AttackStrategy",
@@ -25,5 +25,5 @@ __all__ = [
     "AttackStrategyContextT",
     "AttackStrategyResultT",
     "AttackExecutor",
-    "PartialAttackExecutionResult",
+    "AttackExecutorResult",
 ]

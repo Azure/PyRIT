@@ -1,13 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Additional tests for Scenario retry with PartialAttackExecutionResult functionality."""
+"""Additional tests for Scenario retry with AttackExecutorResult functionality."""
 
 from unittest.mock import MagicMock
 
 import pytest
 
-from pyrit.executor.attack.core import PartialAttackExecutionResult
+from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenarios import AtomicAttack, Scenario
@@ -50,10 +50,10 @@ class ConcreteScenario(Scenario):
 @pytest.mark.usefixtures("patch_central_database")
 @pytest.mark.asyncio
 class TestScenarioPartialAttackCompletion:
-    """Tests for Scenario handling PartialAttackExecutionResult from atomic attacks."""
+    """Tests for Scenario handling AttackExecutorResult from atomic attacks."""
 
     async def test_atomic_attack_returns_partial_result_with_incomplete_objectives(self, mock_objective_target):
-        """Test that scenario handles PartialAttackExecutionResult with incomplete objectives properly."""
+        """Test that scenario handles AttackExecutorResult with incomplete objectives properly."""
         # Create atomic attack that returns partial results
         atomic_attack = MagicMock(spec=AtomicAttack)
         atomic_attack.atomic_attack_name = "partial_attack"
@@ -82,7 +82,7 @@ class TestScenarioPartialAttackCompletion:
                 # Save completed results to memory
                 save_attack_results_to_memory(completed)
 
-                return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=incomplete)
+                return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
             else:
                 # Retry: complete the remaining objective
                 completed = [
@@ -95,7 +95,7 @@ class TestScenarioPartialAttackCompletion:
                     )
                 ]
                 save_attack_results_to_memory(completed)
-                return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=[])
+                return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run
 
@@ -144,7 +144,7 @@ class TestScenarioPartialAttackCompletion:
             # Save completed results to memory
             save_attack_results_to_memory(completed)
 
-            return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=incomplete)
+            return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
 
         atomic_attack.run_async = mock_run
 
@@ -203,7 +203,7 @@ class TestScenarioPartialAttackCompletion:
 
                 save_attack_results_to_memory(completed)
 
-                return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=incomplete)
+                return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
             else:
                 # Retry: complete remaining objectives
                 completed = [
@@ -219,7 +219,7 @@ class TestScenarioPartialAttackCompletion:
 
                 save_attack_results_to_memory(completed)
 
-                return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=[])
+                return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run
 
@@ -286,7 +286,7 @@ class TestScenarioPartialAttackCompletion:
 
                     save_attack_results_to_memory(completed)
 
-                    return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=incomplete)
+                    return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
                 else:
                     # All other attempts succeed fully
                     completed = [
@@ -309,7 +309,7 @@ class TestScenarioPartialAttackCompletion:
 
                     save_attack_results_to_memory(completed)
 
-                    return PartialAttackExecutionResult(completed_results=completed, incomplete_objectives=[])
+                    return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
             return mock_run
 

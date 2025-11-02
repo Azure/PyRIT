@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
-from pyrit.executor.attack.core import PartialAttackExecutionResult
+from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.models import AttackOutcome, AttackResult
 
 
@@ -55,7 +55,7 @@ class TestPartialExecutionWithFailures:
     async def test_execute_multi_objective_returns_partial_on_some_failures(
         self, mock_attack_strategy, sample_objectives
     ):
-        """Test that execute_multi_objective_attack_async returns PartialAttackExecutionResult
+        """Test that execute_multi_objective_attack_async returns AttackExecutorResult
         when some objectives fail and return_partial_on_failure=True."""
 
         # Set up mock to succeed for first 3, fail for last 2
@@ -74,8 +74,8 @@ class TestPartialExecutionWithFailures:
             return_partial_on_failure=True,
         )
 
-        # Should return PartialAttackExecutionResult
-        assert isinstance(result, PartialAttackExecutionResult)
+        # Should return AttackExecutorResult
+        assert isinstance(result, AttackExecutorResult)
 
         # Should have 3 completed results
         assert len(result.completed_results) == 3
@@ -99,7 +99,7 @@ class TestPartialExecutionWithFailures:
     async def test_execute_multi_objective_returns_partial_result_on_all_success(
         self, mock_attack_strategy, sample_objectives
     ):
-        """Test that execute_multi_objective_attack_async returns PartialAttackExecutionResult
+        """Test that execute_multi_objective_attack_async returns AttackExecutorResult
         even when all objectives succeed, with no incomplete objectives."""
 
         # Set up mock to succeed for all
@@ -116,8 +116,8 @@ class TestPartialExecutionWithFailures:
             return_partial_on_failure=True,
         )
 
-        # Should return PartialAttackExecutionResult even when all succeed
-        assert isinstance(result, PartialAttackExecutionResult)
+        # Should return AttackExecutorResult even when all succeed
+        assert isinstance(result, AttackExecutorResult)
         assert len(result) == 5  # Test that __len__ works
         assert len(result.completed_results) == 5
         assert len(result.incomplete_objectives) == 0
@@ -181,7 +181,7 @@ class TestPartialExecutionWithFailures:
             )
 
     async def test_execute_single_turn_returns_partial_on_some_failures(self, mock_attack_strategy, sample_objectives):
-        """Test that execute_single_turn_attacks_async returns PartialAttackExecutionResult
+        """Test that execute_single_turn_attacks_async returns AttackExecutorResult
         when some objectives fail."""
 
         # Set up mock to succeed for first 2, fail for rest
@@ -200,14 +200,14 @@ class TestPartialExecutionWithFailures:
             return_partial_on_failure=True,
         )
 
-        # Should return PartialAttackExecutionResult
-        assert isinstance(result, PartialAttackExecutionResult)
+        # Should return AttackExecutorResult
+        assert isinstance(result, AttackExecutorResult)
         assert len(result.completed_results) == 2
         assert len(result.incomplete_objectives) == 3
         assert result.has_incomplete is True
 
     async def test_execute_multi_turn_returns_partial_on_some_failures(self, mock_attack_strategy, sample_objectives):
-        """Test that execute_multi_turn_attacks_async returns PartialAttackExecutionResult
+        """Test that execute_multi_turn_attacks_async returns AttackExecutorResult
         when some objectives fail."""
 
         # Set up mock to fail for middle objectives
@@ -226,8 +226,8 @@ class TestPartialExecutionWithFailures:
             return_partial_on_failure=True,
         )
 
-        # Should return PartialAttackExecutionResult
-        assert isinstance(result, PartialAttackExecutionResult)
+        # Should return AttackExecutorResult
+        assert isinstance(result, AttackExecutorResult)
         assert len(result.completed_results) == 3
         assert len(result.incomplete_objectives) == 2
 
@@ -237,7 +237,7 @@ class TestPartialExecutionWithFailures:
         assert "objective3" in incomplete_objs
 
     async def test_partial_result_preserves_exception_types(self, mock_attack_strategy, sample_objectives):
-        """Test that PartialAttackExecutionResult preserves the actual exception types."""
+        """Test that AttackExecutorResult preserves the actual exception types."""
 
         # Set up mock with different exception types
         async def mock_execute(objective, **kwargs):
@@ -260,7 +260,7 @@ class TestPartialExecutionWithFailures:
         )
 
         # Should have preserved exception types
-        assert isinstance(result, PartialAttackExecutionResult)
+        assert isinstance(result, AttackExecutorResult)
         assert len(result.incomplete_objectives) == 3
 
         exception_map = {obj: exc for obj, exc in result.incomplete_objectives}
@@ -294,7 +294,7 @@ class TestPartialExecutionWithFailures:
         )
 
         # All fast objectives should have completed before the slow failure
-        assert isinstance(result, PartialAttackExecutionResult)
+        assert isinstance(result, AttackExecutorResult)
         assert len(result.completed_results) >= 2  # At least fast1 and fast2
         assert len(result.incomplete_objectives) == 1
         assert result.incomplete_objectives[0][0] == "slow_fail"
@@ -302,7 +302,7 @@ class TestPartialExecutionWithFailures:
 
 @pytest.mark.asyncio
 class TestPartialExecutionResultMethods:
-    """Tests for PartialAttackExecutionResult convenience methods."""
+    """Tests for AttackExecutorResult convenience methods."""
 
     async def test_raise_if_incomplete_raises_when_incomplete(self, mock_attack_strategy):
         """Test that raise_if_incomplete() raises the first exception when there are incomplete objectives."""

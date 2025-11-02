@@ -22,7 +22,7 @@ from pyrit.executor.attack import (
     MultiTurnAttackContext,
     SingleTurnAttackContext,
 )
-from pyrit.executor.attack.core.attack_executor import PartialAttackExecutionResult
+from pyrit.executor.attack.core.attack_executor import AttackExecutorResult
 from pyrit.models import AttackResult, Message, SeedGroup
 
 logger = logging.getLogger(__name__)
@@ -202,35 +202,35 @@ class AtomicAttack:
 
     async def run_async(
         self, *, max_concurrency: int = 1, return_partial_on_failure: bool = True
-    ) -> PartialAttackExecutionResult[AttackResult]:
+    ) -> AttackExecutorResult[AttackResult]:
         """
-        Execute the atomic attack against all objectives in the dataset.
+            Execute the atomic attack against all objectives in the dataset.
 
-        This method uses AttackExecutor to run the configured attack against
-        all objectives from the dataset. It automatically detects whether to use
-        single-turn or multi-turn execution based on the attack's context type.
+            This method uses AttackExecutor to run the configured attack against
+            all objectives from the dataset. It automatically detects whether to use
+            single-turn or multi-turn execution based on the attack's context type.
 
-        When return_partial_on_failure=True (default), this method will return
-        a PartialAttackExecutionResult containing both completed results and incomplete
-        objectives (those that didn't finish execution due to exceptions). This allows
-        scenarios to save progress and retry only the incomplete objectives.
+            When return_partial_on_failure=True (default), this method will return
+        an AttackExecutorResult containing both completed results and incomplete
+            objectives (those that didn't finish execution due to exceptions). This allows
+            scenarios to save progress and retry only the incomplete objectives.
 
-        Note: "completed" means the execution finished, not that the attack objective
-        was achieved. "incomplete" means execution didn't finish (threw an exception).
+            Note: "completed" means the execution finished, not that the attack objective
+            was achieved. "incomplete" means execution didn't finish (threw an exception).
 
-        Args:
-            max_concurrency (int): Maximum number of concurrent attack executions.
-                Defaults to 1 for sequential execution.
-            return_partial_on_failure (bool): If True, returns partial results even when
-                some objectives don't complete execution. If False, raises an exception on
-                any execution failure. Defaults to True.
+            Args:
+                max_concurrency (int): Maximum number of concurrent attack executions.
+                    Defaults to 1 for sequential execution.
+                return_partial_on_failure (bool): If True, returns partial results even when
+                    some objectives don't complete execution. If False, raises an exception on
+                    any execution failure. Defaults to True.
 
-        Returns:
-            PartialAttackExecutionResult[AttackResult]: Result containing completed attack results and
-                incomplete objectives (those that didn't finish execution).
+            Returns:
+                AttackExecutorResult[AttackResult]: Result containing completed attack results and
+                    incomplete objectives (those that didn't finish execution).
 
-        Raises:
-            ValueError: If the attack execution fails completely and return_partial_on_failure=False.
+            Raises:
+                ValueError: If the attack execution fails completely and return_partial_on_failure=False.
         """
         # Create the executor with the specified concurrency
         executor = AttackExecutor(max_concurrency=max_concurrency)

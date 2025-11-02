@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
-from pyrit.executor.attack.core import PartialAttackExecutionResult
+from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.models import AttackOutcome, AttackResult, Message
 from pyrit.scenarios import AtomicAttack
 
@@ -54,8 +54,8 @@ def sample_attack_results():
 
 
 def wrap_results(results):
-    """Helper to wrap attack results in PartialAttackExecutionResult."""
-    return PartialAttackExecutionResult(completed_results=results, incomplete_objectives=[])
+    """Helper to wrap attack results in AttackExecutorResult."""
+    return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
 
 
 @pytest.fixture
