@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.datasets.fetch_jailbreakv_28k_dataset import fetch_jailbreakv_28k_dataset
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedDataset, SeedPrompt
 
 
 class TestFetchJailbreakv28kDataset:
@@ -87,7 +87,7 @@ class TestFetchJailbreakv28kDataset:
             return
         # Assertions
 
-        assert isinstance(result, SeedPromptDataset)
+        assert isinstance(result, SeedDataset)
         if harm_categories is None:
             assert len(result.prompts) == 4
             assert sum(p.data_type == "text" for p in result.prompts) == 2

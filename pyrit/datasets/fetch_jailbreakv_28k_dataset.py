@@ -9,7 +9,7 @@ from typing import Dict, List, Literal, Optional
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPrompt, SeedPromptDataset
+from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def fetch_jailbreakv_28k_dataset(
     text_field: Literal["jailbreak_query", "redteam_query"] = "redteam_query",
     harm_categories: Optional[List[HarmLiteral]] = None,
     min_prompts: int = 50,
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
     Fetch examples from the JailBreakV 28k Dataset with optional filtering and create a SeedPromptDataset.
     Many images are missing from the dataset in HuggingFace and the team hosts the full image files in Google Drive.
@@ -177,7 +177,7 @@ def fetch_jailbreakv_28k_dataset(
             "JailBreakV-28K fetch produced 0 prompts. "
             "Likely caused by all items returned after filtering having invalid image paths."
         )
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    seed_prompt_dataset = SeedDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
 
