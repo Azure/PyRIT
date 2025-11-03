@@ -11,7 +11,7 @@ Cela en fait une excellente alternative à des outils comme Ollama ou vLLM pour 
 ## 2. Téléchargement et Exécution
 
 1.  **Téléchargez un `llamafile`** :
-    Rendez-vous sur le dépôt GitHub de Mozilla-Ocho pour trouver des modèles pré-packagés. Par exemple, pour télécharger `Llama-3-8B-Instruct.llamafile` :
+    Rendez-vous sur le dépôt GitHub de mozilla-ai/llamafile pour trouver des modèles pré-packagés. Par exemple, pour télécharger `Llama-3-8B-Instruct.llamafile` :
 
     ```sh
     wget https://huggingface.co/Mozilla/Llama-3-8B-Instruct-llamafile/resolve/main/Llama-3-8B-Instruct.llamafile

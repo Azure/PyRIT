@@ -33,7 +33,7 @@ C'est le cœur du test, simulant l'attaque XPIA.
 ### a. Création de la Charge Utile Malveillante
 
 1.  **Texte Caché** : Un bloc de texte (`hidden_text`) est défini. Ce texte est conçu pour contenir des mots-clés et des phrases très pertinents pour une description de poste cible (par ex., "Ingénieur en Machine Learning", "Python", "Kubernetes", "Kestra").
-2.  **Zero Trust - Sanitisation des Entrées** :
+2.  **Zero Trust - Sanitisation des Entrées** (avec Kestra):
     - Avant l'injection, le `hidden_text` est passé à travers la fonction `sanitize_text`.
     - Cette fonction met en œuvre un principe de **Zero Trust** en supposant que l'entrée pourrait être hostile. Elle supprime les caractères invisibles (comme les espaces à chasse nulle) qu'un attaquant pourrait utiliser pour obfusquer la charge utile et contourner des filtres simples.
 3.  **Injection dans le PDF** :
