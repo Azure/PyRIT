@@ -7,10 +7,12 @@ Base class for scenario attack strategies with group-based aggregation.
 This module provides a generic base class for creating enum-based attack strategy
 hierarchies where strategies can be grouped by categories (e.g., complexity, encoding type)
 and automatically expanded during scenario initialization.
+
+It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
 
 from enum import Enum
-from typing import Set, TypeVar
+from typing import List, Sequence, Set, TypeVar
 
 # TypeVar for the enum subclass itself
 T = TypeVar("T", bound="ScenarioStrategy")
@@ -40,41 +42,6 @@ class ScenarioStrategy(Enum):
     1. Expands aggregate tags into their constituent strategies
     2. Excludes the aggregate tag enum members themselves from the final set
     3. Handles the special "all" tag by expanding to all non-aggregate strategies
-
-    Example:
-        >>> class MyAttackStrategy(ScenarioStrategy):
-        ...     '''Attack strategies for my scenario.'''
-        ...
-        ...     # Aggregate members (special markers that expand)
-        ...     ALL = ("all", {"all"})
-        ...     EASY = ("easy", {"easy"})
-        ...     MODERATE = ("moderate", {"moderate"})
-        ...     CONVERTER = ("converter", {"converter"})
-        ...
-        ...     # Baseline strategy
-        ...     Baseline = ("baseline", {"baseline"})
-        ...
-        ...     # Strategies with multiple tags
-        ...     Base64 = ("base64", {"easy", "converter", "encoding"})
-        ...     ROT13 = ("rot13", {"easy", "converter", "encoding"})
-        ...     Advanced = ("advanced", {"moderate", "multi_turn"})
-        ...
-        ...     @classmethod
-        ...     def get_aggregate_tags(cls):
-        ...         return super().get_aggregate_tags() | {"easy", "moderate", "converter"}
-        ...
-        >>> # User specifies aggregate tag
-        >>> strategies = {MyAttackStrategy.EASY}
-        >>> normalized = MyAttackStrategy.normalize_strategies(strategies)
-        >>> # Returns: {Base64, ROT13} (all strategies tagged with "easy")
-        >>>
-        >>> # Filter by any tag
-        >>> converter_strategies = MyAttackStrategy.get_strategies_by_tag("converter")
-        >>> # Returns: {Base64, ROT13}
-        >>>
-        >>> # Get all strategies
-        >>> all_strategies = MyAttackStrategy.normalize_strategies({MyAttackStrategy.ALL})
-        >>> # Returns: {Baseline, Base64, ROT13, Advanced}
     """
 
     _tags: set[str]
@@ -144,6 +111,45 @@ class ScenarioStrategy(Enum):
         return {strategy for strategy in cls if tag in strategy.tags and strategy.value not in aggregate_tags}
 
     @classmethod
+    def get_all_strategies(cls: type[T]) -> list[T]:
+        """
+        Get all non-aggregate strategies for this strategy enum.
+
+        This method returns all concrete attack strategies, excluding aggregate markers
+        (like ALL, EASY, MODERATE, DIFFICULT) that are used for grouping.
+
+        Returns:
+            list[T]: List of all non-aggregate strategies.
+
+        Example:
+            >>> # Get all concrete strategies for a strategy enum
+            >>> all_strategies = FoundryStrategy.get_all_strategies()
+            >>> # Returns: [Base64, ROT13, Leetspeak, ..., Crescendo]
+            >>> # Excludes: ALL, EASY, MODERATE, DIFFICULT
+        """
+        aggregate_tags = cls.get_aggregate_tags()
+        return [s for s in cls if s.value not in aggregate_tags]
+
+    @classmethod
+    def get_aggregate_strategies(cls: type[T]) -> list[T]:
+        """
+        Get all aggregate strategies for this strategy enum.
+
+        This method returns only the aggregate markers (like ALL, EASY, MODERATE, DIFFICULT)
+        that are used to group concrete strategies by tags.
+
+        Returns:
+            list[T]: List of all aggregate strategies.
+
+        Example:
+            >>> # Get all aggregate strategies for a strategy enum
+            >>> aggregates = FoundryStrategy.get_aggregate_strategies()
+            >>> # Returns: [ALL, EASY, MODERATE, DIFFICULT]
+        """
+        aggregate_tags = cls.get_aggregate_tags()
+        return [s for s in cls if s.value in aggregate_tags]
+
+    @classmethod
     def normalize_strategies(cls: type[T], strategies: Set[T]) -> Set[T]:
         """
         Normalize a set of attack strategies by expanding aggregate tags.
@@ -161,11 +167,6 @@ class ScenarioStrategy(Enum):
         Returns:
             Set[T]: The normalized set of concrete attack strategies with aggregate tags
                    expanded and removed.
-
-        Example:
-            >>> strategies = {MyAttackStrategy.EASY, MyAttackStrategy.Base64}
-            >>> normalized = MyAttackStrategy.normalize_strategies(strategies)
-            >>> # EASY is expanded to all strategies with "easy" tag, EASY itself is removed
         """
         normalized_strategies = set(strategies)
 
@@ -183,9 +184,349 @@ class ScenarioStrategy(Enum):
 
             # Special handling for "all" tag - expand to all non-aggregate strategies
             if aggregate_tag == "all":
-                normalized_strategies.update({strategy for strategy in cls if strategy.value not in aggregate_tags})
+                normalized_strategies.update(cls.get_all_strategies())
             else:
                 # Add all strategies with that tag
                 normalized_strategies.update(cls.get_strategies_by_tag(aggregate_tag))
 
         return normalized_strategies
+
+    @classmethod
+    def prepare_scenario_strategies(
+        cls: type[T],
+        strategies: Sequence[T | "ScenarioCompositeStrategy"] | None = None,
+        *,
+        default_aggregate: T | None = None,
+    ) -> List["ScenarioCompositeStrategy"]:
+        """
+        Prepare and normalize scenario strategies for use in a scenario.
+
+        This helper method simplifies scenario initialization by:
+        1. Handling None input with sensible defaults
+        2. Auto-wrapping bare ScenarioStrategy instances into ScenarioCompositeStrategy
+        3. Expanding aggregate tags (like EASY, ALL) into concrete strategies
+        4. Validating compositions according to the strategy's rules
+
+        This eliminates boilerplate code in scenario __init__ methods.
+
+        Args:
+            strategies (Sequence[T | ScenarioCompositeStrategy] | None): The strategies to prepare.
+                Can be a mix of bare strategy enums and composite strategies.
+                If None, uses default_aggregate to determine defaults.
+            default_aggregate (T | None): The aggregate strategy to use when strategies is None.
+                Common values: MyStrategy.ALL, MyStrategy.EASY. If None when strategies is None,
+                raises ValueError.
+
+        Returns:
+            List[ScenarioCompositeStrategy]: Normalized list of composite strategies ready for use.
+
+        Raises:
+            ValueError: If strategies is None and default_aggregate is None, or if compositions
+                       are invalid according to validate_composition().
+        """
+        # Handle None input with default aggregate
+        if strategies is None:
+            if default_aggregate is None:
+                raise ValueError(
+                    f"Either strategies or default_aggregate must be provided. "
+                    f"Common defaults: {cls.__name__}.ALL, {cls.__name__}.EASY"
+                )
+
+            # Expand the default aggregate into concrete strategies
+            expanded = cls.normalize_strategies({default_aggregate})
+            # Wrap each in a ScenarioCompositeStrategy
+            composite_strategies = [ScenarioCompositeStrategy(strategies=[strategy]) for strategy in expanded]
+        else:
+            # Process the provided strategies
+            composite_strategies = []
+            for item in strategies:
+                if isinstance(item, ScenarioCompositeStrategy):
+                    # Already a composite, use as-is
+                    composite_strategies.append(item)
+                elif isinstance(item, cls):
+                    # Bare strategy enum - wrap it in a composite
+                    composite_strategies.append(ScenarioCompositeStrategy(strategies=[item]))
+                else:
+                    # Not our strategy type - skip or could raise error
+                    # For now, skip to allow flexibility
+                    pass
+
+        if not composite_strategies:
+            raise ValueError(
+                f"No valid {cls.__name__} strategies provided. "
+                f"Provide at least one {cls.__name__} enum or ScenarioCompositeStrategy."
+            )
+
+        # Normalize compositions (expands aggregates, validates compositions)
+        normalized = ScenarioCompositeStrategy.normalize_compositions(composite_strategies, strategy_type=cls)
+
+        return normalized
+
+    @classmethod
+    def supports_composition(cls: type[T]) -> bool:
+        """
+        Indicate whether this strategy type supports composition.
+
+        By default, strategies do NOT support composition (only single strategies allowed).
+        Subclasses that support composition (e.g., FoundryStrategy) should override this
+        to return True and implement validate_composition() to enforce their specific rules.
+
+        Returns:
+            bool: True if composition is supported, False otherwise.
+        """
+        return False
+
+    @classmethod
+    def validate_composition(cls: type[T], strategies: Sequence[T]) -> None:
+        """
+        Validate whether the given strategies can be composed together.
+
+        The base implementation checks supports_composition() and raises an error if
+        composition is not supported and multiple strategies are provided.
+
+        Subclasses that support composition should override this method to define their
+        specific composition rules (e.g., "no more than one attack strategy").
+
+        Args:
+            strategies (Sequence[T]): The strategies to validate for composition.
+
+        Raises:
+            ValueError: If the composition is invalid according to the subclass's rules.
+                        The error message should clearly explain what rule was violated.
+
+        Examples:
+            # EncodingStrategy doesn't support composition (uses default)
+            >>> EncodingStrategy.validate_composition([EncodingStrategy.Base64, EncodingStrategy.ROT13])
+            ValueError: EncodingStrategy does not support composition. Each strategy must be used individually.
+
+            # FoundryStrategy allows composition but with rules
+            >>> FoundryStrategy.validate_composition([FoundryStrategy.Crescendo, FoundryStrategy.MultiTurn])
+            ValueError: Cannot compose multiple attack strategies: ['crescendo', 'multi_turn']
+        """
+        if not strategies:
+            raise ValueError("Cannot validate empty strategy list")
+
+        # Filter to only instances of this strategy type
+        typed_strategies = [s for s in strategies if isinstance(s, cls)]
+
+        # Default rule: if composition is not supported, only single strategies allowed
+        if not cls.supports_composition() and len(typed_strategies) > 1:
+            raise ValueError(
+                f"{cls.__name__} does not support composition. "
+                f"Each strategy must be used individually. "
+                f"Received: {[s.value for s in typed_strategies]}"
+            )
+
+
+class ScenarioCompositeStrategy:
+    """
+    Represents a composition of one or more attack strategies.
+
+    This class encapsulates a collection of ScenarioStrategy instances along with
+    an auto-generated descriptive name, making it easy to represent both single strategies
+    and composed multi-strategy attacks.
+
+    The name is automatically derived from the strategies:
+    - Single strategy: Uses the strategy's value (e.g., "base64")
+    - Multiple strategies: Generates "ComposedStrategy(base64, rot13)"
+
+    Attributes:
+        name (str): The auto-generated name of the composite strategy.
+        strategies (List[ScenarioStrategy]): The list of strategies in this composition.
+
+    Example:
+        >>> # Single strategy composition
+        >>> single = ScenarioCompositeStrategy(strategies=[FoundryStrategy.Base64])
+        >>> print(single.name)  # "base64"
+        >>>
+        >>> # Multi-strategy composition
+        >>> composed = ScenarioCompositeStrategy(strategies=[
+        ...     FoundryStrategy.Base64,
+        ...     FoundryStrategy.ROT13
+        ... ])
+        >>> print(composed.name)  # "ComposedStrategy(base64, rot13)"
+    """
+
+    def __init__(self, *, strategies: Sequence[ScenarioStrategy]) -> None:
+        """
+        Initialize a ScenarioCompositeStrategy.
+
+        The name is automatically generated based on the strategies.
+
+        Args:
+            strategies (Sequence[ScenarioStrategy]): The sequence of strategies in this composition.
+                Must contain at least one strategy.
+
+        Raises:
+            ValueError: If strategies list is empty.
+
+        Example:
+            >>> # Single strategy
+            >>> composite = ScenarioCompositeStrategy(strategies=[FoundryStrategy.Base64])
+            >>> print(composite.name)  # "base64"
+            >>>
+            >>> # Multiple strategies
+            >>> composite = ScenarioCompositeStrategy(strategies=[
+            ...     FoundryStrategy.Base64,
+            ...     FoundryStrategy.Atbash
+            ... ])
+            >>> print(composite.name)  # "ComposedStrategy(base64, atbash)"
+        """
+        if not strategies:
+            raise ValueError("strategies list cannot be empty")
+
+        self._strategies = list(strategies)
+        self._name = self.get_composite_name(self._strategies)
+
+    @property
+    def name(self) -> str:
+        """Get the name of the composite strategy."""
+        return self._name
+
+    @property
+    def strategies(self) -> List[ScenarioStrategy]:
+        """Get the list of strategies in this composition."""
+        return self._strategies
+
+    @property
+    def is_single_strategy(self) -> bool:
+        """Check if this composition contains only a single strategy."""
+        return len(self._strategies) == 1
+
+    @staticmethod
+    def get_composite_name(strategies: Sequence[ScenarioStrategy]) -> str:
+        """
+        Generate a descriptive name for a composition of strategies.
+
+        For single strategies, returns the strategy's value.
+        For multiple strategies, generates a name like "ComposedStrategy(base64, rot13)".
+
+        Args:
+            strategies (Sequence[ScenarioStrategy]): The strategies to generate a name for.
+
+        Returns:
+            str: The generated composite name.
+
+        Raises:
+            ValueError: If strategies is empty.
+
+        Example:
+            >>> # Single strategy
+            >>> name = ScenarioCompositeStrategy.get_composite_name([FoundryStrategy.Base64])
+            >>> # Returns: "base64"
+            >>>
+            >>> # Multiple strategies
+            >>> name = ScenarioCompositeStrategy.get_composite_name([
+            ...     FoundryStrategy.Base64,
+            ...     FoundryStrategy.Atbash
+            ... ])
+            >>> # Returns: "ComposedStrategy(base64, atbash)"
+        """
+        if not strategies:
+            raise ValueError("Cannot generate name for empty strategy list")
+
+        if len(strategies) == 1:
+            return strategies[0].value
+
+        strategy_names = ", ".join(s.value for s in strategies)
+        return f"ComposedStrategy({strategy_names})"
+
+    @staticmethod
+    def normalize_compositions(
+        compositions: List["ScenarioCompositeStrategy"], *, strategy_type: type[T]
+    ) -> List["ScenarioCompositeStrategy"]:
+        """
+        Normalize strategy compositions by expanding aggregates while preserving concrete compositions.
+
+        Aggregate strategies are expanded into their constituent individual strategies.
+        Each aggregate expansion creates separate single-strategy compositions.
+        Concrete strategy compositions are preserved together as single compositions.
+
+        This method also validates compositions according to the strategy's rules via validate_composition().
+
+        Args:
+            compositions (List[ScenarioCompositeStrategy]): List of composite strategies to normalize.
+            strategy_type (type[T]): The strategy enum type to use for normalization and validation.
+
+        Returns:
+            List[ScenarioCompositeStrategy]: Normalized list of composite strategies with aggregates expanded.
+
+        Raises:
+            ValueError: If compositions is empty, contains empty compositions,
+                       mixes aggregates with concrete strategies in the same composition,
+                       has multiple aggregates in one composition, or violates validate_composition() rules.
+
+        Examples:
+            # Aggregate expands to individual strategies
+            [ScenarioCompositeStrategy(strategies=[EASY])]
+            -> [ScenarioCompositeStrategy(strategies=[Base64]),
+                ScenarioCompositeStrategy(strategies=[ROT13]), ...]
+
+            # Concrete composition preserved
+            [ScenarioCompositeStrategy(strategies=[Base64, Atbash])]
+            -> [ScenarioCompositeStrategy(strategies=[Base64, Atbash])]
+
+            # Error: Cannot mix aggregate with concrete in same composition
+            [ScenarioCompositeStrategy(strategies=[EASY, Base64])] -> ValueError
+        """
+        if not compositions:
+            raise ValueError("Compositions list cannot be empty")
+
+        aggregate_tags = strategy_type.get_aggregate_tags()
+        normalized_compositions: List[ScenarioCompositeStrategy] = []
+
+        for composite in compositions:
+            if not composite.strategies:
+                raise ValueError("Empty compositions are not allowed")
+
+            # Filter to only strategies of the specified type
+            typed_strategies = [s for s in composite.strategies if isinstance(s, strategy_type)]
+            if not typed_strategies:
+                # No strategies of this type - skip
+                continue
+
+            # Check if composition contains any aggregates
+            aggregates_in_composition = [s for s in typed_strategies if s.value in aggregate_tags]
+            concretes_in_composition = [s for s in typed_strategies if s.value not in aggregate_tags]
+
+            # Error if mixing aggregates with concrete strategies
+            if aggregates_in_composition and concretes_in_composition:
+                raise ValueError(
+                    f"Cannot mix aggregate strategies {[s.value for s in aggregates_in_composition]} "
+                    f"with concrete strategies {[s.value for s in concretes_in_composition]} "
+                    f"in the same composition. Aggregates must be in their own composition to be expanded."
+                )
+
+            # Error if multiple aggregates in same composition
+            if len(aggregates_in_composition) > 1:
+                raise ValueError(
+                    f"Cannot compose multiple aggregate strategies together: "
+                    f"{[s.value for s in aggregates_in_composition]}. "
+                    f"Each aggregate must be in its own composition."
+                )
+
+            # If composition has an aggregate, expand it into individual strategies
+            if aggregates_in_composition:
+                aggregate = aggregates_in_composition[0]
+                expanded = strategy_type.normalize_strategies({aggregate})
+                # Each expanded strategy becomes its own composition
+                for strategy in expanded:
+                    normalized_compositions.append(ScenarioCompositeStrategy(strategies=[strategy]))
+            else:
+                # Concrete composition - validate and preserve as-is
+                strategy_type.validate_composition(typed_strategies)
+                # Keep the composite (name is auto-generated from strategies)
+                normalized_compositions.append(composite)
+
+        if not normalized_compositions:
+            raise ValueError("No valid strategy compositions after normalization")
+
+        return normalized_compositions
+
+    def __repr__(self) -> str:
+        """Get string representation of the composite strategy."""
+        return f"ScenarioCompositeStrategy(name='{self._name}', strategies={self._strategies})"
+
+    def __str__(self) -> str:
+        """Get human-readable string representation."""
+        return self._name

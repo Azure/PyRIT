@@ -7,11 +7,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.executor.attack import PromptSendingAttack
+from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
-from pyrit.scenarios import EncodingScenario
-from pyrit.score import TrueFalseScorer
-from pyrit.score.true_false.decoding_scorer import DecodingScorer
+from pyrit.scenarios import EncodingScenario, EncodingStrategy
+from pyrit.score import DecodingScorer, TrueFalseScorer
 
 
 @pytest.fixture
@@ -126,7 +126,18 @@ class TestEncodingScenarioInitialization:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario._attack_strategies == ["Garak basic"]
+        # By default, EncodingStrategy.ALL is used, which expands to all encoding strategies
+        assert len(scenario._encoding_composites) > 0
+        # Verify all composites contain EncodingStrategy instances
+        assert all(
+            isinstance(comp.strategies[0], EncodingStrategy)
+            for comp in scenario._encoding_composites
+            if comp.strategies
+        )
+        # Verify none of the strategies are the aggregate "ALL"
+        assert all(
+            comp.strategies[0] != EncodingStrategy.ALL for comp in scenario._encoding_composites if comp.strategies
+        )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -174,8 +185,6 @@ class TestEncodingScenarioAtomicAttacks:
         self, mock_objective_target, mock_objective_scorer, sample_seeds
     ):
         """Test that _get_prompt_attacks creates attack runs with correct structure."""
-        from pyrit.prompt_converter import Base64Converter
-
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
@@ -197,8 +206,6 @@ class TestEncodingScenarioAtomicAttacks:
     @pytest.mark.asyncio
     async def test_attack_runs_include_objectives(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test that attack runs include objectives for each seed prompt."""
-        from pyrit.prompt_converter import Base64Converter
-
         scenario = EncodingScenario(
             objective_target=mock_objective_target,
             seed_prompts=sample_seeds,

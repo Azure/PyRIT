@@ -13,7 +13,7 @@ import inspect
 import logging
 import pkgutil
 from pathlib import Path
-from typing import Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Sequence, Type
 
 from pyrit.scenarios.scenario import Scenario
 
@@ -157,7 +157,7 @@ class ScenarioRegistry:
         """
         return self._scenarios.get(name)
 
-    def list_scenarios(self) -> List[Dict[str, str]]:
+    def list_scenarios(self) -> list[dict[str, Sequence[Any]]]:
         """
         List all available scenarios with their metadata.
 
@@ -166,6 +166,7 @@ class ScenarioRegistry:
                 - name: Scenario identifier
                 - class_name: Class name
                 - description: Full class docstring
+                - default_strategy: The default strategy used when none specified
         """
         scenarios_info = []
 
@@ -178,7 +179,19 @@ class ScenarioRegistry:
             else:
                 description = "No description available"
 
-            scenarios_info.append({"name": name, "class_name": scenario_class.__name__, "description": description})
+            # Get the strategy class for this scenario
+            strategy_class = scenario_class.get_strategy_class()
+
+            scenarios_info.append(
+                {
+                    "name": name,
+                    "class_name": scenario_class.__name__,
+                    "description": description,
+                    "default_strategy": scenario_class.get_default_strategy().value,
+                    "all_strategies": [s.value for s in strategy_class.get_all_strategies()],
+                    "aggregate_strategies": [s.value for s in strategy_class.get_aggregate_strategies()],
+                }
+            )
 
         return scenarios_info
 

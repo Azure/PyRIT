@@ -9,20 +9,22 @@ AtomicAttack instances sequentially, enabling comprehensive security testing cam
 """
 
 import logging
-from abc import abstractmethod
-from typing import Dict, List, Optional
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Type
 
 from tqdm.auto import tqdm
 
+from pyrit.memory import CentralMemory
 from pyrit.models import AttackResult
+from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario_result import ScenarioIdentifier, ScenarioResult
+from pyrit.scenarios.scenario_strategy import ScenarioStrategy
 
 logger = logging.getLogger(__name__)
 
 
-class Scenario:
+class Scenario(ABC):
     """
     Groups and executes multiple AtomicAttack instances sequentially.
 
@@ -82,6 +84,8 @@ class Scenario:
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
+            objective_target (Optional[PromptTarget]): The target system to attack.
+            objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
 
         Note:
             Attack runs are populated by calling initialize_async(), which invokes the
@@ -107,6 +111,7 @@ class Scenario:
 
         self._name = name
         self._memory_labels = memory_labels or {}
+        self._memory = CentralMemory.get_memory_instance()
         self._max_concurrency = max_concurrency
         self._atomic_attacks: List[AtomicAttack] = []
 
@@ -119,6 +124,55 @@ class Scenario:
     def atomic_attack_count(self) -> int:
         """Get the number of atomic attacks in this scenario."""
         return len(self._atomic_attacks)
+
+    @classmethod
+    @abstractmethod
+    def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+        """
+        Get the strategy enum class for this scenario.
+
+        This abstract method must be implemented by all scenario subclasses to return
+        the ScenarioStrategy enum class that defines the available attack strategies
+        for the scenario.
+
+        Returns:
+            Type[ScenarioStrategy]: The strategy enum class (e.g., FoundryStrategy, EncodingStrategy).
+
+        Example:
+            >>> class MyScenario(Scenario):
+            ...     @classmethod
+            ...     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+            ...         return MyStrategy
+            >>>
+            >>> # Registry can now discover strategies without instantiation
+            >>> strategy_class = MyScenario.get_strategy_class()
+            >>> all_strategies = list(strategy_class)
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_default_strategy(cls) -> ScenarioStrategy:
+        """
+        Get the default strategy used when no strategies are specified.
+
+        This abstract method must be implemented by all scenario subclasses to return
+        the default aggregate strategy (like EASY, ALL) used when scenario_strategies
+        parameter is None.
+
+        Returns:
+            ScenarioStrategy: The default aggregate strategy (e.g., FoundryStrategy.EASY, EncodingStrategy.ALL).
+
+        Example:
+            >>> class MyScenario(Scenario):
+            ...     @classmethod
+            ...     def get_default_strategy(cls) -> ScenarioStrategy:
+            ...         return MyStrategy.EASY
+            >>>
+            >>> # Registry can discover default strategy without instantiation
+            >>> default = MyScenario.get_default_strategy()
+        """
+        pass
 
     async def initialize_async(self) -> None:
         """
@@ -214,9 +268,13 @@ class Scenario:
 
         logger.info(f"Scenario '{self._name}' completed successfully with {len(all_results)} total results")
 
-        return ScenarioResult(
+        result = ScenarioResult(
             scenario_identifier=self._identifier,
             objective_target_identifier=self._objective_target_identifier,
             objective_scorer_identifier=self._objective_scorer_identifier,
+            labels=self._memory_labels,
             attack_results=all_results,
         )
+
+        self._memory.add_scenario_results_to_memory(scenario_results=[result])
+        return result

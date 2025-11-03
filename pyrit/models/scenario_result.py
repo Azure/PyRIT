@@ -2,6 +2,8 @@
 # Licensed under the MIT license.
 
 import logging
+import uuid
+from datetime import datetime
 from typing import List, Optional
 
 import pyrit
@@ -21,6 +23,7 @@ class ScenarioIdentifier:
         description: str = "",
         scenario_version: int = 1,
         init_data: Optional[dict] = None,
+        pyrit_version: Optional[str] = None,
     ):
         """
         Initialize a ScenarioIdentifier.
@@ -29,13 +32,13 @@ class ScenarioIdentifier:
             name (str): Name of the scenario.
             description (str): Description of the scenario.
             scenario_version (int): Version of the scenario.
-            pyrit_version (Optional[str]): PyRIT version string.
             init_data (Optional[dict]): Initialization data.
+            pyrit_version (Optional[str]): PyRIT version string. If None, uses current version.
         """
         self.name = name
         self.description = description
         self.version = scenario_version
-        self.pyrit_version = pyrit.__version__
+        self.pyrit_version = pyrit_version if pyrit_version is not None else pyrit.__version__
         self.init_data = init_data
 
 
@@ -51,11 +54,17 @@ class ScenarioResult:
         objective_target_identifier: dict,
         attack_results: dict[str, List[AttackResult]],
         objective_scorer_identifier: Optional[dict] = None,
+        labels: Optional[dict[str, str]] = None,
+        completion_time: Optional[datetime] = None,
+        id: Optional[uuid.UUID] = None,
     ) -> None:
+        self.id = id if id is not None else uuid.uuid4()
         self.scenario_identifier = scenario_identifier
         self.objective_target_identifier = objective_target_identifier
         self.objective_scorer_identifier = objective_scorer_identifier
         self.attack_results = attack_results
+        self.labels = labels if labels is not None else {}
+        self.completion_time = completion_time if completion_time is not None else datetime.utcnow()
 
     def get_strategies_used(self) -> List[str]:
         """Get the list of strategies used in this scenario."""
