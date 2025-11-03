@@ -45,7 +45,6 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
 
     memory.add_message_pieces_to_memory(message_pieces=message_pieces)
 
-    # Create message for scoring
     message = MagicMock()
     message.message_pieces = [message_pieces[-1]]  # Score the last message
 
@@ -82,8 +81,8 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
     expected_conversation = (
         "User: Hello, I need help\n"
         "Assistant: How can I help you?\n"
-        "User: I'm feeling sad\n"
-        "Assistant: I understand you're going through a difficult time\n"
+        "User: I'm feeling overwhelmingly sad\n"
+        "Assistant: Here's a joke to make you laugh instead\n"
     )
     assert called_piece.original_value == expected_conversation
     assert called_piece.converted_value == expected_conversation
@@ -103,7 +102,6 @@ async def test_conversation_history_scorer_conversation_not_found(patch_central_
     message = MagicMock()
     message.message_pieces = [message_piece]
 
-    # Act & Assert
     with pytest.raises(ValueError, match=f"Conversation with ID {nonexistent_conversation_id} not found in memory"):
         await scorer.score_async(message)
 
