@@ -4,7 +4,7 @@
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Literal, Optional, get_args
+from typing import Dict, List, Literal, Optional, Union, get_args
 
 ScoreType = Literal["true_false", "float_scale"]
 
@@ -22,24 +22,23 @@ class Score:
     # The type of the scorer; e.g. "true_false" or "float_scale"
     score_type: ScoreType
 
-    # The type of the harms category (e.g. "hate" or "violence")
-    score_category: str
+    # The harms categories (e.g. ["hate", "violence"]) – can be multiple
+    score_category: Optional[List[str]]
 
     # Extra data the scorer provides around the rationale of the score
     score_rationale: str
 
-    # Custom metadata a scorer might use. This is left undefined other than for the
-    # specific scorer that uses it.
-    score_metadata: str
+    # Custom metadata a scorer might use. This can vary by scorer.
+    score_metadata: Optional[Dict[str, Union[str, int]]]
 
     # The identifier of the scorer class, including relevant information
     # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
     scorer_class_identifier: Dict[str, str]
 
-    # This is the prompt_request_response_id that the score is scoring
+    # This is the ID of the MessagePiece that the score is scoring
     # Note a scorer can generate an additional request. This is NOT that, but
     # the ID associated with what we're scoring.
-    prompt_request_response_id: uuid.UUID | str
+    message_piece_id: uuid.UUID | str
 
     # Timestamp of when the score was created
     timestamp: datetime
@@ -54,13 +53,13 @@ class Score:
         score_value: str,
         score_value_description: str,
         score_type: ScoreType,
-        score_category: str,
+        score_category: Optional[List[str]] = None,
         score_rationale: str,
-        score_metadata: str,
-        prompt_request_response_id: str | uuid.UUID,
+        score_metadata: Optional[Dict[str, Union[str, int]]],
+        message_piece_id: str | uuid.UUID,
         scorer_class_identifier: Optional[Dict[str, str]] = None,
         timestamp: Optional[datetime] = None,
-        task: Optional[str] = None,
+        objective: Optional[str] = None,
     ):
         self.id = id if id else uuid.uuid4()
         self.timestamp = timestamp if timestamp else datetime.now()
@@ -78,8 +77,8 @@ class Score:
         self.score_rationale = score_rationale
         self.score_metadata = score_metadata
         self.scorer_class_identifier = scorer_class_identifier or {}
-        self.prompt_request_response_id = prompt_request_response_id
-        self.task = task
+        self.message_piece_id = message_piece_id
+        self.objective = objective
 
     def get_value(self):
         """
@@ -124,15 +123,16 @@ class Score:
             "score_rationale": self.score_rationale,
             "score_metadata": self.score_metadata,
             "scorer_class_identifier": self.scorer_class_identifier,
-            "prompt_request_response_id": str(self.prompt_request_response_id),
+            "message_piece_id": str(self.message_piece_id),
             "timestamp": self.timestamp.isoformat(),
-            "task": self.task,
+            "objective": self.objective,
         }
 
     def __str__(self):
+        category_str = f": {', '.join(self.score_category) if self.score_category else ''}"
         if self.scorer_class_identifier:
-            return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
-        return f": {self.score_category}: {self.score_value}"
+            return f"{self.scorer_class_identifier['__type__']}{category_str}: {self.score_value}"
+        return f"{category_str}: {self.score_value}"
 
     __repr__ = __str__
 
@@ -148,27 +148,26 @@ class UnvalidatedScore:
     raw_score_value: str
 
     score_value_description: str
-    score_type: ScoreType
-    score_category: str
+    score_category: Optional[List[str]]
     score_rationale: str
-    score_metadata: str
+    score_metadata: Optional[Dict[str, Union[str, int]]]
     scorer_class_identifier: Dict[str, str]
-    prompt_request_response_id: uuid.UUID | str
-    task: str
+    message_piece_id: uuid.UUID | str
+    objective: Optional[str]
     id: Optional[uuid.UUID | str] = None
     timestamp: Optional[datetime] = None
 
-    def to_score(self, *, score_value: str):
+    def to_score(self, *, score_value: str, score_type: ScoreType):
         return Score(
             id=self.id,
             score_value=score_value,
             score_value_description=self.score_value_description,
-            score_type=self.score_type,
+            score_type=score_type,
             score_category=self.score_category,
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
-            prompt_request_response_id=self.prompt_request_response_id,
+            message_piece_id=self.message_piece_id,
             timestamp=self.timestamp,
-            task=self.task,
+            objective=self.objective,
         )

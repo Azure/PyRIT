@@ -3,7 +3,9 @@
 
 import logging
 import pathlib
+from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
@@ -14,17 +16,22 @@ logger = logging.getLogger(__name__)
 
 class MathPromptConverter(LLMGenericTextConverter):
     """
-    A PromptConverter that converts natural language instructions into symbolic mathematics problems
-    using an LLM via an existing PromptTarget (like Azure OpenAI or other supported backends).
+    Converts natural language instructions into symbolic mathematics problems using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
+    @apply_defaults
+    def __init__(
+        self, *, converter_target: Optional[PromptChatTarget] = None, prompt_template: Optional[SeedPrompt] = None
+    ):
         """
         Initializes the converter with a specific target and template.
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
-            prompt_template (SeedPrompt): The prompt template to use.
+                Can be omitted if a default has been configured via PyRIT initialization.
+            prompt_template (SeedPrompt): The seed prompt template to use.
         """
 
         # Load the template from the YAML file or use a default template if not provided
@@ -40,14 +47,14 @@ class MathPromptConverter(LLMGenericTextConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Convert a prompt into a mathematical problem format.
+        Converts the given prompt into a mathematical problem format.
 
-        Parameters:
-            prompt (str): The prompt to convert.
+        Args:
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The result of the conversion,
-            including the mathematical representation and real-world example.
+            ConverterResult: The result containing the mathematical representation and real-world example.
         """
         logger.info(f"Converting prompt: {prompt}")
 

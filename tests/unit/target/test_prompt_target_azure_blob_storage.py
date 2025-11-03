@@ -8,15 +8,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from azure.storage.blob.aio import BlobClient as AsyncBlobClient
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
-from unit.mocks import get_sample_conversations
+from unit.mocks import get_image_message_piece, get_sample_conversations
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import AzureBlobStorageTarget
 
 
 @pytest.fixture
-def sample_entries() -> MutableSequence[PromptRequestPiece]:
-    return get_sample_conversations()
+def sample_entries() -> MutableSequence[MessagePiece]:
+    conversations = get_sample_conversations()
+    return Message.flatten_to_message_pieces(conversations)
 
 
 @pytest.fixture
@@ -60,11 +61,15 @@ def test_initialization_with_no_container_url_raises():
 async def test_azure_blob_storage_validate_request_length(
     mock_upload_async,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
 ):
     mock_upload_async.return_value = None
-    request = PromptRequestResponse(request_pieces=sample_entries)
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+    request = Message(
+        message_pieces=[
+            MessagePiece(role="user", conversation_id="123", original_value="test1"),
+            MessagePiece(role="user", conversation_id="123", original_value="test2"),
+        ]
+    )
+    with pytest.raises(ValueError, match="This target only supports a single message piece."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 
 
@@ -73,12 +78,9 @@ async def test_azure_blob_storage_validate_request_length(
 async def test_azure_blob_storage_validate_prompt_type(
     mock_upload_async,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
 ):
     mock_upload_async.return_value = None
-    request_piece = sample_entries[0]
-    request_piece.converted_value_data_type = "image_path"
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text and url prompt input."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 
@@ -88,14 +90,12 @@ async def test_azure_blob_storage_validate_prompt_type(
 async def test_azure_blob_storage_validate_prev_convs(
     mock_upload_async,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
+    sample_entries: MutableSequence[MessagePiece],
 ):
     mock_upload_async.return_value = None
-    request_piece = sample_entries[0]
-    azure_blob_storage_target._memory.add_request_response_to_memory(
-        request=PromptRequestResponse(request_pieces=[request_piece])
-    )
-    request = PromptRequestResponse(request_pieces=[request_piece])
+    message_piece = sample_entries[0]
+    azure_blob_storage_target._memory.add_message_to_memory(request=Message(message_pieces=[message_piece]))
+    request = Message(message_pieces=[message_piece])
 
     with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
@@ -110,7 +110,7 @@ async def test_send_prompt_async(
     mock_upload_blob,
     mock_create_client,
     azure_blob_storage_target: AzureBlobStorageTarget,
-    sample_entries: MutableSequence[PromptRequestPiece],
+    sample_entries: MutableSequence[MessagePiece],
 ):
     mock_blob_client = AsyncMock()
     mock_get_blob_client.return_value = mock_blob_client
@@ -122,9 +122,9 @@ async def test_send_prompt_async(
         container_url=azure_blob_storage_target._container_url, credential="mocked_sas_token"
     )
 
-    request_piece = sample_entries[0]
-    request_piece.converted_value = "Test content"
-    request = PromptRequestResponse([request_piece])
+    message_piece = sample_entries[0]
+    message_piece.converted_value = "Test content"
+    request = Message([message_piece])
 
     response = await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 

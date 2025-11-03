@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.models.prompt_request_response import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+from pyrit.models import (
+    Message,
+    MessagePiece,
 )
 from pyrit.prompt_target import HuggingFaceChatTarget
 
@@ -78,15 +78,23 @@ def mock_pretrained_config():
         yield
 
 
-class AwaitableMock(AsyncMock):
+class AwaitableTask(AsyncMock):
+    """Mock that can be awaited and acts like an asyncio.Task"""
+
     def __await__(self):
-        return iter([])
+        # Return a completed future-like object
+        async def _await():
+            return None
+
+        return _await().__await__()
 
 
 @pytest.fixture(autouse=True)
 def mock_create_task():
-    with patch("asyncio.create_task", return_value=AwaitableMock(spec=Task)):
-        yield
+    with patch("asyncio.create_task") as mock_task:
+        # Return an AwaitableTask that can be awaited
+        mock_task.return_value = AwaitableTask(spec=Task)
+        yield mock_task
 
 
 @pytest.fixture(autouse=True)
@@ -124,17 +132,23 @@ async def test_hf_initialization(patch_central_database, mock_download_specific_
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_is_model_id_valid_true():
+@pytest.mark.asyncio
+async def test_is_model_id_valid_true():
     # Simulate valid model ID
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+    # Await the background task to prevent warnings
+    await hf_chat.load_model_and_tokenizer_task
     assert hf_chat.is_model_id_valid()
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_is_model_id_valid_false():
+@pytest.mark.asyncio
+async def test_is_model_id_valid_false():
     # Simulate invalid model ID by causing an exception
     with patch("transformers.PretrainedConfig.from_pretrained", side_effect=Exception("Invalid model")):
         hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+        # Await the background task to prevent warnings
+        await hf_chat.load_model_and_tokenizer_task
         assert not hf_chat.is_model_id_valid()
 
 
@@ -153,19 +167,19 @@ async def test_send_prompt_async():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
     await hf_chat.load_model_and_tokenizer()
 
-    request_piece = PromptRequestPiece(
+    message_piece = MessagePiece(
         role="user",
         original_value="Hello, how are you?",
         converted_value="Hello, how are you?",
         converted_value_data_type="text",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
 
     # Use await to handle the asynchronous call
     response = await hf_chat.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
-    # Access the response text via request_pieces
-    assert response.request_pieces[0].original_value == "Assistant's response"
+    # Access the response text via message_pieces
+    assert response.message_pieces[0].original_value == "Assistant's response"
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
@@ -175,13 +189,13 @@ async def test_missing_chat_template_error():
     await hf_chat.load_model_and_tokenizer()
     hf_chat.tokenizer.chat_template = None
 
-    request_piece = PromptRequestPiece(
+    message_piece = MessagePiece(
         role="user",
         original_value="Hello, how are you?",
         converted_value="Hello, how are you?",
         converted_value_data_type="text",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+    prompt_request = Message(message_pieces=[message_piece])
 
     with pytest.raises(ValueError) as excinfo:
         # Use await to handle the asynchronous call
@@ -191,22 +205,33 @@ async def test_missing_chat_template_error():
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_invalid_prompt_request_validation():
+@pytest.mark.asyncio
+async def test_invalid_prompt_request_validation():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+    # Await the background task to prevent warnings
+    await hf_chat.load_model_and_tokenizer_task
 
-    # Create an invalid prompt request with multiple request pieces
-    request_piece1 = PromptRequestPiece(
-        role="user", original_value="First piece", converted_value="First piece", converted_value_data_type="text"
+    # Create an invalid prompt request with multiple message pieces
+    message_piece1 = MessagePiece(
+        role="user",
+        original_value="First piece",
+        converted_value="First piece",
+        converted_value_data_type="text",
+        conversation_id="123",
     )
-    request_piece2 = PromptRequestPiece(
-        role="user", original_value="Second piece", converted_value="Second piece", converted_value_data_type="text"
+    message_piece2 = MessagePiece(
+        role="user",
+        original_value="Second piece",
+        converted_value="Second piece",
+        converted_value_data_type="text",
+        conversation_id="123",
     )
-    prompt_request = PromptRequestResponse(request_pieces=[request_piece1, request_piece2])
+    prompt_request = Message(message_pieces=[message_piece1, message_piece2])
 
     with pytest.raises(ValueError) as excinfo:
         hf_chat._validate_request(prompt_request=prompt_request)
 
-    assert "This target only supports a single prompt request piece." in str(excinfo.value)
+    assert "This target only supports a single message piece." in str(excinfo.value)
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
@@ -293,6 +318,25 @@ async def test_optional_kwargs_args_passed_when_loading_model(mock_transformers)
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
-def test_is_json_response_supported():
+@pytest.mark.asyncio
+async def test_is_json_response_supported():
     hf_chat = HuggingFaceChatTarget(model_id="dummy", use_cuda=False, trust_remote_code=True)
+    # Await the background task to prevent warnings
+    await hf_chat.load_model_and_tokenizer_task
     assert hf_chat.is_json_response_supported() is False
+
+
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.asyncio
+async def test_hugging_face_chat_sets_endpoint_and_rate_limit():
+    target = HuggingFaceChatTarget(
+        model_id="test_model",
+        use_cuda=False,
+        max_requests_per_minute=30,
+    )
+    # Await the background task to prevent warnings
+    await target.load_model_and_tokenizer_task
+    identifier = target.get_identifier()
+    # HuggingFaceChatTarget doesn't set an endpoint (it's local), so it shouldn't be in identifier
+    assert "endpoint" not in identifier
+    assert target._max_requests_per_minute == 30

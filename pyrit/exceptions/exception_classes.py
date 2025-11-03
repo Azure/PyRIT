@@ -17,11 +17,7 @@ from tenacity import (
 )
 
 from pyrit.exceptions.exceptions_helpers import log_exception
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import (
-    PromptRequestResponse,
-    construct_response_from_request,
-)
+from pyrit.models import Message, MessagePiece, construct_response_from_request
 
 # Used with pyrit_custom_result_retry, as this function may be used in conjunction with other decorators
 CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 10))
@@ -90,62 +86,6 @@ class MissingPromptPlaceholderException(PyritException):
 
     def __init__(self, *, message: str = "No prompt placeholder"):
         super().__init__(message=message)
-
-
-class AttackValidationException(PyritException):
-    """Raised when attack context validation fails"""
-
-    def __init__(self, *, message: str = "Attack context validation failed", context_info: Optional[dict] = None):
-        # 400-like status code for validation errors (client error)
-        super().__init__(status_code=400, message=message)
-        self.context_info = context_info or {}
-
-    def process_exception(self) -> str:
-        """Enhanced logging with context information"""
-        log_message = (
-            f"{self.__class__.__name__} encountered: "
-            f"Status Code: {self.status_code}, "
-            f"Message: {self.message}, "
-            f"Context: {self.context_info}"
-        )
-        logger.error(log_message)
-
-        return json.dumps({"status_code": self.status_code, "message": self.message, "context_info": self.context_info})
-
-
-class AttackExecutionException(PyritException):
-    """Raised when attack execution fails"""
-
-    def __init__(
-        self,
-        *,
-        message: str = "Attack execution failed",
-        attack_name: Optional[str] = None,
-        objective: Optional[str] = None,
-    ):
-        super().__init__(status_code=500, message=message)
-        self.attack_name = attack_name
-        self.objective = objective
-
-    def process_exception(self) -> str:
-        """Enhanced logging with attack details"""
-        log_message = (
-            f"{self.__class__.__name__} encountered: "
-            f"Status Code: {self.status_code}, "
-            f"Message: {self.message}, "
-            f"Attack: {self.attack_name}, "
-            f"Objective: {self.objective}"
-        )
-        logger.error(log_message)
-
-        return json.dumps(
-            {
-                "status_code": self.status_code,
-                "message": self.message,
-                "attack_name": self.attack_name,
-                "objective": self.objective,
-            }
-        )
 
 
 def pyrit_custom_result_retry(
@@ -261,10 +201,10 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
 
 def handle_bad_request_exception(
     response_text: str,
-    request: PromptRequestPiece,
+    request: MessagePiece,
     is_content_filter=False,
     error_code: int = 400,
-) -> PromptRequestResponse:
+) -> Message:
 
     if (
         "content_filter" in response_text

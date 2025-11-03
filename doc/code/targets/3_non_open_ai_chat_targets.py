@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -45,9 +41,9 @@
 # depending on the specific model. The parameters that can be set per model can usually be found in the 'Consume' tab when you navigate to your endpoint in AML Studio.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import AzureMLChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -61,16 +57,16 @@ azure_ml_chat_target._set_env_configuration_vars(
 # Parameters such as temperature and repetition_penalty can be set using the _set_model_parameters() function.
 azure_ml_chat_target._set_model_parameters(temperature=0.9, repetition_penalty=1.3)
 
-orchestrator = PromptSendingOrchestrator(objective_target=azure_ml_chat_target)
+attack = PromptSendingAttack(objective_target=azure_ml_chat_target)
 
-response = await orchestrator.run_attack_async(objective="Hello! Describe yourself and the company who developed you.")  # type: ignore
-await response.print_conversation_async()  # type: ignore
+result = await attack.execute_async(objective="Hello! Describe yourself and the company who developed you.")  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 azure_ml_chat_target.dispose_db_engine()
 
 # %% [markdown]
 #
 # You can then use this cell anywhere you would use a `PromptTarget` object.
-# For example, you can create a red teaming orchestrator and use this instead of the `AzureOpenAI` target and do the [Gandalf or Crucible Demos](./2_custom_targets.ipynb) but use this AML model.
+# For example, you can create a red teaming attack and use this instead of the `AzureOpenAI` target and do the [Gandalf or Crucible Demos](./2_custom_targets.ipynb) but use this AML model.
 #
-# This is also shown in the [Red Teaming Orchestrator](../orchestrators/2_multi_turn_orchestrators.ipynb) documentation.
+# This is also shown in the [Red Teaming Attack](../executor/attack/2_red_teaming_attack.ipynb) documentation.

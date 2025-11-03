@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, Optional
 if TYPE_CHECKING:
     import azure.cognitiveservices.speech as speechsdk  # noqa: F401
 
+from pyrit.auth.azure_auth import get_speech_config
 from pyrit.common import default_values
-from pyrit.models import PromptDataType
-from pyrit.models.data_type_serializer import data_serializer_factory
+from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
@@ -18,34 +18,66 @@ logger = logging.getLogger(__name__)
 
 class AzureSpeechAudioToTextConverter(PromptConverter):
     """
-    The AzureSpeechAudioTextConverter takes a .wav file and transcribes it into text.
-    https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
+    Transcribes a .wav audio file into text using Azure AI Speech service.
 
-    Args:
-        azure_speech_region (str, Optional): The name of the Azure region.
-        azure_speech_key (str, Optional): The API key for accessing the service.
-        recognition_language (str): Recognition voice language. Defaults to "en-US".
-            For more on supported languages, see the following link
-            https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+    https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
     """
 
+    #: The name of the Azure region.
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
+    #: The API key for accessing the service.
     AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_KEY"
+    #: The resource ID for accessing the service when using Entra ID auth.
+    AZURE_SPEECH_RESOURCE_ID_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_RESOURCE_ID"
 
     def __init__(
         self,
         azure_speech_region: Optional[str] = None,
         azure_speech_key: Optional[str] = None,
+        azure_speech_resource_id: Optional[str] = None,
+        use_entra_auth: bool = False,
         recognition_language: str = "en-US",
     ) -> None:
+        """
+        Initializes the converter with Azure Speech service credentials and recognition language.
 
+        Args:
+            azure_speech_region (str, Optional): The name of the Azure region.
+            azure_speech_key (str, Optional): The API key for accessing the service (if not using Entra ID auth).
+            azure_speech_resource_id (str, Optional): The resource ID for accessing the service when using
+                Entra ID auth. This can be found by selecting 'Properties' in the 'Resource Management'
+                section of your Azure Speech resource in the Azure portal.
+            use_entra_auth (bool): Whether to use Entra ID authentication. If True, azure_speech_resource_id
+                must be provided. If False, azure_speech_key must be provided. Defaults to False.
+            recognition_language (str): Recognition voice language. Defaults to "en-US".
+                For more on supported languages, see the following link:
+                https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+
+        Raises:
+            ValueError: If the required environment variables are not set, if azure_speech_key is passed in
+                when use_entra_auth is True, or if azure_speech_resource_id is passed in when use_entra_auth
+                is False.
+        """
         self._azure_speech_region: str = default_values.get_required_value(
-            env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
+            env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE,
+            passed_value=azure_speech_region,
         )
-
-        self._azure_speech_key: str = default_values.get_required_value(
-            env_var_name=self.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE, passed_value=azure_speech_key
-        )
+        if use_entra_auth:
+            if azure_speech_key:
+                raise ValueError("If using Entra ID auth, please do not specify azure_speech_key.")
+            self._azure_speech_resource_id = default_values.get_required_value(
+                env_var_name=self.AZURE_SPEECH_RESOURCE_ID_ENVIRONMENT_VARIABLE,
+                passed_value=azure_speech_resource_id,
+            )
+            self._azure_speech_key = None
+        else:
+            if azure_speech_resource_id:
+                raise ValueError("If using key auth, please do not specify azure_speech_resource_id.")
+            self._azure_speech_key = default_values.get_required_value(
+                env_var_name=self.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE,
+                passed_value=azure_speech_key,
+            )
+            self._azure_speech_resource_id = None
 
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
@@ -59,13 +91,17 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """
-        Converter that transcribes audio to text.
+        Converts the given audio file into its text representation.
 
         Args:
-            prompt (str): File path to audio file
-            input_type (PromptDataType): Type of data
+            prompt (str): File path to the audio file to be transcribed.
+            input_type (PromptDataType): The type of input data.
+
         Returns:
-            ConverterResult: The transcribed text as a ConverterResult Object
+            ConverterResult: The result containing the transcribed text.
+
+        Raises:
+            ValueError: If the input type is not supported or if the provided file is not a .wav file.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -87,12 +123,13 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     def recognize_audio(self, audio_bytes: bytes) -> str:
         """
-        Recognize audio file and return transcribed text.
+        Recognizes audio file and returns transcribed text.
 
         Args:
             audio_bytes (bytes): Audio bytes input.
+
         Returns:
-            str: Transcribed text
+            str: Transcribed text.
         """
         try:
             import azure.cognitiveservices.speech as speechsdk  # noqa: F811
@@ -103,9 +140,8 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
             )
             raise e
 
-        speech_config = speechsdk.SpeechConfig(
-            subscription=self._azure_speech_key,
-            region=self._azure_speech_region,
+        speech_config = get_speech_config(
+            resource_id=self._azure_speech_resource_id, key=self._azure_speech_key, region=self._azure_speech_region
         )
         speech_config.speech_recognition_language = self._recognition_language
 
@@ -144,22 +180,22 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     def transcript_cb(self, evt: Any, transcript: list[str]) -> None:
         """
-        Callback function that appends transcribed text upon receiving a "recognized" event
+        Callback function that appends transcribed text upon receiving a "recognized" event.
 
         Args:
-            evt (speechsdk.SpeechRecognitionEventArgs): event
-            transcript (list): list to store transcribed text
+            evt (speechsdk.SpeechRecognitionEventArgs): Event.
+            transcript (list): List to store transcribed text.
         """
         logger.info("RECOGNIZED: {}".format(evt.result.text))
         transcript.append(evt.result.text)
 
     def stop_cb(self, evt: Any, recognizer: Any) -> None:
         """
-        Callback function that stops continuous recognition upon receiving an event 'evt'
+        Callback function that stops continuous recognition upon receiving an event 'evt'.
 
         Args:
-            evt (speechsdk.SpeechRecognitionEventArgs): event
-            recognizer (speechsdk.SpeechRecognizer): speech recognizer object
+            evt (speechsdk.SpeechRecognitionEventArgs): Event.
+            recognizer (speechsdk.SpeechRecognizer): Speech recognizer object.
         """
         try:
             import azure.cognitiveservices.speech as speechsdk  # noqa: F811

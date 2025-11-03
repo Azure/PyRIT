@@ -76,7 +76,12 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
+doc/apiref/
+apidoc/myst/
+apidoc/html/
+apidoc/_autosummary/
+node_modules/
 
 # PyBuilder
 .pybuilder/
@@ -175,6 +180,7 @@ doc/_autosummary/
 
 # ignore all VSCode settings
 .vscode/*
+.vscode
 
 # ignore jetbrains IDE settings
 .idea/
@@ -189,3 +195,6 @@ doc/_autosummary/
 # Ignore notebooks directory in Docker folder
 /docker/notebooks/
 /docker/notebooks/*
+
+# Custom user instructions
+.github/instructions/user-custom.instructions.md

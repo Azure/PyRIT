@@ -6,16 +6,17 @@ import logging
 import os
 from typing import TYPE_CHECKING, Optional
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PretrainedConfig,
+)
 
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
-from pyrit.models.prompt_request_response import (
-    PromptRequestResponse,
-    construct_response_from_request,
-)
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.models import Message, construct_response_from_request
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +57,30 @@ class HuggingFaceChatTarget(PromptChatTarget):
         device_map: Optional[str] = None,
         torch_dtype: Optional["torch.dtype"] = None,
         attn_implementation: Optional[str] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__()
+        """Initializes the HuggingFaceChatTarget.
+
+        Args:
+            model_id (Optional[str]): The Hugging Face model ID. Either model_id or model_path must be provided.
+            model_path (Optional[str]): Path to a local model. Either model_id or model_path must be provided.
+            hf_access_token (Optional[str]): Hugging Face access token for authentication.
+            use_cuda (bool): Whether to use CUDA for GPU acceleration. Defaults to False.
+            tensor_format (str): The tensor format. Defaults to "pt".
+            necessary_files (Optional[list]): List of necessary model files to download.
+            max_new_tokens (int): Maximum number of new tokens to generate. Defaults to 20.
+            temperature (float): Sampling temperature. Defaults to 1.0.
+            top_p (float): Nucleus sampling probability. Defaults to 1.0.
+            skip_special_tokens (bool): Whether to skip special tokens. Defaults to True.
+            trust_remote_code (bool): Whether to trust remote code execution. Defaults to False.
+            device_map (Optional[str]): Device mapping strategy.
+            torch_dtype (Optional[torch.dtype]): Torch data type for model weights.
+            attn_implementation (Optional[str]): Attention implementation type.
+            max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
+        """
+        model_name = model_id if model_id else model_path if model_path else ""
+
+        super().__init__(max_requests_per_minute=max_requests_per_minute, model_name=model_name)
 
         if not model_id and not model_path:
             raise ValueError("Either `model_id` or `model_path` must be provided.")
@@ -84,8 +107,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         try:
             import torch
         except ModuleNotFoundError as e:
-            logger.error("Could not import torch. You may need to install it via 'pip install pyrit[all]'")
-            raise e
+            raise RuntimeError("Could not import torch. You may need to install it via 'pip install pyrit[all]'") from e
 
         # Determine the device
         self.device = "cuda" if self.use_cuda and torch.cuda.is_available() else "cpu"
@@ -212,8 +234,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.error(f"Error loading model {self.model_id}: {e}")
             raise
 
+    @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         Sends a normalized prompt asynchronously to the HuggingFace model.
         """
@@ -221,7 +244,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         await self.load_model_and_tokenizer_task
 
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         prompt_template = request.converted_value
 
         logger.info(f"Sending the following prompt to the HuggingFace model: {prompt_template}")
@@ -238,7 +261,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         try:
             # Ensure model is on the correct device (should already be the case from `load_model_and_tokenizer`)
-            self.model.to(self.device)
+            self.model.to(self.device)  # type: ignore[arg-type]
 
             # Record the length of the input tokens to later extract only the generated tokens
             input_length = input_ids.shape[-1]
@@ -305,15 +328,17 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.error(error_message)
             raise ValueError(error_message)
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
-        Validates the provided prompt request response.
+        Validates the provided message.
         """
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+        n_pieces = len(prompt_request.message_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

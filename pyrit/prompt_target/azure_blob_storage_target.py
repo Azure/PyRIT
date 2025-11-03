@@ -12,7 +12,7 @@ from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 
 from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
-from pyrit.models import PromptRequestResponse, construct_response_from_request
+from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ class SupportedContentType(Enum):
     """
 
     PLAIN_TEXT = "text/plain"
+    HTML = "text/html"
 
 
 class AzureBlobStorageTarget(PromptTarget):
@@ -64,7 +65,7 @@ class AzureBlobStorageTarget(PromptTarget):
         self._sas_token = sas_token
         self._client_async: AsyncContainerClient = None
 
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
+        super().__init__(endpoint=self._container_url, max_requests_per_minute=max_requests_per_minute)
 
     async def _create_container_client_async(self) -> None:
         """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
@@ -101,9 +102,15 @@ class AzureBlobStorageTarget(PromptTarget):
             await self._create_container_client_async()
         # Parse the Azure Storage Blob URL to extract components
         _, blob_prefix = self._parse_url()
-        blob_path = f"{blob_prefix}/{file_name}"
+        # If a blob prefix is provided, prepend it to the file name.
+        # If not, the file will be put in the root of the container.
+        blob_path = f"{blob_prefix}/{file_name}" if blob_prefix else file_name
         try:
             blob_client = self._client_async.get_blob_client(blob=blob_path)
+            if await blob_client.exists():
+                logger.info(msg=f"Blob {blob_path} already exists. Deleting it before uploading a new version.")
+                await blob_client.delete_blob()
+            logger.info(msg=f"Uploading new blob to {blob_path}")
             await blob_client.upload_blob(data=data, content_settings=content_settings)
         except Exception as exc:
             if isinstance(exc, ClientAuthenticationError):
@@ -128,7 +135,7 @@ class AzureBlobStorageTarget(PromptTarget):
         return container_url, blob_prefix
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
@@ -142,9 +149,13 @@ class AzureBlobStorageTarget(PromptTarget):
             blob_url (str): The Blob URL of the created blob within the provided storage container.
         """
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
+        # default file name is <conversation_id>.txt, but can be overridden by prompt metadata
         file_name = f"{request.conversation_id}.txt"
+        if request.prompt_metadata.get("file_name"):
+            file_name = str(request.prompt_metadata["file_name"])
+
         data = str.encode(request.converted_value)
         blob_url = self._container_url + "/" + file_name
 
@@ -156,14 +167,16 @@ class AzureBlobStorageTarget(PromptTarget):
 
         return response
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single message piece. Received {n_pieces} pieces")
 
-        if prompt_request.request_pieces[0].converted_value_data_type not in ["text", "url"]:
-            raise ValueError("This target only supports text and url prompt input.")
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        if piece_type not in ["text", "url"]:
+            raise ValueError(f"This target only supports text and url prompt input. Received: {piece_type}.")
 
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
         if len(messages) > 0:

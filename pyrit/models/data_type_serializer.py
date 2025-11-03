@@ -54,8 +54,8 @@ def data_serializer_factory(
             f"The 'category' argument is mandatory and must be one of the following: {get_args(AllowedCategories)}."
         )
     if value is not None:
-        if data_type == "text":
-            return TextDataTypeSerializer(prompt_text=value)
+        if data_type in ["text", "reasoning", "function_call", "tool_call", "function_call_output"]:
+            return TextDataTypeSerializer(prompt_text=value, data_type=data_type)
         elif data_type == "image_path":
             return ImagePathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "audio_path":
@@ -114,10 +114,7 @@ class DataTypeSerializer(abc.ABC):
         """
         if self._is_azure_storage_url(self.value):
             # Scenarios where a user utilizes an in-memory DuckDB but also needs to interact
-            # with an Azure Storage Account, ex., XPIAOrchestrator.
-            from pyrit.common import AZURE_SQL, initialize_pyrit
-
-            initialize_pyrit(memory_db_type=AZURE_SQL)
+            # with an Azure Storage Account, ex., XPIAWorkflow.
             return self._memory.results_storage_io
         return DiskStorageIO()
 
@@ -300,9 +297,8 @@ class DataTypeSerializer(abc.ABC):
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
-
-    def __init__(self, *, prompt_text: str):
-        self.data_type = "text"
+    def __init__(self, *, prompt_text: str, data_type: PromptDataType = "text"):
+        self.data_type = data_type
         self.value = prompt_text
 
     def data_on_disk(self) -> bool:
@@ -324,9 +320,10 @@ class URLDataTypeSerializer(DataTypeSerializer):
         self.value = prompt_text
         self.data_sub_directory = f"/{category}/urls"
         self.file_extension = extension if extension else "txt"
+        self.on_disk = not (prompt_text.startswith("http://") or prompt_text.startswith("https://"))
 
     def data_on_disk(self) -> bool:
-        return True
+        return self.on_disk
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):

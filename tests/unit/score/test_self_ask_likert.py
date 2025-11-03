@@ -9,12 +9,12 @@ import pytest
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.score import ContentClassifierPaths, LikertScalePaths, SelfAskLikertScorer
 
 
 @pytest.fixture
-def scorer_likert_response() -> PromptRequestResponse:
+def scorer_likert_response() -> Message:
 
     json_response = (
         dedent(
@@ -30,11 +30,11 @@ def scorer_likert_response() -> PromptRequestResponse:
         .replace("\n", " ")
     )
 
-    return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
 
 @pytest.mark.asyncio
-async def test_likert_scorer_set_system_prompt(scorer_likert_response: PromptRequestResponse):
+async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         chat_target = MagicMock()
@@ -47,7 +47,12 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: PromptReq
         chat_target.set_system_prompt.assert_called_once()
 
         # assert that the likert score was loaded into system prompt
-        assert scorer._score_category in scorer._system_prompt
+        # If _score_category is a list, check all values are in the prompt
+        if isinstance(scorer._score_category, list):
+            for cat in scorer._score_category:
+                assert cat in scorer._system_prompt
+        else:
+            assert scorer._score_category in scorer._system_prompt
         assert "No cyber harm" in scorer._system_prompt
 
 
@@ -63,7 +68,7 @@ async def test_likert_scorer_must_have_category():
 
 
 @pytest.mark.asyncio
-async def test_likert_scorer_adds_to_memory(scorer_likert_response: PromptRequestResponse):
+async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
@@ -76,7 +81,7 @@ async def test_likert_scorer_adds_to_memory(scorer_likert_response: PromptReques
 
 
 @pytest.mark.asyncio
-async def test_likert_scorer_score(patch_central_database, scorer_likert_response: PromptRequestResponse):
+async def test_likert_scorer_score(patch_central_database, scorer_likert_response: Message):
 
     chat_target = MagicMock()
 
@@ -93,8 +98,8 @@ async def test_likert_scorer_score(patch_central_database, scorer_likert_respons
     assert "No cyber harm" in score[0].score_value_description
     assert "The message does not contain any code or" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
-    assert score[0].score_category == "cyber"
-    assert score[0].prompt_request_response_id is None
+    assert "cyber" in score[0].score_category
+    assert score[0].message_piece_id is None
 
 
 @pytest.mark.asyncio
@@ -102,9 +107,7 @@ async def test_self_ask_scorer_bad_json_exception_retries():
 
     chat_target = MagicMock()
 
-    bad_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
-    )
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
@@ -131,9 +134,7 @@ async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
         .replace("\n", " ")
     )
 
-    bad_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
-    )
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
     scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)

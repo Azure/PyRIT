@@ -14,8 +14,8 @@ from pyrit.exceptions import (
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
+    Message,
     PromptDataType,
-    PromptRequestResponse,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -25,9 +25,11 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIDALLETarget(OpenAITarget):
-    """
-    The Dalle3Target takes a prompt and generates images
-    This class initializes a DALL-E image target
+    """OpenAI DALL-E Target for generating images from text prompts.
+
+    This class provides an interface to OpenAI's DALL-E image generation API,
+    supporting various image generation parameters and formats. It handles
+    prompt processing, API communication, and image response handling.
     """
 
     def __init__(
@@ -47,9 +49,9 @@ class OpenAIDALLETarget(OpenAITarget):
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_DALLE_API_KEY environment variable.
+                Defaults to the `OPENAI_DALLE_API_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -71,7 +73,7 @@ class OpenAIDALLETarget(OpenAITarget):
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
+                `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
 
         Raises:
@@ -94,6 +96,9 @@ class OpenAIDALLETarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
+        # Validate endpoint URL
+        self._warn_if_irregular_endpoint(self.DALLE_URL_REGEX)
+
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_DALLE_MODEL"
         self.endpoint_environment_variable = "OPENAI_DALLE_ENDPOINT"
@@ -104,23 +109,23 @@ class OpenAIDALLETarget(OpenAITarget):
     async def send_prompt_async(
         self,
         *,
-        prompt_request: PromptRequestResponse,
-    ) -> PromptRequestResponse:
+        prompt_request: Message,
+    ) -> Message:
         """
         Send a prompt to the DALL-E target and return the response.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request to send.
+            prompt_request (Message): The prompt request to send.
 
         Returns:
-            PromptRequestResponse: The response from the DALL-E target.
+            Message: The response from the DALL-E target.
         """
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        # Refresh auth headers if using AAD
+        # Refresh auth headers if using Entra authentication
         self.refresh_auth_headers()
 
         body = self._construct_request_body(prompt=request.converted_value)
@@ -138,10 +143,32 @@ class OpenAIDALLETarget(OpenAITarget):
                 params=params,
                 **self._httpx_client_kwargs,
             )
+
         except httpx.HTTPStatusError as StatusError:
             if StatusError.response.status_code == 400:
                 # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=request)
+                error_response_text = StatusError.response.text
+
+                try:
+                    json_error = json.loads(error_response_text).get("error", {})
+
+                    is_content_policy_violation = json_error.get("code") == "content_policy_violation"
+                    is_content_filter = json_error.get("code") == "content_filter"
+
+                    return handle_bad_request_exception(
+                        response_text=error_response_text,
+                        request=request,
+                        error_code=StatusError.response.status_code,
+                        is_content_filter=is_content_policy_violation or is_content_filter,
+                    )
+                except json.JSONDecodeError:
+                    # Invalid JSON response, proceed without parsing
+                    pass
+                return handle_bad_request_exception(
+                    response_text=error_response_text,
+                    request=request,
+                    error_code=StatusError.response.status_code,
+                )
             elif StatusError.response.status_code == 429:
                 raise RateLimitException()
             else:
@@ -179,12 +206,14 @@ class OpenAIDALLETarget(OpenAITarget):
 
         return image_generation_args
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

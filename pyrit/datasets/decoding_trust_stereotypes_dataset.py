@@ -6,8 +6,7 @@ from typing import List, Literal, Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets.dataset_helper import FILE_TYPE_HANDLERS, fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt
 
 
 def fetch_decoding_trust_stereotypes_dataset(
@@ -20,9 +19,9 @@ def fetch_decoding_trust_stereotypes_dataset(
     stereotype_topics: Optional[List[str]] = None,
     target_groups: Optional[List[str]] = None,
     system_prompt_type: Literal["benign", "untargeted", "targeted"] = "targeted",
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
-    Fetch DecodingTrust Stereotypes examples and create a SeedPromptDataset.
+    Fetch DecodingTrust Stereotypes examples and create a SeedDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the DecodingTrust repository.
@@ -41,7 +40,7 @@ def fetch_decoding_trust_stereotypes_dataset(
             Defaults to "targeted".
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -61,16 +60,12 @@ def fetch_decoding_trust_stereotypes_dataset(
 
     if system_prompt_type == "targeted":
         system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_targeted.yaml"
+            Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "dt_stereotypes_targeted.yaml"
         )
     elif system_prompt_type == "untargeted":
-        system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_untargeted.yaml"
-        )
+        system_prompt = SeedPrompt.from_yaml_file(Path(DATASETS_PATH) / "jailbreak" / "dt_stereotypes_untargeted.yaml")
     else:
-        system_prompt = SeedPrompt.from_yaml_file(
-            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_benign.yaml"
-        )
+        system_prompt = SeedPrompt.from_yaml_file(Path(DATASETS_PATH) / "jailbreak" / "dt_stereotypes_benign.yaml")
 
     # Required keys to validate each example
     required_keys = {"stereotype_topic", "target_group", "user_prompt"}
@@ -117,5 +112,5 @@ def fetch_decoding_trust_stereotypes_dataset(
         for prompt in prompts
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset

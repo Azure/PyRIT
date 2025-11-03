@@ -6,22 +6,18 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
-# # PDF Converter with Multiple Modes:
+# # PDFConverter - optional
 #
 # This script demonstrates the use of the `PDFConverter` for generating PDFs in two different modes:
 #
 # - **Template-Based PDF Generation**: Utilize a YAML template to render dynamic content into a PDF.
 # - **Direct Prompt PDF Generation**: Convert plain string prompts into PDFs without using a template.
 #
-# The `PromptSendingOrchestrator` is used to handle the interaction with the `PDFConverter` and the mock `TextTarget` target system.
+# The `PromptSendingAttack` is used to handle the interaction with the `PDFConverter` and the mock `TextTarget` target system.
 #
 # ## Key Features
 #
@@ -36,13 +32,17 @@
 # %%
 import pathlib
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
+from pyrit.executor.attack import (
+    AttackConverterConfig,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
 from pyrit.models import SeedPrompt
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import TextTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -80,21 +80,21 @@ pdf_converter = PromptConverterConfiguration.from_converters(
     ]
 )
 
-# Define a single prompt for the orchestrator
-prompts = str(prompt_data)
-
-# Initialize the orchestrator
-orchestrator = PromptSendingOrchestrator(
-    objective_target=prompt_target,  # Target system (Azure OpenAI or other LLM target)
-    request_converter_configurations=pdf_converter,  # Attach the PDFConverter
-    verbose=False,  # Set to True for detailed logging
+converter_config = AttackConverterConfig(
+    request_converters=pdf_converter,
 )
 
-await orchestrator.run_attack_async(objective=prompts)  # type: ignore
-memory = orchestrator.get_memory()
+# Define a single prompt for the attack
+prompt = str(prompt_data)
 
-for entry in memory:
-    print(entry)
+# Initialize the attack
+attack = PromptSendingAttack(
+    objective_target=prompt_target,  # Target system (Azure OpenAI or other LLM target)
+    attack_converter_config=converter_config,  # Attach the PDFConverter
+)
+
+result = await attack.execute_async(objective=prompt)  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 # %% [markdown]
 # # Direct Prompt PDF Generation (No Template)
@@ -119,19 +119,18 @@ pdf_converter = PromptConverterConfiguration.from_converters(
     ]
 )
 
-# Initialize the orchestrator
-orchestrator = PromptSendingOrchestrator(
-    objective_target=prompt_target,
-    request_converter_configurations=pdf_converter,
-    verbose=False,
+converter_config = AttackConverterConfig(
+    request_converters=pdf_converter,
 )
 
-await orchestrator.run_attack_async(objective=prompt)  # type: ignore
+# Initialize the attack
+attack = PromptSendingAttack(
+    objective_target=prompt_target,
+    attack_converter_config=converter_config,
+)
 
-memory = orchestrator.get_memory()
-
-for entry in memory:
-    print(entry)
+result = await attack.execute_async(objective=prompt)  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 # %% [markdown]
 # # Modify Existing PDF with Injection Items
@@ -141,10 +140,9 @@ from pathlib import Path
 
 import requests
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -200,15 +198,15 @@ pdf_converter = PromptConverterConfiguration.from_converters(
     ]
 )
 
-orchestrator = PromptSendingOrchestrator(
-    objective_target=prompt_target,
-    request_converter_configurations=pdf_converter,
-    verbose=False,
+converter_config = AttackConverterConfig(
+    request_converters=pdf_converter,
 )
 
-await orchestrator.run_attack_async(objective=prompt)  # type: ignore
+# Initialize the attack
+attack = PromptSendingAttack(
+    objective_target=prompt_target,
+    attack_converter_config=converter_config,
+)
 
-memory = orchestrator.get_memory()
-
-for entry in memory:
-    print(entry)
+result = await attack.execute_async(objective=prompt)  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore

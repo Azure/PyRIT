@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Optional, Protocol
 
 from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
+    Message,
+    MessagePiece,
     construct_response_from_request,
 )
-from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 # Avoid errors for users who don't have playwright installed
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ class InteractionFunction(Protocol):
     Defines the structure of interaction functions used with PlaywrightTarget.
     """
 
-    async def __call__(self, page: "Page", request_piece: PromptRequestPiece) -> str: ...
+    async def __call__(self, page: "Page", message_piece: MessagePiece) -> str: ...
 
 
 class PlaywrightTarget(PromptTarget):
@@ -39,31 +39,46 @@ class PlaywrightTarget(PromptTarget):
         *,
         interaction_func: InteractionFunction,
         page: "Page",
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__()
+        """
+        Initialize the Playwright target.
+
+        Args:
+            interaction_func (InteractionFunction): The function that defines how to interact with the page.
+            page (Page): The Playwright page object to use for interaction.
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
+        """
+        endpoint = page.url if page else ""
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
         self._interaction_func = interaction_func
         self._page = page
 
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    @limit_requests_per_minute
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
         if not self._page:
             raise RuntimeError(
                 "Playwright page is not initialized. Please pass a Page object when initializing PlaywrightTarget."
             )
 
-        request_piece = prompt_request.request_pieces[0]
+        message_piece = prompt_request.message_pieces[0]
 
         try:
-            text = await self._interaction_func(self._page, request_piece)
+            text = await self._interaction_func(self._page, message_piece)
         except Exception as e:
             raise RuntimeError(f"An error occurred during interaction: {str(e)}") from e
 
-        response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[text])
+        response_entry = construct_response_from_request(request=message_piece, response_text_pieces=[text])
         return response_entry
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")

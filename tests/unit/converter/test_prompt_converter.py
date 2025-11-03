@@ -6,7 +6,7 @@ import re
 import pytest
 from unit.mocks import MockPromptTarget
 
-from pyrit.memory import CentralMemory, DuckDBMemory
+from pyrit.memory import CentralMemory, SQLiteMemory
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import (
     AddImageTextConverter,
@@ -44,7 +44,6 @@ from pyrit.prompt_converter import (
     SearchReplaceConverter,
     StringJoinConverter,
     SuffixAppendConverter,
-    TextToHexConverter,
     TranslationConverter,
     UnicodeConfusableConverter,
     UnicodeReplacementConverter,
@@ -456,7 +455,7 @@ def test_input_supported_text_only(converter_class):
 
 @pytest.fixture
 def setup_memory():
-    memory = DuckDBMemory(db_path=":memory:")
+    memory = SQLiteMemory(db_path=":memory:")
     CentralMemory.set_memory_instance(memory)
     mock_target = MockPromptTarget()
     yield mock_target
@@ -515,7 +514,6 @@ def is_speechsdk_installed():
         (SearchReplaceConverter(pattern=" ", replace="_"), ["text"], ["text"]),
         (StringJoinConverter(), ["text"], ["text"]),
         (SuffixAppendConverter(suffix="test"), ["text"], ["text"]),
-        (TextToHexConverter(), ["text"], ["text"]),
         (UnicodeConfusableConverter(), ["text"], ["text"]),
         (UnicodeSubstitutionConverter(), ["text"], ["text"]),
         (UrlConverter(), ["text"], ["text"]),

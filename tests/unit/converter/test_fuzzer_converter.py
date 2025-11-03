@@ -8,7 +8,7 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import (
     FuzzerCrossOverConverter,
     FuzzerExpandConverter,
@@ -28,7 +28,22 @@ from pyrit.prompt_converter import (
         FuzzerSimilarConverter,
     ],
 )
-def test_converter_init_templates_not_null(converter_class, duckdb_instance) -> None:
+def test_fuzzer_converter_raises_when_converter_target_is_none(converter_class) -> None:
+    with pytest.raises(ValueError, match="converter_target is required"):
+        converter_class(converter_target=None)
+
+
+@pytest.mark.parametrize(
+    "converter_class",
+    [
+        FuzzerExpandConverter,
+        FuzzerShortenConverter,
+        FuzzerRephraseConverter,
+        FuzzerCrossOverConverter,
+        FuzzerSimilarConverter,
+    ],
+)
+def test_converter_init_templates_not_null(converter_class, sqlite_instance) -> None:
     prompt_target = MockPromptTarget()
     converter = converter_class(converter_target=prompt_target)
     assert converter.system_prompt
@@ -57,7 +72,7 @@ def test_converter_init_templates_not_null(converter_class, duckdb_instance) -> 
     [True, False],
 )
 async def test_converter_send_prompt_async_bad_json_exception_retries(
-    converted_value, converter_class, update, duckdb_instance
+    converted_value, converter_class, update, sqlite_instance
 ):
     prompt_target = MockPromptTarget()
 
@@ -68,9 +83,9 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
 
     with patch("unit.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
 
-        prompt_req_resp = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
+        message = Message(
+            message_pieces=[
+                MessagePiece(
                     role="user",
                     conversation_id="12345679",
                     original_value="test input",
@@ -78,12 +93,12 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
                     original_value_data_type="text",
                     converted_value_data_type="text",
                     prompt_target_identifier={"target": "target-identifier"},
-                    orchestrator_identifier={"test": "test"},
+                    attack_identifier={"test": "test"},
                     labels={"test": "test"},
                 )
             ]
         )
-        mock_create.return_value = prompt_req_resp
+        mock_create.return_value = message
 
         if update:
             converter.update(prompt_templates=["testing 2"])
@@ -110,7 +125,7 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
         FuzzerSimilarConverter,
     ],
 )
-def test_fuzzer_converter_input_supported(converter_class, duckdb_instance) -> None:
+def test_fuzzer_converter_input_supported(converter_class, sqlite_instance) -> None:
     prompt_target = MockPromptTarget()
     converter = converter_class(converter_target=prompt_target)
     assert converter.input_supported("text") is True

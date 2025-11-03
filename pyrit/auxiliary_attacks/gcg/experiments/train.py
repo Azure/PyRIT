@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
 import time
 from typing import Union
 
@@ -21,6 +22,8 @@ from pyrit.auxiliary_attacks.gcg.experiments.log import (
     log_params,
     log_train_goals,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:
@@ -104,7 +107,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.token = token
         params.logfile = logfile
         params.random_seed = random_seed
-        print(params)
+        logger.info(f"Parameters: {params}")
 
         # Start mlflow logging
         mlflow.start_run()

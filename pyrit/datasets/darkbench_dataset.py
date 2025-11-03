@@ -3,16 +3,15 @@
 
 from datasets import load_dataset
 
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt
 
 
-def fetch_darkbench_dataset() -> SeedPromptDataset:
+def fetch_darkbench_dataset() -> SeedDataset:
     """
-    Fetch DarkBench examples and create a SeedPromptDataset.
+    Fetch DarkBench examples and create a SeedDataset.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
 
     Note:
         For more information about the dataset and related materials, visit: \n
@@ -49,5 +48,5 @@ def fetch_darkbench_dataset() -> SeedPromptDataset:
         for item in data
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset

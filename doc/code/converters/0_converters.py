@@ -6,11 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -28,13 +24,15 @@
 # Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
+
 from pyrit.prompt_converter import (
     AsciiArtConverter,
     BinaryConverter,
+    FirstLetterConverter,
     RandomCapitalLettersConverter,
     ROT13Converter,
 )
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -45,6 +43,7 @@ print(await ROT13Converter().convert_tokens_async(prompt=prompt))  # type: ignor
 print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(prompt=prompt))  # type: ignore
 print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await BinaryConverter().convert_tokens_async(prompt=prompt))  # type: ignore
+print(await FirstLetterConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 
 
 # %%

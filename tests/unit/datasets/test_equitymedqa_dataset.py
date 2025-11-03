@@ -5,10 +5,10 @@ from unittest.mock import patch
 
 import pytest
 
-from pyrit.datasets.fetch_equitymedqa_dataset import (
+from pyrit.datasets import (
     fetch_equitymedqa_dataset_unique_values,
 )
-from pyrit.models import SeedPromptDataset
+from pyrit.models import SeedDataset
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def mock_equitymedqa_data():
     }
 
 
-@patch("pyrit.datasets.fetch_equitymedqa_dataset.load_dataset")
+@patch("pyrit.datasets.equitymedqa_dataset.load_dataset")
 def test_get_sub_dataset(mock_load_dataset, mock_equitymedqa_data):
     mock_load_dataset.return_value = mock_equitymedqa_data
 
@@ -51,7 +51,7 @@ def test_get_sub_dataset(mock_load_dataset, mock_equitymedqa_data):
     subset_name = "cc_manual"
     dataset = fetch_equitymedqa_dataset_unique_values(subset_name)
 
-    assert isinstance(dataset, SeedPromptDataset)
+    assert isinstance(dataset, SeedDataset)
     assert len(dataset.prompts) == 2
 
     prompt_list = [dataset.prompts[0].value, dataset.prompts[1].value]
@@ -59,14 +59,14 @@ def test_get_sub_dataset(mock_load_dataset, mock_equitymedqa_data):
     assert "cc_manual_prompt_2" in prompt_list
 
 
-@patch("pyrit.datasets.fetch_equitymedqa_dataset.load_dataset")
+@patch("pyrit.datasets.equitymedqa_dataset.load_dataset")
 def test_fetch_equitymedqa_dataset_unique_values_all(mock_load_dataset, mock_equitymedqa_data):
     mock_load_dataset.return_value = mock_equitymedqa_data
 
     # Test fetching all subsets
     dataset = fetch_equitymedqa_dataset_unique_values()
 
-    assert isinstance(dataset, SeedPromptDataset)
+    assert isinstance(dataset, SeedDataset)
     assert len(dataset.prompts) == 13
 
 

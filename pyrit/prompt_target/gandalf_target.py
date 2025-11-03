@@ -7,7 +7,7 @@ import logging
 from typing import Optional
 
 from pyrit.common import net_utility
-from pyrit.models import PromptRequestResponse, construct_response_from_request
+from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -34,15 +34,24 @@ class GandalfTarget(PromptTarget):
         level: GandalfLevel,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
+        """
+        Initialize the Gandalf target.
 
-        self._endpoint = "https://gandalf.lakera.ai/api/send-message"
+        Args:
+            level (GandalfLevel): The Gandalf level to target.
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
+        """
+        endpoint = "https://gandalf-api.lakera.ai/api/send-message"
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
+
         self._defender = level.value
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -52,12 +61,14 @@ class GandalfTarget(PromptTarget):
 
         return response_entry
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        n_pieces = len(prompt_request.message_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     async def check_password(self, password: str) -> bool:
         """

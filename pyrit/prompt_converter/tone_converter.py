@@ -3,7 +3,9 @@
 
 import logging
 import pathlib
+from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import LLMGenericTextConverter
@@ -13,12 +15,26 @@ logger = logging.getLogger(__name__)
 
 
 class ToneConverter(LLMGenericTextConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, tone: str, prompt_template: SeedPrompt = None):
+    """
+    Converts a conversation to a different tone using an LLM.
+
+    An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
+    """
+
+    @apply_defaults
+    def __init__(
+        self,
+        *,
+        converter_target: Optional[PromptChatTarget] = None,
+        tone: str,
+        prompt_template: Optional[SeedPrompt] = None,
+    ):
         """
-        Converts a conversation to a different tone
+        Initializes the converter with the target chat support, tone, and optional prompt template.
 
         Args:
-            converter_target (PromptChatTarget): The target chat support for the conversion which will translate
+            converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
+                Can be omitted if a default has been configured via PyRIT initialization.
             tone (str): The tone for the conversation. E.g. upset, sarcastic, indifferent, etc.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
 

@@ -6,8 +6,7 @@ from typing import List, Literal, Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedPromptDataset
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt
 
 
 def fetch_adv_bench_dataset(
@@ -28,7 +27,7 @@ def fetch_adv_bench_dataset(
         ]
     ] = None,
     sub_categories: Optional[List[str]] = None,
-) -> SeedPromptDataset:
+) -> SeedDataset:
     """
     Retrieve AdvBench examples enhanced with categories from a collaborative and human-centered harms taxonomy.
 
@@ -51,7 +50,7 @@ def fetch_adv_bench_dataset(
             Defaults to None, which includes all subcategories.
 
     Returns:
-        SeedPromptDataset: A SeedPromptDataset containing the examples.
+        SeedDataset: A SeedDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -97,5 +96,5 @@ def fetch_adv_bench_dataset(
         for item in filtered
     ]
 
-    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
-    return seed_prompt_dataset
+    seed_dataset = SeedDataset(prompts=seed_prompts)
+    return seed_dataset

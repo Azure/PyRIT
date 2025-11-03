@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 class UnicodeConfusableConverter(PromptConverter):
     """
-    A PromptConverter that applies substitutions to words in the prompt
-    to test adversarial textual robustness by replacing characters with visually similar ones.
+    Applies substitutions to words in the prompt to test adversarial textual robustness
+    by replacing characters with visually similar ones.
     """
 
     def __init__(
@@ -28,17 +28,21 @@ class UnicodeConfusableConverter(PromptConverter):
         deterministic: bool = False,
     ):
         """
-        Initializes the UnicodeConfusableConverter.
+        Initializes the converter with the specified source package for homoglyph generation.
 
         Args:
-            source_package: The package to use for homoglyph generation. Can be either "confusable_homoglyphs"
-                which can be found here: https://pypi.org/project/confusable-homoglyphs/ or "confusables" which can be
-                found here: https://pypi.org/project/confusables/. "Confusable_homoglyphs" is used by default as it is
-                more regularly maintained and up to date with the latest Unicode-provided confusables found here:
-                https://www.unicode.org/Public/security/latest/confusables.txt. However, "confusables"
-                provides additional methods of matching characters (not just Unicode list), so each character
-                has more possible substitutions.
-            deterministic: This argument is for unittesting only.
+            source_package (Literal["confusable_homoglyphs", "confusables"]):
+                The package to use for homoglyph generation.
+
+                Can be either:
+                    - "confusable_homoglyphs" (https://pypi.org/project/confusable-homoglyphs/):
+                        Used by default as it is more regularly maintained and up to date with the latest
+                        Unicode-provided confusables found here:
+                        https://www.unicode.org/Public/security/latest/confusables.txt
+                    - "confusables" (https://pypi.org/project/confusables/):
+                        Provides additional methods of matching characters (not just Unicode list),
+                        so each character has more possible substitutions.
+            deterministic (bool): This argument is for unittesting only.
         """
         if source_package not in ["confusable_homoglyphs", "confusables"]:
             raise ValueError(
@@ -55,9 +59,13 @@ class UnicodeConfusableConverter(PromptConverter):
 
         Args:
             prompt (str): The prompt to be converted.
-            input_type (str): The type of input (should be "text").
+            input_type (PromptDataType): The type of input data.
+
         Returns:
-            ConverterResult: The result containing the prompt with confusable subsitutions applied.
+            ConverterResult: The result containing the prompt with confusable substitutions applied.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -75,6 +83,7 @@ class UnicodeConfusableConverter(PromptConverter):
 
         Args:
             word (str): The word to find homoglyphs for.
+
         Returns:
             list: A list of homoglyph variants for the word.
         """
@@ -98,6 +107,7 @@ class UnicodeConfusableConverter(PromptConverter):
 
         Args:
             prompt (str): The original prompt.
+
         Returns:
             str: A perturbed prompt with character-level substitutions.
         """
@@ -127,10 +137,11 @@ class UnicodeConfusableConverter(PromptConverter):
 
     def _confusable(self, char: str) -> str:
         """
-        Pick a confusable character for the given character using the "confusables" package.
+        Picks a confusable character for the given character using the "confusables" package.
 
         Args:
             char (str): The character to be replaced.
+
         Returns:
             str: The confusable character to replace the given character.
         """

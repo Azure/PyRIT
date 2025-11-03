@@ -5,11 +5,9 @@ import pathlib
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
-from pyrit.models.literals import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import Message, MessagePiece, PromptDataType, SeedPrompt
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
     FuzzerConverter,
 )
@@ -18,10 +16,15 @@ from pyrit.prompt_target import PromptChatTarget
 
 
 class FuzzerExpandConverter(FuzzerConverter):
+    """
+    Generates versions of a prompt with new, prepended sentences.
+    """
+
+    @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         prompt_template: Optional[SeedPrompt] = None,
     ):
         prompt_template = (
@@ -35,7 +38,7 @@ class FuzzerExpandConverter(FuzzerConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converter to generate versions of prompt with new, prepended sentences.
+        Converts the given prompt by generating versions of it with new, prepended sentences.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -45,15 +48,15 @@ class FuzzerExpandConverter(FuzzerConverter):
         self.converter_target.set_system_prompt(
             system_prompt=self.system_prompt,
             conversation_id=conversation_id,
-            orchestrator_identifier=None,
+            attack_identifier=None,
         )
 
         formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
 
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        request = PromptRequestResponse(
+        request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=formatted_prompt,
                     converted_value=formatted_prompt,

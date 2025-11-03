@@ -5,26 +5,22 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
 # # 1. Converters with LLMs
 #
-# Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally preffered.
+# Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally preferred.
 
 # %%
 import pathlib
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import VariationConverter
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -44,10 +40,10 @@ print(await variation_converter.convert_async(prompt=prompt))  # type: ignore
 # This is not meant to be exhaustive and include all converter techniques, but hopefully illustrate some things you can do!
 
 # %%
-
 from pyrit.prompt_converter import (
     MaliciousQuestionGeneratorConverter,
     NoiseConverter,
+    RandomTranslationConverter,
     TenseConverter,
     ToneConverter,
     TranslationConverter,
@@ -61,8 +57,13 @@ print(f"Introduced noise: {await noise_converter.convert_async(prompt=prompt)}")
 tone_converter = ToneConverter(converter_target=attack_llm, tone="angry")
 print(f"Angry tone: {await tone_converter.convert_async(prompt=prompt)}")  # type: ignore
 
-language_converter = TranslationConverter(converter_target=attack_llm, language="fr")
-print(f"french translation: {await language_converter.convert_async(prompt=prompt)}")  # type: ignore
+translation_converter = TranslationConverter(converter_target=attack_llm, language="French")
+print(f"french translation: {await translation_converter.convert_async(prompt=prompt)}")  # type: ignore
+
+random_translation_converter = RandomTranslationConverter(
+    converter_target=attack_llm, languages=["French", "German", "Spanish", "English"]
+)
+print(f"random translation: {await random_translation_converter.convert_async(prompt=prompt)}")  # type: ignore
 
 tense_converter = TenseConverter(converter_target=attack_llm, tense="far future")
 print(f"future tense: {await tense_converter.convert_async(prompt=prompt)}")  # type: ignore

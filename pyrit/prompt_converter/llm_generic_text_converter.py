@@ -5,10 +5,11 @@ import logging
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.models import (
+    Message,
+    MessagePiece,
     PromptDataType,
-    PromptRequestPiece,
-    PromptRequestResponse,
     SeedPrompt,
 )
 from pyrit.prompt_converter import ConverterResult, PromptConverter
@@ -18,47 +19,62 @@ logger = logging.getLogger(__name__)
 
 
 class LLMGenericTextConverter(PromptConverter):
+    """
+    Represents a generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format).
+    """
+
+    @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: Optional[PromptChatTarget] = None,
         system_prompt_template: Optional[SeedPrompt] = None,
         user_prompt_template_with_objective: Optional[SeedPrompt] = None,
         **kwargs,
     ):
         """
-        Generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format)
+        Initializes the converter with a target and optional prompt templates.
 
         Args:
-            converter_target (PromptChatTarget): The endpoint that converts the prompt
+            converter_target (PromptChatTarget): The endpoint that converts the prompt.
+                Can be omitted if a default has been configured via PyRIT initialization.
             system_prompt_template (SeedPrompt, Optional): The prompt template to set as the system prompt.
             user_prompt_template_with_objective (SeedPrompt, Optional): The prompt template to set as the user prompt.
                 expects
             kwargs: Additional parameters for the prompt template.
 
+        Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
         """
+        if converter_target is None:
+            raise ValueError(
+                "converter_target is required for LLM-based converters. "
+                "Either pass it explicitly or configure a default via PyRIT initialization "
+                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
+            )
+
         self._converter_target = converter_target
         self._system_prompt_template = system_prompt_template
         self._prompt_kwargs = kwargs
 
-        if user_prompt_template_with_objective and "objective" not in user_prompt_template_with_objective.parameters:
+        if user_prompt_template_with_objective and (
+            user_prompt_template_with_objective.parameters is None
+            or "objective" not in user_prompt_template_with_objective.parameters
+        ):
             raise ValueError("user_prompt_template_with_objective must contain the 'objective' parameter")
 
         self._user_prompt_template_with_objective = user_prompt_template_with_objective
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Convert a prompt based on the prompt template
+        Converts the given prompt using an LLM via the specified converter target.
 
-        Parameters:
-            prompt (str): The prompt to convert.
-            input_type (PromptDataType, Optional): The data type of the input prompt. Defaults to "text".
+        Args:
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
-            ConverterResult: The result of the conversion, including the converted output text and output type.
-
-        Raises:
-            ValueError: If the input type is not supported.
+            ConverterResult: The result containing the converted output and its type.
         """
 
         conversation_id = str(uuid.uuid4())
@@ -72,7 +88,7 @@ class LLMGenericTextConverter(PromptConverter):
             self._converter_target.set_system_prompt(
                 system_prompt=system_prompt,
                 conversation_id=conversation_id,
-                orchestrator_identifier=None,
+                attack_identifier=None,
             )
 
         if not self.input_supported(input_type):
@@ -81,9 +97,9 @@ class LLMGenericTextConverter(PromptConverter):
         if self._user_prompt_template_with_objective:
             prompt = self._user_prompt_template_with_objective.render_template_value(objective=prompt)
 
-        request = PromptRequestResponse(
+        request = Message(
             [
-                PromptRequestPiece(
+                MessagePiece(
                     role="user",
                     original_value=prompt,
                     conversation_id=conversation_id,

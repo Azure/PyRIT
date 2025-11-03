@@ -12,6 +12,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    analyze_results
+    AttackStats
     ConversationAnalytics
 
 :py:mod:`pyrit.auth`
@@ -82,23 +84,32 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    apply_defaults
+    apply_defaults_to_method
     combine_dict
     combine_list
+    convert_local_image_to_data_url
+    DefaultValueScope
+    deprecation_message
     display_image_response
     download_chunk
     download_file
     download_files
     download_specific_files
     get_available_files
+    get_global_default_values
     get_httpx_client
+    get_kwarg_param
     get_non_required_value
     get_random_indices
     get_required_value
-    initialize_pyrit
     is_in_ipython_session
     make_request_and_raise_if_error_async
     print_chat_messages_with_color
+    reset_default_values
+    set_default_value
     Singleton
+    warn_if_set
     YamlLoadable
 
 :py:mod:`pyrit.datasets`
@@ -115,22 +126,30 @@ API Reference
     fetch_adv_bench_dataset
     fetch_aya_redteaming_dataset
     fetch_babelscape_alert_dataset
+    fetch_ccp_sensitive_prompts_dataset
     fetch_darkbench_dataset
     fetch_decoding_trust_stereotypes_dataset
+    fetch_equitymedqa_dataset_unique_values
     fetch_examples
     fetch_forbidden_questions_dataset
     fetch_harmbench_dataset
+    fetch_harmbench_multimodal_dataset_async
     fetch_librAI_do_not_answer_dataset
     fetch_llm_latent_adversarial_training_harmful_dataset
+    fetch_jbb_behaviors_by_harm_category
+    fetch_jbb_behaviors_by_jbb_category
+    fetch_jbb_behaviors_dataset
     fetch_many_shot_jailbreaking_dataset
+    fetch_medsafetybench_dataset
     fetch_mlcommons_ailuminate_demo_dataset
     fetch_multilingual_vulnerability_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_seclists_bias_testing_dataset
+    fetch_sosbench_dataset
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
     fetch_xstest_dataset
-    fetch_equitymedqa_dataset_unique_values
+
 
 
 :py:mod:`pyrit.embedding`
@@ -164,11 +183,90 @@ API Reference
     InvalidJsonException
     MissingPromptPlaceholderException
     PyritException
+    pyrit_custom_result_retry
     pyrit_json_retry
     pyrit_target_retry
     pyrit_placeholder_retry
     RateLimitException
     remove_markdown_json
+
+:py:mod:`pyrit.executor.attack`
+===============================
+
+.. automodule:: pyrit.executor.attack
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    AttackAdversarialConfig
+    AttackContext
+    AttackConverterConfig
+    AttackExecutor
+    AttackScoringConfig
+    AttackStrategy
+    ContextComplianceAttack
+    ConversationSession
+    CrescendoAttack
+    FlipAttack
+    ManyShotJailbreakAttack
+    MultiPromptSendingAttack
+    MultiPromptSendingAttackContext
+    MultiTurnAttackContext
+    PromptSendingAttack
+    RTASystemPromptPaths
+    RedTeamingAttack
+    RolePlayAttack
+    SingleTurnAttackContext
+    TAPAttack
+    TAPAttackContext
+    TAPAttackResult
+    TreeOfAttacksWithPruningAttack
+    SkeletonKeyAttack
+    ConsoleAttackResultPrinter
+
+:py:mod:`pyrit.executor.promptgen`
+==================================
+
+.. automodule:: pyrit.executor.promptgen
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    AnecdoctorContext
+    AnecdoctorGenerator
+    AnecdoctorResult
+    FuzzerContext
+    FuzzerResult
+    FuzzerGenerator
+    FuzzerResultPrinter
+    PromptGeneratorStrategy
+    PromptGeneratorStrategyContext
+    PromptGeneratorStrategyResult
+
+:py:mod:`pyrit.executor.workflow`
+=================================
+
+.. automodule:: pyrit.executor.workflow
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    XPIAContext
+    XPIAResult
+    XPIAWorkflow
+    XPIATestWorkflow
+    XPIAManualProcessingWorkflow
+    XPIAProcessingCallback
+    XPIAStatus
 
 :py:mod:`pyrit.memory`
 ======================
@@ -181,14 +279,16 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    AttackResultEntry
     AzureSQLMemory
     CentralMemory
-    DuckDBMemory
     EmbeddingDataEntry
     MemoryInterface
     MemoryEmbedding
     MemoryExporter
     PromptMemoryEntry
+    SeedEntry
+    SQLiteMemory
 
 :py:mod:`pyrit.models`
 ======================
@@ -209,6 +309,8 @@ API Reference
     ChatMessageRole
     ChatMessageListDictContent
     construct_response_from_request
+    ConversationReference
+    ConversationType
     DataTypeSerializer
     data_serializer_factory
     DiskStorageIO
@@ -217,53 +319,26 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
-    group_conversation_request_pieces_by_sequence
+    group_conversation_message_pieces_by_sequence
     Identifier
     ImagePathDataTypeSerializer
-    PromptRequestPiece
-    PromptResponse
-    PromptResponseError
+    Message
+    MessagePiece
     PromptDataType
-    PromptRequestResponse
+    PromptResponseError
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
     Score
     ScoreType
     SeedPrompt
-    SeedPromptDataset
-    SeedPromptGroup
+    SeedDataset
+    SeedGroup
     StorageIO
+    StrategyResult
     TextDataTypeSerializer
     UnvalidatedScore
 
-:py:mod:`pyrit.orchestrator`
-============================
-
-.. automodule:: pyrit.orchestrator
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    CrescendoOrchestrator
-    FlipAttackOrchestrator
-    FuzzerOrchestrator
-    MultiTurnOrchestrator
-    Orchestrator
-    OrchestratorResult
-    PAIROrchestrator
-    PromptSendingOrchestrator
-    QuestionAnsweringBenchmarkOrchestrator
-    RedTeamingOrchestrator
-    ScoringOrchestrator
-    SkeletonKeyOrchestrator
-    TreeOfAttacksWithPruningOrchestrator
-    XPIAManualProcessingOrchestrator
-    XPIAOrchestrator
-    XPIATestOrchestrator
 
 :py:mod:`pyrit.prompt_converter`
 ================================
@@ -287,6 +362,7 @@ API Reference
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base64Converter
+    BinAsciiConverter
     BinaryConverter
     CaesarConverter
     CharacterSpaceConverter
@@ -297,6 +373,7 @@ API Reference
     DenylistConverter
     DiacriticConverter
     EmojiConverter
+    FirstLetterConverter
     FlipConverter
     FuzzerCrossOverConverter
     FuzzerExpandConverter
@@ -304,6 +381,7 @@ API Reference
     FuzzerShortenConverter
     FuzzerSimilarConverter
     HumanInTheLoopConverter
+    ImageCompressionConverter
     InsertPunctuationConverter
     LeetspeakConverter
     LLMGenericTextConverter
@@ -319,18 +397,23 @@ API Reference
     RepeatTokenConverter
     ROT13Converter
     SearchReplaceConverter
+    SneakyBitsSmugglerConverter
     StringJoinConverter
     SuffixAppendConverter
+    SuperscriptConverter
+    TemplateSegmentConverter
     TenseConverter
-    TextToHexConverter
+    TextJailbreakConverter
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter
+    TransparencyAttackConverter
     UnicodeConfusableConverter
     UnicodeReplacementConverter
     UnicodeSubstitutionConverter
     UrlConverter
     VariationConverter
+    VariationSelectorSmugglerConverter
     ZalgoConverter
     ZeroWidthConverter
 
@@ -370,18 +453,25 @@ API Reference
     CrucibleTarget
     GandalfLevel
     GandalfTarget
+    get_http_target_json_response_callback_function
+    get_http_target_regex_matching_callback_function
     HTTPTarget
+    HTTPXAPITarget
     HuggingFaceChatTarget
     HuggingFaceEndpointTarget
     limit_requests_per_minute
     OpenAICompletionTarget
     OpenAIDALLETarget
     OpenAIChatTarget
+    OpenAIResponseTarget
+    OpenAISoraTarget
     OpenAITTSTarget
     OpenAITarget
+    PlaywrightTarget
     PromptChatTarget
     PromptShieldTarget
     PromptTarget
+    RealtimeTarget
     TextTarget
 
 :py:mod:`pyrit.score`
@@ -396,26 +486,97 @@ API Reference
     :toctree: _autosummary/
 
     AzureContentFilterScorer
+    BatchScorer
     ContentClassifierPaths
-    CompositeScorer
+    FloatScaleScorer
     FloatScaleThresholdScorer
     GandalfScorer
-    HumanInTheLoopScorer
+    HarmHumanLabeledEntry
+    HarmScorerEvaluator
+    HarmScorerMetrics
     HumanInTheLoopScorerGradio
+    HumanLabeledDataset
+    HumanLabeledEntry
+    InsecureCodeScorer
     LikertScalePaths
     LookBackScorer
     MarkdownInjectionScorer
+    MetricsType
+    ObjectiveHumanLabeledEntry
+    ObjectiveScorerEvaluator
+    ObjectiveScorerMetrics
+    PlagiarismMetric
+    PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
     Scorer
-    ScoreAggregator
+    ScorerEvaluator
+    ScorerMetrics
+    ScorerPromptValidator
     SelfAskCategoryScorer
+    SelfAskGeneralFloatScaleScorer
+    SelfAskGeneralTrueFalseScorer
     SelfAskLikertScorer
+    SelfAskQuestionAnswerScorer
     SelfAskRefusalScorer
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
-    SelfAskQuestionAnswerScorer
     SubStringScorer
+    TrueFalseCompositeScorer
     TrueFalseInverterScorer
     TrueFalseQuestion
     TrueFalseQuestionPaths
+    TrueFalseScoreAggregator
+    TrueFalseScorer
+
+:py:mod:`pyrit.scenarios`
+=========================
+
+.. automodule:: pyrit.scenarios
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    AtomicAttack
+    AtomicAttackResult
+    EncodingScenario
+    FoundryStrategy
+    FoundryScenario
+    Scenario
+    ScenarioStrategy
+    ScenarioIdentifier
+    ScenarioResult
+
+:py:mod:`pyrit.setup`
+=====================
+
+.. automodule:: pyrit.setup
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    initialize_pyrit
+    AZURE_SQL
+    SQLITE
+    IN_MEMORY
+
+:py:mod:`pyrit.setup.initializers`
+==================================
+
+.. automodule:: pyrit.setup.initializers
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    PyRITInitializer
+    AIRTInitializer
+    SimpleInitializer

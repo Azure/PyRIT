@@ -13,9 +13,11 @@ from urllib.parse import urlencode
 import websockets
 
 from pyrit.exceptions.exception_classes import ServerErrorException
-from pyrit.models import PromptRequestResponse
-from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models import (
+    Message,
+    construct_response_from_request,
+    data_serializer_factory,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -59,15 +61,17 @@ class RealtimeTarget(OpenAITarget):
     ) -> None:
         """
         RealtimeTarget class for Azure OpenAI Realtime API.
+
         Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
-            and https://platform.openai.com/docs/guides/realtime-websocket
+        and https://platform.openai.com/docs/guides/realtime-websocket
+
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_CHAT_KEY environment variable.
+                Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_aad_auth (bool, Optional): When set to True, user authentication is used
+            use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
@@ -116,7 +120,6 @@ class RealtimeTarget(OpenAITarget):
             query_params["api-version"] = self._api_version
 
         url = f"{self._endpoint}?{urlencode(query_params)}"
-
         websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
         return websocket
@@ -133,7 +136,7 @@ class RealtimeTarget(OpenAITarget):
             query_params["api-key"] = self._api_key
 
         if self._azure_auth:
-            query_params["access_token"] = self._azure_auth.refresh_token()
+            query_params["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
 
     def _set_system_prompt_and_config_vars(self):
 
@@ -178,9 +181,9 @@ class RealtimeTarget(OpenAITarget):
         logger.info("Session set up")
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
 
-        convo_id = prompt_request.request_pieces[0].conversation_id
+        convo_id = prompt_request.message_pieces[0].conversation_id
         if convo_id not in self._existing_conversation:
             websocket = await self.connect()
             self._existing_conversation[convo_id] = websocket
@@ -188,7 +191,7 @@ class RealtimeTarget(OpenAITarget):
             self.set_system_prompt(
                 system_prompt=self.system_prompt,
                 conversation_id=convo_id,
-                orchestrator_identifier=self.get_identifier(),
+                attack_identifier=self.get_identifier(),
             )
 
         websocket = self._existing_conversation[convo_id]
@@ -196,7 +199,7 @@ class RealtimeTarget(OpenAITarget):
         self._validate_request(prompt_request=prompt_request)
 
         await self.send_config(conversation_id=convo_id)
-        request = prompt_request.request_pieces[0]
+        request = prompt_request.message_pieces[0]
         response_type = request.converted_value_data_type
 
         # Order of messages sent varies based on the data format of the prompt
@@ -214,13 +217,13 @@ class RealtimeTarget(OpenAITarget):
 
         text_response_piece = construct_response_from_request(
             request=request, response_text_pieces=[result.flatten_transcripts()], response_type="text"
-        ).request_pieces[0]
+        ).message_pieces[0]
 
         audio_response_piece = construct_response_from_request(
             request=request, response_text_pieces=[output_audio_path], response_type="audio_path"
-        ).request_pieces[0]
+        ).message_pieces[0]
 
-        response_entry = PromptRequestResponse(request_pieces=[text_response_piece, audio_response_piece])
+        response_entry = Message(message_pieces=[text_response_piece, audio_response_piece])
         return response_entry
 
     async def save_audio(
@@ -518,23 +521,25 @@ class RealtimeTarget(OpenAITarget):
         output_audio_path = await self.save_audio(result.audio_bytes, num_channels, sample_width, frame_rate)
         return output_audio_path, result
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
+            prompt_request (Message): The message object.
 
         Raises:
-            ValueError: If more than two request pieces are provided.
-            ValueError: If any of the request pieces have a data type other than 'text' or 'audio_path'.
+            ValueError: If more than two message pieces are provided.
+            ValueError: If any of the message pieces have a data type other than 'text' or 'audio_path'.
         """
 
-        # Check the number of request pieces
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports one request piece.")
+        # Check the number of message pieces
+        n_pieces = len(prompt_request.message_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports one message piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type not in ["text", "audio_path"]:
-            raise ValueError("This target only supports text and audio_path prompt input.")
+        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        if piece_type not in ["text", "audio_path"]:
+            raise ValueError(f"This target only supports text and audio_path prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

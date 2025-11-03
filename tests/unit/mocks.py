@@ -11,8 +11,7 @@ from unittest.mock import MagicMock, patch
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.orchestrator import Orchestrator
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 
@@ -68,37 +67,37 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[dict[str, str]] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt
         if self._memory:
-            self._memory.add_request_response_to_memory(
-                request=PromptRequestPiece(
+            self._memory.add_message_to_memory(
+                request=MessagePiece(
                     role="system",
                     original_value=system_prompt,
                     converted_value=system_prompt,
                     conversation_id=conversation_id,
-                    orchestrator_identifier=orchestrator_identifier,
+                    attack_identifier=attack_identifier,
                     labels=labels,
-                ).to_prompt_request_response()
+                ).to_message()
             )
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         self.prompt_sent.append(prompt_request.get_value())
 
-        return PromptRequestPiece(
+        return MessagePiece(
             role="assistant",
             original_value="default",
-            conversation_id=prompt_request.request_pieces[0].conversation_id,
-            orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
-            labels=prompt_request.request_pieces[0].labels,
-        ).to_prompt_request_response()
+            conversation_id=prompt_request.message_pieces[0].conversation_id,
+            attack_identifier=prompt_request.message_pieces[0].attack_identifier,
+            labels=prompt_request.message_pieces[0].labels,
+        ).to_message()
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: Message) -> None:
         """
-        Validates the provided prompt request response
+        Validates the provided message
         """
 
     def is_json_response_supported(self) -> bool:
@@ -138,13 +137,13 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
     azure_sql_memory.dispose_engine()
 
 
-def get_image_request_piece() -> PromptRequestPiece:
+def get_image_message_piece() -> MessagePiece:
     file_name: str
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
         file_name = temp_file.name
         temp_file.write(b"image data")
 
-        return PromptRequestPiece(
+        return MessagePiece(
             role="user",
             original_value=file_name,
             converted_value=file_name,
@@ -153,13 +152,13 @@ def get_image_request_piece() -> PromptRequestPiece:
         )
 
 
-def get_audio_request_piece() -> PromptRequestPiece:
+def get_audio_message_piece() -> MessagePiece:
     file_name: str
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
         file_name = temp_file.name
         temp_file.write(b"audio data")
 
-        return PromptRequestPiece(
+        return MessagePiece(
             role="user",
             original_value=file_name,
             converted_value=file_name,
@@ -168,9 +167,9 @@ def get_audio_request_piece() -> PromptRequestPiece:
         )
 
 
-def get_test_request_piece() -> PromptRequestPiece:
+def get_test_message_piece() -> MessagePiece:
 
-    return PromptRequestPiece(
+    return MessagePiece(
         role="user",
         original_value="some text",
         converted_value="some text",
@@ -179,46 +178,50 @@ def get_test_request_piece() -> PromptRequestPiece:
     )
 
 
-def get_sample_conversations() -> MutableSequence[PromptRequestPiece]:
+def get_sample_conversations() -> MutableSequence[Message]:
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        orchestrator1 = Orchestrator()
-        orchestrator2 = Orchestrator()
 
         conversation_1 = str(uuid.uuid4())
+        attack_identifier = {
+            "__type__": "MockPromptTarget",
+            "__module__": "unit.mocks",
+            "id": str(uuid.uuid4()),
+        }
 
         return [
-            PromptRequestPiece(
+            MessagePiece(
                 role="user",
                 original_value="original prompt text",
                 converted_value="Hello, how are you?",
                 conversation_id=conversation_1,
                 sequence=0,
-                orchestrator_identifier=orchestrator1.get_identifier(),
-            ),
-            PromptRequestPiece(
+                attack_identifier=attack_identifier,
+            ).to_message(),
+            MessagePiece(
                 role="assistant",
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=conversation_1,
-                sequence=0,
-                orchestrator_identifier=orchestrator1.get_identifier(),
-            ),
-            PromptRequestPiece(
+                sequence=1,
+                attack_identifier=attack_identifier,
+            ).to_message(),
+            MessagePiece(
                 role="assistant",
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=str(uuid.uuid4()),
-                orchestrator_identifier=orchestrator2.get_identifier(),
-            ),
+                attack_identifier=attack_identifier,
+            ).to_message(),
         ]
 
 
 def get_sample_conversation_entries() -> Sequence[PromptMemoryEntry]:
     conversations = get_sample_conversations()
-    return [PromptMemoryEntry(entry=conversation) for conversation in conversations]
+    pieces = Message.flatten_to_message_pieces(conversations)
+    return [PromptMemoryEntry(entry=piece) for piece in pieces]
 
 
-def openai_response_json_dict() -> dict:
+def openai_chat_response_json_dict() -> dict:
     return {
         "id": "12345678-1a2b-3c4e5f-a123-12345678abcd",
         "object": "chat.completion",
@@ -229,5 +232,35 @@ def openai_response_json_dict() -> dict:
                 "finish_reason": "stop",
             }
         ],
-        "model": "gpt-4-v",
+        "model": "o4-mini",
+    }
+
+
+def openai_response_json_dict() -> dict:
+    return {
+        "id": "resp_12345678-1a2b-3c4e5f-a123-12345678abcd",
+        "object": "response",
+        "status": "completed",
+        "error": None,
+        "output": [
+            {
+                "id": "msg_12428471298473947293847293847",
+                "role": "assistant",
+                "type": "message",
+                "content": [
+                    {"type": "output_text", "text": "hi"},
+                ],
+            }
+        ],
+        "model": "o4-mini",
+    }
+
+
+def openai_failed_response_json_dict() -> dict:
+    return {
+        "id": "resp_12345678-1a2b-3c4e5f-a123-12345678abcd",
+        "object": "response",
+        "status": "failed",
+        "error": {"code": "invalid_request", "message": "Invalid request"},
+        "model": "o4-mini",
     }

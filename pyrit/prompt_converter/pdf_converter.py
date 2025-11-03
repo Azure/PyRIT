@@ -6,8 +6,10 @@ from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fpdf import FPDF
 from pypdf import PageObject, PdfReader, PdfWriter
+from reportlab.lib.units import mm
+from reportlab.lib.utils import simpleSplit
+from reportlab.pdfgen import canvas
 
 from pyrit.common.logger import logger
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
@@ -16,25 +18,17 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 class PDFConverter(PromptConverter):
     """
-    Converts a text prompt into a PDF file. Supports various modes:
-    1. Template-Based Generation: If a `SeedPrompt` is provided, dynamic data can be injected into the
-    template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.
-    2. Direct Text-Based Generation: If no template is provided, the raw string prompt is converted directly
-    into a PDF.
-    3. Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
-    coordinates, merging a new "overlay layer" onto the original PDF.
+    Converts a text prompt into a PDF file.
 
-    Args:
-        prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
-        font_type (str): Font type for the PDF. Defaults to "Helvetica".
-        font_size (int): Font size for the PDF. Defaults to 12.
-        font_color (tuple): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
-        page_width (int): Width of the PDF page in mm. Defaults to 210 (A4 width).
-        page_height (int): Height of the PDF page in mm. Defaults to 297 (A4 height).
-        column_width (int): Width of each column in the PDF. Defaults to 0 (full page width).
-        row_height (int): Height of each row in the PDF. Defaults to 10.
-        existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
-        injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
+    Supports various modes:
+        - Template-Based Generation:
+            If a ``SeedPrompt`` is provided, dynamic data can be injected into the template using
+            the ``SeedPrompt.render_template_value`` method, and the resulting content is converted to a PDF.
+        - Direct Text-Based Generation:
+            If no template is provided, the raw string prompt is converted directly into a PDF.
+        - Modify Existing PDFs (Overlay approach):
+            Enables injecting text into existing PDFs at specified coordinates, merging a new "overlay layer"
+            onto the original PDF.
     """
 
     def __init__(
@@ -50,6 +44,25 @@ class PDFConverter(PromptConverter):
         existing_pdf: Optional[Path] = None,
         injection_items: Optional[List[Dict]] = None,
     ) -> None:
+        """
+        Initializes the converter with the specified parameters.
+
+        Args:
+            prompt_template (Optional[SeedPrompt], optional): A ``SeedPrompt`` object representing a template.
+            font_type (str): Font type for the PDF. Defaults to "Helvetica".
+            font_size (int): Font size for the PDF. Defaults to 12.
+            font_color (tuple): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
+            page_width (int): Width of the PDF page in mm. Defaults to 210 (A4 width).
+            page_height (int): Height of the PDF page in mm. Defaults to 297 (A4 height).
+            column_width (int): Width of each column in the PDF. Defaults to 0 (full page width).
+            row_height (int): Height of each row in the PDF. Defaults to 10.
+            existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
+            injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
+
+        Raises:
+            ValueError: If the font color is invalid or the injection items are not provided as a list of dictionaries.
+            FileNotFoundError: If the provided PDF file does not exist.
+        """
         self._prompt_template = prompt_template
         self._font_type = font_type
         self._font_size = font_size
@@ -93,7 +106,7 @@ class PDFConverter(PromptConverter):
 
         Args:
             prompt (str): The prompt to be embedded in the PDF.
-            input_type (PromptDataType): The type of the input data (default: "text").
+            input_type (PromptDataType): The type of input data.
 
         Returns:
             ConverterResult: The result containing the full file path to the generated PDF.
@@ -161,7 +174,7 @@ class PDFConverter(PromptConverter):
 
     def _generate_pdf(self, content: str) -> bytes:
         """
-        Generates a PDF with the given content.
+        Generates a PDF with the given content using ReportLab.
 
         Args:
             content (str): The text content to include in the PDF.
@@ -169,14 +182,67 @@ class PDFConverter(PromptConverter):
         Returns:
             bytes: The generated PDF content in bytes.
         """
-        pdf = FPDF(format=(self._page_width, self._page_height))  # Use custom page size
-        pdf.add_page()
-        pdf.set_font(self._font_type, size=self._font_size)  # Use custom font settings
-        pdf.multi_cell(self._column_width, self._row_height, content)  # Use configurable cell dimensions
 
-        pdf_bytes = BytesIO()
-        pdf.output(pdf_bytes)
-        return pdf_bytes.getvalue()
+        pdf_buffer = BytesIO()
+
+        # Convert mm to points
+        # 1mm = 2.83465 points
+        page_width_pt = self._page_width * mm
+        page_height_pt = self._page_height * mm
+
+        c = canvas.Canvas(pdf_buffer, pagesize=(page_width_pt, page_height_pt))
+
+        font_map = {
+            "Arial": "Helvetica",
+            "Times": "Times-Roman",
+            "Courier": "Courier",
+            "Helvetica": "Helvetica",
+            "Symbol": "Symbol",
+            "ZapfDingbats": "ZapfDingbats",
+        }
+        reportlab_font = font_map.get(self._font_type, "Helvetica")
+
+        c.setFont(reportlab_font, self._font_size)
+
+        margin = 10 * mm
+        x = margin
+        y = page_height_pt - margin  # ReportLab uses bottom-left origin
+
+        # Calculate actual column width
+        if self._column_width == 0:
+            actual_width = page_width_pt - (2 * margin)
+        else:
+            actual_width = self._column_width * mm
+
+        # Convert row_height from mm to points
+        line_height = self._row_height * mm if self._row_height else self._font_size * 1.2
+
+        # Split content into lines (handle existing newlines)
+        paragraphs = content.split("\n")
+
+        for paragraph in paragraphs:
+            if not paragraph:  # Empty line
+                y -= line_height
+                continue
+
+            # Word wrap the paragraph
+            # simpleSplit handles word wrapping
+            wrapped_lines = simpleSplit(paragraph, reportlab_font, self._font_size, actual_width)
+
+            for line in wrapped_lines:
+                # Check if we need a new page
+                if y < margin + line_height:
+                    c.showPage()
+                    c.setFont(reportlab_font, self._font_size)
+                    y = page_height_pt - margin
+
+                # Draw the text (ReportLab origin is bottom-left)
+                c.drawString(x, y, line)
+                y -= line_height
+
+        c.save()
+        pdf_buffer.seek(0)
+        return pdf_buffer.getvalue()
 
     def _modify_existing_pdf(self) -> bytes:
         """
@@ -253,25 +319,27 @@ class PDFConverter(PromptConverter):
         self, page: PageObject, x: float, y: float, text: str, font: str, font_size: int, font_color: tuple
     ) -> tuple[PageObject, BytesIO]:
         """
-        Generates an overlay PDF with the given text injected at the specified coordinates.
+        Generates an overlay PDF with the given text using ReportLab.
 
         Args:
             page (PageObject): The original PDF page to overlay on.
-            x (float): The x-coordinate for the text.
-            y (float): The y-coordinate for the text.
+            x (float): The x-coordinate for the text (in points).
+            y (float): The y-coordinate for the text (in points).
             text (str): The text to inject.
             font (str): The font type.
             font_size (int): The font size.
-            font_color (tuple): The font color in RGB format.
+            font_color (tuple): The font color in RGB format (0-255).
 
         Returns:
             tuple[PageObject, BytesIO]: The overlay page object and its corresponding buffer.
         """
+        from reportlab.pdfgen import canvas
+
         # Determine page size from the original page's MediaBox
         page_width = float(page.mediabox[2] - page.mediabox[0])
         page_height = float(page.mediabox[3] - page.mediabox[1])
 
-        # Out-of-Bounds Checks
+        # Out-of-Bounds Checks (same as original)
         if x < 0:
             logger.error(f"x_pos is less than 0 and therefore out of bounds: x={x}")
             raise ValueError(f"x_pos is less than 0 and therefore out of bounds: x={x}")
@@ -285,25 +353,29 @@ class PDFConverter(PromptConverter):
             logger.error(f"y_pos exceeds page height and is out of bounds: y={y}, page_height={page_height}")
             raise ValueError(f"y_pos exceeds page height and is out of bounds: y={y}, page_height={page_height}")
 
-        # Create a small overlay PDF in memory
-        overlay_pdf = FPDF(unit="pt", format=(page_width, page_height))
-        overlay_pdf.add_page()
-
-        # Set font
-        overlay_pdf.set_font(font, size=font_size)
-        r, g, b = font_color
-        overlay_pdf.set_text_color(r, g, b)
-
-        # Position text: FPDF starts (0,0) at top-left, so (x, y) from bottom-left
-        # means we do "set_xy(x, page_height - y)" if your coordinates assume bottom-left origin
-        overlay_pdf.set_xy(x, page_height - y)
-
-        # Insert the text
-        overlay_pdf.cell(0, 0, text)
-
-        # Convert overlay FPDF to bytes
+        # Create overlay buffer
         overlay_buffer = BytesIO()
-        overlay_pdf.output(overlay_buffer)
+        c = canvas.Canvas(overlay_buffer, pagesize=(page_width, page_height))
+
+        font_map = {
+            "Arial": "Helvetica",
+            "Times": "Times-Roman",
+            "Courier": "Courier",
+            "Helvetica": "Helvetica",
+            "Symbol": "Symbol",
+            "ZapfDingbats": "ZapfDingbats",
+        }
+        reportlab_font = font_map.get(font, "Helvetica")
+
+        c.setFont(reportlab_font, font_size)
+
+        # Set color - ReportLab uses 0-1 range
+        r, g, b = font_color
+        c.setFillColorRGB(r / 255.0, g / 255.0, b / 255.0)
+
+        c.drawString(x, y, text)
+
+        c.save()
         overlay_buffer.seek(0)
 
         # Create a pypdf PageObject from the overlay
@@ -323,13 +395,18 @@ class PDFConverter(PromptConverter):
         Returns:
             DataTypeSerializer: The serializer object containing metadata about the saved file.
         """
-        original_filename_ending = self._existing_pdf_path.stem if self._existing_pdf_path else ""
+        original_filename_ending = self._existing_pdf_path.suffix if self._existing_pdf_path else ""
+
+        if original_filename_ending:
+            extension = original_filename_ending[1:]  # Remove the leading dot
+        else:
+            extension = "pdf"
 
         pdf_serializer = data_serializer_factory(
             category="prompt-memory-entries",
             data_type="url",
             value=content,
-            extension=f"{original_filename_ending}.pdf",
+            extension=extension,
         )
         await pdf_serializer.save_data(pdf_bytes)
         return pdf_serializer
