@@ -74,34 +74,30 @@ class TestFetchSorryBenchDataset:
         mock_load_dataset.assert_called_once_with("sorry-bench/sorry-bench-202503", cache_dir=None)
 
     @patch("pyrit.datasets.sorry_bench_dataset.load_dataset")
-    def test_fetch_sorry_bench_dataset_all_styles(self, mock_load_dataset, mock_sorry_bench_data):
-        """Test fetching all prompt styles."""
+    def test_fetch_sorry_bench_dataset_ascii_style(self, mock_load_dataset, mock_sorry_bench_data):
+        """Test fetching specific prompt style."""
         mock_dataset = {"train": mock_sorry_bench_data}
         mock_load_dataset.return_value = mock_dataset
 
-        # Fetch all styles with empty list
-        result = fetch_sorry_bench_dataset(prompt_styles=[])
+        # Fetch only ascii style
+        result = fetch_sorry_bench_dataset(prompt_style="ascii")
 
-        assert len(result.prompts) == 4  # All prompts
-        styles = [p.metadata["prompt_style"] for p in result.prompts]
-        assert "base" in styles
-        assert "ascii" in styles
-        assert "caesar" in styles
+        assert len(result.prompts) == 1
+        assert result.prompts[0].metadata["prompt_style"] == "ascii"
+        assert result.prompts[0].harm_categories == ["Violent Crimes"]
 
     @patch("pyrit.datasets.sorry_bench_dataset.load_dataset")
-    def test_fetch_sorry_bench_dataset_specific_styles(self, mock_load_dataset, mock_sorry_bench_data):
-        """Test fetching specific prompt styles."""
+    def test_fetch_sorry_bench_dataset_caesar_style(self, mock_load_dataset, mock_sorry_bench_data):
+        """Test fetching caesar prompt style."""
         mock_dataset = {"train": mock_sorry_bench_data}
         mock_load_dataset.return_value = mock_dataset
 
-        # Fetch only ascii and caesar styles
-        result = fetch_sorry_bench_dataset(prompt_styles=["ascii", "caesar"])
+        # Fetch only caesar style
+        result = fetch_sorry_bench_dataset(prompt_style="caesar")
 
-        assert len(result.prompts) == 2
-        styles = [p.metadata["prompt_style"] for p in result.prompts]
-        assert "ascii" in styles
-        assert "caesar" in styles
-        assert "base" not in styles
+        assert len(result.prompts) == 1
+        assert result.prompts[0].metadata["prompt_style"] == "caesar"
+        assert result.prompts[0].harm_categories == ["Self-Harm"]
 
     @patch("pyrit.datasets.sorry_bench_dataset.load_dataset")
     def test_fetch_sorry_bench_dataset_filter_categories(self, mock_load_dataset, mock_sorry_bench_data):
@@ -118,18 +114,16 @@ class TestFetchSorryBenchDataset:
 
     @patch("pyrit.datasets.sorry_bench_dataset.load_dataset")
     def test_fetch_sorry_bench_dataset_multiple_categories(self, mock_load_dataset, mock_sorry_bench_data):
-        """Test filtering by multiple categories."""
+        """Test filtering by multiple categories with specific style."""
         mock_dataset = {"train": mock_sorry_bench_data}
         mock_load_dataset.return_value = mock_dataset
 
-        # Filter for multiple categories with all styles
-        result = fetch_sorry_bench_dataset(categories=["Self-Harm", "Violent Crimes"], prompt_styles=[])
+        # Filter for multiple categories with caesar style
+        result = fetch_sorry_bench_dataset(categories=["Self-Harm", "Violent Crimes"], prompt_style="caesar")
 
-        assert len(result.prompts) == 3
-        categories = [p.harm_categories[0] for p in result.prompts]
-        assert "Self-Harm" in categories
-        assert "Violent Crimes" in categories
-        assert "Personal Insulting Words" not in categories
+        assert len(result.prompts) == 1
+        assert result.prompts[0].harm_categories == ["Self-Harm"]
+        assert result.prompts[0].metadata["prompt_style"] == "caesar"
 
     @patch("pyrit.datasets.sorry_bench_dataset.load_dataset")
     def test_fetch_sorry_bench_dataset_empty_turns(self, mock_load_dataset):
@@ -189,7 +183,7 @@ class TestFetchSorryBenchDataset:
         """Test error handling when dataset loading fails."""
         mock_load_dataset.side_effect = Exception("Network error")
 
-        with pytest.raises(Exception, match="Error loading Sorry-Bench dataset"):
+        with pytest.raises(Exception, match="Network error"):
             fetch_sorry_bench_dataset()
 
     @patch("pyrit.datasets.sorry_bench_dataset.load_dataset")
@@ -207,9 +201,8 @@ class TestFetchSorryBenchDataset:
         }
         mock_load_dataset.return_value = mock_dataset
 
-        # Filter for non-existent category
         with pytest.raises(Exception, match="SeedDataset cannot be empty"):
-            fetch_sorry_bench_dataset(categories=["NonExistentCategory"])
+            fetch_sorry_bench_dataset(categories=["Violent Crimes"], prompt_style="ascii")
 
     @patch("pyrit.datasets.sorry_bench_dataset.load_dataset")
     def test_fetch_sorry_bench_dataset_custom_cache_dir(self, mock_load_dataset, mock_sorry_bench_data):
@@ -222,3 +215,13 @@ class TestFetchSorryBenchDataset:
 
         assert isinstance(result, SeedDataset)
         mock_load_dataset.assert_called_once_with("sorry-bench/sorry-bench-202503", cache_dir=custom_cache)
+
+    def test_fetch_sorry_bench_dataset_invalid_prompt_style(self):
+        """Test error handling for invalid prompt_style."""
+        with pytest.raises(ValueError, match="Invalid prompt_style 'invalid_style'"):
+            fetch_sorry_bench_dataset(prompt_style="invalid_style")
+
+    def test_fetch_sorry_bench_dataset_invalid_categories(self):
+        """Test error handling for invalid categories."""
+        with pytest.raises(ValueError, match="Invalid categories"):
+            fetch_sorry_bench_dataset(categories=["Invalid Category", "Another Invalid"])
