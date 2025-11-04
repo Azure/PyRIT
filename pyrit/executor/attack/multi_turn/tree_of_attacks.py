@@ -979,7 +979,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             raise ValueError("The batch size must be at least 1.")
 
         # Initialize base class
-        super().__init__(logger=logger, context_type=TAPAttackContext)
+        super().__init__(objective_target=objective_target, logger=logger, context_type=TAPAttackContext)
 
         self._memory = CentralMemory.get_memory_instance()
 
@@ -992,8 +992,6 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         self._on_topic_checking_enabled = on_topic_checking_enabled
         self._desired_response_prefix = desired_response_prefix
         self._batch_size = batch_size
-
-        self._objective_target = objective_target
 
         # Initialize adversarial configuration
         self._adversarial_chat = attack_adversarial_config.target
@@ -1061,6 +1059,20 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         # Load initial seed prompt
         self._adversarial_chat_seed_prompt = SeedPrompt.from_yaml_file(
             TreeOfAttacksWithPruningAttack.DEFAULT_ADVERSARIAL_SEED_PROMPT_PATH
+        )
+
+    def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
+        """
+        Get the attack scoring configuration used by this strategy.
+
+        Returns:
+            Optional[AttackScoringConfig]: The scoring configuration with objective scorer,
+                auxiliary scorers, and threshold.
+        """
+        return AttackScoringConfig(
+            objective_scorer=self._objective_scorer,
+            auxiliary_scorers=self._auxiliary_scorers,
+            successful_objective_threshold=self._successful_objective_threshold,
         )
 
     def _validate_context(self, *, context: TAPAttackContext) -> None:

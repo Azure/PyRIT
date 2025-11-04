@@ -153,6 +153,15 @@ class AtomicAttack:
             f"attack type: {type(attack).__name__}, context type: {self._context_type}"
         )
 
+    def get_objectives(self) -> List[str]:
+        """
+        Get a copy of the objectives list for this atomic attack.
+
+        Returns:
+            List[str]: A copy of the objectives list.
+        """
+        return list(self._objectives)
+
     def _determine_context_type(self, attack: AttackStrategy) -> Literal["single_turn", "multi_turn", "unknown"]:
         """
         Determine the context type of the attack strategy.

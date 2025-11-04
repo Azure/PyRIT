@@ -98,9 +98,16 @@ def create_mock_atomic_attack(name: str, objectives: list[str], run_async_mock: 
     Returns:
         MagicMock configured as an AtomicAttack
     """
+    # Create a mock attack strategy
+    mock_attack_strategy = MagicMock()
+    mock_attack_strategy.get_objective_target.return_value = MagicMock()
+    mock_attack_strategy.get_attack_scoring_config.return_value = MagicMock()
+    
     attack = MagicMock(spec=AtomicAttack)
     attack.atomic_attack_name = name
     attack._objectives = objectives
+    attack._attack = mock_attack_strategy
+    attack.get_objectives.return_value = objectives
     if run_async_mock:
         attack.run_async = run_async_mock
     return attack
@@ -110,6 +117,9 @@ class ConcreteScenario(Scenario):
     """Concrete implementation of Scenario for testing."""
 
     def __init__(self, atomic_attacks_to_return=None, **kwargs):
+        # Disable baseline by default for tests unless explicitly enabled
+        if 'include_baseline' not in kwargs:
+            kwargs['include_baseline'] = False
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 

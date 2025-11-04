@@ -18,6 +18,7 @@ from pyrit.models import (
     AttackResult,
     Message,
 )
+from pyrit.prompt_target import PromptTarget
 
 
 @pytest.fixture
@@ -26,6 +27,14 @@ def mock_memory():
     memory = MagicMock(spec=CentralMemory)
     memory.add_attack_results_to_memory = MagicMock()
     return memory
+
+
+@pytest.fixture
+def mock_objective_target():
+    """Mock PromptTarget instance"""
+    target = MagicMock(spec=PromptTarget)
+    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test"}
+    return target
 
 
 @pytest.fixture
@@ -71,9 +80,12 @@ def event_handler(mock_logger):
 @pytest.fixture
 def mock_attack_strategy():
     """Create a mock attack strategy with all abstract methods mocked"""
+    mock_target = MagicMock(spec=PromptTarget)
 
     class TestableAttackStrategy(AttackStrategy):
         def __init__(self, **kwargs):
+            if "objective_target" not in kwargs:
+                kwargs["objective_target"] = mock_target
             super().__init__(context_type=AttackContext, logger=kwargs.get("logger", logging.getLogger()), **kwargs)
 
         # Mock abstract methods from Strategy
@@ -105,7 +117,7 @@ def mock_attack_strategy():
 class TestAttackStrategyInitialization:
     """Tests for AttackStrategy initialization"""
 
-    def test_init_creates_default_event_handler(self):
+    def test_init_creates_default_event_handler(self, mock_objective_target):
         """Test that AttackStrategy creates a default event handler"""
 
         class TestStrategy(AttackStrategy):
@@ -129,14 +141,14 @@ class TestAttackStrategyInitialization:
             async def _teardown_async(self, *, context):
                 pass
 
-        strategy = TestStrategy(context_type=AttackContext)
+        strategy = TestStrategy(context_type=AttackContext, objective_target=mock_objective_target)
 
         assert len(strategy._event_handlers) == 1
         handler_name = "_DefaultAttackStrategyEventHandler"
         assert handler_name in strategy._event_handlers
         assert isinstance(strategy._event_handlers[handler_name], _DefaultAttackStrategyEventHandler)
 
-    def test_init_with_custom_logger(self):
+    def test_init_with_custom_logger(self, mock_objective_target):
         """Test that AttackStrategy accepts a custom logger"""
         custom_logger = logging.getLogger("test_attack_logger")
 
@@ -161,11 +173,11 @@ class TestAttackStrategyInitialization:
             async def _teardown_async(self, *, context):
                 pass
 
-        strategy = TestStrategy(context_type=AttackContext, logger=custom_logger)
+        strategy = TestStrategy(context_type=AttackContext, objective_target=mock_objective_target, logger=custom_logger)
 
         assert strategy._logger.logger == custom_logger
 
-    def test_init_sets_memory_labels_from_default_values(self):
+    def test_init_sets_memory_labels_from_default_values(self, mock_objective_target):
         """Test that memory labels are loaded from default values"""
         with patch("pyrit.executor.core.strategy.default_values") as mock_default:
             mock_default.get_non_required_value.return_value = '{"env_label": "env_value"}'
@@ -191,7 +203,7 @@ class TestAttackStrategyInitialization:
                 async def _teardown_async(self, *, context):
                     pass
 
-            strategy = TestStrategy(context_type=AttackContext)
+            strategy = TestStrategy(context_type=AttackContext, objective_target=mock_objective_target)
 
             assert strategy._memory_labels == {"env_label": "env_value"}
 
@@ -486,7 +498,7 @@ class TestAttackStrategyIntegration:
     """Integration tests for AttackStrategy with event handlers"""
 
     @pytest.mark.asyncio
-    async def test_attack_strategy_event_flow(self, mock_memory):
+    async def test_attack_strategy_event_flow(self, mock_memory, mock_objective_target):
         """Test that AttackStrategy properly triggers events during execution"""
 
         class TestStrategy(AttackStrategy):
@@ -510,7 +522,7 @@ class TestAttackStrategyIntegration:
             async def _teardown_async(self, *, context):
                 pass
 
-        strategy = TestStrategy(context_type=AttackContext)
+        strategy = TestStrategy(context_type=AttackContext, objective_target=mock_objective_target)
 
         with patch("time.perf_counter", side_effect=[100.0, 100.5]):  # Start and end times
             result = await strategy.execute_async(objective="Test objective")
@@ -525,7 +537,7 @@ class TestAttackStrategyIntegration:
         assert result.execution_time_ms == 500
 
     @pytest.mark.asyncio
-    async def test_attack_strategy_with_custom_event_handler(self):
+    async def test_attack_strategy_with_custom_event_handler(self, mock_objective_target):
         """Test that AttackStrategy can work with custom event handlers"""
         custom_handler_called = False
 
@@ -558,7 +570,7 @@ class TestAttackStrategyIntegration:
 
         # Note: The current AttackStrategy implementation doesn't expose a way to add custom handlers
         # This test documents the expected behavior if that capability is added
-        strategy = TestStrategy(context_type=AttackContext)
+        strategy = TestStrategy(context_type=AttackContext, objective_target=mock_objective_target)
 
         # The default handler should still be present
         assert len(strategy._event_handlers) == 1

@@ -13,6 +13,7 @@ from pyrit.common.logger import logger
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import AttackContext, AttackStrategy
 from pyrit.models import AttackResult, Message, SeedGroup
+from pyrit.prompt_target import PromptTarget
 
 
 @dataclass
@@ -39,15 +40,18 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
     of interaction with the target model.
     """
 
-    def __init__(self, *, context_type: type[SingleTurnAttackContext], logger: logging.Logger = logger):
+    def __init__(
+        self, *, objective_target: PromptTarget, context_type: type[SingleTurnAttackContext], logger: logging.Logger = logger
+    ):
         """
         The base class for single-turn attack strategies.
 
         Args:
+            objective_target (PromptTarget): The target system to attack.
             context_type (type[SingleTurnAttackContext]): The type of context this strategy will use
             logger (logging.Logger): Logger instance for logging events and messages
         """
-        super().__init__(context_type=context_type, logger=logger)
+        super().__init__(objective_target=objective_target, context_type=context_type, logger=logger)
 
     @overload
     async def execute_async(
