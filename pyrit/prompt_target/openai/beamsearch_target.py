@@ -6,19 +6,12 @@ import logging
 
 from pydantic import BaseModel
 
-from pyrit.exceptions import (
-    PyritException,
-    handle_bad_request_exception,
-    pyrit_target_retry,
-)
 from pyrit.models import (
     Message,
-    MessagePiece,
 )
 from pyrit.prompt_target import (
     OpenAIResponseTarget,
     PromptChatTarget,
-    limit_requests_per_minute,
 )
 from pyrit.score import AzureContentFilterScorer
 
@@ -86,6 +79,9 @@ class BeamSearchTarget(PromptChatTarget):
         """Let's not have JSON complicate things yet"""
         return False
 
+    def _validate_request(self, *, prompt_request: Message) -> None:
+        pass
+
     async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         # Implement beam search logic here
         beams = [
@@ -111,7 +107,7 @@ class BeamSearchTarget(PromptChatTarget):
         return result
     
     async def _update_beam_text(self, beam: Beam, prompt_request: Message):
-        new_conversation_id = self._memory.duplicate_conversation(beam.id)
+        new_conversation_id = self._memory.duplicate_conversation(conversation_id=beam.id)
 
         grammar_template = """
 start: PREFIX CONTINUATION
