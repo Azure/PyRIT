@@ -306,10 +306,10 @@ class Scenario(ABC):
 
         if not objectives or len(objectives) == 0:
             raise ValueError("First atomic attack must have objectivesto create baseline.")
-        
+
         if not objective_target:
             raise ValueError("Objective target is required to create baseline attack.")
-        
+
         if not attack_scoring_config:
             raise ValueError("Attack scoring config is required to create baseline attack.")
 

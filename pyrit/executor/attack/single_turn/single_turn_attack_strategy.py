@@ -41,7 +41,11 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
     """
 
     def __init__(
-        self, *, objective_target: PromptTarget, context_type: type[SingleTurnAttackContext], logger: logging.Logger = logger
+        self,
+        *,
+        objective_target: PromptTarget,
+        context_type: type[SingleTurnAttackContext],
+        logger: logging.Logger = logger,
     ):
         """
         The base class for single-turn attack strategies.

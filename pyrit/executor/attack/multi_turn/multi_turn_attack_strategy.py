@@ -59,7 +59,11 @@ class MultiTurnAttackContext(AttackContext):
 class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, AttackStrategyResultT], ABC):
 
     def __init__(
-        self, *, objective_target: PromptTarget, context_type: type[MultiTurnAttackStrategyContextT], logger: logging.Logger = logger
+        self,
+        *,
+        objective_target: PromptTarget,
+        context_type: type[MultiTurnAttackStrategyContextT],
+        logger: logging.Logger = logger,
     ):
         """
         The base class for multi-turn attack strategies.

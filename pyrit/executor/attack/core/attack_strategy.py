@@ -168,7 +168,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         *,
         objective_target: PromptTarget,
         context_type: type[AttackStrategyContextT],
-        logger: logging.Logger = logger
+        logger: logging.Logger = logger,
     ):
         """
         Initialize the attack strategy with a specific context type and logger.

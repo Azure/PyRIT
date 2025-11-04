@@ -153,20 +153,17 @@ class TestPromptSendingAttackInitialization:
     def test_get_objective_target_returns_correct_target(self, mock_target):
         """Test that get_objective_target returns the target passed to constructor"""
         attack = PromptSendingAttack(objective_target=mock_target)
-        
+
         assert attack.get_objective_target() == mock_target
 
     def test_get_attack_scoring_config_returns_config(self, mock_target, mock_true_false_scorer):
         """Test that get_attack_scoring_config returns the scoring configuration"""
         auxiliary_scorer = MagicMock(spec=Scorer)
-        scoring_cfg = AttackScoringConfig(
-            objective_scorer=mock_true_false_scorer,
-            auxiliary_scorers=[auxiliary_scorer]
-        )
+        scoring_cfg = AttackScoringConfig(objective_scorer=mock_true_false_scorer, auxiliary_scorers=[auxiliary_scorer])
         attack = PromptSendingAttack(objective_target=mock_target, attack_scoring_config=scoring_cfg)
-        
+
         result = attack.get_attack_scoring_config()
-        
+
         assert result is not None
         assert result.objective_scorer == mock_true_false_scorer
         assert result.auxiliary_scorers == [auxiliary_scorer]

@@ -173,7 +173,9 @@ class TestAttackStrategyInitialization:
             async def _teardown_async(self, *, context):
                 pass
 
-        strategy = TestStrategy(context_type=AttackContext, objective_target=mock_objective_target, logger=custom_logger)
+        strategy = TestStrategy(
+            context_type=AttackContext, objective_target=mock_objective_target, logger=custom_logger
+        )
 
         assert strategy._logger.logger == custom_logger
 

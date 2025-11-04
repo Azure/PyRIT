@@ -38,25 +38,25 @@ def mock_atomic_attacks():
     mock_attack = MagicMock()
     mock_attack.get_objective_target.return_value = MagicMock()
     mock_attack.get_attack_scoring_config.return_value = MagicMock()
-    
+
     run1 = MagicMock(spec=AtomicAttack)
     run1.atomic_attack_name = "attack_run_1"
     run1._objectives = ["objective1"]
     run1._attack = mock_attack
     run1.get_objectives.return_value = ["objective1"]
-    
+
     run2 = MagicMock(spec=AtomicAttack)
     run2.atomic_attack_name = "attack_run_2"
     run2._objectives = ["objective2"]
     run2._attack = mock_attack
     run2.get_objectives.return_value = ["objective2"]
-    
+
     run3 = MagicMock(spec=AtomicAttack)
     run3.atomic_attack_name = "attack_run_3"
     run3._objectives = ["objective3"]
     run3._attack = mock_attack
     run3.get_objectives.return_value = ["objective3"]
-    
+
     return [run1, run2, run3]
 
 
@@ -88,8 +88,8 @@ class ConcreteScenario(Scenario):
 
     def __init__(self, atomic_attacks_to_return=None, **kwargs):
         # Disable baseline by default for tests unless explicitly enabled
-        if 'include_baseline' not in kwargs:
-            kwargs['include_baseline'] = False
+        if "include_baseline" not in kwargs:
+            kwargs["include_baseline"] = False
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
@@ -411,7 +411,7 @@ class TestScenarioProperties:
         mock_attack_strategy = MagicMock()
         mock_attack_strategy.get_objective_target.return_value = MagicMock()
         mock_attack_strategy.get_attack_scoring_config.return_value = MagicMock()
-        
+
         single_run_mock = MagicMock(spec=AtomicAttack)
         single_run_mock.atomic_attack_name = "attack_1"
         single_run_mock._objectives = ["obj1"]
