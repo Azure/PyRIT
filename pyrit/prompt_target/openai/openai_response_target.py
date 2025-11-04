@@ -3,6 +3,7 @@
 
 import json
 import logging
+from copy import deepcopy
 from enum import Enum
 from typing import (
     Any,
@@ -147,6 +148,27 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                     tool_name = tool.get("name")
                     logger.debug("Detected grammar tool: %s", tool_name)
                     self._grammar_name = tool_name
+
+        # Set up a fresh construction
+        self._init_args = {
+            "custom_functions": deepcopy(custom_functions),
+            "api_version": api_version,
+            "max_output_tokens": max_output_tokens,
+            "temperature": temperature,
+            "top_p": top_p,
+            "extra_body_parameters": deepcopy(extra_body_parameters),
+            "fail_on_missing_function": fail_on_missing_function,
+            **deepcopy(kwargs),
+        }
+
+    def fresh_instance(self) -> "OpenAIResponseTarget":
+        """
+        Create a fresh instance of the OpenAIResponseTarget with the same configuration.
+
+        Returns:
+            A new instance of OpenAIResponseTarget.
+        """
+        return OpenAIResponseTarget(**self._init_args)
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
