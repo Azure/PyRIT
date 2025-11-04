@@ -440,7 +440,7 @@ class Scenario(ABC):
         This method supports resumption - if the scenario fails partway through,
         calling run_async again will skip already-completed objectives.
 
-        If max_retries is set, the scenario will automatically retry on failure up to
+        If max_retries is set, the scenario will automatically retry after an exception up to
         the specified number of times. Each retry will resume from where it left off,
         skipping completed objectives.
 
