@@ -18,11 +18,11 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 )
 from pyrit.models import Message, SeedGroup
 
-ResultT = TypeVar("ResultT")
+AttackResultT = TypeVar("AttackResultT")
 
 
 @dataclass
-class AttackExecutorResult(Generic[ResultT]):
+class AttackExecutorResult(Generic[AttackResultT]):
     """
     Result container for attack execution, supporting both full and partial completion.
 
@@ -35,7 +35,7 @@ class AttackExecutorResult(Generic[ResultT]):
     Note: "completed" means the execution finished, not that the attack objective was achieved.
     """
 
-    completed_results: List[ResultT]
+    completed_results: List[AttackResultT]
     incomplete_objectives: List[tuple[str, BaseException]]
 
     def __iter__(self):
@@ -46,7 +46,7 @@ class AttackExecutorResult(Generic[ResultT]):
         """Return number of completed results."""
         return len(self.completed_results)
 
-    def __getitem__(self, index: int) -> ResultT:
+    def __getitem__(self, index: int) -> AttackResultT:
         """Access completed results by index."""
         return self.completed_results[index]
 
@@ -60,6 +60,16 @@ class AttackExecutorResult(Generic[ResultT]):
         """Check if all objectives completed execution."""
         return len(self.incomplete_objectives) == 0
 
+    @property
+    def exceptions(self) -> List[BaseException]:
+        """
+        Get all exceptions from incomplete objectives.
+
+        Returns:
+            List[BaseException]: List of exceptions that caused objectives to fail.
+        """
+        return [exception for _, exception in self.incomplete_objectives]
+
     def raise_if_incomplete(self) -> None:
         """
         Raise the first exception if any objectives are incomplete.
@@ -70,12 +80,12 @@ class AttackExecutorResult(Generic[ResultT]):
         if self.incomplete_objectives:
             raise self.incomplete_objectives[0][1]
 
-    def get_results(self) -> List[ResultT]:
+    def get_results(self) -> List[AttackResultT]:
         """
         Get completed results, raising if any incomplete.
 
         Returns:
-            List[ResultT]: All completed results.
+            List[AttackResultT]: All completed results.
 
         Raises:
             BaseException: The first exception from incomplete objectives.
@@ -414,7 +424,8 @@ class AttackExecutor:
         attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
         context_template: AttackStrategyContextT,
         objectives: List[str],
-    ) -> List[AttackStrategyResultT]:
+        return_partial_on_failure: bool = False,
+    ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute the same attack strategy with multiple objectives using context objects.
 
@@ -429,16 +440,19 @@ class AttackExecutor:
                 Must have a 'duplicate()' method and an 'objective' attribute.
             objectives (List[str]): List of attack objectives to test. Each objective will be
                 executed as a separate attack using a copy of the context template.
+            return_partial_on_failure (bool): If True, returns AttackExecutorResult with completed results
+                even when some objectives don't complete execution. If False, raises the first exception encountered.
+                Defaults to False (raise on failure).
 
         Returns:
-            List[AttackStrategyResultT]: List of attack results in the same order as the objectives list.
-                Each result corresponds to the execution of the strategy with the objective
-                at the same index.
+            AttackExecutorResult[AttackStrategyResultT]: Result container with completed results and
+                any incomplete objectives. The result is iterable and behaves like a list of completed results.
+                Use .has_incomplete or .raise_if_incomplete() to handle failures.
 
         Raises:
             AttributeError: If the context_template doesn't have required 'duplicate()' method
                 or 'objective' attribute.
-            Any exceptions raised during strategy execution will be propagated.
+            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
@@ -448,9 +462,17 @@ class AttackExecutor:
             ...     context_template=context,
             ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"]
             ... )
+            >>> # Iterate directly over results
+            >>> for result in results:
+            ...     print(result)
         """
-        contexts = []
+        semaphore = asyncio.Semaphore(self._max_concurrency)
 
+        async def execute_with_semaphore(ctx: AttackStrategyContextT) -> AttackStrategyResultT:
+            async with semaphore:
+                return await attack.execute_with_context_async(context=ctx)
+
+        contexts = []
         for objective in objectives:
             # Create a deep copy of the context using its duplicate method
             context = context_template.duplicate()
@@ -458,9 +480,15 @@ class AttackExecutor:
             context.objective = objective
             contexts.append(context)
 
-        # Run strategies in parallel
-        results = await self._execute_parallel_async(attack=attack, contexts=contexts)
-        return results
+        # Execute all tasks in parallel with concurrency control
+        tasks = [execute_with_semaphore(ctx) for ctx in contexts]
+        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
+
+        return self._process_execution_results(
+            objectives=objectives,
+            results_or_exceptions=results_or_exceptions,
+            return_partial_on_failure=return_partial_on_failure,
+        )
 
     def _process_execution_results(
         self,
@@ -500,42 +528,4 @@ class AttackExecutor:
         if incomplete_objectives and not return_partial_on_failure:
             raise incomplete_objectives[0][1]
 
-        # Always return AttackExecutorResult (even when all succeeded)
         return AttackExecutorResult(completed_results=completed_results, incomplete_objectives=incomplete_objectives)
-
-    async def _execute_parallel_async(
-        self,
-        *,
-        attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
-        contexts: List[AttackStrategyContextT],
-    ) -> List[AttackStrategyResultT]:
-        """
-        Execute the same attack strategy against multiple contexts in parallel with concurrency control.
-
-        This method uses asyncio semaphores to limit the number of concurrent executions.
-
-        Args:
-            attack (AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]): The attack strategy to execute
-                against all contexts.
-            contexts (List[AttackStrategyContextT]): List of attack contexts to execute the strategy against.
-
-        Returns:
-            List[AttackStrategyResultT]: List of attack results in the same order as the input contexts.
-                Each result corresponds to the execution of the strategy against the context
-                at the same index.
-
-        Raises:
-            Any exceptions raised by the strategy execution will be propagated.
-        """
-        semaphore = asyncio.Semaphore(self._max_concurrency)
-
-        # anonymous function to execute strategy with semaphore
-        async def execute_with_semaphore(
-            attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT], ctx: AttackStrategyContextT
-        ) -> AttackStrategyResultT:
-            async with semaphore:
-                return await attack.execute_with_context_async(context=ctx)
-
-        tasks = [execute_with_semaphore(attack, ctx) for ctx in contexts]
-
-        return await asyncio.gather(*tasks)

@@ -86,9 +86,9 @@ class Scenario(ABC):
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
-            max_retries (int): Maximum number of automatic retries if the scenario fails.
+            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
                 Set to 0 (default) for no automatic retries. If set to a positive number,
-                the scenario will automatically retry up to this many times after a failure.
+                the scenario will automatically retry up to this many times after an exception.
                 For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
