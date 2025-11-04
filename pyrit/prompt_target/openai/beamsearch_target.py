@@ -84,6 +84,7 @@ class BeamSearchTarget(PromptChatTarget):
 
     async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         # Implement beam search logic here
+        print(f"{prompt_request=}")
         beams = [
             Beam(id=prompt_request.conversation_id, text="", score=0.0) for _ in range(self._num_beams)
         ]
@@ -102,6 +103,7 @@ class BeamSearchTarget(PromptChatTarget):
                 print(f"Beam ID: {beam.id}\nText: {beam.text}\nScore: {beam.score}")
 
         best_beam = beams[-1]
+        print(f"Best beam: {best_beam=}")
         result = self._memory.get_conversation(conversation_id=best_beam.id)[-1]
         print(f"{result=}")
         return result
