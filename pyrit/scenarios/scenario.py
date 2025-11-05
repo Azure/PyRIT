@@ -375,26 +375,25 @@ class Scenario(ABC):
         if not self._scenario_result_id:
             return set()
 
+        completed_objectives: Set[str] = set()
+
         try:
             # Retrieve the scenario result from memory
             scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
 
-            if not scenario_results:
-                return set()
-
-            scenario_result = scenario_results[0]
-
-            # Get completed objectives for this atomic attack name
-            if atomic_attack_name in scenario_result.attack_results:
-                return {result.objective for result in scenario_result.attack_results[atomic_attack_name]}
-
-            return set()
-
+            if scenario_results:
+                scenario_result = scenario_results[0]
+                # Get completed objectives for this atomic attack name
+                if atomic_attack_name in scenario_result.attack_results:
+                    completed_objectives = {
+                        result.objective for result in scenario_result.attack_results[atomic_attack_name]
+                    }
         except Exception as e:
             logger.warning(
                 f"Failed to retrieve completed objectives for atomic attack '{atomic_attack_name}': {str(e)}"
             )
-            return set()
+
+        return completed_objectives
 
     async def _get_remaining_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
