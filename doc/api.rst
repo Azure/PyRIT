@@ -124,6 +124,7 @@ API Reference
     :toctree: _autosummary/
 
     fetch_adv_bench_dataset
+    fetch_anthropic_evals_dataset
     fetch_aya_redteaming_dataset
     fetch_babelscape_alert_dataset
     fetch_ccp_sensitive_prompts_dataset
