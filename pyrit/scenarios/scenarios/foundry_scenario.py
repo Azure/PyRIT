@@ -315,7 +315,7 @@ class FoundryScenario(Scenario):
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-            temperature=0.7,
+            temperature=1.2,
         )
 
     def _get_default_scorer(self) -> TrueFalseCompositeScorer:
@@ -328,6 +328,7 @@ class FoundryScenario(Scenario):
                         chat_target=OpenAIChatTarget(
                             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
                             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                            temperature=0.9,
                         )
                     ),
                 ),

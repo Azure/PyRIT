@@ -136,8 +136,8 @@ class Scenario(ABC):
         self._include_baseline = include_baseline
 
         # Store original objectives for each atomic attack (before any mutations)
-        # Key: atomic_attack_name, Value: list of original objectives
-        self._original_objectives_map: Dict[str, List[str]] = {}
+        # Key: atomic_attack_name, Value: tuple of original objectives
+        self._original_objectives_map: Dict[str, tuple[str, ...]] = {}
 
     @property
     def name(self) -> str:
@@ -243,7 +243,7 @@ class Scenario(ABC):
 
         # Store original objectives for each atomic attack (before any mutations during execution)
         self._original_objectives_map = {
-            atomic_attack.atomic_attack_name: list(atomic_attack._objectives) for atomic_attack in self._atomic_attacks
+            atomic_attack.atomic_attack_name: tuple(atomic_attack._objectives) for atomic_attack in self._atomic_attacks
         }
 
         # Check if we're resuming an existing scenario
@@ -418,7 +418,7 @@ class Scenario(ABC):
             )
 
             # Get ORIGINAL objectives (before any mutations) from stored map
-            original_objectives = self._original_objectives_map.get(atomic_attack.atomic_attack_name, [])
+            original_objectives = self._original_objectives_map.get(atomic_attack.atomic_attack_name, ())
 
             # Calculate remaining objectives
             remaining_objectives = [obj for obj in original_objectives if obj not in completed_objectives]
