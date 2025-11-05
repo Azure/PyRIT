@@ -129,8 +129,8 @@ class Scenario(ABC):
         self._scenario_result_id: Optional[str] = scenario_result_id
         self._result_lock = asyncio.Lock()
         # Store original objectives for each atomic attack (before any mutations)
-        # Key: atomic_attack_name, Value: list of original objectives
-        self._original_objectives_map: Dict[str, List[str]] = {}
+        # Key: atomic_attack_name, Value: tuple of original objectives
+        self._original_objectives_map: Dict[str, tuple[str, ...]] = {}
 
     @property
     def name(self) -> str:
@@ -232,7 +232,7 @@ class Scenario(ABC):
 
         # Store original objectives for each atomic attack (before any mutations during execution)
         self._original_objectives_map = {
-            atomic_attack.atomic_attack_name: list(atomic_attack._objectives) for atomic_attack in self._atomic_attacks
+            atomic_attack.atomic_attack_name: tuple(atomic_attack._objectives) for atomic_attack in self._atomic_attacks
         }
 
         # Check if we're resuming an existing scenario
@@ -322,26 +322,25 @@ class Scenario(ABC):
         if not self._scenario_result_id:
             return set()
 
+        completed_objectives: Set[str] = set()
+
         try:
             # Retrieve the scenario result from memory
             scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
 
-            if not scenario_results:
-                return set()
-
-            scenario_result = scenario_results[0]
-
-            # Get completed objectives for this atomic attack name
-            if atomic_attack_name in scenario_result.attack_results:
-                return {result.objective for result in scenario_result.attack_results[atomic_attack_name]}
-
-            return set()
-
+            if scenario_results:
+                scenario_result = scenario_results[0]
+                # Get completed objectives for this atomic attack name
+                if atomic_attack_name in scenario_result.attack_results:
+                    completed_objectives = {
+                        result.objective for result in scenario_result.attack_results[atomic_attack_name]
+                    }
         except Exception as e:
             logger.warning(
                 f"Failed to retrieve completed objectives for atomic attack '{atomic_attack_name}': {str(e)}"
             )
-            return set()
+
+        return completed_objectives
 
     async def _get_remaining_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -366,7 +365,7 @@ class Scenario(ABC):
             )
 
             # Get ORIGINAL objectives (before any mutations) from stored map
-            original_objectives = self._original_objectives_map.get(atomic_attack.atomic_attack_name, [])
+            original_objectives = self._original_objectives_map.get(atomic_attack.atomic_attack_name, ())
 
             # Calculate remaining objectives
             remaining_objectives = [obj for obj in original_objectives if obj not in completed_objectives]
