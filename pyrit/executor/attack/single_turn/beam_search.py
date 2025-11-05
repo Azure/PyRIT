@@ -82,3 +82,101 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         self._num_beams = num_beams
         self._max_iterations = max_iterations
+
+    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+        """
+        Validate the context before executing the attack.
+
+        Args:
+            context (SingleTurnAttackContext): The attack context containing parameters and objective.
+
+        Raises:
+            ValueError: If the context is invalid.
+        """
+        if not context.objective or context.objective.isspace():
+            raise ValueError("Attack objective must be provided and non-empty in the context")
+
+    
+    async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
+        """
+        Set up the attack by preparing conversation context.
+
+        Args:
+            context (SingleTurnAttackContext): The attack context containing attack parameters.
+        """
+        # Ensure the context has a conversation ID
+        context.conversation_id = str(uuid.uuid4())
+
+        # Combine memory labels from context and attack strategy
+        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
+
+        # Process prepended conversation if provided
+        await self._conversation_manager.update_conversation_state_async(
+            target=self._objective_target,
+            conversation_id=context.conversation_id,
+            prepended_conversation=context.prepended_conversation,
+            request_converters=self._request_converters,
+            response_converters=self._response_converters,
+        )
+
+    async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
+        """
+        Perform the attack.
+
+        Args:
+            context: The attack context with objective and parameters.
+
+        Returns:
+            AttackResult containing the outcome of the attack.
+        """
+        # Log the attack configuration
+        self._logger.info(f"Starting {self.__class__.__name__} with objective: {context.objective}")
+
+        # Execute with retries
+        response = None
+        score = None
+
+        # Prepare the prompt
+        prompt_group = self._get_prompt_group(context)
+        print(f"Prepared prompt group: {prompt_group}")
+
+        
+        result = AttackResult(
+            conversation_id=context.conversation_id,
+            objective=context.objective,
+            attack_identifier=self.get_identifier(),
+            last_response=response.get_piece() if response else None,
+            last_score=score,
+            related_conversations=context.related_conversations,
+            # outcome=outcome,
+            # outcome_reason=outcome_reason,
+            executed_turns=1,
+        )
+
+        return result
+    
+    
+    def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedGroup:
+        """
+        Prepare the seed group for the attack.
+
+        If a seed_group is provided in the context, it will be used directly.
+        Otherwise, creates a new SeedGroup with the objective as a text prompt.
+
+        Args:
+            context (SingleTurnAttackContext): The attack context containing the objective
+                and optionally a pre-configured seed_group.
+
+        Returns:
+            SeedGroup: The seed group to be used in the attack.
+        """
+        if context.seed_group:
+            return context.seed_group
+
+        return SeedGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
+    
+    
+    async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
+        """Clean up after attack execution"""
+        # Nothing to be done here, no-op
+        pass
