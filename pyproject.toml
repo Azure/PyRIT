@@ -71,7 +71,7 @@ dev = [
     "flake8-copyright>=0.2.4",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
-    "jupyter-book==1.0.4",
+    "jupyter-book>=1.0.4",
     "jupytext>=1.17.1",
     "mypy>=1.16.0",
     "mock-alchemy>=0.2.6",

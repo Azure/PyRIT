@@ -88,7 +88,7 @@ repos:
     hooks:
       - id: website
         name: Jupyter Book Build Check
-        entry: jupyter-book build -W -q ./doc
+        entry: jb build -W -q ./doc
         language: system
         types: [python]
         pass_filenames: false
