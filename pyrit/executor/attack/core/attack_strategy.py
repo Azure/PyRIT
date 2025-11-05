@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import time
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, field
 from typing import Dict, Optional, TypeVar, overload
 
