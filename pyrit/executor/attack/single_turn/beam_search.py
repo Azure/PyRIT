@@ -39,6 +39,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         attack_scoring_config: AttackScoringConfig,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        num_beams: int = 5,
+        max_iterations: int = 10,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -70,10 +72,13 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
-        
+
         # Skip criteria could be set directly in the injected prompt normalizer
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
         self._conversation_manager = ConversationManager(
             attack_identifier=self.get_identifier(),
             prompt_normalizer=self._prompt_normalizer,
         )
+
+        self._num_beams = num_beams
+        self._max_iterations = max_iterations
