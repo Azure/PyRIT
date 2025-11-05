@@ -16,7 +16,7 @@ mypy:
 	$(CMD) mypy $(PYMODULE) $(UNIT_TESTS)
 
 docs-build:
-	jb build -W -v ./doc
+	jupyter-book build -W -v ./doc
 	python ./build_scripts/generate_rss.py
 
 unit-test:
