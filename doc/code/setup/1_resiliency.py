@@ -97,26 +97,27 @@
 # %% [markdown]
 # ## 3. Scenario-Level Retries: High-Level Workflow Resiliency
 #
-# ### What is Scenario-Level Retry?
-#
-# Scenario-level retry is the **highest-level** retry mechanism in PyRIT. When enabled via the `max_retries` parameter, it allows an entire scenario execution to automatically retry if an exception occurs during the workflow.
+# "### What is Scenario-Level Retry?\n",
+#     "\n",
+#     "Scenario-level retry is the **highest-level** retry mechanism in PyRIT. When enabled via the `max_retries` parameter, it allows an entire scenario execution to automatically retry if an exception occurs during the workflow. \n",
 #
 # But also note, if you rerun the same scenario manually, that follows the same logic and is always an option.
 #
 # ### Key Features
 #
-# - **Picks up where it left off**: On retry, the scenario skips already-completed objectives and continues from the point of exception
-# - **Broad exception handling**: Catches any exception during scenario execution (network issues, target failures, scoring errors, etc.)
-# - **Configurable attempts**: Set `max_retries` to control how many additional attempts are allowed
+# "\n",
+#     "- **Picks up where it left off**: On retry, the scenario skips already-completed objectives and continues from the point of exception\n",
+#     "- **Broad exception handling**: Catches any exception during scenario execution (network issues, target failures, scoring errors, etc.)\n",
+#     "- **Configurable attempts**: Set `max_retries` to control how many additional attempts are allowed\n",
 # - **Progress tracking**: The `number_tries` field in `ScenarioResult` tracks total attempts
 #
 # ### How It Works
 #
 # When you call `scenario.run_async()`, PyRIT:
 #
-# 1. **Initial Attempt**: Executes all atomic attacks in sequence
-# 2. **On Exception**: If an exception occurs, checks if retries remain
-# 3. **Retry with Resume**: On retry, queries memory to identify completed objectives and skips them
+# "1. **Initial Attempt**: Executes all atomic attacks in sequence\n",
+#     "2. **On Exception**: If an exception occurs, checks if retries remain\n",
+#     "3. **Retry with Resume**: On retry, queries memory to identify completed objectives and skips them\n",
 # 4. **Continue from Exception Point**: Executes only the remaining objectives
 # 5. **Repeat**: Continues retrying until success or `max_retries` exhausted
 #
@@ -163,8 +164,8 @@ print(f"Total results: {len(result.attack_results)}")
 #
 # Use scenario-level retries when:
 #
-# - ✅ Running long-duration test campaigns that might encounter transient exceptions
-# - ✅ Testing against unreliable targets or networks
+# "- ✅ Running long-duration test campaigns that might encounter transient exceptions\n",
+#     "- ✅ Testing against unreliable targets or networks\n",
 # - ✅ You want to ensure comprehensive test coverage despite intermittent issues
 # - ✅ You need workflow-level resilience (e.g., partial completion + retry)
 #
@@ -239,10 +240,10 @@ print(f"Total results: {len(result.attack_results)}")
 # ### Core Retry Mechanisms
 #
 # ```
-# ┌─────────────────────────────────────────────────────────────┐
-# │ Scenario-Level Retry (max_retries)                         │
-# │ • Handles ANY exception in the entire workflow              │
-# │ • Resumes from point of exception                           │
+# "┌─────────────────────────────────────────────────────────────┐\n",
+#     "│ Scenario-Level Retry (max_retries)                         │\n",
+#     "│ • Handles ANY exception in the entire workflow              │\n",
+#     "│ • Resumes from point of exception                           │\n",
 # │ • Configurable per scenario                                 │
 # │                                                             │
 # │  ┌───────────────────────────────────────────────────────┐ │
@@ -274,25 +275,6 @@ print(f"Total results: {len(result.attack_results)}")
 # 3. If retries exhaust their attempts, the exception bubbles up
 # 4. **Scenario retry** catches it and retries the entire workflow
 # 5. On scenario retry, target/JSON retries get a fresh set of attempts
-#
-# ### Example Flow
-#
-# ```
-# Scenario attempts objective 1:
-#   └─> Scorer call with JSON retry
-#       └─> Target call: Rate limit error → target retry 1 → success ✓
-#
-# Scenario attempts objective 2:
-#   └─> Scorer call with JSON retry
-#       └─> Target call: Rate limit error → target retry 1-10 → all fail ✗
-#           └─> Scenario catches exception → scenario retry 1
-#               └─> Scorer call with JSON retry
-#                   └─> Target call: success ✓
-#
-# JSON retry example:
-#   └─> Scorer call with JSON retry: Invalid JSON returned
-#       └─> Retry immediately → Target call (with target retry if needed) → success ✓
-# ```
 
 # %% [markdown]
 # ## Best Practices
