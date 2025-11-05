@@ -55,7 +55,12 @@ class BeamSearchScorer:
 
 class BeamSearchTarget(PromptChatTarget):
     def __init__(
-        self, base_target: OpenAIResponseTarget, num_beams: int, num_steps: int, num_chars_per_step: int, beam_scorer: BeamSearchScorer
+        self,
+        base_target: OpenAIResponseTarget,
+        num_beams: int,
+        num_steps: int,
+        num_chars_per_step: int,
+        beam_scorer: BeamSearchScorer,
     ) -> None:
         """
         A beam search target that wraps an OpenAIResponseTarget to provide beam search capabilities.
@@ -85,9 +90,7 @@ class BeamSearchTarget(PromptChatTarget):
     async def send_prompt_async(self, *, prompt_request: Message) -> Message:
         # Implement beam search logic here
         print(f"{prompt_request=}")
-        beams = [
-            Beam(id=prompt_request.conversation_id, text="", score=0.0) for _ in range(self._num_beams)
-        ]
+        beams = [Beam(id=prompt_request.conversation_id, text="", score=0.0) for _ in range(self._num_beams)]
 
         try:
             for i in range(self._num_steps):
@@ -107,7 +110,7 @@ class BeamSearchTarget(PromptChatTarget):
         result = self._memory.get_conversation(conversation_id=best_beam.id)[-1]
         print(f"{result=}")
         return result
-    
+
     async def _update_beam_text(self, beam: Beam, prompt_request: Message):
         new_conversation_id = self._memory.duplicate_conversation(conversation_id=beam.id)
 
@@ -117,11 +120,8 @@ PREFIX: "{prefix}"
 CONTINUATION: /.{{0,{n_chars}}}/
 """
 
-        lark_grammar = grammar_template.format(
-            prefix=beam.text.replace('"', '\\"'), n_chars=self._num_chars_per_step
-        )
+        lark_grammar = grammar_template.format(prefix=beam.text.replace('"', '\\"'), n_chars=self._num_chars_per_step)
 
-        
         grammar_tool = {
             "type": "custom",
             "name": "ContinuationGrammar",
