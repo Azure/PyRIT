@@ -5,6 +5,8 @@ import logging
 import uuid
 from typing import Optional
 
+from pydantic import BaseModel
+
 from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager
@@ -24,10 +26,17 @@ from pyrit.models import (
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.score import Scorer
 
+
 logger = logging.getLogger(__name__)
+
+
+class Beam(BaseModel):
+    id: str
+    text: str
+    score: float
 
 
 class BeamSearchAttack(SingleTurnAttackStrategy):
@@ -35,18 +44,19 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: OpenAIResponseTarget,
         attack_scoring_config: AttackScoringConfig,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         num_beams: int = 5,
         max_iterations: int = 10,
+        num_chars_per_step: int = 50,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
 
         Args:
-            objective_target (PromptTarget): The target system to attack.
+            objective_target (OpenAIResponseTarget): The target system to attack.
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
 
@@ -82,6 +92,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         self._num_beams = num_beams
         self._max_iterations = max_iterations
+        self._num_chars_per_step = num_chars_per_step
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -96,7 +107,6 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         if not context.objective or context.objective.isspace():
             raise ValueError("Attack objective must be provided and non-empty in the context")
 
-    
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
         Set up the attack by preparing conversation context.
@@ -132,15 +142,22 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         # Log the attack configuration
         self._logger.info(f"Starting {self.__class__.__name__} with objective: {context.objective}")
 
+        print(f"Context: {context}")
+
         # Execute with retries
         response = None
         score = None
 
         # Prepare the prompt
         prompt_group = self._get_prompt_group(context)
-        print(f"Prepared prompt group: {prompt_group}")
+        print(f"Prepared prompt group: {[x for x in prompt_group.prompts]}")
 
-        
+        beams = [Beam(id=context.conversation_id, text="", score=0.0) for _ in range(self._num_beams)]
+
+        for step in range(self._max_iterations):
+
+            print(f"Starting iteration {step}")
+
         result = AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
@@ -154,8 +171,47 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         )
 
         return result
-    
-    
+
+    def _get_target_for_beam(self, beam: Beam) -> OpenAIResponseTarget:
+        """
+        Create a OpenAIResponseTarget for the given beam by duplicating the base target.
+
+        Args:
+            beam (Beam): The beam for which to create the target.
+        """
+        grammar_template = """
+start: PREFIX CONTINUATION
+PREFIX: "{prefix}"
+CONTINUATION: /.{{0,{n_chars}}}/
+"""
+
+        lark_grammar = grammar_template.format(prefix=beam.text.replace('"', '\\"'), n_chars=self._num_chars_per_step)
+
+        grammar_tool = {
+            "type": "custom",
+            "name": "ContinuationGrammar",
+            "description": "Forces continuation of the given prefix.",
+            "format": {
+                "type": "grammar",
+                "syntax": "lark",
+                "definition": lark_grammar,
+            },
+        }
+
+        reasoning = {"effort": "minimal"}
+
+        ebp = {
+            "reasoning": reasoning,
+            "tools": [grammar_tool],
+            "tool_choice": "required",
+        }
+
+        target = self._objective_target.fresh_instance()
+        target._extra_body_parameters = ebp
+        target._grammar_name = grammar_tool["name"]
+
+        return target
+
     def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedGroup:
         """
         Prepare the seed group for the attack.
@@ -174,8 +230,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             return context.seed_group
 
         return SeedGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
-    
-    
+
     async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
         """Clean up after attack execution"""
         # Nothing to be done here, no-op
