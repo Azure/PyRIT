@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -40,10 +36,10 @@
 #
 # ## How It Works
 #
-# Each `Scenario` contains a collection of `AttackRun` objects. When executed:
+# Each `Scenario` contains a collection of `AtomicAttack` objects. When executed:
 #
-# 1. Each `AttackRun` is executed sequentially
-# 2. Every `AttackRun` tests its configured attack against all specified objectives and datasets
+# 1. Each `AtomicAttack` is executed sequentially
+# 2. Every `AtomicAttack` tests its configured attack against all specified objectives and datasets
 # 3. Results are aggregated into a single `ScenarioResult` with all attack outcomes
 # 4. Optional memory labels help track and categorize the scenario execution
 #

@@ -42,6 +42,30 @@ jobs:
     name: upgrade_pip_and_setuptools_before_installing_PyRIT
   - bash: sudo apt-get install python3-tk
     name: install_tkinter
+  - bash: |
+      set -e
+      # Detect Ubuntu version
+      UBUNTU_VERSION=$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)
+      SUPPORTED_VERSIONS="18.04 20.04 22.04 24.04 24.10"
+
+      if ! [[ "$SUPPORTED_VERSIONS" == *"$UBUNTU_VERSION"* ]]; then
+        echo "Ubuntu $UBUNTU_VERSION is not currently supported."
+        exit 1
+      fi
+
+      # Download the package to configure the Microsoft repo
+      curl -sSL -O https://packages.microsoft.com/config/ubuntu/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)/packages-microsoft-prod.deb
+      # Install the package
+      sudo dpkg -i packages-microsoft-prod.deb
+      # Delete the file
+      rm packages-microsoft-prod.deb
+
+      # Install the driver
+      sudo apt-get update
+      sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+
+      echo "Microsoft ODBC Driver 18 installed successfully."
+    displayName: 'Install ODBC Driver 18 for SQL Server'
   - bash: pip install .[dev,all] -v
     name: install_PyRIT
   # This step ensures that integration tests are run outside of the PyRIT repository to test that .env files are accessed correctly.
@@ -71,6 +95,10 @@ jobs:
         # Prefetch token for Azure ML / Foundry model endpoints
         az account get-access-token --scope https://ml.azure.com/.default --output none
         echo "Azure ML/Foundry access token cached successfully."
+
+        # Prefetch token for Azure SQL Database
+        az account get-access-token --scope https://database.windows.net/.default --output none
+        echo "Azure SQL Database access token cached successfully."
 
         # Run integration tests
         make integration-test

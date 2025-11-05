@@ -87,9 +87,8 @@ class ConcreteScenario(Scenario):
     """Concrete implementation of Scenario for testing."""
 
     def __init__(self, atomic_attacks_to_return=None, **kwargs):
-        # Disable baseline by default for tests unless explicitly enabled
-        if "include_baseline" not in kwargs:
-            kwargs["include_baseline"] = False
+        # Default include_baseline=False for tests unless explicitly specified
+        kwargs.setdefault('include_baseline', False)
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
@@ -407,15 +406,15 @@ class TestScenarioProperties:
     @pytest.mark.asyncio
     async def test_atomic_attack_count_with_different_sizes(self, mock_objective_target):
         """Test atomic_attack_count with different numbers of atomic attacks."""
-        # Create properly mocked attack
-        mock_attack_strategy = MagicMock()
-        mock_attack_strategy.get_objective_target.return_value = MagicMock()
-        mock_attack_strategy.get_attack_scoring_config.return_value = MagicMock()
+        # Create mock attack strategy
+        mock_attack = MagicMock()
+        mock_attack.get_objective_target.return_value = mock_objective_target
+        mock_attack.get_attack_scoring_config.return_value = MagicMock()
 
         single_run_mock = MagicMock(spec=AtomicAttack)
         single_run_mock.atomic_attack_name = "attack_1"
         single_run_mock._objectives = ["obj1"]
-        single_run_mock._attack = mock_attack_strategy
+        single_run_mock._attack = mock_attack
         single_run_mock.get_objectives.return_value = ["obj1"]
         single_run = [single_run_mock]
 
@@ -433,7 +432,7 @@ class TestScenarioProperties:
             run = MagicMock(spec=AtomicAttack)
             run.atomic_attack_name = f"attack_{i}"
             run._objectives = [f"obj{i}"]
-            run._attack = mock_attack_strategy
+            run._attack = mock_attack
             run.get_objectives.return_value = [f"obj{i}"]
             many_runs.append(run)
 

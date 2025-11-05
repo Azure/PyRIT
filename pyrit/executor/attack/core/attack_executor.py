@@ -414,7 +414,8 @@ class AttackExecutor:
         attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
         context_template: AttackStrategyContextT,
         objectives: List[str],
-    ) -> List[AttackStrategyResultT]:
+        return_partial_on_failure: bool = False,
+    ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute the same attack strategy with multiple objectives using context objects.
 
@@ -449,8 +450,17 @@ class AttackExecutor:
             ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"]
             ... )
         """
-        contexts = []
+        if not objectives:
+            # Return an empty AttackExecutorResult if no objectives
+            return AttackExecutorResult(completed_results=[], incomplete_objectives=[])
 
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def execute_with_semaphore(ctx: AttackStrategyContextT) -> AttackStrategyResultT:
+            async with semaphore:
+                return await attack.execute_with_context_async(context=ctx)
+
+        contexts = []
         for objective in objectives:
             # Create a deep copy of the context using its duplicate method
             context = context_template.duplicate()
@@ -458,9 +468,15 @@ class AttackExecutor:
             context.objective = objective
             contexts.append(context)
 
-        # Run strategies in parallel
-        results = await self._execute_parallel_async(attack=attack, contexts=contexts)
-        return results
+        # Execute all tasks in parallel with concurrency control
+        tasks = [execute_with_semaphore(ctx) for ctx in contexts]
+        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
+
+        return self._process_execution_results(
+            objectives=objectives,
+            results_or_exceptions=results_or_exceptions,
+            return_partial_on_failure=return_partial_on_failure,
+        )
 
     def _process_execution_results(
         self,
@@ -502,40 +518,3 @@ class AttackExecutor:
 
         # Always return AttackExecutorResult (even when all succeeded)
         return AttackExecutorResult(completed_results=completed_results, incomplete_objectives=incomplete_objectives)
-
-    async def _execute_parallel_async(
-        self,
-        *,
-        attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
-        contexts: List[AttackStrategyContextT],
-    ) -> List[AttackStrategyResultT]:
-        """
-        Execute the same attack strategy against multiple contexts in parallel with concurrency control.
-
-        This method uses asyncio semaphores to limit the number of concurrent executions.
-
-        Args:
-            attack (AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]): The attack strategy to execute
-                against all contexts.
-            contexts (List[AttackStrategyContextT]): List of attack contexts to execute the strategy against.
-
-        Returns:
-            List[AttackStrategyResultT]: List of attack results in the same order as the input contexts.
-                Each result corresponds to the execution of the strategy against the context
-                at the same index.
-
-        Raises:
-            Any exceptions raised by the strategy execution will be propagated.
-        """
-        semaphore = asyncio.Semaphore(self._max_concurrency)
-
-        # anonymous function to execute strategy with semaphore
-        async def execute_with_semaphore(
-            attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT], ctx: AttackStrategyContextT
-        ) -> AttackStrategyResultT:
-            async with semaphore:
-                return await attack.execute_with_context_async(context=ctx)
-
-        tasks = [execute_with_semaphore(attack, ctx) for ctx in contexts]
-
-        return await asyncio.gather(*tasks)

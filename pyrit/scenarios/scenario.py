@@ -88,9 +88,9 @@ class Scenario(ABC):
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
-            max_retries (int): Maximum number of automatic retries if the scenario fails.
+            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
                 Set to 0 (default) for no automatic retries. If set to a positive number,
-                the scenario will automatically retry up to this many times after a failure.
+                the scenario will automatically retry up to this many times after an exception.
                 For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
@@ -490,10 +490,10 @@ class Scenario(ABC):
 
         Each AtomicAttack is executed in order, and all results are aggregated
         into a ScenarioResult containing the scenario metadata and all attack results.
-        This method supports resumption - if the scenario fails partway through,
+        This method supports resumption - if the scenario raises an exception partway through,
         calling run_async again will skip already-completed objectives.
 
-        If max_retries is set, the scenario will automatically retry on failure up to
+        If max_retries is set, the scenario will automatically retry after an exception up to
         the specified number of times. Each retry will resume from where it left off,
         skipping completed objectives.
 
@@ -504,7 +504,7 @@ class Scenario(ABC):
         Raises:
             ValueError: If the scenario has no atomic attacks configured. If your scenario
                 requires initialization, call await scenario.initialize() first.
-            ValueError: If the scenario fails after exhausting all retry attempts.
+            ValueError: If the scenario raises an exception after exhausting all retry attempts.
 
         Example:
             >>> result = await scenario.run_async()

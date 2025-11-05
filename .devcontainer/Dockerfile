@@ -13,12 +13,6 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Download and install the DuckDB CLI
-RUN curl -Lo duckdb.gz https://github.com/duckdb/duckdb/releases/download/v1.2.1/duckdb_cli-linux-amd64.gz \
- && gunzip duckdb.gz \
- && mv duckdb /usr/local/bin/duckdb \
- && chmod +x /usr/local/bin/duckdb
-
 # Install the Azure CLI, Microsoft ODBC Driver 18 & SQL tools
 RUN apt-get update && apt-get install -y \
       apt-transport-https \

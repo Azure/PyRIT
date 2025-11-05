@@ -150,9 +150,9 @@ class EncodingScenario(Scenario):
             encoding_templates (Optional[Sequence[str]]): Templates used to construct the decoding
                 prompts. Defaults to AskToDecodeConverter.garak_templates.
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
-            max_retries (int): Maximum number of automatic retries if the scenario fails.
+            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
                 Set to 0 (default) for no automatic retries. If set to a positive number,
-                the scenario will automatically retry up to this many times after a failure.
+                the scenario will automatically retry up to this many times after an exception.
                 For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
         """
 
