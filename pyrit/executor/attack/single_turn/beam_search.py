@@ -6,8 +6,7 @@ import copy
 import logging
 import uuid
 from typing import Optional
-
-from pydantic import BaseModel
+from dataclasses import dataclass, field
 
 from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
@@ -68,10 +67,13 @@ def _print_message(message: Message) -> None:
 
                 print(piece.converted_value)
 
-class Beam(BaseModel):
+@dataclass
+class Beam:
     id: str
     text: str
     score: float
+    context: SingleTurnAttackContext | None = None
+    message: Message | None = None
 
 
 class BeamSearchAttack(SingleTurnAttackStrategy):
@@ -84,8 +86,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         attack_converter_config: Optional[AttackConverterConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         num_beams: int = 2,
-        max_iterations: int = 10,
-        num_chars_per_step: int = 50,
+        max_iterations: int = 4,
+        num_chars_per_step: int = 100,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -196,6 +198,20 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                     tasks = [tg.create_task(self._propagate_beam(beam=beam, first_call=step==0, prompt_group=prompt_group, context=context)) for beam in beams]
                     await asyncio.gather(*tasks)
 
+            for (i, beam) in enumerate(beams):
+                print(f"Beam {i} text after iteration {step}: {beam.text}")
+
+            print("Scoring beams")
+            async with asyncio.TaskGroup() as tg:
+                    tasks = [tg.create_task(self._score_beam(beam=beam)) for beam in beams]
+                    scores = await asyncio.gather(*tasks)
+
+            for (i, beam) in enumerate(beams):
+                print(f"Beam {i} score: {beam.score}")
+
+            for s in scores:
+                print(f"Score: {s}")
+
 
         result = AttackResult(
             conversation_id=context.conversation_id,
@@ -212,7 +228,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         return result
     
     async def _propagate_beam(self, *, beam: Beam, first_call: bool, prompt_group: SeedGroup, context: SingleTurnAttackContext):
-        print(f"Propagating beam {beam.id} with text: {beam.text}")
+        print(f"Propagating beam with text: {beam.text}")
         target = self._get_target_for_beam(beam)
 
         if first_call:
@@ -222,10 +238,12 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         new_context = copy.deepcopy(context)
         new_context.conversation_id = new_conversation_id
+        beam.id = new_conversation_id
+        beam.context = new_context
 
         model_response = await self._prompt_normalizer.send_prompt_async(
             seed_group=prompt_group,
-            target=self._objective_target,
+            target=target,
             conversation_id=new_context.conversation_id,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
@@ -233,7 +251,36 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             attack_identifier=self.get_identifier(),
         )
 
-        _print_message(model_response)
+        # _print_message(model_response)
+        assert len(model_response.message_pieces) == 2, "Expected exactly two message pieces in the response"
+        model_response.message_pieces = model_response.message_pieces[1:]
+        model_response.message_pieces[0].role = "assistant"
+        beam.text = model_response.message_pieces[0].converted_value
+        beam.message = model_response
+        print(f"Updated beam text: {beam.text}")
+
+    async def _score_beam(self, *, beam: Beam) -> Optional[Score]:
+        assert beam.message is not None, "Beam message must be set before scoring"
+        assert beam.context is not None, "Beam context must be set before scoring"
+        scoring_results = await Scorer.score_response_async(
+            response=beam.message,
+            objective_scorer=self._objective_scorer,
+            auxiliary_scorers=self._auxiliary_scorers,
+            role_filter="assistant",
+            objective=beam.context.objective,
+        )
+
+        aux_scores = scoring_results["auxiliary_scores"]
+        beam.score = 0.0
+        for s in aux_scores:
+            print(f"Auxiliary score: {s}")
+            print(f"{s.get_value()=}")
+            beam.score += s.get_value()
+
+        objective_scores = scoring_results["objective_scores"]
+        if not objective_scores:
+            return None
+        return objective_scores[0]
 
     def _get_target_for_beam(self, beam: Beam) -> OpenAIResponseTarget:
         """
