@@ -19,13 +19,27 @@ from tenacity import (
 from pyrit.exceptions.exceptions_helpers import log_exception
 from pyrit.models import Message, MessagePiece, construct_response_from_request
 
-# Used with pyrit_custom_result_retry, as this function may be used in conjunction with other decorators
-CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 10))
-RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 10))
-RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 5))
-RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 220))
-
 logger = logging.getLogger(__name__)
+
+
+def _get_custom_result_retry_max_num_attempts() -> int:
+    """Get the maximum number of retry attempts for custom result retry decorator."""
+    return int(os.getenv("CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS", 10))
+
+
+def _get_retry_max_num_attempts() -> int:
+    """Get the maximum number of retry attempts."""
+    return int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 10))
+
+
+def _get_retry_wait_min_seconds() -> int:
+    """Get the minimum wait time in seconds between retries."""
+    return int(os.getenv("RETRY_WAIT_MIN_SECONDS", 5))
+
+
+def _get_retry_wait_max_seconds() -> int:
+    """Get the maximum wait time in seconds between retries."""
+    return int(os.getenv("RETRY_WAIT_MAX_SECONDS", 220))
 
 
 class PyritException(Exception, ABC):
@@ -89,7 +103,7 @@ class MissingPromptPlaceholderException(PyritException):
 
 
 def pyrit_custom_result_retry(
-    retry_function: Callable, retry_max_num_attempts: int = CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS
+    retry_function: Callable, retry_max_num_attempts: Optional[int] = None
 ) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
@@ -102,7 +116,7 @@ def pyrit_custom_result_retry(
         retry_function (Callable): The boolean function to determine if a retry should occur based
             on the result of the decorated function.
         retry_max_num_attempts (Optional, int): The maximum number of retry attempts. Defaults to
-            CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS.
+            environment variable CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS or 10.
         func (Callable): The function to be decorated.
 
     Returns:
@@ -110,14 +124,14 @@ def pyrit_custom_result_retry(
     """
 
     def inner_retry(func):
-        global RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+        max_attempts = retry_max_num_attempts or _get_custom_result_retry_max_num_attempts()
 
         return retry(
             reraise=True,
             retry=retry_if_result(retry_function),
-            wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+            wait=wait_random_exponential(min=_get_retry_wait_min_seconds(), max=_get_retry_wait_max_seconds()),
             after=log_exception,
-            stop=stop_after_attempt(retry_max_num_attempts),
+            stop=stop_after_attempt(max_attempts),
         )(func)
 
     return inner_retry
@@ -137,16 +151,15 @@ def pyrit_target_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
 
     return retry(
         reraise=True,
         retry=retry_if_exception_type(RateLimitError)
         | retry_if_exception_type(EmptyResponseException)
         | retry_if_exception_type(RateLimitException),
-        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+        wait=wait_random_exponential(min=_get_retry_wait_min_seconds(), max=_get_retry_wait_max_seconds()),
         after=log_exception,
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+        stop=stop_after_attempt(_get_retry_max_num_attempts()),
     )(func)
 
 
@@ -163,13 +176,12 @@ def pyrit_json_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-    global RETRY_MAX_NUM_ATTEMPTS
 
     return retry(
         reraise=True,
         retry=retry_if_exception_type(InvalidJsonException),
         after=log_exception,
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+        stop=stop_after_attempt(_get_retry_max_num_attempts()),
     )(func)
 
 
@@ -187,13 +199,11 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
         Callable: The decorated function with retry logic applied.
     """
 
-    global RETRY_MAX_NUM_ATTEMPTS
-
     return retry(
         reraise=True,
         retry=retry_if_exception_type(MissingPromptPlaceholderException),
         after=log_exception,
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+        stop=stop_after_attempt(_get_retry_max_num_attempts()),
     )(func)
 
 
