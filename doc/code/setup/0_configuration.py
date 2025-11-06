@@ -9,7 +9,7 @@
 # ---
 
 # %% [markdown]
-# # Configuring PyRIT
+# # 0. Configuring PyRIT
 #
 # Before running PyRIT, you need to call the `initialize_pyrit` function which will set up your configuration.
 #

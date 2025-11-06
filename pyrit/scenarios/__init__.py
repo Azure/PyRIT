@@ -3,7 +3,7 @@
 
 """High-level scenario classes for running attack configurations."""
 
-from pyrit.scenarios.atomic_attack import AtomicAttack, AtomicAttackResult
+from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 
@@ -13,7 +13,6 @@ from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, Scenari
 
 __all__ = [
     "AtomicAttack",
-    "AtomicAttackResult",
     "EncodingScenario",
     "EncodingStrategy",
     "FoundryStrategy",

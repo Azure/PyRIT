@@ -240,6 +240,7 @@ class FoundryScenario(Scenario):
         objective_scorer: Optional[TrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         max_concurrency: int = 5,
+        max_retries: int = 0,
     ):
         """
         Initialize a FoundryScenario with the specified attack strategies.
@@ -260,6 +261,10 @@ class FoundryScenario(Scenario):
                 and SelfAsk Refusal scorers.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs for tracking and categorization.
+            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
+                Set to 0 (default) for no automatic retries. If set to a positive number,
+                the scenario will automatically retry up to this many times after an exception.
+                For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
 
         Raises:
             ValueError: If attack_strategies is empty or contains unsupported strategies.
@@ -291,6 +296,7 @@ class FoundryScenario(Scenario):
             max_concurrency=max_concurrency,
             objective_target=objective_target,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
+            max_retries=max_retries,
         )
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
@@ -309,7 +315,7 @@ class FoundryScenario(Scenario):
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-            temperature=0.7,
+            temperature=1.2,
         )
 
     def _get_default_scorer(self) -> TrueFalseCompositeScorer:
@@ -322,6 +328,7 @@ class FoundryScenario(Scenario):
                         chat_target=OpenAIChatTarget(
                             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
                             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                            temperature=0.9,
                         )
                     ),
                 ),

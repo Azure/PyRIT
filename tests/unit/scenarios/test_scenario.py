@@ -7,10 +7,28 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from pyrit.executor.attack.core import AttackExecutorResult
+from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.atomic_attack import AtomicAttackResult
 from pyrit.scenarios.scenario import ScenarioIdentifier, ScenarioResult
+
+
+def save_attack_results_to_memory(attack_results):
+    """Helper function to save attack results to memory (mimics what real attacks do)."""
+    memory = CentralMemory.get_memory_instance()
+    memory.add_attack_results_to_memory(attack_results=attack_results)
+
+
+def create_mock_run_async(attack_results):
+    """Create a mock run_async that saves results to memory before returning."""
+
+    async def mock_run_async(*args, **kwargs):
+        # Save results to memory (mimics what real attacks do)
+        save_attack_results_to_memory(attack_results)
+        return AttackExecutorResult(completed_results=attack_results, incomplete_objectives=[])
+
+    return AsyncMock(side_effect=mock_run_async)
 
 
 @pytest.fixture
@@ -18,10 +36,13 @@ def mock_atomic_attacks():
     """Create mock AtomicAttack instances for testing."""
     run1 = MagicMock(spec=AtomicAttack)
     run1.atomic_attack_name = "attack_run_1"
+    run1._objectives = ["objective1"]
     run2 = MagicMock(spec=AtomicAttack)
     run2.atomic_attack_name = "attack_run_2"
+    run2._objectives = ["objective2"]
     run3 = MagicMock(spec=AtomicAttack)
     run3.atomic_attack_name = "attack_run_3"
+    run3._objectives = ["objective3"]
     return [run1, run2, run3]
 
 
@@ -97,6 +118,7 @@ class TestScenarioInitialization:
         assert scenario._identifier.version == 1
         assert scenario._memory_labels == {}
         assert scenario._max_concurrency == 1
+        assert scenario._max_retries == 0  # Default value
         assert scenario.atomic_attack_count == 0  # Not initialized yet
 
     def test_init_with_memory_labels(self, mock_objective_target):
@@ -122,6 +144,17 @@ class TestScenarioInitialization:
         )
 
         assert scenario._max_concurrency == 5
+
+    def test_init_with_custom_max_retries(self, mock_objective_target):
+        """Test initialization with custom max_retries."""
+        scenario = ConcreteScenario(
+            name="Test Scenario",
+            version=1,
+            objective_target=mock_objective_target,
+            max_retries=3,
+        )
+
+        assert scenario._max_retries == 3
 
     def test_init_creates_scenario_identifier(self, mock_objective_target):
         """Test that initialization creates a proper ScenarioIdentifier."""
@@ -179,9 +212,7 @@ class TestScenarioExecution:
         """Test that run_async executes all atomic attacks sequentially."""
         # Configure each run to return different results
         for i, run in enumerate(mock_atomic_attacks):
-            run.run_async = AsyncMock(
-                return_value=AtomicAttackResult(results=[sample_attack_results[i]], name=run.atomic_attack_name)
-            )
+            run.run_async = create_mock_run_async([sample_attack_results[i]])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -199,7 +230,7 @@ class TestScenarioExecution:
         # Verify all runs were executed with correct concurrency
         assert len(result.attack_results) == 3
         for run in mock_atomic_attacks:
-            run.run_async.assert_called_once_with(max_concurrency=1)
+            run.run_async.assert_called_once_with(max_concurrency=1, return_partial_on_failure=True)
 
         # Verify results are aggregated correctly by atomic attack name
         assert "attack_run_1" in result.attack_results
@@ -215,9 +246,7 @@ class TestScenarioExecution:
     ):
         """Test that max_concurrency from init is passed to each atomic attack."""
         for i, run in enumerate(mock_atomic_attacks):
-            run.run_async = AsyncMock(
-                return_value=AtomicAttackResult(results=[sample_attack_results[i]], name=run.atomic_attack_name)
-            )
+            run.run_async = create_mock_run_async([sample_attack_results[i]])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -232,7 +261,7 @@ class TestScenarioExecution:
 
         # Verify max_concurrency was passed to each run
         for run in mock_atomic_attacks:
-            run.run_async.assert_called_once_with(max_concurrency=5)
+            run.run_async.assert_called_once_with(max_concurrency=5, return_partial_on_failure=True)
 
         # Verify result structure
         assert isinstance(result, ScenarioResult)
@@ -244,21 +273,9 @@ class TestScenarioExecution:
     ):
         """Test that results from multiple atomic attacks are properly aggregated."""
         # Configure runs to return different numbers of results
-        mock_atomic_attacks[0].run_async = AsyncMock(
-            return_value=AtomicAttackResult(
-                results=sample_attack_results[0:2], name=mock_atomic_attacks[0].atomic_attack_name
-            )
-        )
-        mock_atomic_attacks[1].run_async = AsyncMock(
-            return_value=AtomicAttackResult(
-                results=sample_attack_results[2:4], name=mock_atomic_attacks[1].atomic_attack_name
-            )
-        )
-        mock_atomic_attacks[2].run_async = AsyncMock(
-            return_value=AtomicAttackResult(
-                results=sample_attack_results[4:5], name=mock_atomic_attacks[2].atomic_attack_name
-            )
-        )
+        mock_atomic_attacks[0].run_async = create_mock_run_async(sample_attack_results[0:2])
+        mock_atomic_attacks[1].run_async = create_mock_run_async(sample_attack_results[2:4])
+        mock_atomic_attacks[2].run_async = create_mock_run_async(sample_attack_results[4:5])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -280,17 +297,9 @@ class TestScenarioExecution:
     @pytest.mark.asyncio
     async def test_run_async_stops_on_error(self, mock_atomic_attacks, sample_attack_results, mock_objective_target):
         """Test that execution stops when an atomic attack fails."""
-        mock_atomic_attacks[0].run_async = AsyncMock(
-            return_value=AtomicAttackResult(
-                results=[sample_attack_results[0]], name=mock_atomic_attacks[0].atomic_attack_name
-            )
-        )
+        mock_atomic_attacks[0].run_async = create_mock_run_async([sample_attack_results[0]])
         mock_atomic_attacks[1].run_async = AsyncMock(side_effect=Exception("Test error"))
-        mock_atomic_attacks[2].run_async = AsyncMock(
-            return_value=AtomicAttackResult(
-                results=[sample_attack_results[2]], name=mock_atomic_attacks[2].atomic_attack_name
-            )
-        )
+        mock_atomic_attacks[2].run_async = create_mock_run_async([sample_attack_results[2]])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -300,7 +309,7 @@ class TestScenarioExecution:
         )
         await scenario.initialize_async()
 
-        with pytest.raises(ValueError, match="Failed to execute atomic attack 2 in scenario 'Test Scenario'"):
+        with pytest.raises(Exception, match="Test error"):
             await scenario.run_async()
 
         # First run should have been executed
@@ -328,9 +337,7 @@ class TestScenarioExecution:
     ):
         """Test that run_async returns ScenarioResult with proper identifier."""
         for i, run in enumerate(mock_atomic_attacks):
-            run.run_async = AsyncMock(
-                return_value=AtomicAttackResult(results=[sample_attack_results[i]], name=run.atomic_attack_name)
-            )
+            run.run_async = create_mock_run_async([sample_attack_results[i]])
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -383,7 +390,11 @@ class TestScenarioProperties:
     @pytest.mark.asyncio
     async def test_atomic_attack_count_with_different_sizes(self, mock_objective_target):
         """Test atomic_attack_count with different numbers of atomic attacks."""
-        single_run = [MagicMock(spec=AtomicAttack)]
+        single_run_mock = MagicMock(spec=AtomicAttack)
+        single_run_mock.atomic_attack_name = "attack_1"
+        single_run_mock._objectives = ["obj1"]
+        single_run = [single_run_mock]
+
         scenario1 = ConcreteScenario(
             name="Single",
             version=1,
@@ -393,7 +404,13 @@ class TestScenarioProperties:
         await scenario1.initialize_async()
         assert scenario1.atomic_attack_count == 1
 
-        many_runs = [MagicMock(spec=AtomicAttack) for _ in range(10)]
+        many_runs = []
+        for i in range(10):
+            run = MagicMock(spec=AtomicAttack)
+            run.atomic_attack_name = f"attack_{i}"
+            run._objectives = [f"obj{i}"]
+            many_runs.append(run)
+
         scenario2 = ConcreteScenario(
             name="Many",
             version=1,
