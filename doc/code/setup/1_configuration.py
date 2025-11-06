@@ -9,7 +9,7 @@
 # ---
 
 # %% [markdown]
-# # 0. Configuring PyRIT
+# # 1. Configuration
 #
 # Before running PyRIT, you need to call the `initialize_pyrit` function which will set up your configuration.
 #
@@ -18,6 +18,8 @@
 # 1. Set up environment variables (recommended)
 # 2. Pick a database (required)
 # 3. Set initialization scripts and defaults (recommended)
+#
+# ## Simple Example
 #
 # This section goes into each of these steps. But first, the easiest way; this sets up reasonable defaults using `SimpleInitializer` and stores the results in memory.
 
@@ -33,7 +35,7 @@ initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 # Now you can run most of our notebooks! Just remove any os.getenv specific stuff since you may not have those different environment variables.
 
 # %% [markdown]
-# # Setting up Environment Variables
+# ## Setting up Environment Variables
 #
 # The recommended step to setup PyRIT is that it needs access to secrets and endpoints. These can be loaded in environment variables or put in a `.env` file. See `.env_example` for how this file is formatted.
 #
@@ -88,16 +90,16 @@ target3 = OpenAIChatTarget(
 #    ```
 
 # %% [markdown]
-# # Choosing a database
+# ## Choosing a database
 #
 # The next required step is to pick a database. PyRIT supports three types of databases; InMemory, sqlite, and SQL Azure. These are detailed in the [memory](../memory/0_memory.md) section of documentation. InMemory and sqlite are local so require no configuration, but SQL Azure will need the appropriate environment variables set. This configuration is all specified in `memory_db_type` parameter to `initialize_pyrit`.
 
 # %% [markdown]
-# # Setting up Initialization Scripts and Defaults
+# ## Setting up Initialization Scripts and Defaults
 #
 # When you call initialize_pyrit, you can pass it initialization_scripts and/or initializers. These can do anything, including setting convenience variables. But one of the primary purposes is to set default values. It is recommended to always use an initializer.
 #
-# ## Using Built-In Initializers
+# ### Using Built-In Initializers
 #
 # Imagine you have an `OpenAIChatTarget`. What is the default?
 #
@@ -168,7 +170,7 @@ for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 # %% [markdown]
-# ## Using your own Initializers
+# ### Using your own Initializers
 #
 # You can also create your own initializers and pass the path to the script in as an argument. This is really powerful. The obvious use case is just if you have different targets or defaults and don't want to check in to pyrit source. However, there are other common use cases.
 #
@@ -177,7 +179,7 @@ for result in results:
 # All you need to do is create a `PyRITInitializer` class (e.g. myinitializer.py). Then you can use `set_global_variable` and use it everywhere. Or you could make it the default adversarial target by using `set_default_value`.
 #
 #
-# ## Additional Initializer information
+# ### Additional Initializer information
 #
 # - For more information on how default values work, see the [default values](./default_values.md) section.
 # - For more information on how initializers work, see the [initializers](./pyrit_initializer.ipynb) section

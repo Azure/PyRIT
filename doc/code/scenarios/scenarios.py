@@ -112,4 +112,4 @@ await printer.print_summary_async(foundry_results)  # type: ignore
 #
 # During a long-running scenario, you may want to adjust parameters like `max_concurrency` to manage resource usage, or switch your scorer to use a different target. PyRIT's resiliency features make it safe to stop, reconfigure, and continue scenarios as needed.
 #
-# For more information, see [resiliency](../setup/1_resiliency.ipynb)
+# For more information, see [resiliency](../setup/2_resiliency.ipynb)
