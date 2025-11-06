@@ -78,7 +78,7 @@ class Scenario(ABC):
         memory_labels: Optional[Dict[str, str]] = None,
         objective_target: Optional[PromptTarget] = None,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
-        include_baseline: bool = True,
+        include_default_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
     ) -> None:
         """
@@ -96,8 +96,10 @@ class Scenario(ABC):
                 attack runs in the scenario. These help track and categorize the scenario.
             objective_target (Optional[PromptTarget]): The target system to attack.
             objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
-            include_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
-                without modifications. Defaults to True.
+            include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
+                from the first atomic attack without modifications. Most scenarios should have some kind of
+                baseline so users can understand the impact of strategies, but subclasses can optionally write
+                their own custom baselines. Defaults to True.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
                 If provided and found in memory, the scenario will resume from prior progress.
                 All other parameters must still match the stored scenario configuration.
@@ -133,7 +135,7 @@ class Scenario(ABC):
         self._scenario_result_id: Optional[str] = scenario_result_id
         self._result_lock = asyncio.Lock()
 
-        self._include_baseline = include_baseline
+        self._include_baseline = include_default_baseline
 
         # Store original objectives for each atomic attack (before any mutations)
         # Key: atomic_attack_name, Value: tuple of original objectives

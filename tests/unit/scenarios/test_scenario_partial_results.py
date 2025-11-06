@@ -46,8 +46,8 @@ class ConcreteScenario(Scenario):
     """Concrete implementation of Scenario for testing."""
 
     def __init__(self, *, atomic_attacks_to_return=None, **kwargs):
-        # Default include_baseline=False for tests unless explicitly specified
-        kwargs.setdefault("include_baseline", False)
+        # Default include_default_baseline=False for tests unless explicitly specified
+        kwargs.setdefault("include_default_baseline", False)
         super().__init__(**kwargs)
         self._test_atomic_attacks = atomic_attacks_to_return or []
 

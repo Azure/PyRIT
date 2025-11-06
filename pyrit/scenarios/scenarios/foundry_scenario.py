@@ -303,7 +303,7 @@ class FoundryScenario(Scenario):
             objective_target=objective_target,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
             max_retries=max_retries,
-            include_baseline=include_baseline,
+            include_default_baseline=include_baseline,
         )
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:

@@ -180,7 +180,7 @@ class EncodingScenario(Scenario):
             objective_scorer_identifier=objective_scorer.get_identifier(),
             objective_target=objective_target,
             max_retries=max_retries,
-            include_baseline=include_baseline,
+            include_default_baseline=include_baseline,
         )
 
     # Use the same as Garak by default
