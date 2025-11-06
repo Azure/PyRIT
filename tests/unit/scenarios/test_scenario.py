@@ -3,7 +3,7 @@
 
 """Tests for the scenarios.Scenario class."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
 
@@ -43,19 +43,19 @@ def mock_atomic_attacks():
     run1.atomic_attack_name = "attack_run_1"
     run1._objectives = ["objective1"]
     run1._attack = mock_attack
-    run1.get_objectives.return_value = ["objective1"]
+    type(run1).objectives = PropertyMock(return_value=["objective1"])
 
     run2 = MagicMock(spec=AtomicAttack)
     run2.atomic_attack_name = "attack_run_2"
     run2._objectives = ["objective2"]
     run2._attack = mock_attack
-    run2.get_objectives.return_value = ["objective2"]
+    type(run2).objectives = PropertyMock(return_value=["objective2"])
 
     run3 = MagicMock(spec=AtomicAttack)
     run3.atomic_attack_name = "attack_run_3"
     run3._objectives = ["objective3"]
     run3._attack = mock_attack
-    run3.get_objectives.return_value = ["objective3"]
+    type(run3).objectives = PropertyMock(return_value=["objective3"])
 
     return [run1, run2, run3]
 
@@ -415,7 +415,7 @@ class TestScenarioProperties:
         single_run_mock.atomic_attack_name = "attack_1"
         single_run_mock._objectives = ["obj1"]
         single_run_mock._attack = mock_attack
-        single_run_mock.get_objectives.return_value = ["obj1"]
+        type(single_run_mock).objectives = PropertyMock(return_value=["obj1"])
         single_run = [single_run_mock]
 
         scenario1 = ConcreteScenario(
@@ -433,7 +433,7 @@ class TestScenarioProperties:
             run.atomic_attack_name = f"attack_{i}"
             run._objectives = [f"obj{i}"]
             run._attack = mock_attack
-            run.get_objectives.return_value = [f"obj{i}"]
+            type(run).objectives = PropertyMock(return_value=[f"obj{i}"])
             many_runs.append(run)
 
         scenario2 = ConcreteScenario(

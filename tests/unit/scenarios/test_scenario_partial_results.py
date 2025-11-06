@@ -3,7 +3,7 @@
 
 """Additional tests for Scenario retry with AttackExecutorResult functionality."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
@@ -38,7 +38,7 @@ def create_mock_atomic_attack(name: str, objectives: list[str]) -> MagicMock:
     attack.atomic_attack_name = name
     attack._objectives = objectives
     attack._attack = mock_attack_strategy
-    attack.get_objectives.return_value = objectives
+    type(attack).objectives = PropertyMock(return_value=objectives)
     return attack
 
 

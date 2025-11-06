@@ -300,7 +300,7 @@ class Scenario(ABC):
         first_attack = self._atomic_attacks[0]
 
         # Copy objectives, scoring, target from the first attack
-        objectives = first_attack.get_objectives()
+        objectives = first_attack.objectives
         attack_scoring_config = first_attack._attack.get_attack_scoring_config()
         objective_target = first_attack._attack.get_objective_target()
 

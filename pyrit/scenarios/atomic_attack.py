@@ -153,9 +153,12 @@ class AtomicAttack:
             f"attack type: {type(attack).__name__}, context type: {self._context_type}"
         )
 
-    def get_objectives(self) -> List[str]:
+    @property
+    def objectives(self) -> List[str]:
         """
         Get a copy of the objectives list for this atomic attack.
+
+        This property is read-only. To use different objectives, create a new AtomicAttack instance.
 
         Returns:
             List[str]: A copy of the objectives list.

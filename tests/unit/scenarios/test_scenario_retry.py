@@ -3,7 +3,7 @@
 
 """Tests for Scenario retry functionality."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
 
@@ -107,7 +107,7 @@ def create_mock_atomic_attack(name: str, objectives: list[str], run_async_mock: 
     attack.atomic_attack_name = name
     attack._objectives = objectives
     attack._attack = mock_attack_strategy
-    attack.get_objectives.return_value = objectives
+    type(attack).objectives = PropertyMock(return_value=objectives)
     if run_async_mock:
         attack.run_async = run_async_mock
     return attack
