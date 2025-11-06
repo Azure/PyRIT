@@ -3,7 +3,7 @@
 
 """Additional tests for Scenario retry with AttackExecutorResult functionality."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
@@ -28,10 +28,26 @@ def save_attack_results_to_memory(attack_results):
     memory.add_attack_results_to_memory(attack_results=attack_results)
 
 
+def create_mock_atomic_attack(name: str, objectives: list[str]) -> MagicMock:
+    """Create a mock AtomicAttack with required attributes for baseline creation."""
+    mock_attack_strategy = MagicMock()
+    mock_attack_strategy.get_objective_target.return_value = MagicMock()
+    mock_attack_strategy.get_attack_scoring_config.return_value = MagicMock()
+
+    attack = MagicMock(spec=AtomicAttack)
+    attack.atomic_attack_name = name
+    attack._objectives = objectives
+    attack._attack = mock_attack_strategy
+    type(attack).objectives = PropertyMock(return_value=objectives)
+    return attack
+
+
 class ConcreteScenario(Scenario):
     """Concrete implementation of Scenario for testing."""
 
     def __init__(self, *, atomic_attacks_to_return=None, **kwargs):
+        # Default include_default_baseline=False for tests unless explicitly specified
+        kwargs.setdefault("include_default_baseline", False)
         super().__init__(**kwargs)
         self._test_atomic_attacks = atomic_attacks_to_return or []
 
@@ -55,9 +71,7 @@ class TestScenarioPartialAttackCompletion:
     async def test_atomic_attack_returns_partial_result_with_incomplete_objectives(self, mock_objective_target):
         """Test that scenario handles AttackExecutorResult with incomplete objectives properly."""
         # Create atomic attack that returns partial results
-        atomic_attack = MagicMock(spec=AtomicAttack)
-        atomic_attack.atomic_attack_name = "partial_attack"
-        atomic_attack._objectives = ["obj1", "obj2", "obj3"]
+        atomic_attack = create_mock_atomic_attack("partial_attack", ["obj1", "obj2", "obj3"])
 
         # First call returns partial results (2 completed, 1 incomplete)
         # Second call completes the remaining objective
@@ -123,9 +137,7 @@ class TestScenarioPartialAttackCompletion:
 
     async def test_scenario_saves_partial_results_before_failure(self, mock_objective_target):
         """Test that scenario saves partial results even when attack fails."""
-        atomic_attack = MagicMock(spec=AtomicAttack)
-        atomic_attack.atomic_attack_name = "partial_save_attack"
-        atomic_attack._objectives = ["obj1", "obj2", "obj3", "obj4"]
+        atomic_attack = create_mock_atomic_attack("partial_save_attack", ["obj1", "obj2", "obj3", "obj4"])
 
         async def mock_run(*args, **kwargs):
             # Return partial results with incomplete objectives
@@ -173,9 +185,7 @@ class TestScenarioPartialAttackCompletion:
 
     async def test_scenario_resumes_with_only_incomplete_objectives(self, mock_objective_target):
         """Test that on retry, scenario only passes incomplete objectives to atomic attack."""
-        atomic_attack = MagicMock(spec=AtomicAttack)
-        atomic_attack.atomic_attack_name = "resume_attack"
-        atomic_attack._objectives = ["obj1", "obj2", "obj3", "obj4", "obj5"]
+        atomic_attack = create_mock_atomic_attack("resume_attack", ["obj1", "obj2", "obj3", "obj4", "obj5"])
 
         executed_objectives = []
         call_count = [0]
@@ -253,17 +263,9 @@ class TestScenarioPartialAttackCompletion:
     async def test_multiple_atomic_attacks_with_partial_results(self, mock_objective_target):
         """Test scenario with multiple atomic attacks that return partial results."""
         # Create 3 atomic attacks
-        attack1 = MagicMock(spec=AtomicAttack)
-        attack1.atomic_attack_name = "attack_1"
-        attack1._objectives = ["a1_obj1", "a1_obj2"]
-
-        attack2 = MagicMock(spec=AtomicAttack)
-        attack2.atomic_attack_name = "attack_2"
-        attack2._objectives = ["a2_obj1", "a2_obj2", "a2_obj3"]
-
-        attack3 = MagicMock(spec=AtomicAttack)
-        attack3.atomic_attack_name = "attack_3"
-        attack3._objectives = ["a3_obj1"]
+        attack1 = create_mock_atomic_attack("attack_1", ["a1_obj1", "a1_obj2"])
+        attack2 = create_mock_atomic_attack("attack_2", ["a2_obj1", "a2_obj2", "a2_obj3"])
+        attack3 = create_mock_atomic_attack("attack_3", ["a3_obj1"])
 
         call_counts = {"attack_1": 0, "attack_2": 0, "attack_3": 0}
 
