@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
+import copy
 import logging
 import uuid
 from typing import Optional
@@ -33,6 +35,39 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
+def _print_message(message: Message) -> None:
+    for piece in message.message_pieces:
+        if piece.role == "user":
+            # User message header
+            print()
+            print("─" * 10)
+            print("USER")
+
+            # Handle converted values
+            if piece.converted_value != piece.original_value:
+                print(f"Original:")
+                print(piece.original_value)
+                print()
+                print(f"Converted:")
+                print(piece.converted_value)
+            else:
+                print(piece.converted_value)
+        elif piece.role == "system":
+            # System message header (not counted as a turn)
+            print()
+            print("─" * 10)
+            print("SYSTEM")
+
+            print(piece.converted_value)
+        else:
+            if piece.original_value_data_type != "reasoning":
+                # Assistant message header
+                print()
+                print("─" * 10)
+                print(f"{piece.role.upper()}")
+
+                print(piece.converted_value)
+
 class Beam(BaseModel):
     id: str
     text: str
@@ -48,7 +83,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         attack_scoring_config: AttackScoringConfig,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
-        num_beams: int = 5,
+        num_beams: int = 2,
         max_iterations: int = 10,
         num_chars_per_step: int = 50,
     ) -> None:
@@ -157,6 +192,10 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         for step in range(self._max_iterations):
 
             print(f"Starting iteration {step}")
+            async with asyncio.TaskGroup() as tg:
+                    tasks = [tg.create_task(self._propagate_beam(beam=beam, first_call=step==0, prompt_group=prompt_group, context=context)) for beam in beams]
+                    await asyncio.gather(*tasks)
+
 
         result = AttackResult(
             conversation_id=context.conversation_id,
@@ -171,6 +210,30 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         )
 
         return result
+    
+    async def _propagate_beam(self, *, beam: Beam, first_call: bool, prompt_group: SeedGroup, context: SingleTurnAttackContext):
+        print(f"Propagating beam {beam.id} with text: {beam.text}")
+        target = self._get_target_for_beam(beam)
+
+        if first_call:
+            new_conversation_id = target._memory.duplicate_conversation(conversation_id=context.conversation_id)
+        else:
+            new_conversation_id = target._memory.duplicate_conversation(conversation_id=context.conversation_id)
+
+        new_context = copy.deepcopy(context)
+        new_context.conversation_id = new_conversation_id
+
+        model_response = await self._prompt_normalizer.send_prompt_async(
+            seed_group=prompt_group,
+            target=self._objective_target,
+            conversation_id=new_context.conversation_id,
+            request_converter_configurations=self._request_converters,
+            response_converter_configurations=self._response_converters,
+            labels=context.memory_labels,  # combined with strategy labels at _setup()
+            attack_identifier=self.get_identifier(),
+        )
+
+        _print_message(model_response)
 
     def _get_target_for_beam(self, beam: Beam) -> OpenAIResponseTarget:
         """
