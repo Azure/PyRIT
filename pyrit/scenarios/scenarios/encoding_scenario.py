@@ -53,7 +53,9 @@ class EncodingStrategy(ScenarioStrategy):  # type: ignore[misc]
 
     Note: EncodingStrategy does not support composition. Each encoding must be applied individually.
     """
-
+    
+    
+    
     # Aggregate member
     ALL = ("all", {"all"})
 
