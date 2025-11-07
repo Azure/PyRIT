@@ -120,7 +120,7 @@ class EncodingScenario(Scenario):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: Optional[PromptTarget] = None,
         scenario_strategies: list[EncodingStrategy | ScenarioCompositeStrategy] | None = None,
         seed_prompts: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,

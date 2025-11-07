@@ -22,12 +22,13 @@ from pyrit.models import AttackResult
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
+from pyrit.scenarios.scenario_signature_enforcer import ScenarioSignatureEnforcer
 from pyrit.scenarios.scenario_strategy import ScenarioStrategy
 
 logger = logging.getLogger(__name__)
 
 
-class Scenario(ABC):
+class Scenario(ABC, metaclass=ScenarioSignatureEnforcer):
     """
     Groups and executes multiple AtomicAttack instances sequentially.
 
