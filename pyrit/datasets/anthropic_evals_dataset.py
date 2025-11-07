@@ -67,40 +67,37 @@ def fetch_anthropic_evals_dataset(
 
             for file_info in files:
                 file_name = file_info["name"]
-                if not file_name.endswith(".jsonl"):
-                    continue
+                if file_name.endswith(".jsonl"):
+                   file_url = file_info["download_url"]
+                   eval_name = file_name.removesuffix(".jsonl")
 
-                file_url = file_info["download_url"]
-                eval_name = file_name.removesuffix(".jsonl")
+                   logger.info(f"Loading evaluation: {eval_name}")
 
-                logger.info(f"Loading evaluation: {eval_name}")
+                    examples = fetch_examples(
+                       source=file_url,
+                       source_type="public_url",
+                       cache=True,
+                       data_home=Path(cache_dir) if cache_dir else None,
+                   )
 
-                examples = fetch_examples(
-                    source=file_url,
-                    source_type="public_url",
-                    cache=True,
-                    data_home=Path(cache_dir) if cache_dir else None,
-                )
+                   for item in examples:
+                       question = item.get("question", "").strip()
+                       if not question:
+                           logger.warning(f"Skipping item with empty question in {file_name}")
+                        else"
+                           answer_matching = item.get("answer_matching_behavior", "")
+                           answer_not_matching = item.get("answer_not_matching_behavior", "")
 
-                for item in examples:
-                    question = item.get("question", "").strip()
-                    if not question:
-                        logger.warning(f"Skipping item with empty question in {file_name}")
-                        continue
-
-                    answer_matching = item.get("answer_matching_behavior", "")
-                    answer_not_matching = item.get("answer_not_matching_behavior", "")
-
-                    seed_prompt = SeedPrompt(
-                        value=question,
-                        harm_categories=[],
-                        groups=[eval_name],
-                        metadata={
-                            "category": cat,
-                            "answer_matching_behavior": answer_matching,
-                            "answer_not_matching_behavior": answer_not_matching,
-                        },
-                        **common_metadata,  # type: ignore[arg-type]
+                            seed_prompt = SeedPrompt(
+                               value=question,
+                               harm_categories=[],
+                              groups=[eval_name],
+                              metadata={
+                                "category": cat,
+                                 "answer_matching_behavior": answer_matching,
+                                 "answer_not_matching_behavior": answer_not_matching,
+                             },
+                            **common_metadata,  # type: ignore[arg-type]
                     )
 
                     seed_prompts.append(seed_prompt)
