@@ -514,7 +514,7 @@ class Scenario(ABC):
         """
         if not self._atomic_attacks:
             raise ValueError(
-                "Cannot run scenario with no atomic attacks. Either supply them in initialization or"
+                "Cannot run scenario with no atomic attacks. Either supply them in initialization or "
                 "call await scenario.initialize_async() first."
             )
 

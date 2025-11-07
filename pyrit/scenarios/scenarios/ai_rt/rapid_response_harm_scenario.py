@@ -1,27 +1,29 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
-from inspect import signature
 import os
+from inspect import signature
 from typing import Dict, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common.apply_defaults import apply_defaults
+from pyrit.executor.attack import (
+    AttackStrategy,
+    CrescendoAttack,
+    MultiPromptSendingAttack,
+    PromptSendingAttack,
+)
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
-    AttackConverterConfig,
     AttackScoringConfig,
 )
-from pyrit.executor.attack import AttackStrategy, CrescendoAttack, MultiPromptSendingAttack, PromptSendingAttack
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models.seed_group import SeedGroup
-from pyrit.prompt_converter.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.prompt_converter_configuration import (
-    PromptConverterConfiguration,
+from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
+from pyrit.scenarios import (
+    AtomicAttack,
+    Scenario,
+    ScenarioCompositeStrategy,
+    ScenarioStrategy,
 )
-from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
-from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
 from pyrit.score import (
     SelfAskRefusalScorer,
     TrueFalseInverterScorer,
@@ -32,6 +34,13 @@ AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
 
 class RapidResponseHarmStrategy(ScenarioStrategy):
+    """
+    RapidResponseHarmStrategy defines a set of strategies for testing model behavior
+    in several different harm categories.
+
+    Each harm categories has a few different strategies to test different aspects of the harm type.
+    """
+
     ALL = ("all", {"all"})
     HATE = ("hate", {"hate"})
     FAIRNESS = ("fairness", {"fairness"})
@@ -60,12 +69,12 @@ class RapidResponseHarmStrategy(ScenarioStrategy):
     # sexual strategies
     SexualExplicitContent = ("sexual_explicit_content", {"sexual", "harm"})
     SexualVocabulary = ("sexual_vocabulary", {"sexual", "harm"})
-    
+
     # harassment strategies
     HarassmentBullying = ("harassment_bullying", {"harassment", "harm"})
     HarassmentUpskilling = ("harassment_upskilling", {"harassment", "harm"})
     HarassmentFictionalStory = ("harassment_fictional_story", {"harassment", "harm"})
-    
+
     # misinformation strategies
     MisinformationElections = ("misinformation_elections", {"misinformation", "harm"})
     MisinformationFictionalStory = ("misinformation_fictional_story", {"misinformation", "harm"})
@@ -85,8 +94,16 @@ class RapidResponseHarmStrategy(ScenarioStrategy):
             set[str]: Set of tags that are aggregate markers.
         """
         # Include base class aggregates ("all") and add harm-specific ones
-        return super().get_aggregate_tags() | {"hate", "fairness", "violence", "sexual", "harassment", "misinformation", "leakage"}
-    
+        return super().get_aggregate_tags() | {
+            "hate",
+            "fairness",
+            "violence",
+            "sexual",
+            "harassment",
+            "misinformation",
+            "leakage",
+        }
+
     @classmethod
     def supports_composition(cls) -> bool:
         """
@@ -128,7 +145,7 @@ class RapidResponseHarmStrategy(ScenarioStrategy):
                 f"Cannot compose multiple attack strategies together: {[a.value for a in attacks]}. "
                 f"Only one attack strategy is allowed per composition."
             )
-        if len(harms) > 1
+        if len(harms) > 1:
             raise ValueError(
                 f"Cannot compose multiple harm strategies together: {[h.value for h in harms]}. "
                 f"Only one harm strategy is allowed per composition."
@@ -143,17 +160,16 @@ class RapidResponseHarmScenario(Scenario):
     This scenario contains various harm-based checks that you can run to get a quick idea about model behavior
     with respect to certain harm categories.
     """
-    
+
     version: int = 1
 
-    
     @classmethod
     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
         """
         Get the strategy enum class for this scenario.
 
         Returns:
-            Type[ScenarioStrategy]: The FoundryStrategy enum class.
+            Type[ScenarioStrategy]: The RapidResponseHarmStrategy enum class.
         """
         return RapidResponseHarmStrategy
 
@@ -167,7 +183,6 @@ class RapidResponseHarmScenario(Scenario):
         """
         return RapidResponseHarmStrategy.ALL
 
-
     @apply_defaults
     def __init__(
         self,
@@ -178,16 +193,17 @@ class RapidResponseHarmScenario(Scenario):
         objective_scorer: Optional[TrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         max_concurrency: int = 5,
-        converters: Optional[List[PromptConverter]] = None,
         objective_dataset_path: Optional[str] = None,
+        include_baseline: bool = False,
     ):
         """
-        Initialize the HarmScenario.
+        Initialize the Rapid Response Harm Scenario.
 
         Args:
             objective_target (PromptTarget): The target model to test for harms vulnerabilities.
             scenario_strategies (Sequence[HarmStrategy | ScenarioCompositeStrategy] | None):
-                The harm strategies or composite strategies to include in this scenario. If None, defaults to HarmStrategy.ALL.
+                The harm strategies or composite strategies to include in this scenario. If None,
+                defaults to HarmStrategy.ALL.
             adversarial_chat (Optional[PromptChatTarget]): The chat target used for adversarial multi
             objective_scorer (Optional[TrueFalseScorer]): The scorer used to evaluate if the model
                 successfully decoded the payload. Defaults to DecodingScorer with encoding_scenario
@@ -195,23 +211,26 @@ class RapidResponseHarmScenario(Scenario):
             memory_labels (Optional[Dict[str, str]]): Optional labels to attach to memory entries
                 for tracking and filtering.
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 5.
-            converters (Optional[List[PromptConverter]]): List of converters to apply to the attack prompts.
             objective_dataset_path (Optional[str]): Path of the dataset to use for the objectives. If None,
-                use objectives defined in rapid_response_harm_objectives which should be pre-loaded into memory.
+                use objectives defined in rapid_response_harm_ which should be pre-loaded into memory.
+            include_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
+                without modifications. Defaults to True. When True, a "baseline" attack is automatically
+                added as the first atomic attack, allowing comparison between unmodified prompts and
+                encoding-modified prompts.
         """
 
         self._objective_target = objective_target
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
-        self._converters = converters if converters else None
-        self.objective_dataset_path = objective_dataset_path if objective_dataset_path else "rapid_response_harm_objectives"
+        self.objective_dataset_path = objective_dataset_path if objective_dataset_path else "rapid_response_harm_"
         self._objective_scorer_config = AttackScoringConfig(objective_scorer=self._objective_scorer)
         self._attack_adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
         self._memory_labels = memory_labels or {}
 
-        self._rapid_response_harm_strategy_compositiion = RapidResponseHarmStrategy.prepare_scenario_strategies(scenario_strategies,
-                                                                                    default_aggregate=RapidResponseHarmStrategy.ALL)
+        self._rapid_response_harm_strategy_compositiion = RapidResponseHarmStrategy.prepare_scenario_strategies(
+            scenario_strategies, default_aggregate=RapidResponseHarmStrategy.ALL
+        )
 
         super().__init__(
             name="Rapid Response Harm Scenario",
@@ -220,6 +239,7 @@ class RapidResponseHarmScenario(Scenario):
             max_concurrency=max_concurrency,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
             objective_target=objective_target,
+            include_default_baseline=include_baseline,
         )
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
@@ -231,15 +251,14 @@ class RapidResponseHarmScenario(Scenario):
 
     def _get_default_scorer(self) -> TrueFalseInverterScorer:
         return TrueFalseInverterScorer(
-                    scorer=SelfAskRefusalScorer(
-                        chat_target=OpenAIChatTarget(
-                            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
-                            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                        )
-                    ),
+            scorer=SelfAskRefusalScorer(
+                chat_target=OpenAIChatTarget(
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
                 )
+            ),
+        )
 
-    
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances in this scenario.
@@ -249,7 +268,6 @@ class RapidResponseHarmScenario(Scenario):
         """
         return self._get_rapid_response_harm_attacks()
 
-    
     def _get_rapid_response_harm_attacks(self) -> List[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances for harm strategies.
@@ -281,9 +299,7 @@ class RapidResponseHarmScenario(Scenario):
         # Extract RapidResponseHarmStrategy enums from the composite
         strategy_list = [s for s in composite_strategy.strategies if isinstance(s, RapidResponseHarmStrategy)]
 
-
         # Determine the attack type based on the strategy tags
-        attack_type: type[AttackStrategy] = PromptSendingAttack
         attack_tag = [s for s in strategy_list if "attack" in s.tags]
         attack_type: type[AttackStrategy] = PromptSendingAttack
         if attack_tag:
@@ -293,23 +309,23 @@ class RapidResponseHarmScenario(Scenario):
                 attack_type = MultiPromptSendingAttack
             else:
                 raise ValueError(f"Unknown attack strategy: {attack_tag[0].value}")
-            
 
         attack = self._get_attack(attack_type=attack_type)
 
         harm_tag = [s for s in strategy_list if "harm" in s.tags]
         if not harm_tag:
             raise ValueError(f"No harm strategy found in composition: {[s.value for s in strategy_list]}")
-        if harm_tag[0].value not in RapidResponseHarmStrategy.get_all_strategies():
-            raise ValueError(f"Unknown harm strategy: {harm_tag[0].value}")
-        
+
         # Retrieve objectives from CentralMemory based on harm tag
         memory = CentralMemory.get_memory_instance()
-        harm_dataset_name = f"{self.objective_dataset_path}_{harm_tag[0].value}"
+        harm_dataset_name = f"{self.objective_dataset_path}{harm_tag[0].value}"
         seed_groups = memory.get_seed_groups(dataset_name=harm_dataset_name)
-        strategy_objectives: list[str]= [obj.objective.value for obj in seed_groups if obj.objective is not None]
+        strategy_objectives: list[str] = [obj.objective.value for obj in seed_groups if obj.objective is not None]
         if len(strategy_objectives) == 0:
-            raise ValueError(f"No objectives found in the dataset {harm_dataset_name}. Ensure that the dataset is properly loaded into CentralMemory.")
+            raise ValueError(
+                f"No objectives found in the dataset {harm_dataset_name}. Ensure that the dataset is properly "
+                f"loaded into CentralMemory."
+            )
 
         return AtomicAttack(
             atomic_attack_name=composite_strategy.name,
@@ -326,8 +342,8 @@ class RapidResponseHarmScenario(Scenario):
         """
         Create an attack instance with the specified converters.
 
-        This method creates an instance of an AttackStrategy subclass with the provided
-        converters configured as request converters. For multi-turn attacks that require
+        This method creates an instance of an AttackStrategy subclass.
+        For multi-turn attacks that require
         an adversarial target (e.g., CrescendoAttack), the method automatically creates
         an AttackAdversarialConfig using self._adversarial_chat.
 
@@ -340,7 +356,6 @@ class RapidResponseHarmScenario(Scenario):
         Args:
             attack_type (type[AttackStrategyT]): The attack strategy class to instantiate.
                 Must accept objective_target and attack_converter_config parameters.
-            converters (list[PromptConverter]): List of converters to apply as request converters.
 
         Returns:
             AttackStrategyT: An instance of the specified attack type with configured converters.
@@ -348,16 +363,10 @@ class RapidResponseHarmScenario(Scenario):
         Raises:
             ValueError: If the attack requires an adversarial target but self._adversarial_chat is None.
         """
-        attack_converter_config: Optional[AttackConverterConfig] = None
-        if self._converters is not  None:
-            attack_converter_config = AttackConverterConfig(
-                request_converters=PromptConverterConfiguration.from_converters(converters=self._converters)
-            )
 
         # Build kwargs with required parameters
         kwargs = {
             "objective_target": self._objective_target,
-            "attack_converter_config": attack_converter_config,
             "attack_scoring_config": AttackScoringConfig(objective_scorer=self._objective_scorer),
         }
 
