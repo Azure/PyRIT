@@ -66,5 +66,5 @@ When using Entra auth, you don't need to set API keys for Azure resources.
 
 ## Next Steps
 
-- For detailed configuration options, see the [Configuration Guide](../code/setup/0_configuration.ipynb)
+- For detailed configuration options, see the [Configuration Guide](../code/setup/1_configuration.ipynb)
 - For database options beyond in-memory storage, see the [Memory Documentation](../code/memory/0_memory.md)

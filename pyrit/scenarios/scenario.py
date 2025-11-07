@@ -15,6 +15,7 @@ from typing import Dict, List, Optional, Set, Type
 
 from tqdm.auto import tqdm
 
+from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import ScenarioResultEntry
 from pyrit.models import AttackResult
@@ -77,6 +78,7 @@ class Scenario(ABC):
         memory_labels: Optional[Dict[str, str]] = None,
         objective_target: Optional[PromptTarget] = None,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
+        include_default_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
     ) -> None:
         """
@@ -94,6 +96,10 @@ class Scenario(ABC):
                 attack runs in the scenario. These help track and categorize the scenario.
             objective_target (Optional[PromptTarget]): The target system to attack.
             objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
+            include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
+                from the first atomic attack without modifications. Most scenarios should have some kind of
+                baseline so users can understand the impact of strategies, but subclasses can optionally write
+                their own custom baselines. Defaults to True.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
                 If provided and found in memory, the scenario will resume from prior progress.
                 All other parameters must still match the stored scenario configuration.
@@ -128,6 +134,9 @@ class Scenario(ABC):
         self._atomic_attacks: List[AtomicAttack] = []
         self._scenario_result_id: Optional[str] = scenario_result_id
         self._result_lock = asyncio.Lock()
+
+        self._include_baseline = include_default_baseline
+
         # Store original objectives for each atomic attack (before any mutations)
         # Key: atomic_attack_name, Value: tuple of original objectives
         self._original_objectives_map: Dict[str, tuple[str, ...]] = {}
@@ -230,6 +239,10 @@ class Scenario(ABC):
         """
         self._atomic_attacks = await self._get_atomic_attacks_async()
 
+        if self._include_baseline:
+            baseline_attack = self._get_baseline_from_first_attack()
+            self._atomic_attacks.insert(0, baseline_attack)
+
         # Store original objectives for each atomic attack (before any mutations during execution)
         self._original_objectives_map = {
             atomic_attack.atomic_attack_name: tuple(atomic_attack._objectives) for atomic_attack in self._atomic_attacks
@@ -272,6 +285,48 @@ class Scenario(ABC):
         self._memory.add_scenario_results_to_memory(scenario_results=[result])
         self._scenario_result_id = str(result.id)
         logger.info(f"Created new scenario result with ID: {self._scenario_result_id}")
+
+    def _get_baseline_from_first_attack(self) -> AtomicAttack:
+        """
+        Get a baseline AtomicAttack, which simply sends all the objectives without any modifications.
+
+        Returns:
+            AtomicAttack: The baseline AtomicAttack instance.
+
+        Raises:
+            ValueError: If no atomic attacks are available to derive baseline from.
+        """
+        if not self._atomic_attacks or len(self._atomic_attacks) == 0:
+            raise ValueError("No atomic attacks available to derive baseline from.")
+
+        first_attack = self._atomic_attacks[0]
+
+        # Copy objectives, scoring, target from the first attack
+        objectives = first_attack.objectives
+        attack_scoring_config = first_attack._attack.get_attack_scoring_config()
+        objective_target = first_attack._attack.get_objective_target()
+
+        if not objectives or len(objectives) == 0:
+            raise ValueError("First atomic attack must have objectives to create baseline.")
+
+        if not objective_target:
+            raise ValueError("Objective target is required to create baseline attack.")
+
+        if not attack_scoring_config:
+            raise ValueError("Attack scoring config is required to create baseline attack.")
+
+        # Create baseline attack with no converters
+        attack = PromptSendingAttack(
+            objective_target=objective_target,
+            attack_scoring_config=attack_scoring_config,
+        )
+
+        return AtomicAttack(
+            atomic_attack_name="baseline",
+            attack=attack,
+            objectives=objectives,
+            memory_labels=self._memory_labels,
+        )
 
     def _validate_stored_scenario(self, *, stored_result: ScenarioResult) -> bool:
         """
@@ -436,7 +491,7 @@ class Scenario(ABC):
 
         Each AtomicAttack is executed in order, and all results are aggregated
         into a ScenarioResult containing the scenario metadata and all attack results.
-        This method supports resumption - if the scenario fails partway through,
+        This method supports resumption - if the scenario raises an exception partway through,
         calling run_async again will skip already-completed objectives.
 
         If max_retries is set, the scenario will automatically retry after an exception up to
@@ -450,7 +505,7 @@ class Scenario(ABC):
         Raises:
             ValueError: If the scenario has no atomic attacks configured. If your scenario
                 requires initialization, call await scenario.initialize() first.
-            ValueError: If the scenario fails after exhausting all retry attempts.
+            ValueError: If the scenario raises an exception after exhausting all retry attempts.
 
         Example:
             >>> result = await scenario.run_async()

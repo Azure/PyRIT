@@ -153,6 +153,18 @@ class AtomicAttack:
             f"attack type: {type(attack).__name__}, context type: {self._context_type}"
         )
 
+    @property
+    def objectives(self) -> List[str]:
+        """
+        Get a copy of the objectives list for this atomic attack.
+
+        This property is read-only. To use different objectives, create a new AtomicAttack instance.
+
+        Returns:
+            List[str]: A copy of the objectives list.
+        """
+        return list(self._objectives)
+
     def _determine_context_type(self, attack: AttackStrategy) -> Literal["single_turn", "multi_turn", "unknown"]:
         """
         Determine the context type of the attack strategy.

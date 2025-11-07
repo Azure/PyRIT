@@ -100,16 +100,13 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             attack_converter_config: Configuration for attack converters. Defaults to None.
             attack_scoring_config: Configuration for attack scoring. Defaults to None.
             prompt_normalizer: The prompt normalizer to use for sending prompts. Defaults to None.
-            max_turns: Maximum number of turns for the attack. Defaults to 10.
+            max_turns (int): Maximum number of turns for the attack. Defaults to 10.
 
         Raises:
             ValueError: If objective_scorer is not provided in attack_scoring_config.
         """
         # Initialize base class
-        super().__init__(logger=logger, context_type=MultiTurnAttackContext)
-
-        # Store the objective target
-        self._objective_target = objective_target
+        super().__init__(objective_target=objective_target, logger=logger, context_type=MultiTurnAttackContext)
 
         # Initialize converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -155,6 +152,20 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             raise ValueError("Maximum turns must be a positive integer.")
 
         self._max_turns = max_turns
+
+    def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
+        """
+        Get the attack scoring configuration used by this strategy.
+
+        Returns:
+            Optional[AttackScoringConfig]: The scoring configuration with objective scorer,
+                use_score_as_feedback, and threshold.
+        """
+        return AttackScoringConfig(
+            objective_scorer=self._objective_scorer,
+            use_score_as_feedback=self._use_score_as_feedback,
+            successful_objective_threshold=self._successful_objective_threshold,
+        )
 
     def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
         """

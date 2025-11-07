@@ -433,6 +433,51 @@ class TestCrescendoAttackInitialization:
         assert len(attack._request_converters) == 1
         assert len(attack._response_converters) == 0
 
+    def test_get_objective_target_returns_correct_target(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test that get_objective_target returns the target passed to constructor"""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+        )
+
+        assert attack.get_objective_target() == mock_objective_target
+
+    def test_get_attack_scoring_config_returns_config(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_refusal_scorer: MagicMock,
+    ):
+        """Test that get_attack_scoring_config returns the scoring configuration"""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_objective_scorer,
+            refusal_scorer=mock_refusal_scorer,
+            successful_objective_threshold=0.85,
+            use_score_as_feedback=True,
+        )
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        result = attack.get_attack_scoring_config()
+
+        assert result is not None
+        assert result.objective_scorer == mock_objective_scorer
+        assert result.refusal_scorer == mock_refusal_scorer
+        assert result.successful_objective_threshold == 0.85
+        assert result.use_score_as_feedback is True
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestContextValidation:
