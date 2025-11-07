@@ -109,8 +109,6 @@ def fetch_anthropic_evals_dataset(
 
         return SeedDataset(prompts=seed_prompts)
 
-    except ValueError:
-        raise
     except Exception as e:
         logger.error(f"Failed to load Anthropic evals dataset: {str(e)}")
         raise
