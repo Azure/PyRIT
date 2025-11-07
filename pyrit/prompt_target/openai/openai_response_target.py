@@ -303,6 +303,29 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         """
         input_items = await self._build_input_for_multi_modal_async(conversation)
 
+        text_format = None
+        if is_json_response:
+            if conversation[-1].message_pieces[0].prompt_metadata.get("json_schema"):
+                json_schema_str = str(conversation[-1].message_pieces[0].prompt_metadata["json_schema"])
+                try:
+                    json_schema = json.loads(json_schema_str)
+                except json.JSONDecodeError as e:
+                    raise PyritException(
+                        message=f"Failed to parse provided JSON schema for response_format as JSON.\n"
+                        f"Schema: {json_schema_str}\nFull error: {e}"
+                    )
+                text_format = {
+                    "format": {
+                        "type": "json_schema",
+                        "name": "CustomSchema",
+                        "schema": json_schema,
+                        "strict": True,
+                    }
+                }
+            else:
+                logger.info("Falling back to json_object; not recommended for new models")
+                text_format = {"format": {"type": "json_object"}}
+
         body_parameters = {
             "model": self._model_name,
             "max_output_tokens": self._max_output_tokens,
@@ -311,7 +334,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             "stream": False,
             "input": input_items,
             # Correct JSON response format per Responses API
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "text": text_format,
         }
 
         if self._extra_body_parameters:
