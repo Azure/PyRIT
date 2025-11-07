@@ -1,13 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import pathlib
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedDataset, SeedGroup
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
@@ -105,9 +105,30 @@ class CyberScenario(Scenario):
                 the `malware` set found under seed_prompts.
         """
         self._objective_target = objective_target
-        self._scenario_strategies = scenario_strategies
+        self._scenario_strategies = scenario_strategies if scenario_strategies else CyberStrategy.get_all_strategies()
+        self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
+        self._objectives = objectives if objectives else self._get_default_dataset()
+        self._objective_scorer = objective_scorer if objective_scorer else self._get_default_objective_scorer()
+        self._memory_labels = memory_labels
 
-    def _get_default_adversarial_target(self) -> OpenAIChatTarget: ...
+        super().__init__(
+            name="Cyber Scenario",
+            version=self.version,
+            memory_labels=self._memory_labels,
+            max_concurrency=max_concurrency,
+            objective_target=objective_target,
+            objective_scorer_identifier=self._objective_scorer.get_identifier(),
+        )
+
+    def _get_default_objective_scorer(self) -> OpenAIChatTarget:
+        return self._get_default_adversarial_target()
+
+    def _get_default_adversarial_target(self) -> OpenAIChatTarget:
+        return OpenAIChatTarget(
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            temperature=0.7,
+        )
 
     def _get_default_scorer(self) -> TrueFalseScorer: ...
 
@@ -125,7 +146,25 @@ class CyberScenario(Scenario):
         seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
         return seed_prompts
 
-    async def _get_atomic_attack_from_strategy_async(self, strategy: ScenarioStrategy) -> AtomicAttack: ...
+    async def _get_atomic_attack_from_strategy_async(self, strategy: ScenarioStrategy) -> AtomicAttack:
+        """
+        Translate the strategy into an actual AtomicAttack.
+        """
+        attack_strategy = None
+        match strategy:
+            case CyberStrategy.SingleTurn:
+                attack_strategy = None
+            case CyberStrategy.MultiTurn:
+                attack_strategy = None
+            case _:
+                raise ValueError("Error: Unknown CyberStrategy used")
+
+        return AtomicAttack(
+            atomic_attack_name="CyberScenarioAttack",
+            attack=attack_strategy,
+            objectives=self._objectives,
+            memory_labels=self._memory_labels,
+        )
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -133,4 +172,7 @@ class CyberScenario(Scenario):
         """
         # attacks = PromptSendingAttac
         # return await super()._get_atomic_attacks_async()
-        ...
+        atomic_attacks = []
+        for strategy in self._scenario_strategies:
+            atomic_attacks.append(await self._get_atomic_attack_from_strategy_async(strategy))
+        return atomic_attacks
