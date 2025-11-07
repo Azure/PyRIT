@@ -151,19 +151,13 @@ def fetch_sorry_bench_dataset(
 
             if not turns:
                 logger.warning(f"Skipping item {question_id} with empty turns")
-                continue
+             else: 
+               prompt_text = turns[0].strip()
 
-            prompt_text = turns[0].strip()
-
-            if not prompt_text:
-                logger.warning(f"Skipping item {question_id} with empty prompt text")
-                continue
-
-            if categories and category not in categories:
-                continue
-
-            if prompt_style != item_prompt_style:
-                continue
+               if not prompt_text:
+                   logger.warning(f"Skipping item {question_id} with empty prompt text")
+               else:
+                   if categories and category in categories and prompt_style == item_prompt_style:
 
             seed_prompt = SeedPrompt(
                 value=prompt_text,
