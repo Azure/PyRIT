@@ -191,6 +191,39 @@ class MemoryInterface(abc.ABC):
         """Inserts multiple entries into the database."""
 
     @abc.abstractmethod
+    def get_session(self):  # type: ignore
+        """
+        Provides a SQLAlchemy session for transactional operations.
+
+        Returns:
+            Session: A SQLAlchemy session bound to the engine.
+        """
+
+    def _update_entry(self, entry: Base) -> None:  # type: ignore
+        """
+        Updates an existing entry in the Table using merge.
+
+        This method uses SQLAlchemy's merge operation which will:
+        - Update the existing record if the primary key matches
+        - Insert a new record if the primary key doesn't exist
+
+        Args:
+            entry: An instance of a SQLAlchemy model to be updated in the Table.
+        """
+        from contextlib import closing
+
+        from sqlalchemy.exc import SQLAlchemyError
+
+        with closing(self.get_session()) as session:
+            try:
+                session.merge(entry)
+                session.commit()
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error updating entry in the table: {e}")
+                raise
+
+    @abc.abstractmethod
     def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
@@ -1115,6 +1148,109 @@ class MemoryInterface(abc.ABC):
         self._insert_entries(
             entries=[ScenarioResultEntry(entry=scenario_result) for scenario_result in scenario_results]
         )
+
+    def add_attack_results_to_scenario(
+        self,
+        *,
+        scenario_result_id: str,
+        atomic_attack_name: str,
+        attack_results: Sequence[AttackResult],
+    ) -> bool:
+        """
+        Add attack results to an existing scenario result in memory.
+
+        This method efficiently updates a scenario result by appending new attack results
+        to a specific atomic attack name without requiring a full retrieve-modify-save cycle.
+
+        Args:
+            scenario_result_id (str): The ID of the scenario result to update.
+            atomic_attack_name (str): The name of the atomic attack to add results for.
+            attack_results (Sequence[AttackResult]): The attack results to add.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+
+        Example:
+            >>> memory.add_attack_results_to_scenario(
+            ...     scenario_result_id="123e4567-e89b-12d3-a456-426614174000",
+            ...     atomic_attack_name="base64_attack",
+            ...     attack_results=[result1, result2]
+            ... )
+        """
+        try:
+            # Retrieve current scenario result
+            scenario_results = self.get_scenario_results(scenario_result_ids=[scenario_result_id])
+
+            if not scenario_results:
+                logger.error(f"Scenario result with ID {scenario_result_id} not found in memory")
+                return False
+
+            scenario_result = scenario_results[0]
+
+            # Update attack results for this atomic attack name
+            if atomic_attack_name not in scenario_result.attack_results:
+                scenario_result.attack_results[atomic_attack_name] = []
+
+            scenario_result.attack_results[atomic_attack_name].extend(list(attack_results))
+
+            # Save updated result back to memory using update
+            entry = ScenarioResultEntry(entry=scenario_result)
+            self._update_entry(entry)
+
+            logger.info(
+                f"Added {len(attack_results)} attack results to scenario {scenario_result_id} "
+                f"for atomic attack '{atomic_attack_name}'"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to add attack results to scenario {scenario_result_id}: {str(e)}", exc_info=True)
+            return False
+
+    def update_scenario_run_state(self, *, scenario_result_id: str, scenario_run_state: str) -> bool:
+        """
+        Update the run state of an existing scenario result.
+
+        Args:
+            scenario_result_id (str): The ID of the scenario result to update.
+            scenario_run_state (str): The new state for the scenario
+                (e.g., "CREATED", "IN_PROGRESS", "COMPLETED", "FAILED").
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+
+        Example:
+            >>> memory.update_scenario_run_state(
+            ...     scenario_result_id="123e4567-e89b-12d3-a456-426614174000",
+            ...     scenario_run_state="COMPLETED"
+            ... )
+        """
+        try:
+            # Retrieve current scenario result
+            scenario_results = self.get_scenario_results(scenario_result_ids=[scenario_result_id])
+
+            if not scenario_results:
+                logger.error(f"Scenario result with ID {scenario_result_id} not found in memory")
+                return False
+
+            scenario_result = scenario_results[0]
+
+            # Update the scenario run state
+            scenario_result.scenario_run_state = scenario_run_state  # type: ignore
+
+            # Save updated result back to memory using update
+            entry = ScenarioResultEntry(entry=scenario_result)
+            self._update_entry(entry)
+
+            logger.info(f"Updated scenario {scenario_result_id} state to '{scenario_run_state}'")
+            return True
+
+        except Exception as e:
+            logger.error(
+                f"Failed to update scenario {scenario_result_id} state to '{scenario_run_state}': {str(e)}",
+                exc_info=True,
+            )
+            return False
 
     def get_scenario_results(
         self,
