@@ -4,6 +4,7 @@
 """Tests for the scenario signature enforcer metaclass."""
 
 from typing import Dict, List, Optional, Sequence
+
 import pytest
 
 from pyrit.common import apply_defaults

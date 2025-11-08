@@ -14,7 +14,6 @@ import logging
 from abc import ABCMeta
 from typing import Any, Dict, Type
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -148,7 +147,7 @@ class ScenarioSignatureEnforcer(ABCMeta):
                 f"\n{cls.__name__}.__init__() missing required parameter(s) for CLI compatibility:\n"
                 + "\n".join(missing_params)
                 + f"\n\nFound parameters: {params_list}\n"
-                + f"\nAll scenarios must include these exact parameter names to support CLI operations.\n"
+                + "\nAll scenarios must include these exact parameter names to support CLI operations.\n"
                 + f"Example: pyrit run {cls.__name__.lower()} --objective_target <target> --scenario_strategies "
                 + "<strategies>"
             )
