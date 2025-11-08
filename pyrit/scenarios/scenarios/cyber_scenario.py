@@ -108,17 +108,7 @@ class CyberScenario(Scenario):
         self._scenario_strategies = scenario_strategies if scenario_strategies else CyberStrategy.get_all_strategies()
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objectives = objectives if objectives else self._get_default_dataset()
-        self._objective_scorer = (
-            objective_scorer
-            if objective_scorer
-            else SelfAskTrueFalseScorer(
-                chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("OPENAI_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("OPENAI_CHAT_KEY"),
-                ),
-                true_false_question_path=SCORER_CONFIG_PATH / "config" / "true_false_question" / "malware.yaml",
-            )
-        )
+        self._objective_scorer = objective_scorer if objective_scorer else self._get_default_objective_scorer()
         self._memory_labels = memory_labels
 
         super().__init__(
@@ -130,8 +120,14 @@ class CyberScenario(Scenario):
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
         )
 
-    def _get_default_objective_scorer(self) -> OpenAIChatTarget:
-        return self._get_default_adversarial_target()
+    def _get_default_objective_scorer(self) -> SelfAskTrueFalseScorer:
+        return SelfAskTrueFalseScorer(
+            chat_target=OpenAIChatTarget(
+                endpoint=os.environ.get("OPENAI_CHAT_ENDPOINT"),
+                api_key=os.environ.get("OPENAI_CHAT_KEY"),
+            ),
+            true_false_question_path=SCORER_CONFIG_PATH / "config" / "true_false_question" / "malware.yaml",
+        )
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
