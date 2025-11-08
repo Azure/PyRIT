@@ -6,7 +6,7 @@ import pathlib
 from typing import Dict, List, Optional
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import DATASETS_PATH, SCORER_CONFIG_PATH
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
@@ -14,7 +14,7 @@ from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_strategy import (
     ScenarioStrategy,
 )
-from pyrit.score import TrueFalseScorer
+from pyrit.score import SelfAskTrueFalseScorer
 
 """
 Cyber scenario implementation.
@@ -90,7 +90,7 @@ class CyberScenario(Scenario):
         scenario_strategies: List[CyberStrategy] | None = None,
         adversarial_chat: Optional[OpenAIChatTarget] = None,
         objectives: Optional[List[str]] = None,
-        objective_scorer: Optional[TrueFalseScorer] = None,
+        objective_scorer: Optional[SelfAskTrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         max_concurrency: int = 10,
     ) -> None:
@@ -108,7 +108,17 @@ class CyberScenario(Scenario):
         self._scenario_strategies = scenario_strategies if scenario_strategies else CyberStrategy.get_all_strategies()
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objectives = objectives if objectives else self._get_default_dataset()
-        self._objective_scorer = objective_scorer if objective_scorer else self._get_default_objective_scorer()
+        self._objective_scorer = (
+            objective_scorer
+            if objective_scorer
+            else SelfAskTrueFalseScorer(
+                chat_target=OpenAIChatTarget(
+                    endpoint=os.environ.get("OPENAI_CHAT_ENDPOINT"),
+                    api_key=os.environ.get("OPENAI_CHAT_KEY"),
+                ),
+                true_false_question_path=SCORER_CONFIG_PATH / "config" / "true_false_question" / "malware.yaml",
+            )
+        )
         self._memory_labels = memory_labels
 
         super().__init__(
@@ -129,8 +139,6 @@ class CyberScenario(Scenario):
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
             temperature=0.7,
         )
-
-    def _get_default_scorer(self) -> TrueFalseScorer: ...
 
     def _get_default_dataset(self) -> list[str]:
         """
