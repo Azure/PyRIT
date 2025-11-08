@@ -11,7 +11,6 @@ initialization scripts.
 
 # Standard library imports
 import asyncio
-import json
 import logging
 import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
@@ -57,10 +56,6 @@ Examples:
   # Run specific strategies
   pyrit_scan encoding_scenario --initializers simple objective_target --scenario-strategies base64 rot13 morse_code
   pyrit_scan foundry_scenario --initializers simple objective_target --scenario-strategies base64 atbash
-
-  # Include scenario parameters
-  pyrit_scan foundry_scenario --initializers simple objective_target --max-concurrency 10 --max-retries 3
-  pyrit_scan foundry_scenario --initializers simple objective_target --memory-labels '{"experiment": "test1", "version": "v2"}'
 """,
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -119,62 +114,8 @@ Examples:
         nargs="+",
         help="List of strategy names to run (e.g., base64 rot13 morse_code). If not specified, uses scenario defaults.",
     )
-    parser.add_argument(
-        "--max-concurrency",
-        type=int,
-        help="Maximum number of concurrent attack executions. If not specified, uses scenario defaults.",
-    )
-    parser.add_argument(
-        "--max-retries",
-        type=int,
-        help="Maximum number of automatic retries if the scenario raises an exception. If not specified, uses scenario defaults.",
-    )
-    parser.add_argument(
-        "--memory-labels",
-        type=str,
-        help='Additional labels to apply to all attack runs as JSON string (e.g., \'{"experiment": "test1", "version": "v2"}\').',
-    )
 
     return parser.parse_args(args)
-
-
-def parse_memory_labels(*, json_string: str) -> dict[str, str]:
-    """
-    Parse a JSON string into a dictionary of memory labels.
-
-    Args:
-        json_string (str): JSON string representing memory labels.
-
-    Returns:
-        dict[str, str]: Parsed memory labels dictionary.
-
-    Raises:
-        ValueError: If the JSON string is invalid or doesn't represent a string dictionary.
-    """
-    try:
-        labels = json.loads(json_string)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Invalid JSON format for --memory-labels: {e}\n"
-            f'Expected format: \'{{"key1": "value1", "key2": "value2"}}\''
-        ) from e
-
-    if not isinstance(labels, dict):
-        raise ValueError(
-            f"--memory-labels must be a JSON object (dictionary), got {type(labels).__name__}\n"
-            f'Expected format: \'{{"key1": "value1", "key2": "value2"}}\''
-        )
-
-    # Validate all keys and values are strings
-    for key, value in labels.items():
-        if not isinstance(key, str):
-            raise ValueError(f"All keys in --memory-labels must be strings, got {type(key).__name__} for key: {key}")
-        if not isinstance(value, str):
-            raise ValueError(
-                f"All values in --memory-labels must be strings, got {type(value).__name__} for key '{key}'"
-            )
-
-    return labels
 
 
 def list_scenarios(*, registry: ScenarioRegistry) -> None:
@@ -233,9 +174,6 @@ async def run_scenario_async(
     scenario_name: str,
     registry: ScenarioRegistry,
     scenario_strategies: list[str] | None = None,
-    max_concurrency: int | None = None,
-    max_retries: int | None = None,
-    memory_labels: dict[str, str] | None = None,
 ) -> None:
     """
     Run a specific scenario by name.
@@ -246,12 +184,6 @@ async def run_scenario_async(
         scenario_strategies (list[str] | None): Optional list of strategy names to run.
             If provided, these will be converted to ScenarioCompositeStrategy instances
             and passed to the scenario's __init__.
-        max_concurrency (int | None): Maximum number of concurrent attack executions.
-            If provided, overrides the scenario's default value.
-        max_retries (int | None): Maximum number of automatic retries if the scenario raises an exception.
-            If provided, overrides the scenario's default value.
-        memory_labels (dict[str, str] | None): Additional labels to apply to all attack runs.
-            If provided, overrides or merges with initialization script defaults.
 
     Raises:
         ValueError: If the scenario is not found or cannot be instantiated.
@@ -269,53 +201,39 @@ async def run_scenario_async(
 
     logger.info(f"Instantiating scenario: {scenario_class.__name__}")
 
-    # Instantiate the scenario with optional overrides
-    # The scenario should get its configuration from (in priority order):
-    # 1. CLI flags (--scenario-strategies, --max-concurrency, --max-retries, --memory-labels)
+    # Instantiate the scenario with optional strategy override
+    # The scenario should get its configuration from:
+    # 1. --scenario-strategies CLI flag (if provided)
     # 2. Default values set by initialization scripts via @apply_defaults
     # 3. Global variables set by initialization scripts
 
     scenario: Scenario
 
-    # Build kwargs for CLI-provided parameters
-    cli_kwargs: dict[str, Any] = {}
-
-    # Add scenario strategies if provided
-    if scenario_strategies:
-        # Get the strategy enum class for this scenario
-        strategy_class = scenario_class.get_strategy_class()
-
-        # Convert strategy names to enum instances
-        strategy_enums = []
-        for strategy_name in scenario_strategies:
-            try:
-                # Python Enum supports direct construction from value
-                strategy_enums.append(strategy_class(strategy_name))
-            except ValueError:
-                available_strategies = [s.value for s in strategy_class]
-                raise ValueError(
-                    f"Strategy '{strategy_name}' not found in {scenario_class.__name__}.\n"
-                    f"Available strategies: {', '.join(available_strategies)}\n"
-                    f"Use 'pyrit_scan --list-scenarios' to see available strategies for each scenario."
-                ) from None
-
-        cli_kwargs["scenario_strategies"] = strategy_enums
-
-    # Add max_concurrency if provided
-    if max_concurrency is not None:
-        cli_kwargs["max_concurrency"] = max_concurrency
-
-    # Add max_retries if provided
-    if max_retries is not None:
-        cli_kwargs["max_retries"] = max_retries
-
-    # Add memory_labels if provided
-    if memory_labels is not None:
-        cli_kwargs["memory_labels"] = memory_labels
-
     try:
-        # Instantiate with CLI-provided kwargs
-        scenario = scenario_class(**cli_kwargs)  # type: ignore[call-arg]
+        if scenario_strategies:
+            # Get the strategy enum class for this scenario
+            strategy_class = scenario_class.get_strategy_class()
+
+            # Convert strategy names to enum instances
+            strategy_enums = []
+            for strategy_name in scenario_strategies:
+                try:
+                    # Python Enum supports direct construction from value
+                    strategy_enums.append(strategy_class(strategy_name))
+                except ValueError:
+                    available_strategies = [s.value for s in strategy_class]
+                    raise ValueError(
+                        f"Strategy '{strategy_name}' not found in {scenario_class.__name__}.\n"
+                        f"Available strategies: {', '.join(available_strategies)}\n"
+                        f"Use 'pyrit_scan --list-scenarios' to see available strategies for each scenario."
+                    ) from None
+
+            # Pass the strategy enums to the scenario
+            # The scenario's __init__ will call prepare_scenario_strategies() to handle conversion
+            scenario = scenario_class(scenario_strategies=strategy_enums)  # type: ignore[call-arg]
+        else:
+            # No strategies specified, use scenario defaults
+            scenario = scenario_class()  # type: ignore[call-arg]
     except TypeError as e:
         # Check if this is a missing parameter error
         error_msg = str(e)
@@ -529,15 +447,8 @@ def _run_scenario(*, parsed_args: Namespace) -> int:
         registry = ScenarioRegistry()
         registry.discover_user_scenarios()
 
-        # Extract CLI parameters for the scenario
+        # Get scenario strategies from CLI args if provided
         scenario_strategies = parsed_args.scenario_strategies if hasattr(parsed_args, "scenario_strategies") else None
-        max_concurrency = parsed_args.max_concurrency if hasattr(parsed_args, "max_concurrency") else None
-        max_retries = parsed_args.max_retries if hasattr(parsed_args, "max_retries") else None
-
-        # Parse memory_labels from JSON string if provided
-        memory_labels = None
-        if hasattr(parsed_args, "memory_labels") and parsed_args.memory_labels:
-            memory_labels = parse_memory_labels(json_string=parsed_args.memory_labels)
 
         # Run the scenario
         asyncio.run(
@@ -545,9 +456,6 @@ def _run_scenario(*, parsed_args: Namespace) -> int:
                 scenario_name=parsed_args.scenario_name,
                 registry=registry,
                 scenario_strategies=scenario_strategies,
-                max_concurrency=max_concurrency,
-                max_retries=max_retries,
-                memory_labels=memory_labels,
             )
         )
         return 0

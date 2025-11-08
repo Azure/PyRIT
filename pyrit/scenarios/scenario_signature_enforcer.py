@@ -12,10 +12,8 @@ scenario_strategies which are required for CLI integration.
 import inspect
 import logging
 from abc import ABCMeta
-from typing import Any, Dict, Optional, Sequence, Type
+from typing import Any, Dict, Type
 
-from pyrit.prompt_target import PromptTarget
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +149,8 @@ class ScenarioSignatureEnforcer(ABCMeta):
                 + "\n".join(missing_params)
                 + f"\n\nFound parameters: {params_list}\n"
                 + f"\nAll scenarios must include these exact parameter names to support CLI operations.\n"
-                + f"Example: pyrit run {cls.__name__.lower()} --objective_target <target> --scenario_strategies <strategies>"
+                + f"Example: pyrit run {cls.__name__.lower()} --objective_target <target> --scenario_strategies "
+                + "<strategies>"
             )
 
         logger.debug(f"{cls.__name__} signature validation passed")

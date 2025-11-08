@@ -4,8 +4,6 @@
 """Tests for the scenario signature enforcer metaclass."""
 
 from typing import Dict, List, Optional, Sequence
-from unittest.mock import MagicMock
-
 import pytest
 
 from pyrit.common import apply_defaults
@@ -15,7 +13,10 @@ from pyrit.scenarios.scenario_signature_enforcer import (
     ScenarioSignatureEnforcer,
     validate_scenario_signature,
 )
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
+from pyrit.scenarios.scenario_strategy import (
+    ScenarioCompositeStrategy,
+    ScenarioStrategy,
+)
 
 
 @pytest.mark.usefixtures("patch_central_database")
