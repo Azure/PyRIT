@@ -130,6 +130,6 @@ if os.path.exists(temp_dir):
 
 # %% [markdown]
 # ## More information:
-# - [Configuration notebook](0_configuration.ipynb) shows practical examples with custom targets
+# - [Configuration notebook](1_configuration.ipynb) shows practical examples with custom targets
 # - [Default Values notebook](default_values.md) explains how defaults work
 #
