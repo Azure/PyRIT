@@ -140,12 +140,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             max_turns (int): Maximum number of turns allowed.
         """
         # Initialize base class
-        super().__init__(logger=logger, context_type=CrescendoAttackContext)
+        super().__init__(objective_target=objective_target, logger=logger, context_type=CrescendoAttackContext)
 
         self._memory = CentralMemory.get_memory_instance()
-
-        # Store the objective target
-        self._objective_target = objective_target
 
         # Initialize converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -212,6 +209,22 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         self._max_backtracks = max_backtracks
         self._max_turns = max_turns
+
+    def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
+        """
+        Get the attack scoring configuration used by this strategy.
+
+        Returns:
+            Optional[AttackScoringConfig]: The scoring configuration with objective scorer,
+                auxiliary scorers, and refusal scorer.
+        """
+        return AttackScoringConfig(
+            objective_scorer=self._objective_scorer,
+            auxiliary_scorers=self._auxiliary_scorers,
+            refusal_scorer=self._refusal_scorer,
+            use_score_as_feedback=self._use_score_as_feedback,
+            successful_objective_threshold=self._successful_objective_threshold,
+        )
 
     def _validate_context(self, *, context: CrescendoAttackContext) -> None:
         """

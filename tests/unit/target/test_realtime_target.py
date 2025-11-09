@@ -57,10 +57,10 @@ async def test_send_prompt_async(target):
         role="user",
         conversation_id="test_conversation_id",
     )
-    prompt_request = Message(message_pieces=[message_piece])
+    message = Message(message_pieces=[message_piece])
 
     # Call the send_prompt_async method
-    response = await target.send_prompt_async(prompt_request=prompt_request)
+    response = await target.send_prompt_async(message=message)
 
     assert response
 
@@ -94,10 +94,10 @@ async def test_send_prompt_async_adds_system_prompt_to_memory(target):
         role="user",
         conversation_id="new_conversation_id",
     )
-    prompt_request = Message(message_pieces=[message_piece])
+    message = Message(message_pieces=[message_piece])
 
     # Call the send_prompt_async method
-    await target.send_prompt_async(prompt_request=prompt_request)
+    await target.send_prompt_async(message=message)
 
     # Assert that set_system_prompt was called with the correct arguments
     target.set_system_prompt.assert_called_once_with(
@@ -130,7 +130,7 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
         role="user",
         conversation_id="conversation_1",
     )
-    prompt_request_1 = Message(message_pieces=[message_piece_1])
+    message_1 = Message(message_pieces=[message_piece_1])
 
     message_piece_2 = MessagePiece(
         original_value="Hi",
@@ -140,11 +140,11 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
         role="user",
         conversation_id="conversation_2",
     )
-    prompt_request_2 = Message(message_pieces=[message_piece_2])
+    message_2 = Message(message_pieces=[message_piece_2])
 
     # Call the send_prompt_async method for both conversations
-    await target.send_prompt_async(prompt_request=prompt_request_1)
-    await target.send_prompt_async(prompt_request=prompt_request_2)
+    await target.send_prompt_async(message=message_1)
+    await target.send_prompt_async(message=message_2)
 
     # Assert that two different WebSocket connections were created
     assert "conversation_1" in target._existing_conversation
@@ -166,9 +166,9 @@ async def test_send_prompt_async_invalid_request(target):
         converted_value_data_type="image_path",
         role="user",
     )
-    prompt_request = Message(message_pieces=[message_piece])
+    message = Message(message_pieces=[message_piece])
     with pytest.raises(ValueError) as excinfo:
-        target._validate_request(prompt_request=prompt_request)
+        target._validate_request(message=message)
 
     assert "This target only supports text and audio_path prompt input. Received: image_path." == str(excinfo.value)
 
@@ -197,10 +197,10 @@ async def test_realtime_target_no_api_version(target):
             role="user",
             conversation_id="test_conversation_id",
         )
-        prompt_request = Message(message_pieces=[message_piece])
+        message = Message(message_pieces=[message_piece])
 
         # Call the method
-        response = await target.send_prompt_async(prompt_request=prompt_request)
+        response = await target.send_prompt_async(message=message)
 
         assert response
 
@@ -244,10 +244,10 @@ async def test_realtime_target_default_api_version(target):
             role="user",
             conversation_id="test_conversation_id",
         )
-        prompt_request = Message(message_pieces=[message_piece])
+        message = Message(message_pieces=[message_piece])
 
         # Call the method
-        response = await target.send_prompt_async(prompt_request=prompt_request)
+        response = await target.send_prompt_async(message=message)
 
         assert response
 

@@ -3,8 +3,8 @@
 
 import logging
 import uuid
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import List, Literal, Optional
 
 import pyrit
 from pyrit.models import AttackOutcome, AttackResult
@@ -42,6 +42,9 @@ class ScenarioIdentifier:
         self.init_data = init_data
 
 
+ScenarioRunState = Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]
+
+
 class ScenarioResult:
     """
     Scenario result class for aggregating scenario results.
@@ -54,17 +57,21 @@ class ScenarioResult:
         objective_target_identifier: dict,
         attack_results: dict[str, List[AttackResult]],
         objective_scorer_identifier: Optional[dict] = None,
+        scenario_run_state: ScenarioRunState = "CREATED",
         labels: Optional[dict[str, str]] = None,
         completion_time: Optional[datetime] = None,
+        number_tries: int = 0,
         id: Optional[uuid.UUID] = None,
     ) -> None:
         self.id = id if id is not None else uuid.uuid4()
         self.scenario_identifier = scenario_identifier
         self.objective_target_identifier = objective_target_identifier
         self.objective_scorer_identifier = objective_scorer_identifier
+        self.scenario_run_state = scenario_run_state
         self.attack_results = attack_results
         self.labels = labels if labels is not None else {}
-        self.completion_time = completion_time if completion_time is not None else datetime.utcnow()
+        self.completion_time = completion_time if completion_time is not None else datetime.now(timezone.utc)
+        self.number_tries = number_tries
 
     def get_strategies_used(self) -> List[str]:
         """Get the list of strategies used in this scenario."""

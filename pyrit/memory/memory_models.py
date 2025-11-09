@@ -676,10 +676,13 @@ class ScenarioResultEntry(Base):
         scenario_init_data (dict): Optional initialization parameters used to configure the scenario.
         objective_target_identifier (dict): Identifier for the target being evaluated in the scenario.
         objective_scorer_identifier (dict): Optional identifier for the scorer used to evaluate results.
+        scenario_run_state (Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]): Current execution state
+            of the scenario.
         attack_results_json (str): JSON-serialized dictionary mapping attack names to conversation IDs.
             Format: {"attack_name": ["conversation_id1", "conversation_id2", ...]}.
             The full AttackResult objects are stored in AttackResultEntries and can be queried by conversation_id.
         labels (dict): Optional key-value pairs for categorization and filtering.
+        number_tries (int): Number of times run_async has been called on this scenario (incremented at each run).
         completion_time (DateTime): When the scenario execution completed.
         timestamp (DateTime): When this database entry was created.
 
@@ -701,8 +704,12 @@ class ScenarioResultEntry(Base):
     scenario_init_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     objective_target_identifier: Mapped[dict] = mapped_column(JSON, nullable=False)
     objective_scorer_identifier: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    scenario_run_state: Mapped[Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]] = mapped_column(
+        String, nullable=False, default="CREATED"
+    )
     attack_results_json: Mapped[str] = mapped_column(Unicode, nullable=False)
     labels: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    number_tries: Mapped[int] = mapped_column(INTEGER, nullable=False, default=0)
     completion_time = mapped_column(DateTime, nullable=False)
     timestamp = mapped_column(DateTime, nullable=False)
 
@@ -715,7 +722,9 @@ class ScenarioResultEntry(Base):
         self.scenario_init_data = entry.scenario_identifier.init_data
         self.objective_target_identifier = entry.objective_target_identifier
         self.objective_scorer_identifier = entry.objective_scorer_identifier
+        self.scenario_run_state = entry.scenario_run_state  # type: ignore
         self.labels = entry.labels
+        self.number_tries = entry.number_tries
         self.completion_time = entry.completion_time
 
         # Serialize attack_results: dict[str, List[AttackResult]] -> dict[str, List[str]]
@@ -756,7 +765,9 @@ class ScenarioResultEntry(Base):
             objective_target_identifier=self.objective_target_identifier,
             attack_results=attack_results,
             objective_scorer_identifier=self.objective_scorer_identifier,
+            scenario_run_state=self.scenario_run_state,
             labels=self.labels,
+            number_tries=self.number_tries,
             completion_time=self.completion_time,
         )
 

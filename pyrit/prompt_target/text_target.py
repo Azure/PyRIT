@@ -28,11 +28,11 @@ class TextTarget(PromptTarget):
         super().__init__()
         self._text_stream = text_stream
 
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
 
-        self._validate_request(prompt_request=prompt_request)
+        self._validate_request(message=message)
 
-        self._text_stream.write(f"{str(prompt_request)}\n")
+        self._text_stream.write(f"{str(message)}\n")
         self._text_stream.flush()
 
         return None
@@ -65,7 +65,7 @@ class TextTarget(PromptTarget):
         self._memory.add_message_pieces_to_memory(message_pieces=message_pieces)
         return message_pieces
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         pass
 
     async def cleanup_target(self):
