@@ -84,18 +84,18 @@ class MockPromptTarget(PromptChatTarget):
             )
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
-        self.prompt_sent.append(prompt_request.get_value())
+    async def send_prompt_async(self, *, message: Message) -> Message:
+        self.prompt_sent.append(message.get_value())
 
         return MessagePiece(
             role="assistant",
             original_value="default",
-            conversation_id=prompt_request.message_pieces[0].conversation_id,
-            attack_identifier=prompt_request.message_pieces[0].attack_identifier,
-            labels=prompt_request.message_pieces[0].labels,
+            conversation_id=message.message_pieces[0].conversation_id,
+            attack_identifier=message.message_pieces[0].attack_identifier,
+            labels=message.message_pieces[0].labels,
         ).to_message()
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """
         Validates the provided message
         """

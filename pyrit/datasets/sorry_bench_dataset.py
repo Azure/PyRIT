@@ -146,18 +146,24 @@ def fetch_sorry_bench_dataset(
         for item in dataset_split:
             category = item.get("category", "")
             item_prompt_style = item.get("prompt_style", "")
-            turns = item.get("turns", [])
+            turns = [t for t in item.get("turns", []) if t is not None]
             question_id = item.get("question_id")
 
             if not turns:
                 logger.warning(f"Skipping item {question_id} with empty turns")
-             else: 
-               prompt_text = turns[0].strip()
+                continue
 
-               if not prompt_text:
-                   logger.warning(f"Skipping item {question_id} with empty prompt text")
-               else:
-                   if categories and category in categories and prompt_style == item_prompt_style:
+            prompt_text = turns[0].strip()
+
+            if not prompt_text:
+                logger.warning(f"Skipping item {question_id} with empty prompt text")
+                continue
+
+            if categories and category not in categories:
+                continue
+
+            if prompt_style != item_prompt_style:
+                continue
 
             seed_prompt = SeedPrompt(
                 value=prompt_text,
