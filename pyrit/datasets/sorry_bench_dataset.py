@@ -146,7 +146,7 @@ def fetch_sorry_bench_dataset(
         for item in dataset_split:
             category = item.get("category", "")
             item_prompt_style = item.get("prompt_style", "")
-            turns = item.get("turns", [])
+            turns = [t for t in item.get("turns", []) if t is not None]
             question_id = item.get("question_id")
 
             if not turns:
