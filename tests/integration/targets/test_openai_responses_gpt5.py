@@ -45,7 +45,7 @@ async def test_openai_responses_gpt5(sqlite_instance, gpt5_args):
         conversation_id=conv_id,
     )
 
-    result = await target.send_prompt_async(prompt_request=user_piece.to_message())
+    result = await target.send_prompt_async(message=user_piece.to_message())
     assert result is not None
     assert len(result.message_pieces) == 2
     assert result.message_pieces[0].role == "assistant"
