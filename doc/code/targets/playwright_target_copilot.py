@@ -22,9 +22,9 @@
 import asyncio
 import pathlib
 import sys
+
 from playwright.async_api import Page, async_playwright
 
-from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -34,9 +34,10 @@ from pyrit.executor.attack import (
     RTASystemPromptPaths,
     SingleTurnAttackContext,
 )
-from pyrit.models import SeedPrompt, SeedGroup
+from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import CopilotType, OpenAIChatTarget, PlaywrightCopilotTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
