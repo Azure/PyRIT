@@ -54,8 +54,6 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-10-21".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -119,17 +117,12 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
-        params = {}
-        if self._api_version is not None:
-            params["api-version"] = self._api_version
-
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
                 headers=self._headers,
                 request_body=body,
-                params=params,
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:

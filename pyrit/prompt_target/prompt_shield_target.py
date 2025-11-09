@@ -130,7 +130,7 @@ class PromptShieldTarget(PromptTarget):
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=f"{self._endpoint}/contentsafety/text:shieldPrompt",
             method="POST",
-            params=params,
+            extra_url_parameters=params,
             headers=headers,
             request_body=body,
         )

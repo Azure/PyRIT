@@ -55,7 +55,6 @@ def target(patch_central_database) -> OpenAIChatTarget:
         model_name="gpt-o",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
     )
 
 
@@ -77,14 +76,13 @@ def test_init_with_no_endpoint_uri_var_raises():
                 model_name="gpt-4",
                 endpoint="",
                 api_key="xxxxx",
-                api_version="some_version",
             )
 
 
 def test_init_with_no_additional_request_headers_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):
-            OpenAIChatTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers="")
+            OpenAIChatTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
 
 
 def test_init_with_passed_api_key_and_use_entra_auth_raises(patch_central_database):
@@ -93,7 +91,6 @@ def test_init_with_passed_api_key_and_use_entra_auth_raises(patch_central_databa
             model_name="gpt-4",
             endpoint="https://mock.azure.com/",
             api_key="xxxxx",
-            api_version="some_version",
             use_entra_auth=True,
         )
 
@@ -103,7 +100,6 @@ def test_init_is_json_supported_defaults_to_true(patch_central_database):
         model_name="gpt-4",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
     )
     assert target.is_json_response_supported() is True
 
@@ -113,7 +109,6 @@ def test_init_is_json_supported_can_be_set_to_false(patch_central_database):
         model_name="gpt-4",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
         is_json_supported=False,
     )
     assert target.is_json_response_supported() is False
@@ -124,7 +119,6 @@ def test_init_is_json_supported_can_be_set_to_true(patch_central_database):
         model_name="gpt-4",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
         is_json_supported=True,
     )
     assert target.is_json_response_supported() is True
@@ -179,7 +173,6 @@ async def test_construct_request_body_includes_extra_body_params(
     target = OpenAIChatTarget(
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
         extra_body_parameters={"key": "value"},
     )
 
@@ -648,42 +641,6 @@ def test_construct_message_unknown_finish_reason(target: OpenAIChatTarget, dummy
 
 
 @pytest.mark.asyncio
-async def test_openai_chat_target_no_api_version(sample_conversations: MutableSequence[MessagePiece]):
-    target = OpenAIChatTarget(
-        api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
-    )
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        mock_request.return_value = MagicMock()
-        mock_request.return_value.status_code = 200
-        mock_request.return_value.text = '{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}'
-
-        await target.send_prompt_async(prompt_request=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" not in called_params
-
-
-@pytest.mark.asyncio
-async def test_openai_chat_target_default_api_version(sample_conversations: MutableSequence[MessagePiece]):
-    target = OpenAIChatTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        mock_request.return_value = MagicMock()
-        mock_request.return_value.status_code = 200
-        mock_request.return_value.text = '{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}'
-
-        await target.send_prompt_async(prompt_request=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" in called_params
-        assert called_params["api-version"] == "2024-10-21"
-
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
@@ -768,7 +725,6 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
         model_name="gpt-4",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="2024-06-01",
     )
     message_piece = MessagePiece(
         role="user",
@@ -849,7 +805,6 @@ def test_url_validation_warning_for_incorrect_endpoint(caplog, patch_central_dat
                 model_name="gpt-4",
                 endpoint="https://api.openai.com/v1/wrong/path",  # Incorrect endpoint
                 api_key="test-key",
-                api_version="2024-10-21",
             )
 
     # Should have a warning about incorrect endpoint
@@ -857,8 +812,7 @@ def test_url_validation_warning_for_incorrect_endpoint(caplog, patch_central_dat
     assert len(warning_logs) >= 1
     endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
     assert len(endpoint_warnings) == 1
-    assert "/v1/chat/completions" in endpoint_warnings[0].message
-    assert "/openai/deployments/*/chat/completions" in endpoint_warnings[0].message
+    assert "/chat/completions" in endpoint_warnings[0].message
     assert target
 
 
@@ -870,7 +824,6 @@ def test_url_validation_no_warning_for_correct_azure_endpoint(caplog, patch_cent
                 model_name="gpt-4",
                 endpoint="https://myservice.openai.azure.com/openai/deployments/gpt-4/chat/completions",
                 api_key="test-key",
-                api_version="2024-10-21",
             )
 
     # Should not have URL validation warnings
@@ -888,7 +841,6 @@ def test_url_validation_no_warning_for_correct_openai_endpoint(caplog, patch_cen
                 model_name="gpt-4",
                 endpoint="https://api.openai.com/v1/chat/completions",
                 api_key="test-key",
-                api_version="2024-10-21",
             )
 
     # Should not have URL validation warnings

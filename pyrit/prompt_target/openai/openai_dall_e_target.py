@@ -25,12 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIDALLETarget(OpenAITarget):
-    """OpenAI DALL-E Target for generating images from text prompts.
-
-    This class provides an interface to OpenAI's DALL-E image generation API,
-    supporting various image generation parameters and formats. It handles
-    prompt processing, API communication, and image response handling.
-    """
+    """A target for image generation using OpenAI's DALL-E models."""
 
     def __init__(
         self,
@@ -55,8 +50,6 @@ class OpenAIDALLETarget(OpenAITarget):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-06-01".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -96,8 +89,8 @@ class OpenAIDALLETarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
-        # Validate endpoint URL
-        self._warn_if_irregular_endpoint(self.DALLE_URL_REGEX)
+        dalle_url_patterns = [r"/images/generations"]
+        self._warn_if_irregular_endpoint(dalle_url_patterns)
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_DALLE_MODEL"
@@ -130,17 +123,12 @@ class OpenAIDALLETarget(OpenAITarget):
 
         body = self._construct_request_body(prompt=request.converted_value)
 
-        params = {}
-        if self._api_version is not None:
-            params["api-version"] = self._api_version
-
         try:
             http_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
                 headers=self._headers,
                 request_body=body,
-                params=params,
                 **self._httpx_client_kwargs,
             )
 

@@ -184,49 +184,6 @@ def test_is_json_response_supported(tts_target: OpenAITTSTarget):
 
 
 @pytest.mark.asyncio
-async def test_tts_target_no_api_version(sample_conversations: MutableSequence[MessagePiece]):
-    target = OpenAITTSTarget(
-        api_key="test_key", endpoint="https://mock.azure.com", model_name="tts-model", api_version=None
-    )
-    request = Message([sample_conversations[0]])
-
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"audio data"
-
-        mock_request.return_value = mock_response
-
-        await target.send_prompt_async(prompt_request=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" not in called_params
-
-
-@pytest.mark.asyncio
-async def test_tts_target_default_api_version(sample_conversations: MutableSequence[MessagePiece]):
-    target = OpenAITTSTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="tts-model")
-    request = Message([sample_conversations[0]])
-
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"audio data"
-
-        mock_request.return_value = mock_response
-
-        await target.send_prompt_async(prompt_request=request)
-
-        called_params = mock_request.call_args[1]["params"]
-
-        assert "api-version" in called_params
-        assert called_params["api-version"] == "2025-02-01-preview"
-
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
     mock_memory = MagicMock(spec=MemoryInterface)

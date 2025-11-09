@@ -65,7 +65,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         self,
         *,
         custom_functions: Optional[Dict[str, ToolExecutor]] = None,
-        api_version: Optional[str] = "2025-03-01-preview",
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
@@ -83,8 +82,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the OPENAI_RESPONSES_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2025-03-01-preview".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -118,11 +115,11 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             json.JSONDecodeError: If the response from the target is not valid JSON.
             Exception: If the request fails for any other reason.
         """
-        super().__init__(api_version=api_version, temperature=temperature, top_p=top_p, **kwargs)
+        super().__init__(temperature=temperature, top_p=top_p, **kwargs)
         self._max_output_tokens = max_output_tokens
 
-        # Validate endpoint URL for OpenAI Response API
-        self._warn_if_irregular_endpoint(self.RESPONSE_URL_REGEX)
+        response_url_patterns = [r"/responses"]
+        self._warn_if_irregular_endpoint(response_url_patterns)
 
         # Reasoning parameters are not yet supported by PyRIT.
         # See https://platform.openai.com/docs/api-reference/responses/create#responses-create-reasoning
