@@ -314,7 +314,7 @@ class OpenAISoraTarget(OpenAITarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """Asynchronously sends a message and handles the response within a managed conversation context.
 
         Args:
@@ -327,8 +327,8 @@ class OpenAISoraTarget(OpenAITarget):
             RateLimitException: If the rate limit is exceeded.
             httpx.HTTPStatusError: If the request fails.
         """
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
         prompt = request.converted_value
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt}")
@@ -759,19 +759,19 @@ class OpenAISoraTarget(OpenAITarget):
         }
         return {k: v for k, v in files_parameters.items() if v[1] is not None}
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """
         Validates the message to ensure it meets the requirements for the Sora target.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Raises:
             ValueError: If the request is invalid.
         """
-        message_piece = prompt_request.get_piece()
+        message_piece = message.get_piece()
 
-        n_pieces = len(prompt_request.message_pieces)
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 

@@ -60,14 +60,14 @@ async def test_tts_validate_request_length(tts_target: OpenAITTSTarget):
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await tts_target.send_prompt_async(prompt_request=request)
+        await tts_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
 async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget):
     request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
-        await tts_target.send_prompt_async(prompt_request=request)
+        await tts_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
@@ -87,7 +87,7 @@ async def test_tts_validate_previous_conversations(
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_request:
         mock_request.return_value = MagicMock(content=b"audio data")
         with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
-            await tts_target.send_prompt_async(prompt_request=request)
+            await tts_target.send_prompt_async(message=request)
 
 
 @pytest.mark.parametrize("response_format", ["mp3", "ogg"])
@@ -108,7 +108,7 @@ async def test_tts_send_prompt_file_save_async(
         return_value = MagicMock()
         return_value.content = b"audio data"
         mock_request.return_value = return_value
-        response = await tts_target.send_prompt_async(prompt_request=request)
+        response = await tts_target.send_prompt_async(message=request)
 
         file_path = response.get_value()
         assert file_path
@@ -151,7 +151,7 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
     request = Message(message_pieces=[message_piece])
 
     with pytest.raises((exception_class)) as exc:
-        await tts_target.send_prompt_async(prompt_request=request)
+        await tts_target.send_prompt_async(message=request)
         tts_target._memory.get_conversation.assert_called_once_with(conversation_id=message_piece.conversation_id)
 
         tts_target._memory.add_message_to_memory.assert_called_once_with(request=request)
@@ -175,7 +175,7 @@ async def test_tts_send_prompt_async_rate_limit_exception_retries(
     request = Message(message_pieces=[message_piece])
 
     with pytest.raises(RateLimitError):
-        await tts_target.send_prompt_async(prompt_request=request)
+        await tts_target.send_prompt_async(message=request)
         assert mock_response_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
@@ -201,7 +201,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
         mock_response.content = b"audio data"
         mock_make_request.return_value = mock_response
 
-        prompt_request = Message(
+        message = Message(
             message_pieces=[
                 MessagePiece(
                     role="user",
@@ -211,6 +211,6 @@ async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
                 )
             ]
         )
-        await tts_target.send_prompt_async(prompt_request=prompt_request)
+        await tts_target.send_prompt_async(message=message)
 
         tts_target.refresh_auth_headers.assert_called_once()

@@ -303,19 +303,18 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
         return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        """Validates the structure and content of a prompt request for compatibility of this target.
+    def _validate_request(self, *, message: Message) -> None:
+        """Validates the structure and content of a message for compatibility of this target.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Raises:
-            ValueError: If more than two message pieces are provided.
             ValueError: If any of the message pieces have a data type other than 'text' or 'image_path'.
         """
 
         converted_prompt_data_types = [
-            message_piece.converted_value_data_type for message_piece in prompt_request.message_pieces
+            message_piece.converted_value_data_type for message_piece in message.message_pieces
         ]
 
         # Some models may not support all of these
