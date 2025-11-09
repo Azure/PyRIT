@@ -70,7 +70,7 @@ async def test_azure_blob_storage_validate_request_length(
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await azure_blob_storage_target.send_prompt_async(prompt_request=request)
+        await azure_blob_storage_target.send_prompt_async(message=request)
 
 
 @patch("azure.storage.blob.aio.ContainerClient.upload_blob")
@@ -82,7 +82,7 @@ async def test_azure_blob_storage_validate_prompt_type(
     mock_upload_async.return_value = None
     request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text and url prompt input."):
-        await azure_blob_storage_target.send_prompt_async(prompt_request=request)
+        await azure_blob_storage_target.send_prompt_async(message=request)
 
 
 @patch("azure.storage.blob.aio.ContainerClient.upload_blob")
@@ -98,7 +98,7 @@ async def test_azure_blob_storage_validate_prev_convs(
     request = Message(message_pieces=[message_piece])
 
     with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
-        await azure_blob_storage_target.send_prompt_async(prompt_request=request)
+        await azure_blob_storage_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
@@ -126,7 +126,7 @@ async def test_send_prompt_async(
     message_piece.converted_value = "Test content"
     request = Message([message_piece])
 
-    response = await azure_blob_storage_target.send_prompt_async(prompt_request=request)
+    response = await azure_blob_storage_target.send_prompt_async(message=request)
 
     assert response
     blob_url = response.get_value()
