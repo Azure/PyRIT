@@ -134,7 +134,10 @@ class EncodingScenario(Scenario):
         Initialize the EncodingScenario.
 
         Args:
-            objective_target (PromptTarget): The target model to test for encoding vulnerabilities.
+            objective_target (PromptTarget): **Required.** The target model to test for encoding vulnerabilities.
+                While this parameter has a default of None to support dependency injection
+                via pyrit_defaults, it must be provided either directly or through injection.
+                Raises ValueError if not provided.
             scenario_strategies (list[EncodingStrategy | ScenarioCompositeStrategy] | None):
                 Strategies to test. Can be a list of EncodingStrategy enums (simple case) or
                 ScenarioCompositeStrategy instances (advanced case).
@@ -159,6 +162,10 @@ class EncodingScenario(Scenario):
                 without modifications. Defaults to True. When True, a "baseline" attack is automatically
                 added as the first atomic attack, allowing comparison between unmodified prompts and
                 encoding-modified prompts.
+
+        Raises:
+            ValueError: If objective_target is not provided.
+            ValueError: If attack_strategies is empty or contains unsupported strategies.
         """
 
         self._encoding_composites = EncodingStrategy.prepare_scenario_strategies(

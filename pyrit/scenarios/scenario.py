@@ -72,12 +72,12 @@ class Scenario(ABC, metaclass=ScenarioSignatureEnforcer):
     def __init__(
         self,
         *,
+        objective_target: Optional[PromptTarget] = None,
         name: str,
         version: int,
         max_concurrency: int = 1,
         max_retries: int = 0,
         memory_labels: Optional[Dict[str, str]] = None,
-        objective_target: Optional[PromptTarget] = None,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
         include_default_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
@@ -86,6 +86,10 @@ class Scenario(ABC, metaclass=ScenarioSignatureEnforcer):
         Initialize a scenario.
 
         Args:
+            objective_target (PromptTarget): **Required.** The target system to attack.
+                While this parameter has a default of None to support dependency injection
+                via pyrit_defaults, it must be provided either directly or through PyritInitializers.
+                Raises ValueError if not provided.
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
@@ -95,7 +99,6 @@ class Scenario(ABC, metaclass=ScenarioSignatureEnforcer):
                 For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
-            objective_target (Optional[PromptTarget]): The target system to attack.
             objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
             include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 from the first atomic attack without modifications. Most scenarios should have some kind of
@@ -104,6 +107,9 @@ class Scenario(ABC, metaclass=ScenarioSignatureEnforcer):
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
                 If provided and found in memory, the scenario will resume from prior progress.
                 All other parameters must still match the stored scenario configuration.
+
+        Raises:
+            ValueError: If objective_target is not provided.
 
         Note:
             Attack runs are populated by calling initialize_async(), which invokes the

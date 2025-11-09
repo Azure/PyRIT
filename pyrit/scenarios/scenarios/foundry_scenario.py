@@ -247,7 +247,10 @@ class FoundryScenario(Scenario):
         Initialize a FoundryScenario with the specified attack strategies.
 
         Args:
-            objective_target (PromptTarget): The target system to attack.
+            objective_target (PromptTarget): **Required.** The target system to attack.
+                While this parameter has a default of None to support dependency injection
+                via pyrit_defaults, it must be provided either directly or through injection.
+                Raises ValueError if not provided.
             scenario_strategies (list[FoundryStrategy | ScenarioCompositeStrategy] | None):
                 Strategies to test. Can be a list of FoundryStrategy enums (simple case) or
                 ScenarioCompositeStrategy instances (advanced case for composition).
@@ -273,6 +276,7 @@ class FoundryScenario(Scenario):
                 attack-modified prompts.
 
         Raises:
+            ValueError: If objective_target is not provided.
             ValueError: If attack_strategies is empty or contains unsupported strategies.
         """
 
