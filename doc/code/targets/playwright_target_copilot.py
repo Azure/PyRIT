@@ -18,6 +18,9 @@
 # Similar to the more generic `PlaywrightTarget`, `PlaywrightCopilotTarget` uses Playwright for browser automation.
 # It is built specifically for testing Microsoft's Copilots (currently supports M365 and Consumer Copilot).
 #
+# Note: This code will not run in Jupyter! Please run it as a standalone Python script.
+# To convert to a .py, find the corresponding file in the repository, use `jupytext --to py:percent`, or copy the code into a .py file.`
+#
 # %%
 import asyncio
 import pathlib
@@ -129,11 +132,7 @@ async def run_text(page: Page) -> None:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
 
-# Uncomment to run (after starting browser with remote debugging)
 asyncio.run(connect_to_existing_browser(browser_debug_port=9222, run_function=run_text))
-# In Jupyter notebooks, use 'await' instead of 'asyncio.run()'
-# await connect_to_existing_browser(browser_debug_port=9222, run_function=run_text)
-
 
 # %% [markdown]
 # ## Using PlaywrightCopilotTarget for multimodal interactions
@@ -165,9 +164,6 @@ async def run_multimodal(page: Page) -> None:
 
 
 asyncio.run(connect_to_existing_browser(browser_debug_port=9222, run_function=run_multimodal))
-# In Jupyter notebooks, use 'await' instead of 'asyncio.run()'
-# await connect_to_existing_browser(browser_debug_port=9222, run_function=run_multimodal)
-
 
 # %%
 # Close connection to memory
