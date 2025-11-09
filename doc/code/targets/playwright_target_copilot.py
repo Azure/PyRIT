@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.18.1
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -47,7 +47,7 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 #
 # First, start a browser (in this case Edge) with remote debugging enabled (outside of Python):
 # ```bash
-# Start-Process msedge -ArgumentList "--remote-debugging-port=9222", "--user-data-dir=$env:TEMP\edge-debug", "--profile-directory=`"Profile 3`""
+# Start-Process msedge -ArgumentList "--remote-debugging-port=9222", "--user-data-dir=$env:TEMP\edge-debug", "--profile-directory=`"Default`""
 # ```
 # The profile directory is optional but useful if you want to maintain session state (e.g., logged-in users).
 # In the example below we assume that the user is logged into Consumer Copilot and
@@ -130,6 +130,9 @@ async def run_text(page: Page) -> None:
 
 # Uncomment to run (after starting browser with remote debugging)
 asyncio.run(connect_to_existing_browser(browser_debug_port=9222, run_function=run_text))
+# In Jupyter notebooks, use 'await' instead of 'asyncio.run()'
+# await connect_to_existing_browser(browser_debug_port=9222, run_function=run_text)
+
 
 # %% [markdown]
 # ## Using PlaywrightCopilotTarget for multimodal interactions
@@ -137,6 +140,7 @@ asyncio.run(connect_to_existing_browser(browser_debug_port=9222, run_function=ru
 
 # %%
 async def run_multimodal(page: Page) -> None:
+    await page.goto("https://m365.cloud.microsoft/chat/")
     target = PlaywrightCopilotTarget(page=page, copilot_type=CopilotType.M365)
 
     attack = PromptSendingAttack(objective_target=target)
@@ -155,13 +159,14 @@ async def run_multimodal(page: Page) -> None:
         objective=objective,
     )
 
-    await page.goto("https://m365.cloud.microsoft/chat/")
-
     result = await attack.execute_with_context_async(context=attack_context)  # type: ignore
     await ConsoleAttackResultPrinter().print_conversation_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
 
 asyncio.run(connect_to_existing_browser(browser_debug_port=9222, run_function=run_multimodal))
+# In Jupyter notebooks, use 'await' instead of 'asyncio.run()'
+# await connect_to_existing_browser(browser_debug_port=9222, run_function=run_multimodal)
+
 
 # %%
 # Close connection to memory
