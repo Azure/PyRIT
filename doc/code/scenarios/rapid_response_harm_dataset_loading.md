@@ -20,26 +20,8 @@ The naming schema is **critical** for these scenarios to automatically retrieve 
 ### Components
 
 1. **Dataset Path Prefix** (default: <scenario_name>):
-   - Can be customized via the `objective_dataset_path` parameter in the scenario constructor
+   - Can be customized via the `seed_dataset_path` parameter in the scenario constructor
    - Helps organize datasets in memory when multiple scenario types are being used
-
-2. **Strategy Name** (required):
-   - Derived from the strategy enum value
-   - Converted to lowercase with underscores (e.g., `HateFictionalStory` → `hate_fictional_story`)
-   - Must match exactly for the scenario to find the dataset
-
-### Default Naming Examples for Rapid Response Harm Scenario
-
-| Strategy Enum | Dataset Name |
-|--------------|--------------|
-| `RapidResponseHarmStrategy.HateFictionalStory` | `rapid_response_harm_hate_fictional_story` |
-| `RapidResponseHarmStrategy.FairnessEthnicityInference` | `rapid_response_harm_fairness_ethnicity_inference` |
-| `RapidResponseHarmStrategy.ViolenceCivic` | `rapid_response_harm_violence_civic` |
-| `RapidResponseHarmStrategy.ViolenceProtestDisruption` | `rapid_response_harm_violence_protest_disruption` |
-| `RapidResponseHarmStrategy.SexualContent` | `rapid_response_harm_sexual_content` |
-| `RapidResponseHarmStrategy.HarassmentBullying` | `rapid_response_harm_harassment_bullying` |
-| `RapidResponseHarmStrategy.MisinformationElection` | `rapid_response_harm_misinformation_election` |
-| `RapidResponseHarmStrategy.LeakagePersonalData` | `rapid_response_harm_leakage_personal_data` |
 
 ### Custom Dataset Path Prefix
 
@@ -70,7 +52,7 @@ scenario = RapidResponseHarmScenario(
 
 ```python
 # Correct naming
-dataset_name = "rapid_response_harm_" + strategy.value  # e.g., "hate_fictional_story"
+dataset_name = "rapid_response_harm_" + strategy.value  # e.g., "hate"
 ```
 
 ### Error: Dataset not found for custom prefix
