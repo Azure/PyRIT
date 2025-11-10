@@ -14,14 +14,19 @@ from pyrit.score import SelfAskTrueFalseScorer
 
 
 @pytest.fixture
-def mock_objective_target() -> MagicMock:
+def mock_objective_target():
     """Create a mock objective target for testing."""
-    return MagicMock(spec=PromptTarget)
+    mock = MagicMock(spec=PromptTarget)
+    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    return mock
 
 
 @pytest.fixture
-def mock_objective_scorer() -> MagicMock:
-    return MagicMock(spec=SelfAskTrueFalseScorer)
+def mock_objective_scorer():
+    """Create a mock objective scorer for testing."""
+    mock = MagicMock(spec=SelfAskTrueFalseScorer)
+    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    return mock
 
 
 @pytest.fixture
@@ -34,8 +39,9 @@ def sample_objectives() -> List[str]:
 class TestCyberScenarioInitialization:
     """Tests for CyberScenario initialization."""
 
-    def test_init_with_custom_objectives(self) -> None:
+    def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives) -> None:
         """Test initialization with custom objectives."""
+
         scenario = CyberScenario(
             objectives=sample_objectives,
             objective_target=mock_objective_target,
@@ -66,6 +72,10 @@ class TestCyberScenarioAtomicAttacks:
 @pytest.mark.usefixtures("patch_central_database")
 class TestCyberScenarioExecution:
     """Tests for CyberScenario execution."""
+
+    def test_single_turn_attack(self) -> None: ...
+
+    def test_multi_turn_attack(self) -> None: ...
 
     ...
 

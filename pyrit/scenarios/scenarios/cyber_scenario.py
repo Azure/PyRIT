@@ -7,6 +7,10 @@ from typing import Dict, List, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH, SCORER_CONFIG_PATH
+from pyrit.executor.attack.core.attack_strategy import AttackStrategy
+from pyrit.executor.attack.core.attack_config import AttackScoringConfig
+from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
@@ -60,7 +64,6 @@ class CyberScenario(Scenario):
     """
 
     version: int = 1
-    ...
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -93,6 +96,8 @@ class CyberScenario(Scenario):
         objective_scorer: Optional[SelfAskTrueFalseScorer] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         max_concurrency: int = 10,
+        max_retries: int = 0,
+        include_baseline: bool = True,
     ) -> None:
         """
         Initialize the CyberScenario.
@@ -100,15 +105,25 @@ class CyberScenario(Scenario):
         Args:
             objective_target (PromptTarget): The target model to test for malware vulnerabilities.
             scenario_strategies (List[CyberStrategy]): The cyberstrategies to test; defaults to all of them.
-            seed_prompts (Optional[List[str]]): The list of text strings that will be used to test the model;
-                these contain malware exploit attempts (see CyberStrategy). If not provided this defaults to
-                the `malware` set found under seed_prompts.
+            adversarial_chat (Optional[OpenAIChatTarget]):
+            objectives (Optional[List[str]]):
+            objective_scorer (Optional[SelfAskTrueFalseScorer]):
+            memory_labels (Optional[Dict[str, str]]):
+            max_concurrency (int):
+            max_retries (int):
+            include_baseline (bool):
         """
         self._objective_target = objective_target
+
+        # In this context the "objective" scorer has nothing to do with the "objective" target
+        objective_scorer = (
+            objective_scorer if objective_scorer else SelfAskTrueFalseScorer(chat_target=OpenAIChatTarget())
+        )
+        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
+
         self._scenario_strategies = scenario_strategies if scenario_strategies else CyberStrategy.get_all_strategies()
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objectives = objectives if objectives else self._get_default_dataset()
-        self._objective_scorer = objective_scorer if objective_scorer else self._get_default_objective_scorer()
         self._memory_labels = memory_labels
 
         super().__init__(
@@ -117,7 +132,9 @@ class CyberScenario(Scenario):
             memory_labels=self._memory_labels,
             max_concurrency=max_concurrency,
             objective_target=objective_target,
-            objective_scorer_identifier=self._objective_scorer.get_identifier(),
+            objective_scorer_identifier=objective_scorer.get_identifier(),
+            max_retries=max_retries,
+            include_default_baseline=include_baseline,
         )
 
     def _get_default_objective_scorer(self) -> SelfAskTrueFalseScorer:
@@ -154,14 +171,18 @@ class CyberScenario(Scenario):
         """
         Translate the strategy into an actual AtomicAttack.
         """
-        attack_strategy = None
+        attack_strategy: Optional[AttackStrategy] = None
+        args = {"objective_target": self._objective_target, "attack_scoring_config": self._scorer_config}
         match strategy:
             case CyberStrategy.SingleTurn:
-                attack_strategy = None
+                attack_strategy = PromptSendingAttack(**args)
             case CyberStrategy.MultiTurn:
-                attack_strategy = None
+                attack_strategy = RedTeamingAttack(**args)
             case _:
-                raise ValueError("Error: Unknown CyberStrategy used")
+                raise ValueError("Error: Unknown CyberStrategy used.")
+
+        if not attack_strategy:
+            raise ValueError("Error: attack strategy not correctly populated!")
 
         return AtomicAttack(
             atomic_attack_name="CyberScenarioAttack",
@@ -176,7 +197,7 @@ class CyberScenario(Scenario):
         """
         # attacks = PromptSendingAttac
         # return await super()._get_atomic_attacks_async()
-        atomic_attacks = []
+        atomic_attacks: List[AtomicAttack] = []
         for strategy in self._scenario_strategies:
             atomic_attacks.append(await self._get_atomic_attack_from_strategy_async(strategy))
         return atomic_attacks
