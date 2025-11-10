@@ -33,7 +33,7 @@ async def test_crucible_validate_request_length(crucible_target: CrucibleTarget)
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await crucible_target.send_prompt_async(prompt_request=request)
+        await crucible_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
@@ -41,4 +41,4 @@ async def test_crucible_validate_prompt_type(crucible_target: CrucibleTarget):
     message_piece = get_image_message_piece()
     request = Message(message_pieces=[message_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
-        await crucible_target.send_prompt_async(prompt_request=request)
+        await crucible_target.send_prompt_async(message=request)

@@ -16,9 +16,9 @@ Originator = Literal["attack", "converter", "undefined", "scorer"]
 
 
 class MessagePiece:
-    """Represents a piece of a prompt request to a target.
+    """Represents a piece of a message to a target.
 
-    This class represents a single piece of a prompt request that will be sent
+    This class represents a single piece of a message that will be sent
     to a target. Since some targets can handle multiple pieces (e.g., text and images),
     requests are composed of lists of MessagePiece objects.
     """
