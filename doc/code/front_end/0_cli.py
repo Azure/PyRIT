@@ -15,7 +15,7 @@
 # %% [markdown]
 # # The PyRIT CLI
 #
-# The PyRIT cli tool that allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategies and [configuration](../setup/0_configuration.ipynb).
+# The PyRIT cli tool that allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategies and [configuration](../setup/1_configuration.ipynb).
 #
 # Note in this doc the ! prefaces all commands in the terminal so we can run in a Jupyter Notebook.
 #
@@ -146,7 +146,7 @@
 #
 # For comprehensive documentation about initialization files and setting defaults see:
 #
-# - **Configuration**: See [configuration](../setup/0_configuration.ipynb)
+# - **Configuration**: See [configuration](../setup/1_configuration.ipynb)
 # - **Setting Default Values**: See [default values](../setup/default_values.md)
 # - **Writing Initializers**: See [Initializers](../setup/pyrit_initializer.ipynb)
 #

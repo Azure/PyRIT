@@ -55,7 +55,6 @@ def target(patch_central_database) -> OpenAIResponseTarget:
         model_name="gpt-o",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
     )
 
 
@@ -77,16 +76,13 @@ def test_init_with_no_endpoint_uri_var_raises():
                 model_name="gpt-4",
                 endpoint="",
                 api_key="xxxxx",
-                api_version="some_version",
             )
 
 
 def test_init_with_no_additional_request_headers_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):
-            OpenAIResponseTarget(
-                model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
-            )
+            OpenAIResponseTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
 
 
 @pytest.mark.asyncio()
@@ -164,7 +160,6 @@ async def test_construct_request_body_includes_extra_body_params(
     target = OpenAIResponseTarget(
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
         extra_body_parameters={"key": "value"},
     )
 
@@ -287,7 +282,7 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
             target._memory = MagicMock(MemoryInterface)
 
             with pytest.raises(EmptyResponseException):
-                await target.send_prompt_async(prompt_request=message)
+                await target.send_prompt_async(message=message)
 
             assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
@@ -309,14 +304,12 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
 
-        prompt_request = Message(
-            message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")]
-        )
+        message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
         with pytest.raises(RateLimitException) as rle:
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_message_to_memory.assert_called_once_with(request=prompt_request)
+            target._memory.add_message_to_memory.assert_called_once_with(request=message)
 
             assert str(rle.value) == "Rate Limit Reached"
 
@@ -329,7 +322,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     target._memory = mock_memory
 
-    prompt_request = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
     response = MagicMock()
     response.status_code = 400
@@ -339,9 +332,9 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
         with pytest.raises(httpx.HTTPStatusError) as bre:
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_message_to_memory.assert_called_once_with(request=prompt_request)
+            target._memory.add_message_to_memory.assert_called_once_with(request=message)
 
             assert str(bre.value) == "Bad Request"
 
@@ -387,7 +380,7 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
             openai_mock_return = MagicMock()
             openai_mock_return.text = json.dumps(openai_response_json)
             mock_create.return_value = openai_mock_return
-            response: Message = await target.send_prompt_async(prompt_request=message)
+            response: Message = await target.send_prompt_async(message=message)
             assert len(response.message_pieces) == 1
             assert response.get_value() == "hi"
     os.remove(tmp_file_name)
@@ -440,7 +433,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
             target._memory = MagicMock(MemoryInterface)
 
             with pytest.raises(EmptyResponseException):
-                await target.send_prompt_async(prompt_request=message)
+                await target.send_prompt_async(message=message)
 
             assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
@@ -448,9 +441,7 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResponseTarget):
 
-    prompt_request = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     response = MagicMock()
     response.status_code = 429
@@ -462,7 +453,7 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResp
     ) as mock_request:
 
         with pytest.raises(RateLimitError):
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
@@ -474,13 +465,11 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIResponseTarget)
 
     side_effect = BadRequestError("Bad Request Error", response=response, body="Bad request")
 
-    prompt_request = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")])
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
         with pytest.raises(BadRequestError) as bre:
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             assert str(bre.value) == "Bad Request Error"
 
 
@@ -499,7 +488,7 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
         }
     )
 
-    prompt_request = Message(
+    message = Message(
         message_pieces=[
             MessagePiece(
                 role="user",
@@ -514,7 +503,7 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
     mock_response.text = response_body
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", return_value=mock_response):
-        response = await target.send_prompt_async(prompt_request=prompt_request)
+        response = await target.send_prompt_async(message=message)
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "blocked"
         assert response.message_pieces[0].converted_value_data_type == "error"
@@ -525,7 +514,7 @@ def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
 
     image_piece = get_image_message_piece()
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
-    prompt_request = Message(
+    message = Message(
         message_pieces=[
             MessagePiece(
                 role="user",
@@ -538,7 +527,7 @@ def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
     )
 
     with pytest.raises(ValueError) as excinfo:
-        target._validate_request(prompt_request=prompt_request)
+        target._validate_request(message=message)
 
     assert "Unsupported data type" in str(excinfo.value), "Error not raised for unsupported data types"
 
@@ -616,46 +605,6 @@ def test_construct_message_empty_response(
 
 
 @pytest.mark.asyncio
-async def test_openai_response_target_no_api_version(
-    sample_conversations: MutableSequence[MessagePiece], openai_response_json: dict
-):
-    target = OpenAIResponseTarget(
-        api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
-    )
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        mock_request.return_value = MagicMock()
-        mock_request.return_value.status_code = 200
-        mock_request.return_value.text = json.dumps(openai_response_json)
-
-        await target.send_prompt_async(prompt_request=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" not in called_params
-
-
-@pytest.mark.asyncio
-async def test_openai_response_target_default_api_version(
-    sample_conversations: MutableSequence[MessagePiece], openai_response_json: dict
-):
-    target = OpenAIResponseTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        mock_request.return_value = MagicMock()
-        mock_request.return_value.status_code = 200
-        mock_request.return_value.text = json.dumps(openai_response_json)
-
-        await target.send_prompt_async(prompt_request=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" in called_params
-        assert called_params["api-version"] == "2025-03-01-preview"
-
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIResponseTarget, openai_response_json: dict):
     mock_memory = MagicMock(spec=MemoryInterface)
@@ -676,7 +625,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIRespon
         with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
             mock_make_request.return_value = MagicMock(text=json.dumps(openai_response_json))
 
-            prompt_request = Message(
+            message = Message(
                 message_pieces=[
                     MessagePiece(
                         role="user",
@@ -686,7 +635,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIRespon
                     )
                 ]
             )
-            await target.send_prompt_async(prompt_request=prompt_request)
+            await target.send_prompt_async(message=message)
             mock_refresh.assert_called_once()
 
 
@@ -758,7 +707,7 @@ def test_validate_request_allows_text_and_image(target: OpenAIResponseTarget):
             ),
         ]
     )
-    target._validate_request(prompt_request=req)
+    target._validate_request(message=req)
 
 
 def test_validate_request_raises_for_invalid_type(target: OpenAIResponseTarget):
@@ -768,7 +717,7 @@ def test_validate_request_raises_for_invalid_type(target: OpenAIResponseTarget):
         ]
     )
     with pytest.raises(ValueError) as excinfo:
-        target._validate_request(prompt_request=req)
+        target._validate_request(message=req)
     assert "Unsupported data type" in str(excinfo.value)
 
 
@@ -1091,7 +1040,7 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
     call_counter = {"n": 0}
 
     # 4) Mock the base class send to return first the function_call reply, then the final reply
-    async def fake_send(prompt_request: Message) -> Message:
+    async def fake_send(message: Message) -> Message:
         # Return first reply on first call, second on subsequent calls
         call_counter["n"] += 1
         return first_reply if call_counter["n"] == 1 else second_reply
@@ -1102,7 +1051,7 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         new_callable=AsyncMock,
         side_effect=fake_send,
     ):
-        final = await target.send_prompt_async(prompt_request=user_req)
+        final = await target.send_prompt_async(message=user_req)
 
         # Should get the final (non-tool-call) assistant message
         assert len(final.message_pieces) == 1

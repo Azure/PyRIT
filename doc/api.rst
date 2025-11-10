@@ -145,6 +145,7 @@ API Reference
     fetch_multilingual_vulnerability_dataset
     fetch_pku_safe_rlhf_dataset
     fetch_seclists_bias_testing_dataset
+    fetch_sorry_bench_dataset
     fetch_sosbench_dataset
     fetch_tdc23_redteaming_dataset
     fetch_wmdp_dataset
@@ -215,6 +216,7 @@ API Reference
     MultiPromptSendingAttack
     MultiPromptSendingAttackContext
     MultiTurnAttackContext
+    AttackExecutorResult
     PromptSendingAttack
     RTASystemPromptPaths
     RedTeamingAttack
@@ -541,7 +543,6 @@ API Reference
     :toctree: _autosummary/
 
     AtomicAttack
-    AtomicAttackResult
     EncodingScenario
     FoundryStrategy
     FoundryScenario

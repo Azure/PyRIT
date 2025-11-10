@@ -20,23 +20,6 @@ class OpenAITarget(PromptChatTarget):
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
-    # Expected URL regex patterns for different OpenAI and AOAI targets
-    CHAT_URL_REGEX = [
-        r"/v1/chat/completions$",  # Standard OpenAI & Anthropic endpoints
-        r"/openai/deployments/[^/]+/chat/completions$",  # AOAI pattern
-        r"/openai/chat/completions$",  # Gemini endpoint
-    ]
-    SORA_URL_REGEX = [
-        r"/videos/v1/video/generations$",  # Azure sora1 endpoint
-        r"/videos/v1/videos$",  # Azure sora2 endpoint
-        r"/v1/videos$",  # oai sora2 endpoint
-        r"/openai/v1/video/generations$",  # Azure OpenAI Sora endpoint pattern
-    ]
-
-    DALLE_URL_REGEX = [r"/images/generations$"]
-    TTS_URL_REGEX = [r"/audio/speech$"]
-    RESPONSE_URL_REGEX = [r"/openai/responses$", r"v1/responses$"]
-
     model_name_environment_variable: str
     endpoint_environment_variable: str
     api_key_environment_variable: str
@@ -51,7 +34,6 @@ class OpenAITarget(PromptChatTarget):
         api_key: Optional[str] = None,
         headers: Optional[str] = None,
         use_entra_auth: bool = False,
-        api_version: Optional[str] = "2024-10-21",
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
@@ -72,8 +54,6 @@ class OpenAITarget(PromptChatTarget):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default. Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-06-01". If set to None, this will not be added as a query parameter to requests.
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -90,8 +70,6 @@ class OpenAITarget(PromptChatTarget):
         if request_headers and isinstance(request_headers, str):
             self._headers = json.loads(request_headers)
 
-        self._api_version = api_version
-
         self._set_openai_env_configuration_vars()
 
         self._model_name: str = default_values.get_non_required_value(
@@ -99,7 +77,7 @@ class OpenAITarget(PromptChatTarget):
         )
         endpoint_value = default_values.get_required_value(
             env_var_name=self.endpoint_environment_variable, passed_value=endpoint
-        ).rstrip("/")
+        )
 
         # Initialize parent with endpoint and model_name
         PromptChatTarget.__init__(
