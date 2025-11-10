@@ -15,7 +15,13 @@ from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Scorer, ScorerPromptValidator, TrueFalseScorer
+from pyrit.score import (
+    HarmScorerEvaluator,
+    HarmScorerMetrics,
+    Scorer,
+    ScorerPromptValidator,
+    TrueFalseScorer,
+)
 
 
 @pytest.fixture
@@ -146,8 +152,8 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
         await scorer._score_value_with_llm(
             prompt_target=chat_target,
             system_prompt="system_prompt",
-            prompt_request_value="prompt_request_value",
-            prompt_request_data_type="text",
+            message_value="message_value",
+            message_data_type="text",
             scored_prompt_id="123",
             category="category",
             objective="task",
@@ -167,8 +173,8 @@ async def test_scorer_score_value_with_llm_exception_display_prompt_id():
         await scorer._score_value_with_llm(
             prompt_target=chat_target,
             system_prompt="system_prompt",
-            prompt_request_value="prompt_request_value",
-            prompt_request_data_type="text",
+            message_value="message_value",
+            message_data_type="text",
             scored_prompt_id="123",
             category="category",
             objective="task",
@@ -193,8 +199,8 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
     await scorer._score_value_with_llm(
         prompt_target=chat_target,
         system_prompt=expected_system_prompt,
-        prompt_request_value="prompt_request_value",
-        prompt_request_data_type="text",
+        message_value="message_value",
+        message_data_type="text",
         scored_prompt_id=expected_scored_prompt_id,
         category="category",
         objective="task",
@@ -226,8 +232,8 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
     await scorer._score_value_with_llm(
         prompt_target=chat_target,
         system_prompt=expected_system_prompt,
-        prompt_request_value="prompt_request_value",
-        prompt_request_data_type="text",
+        message_value="message_value",
+        message_data_type="text",
         scored_prompt_id="123",
         category="category",
         objective="task",
@@ -256,8 +262,8 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
     await scorer._score_value_with_llm(
         prompt_target=chat_target,
         system_prompt="system_prompt",
-        prompt_request_value="prompt_request_value",
-        prompt_request_data_type="text",
+        message_value="message_value",
+        message_data_type="text",
         scored_prompt_id="123",
         category="category",
         objective="task",
@@ -281,8 +287,8 @@ async def test_scorer_remove_markdown_json_called(good_json):
         await scorer._score_value_with_llm(
             prompt_target=chat_target,
             system_prompt="system_prompt",
-            prompt_request_value="prompt_request_value",
-            prompt_request_data_type="text",
+            message_value="message_value",
+            message_data_type="text",
             scored_prompt_id="123",
             category="category",
             objective="task",
@@ -291,7 +297,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
         mock_remove_markdown_json.assert_called_once()
 
 
-def test_scorer_path_verification_rejection():
+def test_scorer_path_verification_rejection() -> None:
     """
     Test that the scorer correctly refuses to verify a non-existent path.
     """
@@ -301,7 +307,7 @@ def test_scorer_path_verification_rejection():
         scorer._verify_and_resolve_path(mock_path)
 
 
-def test_scorer_path_verification_confirmation():
+def test_scorer_path_verification_confirmation() -> None:
     """
     Test that the scorer verifies the paths that currently exist
     under the scorer configs.
@@ -890,11 +896,6 @@ async def test_score_response_async_empty_lists():
 
 
 def test_get_scorer_metrics(tmp_path):
-    from pyrit.score import Scorer
-    from pyrit.score.scorer_evaluation.scorer_evaluator import (
-        HarmScorerEvaluator,
-        HarmScorerMetrics,
-    )
 
     # Create a fake metrics file
     metrics = HarmScorerMetrics(

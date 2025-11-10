@@ -35,6 +35,7 @@ from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.datasets.transphobia_awareness_dataset import fetch_transphobia_awareness_dataset
 from pyrit.datasets.wmdp_dataset import fetch_wmdp_dataset
 from pyrit.datasets.xstest_dataset import fetch_xstest_dataset
+from pyrit.datasets.sorry_bench_dataset import fetch_sorry_bench_dataset
 
 
 __all__ = [
@@ -59,6 +60,7 @@ __all__ = [
     "fetch_red_team_social_bias_dataset",
     "fetch_seclists_bias_testing_dataset",
     "fetch_sosbench_dataset",
+    "fetch_sorry_bench_dataset",
     "fetch_tdc23_redteaming_dataset",
     "fetch_transphobia_awareness_dataset",
     "fetch_wmdp_dataset",

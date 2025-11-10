@@ -16,10 +16,10 @@
 # %%
 from uuid import uuid4
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

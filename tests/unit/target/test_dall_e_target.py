@@ -80,7 +80,7 @@ async def test_send_prompt_async(
 
         mock_request.return_value = openai_mock_return
 
-        resp = await dalle_target.send_prompt_async(prompt_request=Message([request]))
+        resp = await dalle_target.send_prompt_async(message=Message([request]))
         assert resp
         path = resp.message_pieces[0].original_value
         assert os.path.isfile(path)
@@ -112,7 +112,7 @@ async def test_send_prompt_async_empty_response(
         mock_request.return_value = openai_mock_return
 
         with pytest.raises(EmptyResponseException) as e:
-            await dalle_target.send_prompt_async(prompt_request=Message([request]))
+            await dalle_target.send_prompt_async(message=Message([request]))
             assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
@@ -134,7 +134,7 @@ async def test_send_prompt_async_rate_limit_exception(
     ) as mock_request:
 
         with pytest.raises(RateLimitException) as rle:
-            await dalle_target.send_prompt_async(prompt_request=Message([request]))
+            await dalle_target.send_prompt_async(message=Message([request]))
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
             assert str(rle.value) == "Rate Limit Reached"
 
@@ -156,7 +156,7 @@ async def test_send_prompt_async_bad_request_error(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
     ) as mock_request:
         with pytest.raises(httpx.HTTPStatusError) as exc_info:
-            await dalle_target.send_prompt_async(prompt_request=Message([request]))
+            await dalle_target.send_prompt_async(message=Message([request]))
         assert mock_request.call_count == 1
         assert str(exc_info.value) == "Bad Request Error"
 
@@ -171,14 +171,14 @@ async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget):
     )
 
     with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await dalle_target.send_prompt_async(prompt_request=request)
+        await dalle_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
 async def test_dalle_validate_prompt_type(dalle_target: OpenAIDALLETarget):
     request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
-        await dalle_target.send_prompt_async(prompt_request=request)
+        await dalle_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
@@ -207,7 +207,7 @@ async def test_send_prompt_async_empty_response_adds_memory(
         dalle_target._memory = mock_memory
 
         with pytest.raises(EmptyResponseException):
-            await dalle_target.send_prompt_async(prompt_request=Message([request]))
+            await dalle_target.send_prompt_async(message=Message([request]))
             assert mock_memory.add_message_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
@@ -233,7 +233,7 @@ async def test_send_prompt_async_rate_limit_adds_memory(
         dalle_target._memory = mock_memory
 
         with pytest.raises(RateLimitException):
-            await dalle_target.send_prompt_async(prompt_request=Message([request]))
+            await dalle_target.send_prompt_async(message=Message([request]))
             assert mock_memory.add_message_to_memory.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
@@ -253,7 +253,7 @@ async def test_send_prompt_async_bad_request_content_filter(
     side_effect = httpx.HTTPStatusError("Bad Request Error", response=response, request=MagicMock())
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-        result = await dalle_target.send_prompt_async(prompt_request=Message([request]))
+        result = await dalle_target.send_prompt_async(message=Message([request]))
         # For content filter errors, a response should be returned, not an exception raised
         assert result is not None
         assert isinstance(result, Message)
@@ -289,7 +289,7 @@ async def test_dalle_target_no_api_version(
         mock_request.return_value.status_code = 200
         mock_request.return_value.text = json.dumps(dalle_response_json)
 
-        await target.send_prompt_async(prompt_request=request)
+        await target.send_prompt_async(message=request)
 
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" not in called_params
@@ -311,7 +311,7 @@ async def test_dalle_target_default_api_version(
         mock_request.return_value.status_code = 200
         mock_request.return_value.text = json.dumps(dalle_response_json)
 
-        await target.send_prompt_async(prompt_request=request)
+        await target.send_prompt_async(message=request)
 
         called_params = mock_request.call_args[1]["params"]
         assert "api-version" in called_params
@@ -335,7 +335,7 @@ async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
         mock_response.text = json.dumps({"data": [{"b64_json": "aGVsbG8="}]})  # Base64 encoded "hello"
         mock_make_request.return_value = mock_response
 
-        prompt_request = Message(
+        message = Message(
             message_pieces=[
                 MessagePiece(
                     role="user",
@@ -345,6 +345,6 @@ async def test_send_prompt_async_calls_refresh_auth_headers(dalle_target):
                 )
             ]
         )
-        await dalle_target.send_prompt_async(prompt_request=prompt_request)
+        await dalle_target.send_prompt_async(message=message)
 
         dalle_target.refresh_auth_headers.assert_called_once()

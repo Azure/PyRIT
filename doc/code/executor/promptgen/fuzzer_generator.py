@@ -23,7 +23,6 @@
 # %%
 import pathlib
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.promptgen import FuzzerGenerator, FuzzerResultPrinter
 from pyrit.models import SeedPrompt
@@ -36,6 +35,7 @@ from pyrit.prompt_converter import (
 )
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 # Initialize Pyrit with in-memory database
 initialize_pyrit(memory_db_type=IN_MEMORY)

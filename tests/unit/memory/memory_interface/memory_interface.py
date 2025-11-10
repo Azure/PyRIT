@@ -39,7 +39,6 @@ from pyrit.models import (
     Score,
     SeedDataset,
     SeedGroup,
-    SeedPrompt,
     StorageIO,
     data_serializer_factory,
     group_conversation_message_pieces_by_sequence,
@@ -816,7 +815,7 @@ class MemoryInterface(abc.ABC):
             raise ValueError("At least one prompt group must be provided.")
         # Validates the prompt group IDs and sets them if possible before leveraging
         # the add_seed_prompts_to_memory method.
-        all_prompts: MutableSequence[SeedPrompt] = []
+        all_prompts: MutableSequence[Seed] = []
         for prompt_group in prompt_groups:
             if not prompt_group.prompts:
                 raise ValueError("Prompt group must have at least one prompt.")
@@ -832,6 +831,9 @@ class MemoryInterface(abc.ABC):
             prompt_group_id = group_id_set.pop() or uuid.uuid4()
             for prompt in prompt_group.prompts:
                 prompt.prompt_group_id = prompt_group_id
+            if prompt_group.objective:
+                prompt_group.objective.prompt_group_id = prompt_group_id
+                all_prompts.append(prompt_group.objective)
             all_prompts.extend(prompt_group.prompts)
         await self.add_seeds_to_memory_async(prompts=all_prompts, added_by=added_by)
 

@@ -25,13 +25,13 @@
 import time
 import uuid
 
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import (
     AttackExecutor,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import AZURE_SQL, initialize_pyrit
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 
@@ -165,7 +165,6 @@ await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ig
 # %%
 import pathlib
 
-from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
@@ -173,6 +172,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import AZURE_SQL, initialize_pyrit
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()

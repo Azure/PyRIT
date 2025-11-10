@@ -25,7 +25,6 @@
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
@@ -33,6 +32,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -96,8 +96,6 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This example demonstrates how to use the Sora target to create a video from a text-based prompt.
 
-# %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import (
     AttackExecutor,
     AttackScoringConfig,
@@ -112,6 +110,7 @@ from pyrit.score import (
     VideoFloatScaleScorer,
     VideoTrueFalseScorer,
 )
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -155,11 +154,11 @@ for result in results:
 # %%
 import pathlib
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import SingleTurnAttackContext
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

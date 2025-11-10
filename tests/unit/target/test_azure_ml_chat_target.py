@@ -205,14 +205,14 @@ async def test_azure_ml_validate_request_length(aml_online_chat: AzureMLChatTarg
     )
 
     with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await aml_online_chat.send_prompt_async(prompt_request=request)
+        await aml_online_chat.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
 async def test_azure_ml_validate_prompt_type(aml_online_chat: AzureMLChatTarget):
     request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
-        await aml_online_chat.send_prompt_async(prompt_request=request)
+        await aml_online_chat.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
@@ -230,12 +230,12 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(aml_online_cha
         side_effect=HTTPStatusError(message="Bad Request", request=MagicMock(), response=response)
     )
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
     with pytest.raises(HTTPStatusError) as bre:
-        await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
+        await aml_online_chat.send_prompt_async(message=message)
         aml_online_chat._memory.get_conversation.assert_called_once_with(conversation_id="123")
-        aml_online_chat._memory.add_message_to_memory.assert_called_once_with(request=prompt_request)
+        aml_online_chat._memory.add_message_to_memory.assert_called_once_with(request=message)
 
     assert str(bre.value) == "Bad Request"
 
@@ -254,12 +254,12 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(aml_online_
         side_effect=HTTPStatusError(message="Rate Limit Reached", request=MagicMock(), response=response)
     )
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
     with pytest.raises(RateLimitException) as rle:
-        await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
+        await aml_online_chat.send_prompt_async(message=message)
         aml_online_chat._memory.get_conversation.assert_called_once_with(conversation_id="123")
-        aml_online_chat._memory.add_message_to_memory.assert_called_once_with(request=prompt_request)
+        aml_online_chat._memory.add_message_to_memory.assert_called_once_with(request=message)
 
     assert str(rle.value) == "Status Code: 429, Message: Rate Limit Exception"
 
@@ -273,12 +273,10 @@ async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: A
         side_effect=RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
     )
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     with pytest.raises(RateLimitError):
-        await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
+        await aml_online_chat.send_prompt_async(message=message)
         assert mock_complete_chat_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
@@ -291,12 +289,10 @@ async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureML
     mock_complete_chat_async.return_value = None
 
     setattr(aml_online_chat, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = Message(
-        message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")]
-    )
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     with pytest.raises(EmptyResponseException):
-        await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
+        await aml_online_chat.send_prompt_async(message=message)
         assert mock_complete_chat_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 

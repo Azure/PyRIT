@@ -7,6 +7,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -18,9 +22,10 @@
 # As with all memory, we can use local DuckDBMemory or AzureSQLMemory in Azure to get the
 # benefits of sharing with other users and persisting data.
 
-# %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models.seed_prompt import SeedPrompt
+
+# %%
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -128,7 +133,6 @@ await memory.add_seed_groups_to_memory(prompt_groups=[seed_group], added_by="tes
 # It's also possible to create a SeedGroup which only contains an objective via YAML file. To do this, provide only one SeedPrompt to the
 # SeedGroup and set the `is_objective` field to true
 # %%
-
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH

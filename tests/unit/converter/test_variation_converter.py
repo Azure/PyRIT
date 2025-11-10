@@ -12,6 +12,11 @@ from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import VariationConverter
 
 
+def test_variation_converter_raises_when_converter_target_is_none():
+    with pytest.raises(ValueError, match="converter_target is required"):
+        VariationConverter(converter_target=None)
+
+
 def test_prompt_variation_init_templates_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     prompt_variation = VariationConverter(converter_target=prompt_target)

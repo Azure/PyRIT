@@ -273,6 +273,44 @@ class TestRedTeamingAttackInitialization:
                 attack_scoring_config=scoring_config,
             )
 
+    def test_get_objective_target_returns_correct_target(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test that get_objective_target returns the target passed during initialization."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        assert attack.get_objective_target() == mock_objective_target
+
+    def test_get_attack_scoring_config_returns_config(
+        self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
+    ):
+        """Test that get_attack_scoring_config returns the configured AttackScoringConfig."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_objective_scorer,
+            use_score_as_feedback=True,
+            successful_objective_threshold=0.9,
+        )
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        result = attack.get_attack_scoring_config()
+
+        assert result.objective_scorer == mock_objective_scorer
+        assert result.use_score_as_feedback is True
+        assert result.successful_objective_threshold == 0.9
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestContextCreation:

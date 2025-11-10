@@ -10,6 +10,11 @@ from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import TranslationConverter
 
 
+def test_translation_converter_raises_when_converter_target_is_none():
+    with pytest.raises(ValueError, match="converter_target is required"):
+        TranslationConverter(converter_target=None, language="en")
+
+
 def test_prompt_translation_init_templates_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
     translation_converter = TranslationConverter(converter_target=prompt_target, language="en")

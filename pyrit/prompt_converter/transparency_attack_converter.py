@@ -206,7 +206,8 @@ class TransparencyAttackConverter(PromptConverter):
             img_serializer.file_extension = "png"
 
             la_image = self._create_blended_image(attack_image, alpha)
-            la_pil = Image.fromarray(la_image, mode="LA")
+            # Pillow 10+ can infer the mode from the array dtype and shape
+            la_pil = Image.fromarray(la_image)
             image_buffer = BytesIO()
             la_pil.save(image_buffer, format="PNG")
             image_str = base64.b64encode(image_buffer.getvalue())

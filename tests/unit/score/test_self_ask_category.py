@@ -199,7 +199,8 @@ async def test_score_prompts_batch_async(
     scorer_category_response_false: Message,
     patch_central_database,
 ):
-    chat_target = AsyncMock()
+    chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock()
     chat_target._max_requests_per_minute = max_requests_per_minute
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         scorer = SelfAskCategoryScorer(

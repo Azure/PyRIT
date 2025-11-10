@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -22,10 +26,10 @@
 # %%
 import pathlib
 
-from pyrit.common.initialization import initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import SeedDataset
+from pyrit.setup import initialize_pyrit
 
 # Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
 initialize_pyrit(memory_db_type="InMemory")
@@ -241,7 +245,7 @@ print(f"Found {len(interesting_prompts)} interesting prompts")
 new_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=OpenAIChatTarget())
 
 for prompt in interesting_prompts:
-    new_results = await new_scorer.score_prompts_batch_async(request_responses=interesting_prompts)  # type: ignore
+    new_results = await new_scorer.score_prompts_batch_async(messages=interesting_prompts)  # type: ignore
 
 for result in new_results:
     print(f"Added score: {result}")

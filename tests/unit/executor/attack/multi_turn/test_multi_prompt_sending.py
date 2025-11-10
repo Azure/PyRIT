@@ -158,6 +158,28 @@ class TestMultiPromptSendingAttackInitialization:
         assert attack._conversation_manager is not None
         assert hasattr(attack._conversation_manager, "update_conversation_state_async")
 
+    def test_get_objective_target_returns_correct_target(self, mock_target):
+        """Test that get_objective_target returns the target passed during initialization."""
+        attack = MultiPromptSendingAttack(objective_target=mock_target)
+
+        assert attack.get_objective_target() == mock_target
+
+    def test_get_attack_scoring_config_returns_config(self, mock_target, mock_true_false_scorer):
+        """Test that get_attack_scoring_config returns the configured AttackScoringConfig."""
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_true_false_scorer,
+            auxiliary_scorers=[MagicMock(spec=Scorer)],
+            successful_objective_threshold=0.85,
+        )
+
+        attack = MultiPromptSendingAttack(objective_target=mock_target, attack_scoring_config=scoring_config)
+
+        result = attack.get_attack_scoring_config()
+
+        assert result.objective_scorer == mock_true_false_scorer
+        assert len(result.auxiliary_scorers) == 1
+        assert result.successful_objective_threshold == 0.85
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestContextValidation:

@@ -13,6 +13,7 @@ from pyrit.models.conversation_reference import ConversationReference, Conversat
 
 from pyrit.models.attack_result import AttackResult, AttackOutcome, AttackResultT
 from pyrit.models.strategy_result import StrategyResult, StrategyResultT
+from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
     AudioPathDataTypeSerializer,
@@ -76,6 +77,8 @@ __all__ = [
     "QuestionChoice",
     "Score",
     "ScoreType",
+    "ScenarioIdentifier",
+    "ScenarioResult",
     "Seed",
     "SeedObjective",
     "SeedPrompt",

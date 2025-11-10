@@ -56,13 +56,15 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
         inv_score.score_value = str(True) if not inv_score.get_value() else str(False)
         inv_score.score_value_description = "Inverted score: " + str(inv_score.score_value_description)
-        inv_score.score_rationale = f"Inverted score: {inv_score.score_value}\n{inv_score.score_rationale}"
+
+        scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
+        inv_score.score_rationale = (
+            f"Inverted score from {scorer_type} result: {inv_score.score_value}\n" f"{inv_score.score_rationale}"
+        )
 
         inv_score.id = uuid.uuid4()
 
         inv_score.scorer_class_identifier = self.get_identifier()
-        # Store a string representation to satisfy type expectations
-        inv_score.scorer_class_identifier["sub_identifier"] = str(self._scorer.get_identifier())
 
         return [inv_score]
 
@@ -77,3 +79,12 @@ class TrueFalseInverterScorer(TrueFalseScorer):
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
+
+    def _get_sub_identifier(self):
+        """
+        Returns the identifier of the underlying true/false scorer.
+
+        Returns:
+            dict: The identifier dictionary of the wrapped scorer.
+        """
+        return self._scorer.get_identifier()

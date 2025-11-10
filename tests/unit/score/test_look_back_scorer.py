@@ -145,4 +145,4 @@ async def test_score_async_handles_persuasion_conversation(patch_central_databas
     scorer._score_value_with_llm.assert_awaited_once()
 
     expected_formatted_prompt = "".join(f"{message.role}: {message.content}\n" for message in turns)
-    assert scorer._score_value_with_llm.call_args[1]["prompt_request_value"] == expected_formatted_prompt
+    assert scorer._score_value_with_llm.call_args[1]["message_value"] == expected_formatted_prompt

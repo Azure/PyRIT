@@ -9,13 +9,23 @@ When generating unit tests for PyRIT components, follow these comprehensive guid
 ## Core Testing Requirements
 
 ### Database/Memory Isolation
-- Always use `@pytest.mark.usefixtures("patch_central_database")` decorator on test classes that may interact with the Central Memory
+
+For unit tests (in tests/unit):
+- Always use `@pytest.mark.usefixtures("patch_central_database")` decorator on unit test classes that may interact with the Central Memory
 - This ensures tests run in isolation without affecting the actual database
 
 ### Async Testing
 - Use `@pytest.mark.asyncio` decorator for all async test methods
 - Use `AsyncMock` instead of `MagicMock` when mocking async methods
 - Properly await all async operations in tests
+
+
+### Using Pre-Configured Settings
+
+Check conftest and mocks.py to see if there are common utilities that can be reused across tests.
+
+One common issue is setting the central database. Use the `patch_central_database` is a common solution.
+
 
 ### Test Organization
 - Group related tests into classes with descriptive names starting with `Test`

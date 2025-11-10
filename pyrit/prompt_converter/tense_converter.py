@@ -3,7 +3,9 @@
 
 import logging
 import pathlib
+from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import LLMGenericTextConverter
@@ -19,17 +21,22 @@ class TenseConverter(LLMGenericTextConverter):
     An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, tense: str, prompt_template: SeedPrompt = None):
+    @apply_defaults
+    def __init__(
+        self,
+        *,
+        converter_target: Optional[PromptChatTarget] = None,
+        tense: str,
+        prompt_template: Optional[SeedPrompt] = None,
+    ):
         """
         Initializes the converter with the target chat support, tense, and optional prompt template.
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
+                Can be omitted if a default has been configured via PyRIT initialization.
             tone (str): The tense the converter should convert the prompt to. E.g. past, present, future.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
-
-        Raises:
-            ValueError: If the language is not provided.
         """
         # set to default strategy if not provided
         prompt_template = (

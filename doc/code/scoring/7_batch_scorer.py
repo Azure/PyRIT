@@ -22,11 +22,12 @@
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
+
 # %%
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.prompt_target import TextTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

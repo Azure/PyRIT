@@ -28,6 +28,21 @@ from pyrit.prompt_converter import (
         FuzzerSimilarConverter,
     ],
 )
+def test_fuzzer_converter_raises_when_converter_target_is_none(converter_class) -> None:
+    with pytest.raises(ValueError, match="converter_target is required"):
+        converter_class(converter_target=None)
+
+
+@pytest.mark.parametrize(
+    "converter_class",
+    [
+        FuzzerExpandConverter,
+        FuzzerShortenConverter,
+        FuzzerRephraseConverter,
+        FuzzerCrossOverConverter,
+        FuzzerSimilarConverter,
+    ],
+)
 def test_converter_init_templates_not_null(converter_class, sqlite_instance) -> None:
     prompt_target = MockPromptTarget()
     converter = converter_class(converter_target=prompt_target)

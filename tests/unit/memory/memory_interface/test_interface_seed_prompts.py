@@ -11,6 +11,7 @@ import pytest
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import MessagePiece, SeedGroup, SeedPrompt
+from pyrit.models.seed_objective import SeedObjective
 
 
 def assert_original_value_in_list(original_value: str, message_pieces: Sequence[MessagePiece]):
@@ -824,8 +825,6 @@ async def test_add_seed_prompts_no_serialization_for_text(sqlite_instance: Memor
 @pytest.mark.asyncio
 async def test_add_seed_groups_with_objective_added_to_all_prompts(sqlite_instance: MemoryInterface):
     """Test objective is added to all_prompts list"""
-    from pyrit.models.seed_objective import SeedObjective
-
     # Create prompts and objective
     prompt1 = SeedPrompt(value="Test prompt 1", data_type="text", sequence=0, added_by="test_user", role="user")
     prompt2 = SeedPrompt(value="Test prompt 2", data_type="text", sequence=0, added_by="test_user")

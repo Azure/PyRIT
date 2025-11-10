@@ -6,7 +6,9 @@ import logging
 import pathlib
 import uuid
 from textwrap import dedent
+from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -30,15 +32,29 @@ class VariationConverter(PromptConverter):
     Generates variations of the input prompts using the converter target.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
+    @apply_defaults
+    def __init__(
+        self, *, converter_target: Optional[PromptChatTarget] = None, prompt_template: Optional[SeedPrompt] = None
+    ):
         """
         Initializes the converter with the specified target and prompt template.
 
         Args:
             converter_target (PromptChatTarget): The target to which the prompt will be sent for conversion.
+                Can be omitted if a default has been configured via PyRIT initialization.
             prompt_template (SeedPrompt, optional): The template used for generating the system prompt.
                 If not provided, a default template will be used.
+
+        Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
         """
+        if converter_target is None:
+            raise ValueError(
+                "converter_target is required for LLM-based converters. "
+                "Either pass it explicitly or configure a default via PyRIT initialization "
+                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
+            )
+
         self.converter_target = converter_target
 
         # set to default strategy if not provided
@@ -107,8 +123,8 @@ class VariationConverter(PromptConverter):
 
     @pyrit_json_retry
     async def send_variation_prompt_async(self, request):
-        """Sends the prompt request to the converter target and retrieves the response."""
-        response = await self.converter_target.send_prompt_async(prompt_request=request)
+        """Sends the message to the converter target and retrieves the response."""
+        response = await self.converter_target.send_prompt_async(message=request)
 
         response_msg = response.get_value()
         response_msg = remove_markdown_json(response_msg)

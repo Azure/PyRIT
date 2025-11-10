@@ -19,6 +19,7 @@ from pyrit.models import (
     Score,
     construct_response_from_request,
     group_conversation_message_pieces_by_sequence,
+    group_message_pieces_into_conversations,
     sort_message_pieces,
 )
 from pyrit.prompt_converter import Base64Converter
@@ -240,8 +241,6 @@ def test_group_conversation_message_pieces_throws():
 
 def test_group_message_pieces_into_conversations_multiple_conversations():
     """Test grouping pieces from multiple conversations."""
-    from pyrit.models import group_message_pieces_into_conversations
-
     pieces = [
         # Conversation 1 - each sequence/role combination is separate
         MessagePiece(role="user", conversation_id="conv1", sequence=0, original_value="Conv1 User Seq0"),
@@ -278,16 +277,12 @@ def test_group_message_pieces_into_conversations_multiple_conversations():
 
 def test_group_message_pieces_into_conversations_empty_list():
     """Test grouping with empty list returns empty list."""
-    from pyrit.models import group_message_pieces_into_conversations
-
     result = group_message_pieces_into_conversations([])
     assert result == []
 
 
 def test_group_message_pieces_into_conversations_single_conversation():
     """Test that function works correctly when all pieces are from same conversation."""
-    from pyrit.models import group_message_pieces_into_conversations
-
     pieces = [
         MessagePiece(role="user", conversation_id="conv1", sequence=0, original_value="User Seq0"),
         MessagePiece(role="assistant", conversation_id="conv1", sequence=1, original_value="Asst Seq1"),
@@ -306,8 +301,6 @@ def test_group_message_pieces_into_conversations_single_conversation():
 
 def test_group_message_pieces_into_conversations_multiple_pieces_same_sequence_role():
     """Test grouping when multiple pieces have the same sequence and role."""
-    from pyrit.models import group_message_pieces_into_conversations
-
     pieces = [
         # Two user pieces in sequence 0 (e.g., multimodal with text and image)
         MessagePiece(role="user", conversation_id="conv1", sequence=0, original_value="Text piece"),

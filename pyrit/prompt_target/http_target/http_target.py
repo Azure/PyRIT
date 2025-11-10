@@ -45,15 +45,22 @@ class HTTPTarget(PromptTarget):
         callback_function: Optional[Callable] = None,
         max_requests_per_minute: Optional[int] = None,
         client: Optional[httpx.AsyncClient] = None,
+        model_name: str = "",
         **httpx_client_kwargs: Any,
     ) -> None:
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
+        # Initialize attributes needed by parse_raw_http_request before calling it
+        self._client = client
+        self.use_tls = use_tls
+
+        # Parse the URL early to use as endpoint identifier
+        # This will fail early if the http_request is malformed
+        _, _, endpoint, _, _ = self.parse_raw_http_request(http_request)
+
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
-        self.use_tls = use_tls
         self.httpx_client_kwargs = httpx_client_kwargs or {}
-        self._client = client
 
         if client and httpx_client_kwargs:
             raise ValueError("Cannot provide both a pre-configured client and additional httpx client kwargs.")
@@ -99,9 +106,9 @@ class HTTPTarget(PromptTarget):
         return http_request_w_prompt
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+    async def send_prompt_async(self, *, message: Message) -> Message:
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
 
         http_request_w_prompt = self._inject_prompt_into_request(request)
 
@@ -228,8 +235,8 @@ class HTTPTarget(PromptTarget):
         host = headers_dict["host"]
         return f"{http_protocol}{host}{path}"
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        message_pieces: Sequence[MessagePiece] = prompt_request.message_pieces
+    def _validate_request(self, *, message: Message) -> None:
+        message_pieces: Sequence[MessagePiece] = message.message_pieces
 
         n_pieces = len(message_pieces)
         if n_pieces != 1:

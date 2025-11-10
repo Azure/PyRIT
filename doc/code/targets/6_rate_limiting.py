@@ -19,9 +19,9 @@
 # %%
 import time
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 max_requests_per_minute = 5

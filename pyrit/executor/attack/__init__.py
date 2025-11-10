@@ -8,6 +8,7 @@ from pyrit.executor.attack.core import (
     AttackScoringConfig,
     AttackAdversarialConfig,
     AttackExecutor,
+    AttackExecutorResult,
 )
 
 from pyrit.executor.attack.single_turn import (
@@ -39,9 +40,10 @@ from pyrit.executor.attack.multi_turn import (
     TAPAttackResult,
 )
 
-from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResultPrinter, MarkdownAttackResultPrinter
-
 from pyrit.executor.attack.component import ConversationManager, ConversationState, ObjectiveEvaluator
+
+# Import printer modules last to avoid circular dependencies
+from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResultPrinter, MarkdownAttackResultPrinter
 
 __all__ = [
     "AttackStrategy",
@@ -79,4 +81,5 @@ __all__ = [
     "ConversationState",
     "AttackExecutor",
     "ObjectiveEvaluator",
+    "AttackExecutorResult",
 ]

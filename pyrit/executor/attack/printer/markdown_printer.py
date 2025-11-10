@@ -5,8 +5,6 @@ import os
 from datetime import datetime
 from typing import List
 
-from IPython.display import Markdown, display
-
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackResult, Message, MessagePiece, Score
@@ -47,9 +45,11 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         if self._display_inline:
             try:
+                from IPython.display import Markdown, display
+
                 display(Markdown(full_markdown))
             except (ImportError, NameError):
-                # Fallback to print if not in Jupyter environment
+                # Fallback to print if IPython is not available
                 print(full_markdown)
         else:
             print(full_markdown)

@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
@@ -49,6 +50,7 @@ class ContextComplianceAttack(PromptSendingAttack):
     # Default affirmative response used in conversation
     DEFAULT_AFFIRMATIVE_RESPONSE: str = "yes."
 
+    @apply_defaults
     def __init__(
         self,
         *,

@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from azure.storage.blob import UserDelegationKey
@@ -54,7 +54,8 @@ async def test_get_sas_token(
 
     # Mocking the container URL
     container_url = "https://mockaccount.blob.core.windows.net/mockcontainer"
-    mock_container_client_instance = AsyncMock()
+    # Use MagicMock with spec to avoid AsyncMock behavior for sync properties
+    mock_container_client_instance = MagicMock(spec=["container_name", "account_name"])
     mock_container_client.from_container_url.return_value = mock_container_client_instance
     mock_container_client_instance.container_name = "mock_container"
     mock_container_client_instance.account_name = "mock_account"

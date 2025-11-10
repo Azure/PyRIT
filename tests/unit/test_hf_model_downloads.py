@@ -32,10 +32,11 @@ def setup_environment():
         yield token
 
 
-def test_download_specific_files(setup_environment):
+@pytest.mark.asyncio
+async def test_download_specific_files(setup_environment):
     """Test downloading specific files"""
     token = setup_environment  # Get the token from the fixture
 
     with patch("os.makedirs"):
         with patch("pyrit.common.download_hf_model.download_files"):
-            download_specific_files(MODEL_ID, FILE_PATTERNS, token, Path(""))
+            await download_specific_files(MODEL_ID, FILE_PATTERNS, token, Path(""))

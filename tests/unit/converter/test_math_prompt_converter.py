@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -12,8 +12,9 @@ from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 
 @pytest.mark.asyncio
 async def test_math_prompt_converter_convert_async():
-    # Mock the converter target
-    mock_converter_target = AsyncMock()
+    # Mock the converter target - use MagicMock for synchronous methods
+    mock_converter_target = MagicMock()
+    mock_converter_target.send_prompt_async = AsyncMock()
     # Specify parameters=['prompt'] to match the placeholder in the template
     template_value = "Solve the following problem: {{ prompt }}"
     dataset_name = "dataset_1"
@@ -66,8 +67,9 @@ async def test_math_prompt_converter_convert_async():
 
 @pytest.mark.asyncio
 async def test_math_prompt_converter_handles_disallowed_content():
-    # Mock the converter target
-    mock_converter_target = AsyncMock()
+    # Mock the converter target - use MagicMock for synchronous methods
+    mock_converter_target = MagicMock()
+    mock_converter_target.send_prompt_async = AsyncMock()
     # Specify parameters=['prompt'] to match the placeholder in the template
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
@@ -117,8 +119,9 @@ async def test_math_prompt_converter_handles_disallowed_content():
 
 @pytest.mark.asyncio
 async def test_math_prompt_converter_invalid_input_type():
-    # Mock the converter target
-    mock_converter_target = AsyncMock()
+    # Mock the converter target - use MagicMock for synchronous methods
+    mock_converter_target = MagicMock()
+    mock_converter_target.send_prompt_async = AsyncMock()
     # Specify parameters=['prompt'] to match the placeholder in the template
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
@@ -132,13 +135,15 @@ async def test_math_prompt_converter_invalid_input_type():
 
     # Test with an invalid input type
     with pytest.raises(ValueError, match="Input type not supported"):
-        await converter.convert_async(prompt="Test prompt", input_type="unsupported")
+        # Use type: ignore to suppress the type error for testing invalid input
+        await converter.convert_async(prompt="Test prompt", input_type="unsupported")  # type: ignore
 
 
 @pytest.mark.asyncio
 async def test_math_prompt_converter_error_handling():
-    # Mock the converter target
-    mock_converter_target = AsyncMock()
+    # Mock the converter target - use MagicMock for synchronous methods
+    mock_converter_target = MagicMock()
+    mock_converter_target.send_prompt_async = AsyncMock()
     # Specify parameters=['prompt'] to match the placeholder in the template
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"

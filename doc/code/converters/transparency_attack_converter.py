@@ -29,11 +29,11 @@ import pathlib
 from IPython.display import display
 from PIL import Image
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.executor.attack.single_turn import PromptSendingAttack
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_converter import TransparencyAttackConverter
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

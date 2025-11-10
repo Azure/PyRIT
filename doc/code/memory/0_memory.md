@@ -10,7 +10,7 @@ At the beginning of each notebook, make sure to call:
 ```
 # Import initialize_pyrit
 # Import the specific constant for the MemoryDatabaseType, or provide the literal value
-from pyrit.common import initialize_pyrit, IN_MEMORY, SQLITE, AZURE_SQL
+from pyrit.setup import initialize_pyrit, IN_MEMORY, SQLITE, AZURE_SQL
 
 initialize_pyrit(memory_db_type: MemoryDatabaseType, memory_instance_kwargs: Optional[Any])
 ```

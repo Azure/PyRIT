@@ -16,6 +16,7 @@ skipped_urls = [
     "https://code.visualstudio.com/Download",  # This will block python requests
     "https://platform.openai.com/docs/api-reference/introduction",  # blocks python requests
     "https://platform.openai.com/docs/api-reference/responses",  # blocks python requests
+    "https://platform.openai.com/docs/guides/function-calling",  # blocks python requests
     "https://www.anthropic.com/research/many-shot-jailbreaking",  # blocks python requests
     "https://code.visualstudio.com/docs/devcontainers/containers",
     "https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working",
