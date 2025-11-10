@@ -405,10 +405,8 @@ class TestComplexScenarios:
                 temperature: Optional[float] = None,
                 top_p: Optional[float] = None,
                 max_tokens: Optional[int] = None,
-                api_version: Optional[str] = None,
             ) -> None:
                 super().__init__(temperature=temperature, top_p=top_p, max_tokens=max_tokens)
-                self.api_version = api_version
 
         # Set defaults for base class
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.7)
@@ -416,7 +414,6 @@ class TestComplexScenarios:
 
         # Set defaults for subclass (more specific temperature)
         set_default_value(class_type=AzureOpenAIChatTarget, parameter_name="temperature", value=0.3)
-        set_default_value(class_type=AzureOpenAIChatTarget, parameter_name="api_version", value="2024-10-21")
 
         # Test base class
         base_obj = OpenAIChatTarget()
@@ -429,14 +426,12 @@ class TestComplexScenarios:
         assert azure_obj.temperature == 0.3  # More specific default
         assert azure_obj.top_p == 0.9  # Inherited from parent
         assert azure_obj.max_tokens is None  # No default set
-        assert azure_obj.api_version == "2024-10-21"  # Subclass-specific default
 
         # Test with explicit overrides
         custom_obj = AzureOpenAIChatTarget(temperature=0.5, max_tokens=100)
         assert custom_obj.temperature == 0.5  # Explicit override
         assert custom_obj.top_p == 0.9  # Still uses default
         assert custom_obj.max_tokens == 100  # Explicit override
-        assert custom_obj.api_version == "2024-10-21"  # Still uses default
 
     def test_multiple_classes_independent_defaults(self) -> None:
         """Test that multiple classes can have independent default configurations."""
