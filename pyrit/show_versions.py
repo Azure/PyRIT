@@ -15,10 +15,8 @@ def _get_sys_info():
     """
     System information.
 
-    Returns
-    -------
-    sys_info : dict
-        system and Python version information
+    Returns:
+        dict: system and Python version information
     """
     python = sys.version.replace("\n", " ")
 
@@ -38,10 +36,8 @@ def _get_deps_info():
     This function does not import the modules to collect the version numbers
     but instead relies on standard Python package metadata.
 
-    Returns
-    -------
-    deps_info: dict
-        version information on relevant Python libraries
+    Returns:
+        dict: version information on relevant Python libraries
     """
     deps = sorted(
         [

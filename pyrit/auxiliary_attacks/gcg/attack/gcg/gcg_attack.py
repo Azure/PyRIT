@@ -37,10 +37,8 @@ def token_gradients(model, input_ids, input_slice, target_slice, loss_slice):
     loss_slice : slice
         The slice of the logits to be used for computing the loss.
 
-    Returns
-    -------
-    torch.Tensor
-        The gradients of each token in the input_slice with respect to the loss.
+    Returns:
+        torch.Tensor: The gradients of each token in the input_slice with respect to the loss.
     """
 
     embed_weights = get_embedding_matrix(model)
