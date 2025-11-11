@@ -83,8 +83,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-10-21".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -134,8 +132,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
-        # Validate endpoint URL
-        self._warn_if_irregular_endpoint(self.CHAT_URL_REGEX)
+        chat_url_patterns = [r"/chat/completions"]
+        self._warn_if_irregular_endpoint(chat_url_patterns)
 
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
@@ -305,19 +303,18 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
         return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        """Validates the structure and content of a prompt request for compatibility of this target.
+    def _validate_request(self, *, message: Message) -> None:
+        """Validates the structure and content of a message for compatibility of this target.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Raises:
-            ValueError: If more than two message pieces are provided.
             ValueError: If any of the message pieces have a data type other than 'text' or 'image_path'.
         """
 
         converted_prompt_data_types = [
-            message_piece.converted_value_data_type for message_piece in prompt_request.message_pieces
+            message_piece.converted_value_data_type for message_piece in message.message_pieces
         ]
 
         # Some models may not support all of these
