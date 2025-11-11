@@ -25,7 +25,7 @@ class ScenarioObjectiveListInitializer(PyRITInitializer):
 
     @property
     def execution_order(self) -> int:
-        """should be executed after most initializers"""
+        """Should be executed after most initializers"""
         return 10
 
     @property

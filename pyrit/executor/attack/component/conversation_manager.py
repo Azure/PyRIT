@@ -103,7 +103,7 @@ class ConversationManager:
         labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """
-        set or update the system-level prompt associated with a conversation.
+        Set or update the system-level prompt associated with a conversation.
 
         This helper is intended for conversational (`PromptChatTarget`) goals,
         where a dedicated system prompt influences the behavior of the LLM for
