@@ -136,7 +136,7 @@
 #         return atomic_attacks
 # ```
 #
-# ### Key Patterns from Existing Scenarios
+# ### Existing Scenarios
 #
 # - **EncodingScenario**: Tests encoding attacks (Base64, ROT13, etc.) with seed prompts and decoding templates
 # - **FoundryScenario**: Comprehensive converter and multi-turn attack testing with difficulty-based strategies

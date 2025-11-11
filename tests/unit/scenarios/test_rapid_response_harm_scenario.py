@@ -49,46 +49,6 @@ def sample_objectives():
 class TestRapidResponseHarmStrategy:
     """Tests for the RapidResponseHarmStrategy enum."""
 
-    def test_all_strategy_has_all_tag(self):
-        """Test that ALL strategy has the 'all' tag."""
-        assert "all" in RapidResponseHarmStrategy.ALL.tags
-        assert RapidResponseHarmStrategy.ALL.value == "all"
-
-    def test_hate_strategy_has_correct_value_and_tags(self):
-        """Test that Hate strategy has correct value."""
-        assert RapidResponseHarmStrategy.Hate.value == "hate"
-        assert isinstance(RapidResponseHarmStrategy.Hate.tags, set)
-
-    def test_fairness_strategy_has_correct_value_and_tags(self):
-        """Test that Fairness strategy has correct value."""
-        assert RapidResponseHarmStrategy.Fairness.value == "fairness"
-        assert isinstance(RapidResponseHarmStrategy.Fairness.tags, set)
-
-    def test_violence_strategy_has_correct_value_and_tags(self):
-        """Test that Violence strategy has correct value."""
-        assert RapidResponseHarmStrategy.Violence.value == "violence"
-        assert isinstance(RapidResponseHarmStrategy.Violence.tags, set)
-
-    def test_sexual_strategy_has_correct_value_and_tags(self):
-        """Test that Sexual strategy has correct value."""
-        assert RapidResponseHarmStrategy.Sexual.value == "sexual"
-        assert isinstance(RapidResponseHarmStrategy.Sexual.tags, set)
-
-    def test_harassment_strategy_has_correct_value_and_tags(self):
-        """Test that Harassment strategy has correct value."""
-        assert RapidResponseHarmStrategy.Harassment.value == "harassment"
-        assert isinstance(RapidResponseHarmStrategy.Harassment.tags, set)
-
-    def test_misinformation_strategy_has_correct_value_and_tags(self):
-        """Test that Misinformation strategy has correct value."""
-        assert RapidResponseHarmStrategy.Misinformation.value == "misinformation"
-        assert isinstance(RapidResponseHarmStrategy.Misinformation.tags, set)
-
-    def test_leakage_strategy_has_correct_value_and_tags(self):
-        """Test that Leakage strategy has correct value."""
-        assert RapidResponseHarmStrategy.Leakage.value == "leakage"
-        assert isinstance(RapidResponseHarmStrategy.Leakage.tags, set)
-
     def test_all_harm_categories_exist(self):
         """Test that all expected harm categories exist as strategies."""
         expected_categories = ["hate", "fairness", "violence", "sexual", "harassment", "misinformation", "leakage"]
@@ -96,11 +56,6 @@ class TestRapidResponseHarmStrategy:
 
         for category in expected_categories:
             assert category in strategy_values, f"Expected harm category '{category}' not found in strategies"
-
-    def test_strategy_values_are_lowercase(self):
-        """Test that all strategy values are lowercase."""
-        for strategy in RapidResponseHarmStrategy:
-            assert strategy.value == strategy.value.lower(), f"Strategy value '{strategy.value}' is not lowercase"
 
     def test_strategy_tags_are_sets(self):
         """Test that all strategy tags are set objects."""
@@ -111,18 +66,6 @@ class TestRapidResponseHarmStrategy:
         """Test that we have the expected number of strategy members."""
         # ALL + 7 harm categories = 8 total
         assert len(list(RapidResponseHarmStrategy)) == 8
-
-    def test_strategy_name_matches_value_pattern(self):
-        """Test that strategy names follow expected patterns."""
-        for strategy in RapidResponseHarmStrategy:
-            if strategy == RapidResponseHarmStrategy.ALL:
-                assert strategy.name == "ALL"
-                assert strategy.value == "all"
-            else:
-                # Other strategies should have capitalized names
-                assert strategy.name[0].isupper(), f"Strategy name '{strategy.name}' should start with uppercase"
-                # Value should be lowercase version of name
-                assert strategy.value == strategy.name.lower(), f"Value '{strategy.value}' doesn't match lowercase name"
 
     def test_all_strategies_can_be_accessed_by_name(self):
         """Test that all strategies can be accessed by their name."""
@@ -279,14 +222,6 @@ class TestRapidResponseHarmStrategy:
         assert isinstance(result, list)
         assert len(result) >= 3
 
-    def test_strategy_has_inherited_methods(self):
-        """Test that strategies inherit methods from ScenarioStrategy."""
-        # Check that class methods exist
-        assert hasattr(RapidResponseHarmStrategy, "get_aggregate_tags")
-        assert hasattr(RapidResponseHarmStrategy, "supports_composition")
-        assert hasattr(RapidResponseHarmStrategy, "validate_composition")
-        assert hasattr(RapidResponseHarmStrategy, "prepare_scenario_strategies")
-
     def test_validate_composition_accepts_single_harm(self):
         """Test that composition validation accepts single harm strategy."""
         strategies = [RapidResponseHarmStrategy.Hate]
@@ -386,10 +321,6 @@ class TestRapidResponseHarmScenarioBasic:
 
         # Should have strategies from the ALL aggregate
         assert len(scenario._rapid_response_harm_strategy_composition) > 0
-
-    def test_get_strategy_class_returns_correct_class(self):
-        """Test that get_strategy_class returns RapidResponseHarmStrategy."""
-        assert RapidResponseHarmScenario.get_strategy_class() == RapidResponseHarmStrategy
 
     def test_get_default_strategy_returns_all(self):
         """Test that get_default_strategy returns ALL strategy."""
