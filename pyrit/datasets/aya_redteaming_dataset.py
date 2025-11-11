@@ -55,7 +55,7 @@ def fetch_aya_redteaming_dataset(
     Warning:
         Due to the nature of these prompts, it may be advisable to consult your relevant legal
         department before testing them with LLMs to ensure compliance and reduce potential risks.
-    """
+    """  # noqa: D301
     _lang = {
         "English": "eng",
         "Hindi": "hin",

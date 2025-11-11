@@ -47,7 +47,7 @@ def fetch_mlcommons_ailuminate_demo_dataset(
         - https://github.com/mlcommons/ailuminate \n
         - https://mlcommons.org/ailuminate/ \n
         - https://doi.org/10.48550/arXiv.2404.12241
-    """
+    """  # noqa: D301
     examples = fetch_examples(source, source_type, cache, data_home)
 
     seed_prompts = [

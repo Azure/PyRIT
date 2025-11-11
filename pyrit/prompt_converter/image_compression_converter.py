@@ -81,7 +81,7 @@ class ImageCompressionConverter(PromptConverter):
 
         Raises:
             ValueError: If unsupported output format is specified, or if some of the parameters are out of range.
-        """
+        """  # noqa: D301
         if quality is not None and (quality < 0 or quality > 100):
             raise ValueError("Quality must be between 0 and 100")
         self._quality = quality

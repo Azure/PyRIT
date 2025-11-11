@@ -66,7 +66,7 @@ async def fetch_harmbench_multimodal_dataset_async(
         Authors:
             Mantas Mazeika & Long Phan & Xuwang Yin & Andy Zou & Zifan Wang & Norman Mu & Elham Sakhaee
             & Nathaniel Li & Steven Basart & Bo Li & David Forsyth & Dan Hendrycks
-    """
+    """  # noqa: D301
     if categories is not None:
         valid_categories = {category.value for category in SemanticCategory}
         invalid_categories = (
