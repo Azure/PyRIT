@@ -141,7 +141,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Args:
             has_echo (bool): Flag to enable detailed SQL execution logging.
         """
-
         try:
             # Create the SQLAlchemy engine.
             # Use pool_pre_ping (health check) to gracefully handle server-closed connections

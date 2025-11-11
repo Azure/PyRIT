@@ -573,7 +573,6 @@ class Scenario(ABC):
         Raises:
             Exception: Any exception that occurs during scenario execution.
         """
-
         logger.info(f"Starting scenario '{self._name}' execution with {len(self._atomic_attacks)} atomic attacks")
 
         # Increment number_tries at the start of each run

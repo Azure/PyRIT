@@ -65,7 +65,6 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         Returns:
             list[Score]: A single-element list with the aggregated true/false score.
         """
-
         tasks = [
             scorer.score_async(message=message, objective=objective, role_filter=role_filter)
             for scorer in self._scorers

@@ -172,7 +172,6 @@ class HTTPTarget(PromptTarget):
             http_method (str): method (ie GET vs POST)
             http_version (str): HTTP version to use
         """
-
         headers_dict: Dict[str, str] = {}
         if self._client:
             headers_dict = dict(self._client.headers.copy())

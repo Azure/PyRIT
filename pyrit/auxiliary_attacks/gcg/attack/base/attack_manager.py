@@ -150,7 +150,6 @@ class AttackPrompt(object):
             A list of prefixes to test the attack
             (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
         """
-
         self.goal = goal
         self.target = target
         self.control = control_init
@@ -485,7 +484,6 @@ class PromptManager(object):
         managers : dict, optional
             A dictionary of manager objects, required to create the prompts.
         """
-
         if len(goals) != len(targets):
             raise ValueError("Length of goals and targets must match")
         if len(goals) == 0:
@@ -625,7 +623,6 @@ class MultiPromptAttack(object):
         test_workers : list of Worker objects, optional
             The list of test workers used in the attack
         """
-
         self.goals = goals
         self.targets = targets
         self.workers = workers
@@ -952,7 +949,6 @@ class ProgressiveMultiPromptAttack(object):
         test_workers : list of Worker objects, optional
             The list of test workers used in the attack
         """
-
         self.goals = goals
         self.targets = targets
         self.workers = workers
@@ -1062,7 +1058,6 @@ class ProgressiveMultiPromptAttack(object):
         filter_cand : bool, optional
             Whether to filter candidates whose lengths changed after re-tokenization (default is True)
         """
-
         if self.logfile is not None:
             with open(self.logfile, "r") as f:
                 log = json.load(f)
@@ -1193,7 +1188,6 @@ class IndividualPromptAttack(object):
         test_workers : list, optional
             The list of test workers used in the attack
         """
-
         self.goals = goals
         self.targets = targets
         self.workers = workers
@@ -1300,7 +1294,6 @@ class IndividualPromptAttack(object):
         filter_cand : bool, optional
             Whether to filter candidates (default is True)
         """
-
         if self.logfile is not None:
             with open(self.logfile, "r") as f:
                 log = json.load(f)
@@ -1403,7 +1396,6 @@ class EvaluateAttack(object):
         test_workers : list, optional
             The list of test workers used in the attack
         """
-
         self.goals = goals
         self.targets = targets
         self.workers = workers

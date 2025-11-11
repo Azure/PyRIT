@@ -33,7 +33,6 @@ class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
         Returns:
             str: The formatted chat messages.
         """
-
         messages_list = []
 
         formatted_messages: str = ""

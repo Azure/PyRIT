@@ -63,7 +63,6 @@ class OpenAICompletionTarget(OpenAITarget):
                 `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """  # noqa: D415
-
         super().__init__(*args, **kwargs)
 
         self._max_tokens = max_tokens

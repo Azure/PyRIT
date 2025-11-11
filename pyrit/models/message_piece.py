@@ -81,7 +81,6 @@ class MessagePiece:
             scores: The scores associated with the prompt. Defaults to None.
             targeted_harm_categories: The harm categories associated with the prompt. Defaults to None.
         """
-
         self.id = id if id else uuid4()
 
         if role not in ChatMessageRole.__args__:  # type: ignore

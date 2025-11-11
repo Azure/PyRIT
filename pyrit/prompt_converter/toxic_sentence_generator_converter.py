@@ -42,7 +42,6 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
             prompt_template (SeedPrompt): The seed prompt template to use. If not provided,
                                           defaults to the ``toxic_sentence_generator.yaml``.
         """
-
         # set to default strategy if not provided
         prompt_template = (
             prompt_template

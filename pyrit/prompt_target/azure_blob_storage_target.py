@@ -96,7 +96,6 @@ class AzureBlobStorageTarget(PromptTarget):
             data (bytes): Byte representation of content to upload to container.
             content_type (str): Content type to upload.
         """
-
         content_settings = ContentSettings(content_type=f"{content_type}")
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 

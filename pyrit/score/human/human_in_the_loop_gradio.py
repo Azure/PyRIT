@@ -54,7 +54,6 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         Returns:
             list[Score]: A list containing a single Score object based on human evaluation.
         """
-
         try:
             score = await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
             return score

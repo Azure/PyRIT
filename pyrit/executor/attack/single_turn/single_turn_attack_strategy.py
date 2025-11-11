@@ -95,7 +95,6 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         """
         Execute the attack strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         seed_group = get_kwarg_param(kwargs=kwargs, param_name="seed_group", expected_type=SeedGroup, required=False)
         objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str, required=False)

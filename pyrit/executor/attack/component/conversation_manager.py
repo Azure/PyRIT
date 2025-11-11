@@ -344,7 +344,6 @@ class ConversationManager:
             ValueError: If max_turns would be exceeded by this piece.
             ValueError: If a system prompt is provided but target doesn't support it.
         """
-
         # Check if multiturn
         is_multi_turn = max_turns is not None
 

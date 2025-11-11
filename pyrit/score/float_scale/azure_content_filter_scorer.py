@@ -61,7 +61,6 @@ class AzureContentFilterScorer(FloatScaleScorer):
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.
         """
-
         super().__init__(validator=validator or self._default_validator)
 
         if harm_categories:

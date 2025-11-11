@@ -21,7 +21,6 @@ class TrueFalseInverterScorer(TrueFalseScorer):
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
                 Note: This parameter is present for signature compatibility but is not used.
         """
-
         super().__init__(validator=ScorerPromptValidator())
 
         if not isinstance(scorer, TrueFalseScorer):

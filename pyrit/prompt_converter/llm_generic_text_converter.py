@@ -76,7 +76,6 @@ class LLMGenericTextConverter(PromptConverter):
         Returns:
             ConverterResult: The result containing the converted output and its type.
         """
-
         conversation_id = str(uuid.uuid4())
 
         kwargs = self._prompt_kwargs.copy()

@@ -327,7 +327,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         """
         Execute the attack strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         prompt_sequence = get_kwarg_param(
             kwargs=kwargs, param_name="prompt_sequence", expected_type=list, required=True

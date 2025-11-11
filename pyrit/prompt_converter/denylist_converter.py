@@ -64,7 +64,6 @@ class DenylistConverter(LLMGenericTextConverter):
         Returns:
             ConverterResult: The result containing the modified prompt.
         """
-
         # check if the prompt contains any words from the  denylist and if so,
         # update the prompt replacing the denied words with synonyms
         denylist = self._prompt_kwargs.get("denylist", [])

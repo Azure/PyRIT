@@ -188,7 +188,6 @@ def group_conversation_message_pieces_by_sequence(
     ...     ])
     ... ]
     """
-
     if not message_pieces:
         return []
 
@@ -274,7 +273,6 @@ def construct_response_from_request(
     """
     Constructs a response entry from a request.
     """
-
     if request.prompt_metadata:
         prompt_metadata = combine_dict(request.prompt_metadata, prompt_metadata or {})
 

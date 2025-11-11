@@ -100,7 +100,6 @@ class Seed(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-
         jinja_template = Template(self.value, undefined=StrictUndefined)
 
         try:

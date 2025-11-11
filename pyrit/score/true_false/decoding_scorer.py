@@ -63,7 +63,6 @@ class DecodingScorer(TrueFalseScorer):
             list[Score]: A list containing a single Score object with a boolean value indicating
                 whether any of the user piece values match the response.
         """
-
         memory = CentralMemory.get_memory_instance()
         user_request = memory.get_request_from_response(response=message_piece.to_message())
 

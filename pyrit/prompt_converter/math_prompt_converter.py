@@ -33,7 +33,6 @@ class MathPromptConverter(LLMGenericTextConverter):
                 Can be omitted if a default has been configured via PyRIT initialization.
             prompt_template (SeedPrompt): The seed prompt template to use.
         """
-
         # Load the template from the YAML file or use a default template if not provided
         prompt_template = (
             prompt_template

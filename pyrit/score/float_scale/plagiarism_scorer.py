@@ -46,7 +46,6 @@ class PlagiarismScorer(FloatScaleScorer):
             metric (PlagiarismMetric, optional): The plagiarism detection metric to use.
             n (int, optional): The n-gram size for n-gram similarity (default is 5).
         """
-
         super().__init__(validator=validator or self._default_validator)
 
         self.reference_text = reference_text

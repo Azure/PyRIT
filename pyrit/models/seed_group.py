@@ -72,7 +72,6 @@ class SeedGroup(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-
         for prompt in self.prompts:
             prompt.value = prompt.render_template_value(**kwargs)
 

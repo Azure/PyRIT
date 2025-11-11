@@ -265,7 +265,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         Returns:
             AttackResult: The result of the attack execution.
         """
-
         # Log the attack configuration
         logger.info(f"Starting red teaming attack with objective: {context.objective}")
         logger.info(f"Max turns: {self._max_turns}")

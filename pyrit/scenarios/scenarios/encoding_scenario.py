@@ -160,7 +160,6 @@ class EncodingScenario(Scenario):
                 added as the first atomic attack, allowing comparison between unmodified prompts and
                 encoding-modified prompts.
         """
-
         self._encoding_composites = EncodingStrategy.prepare_scenario_strategies(
             scenario_strategies, default_aggregate=EncodingStrategy.ALL
         )
@@ -276,7 +275,6 @@ class EncodingScenario(Scenario):
         Returns:
             list[AtomicAttack]: List of atomic attacks for this encoding scheme.
         """
-
         converter_configs = [
             AttackConverterConfig(
                 request_converters=PromptConverterConfiguration.from_converters(converters=converters)

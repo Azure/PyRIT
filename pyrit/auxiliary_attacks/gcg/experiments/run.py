@@ -34,7 +34,6 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
             - "multiple": multiple prompts one model or multiple prompts multiple models
 
     """
-
     if model_name not in MODEL_NAMES:
         raise ValueError(
             "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"

@@ -315,7 +315,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         Raises:
             ValueError: If any of the message pieces have a data type other than 'text' or 'image_path'.
         """
-
         converted_prompt_data_types = [
             message_piece.converted_value_data_type for message_piece in message.message_pieces
         ]

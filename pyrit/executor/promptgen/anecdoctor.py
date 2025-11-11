@@ -143,7 +143,6 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         Raises:
             ValueError: If the context is invalid.
         """
-
         if not context.content_type:
             raise ValueError("content_type must be provided in the context")
 
@@ -417,7 +416,6 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         """
         Execute the prompt generation strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         content_type = get_kwarg_param(kwargs=kwargs, param_name="content_type", expected_type=str)
         language = get_kwarg_param(kwargs=kwargs, param_name="language", expected_type=str)

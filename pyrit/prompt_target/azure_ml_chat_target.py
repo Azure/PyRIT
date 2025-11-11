@@ -230,7 +230,6 @@ class AzureMLChatTarget(PromptChatTarget):
         messages: list[ChatMessage],
     ) -> dict:
         """Constructs the HTTP request body for the AML online endpoint."""
-
         squashed_messages = self.chat_message_normalizer.normalize(messages)
         messages_dict = [message.model_dump() for message in squashed_messages]
 
@@ -261,7 +260,6 @@ class AzureMLChatTarget(PromptChatTarget):
         Returns:
             headers(dict): contains bearer token as AML key and content-type: JSON
         """
-
         headers: dict = {
             "Content-Type": "application/json",
             "Authorization": ("Bearer " + self._api_key),

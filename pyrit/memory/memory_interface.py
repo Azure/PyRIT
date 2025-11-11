@@ -486,7 +486,6 @@ class MemoryInterface(abc.ABC):
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
         """
-
         conditions = []
         if attack_id:
             conditions.append(self._get_message_pieces_attack_conditions(attack_id=str(attack_id)))
@@ -646,7 +645,6 @@ class MemoryInterface(abc.ABC):
         Args:
             message_pieces (Sequence[MessagePiece]): The list of message pieces to update.
         """
-
         prev_conversations = self.get_message_pieces(conversation_id=message_pieces[0].conversation_id)
 
         sequence = 0

@@ -124,7 +124,6 @@ class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyCont
         Args:
             result (AttackResult): The result of the attack strategy execution.
         """
-
         if not event_data.result:
             raise ValueError("Attack result is None. Cannot log or record the outcome.")
 
@@ -245,7 +244,6 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         """
         Execute the attack strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str)
 

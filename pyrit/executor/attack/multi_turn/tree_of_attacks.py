@@ -277,7 +277,6 @@ class _TreeOfAttacksNode:
             - `off_topic`: `True` if the prompt was deemed off-topic
             - `error_message`: Set if an error occurred during execution
         """
-
         try:
             # Generate adversarial prompt
             prompt = await self._generate_adversarial_prompt_async(objective)
@@ -1041,7 +1040,6 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
     def _load_adversarial_prompts(self) -> None:
         """Load the adversarial chat prompts from the configured paths."""
-
         # Load system prompt
         self._adversarial_chat_system_seed_prompt = SeedPrompt.from_yaml_with_required_parameters(
             template_path=self._adversarial_chat_system_prompt_path,
