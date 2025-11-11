@@ -45,7 +45,107 @@
 #
 # ## Creating Custom Scenarios
 #
-# To create a custom scenario, extend the `Scenario` base class. See [`FoundryScenario`](../../../pyrit/scenarios/scenarios/foundry_scenario.py) for an example.
+# To create a custom scenario, extend the `Scenario` base class and implement the required abstract methods.
+#
+# ### Required Components
+#
+# 1. **Strategy Enum**: Create a `ScenarioStrategy` enum that defines the available strategies for your scenario.
+#    - Each enum member is defined as `(value, tags)` where value is a string and tags is a set of strings
+#    - Include an `ALL` aggregate strategy that expands to all available strategies
+#    - Optionally implement `supports_composition()` and `validate_composition()` for strategy composition rules
+#
+# 2. **Scenario Class**: Extend `Scenario` and implement these abstract methods:
+#    - `get_strategy_class()`: Return your strategy enum class
+#    - `get_default_strategy()`: Return the default strategy (typically `YourStrategy.ALL`)
+#    - `_get_atomic_attacks_async()`: Build and return a list of `AtomicAttack` instances
+#
+# 3. **Constructor**: Use `@apply_defaults` decorator and call `super().__init__()` with scenario metadata:
+#    - `name`: Descriptive name for your scenario
+#    - `version`: Integer version number
+#    - `objective_target`: The target system being tested
+#    - `objective_scorer_identifier`: Identifier for the scoring mechanism
+#    - `memory_labels`: Optional labels for tracking
+#    - `max_concurrency`: Number of concurrent operations (default: 10)
+#    - `max_retries`: Number of retry attempts on failure (default: 0)
+#
+# ### Example Structure
+#
+# ```python
+# class MyStrategy(ScenarioStrategy):
+#     ALL = ("all", {"all"})
+#     StrategyA = ("strategy_a", {"tag1", "tag2"})
+#     StrategyB = ("strategy_b", {"tag1"})
+#
+# class MyScenario(Scenario):
+#     version: int = 1
+#
+#     @classmethod
+#     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+#         return MyStrategy
+#
+#     @classmethod
+#     def get_default_strategy(cls) -> ScenarioStrategy:
+#         return MyStrategy.ALL
+#
+#     @apply_defaults
+#     def __init__(
+#         self,
+#         *,
+#         objective_target: PromptTarget,
+#         scenario_strategies: Sequence[MyStrategy | ScenarioCompositeStrategy] | None = None,
+#         objective_scorer: Optional[TrueFalseScorer] = None,
+#         memory_labels: Optional[Dict[str, str]] = None,
+#         max_concurrency: int = 10,
+#         max_retries: int = 0,
+#     ):
+#         # Prepare strategy compositions
+#         self._strategy_compositions = MyStrategy.prepare_scenario_strategies(
+#             scenario_strategies, default_aggregate=MyStrategy.ALL
+#         )
+#
+#         # Initialize scoring and targets
+#         self._objective_target = objective_target
+#         self._objective_scorer = objective_scorer or self._get_default_scorer()
+#         self._scorer_config = AttackScoringConfig(objective_scorer=self._objective_scorer)
+#
+#         # Call parent constructor
+#         super().__init__(
+#             name="My Custom Scenario",
+#             version=self.version,
+#             objective_target=objective_target,
+#             objective_scorer_identifier=self._objective_scorer.get_identifier(),
+#             memory_labels=memory_labels,
+#             max_concurrency=max_concurrency,
+#             max_retries=max_retries,
+#         )
+#
+#     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+#         atomic_attacks = []
+#         for strategy in self._strategy_compositions:
+#             # Create attack instances based on strategy
+#             attack = PromptSendingAttack(
+#                 objective_target=self._objective_target,
+#                 attack_scoring_config=self._scorer_config,
+#             )
+#             atomic_attacks.append(AtomicAttack(
+#                 atomic_attack_name=strategy.name,
+#                 attack=attack,
+#                 objectives=["objective1", "objective2"],
+#                 memory_labels=self._memory_labels,
+#             ))
+#         return atomic_attacks
+# ```
+#
+# ### Key Patterns from Existing Scenarios
+#
+# - **EncodingScenario**: Tests encoding attacks (Base64, ROT13, etc.) with seed prompts and decoding templates
+# - **FoundryScenario**: Comprehensive converter and multi-turn attack testing with difficulty-based strategies
+# - **RapidResponseHarmScenario**: Tests harm categories (hate, violence, etc.) by loading datasets from CentralMemory
+#
+#
+# See [`FoundryScenario`](../../../pyrit/scenarios/scenarios/foundry_scenario.py),
+# [`EncodingScenario`](../../../pyrit/scenarios/scenarios/encoding_scenario.py), and
+# [`RapidResponseHarmScenario`](../../../pyrit/scenarios/scenarios/ai_rt/rapid_response_harm_scenario.py) for complete examples.
 #
 # ## Using Scenarios
 #

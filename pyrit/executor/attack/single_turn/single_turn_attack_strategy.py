@@ -102,7 +102,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
 
         # Because objective is a required parameter for single-turn attacks, SeedGroups that have objectives
         # are invalid
-        if seed_group and not seed_group.is_single_turn():
+        if seed_group and seed_group.objective and not seed_group.is_single_turn():
             raise ValueError(
                 "Attack can only specify one objective per turn. Objective parameter '%s' and seed"
                 " prompt group objective '%s' are both defined",

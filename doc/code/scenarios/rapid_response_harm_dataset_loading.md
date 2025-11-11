@@ -20,7 +20,7 @@ The naming schema is **critical** for these scenarios to automatically retrieve 
 ### Components
 
 1. **Dataset Path Prefix** (default: <scenario_name>):
-   - Can be customized via the `seed_dataset_path` parameter in the scenario constructor
+   - Can be customized via the `seed_dataset_prefix` parameter in the scenario constructor
    - Helps organize datasets in memory when multiple scenario types are being used
 
 ### Custom Dataset Path Prefix
@@ -31,8 +31,8 @@ You can customize the prefix when creating a scenario:
 scenario = RapidResponseHarmScenario(
     objective_target=my_target,
     adversarial_chat=adversarial_target,
-    objective_dataset_path="custom_test_",  # Custom prefix
-    scenario_strategies=[RapidResponseHarmStrategy.HateFictionalStory]
+    objective_dataset_path="custom_test",  # Custom prefix
+    scenario_strategies=[RapidResponseHarmStrategy.Hate]
 )
 
 # Now the dataset name must be: "custom_test_hate_fictional_story"
@@ -52,29 +52,14 @@ scenario = RapidResponseHarmScenario(
 
 ```python
 # Correct naming
-dataset_name = "rapid_response_harm_" + strategy.value  # e.g., "hate"
+dataset_name = "rapid_response_harm" + "_" + strategy.value  # e.g., "hate"
 ```
-
 ### Error: Dataset not found for custom prefix
 
-**Cause**: The scenario's `objective_dataset_path` doesn't match the dataset names in memory.
+**Cause**: The scenario's `seed_dataset_prefix` doesn't match the dataset names in memory.
 
 **Solution**: Ensure consistency between the scenario configuration and dataset names:
 
-```python
-# Scenario configuration
-scenario = RapidResponseHarmScenario(
-    objective_target=target,
-    adversarial_chat=adversarial,
-    objective_dataset_path="my_custom_prefix_"  # Must match dataset names
-)
-
-# Dataset must be named: "my_custom_prefix_hate_fictional_story"
-await create_seed_dataset(
-    name="my_custom_prefix_hate_fictional_story",
-    prompts=[...],
-    objective="..."
-)
 ```
 
 ## Additional Resources
