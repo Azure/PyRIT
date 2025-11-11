@@ -273,9 +273,9 @@ class TestCyberScenarioProperties:
         scenario = CyberScenario(objective_target=mock_objective_target)
         await scenario.initialize_async()
 
-        objective_target: PromptTarget = scenario._objective_target  # type: PromptTarget
-        scorer_target: OpenAIChatTarget = scenario._scorer_config.objective_scorer._prompt_target  # type: OpenAIChatTarget
-        adversarial_target: PromptChatTarget = scenario._adversarial_chat  # type: PromptChatTarget
+        objective_target = scenario._objective_target
+        scorer_target = scenario._scorer_config.objective_scorer._prompt_target
+        adversarial_target = scenario._adversarial_chat
 
         assert objective_target != scorer_target
         assert objective_target != adversarial_target
