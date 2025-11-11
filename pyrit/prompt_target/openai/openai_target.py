@@ -110,7 +110,8 @@ class OpenAITarget(PromptChatTarget):
     def refresh_auth_headers(self) -> None:
         """
         Refresh the authentication headers. This is particularly useful for Entra authentication
-        where tokens need to be refreshed periodically."""
+        where tokens need to be refreshed periodically.
+        """
         if self._azure_auth:
             self._headers["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
 

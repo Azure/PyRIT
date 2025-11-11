@@ -71,7 +71,8 @@ class AzureBlobStorageTarget(PromptTarget):
         """
         Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
-        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
+        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication.
+        """
         container_url, _ = self._parse_url()
         try:
             sas_token: str = default_values.get_required_value(
