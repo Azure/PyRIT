@@ -182,6 +182,7 @@ def get_speech_config(resource_id: Union[str, None], key: Union[str, None], regi
         resource_id (Union[str, None]): The resource ID to get the token for.
         key (Union[str, None]): The Azure Speech key
         region (str): The region to get the token for.
+
     Returns:
         The speech config based on passed in args
 

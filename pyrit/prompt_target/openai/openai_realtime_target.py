@@ -449,6 +449,7 @@ class RealtimeTarget(OpenAITarget):
     async def send_text_async(self, text: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
         """
         Sends text prompt to the WebSocket server.
+
         Args:
             text: prompt to send.
             conversation_id: conversation ID

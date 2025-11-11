@@ -428,8 +428,10 @@ class MemoryInterface(abc.ABC):
     def get_request_from_response(self, *, response: Message) -> Message:
         """
         Retrieves the request that produced the given response.
+
         Args:
             request (Message): The message object to match.
+
         Returns:
             Message: The corresponding message object.
         """
@@ -476,8 +478,10 @@ class MemoryInterface(abc.ABC):
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
             converted_value_sha256 (Optional[Sequence[str]], optional): A list of SHA256 hashes of converted values.
                 Defaults to None.
+
         Returns:
             Sequence[MessagePiece]: A list of MessagePiece objects that match the specified filters.
+
         Raises:
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
@@ -534,6 +538,7 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID with existing conversations.
             new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
                 If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
+
         Returns:
             The uuid for the new conversation.
         """
@@ -567,6 +572,7 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID with existing conversations.
             new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
                 If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
+
         Returns:
             The uuid for the new conversation.
         """
@@ -1102,6 +1108,7 @@ class MemoryInterface(abc.ABC):
             labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter results by.
                 These labels are associated with the prompts themselves, used for custom tagging and tracking.
                 Defaults to None.
+
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
         """

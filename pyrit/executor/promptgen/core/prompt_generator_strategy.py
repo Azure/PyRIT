@@ -53,6 +53,7 @@ class _DefaultPromptGeneratorStrategyEventHandler(
     ) -> None:
         """
         Handle an event during the execution of a prompt generator strategy.
+
         Args:
             event_data (StrategyEventData[PromptGeneratorStrategyContextT, PromptGeneratorStrategyResultT]):
                 The event data containing context and result.

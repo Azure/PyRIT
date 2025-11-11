@@ -257,6 +257,7 @@ class AzureMLChatTarget(PromptChatTarget):
     def _get_headers(self) -> dict:
         """
         Headers for accessing inference endpoint deployed in AML.
+
         Returns:
             headers(dict): contains bearer token as AML key and content-type: JSON
         """

@@ -74,8 +74,10 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
         Validate the context before executing the attack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing parameters and objective.
+
         Raises:
             ValueError: If the context is invalid.
         """
@@ -86,8 +88,10 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
         Perform the ManyShotJailbreakAttack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
+
         Returns:
             AttackResult: The result of the attack.
         """

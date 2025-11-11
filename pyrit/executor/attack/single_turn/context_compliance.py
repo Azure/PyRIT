@@ -131,8 +131,10 @@ class ContextComplianceAttack(PromptSendingAttack):
         """
         Validate the context for the attack.
         This attack does not support prepended conversations, so it raises an error if one exists.
+
         Args:
             context (SingleTurnAttackContext): The attack context to validate.
+
         Raises:
             ValueError: If the context has a prepended conversation.
         """

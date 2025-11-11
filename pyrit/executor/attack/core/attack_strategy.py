@@ -220,11 +220,13 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
     ) -> AttackStrategyResultT:
         """
         Execute the attack strategy asynchronously with the provided parameters.
+
         Args:
             objective (str): The objective of the attack.
             prepended_conversation (Optional[List[Message]]): Conversation to prepend.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.
+
         Returns:
             AttackStrategyResultT: The result of the attack execution.
         """
