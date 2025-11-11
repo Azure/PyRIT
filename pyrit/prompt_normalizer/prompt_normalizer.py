@@ -65,7 +65,7 @@ class PromptNormalizer:
             attack_identifier (Optional[dict[str, str]], optional): Identifier for the attack. Defaults to
                 None.
 
-            Raises:
+        Raises:
             Exception: If an error occurs during the request processing.
             ValueError: If the prompts in the SeedGroup are not part of the same sequence.
 
