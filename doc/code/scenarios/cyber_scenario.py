@@ -40,16 +40,14 @@ printer = ConsoleScenarioResultPrinter()
 
 # Create a scenario from the pre-configured Foundry scenario
 cyber_scenario = CyberScenario(
-    objective_target=objective_target,
-    max_concurrency=10,
-    scenario_strategies=[CyberStrategy.MultiTurn]
+    objective_target=objective_target, max_concurrency=10, scenario_strategies=[CyberStrategy.MultiTurn]
 )
-await cyber_scenario.initialize_async() # type: ignore
+await cyber_scenario.initialize_async()  # type: ignore
 
 print(f"Created scenario: {cyber_scenario.name}")
 
 # Execute the entire scenario
-cyber_results = await cyber_scenario.run_async() # type: ignore
-await printer.print_summary_async(cyber_results) # type: ignore
+cyber_results = await cyber_scenario.run_async()  # type: ignore
+await printer.print_summary_async(cyber_results)  # type: ignore
 
 # %%
