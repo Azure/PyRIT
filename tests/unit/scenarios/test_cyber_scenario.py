@@ -4,13 +4,25 @@
 """Tests for the CyberScenario class."""
 
 from typing import List
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.scenarios import CyberScenario, CyberStrategy
 from pyrit.score import SelfAskTrueFalseScorer
+
+
+@pytest.fixture
+def mock_runtime_env():
+    with patch.dict(
+        "os.environ",
+        {
+            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+        },
+    ):
+        yield
 
 
 @pytest.fixture
@@ -30,13 +42,23 @@ def mock_objective_scorer():
 
 
 @pytest.fixture
+def mock_adversarial_target():
+    """Createa a mock adversarial target for testing."""
+    mock = MagicMock(spec=PromptChatTarget)
+    mock.get_identifier.return_value = {"__type__": "MockAdversarialTarget", "__module__": "test"}
+
+
+@pytest.fixture
 def sample_objectives() -> List[str]:
     """Create sample objectives for testing."""
     return ["test prompt 1", "test prompt 2"]
 
 
-@pytest.mark.usefixtures("patch_central_database")
-class TestCyberScenarioInitialization:
+FIXTURES = ["patch_central_database", "mock_runtime_env"]
+
+
+@pytest.mark.usefixtures(*FIXTURES)
+class TestCyberScenarioBasicInitialization:
     """Tests for CyberScenario initialization."""
 
     def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives) -> None:
@@ -62,14 +84,41 @@ class TestCyberScenarioInitialization:
     def test_init_with_memory_labels(self) -> None: ...
 
 
-@pytest.mark.usefixtures("patch_central_database")
-class TestCyberScenarioAtomicAttacks:
-    """Tests for CyberScenario atomic attack generation."""
+@pytest.mark.usefixtures(*FIXTURES)
+class TestCyberScenarioAdversarialInitialization:
+    """Tests for CyberScenario initialization."""
+
+    def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives) -> None:
+        """Test initialization with custom objectives."""
+
+        scenario = CyberScenario(
+            objectives=sample_objectives,
+            objective_target=mock_objective_target,
+            objective_scorer=mock_objective_scorer,
+        )
+
+        assert scenario._objectives == sample_objectives
+        assert scenario._objective_target == mock_objective_target
+        assert scenario.name == "Cyber Scenario"
+        assert scenario.version == 1
+
+    def test_init_with_custom_scorer(self) -> None: ...
+
+    def test_init_with_default_objectives(self) -> None: ...
+
+    def test_init_with_default_scorer(self) -> None: ...
+
+    def test_init_with_memory_labels(self) -> None: ...
+
+
+@pytest.mark.usefixtures(*FIXTURES)
+class TestCyberScenarioAttackGeneration:
+    """Tests for CyberScenario attack generation."""
 
     ...
 
 
-@pytest.mark.usefixtures("patch_central_database")
+@pytest.mark.usefixtures(*FIXTURES)
 class TestCyberScenarioExecution:
     """Tests for CyberScenario execution."""
 
@@ -80,8 +129,19 @@ class TestCyberScenarioExecution:
     ...
 
 
-@pytest.mark.usefixtures("patch_central_database")
-class TestCyberScenarioIntent:
-    """Tests that end-to-end flow respects spirit of the scenario (e.g. rm -rf / == harm)."""
+@pytest.mark.usefixtures(*FIXTURES)
+class TestCyberScenarioProperties:
+    """
+    Tests for CyberScenario properties and attributes.
+    """
 
-    ...
+    def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer, sample_objectives) -> None:
+        """Test that scenario version is properly set."""
+        scenario = CyberScenario(
+            objective_target=mock_objective_target,
+            scenario_strategies=[CyberStrategy.SingleTurn],
+            objectives=sample_objectives,
+            objective_scorer=mock_objective_scorer,
+        )
+
+        assert scenario.version == 1
