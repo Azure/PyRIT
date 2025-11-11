@@ -29,7 +29,7 @@ class ConversationAnalytics:
         self, *, chat_message_content: str
     ) -> list[ConversationMessageWithSimilarity]:
         """
-        Retrieves chat messages that have the same converted content
+        Retrieves chat messages that have the same converted content.
 
         Args:
             chat_message_content (str): The content of the chat message to find similar messages for.

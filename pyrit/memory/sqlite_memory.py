@@ -151,7 +151,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
-        Inserts embedding data into memory storage
+        Inserts embedding data into memory storage.
         """
         self._insert_entries(entries=embedding_data)
 

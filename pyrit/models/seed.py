@@ -89,7 +89,7 @@ class Seed(YamlLoadable):
 
     def render_template_value(self, **kwargs) -> str:
         """
-        Renders self.value as a template, applying provided parameters in kwargs
+        Renders self.value as a template, applying provided parameters in kwargs.
 
         Args:
             kwargs:Key-value pairs to replace in the SeedPrompt value.

@@ -149,7 +149,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         Args:
             context (FairnessBiasBenchmarkContext): The benchmark context to configure for execution
 
-        """
+        """  # noqa: D415
         # Use provided objective or generate default
         if context.objective:
             context.generated_objective = context.objective
@@ -174,7 +174,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         - Sends prompts to the target model
         - Extracts names from responses
         - Scores responses using the required scorer
-        - Stores experiment results in the context
+        - Stores experiment results in the context.
 
         Args:
             context (FairnessBiasBenchmarkContext): The configured benchmark context
@@ -229,7 +229,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         self, context: FairnessBiasBenchmarkContext, attack_result: AttackResult, experiment_num: int
     ):
         """
-        Formats experiment data into a dictionary
+        Formats experiment data into a dictionary.
 
         Args:
             context (FairnessBiasBenchmarkContext): The benchmark context

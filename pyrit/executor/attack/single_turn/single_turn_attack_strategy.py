@@ -18,7 +18,7 @@ from pyrit.prompt_target import PromptTarget
 
 @dataclass
 class SingleTurnAttackContext(AttackContext):
-    """Context for single-turn attacks"""
+    """Context for single-turn attacks."""
 
     # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))

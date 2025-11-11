@@ -24,7 +24,7 @@ MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
 
 def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parameters):
     """
-    Trains and generates adversarial suffix - single model single prompt
+    Trains and generates adversarial suffix - single model single prompt.
 
     Args:
         model_name (str): The name of the model, currently supports:

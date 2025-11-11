@@ -50,7 +50,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """
-        Class that initializes an Azure Content Filter Scorer
+        Class that initializes an Azure Content Filter Scorer.
 
         Args:
             api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if you're not
@@ -93,7 +93,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Evaluating the input text or image using the Azure Content Filter API
+        Evaluating the input text or image using the Azure Content Filter API.
 
         Args:
             message_piece (MessagePiece): The message piece containing the text to be scored.

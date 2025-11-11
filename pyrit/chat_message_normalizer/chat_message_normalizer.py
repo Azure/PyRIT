@@ -13,7 +13,7 @@ class ChatMessageNormalizer(abc.ABC, Generic[T]):
     @abc.abstractmethod
     def normalize(self, messages: list[ChatMessage]) -> T:
         """
-        Normalizes the list of chat messages into a compatible format for the model or target
+        Normalizes the list of chat messages into a compatible format for the model or target.
         """
 
     @staticmethod

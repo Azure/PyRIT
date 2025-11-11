@@ -260,7 +260,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         return AttackOutcome.FAILURE, "All attempts were filtered or failed to get a response"
 
     async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
-        """Clean up after attack execution"""
+        """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 

@@ -26,7 +26,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     Prepends the seed prompt with a faux dialogue between a human and an AI, using examples from a dataset
     to demonstrate successful jailbreaking attempts. This method leverages the model's ability to learn from
     examples to bypass safety measures.
-    """
+    """  # noqa: D415
 
     @apply_defaults
     def __init__(

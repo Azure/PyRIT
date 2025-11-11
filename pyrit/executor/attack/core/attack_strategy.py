@@ -34,7 +34,7 @@ AttackStrategyResultT = TypeVar("AttackStrategyResultT", bound="AttackResult")
 
 @dataclass
 class AttackContext(StrategyContext, ABC):
-    """Base class for all attack contexts"""
+    """Base class for all attack contexts."""
 
     # Natural-language description of what the attack tries to achieve
     objective: str

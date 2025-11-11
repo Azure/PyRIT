@@ -27,7 +27,7 @@ class ScenarioObjectiveTargetInitializer(PyRITInitializer):
 
     @property
     def execution_order(self) -> int:
-        """Should be executed after most initializers"""
+        """Should be executed after most initializers."""
         return 10
 
     @property

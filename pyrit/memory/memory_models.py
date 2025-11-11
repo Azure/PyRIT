@@ -210,7 +210,7 @@ class PromptMemoryEntry(Base):
 class EmbeddingDataEntry(Base):  # type: ignore
     """
     Represents the embedding data associated with conversation entries in the database.
-    Each embedding is linked to a specific conversation entry via an id
+    Each embedding is linked to a specific conversation entry via an id.
 
     Parameters:
         id (Uuid): The primary key, which is a foreign key referencing the UUID in the PromptMemoryEntries table.
@@ -232,7 +232,7 @@ class EmbeddingDataEntry(Base):  # type: ignore
 
 class ScoreEntry(Base):  # type: ignore
     """
-    Represents the Score Memory Entry
+    Represents the Score Memory Entry.
 
     """
 

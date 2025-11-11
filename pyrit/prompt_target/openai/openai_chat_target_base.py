@@ -78,7 +78,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
             httpx.HTTPStatusError: If the request fails with a 400 Bad Request or 429 Too Many Requests error.
             json.JSONDecodeError: If the response from the target is not valid JSON.
             Exception: If the request fails for any other reason.
-        """
+        """  # noqa: D415
         super().__init__(**kwargs)
 
         if temperature is not None and (temperature < 0 or temperature > 2):

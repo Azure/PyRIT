@@ -32,7 +32,7 @@ class EmbeddingResponse(BaseModel):
 
     def save_to_file(self, directory_path: Path) -> str:
         """
-        Save the embedding response to disk and return the path of the new file
+        Save the embedding response to disk and return the path of the new file.
 
         Args:
             directory_path: The path to save the file to
@@ -48,7 +48,7 @@ class EmbeddingResponse(BaseModel):
     @staticmethod
     def load_from_file(file_path: Path) -> EmbeddingResponse:
         """
-        Load the embedding response from disk
+        Load the embedding response from disk.
 
         Args:
             file_path: The path to load the file from
@@ -66,7 +66,7 @@ class EmbeddingSupport(ABC):
     @abstractmethod
     def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
         """
-        Generate text embedding
+        Generate text embedding.
 
         Args:
             text: The text to generate the embedding for

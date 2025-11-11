@@ -23,7 +23,7 @@ StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
 
 @dataclass
 class StrategyContext(ABC):
-    """Base class for all strategy contexts"""
+    """Base class for all strategy contexts."""
 
     def duplicate(self: StrategyContextT) -> StrategyContextT:
         """

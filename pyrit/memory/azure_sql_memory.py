@@ -198,7 +198,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
-        Inserts embedding data into memory storage
+        Inserts embedding data into memory storage.
         """
         self._insert_entries(entries=embedding_data)
 
@@ -549,7 +549,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 return False
 
     def reset_database(self):
-        """Drop and recreate existing tables"""
+        """Drop and recreate existing tables."""
         # Drop all existing tables
         Base.metadata.drop_all(self.engine)
         # Recreate the tables

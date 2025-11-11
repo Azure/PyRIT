@@ -176,7 +176,7 @@ def get_default_scope(endpoint: str) -> str:
 def get_speech_config(resource_id: Union[str, None], key: Union[str, None], region: str):
     """
     Get the speech config using key/region pair (for key auth scenarios) or resource_id/region pair
-    (for Entra auth scenarios)
+    (for Entra auth scenarios).
 
     Args:
         resource_id (Union[str, None]): The resource ID to get the token for.

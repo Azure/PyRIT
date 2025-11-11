@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class OpenAIChatTarget(OpenAIChatTargetBase):
     """
-    This class facilitates multimodal (image and text) input and text output generation
+    This class facilitates multimodal (image and text) input and text output generation.
 
     This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
 
@@ -183,7 +183,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
     def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
         Builds chat messages based on message entries. This is needed because many
-        openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted)
+        openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted).
 
         Args:
             conversation (list[Message]): A list of Message objects.

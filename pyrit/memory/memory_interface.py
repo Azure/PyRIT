@@ -159,7 +159,7 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
-        Inserts embedding data into memory storage
+        Inserts embedding data into memory storage.
         """
 
     @abc.abstractmethod
@@ -528,7 +528,7 @@ class MemoryInterface(abc.ABC):
 
     def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
         """
-        Duplicates a conversation for reuse
+        Duplicates a conversation for reuse.
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
         One cannot continue both branches with the same attack and conversation IDs since that would corrupt
@@ -728,7 +728,7 @@ class MemoryInterface(abc.ABC):
 
     def cleanup(self):
         """
-        Ensure cleanup on process exit
+        Ensure cleanup on process exit.
         """
         # Ensure cleanup at process exit
         atexit.register(self.dispose_engine)
@@ -978,7 +978,7 @@ class MemoryInterface(abc.ABC):
         source: Optional[str] = None,
     ) -> Sequence[SeedGroup]:
         """
-        Retrieves groups of seed prompts based on the provided filtering criteria
+        Retrieves groups of seed prompts based on the provided filtering criteria.
 
         Args:
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed groups by.

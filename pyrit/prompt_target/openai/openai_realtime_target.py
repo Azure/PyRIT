@@ -266,7 +266,7 @@ class RealtimeTarget(OpenAITarget):
 
     async def cleanup_conversation(self, conversation_id: str):
         """
-        Disconnects from the WebSocket server for a specific conversation
+        Disconnects from the WebSocket server for a specific conversation.
 
         Args:
             conversation_id (str): The conversation ID to disconnect from.

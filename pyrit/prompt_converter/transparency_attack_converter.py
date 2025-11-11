@@ -26,7 +26,7 @@ class _AdamOptimizer:
     Note:
         The code is inspired by the implementation found at:
         https://github.com/xbeat/Machine-Learning/blob/main/Adam%20Optimizer%20in%20Python.md
-    """
+    """  # noqa: D415
 
     def __init__(
         self, *, learning_rate: float = 0.001, beta_1: float = 0.9, beta_2: float = 0.999, epsilon: float = 1e-8
@@ -220,7 +220,7 @@ class TransparencyAttackConverter(PromptConverter):
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
         Converts the given prompt by blending an attack image (potentially harmful) with a benign image.
-        Uses the Novel Image Blending Algorithm from: https://arxiv.org/abs/2401.15817
+        Uses the Novel Image Blending Algorithm from: https://arxiv.org/abs/2401.15817.
 
         Args:
             prompt (str): The image file path to the attack image.

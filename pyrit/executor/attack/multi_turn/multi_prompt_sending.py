@@ -262,7 +262,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         return AttackOutcome.FAILURE, "At least one prompt was filtered or failed to get a response"
 
     async def _teardown_async(self, *, context: MultiPromptSendingAttackContext) -> None:
-        """Clean up after attack execution"""
+        """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 

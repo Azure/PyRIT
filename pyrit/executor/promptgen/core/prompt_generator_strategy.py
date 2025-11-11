@@ -23,12 +23,12 @@ PromptGeneratorStrategyResultT = TypeVar("PromptGeneratorStrategyResultT", bound
 
 @dataclass
 class PromptGeneratorStrategyContext(StrategyContext, ABC):
-    """Base class for all prompt generator strategy contexts"""
+    """Base class for all prompt generator strategy contexts."""
 
 
 @dataclass
 class PromptGeneratorStrategyResult(StrategyResult, ABC):
-    """Base class for all prompt generator strategy results"""
+    """Base class for all prompt generator strategy results."""
 
 
 class _DefaultPromptGeneratorStrategyEventHandler(
