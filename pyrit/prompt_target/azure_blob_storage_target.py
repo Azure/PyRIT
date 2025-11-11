@@ -68,7 +68,8 @@ class AzureBlobStorageTarget(PromptTarget):
         super().__init__(endpoint=self._container_url, max_requests_per_minute=max_requests_per_minute)
 
     async def _create_container_client_async(self) -> None:
-        """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
+        """
+        Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
         for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
         container_url, _ = self._parse_url()

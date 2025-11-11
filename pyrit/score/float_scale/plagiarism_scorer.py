@@ -19,7 +19,8 @@ class PlagiarismMetric(Enum):
 
 
 class PlagiarismScorer(FloatScaleScorer):
-    """A scorer that measures plagiarism by computing word-level similarity
+    """
+    A scorer that measures plagiarism by computing word-level similarity
     between the AI response and a reference text.
 
     This scorer implements three similarity metrics:
@@ -37,7 +38,8 @@ class PlagiarismScorer(FloatScaleScorer):
         n: int = 5,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
-        """Initializes the PlagiarismScorer.
+        """
+        Initializes the PlagiarismScorer.
 
         Args:
             reference_text (str): The reference text to compare against.
@@ -131,7 +133,8 @@ class PlagiarismScorer(FloatScaleScorer):
             raise ValueError("metric must be 'lcs', 'levenshtein', or 'jaccard'")
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Scores the AI response against the reference text using the specified metric.
+        """
+        Scores the AI response against the reference text using the specified metric.
 
         Args:
             message_piece (MessagePiece): The piece to score.

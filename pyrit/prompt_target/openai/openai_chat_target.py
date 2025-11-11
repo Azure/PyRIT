@@ -149,7 +149,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
-        """Builds chat messages based on message entries.
+        """
+        Builds chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -163,7 +164,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             return await self._build_chat_messages_for_multi_modal_async(conversation)
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
-        """Checks if the message piece is in text message format.
+        """
+        Checks if the message piece is in text message format.
 
         Args:
             conversation list[Message]: The conversation
@@ -304,7 +306,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
     def _validate_request(self, *, message: Message) -> None:
-        """Validates the structure and content of a message for compatibility of this target.
+        """
+        Validates the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.

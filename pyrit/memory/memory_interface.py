@@ -55,7 +55,8 @@ Model = TypeVar("Model")
 
 
 class MemoryInterface(abc.ABC):
-    """Abstract interface for conversation memory storage systems.
+    """
+    Abstract interface for conversation memory storage systems.
 
     This interface defines the contract for storing and retrieving chat messages
     and conversation history. Implementations can use different storage backends
@@ -68,7 +69,8 @@ class MemoryInterface(abc.ABC):
     engine: Engine = None
 
     def __init__(self, embedding_model=None):
-        """Initialize the MemoryInterface.
+        """
+        Initialize the MemoryInterface.
 
         Args:
             embedding_model: If set, this includes embeddings in the memory entries
@@ -969,7 +971,8 @@ class MemoryInterface(abc.ABC):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
     ) -> Sequence[SeedGroup]:
-        """Retrieves groups of seed prompts based on the provided filtering criteria
+        """
+        Retrieves groups of seed prompts based on the provided filtering criteria
 
         Args:
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed groups by.

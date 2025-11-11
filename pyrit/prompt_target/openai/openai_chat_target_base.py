@@ -94,7 +94,8 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
     @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> Message:
-        """Asynchronously sends a message and handles the response within a managed conversation context.
+        """
+        Asynchronously sends a message and handles the response within a managed conversation context.
 
         Args:
             message (Message): The message object.

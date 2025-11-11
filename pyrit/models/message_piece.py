@@ -16,7 +16,8 @@ Originator = Literal["attack", "converter", "undefined", "scorer"]
 
 
 class MessagePiece:
-    """Represents a piece of a message to a target.
+    """
+    Represents a piece of a message to a target.
 
     This class represents a single piece of a message that will be sent
     to a target. Since some targets can handle multiple pieces (e.g., text and images),
@@ -49,7 +50,8 @@ class MessagePiece:
         scores: Optional[List[Score]] = None,
         targeted_harm_categories: Optional[List[str]] = None,
     ):
-        """Initialize a MessagePiece.
+        """
+        Initialize a MessagePiece.
 
         Args:
             role: The role of the prompt (system, assistant, user).

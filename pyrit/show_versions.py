@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Utility methods to print system info for debugging.
+"""
+Utility methods to print system info for debugging.
 
 Adapted from :py:func:`pandas.show_versions` and :py:func:`sklearn.show_versions`.
 """  # noqa: RST304
@@ -11,7 +12,8 @@ import sys
 
 
 def _get_sys_info():
-    """System information.
+    """
+    System information.
 
     Returns
     -------
@@ -30,7 +32,8 @@ def _get_sys_info():
 
 
 def _get_deps_info():
-    """Overview of the installed version of main dependencies.
+    """
+    Overview of the installed version of main dependencies.
 
     This function does not import the modules to collect the version numbers
     but instead relies on standard Python package metadata.

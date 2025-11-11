@@ -65,7 +65,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         self.results_storage_io = DiskStorageIO()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
-        """Creates the SQLAlchemy engine for SQLite.
+        """
+        Creates the SQLAlchemy engine for SQLite.
 
         Creates an engine bound to the specified database file. The `has_echo` parameter
         controls the verbosity of SQL execution logging.

@@ -41,7 +41,8 @@ class AzureAuth(Authenticator):
         self.token = self.access_token.token
 
     def refresh_token(self) -> str:
-        """Refresh the access token if it is expired.
+        """
+        Refresh the access token if it is expired.
 
         Returns:
             A token
@@ -79,7 +80,8 @@ def get_access_token_from_azure_cli(*, scope: str, tenant_id: str = ""):
 
 
 def get_access_token_from_azure_msi(*, client_id: str, scope: str):
-    """Connect to an AOAI endpoint via managed identity credential attached to an Azure resource.
+    """
+    Connect to an AOAI endpoint via managed identity credential attached to an Azure resource.
     For proper setup and configuration of MSI
     https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview.
 
@@ -100,7 +102,8 @@ def get_access_token_from_azure_msi(*, client_id: str, scope: str):
 
 
 def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
-    """Uses MSA account to connect to an AOAI endpoint via interactive login. A browser window
+    """
+    Uses MSA account to connect to an AOAI endpoint via interactive login. A browser window
     will open and ask for login credentials.
 
     Args:
@@ -120,7 +123,8 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
 
 
 def get_access_token_from_interactive_login(scope: str) -> str:
-    """Connects to an OpenAI endpoint with an interactive login from Azure. A browser window will
+    """
+    Connects to an OpenAI endpoint with an interactive login from Azure. A browser window will
     open and ask for login credentials.  The token will be scoped for Azure Cognitive services.
 
     Returns:
@@ -135,7 +139,8 @@ def get_access_token_from_interactive_login(scope: str) -> str:
 
 
 def get_token_provider_from_default_azure_credential(scope: str) -> Callable[[], str]:
-    """Connect to an AOAI endpoint via default Azure credential.
+    """
+    Connect to an AOAI endpoint via default Azure credential.
 
     Returns:
         Authentication token provider
@@ -149,7 +154,8 @@ def get_token_provider_from_default_azure_credential(scope: str) -> Callable[[],
 
 
 def get_default_scope(endpoint: str) -> str:
-    """Get the default scope for the given endpoint.
+    """
+    Get the default scope for the given endpoint.
 
     Args:
         endpoint (str): The endpoint to get the scope for.
@@ -207,7 +213,8 @@ def get_speech_config(resource_id: Union[str, None], key: Union[str, None], regi
 
 
 def get_speech_config_from_default_azure_credential(resource_id: str, region: str):
-    """Get the speech config for the given resource ID and region.
+    """
+    Get the speech config for the given resource ID and region.
 
     Args:
         resource_id (str): The resource ID to get the token for.

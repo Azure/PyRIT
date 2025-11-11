@@ -132,7 +132,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             self._create_auth_token()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
-        """Creates the SQLAlchemy engine for Azure SQL Server.
+        """
+        Creates the SQLAlchemy engine for Azure SQL Server.
 
         Creates an engine bound to the specified server and database. The `has_echo` parameter
         controls the verbosity of SQL execution logging.

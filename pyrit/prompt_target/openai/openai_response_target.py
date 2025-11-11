@@ -490,7 +490,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         )
 
     def _validate_request(self, *, message: Message) -> None:
-        """Validates the structure and content of a message for compatibility of this target.
+        """
+        Validates the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.
