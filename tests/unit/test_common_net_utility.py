@@ -8,8 +8,10 @@ import pytest
 import respx
 
 from pyrit.common.net_utility import (
+    extract_url_parameters,
     get_httpx_client,
     make_request_and_raise_if_error_async,
+    remove_url_parameters,
 )
 
 
@@ -81,3 +83,63 @@ async def test_debug_is_false_by_default():
         await make_request_and_raise_if_error_async(endpoint_uri="http://example.com", method="GET")
 
         mock_get_httpx_client.assert_called_with(debug=False, use_async=True)
+
+
+def test_extract_url_parameters_simple():
+    url = "https://api.example.com/endpoint?api-version=2024-10-21&key=value"
+    params = extract_url_parameters(url)
+    assert params == {"api-version": "2024-10-21", "key": "value"}
+
+
+def test_extract_url_parameters_no_params():
+    url = "https://api.example.com/endpoint"
+    params = extract_url_parameters(url)
+    assert params == {}
+
+
+def test_extract_url_parameters_empty_query():
+    url = "https://api.example.com/endpoint?"
+    params = extract_url_parameters(url)
+    assert params == {}
+
+
+def test_extract_url_parameters_with_fragment():
+    url = "https://api.example.com/endpoint?param1=value1&param2=value2#section"
+    params = extract_url_parameters(url)
+    assert params == {"param1": "value1", "param2": "value2"}
+
+
+def test_extract_url_parameters_special_characters():
+    url = "https://api.example.com/endpoint?name=John%20Doe&email=test%40example.com"
+    params = extract_url_parameters(url)
+    assert params == {"name": "John Doe", "email": "test@example.com"}
+
+
+def test_remove_url_parameters_simple():
+    url = "https://api.example.com/endpoint?api-version=2024-10-21&key=value"
+    clean_url = remove_url_parameters(url)
+    assert clean_url == "https://api.example.com/endpoint"
+
+
+def test_remove_url_parameters_no_params():
+    url = "https://api.example.com/endpoint"
+    clean_url = remove_url_parameters(url)
+    assert clean_url == "https://api.example.com/endpoint"
+
+
+def test_remove_url_parameters_with_fragment():
+    url = "https://api.example.com/endpoint?param=value#section"
+    clean_url = remove_url_parameters(url)
+    assert clean_url == "https://api.example.com/endpoint#section"
+
+
+def test_remove_url_parameters_with_path_params():
+    url = "https://api.example.com/endpoint;pathparam?query=value"
+    clean_url = remove_url_parameters(url)
+    assert clean_url == "https://api.example.com/endpoint;pathparam"
+
+
+def test_remove_url_parameters_complex():
+    url = "https://user:pass@api.example.com:8080/path/to/endpoint?key1=value1&key2=value2#fragment"
+    clean_url = remove_url_parameters(url)
+    assert clean_url == "https://user:pass@api.example.com:8080/path/to/endpoint#fragment"

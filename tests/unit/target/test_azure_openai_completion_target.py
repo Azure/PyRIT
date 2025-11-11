@@ -38,7 +38,6 @@ def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:
         model_name="gpt-35-turbo",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
     )
 
 
@@ -103,47 +102,10 @@ def test_azure_invalid_endpoint_raises():
                     model_name="gpt-4",
                     endpoint="",
                     api_key="xxxxx",
-                    api_version="some_version",
                 )
 
 
 @pytest.mark.asyncio
-async def test_openai_completion_target_no_api_version(sample_conversations: MutableSequence[MessagePiece]):
-    target = OpenAICompletionTarget(
-        api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
-    )
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        mock_request.return_value = MagicMock()
-        mock_request.return_value.status_code = 200
-        mock_request.return_value.text = '{"choices": [{"text": "hi"}]}'
-
-        await target.send_prompt_async(message=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" not in called_params
-
-
-@pytest.mark.asyncio
-async def test_openai_completion_target_default_api_version(sample_conversations: MutableSequence[MessagePiece]):
-    target = OpenAICompletionTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        mock_request.return_value = MagicMock()
-        mock_request.return_value.status_code = 200
-        mock_request.return_value.text = '{"choices": [{"text": "hi"}]}'
-
-        await target.send_prompt_async(message=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" in called_params
-        assert called_params["api-version"] == "2024-10-21"
-
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_calls_refresh_auth_headers(azure_completion_target: OpenAICompletionTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
