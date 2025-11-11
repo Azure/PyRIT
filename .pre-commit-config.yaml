@@ -49,6 +49,15 @@ repos:
       name: Import Sort (Jupyter Notebooks)
       args: [--profile=black]
 
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.4
+    hooks:
+      - id: ruff-check
+        # TODO: once existing docstring issues are fixed, we can remove all args
+        # https://github.com/Azure/PyRIT/issues/1176#issuecomment-3517216359
+        args: [--select=D204,D209,D213,D214,D300,D301,D403,D410,D411,D415,D416]
+        files: ^pyrit/
+
   - repo: https://github.com/PyCQA/flake8
     rev: 7.1.2
     hooks:
