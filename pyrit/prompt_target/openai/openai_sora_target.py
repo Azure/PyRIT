@@ -155,17 +155,23 @@ class OpenAISoraTarget(OpenAITarget):
         # Initialize parent class first to get endpoint
         super().__init__(**kwargs)
 
+        # Extract query parameters from endpoint and store separately
+        # This allows us to append paths to the base endpoint without breaking the URL
+        self._params: Dict[str, Any] = net_utility.extract_url_parameters(self._endpoint)
+
+        # Store endpoint without query parameters for clean path appending
+        self._endpoint = net_utility.remove_url_parameters(self._endpoint)
+
         # Detect API version
         self._detected_api_version = self._detect_api_version()
 
-        # Validate endpoint URL
-        self._warn_if_irregular_endpoint(self.SORA_URL_REGEX)
+        sora_url_patterns = [r"/v1/video"]
+        self._warn_if_irregular_endpoint(sora_url_patterns)
 
         # Set instance variables
         self._n_seconds = n_seconds
         self._validate_duration()
         self._width, self._height = self._parse_and_validate_resolution(resolution_dimensions=resolution_dimensions)
-        self._params: Dict[str, Any] = {}
 
     def _set_openai_env_configuration_vars(self) -> None:
         """Set unified environment variable names for both API versions."""
@@ -294,7 +300,7 @@ class OpenAISoraTarget(OpenAITarget):
                 request_body=request_body,
                 files=files,
                 headers=self._headers,
-                params=self._params,
+                extra_url_parameters=self._params,
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
@@ -308,7 +314,7 @@ class OpenAISoraTarget(OpenAITarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """Asynchronously sends a message and handles the response within a managed conversation context.
 
         Args:
@@ -321,8 +327,8 @@ class OpenAISoraTarget(OpenAITarget):
             RateLimitException: If the rate limit is exceeded.
             httpx.HTTPStatusError: If the request fails.
         """
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
         prompt = request.converted_value
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt}")
@@ -394,9 +400,6 @@ class OpenAISoraTarget(OpenAITarget):
         body = self._construct_v1_request_body(prompt=prompt)
         endpoint_uri = f"{self._endpoint}/jobs"
 
-        # Set api-version parameter for v1
-        self._params["api-version"] = "preview"
-
         try:
             response = await self._send_httpx_request_async(
                 endpoint_uri=endpoint_uri,
@@ -411,9 +414,6 @@ class OpenAISoraTarget(OpenAITarget):
     async def _send_v2_request_async(self, request: MessagePiece, prompt: str) -> Message:
         """Send request using Sora-2 API (multipart form data)."""
         files = self._construct_v2_request_files(prompt=prompt)
-
-        # Remove api-version parameter for v2
-        self._params.pop("api-version", None)
 
         try:
             response = await self._send_httpx_request_async(
@@ -480,7 +480,7 @@ class OpenAISoraTarget(OpenAITarget):
                 endpoint_uri=uri,
                 method="GET",
                 headers=self._headers,
-                params=self._params,
+                extra_url_parameters=self._params,
                 **download_kwargs,
             )
         else:
@@ -759,19 +759,19 @@ class OpenAISoraTarget(OpenAITarget):
         }
         return {k: v for k, v in files_parameters.items() if v[1] is not None}
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """
         Validates the message to ensure it meets the requirements for the Sora target.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Raises:
             ValueError: If the request is invalid.
         """
-        message_piece = prompt_request.get_piece()
+        message_piece = message.get_piece()
 
-        n_pieces = len(prompt_request.message_pieces)
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 

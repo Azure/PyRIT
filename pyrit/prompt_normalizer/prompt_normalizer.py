@@ -93,7 +93,7 @@ class PromptNormalizer:
         response = None
 
         try:
-            response = await target.send_prompt_async(prompt_request=request)
+            response = await target.send_prompt_async(message=request)
             self._memory.add_message_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
@@ -270,16 +270,16 @@ class PromptNormalizer:
 
         self._skip_value_type = skip_value_type
 
-    def _should_skip_based_on_skip_criteria(self, prompt_request: Message) -> bool:
+    def _should_skip_based_on_skip_criteria(self, message: Message) -> bool:
         """
-        Filters out prompts from prompt_request_list that match the skip criteria.
+        Filters out prompts from message_list that match the skip criteria.
 
-        Every message_piece of the prompt_request needs to have matching sha256 to skip.
+        Every message_piece of the message needs to have matching sha256 to skip.
         """
         if not self._skip_criteria:
             return False
 
-        for user_prompt in prompt_request.message_pieces:
+        for user_prompt in message.message_pieces:
             if self._skip_value_type == "converted":
                 if user_prompt.converted_value_sha256 not in self._converted_sha256_prompts_to_skip:
                     return False

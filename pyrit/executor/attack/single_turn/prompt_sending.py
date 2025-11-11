@@ -73,10 +73,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(logger=logger, context_type=SingleTurnAttackContext)
-
-        # Store the objective target
-        self._objective_target = objective_target
+        super().__init__(objective_target=objective_target, logger=logger, context_type=SingleTurnAttackContext)
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -104,6 +101,18 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             raise ValueError("max_attempts_on_failure must be a non-negative integer")
 
         self._max_attempts_on_failure = max_attempts_on_failure
+
+    def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
+        """
+        Get the attack scoring configuration used by this strategy.
+
+        Returns:
+            Optional[AttackScoringConfig]: The scoring configuration with objective and auxiliary scorers.
+        """
+        return AttackScoringConfig(
+            objective_scorer=self._objective_scorer,
+            auxiliary_scorers=self._auxiliary_scorers,
+        )
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """

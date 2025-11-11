@@ -355,6 +355,23 @@ class TestTreeOfAttacksInitialization:
         attack = attack_builder.with_default_mocks().with_auxiliary_scorers(2).build()
         assert len(attack._auxiliary_scorers) == 2
 
+    def test_get_objective_target_returns_correct_target(self, attack_builder):
+        """Test that get_objective_target returns the target passed to constructor"""
+        attack = attack_builder.with_default_mocks().build()
+
+        assert attack.get_objective_target() == attack_builder.objective_target
+
+    def test_get_attack_scoring_config_returns_config(self, attack_builder):
+        """Test that get_attack_scoring_config returns the scoring configuration"""
+        attack = attack_builder.with_default_mocks().with_auxiliary_scorers(1).with_threshold(0.75).build()
+
+        result = attack.get_attack_scoring_config()
+
+        assert result is not None
+        assert result.objective_scorer == attack_builder.objective_scorer
+        assert len(result.auxiliary_scorers) == 1
+        assert result.successful_objective_threshold == 0.75
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestPruningLogic:

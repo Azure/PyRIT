@@ -198,7 +198,7 @@ async def test_send_prompt_async_succeeded_download(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
         path = response.get_value()
         assert path
 
@@ -237,7 +237,7 @@ async def test_send_prompt_async_succeeded_download_error(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
         response_content = response.message_pieces[0]
 
         response_content.original_value = f"Status Code: 400, Message: {sora_target.download_video_content_async}"
@@ -265,7 +265,7 @@ async def test_send_prompt_async_failed_unknown(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
         response_content = response.message_pieces[0]
         response_content.original_value = "task_03 failed, Reason: other"
         response_content.response_error = "unknown"
@@ -292,7 +292,7 @@ async def test_send_prompt_async_failed_moderation(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
         response_content = response.message_pieces[0]
         response_content.original_value = "Status Code: 400, Message: task_02 failed, Reason: output_moderation"
         response_content.response_error = "blocked"
@@ -348,7 +348,7 @@ async def test_send_prompt_async_timeout(
 
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
         response_content = response.message_pieces[0]
 
         job_id = video_generation_response["id"]
@@ -397,7 +397,7 @@ async def test_send_prompt_async_rate_limit_exception(
     ) as mock_request:
 
         with pytest.raises(RateLimitException):
-            await sora_target.send_prompt_async(prompt_request=Message([request]))
+            await sora_target.send_prompt_async(message=Message([request]))
 
         max_attempts = os.getenv("RETRY_MAX_NUM_ATTEMPTS")
         if max_attempts:
@@ -422,7 +422,7 @@ async def test_send_prompt_async_http_error_handled(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
     ) as mock_request:
 
-        result = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        result = await sora_target.send_prompt_async(message=Message([request]))
 
         # Should return an error message, not raise an exception
         assert result is not None
@@ -520,7 +520,7 @@ async def test_send_prompt_async_uses_v1_api(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
 
         # Verify v1 API was detected
         assert sora_target._detected_api_version == "v1"
@@ -591,7 +591,7 @@ async def test_send_prompt_async_uses_v2_api(
     ) as mock_request:
         mock_request.return_value = v2_mock_return
 
-        response = await target.send_prompt_async(prompt_request=Message([request]))
+        response = await target.send_prompt_async(message=Message([request]))
 
         # Verify v2 API was detected from endpoint
         assert target._detected_api_version == "v2"
@@ -777,7 +777,7 @@ async def test_send_v2_request_content_filter_error(
     ) as mock_request:
         mock_request.side_effect = http_error
 
-        response = await target.send_prompt_async(prompt_request=Message([request]))
+        response = await target.send_prompt_async(message=Message([request]))
 
         # Should handle as content filter
         assert response.message_pieces[0].response_error == "blocked"
@@ -808,7 +808,7 @@ async def test_send_v2_request_non_content_filter_error(
     ) as mock_request:
         mock_request.side_effect = http_error
 
-        response = await target.send_prompt_async(prompt_request=Message([request]))
+        response = await target.send_prompt_async(message=Message([request]))
 
         # Should handle as unknown error
         assert response.message_pieces[0].response_error == "unknown"
@@ -840,7 +840,7 @@ async def test_send_v2_request_error_non_dict(
     ) as mock_request:
         mock_request.side_effect = http_error
 
-        response = await target.send_prompt_async(prompt_request=Message([request]))
+        response = await target.send_prompt_async(message=Message([request]))
 
         assert "Simple error string" in response.message_pieces[0].converted_value
 
@@ -871,7 +871,7 @@ async def test_send_v2_request_error_unparseable_json(
     ) as mock_request:
         mock_request.side_effect = http_error
 
-        response = await target.send_prompt_async(prompt_request=Message([request]))
+        response = await target.send_prompt_async(message=Message([request]))
 
         assert "Raw error response text" in response.message_pieces[0].converted_value
 
@@ -901,7 +901,7 @@ async def test_handle_response_cancelled_status(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
 
         assert response.message_pieces[0].response_error == "unknown"
         assert "cancelled" in response.message_pieces[0].converted_value.lower()
@@ -932,7 +932,7 @@ async def test_handle_response_internal_error(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
 
         # internal_error is not a moderation error, so it's "unknown"
         assert response.message_pieces[0].response_error == "unknown"
@@ -965,7 +965,7 @@ async def test_handle_response_error_dict_fields(
     ) as mock_request:
         mock_request.return_value = openai_mock_return
 
-        response = await sora_target.send_prompt_async(prompt_request=Message([request]))
+        response = await sora_target.send_prompt_async(message=Message([request]))
 
         value = response.message_pieces[0].converted_value
         assert "Detailed error message" in value
@@ -983,7 +983,7 @@ def test_validate_request_multiple_pieces(
     request2 = sample_conversations[0]
 
     with pytest.raises(ValueError, match="only supports a single message piece"):
-        sora_target._validate_request(prompt_request=Message([request1, request2]))
+        sora_target._validate_request(message=Message([request1, request2]))
 
 
 def test_validate_request_non_text_type(
@@ -995,7 +995,7 @@ def test_validate_request_non_text_type(
     request.converted_value_data_type = "image_path"
 
     with pytest.raises(ValueError, match="only supports text prompt input"):
-        sora_target._validate_request(prompt_request=Message([request]))
+        sora_target._validate_request(message=Message([request]))
 
 
 def test_is_json_response_supported(sora_target: OpenAISoraTarget):

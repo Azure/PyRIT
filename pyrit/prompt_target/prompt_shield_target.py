@@ -100,16 +100,16 @@ class PromptShieldTarget(PromptTarget):
         self._force_entry_field: PromptShieldEntryField = field
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """
-        Parses the text in prompt_request to separate the userPrompt and documents contents,
+        Parses the text in message to separate the userPrompt and documents contents,
         then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
         https://learn.microsoft.com/en-us/azure/ai-services/content-safety/quickstart-jailbreak
         """
 
-        self._validate_request(prompt_request=prompt_request)
+        self._validate_request(message=message)
 
-        request = prompt_request.message_pieces[0]
+        request = message.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -130,7 +130,7 @@ class PromptShieldTarget(PromptTarget):
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=f"{self._endpoint}/contentsafety/text:shieldPrompt",
             method="POST",
-            params=params,
+            extra_url_parameters=params,
             headers=headers,
             request_body=body,
         )
@@ -150,8 +150,8 @@ class PromptShieldTarget(PromptTarget):
 
         return response_entry
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        message_pieces: Sequence[MessagePiece] = prompt_request.message_pieces
+    def _validate_request(self, *, message: Message) -> None:
+        message_pieces: Sequence[MessagePiece] = message.message_pieces
 
         n_pieces = len(message_pieces)
         if n_pieces != 1:
