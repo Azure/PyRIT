@@ -81,6 +81,7 @@ dev = [
     "pytest-cov>=6.1.1",
     "pytest-timeout>=2.4.0",
     "respx>=0.22.0",
+    "ruff>=0.13.0",
     "sphinxcontrib-mermaid>=1.0.0",
     "types-PyYAML>=6.0.12.20250516",
     "types-requests>=2.31.0.20250515",
@@ -174,6 +175,9 @@ formats = "ipynb,py:percent"
 
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.lint]
+preview = true
 fixable = [
     "A",
     "B",
@@ -220,3 +224,23 @@ fixable = [
     "UP",
     "YTT",
 ]
+select = [
+    "D",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
+    "DOC"  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
+]
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D200",  # One-line docstring should fit on one line
+    "D205",  # 1 blank line required between summary line and description
+    "D212",  # Multi-line docstring summary should start at the first line
+    "DOC502",  # Raised exception is not explicitly raised
+]
+extend-select = [
+    "D204",  # 1 blank line required after class docstring
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D401",  # First line of docstring should be in imperative mood
+    "D404",  # First word of the docstring should not be "This"
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
