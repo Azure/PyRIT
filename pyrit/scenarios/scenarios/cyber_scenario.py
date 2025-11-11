@@ -36,12 +36,10 @@ class CyberStrategy(ScenarioStrategy):  # type: ignore[misc]
 
     # Aggregate members (special markers that expand to strategies with matching tags)
     ALL = ("all", {"all"})
-    EASY = ("easy", {"easy"})
-    DIFFICULT = ("difficult", {"difficult"})
 
     # Attack strategies
-    SingleTurn = ("single_turn", {"easy"})
-    MultiTurn = ("multi_turn", {"difficult"})
+    SingleTurn = ("single_turn", set[str]())
+    MultiTurn = ("multi_turn", set[str]())
 
 
 class CyberScenario(Scenario):

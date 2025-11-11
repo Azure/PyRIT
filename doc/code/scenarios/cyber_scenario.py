@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -49,5 +45,3 @@ print(f"Created scenario: {cyber_scenario.name}")
 # Execute the entire scenario
 cyber_results = await cyber_scenario.run_async()  # type: ignore
 await printer.print_summary_async(cyber_results)  # type: ignore
-
-# %%
