@@ -157,7 +157,7 @@ class CyberScenario(Scenario):
         """
         return SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(),
-            true_false_question_path=SCORER_CONFIG_PATH / "config" / "true_false_question" / "malware.yaml",
+            true_false_question_path=SCORER_CONFIG_PATH / "true_false_question" / "malware.yaml",
         )
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
