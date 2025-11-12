@@ -233,25 +233,16 @@ class FoundryScenario(Scenario):
     def __init__(
         self,
         *,
-        objective_target: Optional[PromptTarget] = None,
-        scenario_strategies: Sequence[FoundryStrategy | ScenarioCompositeStrategy] | None = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
-        memory_labels: Optional[Dict[str, str]] = None,
-        max_concurrency: int = 5,
-        max_retries: int = 0,
         include_baseline: bool = True,
+        scenario_result_id: Optional[str] = None,
     ):
         """
         Initialize a FoundryScenario with the specified attack strategies.
 
         Args:
-            objective_target (PromptTarget): The target system to attack.
-            scenario_strategies (list[FoundryStrategy | ScenarioCompositeStrategy] | None):
-                Strategies to test. Can be a list of FoundryStrategy enums (simple case) or
-                ScenarioCompositeStrategy instances (advanced case for composition).
-                If None, defaults to EASY strategies.
             adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
                 like Crescendo and RedTeaming. Additionally used for scoring defaults.
                 If not provided, a default OpenAI target will be created using environment variables.
@@ -260,17 +251,11 @@ class FoundryScenario(Scenario):
             objective_scorer (Optional[TrueFalseScorer]): Scorer to evaluate attack success.
                 If not provided, creates a default composite scorer using Azure Content Filter
                 and SelfAsk Refusal scorers.
-            memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
-                attack runs for tracking and categorization.
-            max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 5.
-            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
-                Set to 0 (default) for no automatic retries. If set to a positive number,
-                the scenario will automatically retry up to this many times after an exception.
-                For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
             include_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 without modifications. Defaults to True. When True, a "baseline" attack is automatically
                 added as the first atomic attack, allowing comparison between unmodified prompts and
                 attack-modified prompts.
+            scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
 
         Raises:
             ValueError: If attack_strategies is empty or contains unsupported strategies.
@@ -288,22 +273,14 @@ class FoundryScenario(Scenario):
             )
         )
 
-        self._memory_labels = memory_labels or {}
-
-        # Use the new helper to prepare strategies - auto-wraps bare enums and validates
-        self._foundry_strategy_compositions = FoundryStrategy.prepare_scenario_strategies(
-            scenario_strategies, default_aggregate=FoundryStrategy.EASY
-        )
-
         super().__init__(
             name="Foundry Scenario",
             version=self.version,
-            memory_labels=memory_labels,
-            max_concurrency=max_concurrency,
-            objective_target=objective_target,
+            strategy_class=FoundryStrategy,
+            default_aggregate=FoundryStrategy.EASY,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
-            max_retries=max_retries,
             include_default_baseline=include_baseline,
+            scenario_result_id=scenario_result_id,
         )
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
@@ -314,7 +291,7 @@ class FoundryScenario(Scenario):
             List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
         atomic_attacks = []
-        for composition in self._foundry_strategy_compositions:
+        for composition in self._scenario_composites:
             atomic_attacks.append(self._get_attack_from_strategy(composition))
         return atomic_attacks
 
