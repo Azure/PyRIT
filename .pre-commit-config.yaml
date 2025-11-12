@@ -52,10 +52,11 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.4
     hooks:
+      # TODO: once existing docstring issues are fixed,
+      # and https://github.com/Azure/PyRIT/issues/1176 is resolved,
+      # we can remove all args from here to use the pyproject.toml config only
       - id: ruff-check
-        # TODO: once existing docstring issues are fixed,
-        # and https://github.com/Azure/PyRIT/issues/1176 is resolved,
-        # we can remove all args from here to use the pyproject.toml config only
+        name: ruff-check (doc rules for pyrit/)
         args:
           - --select
           - D202
@@ -82,6 +83,11 @@ repos:
           - --select
           - D416
         files: ^pyrit/
+      - id: ruff-check
+        name: ruff-check (other rules for entire repo)
+        args:
+          - --select
+          - F401  # unused imports
 
   - repo: https://github.com/PyCQA/flake8
     rev: 7.1.2
@@ -100,13 +106,6 @@ repos:
       files: ^doc.*\.(py|md)$
       additional_dependencies: ['requests']
       exclude: (release_process.md|git.md|^doc/deployment/|tests|pyrit/prompt_converter/morse_converter.py|.github|pyrit/prompt_converter/emoji_converter.py|pyrit/score/markdown_injection.py|^pyrit/datasets/|^pyrit/auxiliary_attacks/gcg/)
-
-  - repo: https://github.com/pycqa/pylint
-    rev: v3.3.7
-    hooks:
-      - id: pylint
-        args: [--disable=all, --enable=unused-import]
-        exclude: NOTICE.txt
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.15.0
