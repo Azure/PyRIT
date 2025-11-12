@@ -232,22 +232,21 @@ class TestCyberScenarioAttackGeneration:
             for i, objective in enumerate(run._objectives):
                 assert sample_objectives[i] in objective
 
+    @pytest.mark.asyncio
+    async def test_get_atomic_attacks_async_returns_attacks(
+        self, mock_objective_target, mock_objective_scorer, sample_objectives
+    ):
+        """Test that _get_atomic_attacks_async returns atomic attacks."""
+        scenario = CyberScenario(
+            objective_target=mock_objective_target,
+            objectives=sample_objectives,
+            objective_scorer=mock_objective_scorer,
+        )
 
-@pytest.mark.usefixtures(*FIXTURES)
-class TestCyberScenarioExecution:
-    """Tests for CyberScenario execution."""
-
-    def test_end_to_end_execution_all(self): ...
-
-    def test_end_to_end_execution_singleturn(self): ...
-
-    def test_end_to_end_execution_multiturn(self): ...
-
-    def test_get_atomic_attacks_async_returns_attacks(self): ...
-
-    def test_get_prompt_attacks_creates_attack_runs(self): ...
-
-    def test_attack_runs_include_objectives(self): ...
+        await scenario.initialize_async()
+        atomic_attacks = await scenario._get_atomic_attacks_async()
+        assert len(atomic_attacks) > 0
+        assert all(hasattr(run, "_attack") for run in atomic_attacks)
 
 
 @pytest.mark.usefixtures(*FIXTURES)
