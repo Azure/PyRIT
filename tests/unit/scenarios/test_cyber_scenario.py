@@ -152,7 +152,7 @@ class TestCyberScenarioInitialization:
 
     def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer):
         """Test initialization with memory labels."""
-        memory_labels = {"test": "encoding", "category": "scenario"}
+        memory_labels = {"test": "cyber", "category": "scenario"}
 
         scenario = CyberScenario(
             objective_target=mock_objective_target,
