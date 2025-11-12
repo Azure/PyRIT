@@ -11,7 +11,7 @@ Foundry attacks against specified datasets.
 
 import os
 from inspect import signature
-from typing import Dict, List, Optional, Sequence, Type, TypeVar
+from typing import List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
@@ -54,7 +54,6 @@ from pyrit.prompt_converter.token_smuggling.ascii_smuggler_converter import (
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
-from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
@@ -76,7 +75,7 @@ from pyrit.score import (
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
 
-class FoundryStrategy(ScenarioStrategy):  # type: ignore[misc]
+class FoundryStrategy(ScenarioStrategy):
     """
     Strategies for attacks with tag-based categorization.
 

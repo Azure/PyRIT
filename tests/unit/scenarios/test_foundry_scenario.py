@@ -218,8 +218,7 @@ class TestFoundryScenarioInitialization:
         mock_dataset.get_random_values.return_value = ["harmbench1", "harmbench2", "harmbench3", "harmbench4"]
         mock_harmbench.return_value = mock_dataset
 
-        scenario = FoundryScenario(
-        )
+        scenario = FoundryScenario()
 
         # Verify default scorer was created
         mock_composite.assert_called_once()
@@ -595,10 +594,11 @@ class TestFoundryScenarioProperties:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_scenario_name_includes_strategies(
+    @pytest.mark.asyncio
+    async def test_scenario_composites_set_after_initialize(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
-        """Test that scenario name is set correctly."""
+        """Test that scenario composites are set after initialize_async."""
         strategies = [FoundryStrategy.Base64, FoundryStrategy.ROT13]
 
         scenario = FoundryScenario(
@@ -606,10 +606,17 @@ class TestFoundryScenarioProperties:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.name == "Foundry Scenario"
-        # Verify the scenario was initialized with the attack strategies (need to call initialize_async first)
-        # Note: _scenario_composites is not set until initialize_async is called
+        # Before initialize_async, composites should be empty
         assert len(scenario._scenario_composites) == 0
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=strategies,
+        )
+
+        # After initialize_async, composites should be set
+        assert len(scenario._scenario_composites) == len(strategies)
+        assert scenario.atomic_attack_count == len(strategies)
 
     @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(

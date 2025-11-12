@@ -210,30 +210,8 @@ async def run_scenario_async(
     scenario: Scenario
 
     try:
-        if scenario_strategies:
-            # Get the strategy enum class for this scenario
-            strategy_class = scenario_class.get_strategy_class()
-
-            # Convert strategy names to enum instances
-            strategy_enums = []
-            for strategy_name in scenario_strategies:
-                try:
-                    # Python Enum supports direct construction from value
-                    strategy_enums.append(strategy_class(strategy_name))
-                except ValueError:
-                    available_strategies = [s.value for s in strategy_class]
-                    raise ValueError(
-                        f"Strategy '{strategy_name}' not found in {scenario_class.__name__}.\n"
-                        f"Available strategies: {', '.join(available_strategies)}\n"
-                        f"Use 'pyrit_scan --list-scenarios' to see available strategies for each scenario."
-                    ) from None
-
-            # Pass the strategy enums to the scenario
-            # The scenario's __init__ will call prepare_scenario_strategies() to handle conversion
-            scenario = scenario_class(scenario_strategies=strategy_enums)  # type: ignore[call-arg]
-        else:
-            # No strategies specified, use scenario defaults
-            scenario = scenario_class()  # type: ignore[call-arg]
+        # Instantiate the scenario (no strategies in __init__)
+        scenario = scenario_class()  # type: ignore[call-arg]
     except TypeError as e:
         # Check if this is a missing parameter error
         error_msg = str(e)
@@ -257,9 +235,30 @@ async def run_scenario_async(
 
     logger.info(f"Initializing scenario: {scenario.name}")
 
-    # Initialize the scenario
+    # Convert strategy names to enum instances if provided
+    strategy_enums = None
+    if scenario_strategies:
+        strategy_class = scenario_class.get_strategy_class()
+        strategy_enums = []
+        for strategy_name in scenario_strategies:
+            try:
+                strategy_enums.append(strategy_class(strategy_name))
+            except ValueError:
+                available_strategies = [s.value for s in strategy_class]
+                raise ValueError(
+                    f"Strategy '{strategy_name}' not found in {scenario_class.__name__}.\n"
+                    f"Available strategies: {', '.join(available_strategies)}\n"
+                    f"Use 'pyrit_scan --list-scenarios' to see available strategies for each scenario."
+                ) from None
+
+    # Initialize the scenario with strategy override if provided
+    # Note: objective_target and other parameters should be set via initialization scripts
+    # using set_default_value() which will be applied by the @apply_defaults decorator
     try:
-        await scenario.initialize_async()
+        if strategy_enums:
+            await scenario.initialize_async(scenario_strategies=strategy_enums)  # type: ignore[call-arg]
+        else:
+            await scenario.initialize_async()  # type: ignore[call-arg]
     except Exception as e:
         raise ValueError(f"Failed to initialize scenario '{scenario_name}'.\n" f"Error: {e}") from e
 

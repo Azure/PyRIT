@@ -119,11 +119,11 @@ class ConcreteScenario(Scenario):
     def __init__(self, atomic_attacks_to_return=None, **kwargs):
         # Default include_default_baseline=False for tests unless explicitly specified
         kwargs.setdefault("include_default_baseline", False)
-        
+
         # Get strategy_class from kwargs or use default
         strategy_class = kwargs.pop("strategy_class", None) or self.get_strategy_class()
         default_aggregate = kwargs.pop("default_aggregate", None) or self.get_default_strategy()
-        
+
         super().__init__(strategy_class=strategy_class, default_aggregate=default_aggregate, **kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 

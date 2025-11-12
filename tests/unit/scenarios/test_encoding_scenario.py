@@ -81,8 +81,6 @@ class TestEncodingScenarioInitialization:
 
     def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with memory labels."""
-        memory_labels = {"test": "encoding", "category": "scenario"}
-
         scenario = EncodingScenario(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,

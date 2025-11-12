@@ -23,7 +23,10 @@ from pyrit.models import AttackResult
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
+from pyrit.scenarios.scenario_strategy import (
+    ScenarioCompositeStrategy,
+    ScenarioStrategy,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +206,7 @@ class Scenario(ABC):
     async def initialize_async(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget | None = None,
         scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
         max_concurrency: int = 1,
         max_retries: int = 0,
@@ -222,10 +225,10 @@ class Scenario(ABC):
 
         Args:
             objective_target (PromptTarget): The target system to attack.
-            scenario_strategies (Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]]): 
+            scenario_strategies (Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]]):
                 The strategies to execute. Can be a list of bare ScenarioStrategy enums or
                 ScenarioCompositeStrategy instances for advanced composition. Bare enums are
-                automatically wrapped into composites. If None, uses the default aggregate 
+                automatically wrapped into composites. If None, uses the default aggregate
                 from the scenario's configuration.
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
             max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
@@ -263,6 +266,13 @@ class Scenario(ABC):
             ... )
             >>> results = await resumed_scenario.run_async()  # Resumes from progress
         """
+        # Validate required parameters
+        if objective_target is None:
+            raise ValueError(
+                "objective_target is required. "
+                "Provide it either as a parameter or via set_default_value() in an initialization script."
+            )
+
         # Set instance variables from parameters
         self._objective_target = objective_target
         self._objective_target_identifier = objective_target.get_identifier()
@@ -655,9 +665,7 @@ class Scenario(ABC):
         )
 
         # Mark scenario as in progress
-        self._memory.update_scenario_run_state(
-            scenario_result_id=scenario_result_id, scenario_run_state="IN_PROGRESS"
-        )
+        self._memory.update_scenario_run_state(scenario_result_id=scenario_result_id, scenario_run_state="IN_PROGRESS")
 
         # Calculate starting index based on completed attacks
         completed_count = len(self._atomic_attacks) - len(remaining_attacks)

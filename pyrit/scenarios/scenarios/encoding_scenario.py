@@ -3,7 +3,7 @@
 
 
 import pathlib
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH
@@ -33,18 +33,16 @@ from pyrit.prompt_converter.nato_converter import NatoConverter
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
-from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_strategy import (
-    ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
 from pyrit.score import TrueFalseScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
 
 
-class EncodingStrategy(ScenarioStrategy):  # type: ignore[misc]
+class EncodingStrategy(ScenarioStrategy):
     """
     Strategies for encoding attacks.
 
