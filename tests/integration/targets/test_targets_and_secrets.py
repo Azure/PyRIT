@@ -19,6 +19,26 @@ from pyrit.prompt_target import (
 )
 
 
+def _get_required_env_var(env_var_name: str) -> str:
+    """
+    Retrieve a required environment variable. This is needed because often if you pass None
+    to a target constructor, it will attempt to use a default ennmeent variable.
+
+    Args:
+        env_var_name (str): The name of the environment variable to retrieve.
+
+    Returns:
+        str: The value of the environment variable.
+
+    Raises:
+        ValueError: If the environment variable is not set.
+    """
+    value = os.getenv(env_var_name)
+    if not value:
+        raise ValueError(f"Environment variable {env_var_name} is not set.")
+    return value
+
+
 async def _assert_can_send_prompt(target, check_if_llm_interpreted_request=True, max_retries=2):
 
     simple_prompt = """\
@@ -72,35 +92,35 @@ async def _assert_can_send_video_prompt(target):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "api_key", "model_name", "no_api_version", "supports_seed"),
+    ("endpoint", "api_key", "model_name", "supports_seed"),
     [
-        ("OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL", False, True),
-        ("PLATFORM_OPENAI_CHAT_ENDPOINT", "PLATFORM_OPENAI_CHAT_KEY", "PLATFORM_OPENAI_CHAT_MODEL", False, True),
-        ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "", False, True),
-        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_KEY", "", False, True),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", "", False, True),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", "", False, True),
-        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY", "", False, True),
-        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_KEY", "", False, True),
-        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", "", False, True),
-        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "AZURE_FOUNDRY_DEEPSEEK_KEY", "", False, True),
-        ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "", False, True),
-        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "", False, False),
-        ("GOOGLE_GEMINI_ENDPOINT", "GOOGLE_GEMINI_API_KEY", "GOOGLE_GEMINI_MODEL", True, False),
-        ("ANTHROPIC_CHAT_ENDPOINT", "ANTHROPIC_CHAT_KEY", "ANTHROPIC_CHAT_MODEL", True, False),
+        ("OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL", True),
+        ("PLATFORM_OPENAI_CHAT_ENDPOINT", "PLATFORM_OPENAI_CHAT_KEY", "PLATFORM_OPENAI_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "", True),
+        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_KEY", "", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", "", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", "", True),
+        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY", "", True),
+        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_KEY", "", True),
+        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", "", True),
+        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "AZURE_FOUNDRY_DEEPSEEK_KEY", "", True),
+        ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "", True),
+        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "", False),
+        ("GOOGLE_GEMINI_ENDPOINT", "GOOGLE_GEMINI_API_KEY", "GOOGLE_GEMINI_MODEL", False),
+        ("ANTHROPIC_CHAT_ENDPOINT", "ANTHROPIC_CHAT_KEY", "ANTHROPIC_CHAT_MODEL", False),
     ],
 )
-async def test_connect_required_openai_text_targets(
-    sqlite_instance, endpoint, api_key, model_name, no_api_version, supports_seed
-):
+async def test_connect_required_openai_text_targets(sqlite_instance, endpoint, api_key, model_name, supports_seed):
+    endpoint_value = _get_required_env_var(endpoint)
+    api_key_value = _get_required_env_var(api_key)
+    model_name_value = os.getenv(model_name) if model_name else ""
+
     args = {
-        "endpoint": os.getenv(endpoint),
-        "api_key": os.getenv(api_key),
-        "model_name": os.getenv(model_name),
+        "endpoint": endpoint_value,
+        "api_key": api_key_value,
+        "model_name": model_name_value,
         "temperature": 0.0,
     }
-    if no_api_version:
-        args["api_version"] = None
 
     if supports_seed:
         args["seed"] = 42
@@ -112,27 +132,26 @@ async def test_connect_required_openai_text_targets(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "api_key", "model_name", "no_api_version"),
+    ("endpoint", "api_key", "model_name"),
     [
         (
             "PLATFORM_OPENAI_RESPONSES_ENDPOINT",
             "PLATFORM_OPENAI_RESPONSES_KEY",
             "PLATFORM_OPENAI_RESPONSES_MODEL",
-            True,
         ),
-        ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL", False),
+        ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL"),
     ],
 )
-async def test_connect_required_openai_response_targets(sqlite_instance, endpoint, api_key, model_name, no_api_version):
-    args = {
-        "endpoint": os.getenv(endpoint),
-        "api_key": os.getenv(api_key),
-        "model_name": os.getenv(model_name),
-    }
-    if no_api_version:
-        args["api_version"] = None
+async def test_connect_required_openai_response_targets(sqlite_instance, endpoint, api_key, model_name):
+    endpoint_value = _get_required_env_var(endpoint)
+    api_key_value = _get_required_env_var(api_key)
+    model_name_value = _get_required_env_var(model_name)
 
-    target = OpenAIResponseTarget(**args)
+    target = OpenAIResponseTarget(
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
+    )
 
     # OpenAIResponseTarget returns structured responses (reasoning JSON), so we just need to verify
     # we can send a prompt and get a response, not that it contains specific text
@@ -147,10 +166,14 @@ async def test_connect_required_openai_response_targets(sqlite_instance, endpoin
     ],
 )
 async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_key, model_name):
+    endpoint_value = _get_required_env_var(endpoint)
+    api_key_value = _get_required_env_var(api_key)
+    model_name_value = _get_required_env_var(model_name)
+
     target = RealtimeTarget(
-        endpoint=os.getenv(endpoint),
-        api_key=os.getenv(api_key),
-        model_name=os.getenv(model_name),
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
     )
 
     await _assert_can_send_prompt(target)
@@ -165,9 +188,12 @@ async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_
     ],
 )
 async def test_connect_required_aml_text_targets(sqlite_instance, endpoint, api_key):
+    endpoint_value = _get_required_env_var(endpoint)
+    api_key_value = _get_required_env_var(api_key)
+
     target = AzureMLChatTarget(
-        endpoint=os.getenv(endpoint),
-        api_key=os.getenv(api_key),
+        endpoint=endpoint_value,
+        api_key=api_key_value,
     )
 
     await _assert_can_send_prompt(target)
@@ -175,13 +201,14 @@ async def test_connect_required_aml_text_targets(sqlite_instance, endpoint, api_
 
 @pytest.mark.asyncio
 async def test_connect_openai_completion(sqlite_instance):
-
-    endpoint = "OPENAI_COMPLETION_ENDPOINT"
-    api_key = "OPENAI_COMPLETION_API_KEY"
-    model = "OPENAI_COMPLETION_MODEL"
+    endpoint_value = _get_required_env_var("OPENAI_COMPLETION_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_COMPLETION_API_KEY")
+    model_value = _get_required_env_var("OPENAI_COMPLETION_MODEL")
 
     target = OpenAICompletionTarget(
-        endpoint=os.getenv(endpoint), api_key=os.getenv(api_key), model_name=os.getenv(model)
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_value,
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
@@ -196,9 +223,12 @@ async def test_connect_openai_completion(sqlite_instance):
     ],
 )
 async def test_connect_dall_e(sqlite_instance, endpoint, api_key):
+    endpoint_value = _get_required_env_var(endpoint)
+    api_key_value = _get_required_env_var(api_key)
+
     target = OpenAIDALLETarget(
-        endpoint=os.getenv(endpoint),
-        api_key=os.getenv(api_key),
+        endpoint=endpoint_value,
+        api_key=api_key_value,
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
@@ -213,9 +243,12 @@ async def test_connect_dall_e(sqlite_instance, endpoint, api_key):
     ],
 )
 async def test_connect_tts(sqlite_instance, endpoint, api_key):
+    endpoint_value = _get_required_env_var(endpoint)
+    api_key_value = _get_required_env_var(api_key)
+
     target = OpenAITTSTarget(
-        endpoint=os.getenv(endpoint),
-        api_key=os.getenv(api_key),
+        endpoint=endpoint_value,
+        api_key=api_key_value,
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
@@ -233,10 +266,14 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key):
 )
 async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
     """Test OpenAISoraTarget with both Sora-1 and Sora-2 APIs (auto-detected via endpoint)."""
+    endpoint_value = _get_required_env_var(endpoint)
+    api_key_value = _get_required_env_var(api_key)
+    model_name_value = _get_required_env_var(model_name)
+
     target = OpenAISoraTarget(
-        endpoint=os.getenv(endpoint),
-        api_key=os.getenv(api_key),
-        model_name=os.getenv(model_name),
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
         resolution_dimensions="1280x720",  # Supported by both v1 and v2
         n_seconds=4,  # Supported by both v1 (up to 20s) and v2 (4, 8, or 12s)
     )
@@ -269,10 +306,14 @@ async def test_connect_sora_unsupported_resolution_returns_processing_error(
     This test verifies that such errors are properly categorized as error="processing"
     rather than crashing or returning unknown error types.
     """
+    endpoint_value = _get_required_env_var(endpoint_var)
+    api_key_value = _get_required_env_var(api_key_var)
+    model_value = _get_required_env_var(model_var)
+
     target = OpenAISoraTarget(
-        endpoint=os.getenv(endpoint_var),
-        api_key=os.getenv(api_key_var),
-        model_name=os.getenv(model_var),
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_value,
         resolution_dimensions=resolution,
         n_seconds=4,  # Supported by v2 (4, 8, or 12s)
     )
@@ -311,10 +352,14 @@ async def test_sora_multiple_prompts_create_separate_files(sqlite_instance):
     This verifies that each video generation creates a unique file based on
     the task_id/generation_id mechanism.
     """
+    endpoint_value = _get_required_env_var("OPENAI_SORA1_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_SORA1_KEY")
+    model_name_value = _get_required_env_var("OPENAI_SORA1_MODEL")
+
     target = OpenAISoraTarget(
-        endpoint=os.getenv("OPENAI_SORA1_ENDPOINT"),
-        api_key=os.getenv("OPENAI_SORA1_KEY"),
-        model_name=os.getenv("OPENAI_SORA1_MODEL"),
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
         resolution_dimensions="1280x720",
         n_seconds=4,
     )
@@ -384,8 +429,15 @@ async def test_sora_multiple_prompts_create_separate_files(sqlite_instance):
     ],
 )
 async def test_connect_non_required_openai_text_targets(sqlite_instance, endpoint, api_key, model_name):
+    endpoint_value = _get_required_env_var(endpoint)
+    # api_key can be empty string for OLLAMA
+    api_key_value = os.getenv(api_key) if api_key else ""
+    model_name_value = _get_required_env_var(model_name)
+
     target = OpenAIChatTarget(
-        endpoint=os.getenv(endpoint), api_key=os.getenv(api_key), model_name=os.getenv(model_name)
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
     )
 
     await _assert_can_send_prompt(target)

@@ -36,7 +36,6 @@ class OpenAITTSTarget(OpenAITarget):
         response_format: TTSResponseFormat = "mp3",
         language: str = "en",
         speed: Optional[float] = None,
-        api_version: Optional[str] = "2025-02-01-preview",
         **kwargs,
     ):
         """
@@ -52,8 +51,6 @@ class OpenAITTSTarget(OpenAITarget):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2025-02-01-preview".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -66,13 +63,13 @@ class OpenAITTSTarget(OpenAITarget):
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
 
-        super().__init__(api_version=api_version, **kwargs)
+        super().__init__(**kwargs)
 
         if not self._model_name:
             self._model_name = "tts-1"
 
-        # Validate endpoint URL
-        self._warn_if_irregular_endpoint(self.TTS_URL_REGEX)
+        tts_url_patterns = [r"/audio/speech"]
+        self._warn_if_irregular_endpoint(tts_url_patterns)
 
         self._voice = voice
         self._response_format = response_format
@@ -97,17 +94,12 @@ class OpenAITTSTarget(OpenAITarget):
 
         body = self._construct_request_body(request=request)
 
-        params = {}
-        if self._api_version is not None:
-            params["api-version"] = self._api_version
-
         try:
             response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
                 headers=self._headers,
                 request_body=body,
-                params=params,
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:
