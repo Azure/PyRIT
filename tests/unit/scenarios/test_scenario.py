@@ -11,7 +11,7 @@ from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.scenario import ScenarioIdentifier, ScenarioResult
+from pyrit.scenarios.scenario import ScenarioIdentifier, ScenarioResult, ScenarioStrategy
 
 
 def save_attack_results_to_memory(attack_results):
@@ -89,6 +89,20 @@ class ConcreteScenario(Scenario):
     def __init__(self, atomic_attacks_to_return=None, **kwargs):
         # Default include_default_baseline=False for tests unless explicitly specified
         kwargs.setdefault("include_default_baseline", False)
+        
+        # Add required strategy_class and default_aggregate if not provided
+        
+        class TestStrategy(ScenarioStrategy):
+            TEST = ("test", set())
+            ALL = ("all", {"all"})
+
+            @classmethod
+            def get_aggregate_tags(cls) -> set[str]:
+                return {"all"}
+
+        kwargs.setdefault("strategy_class", TestStrategy)
+        kwargs.setdefault("default_aggregate", TestStrategy.ALL)
+        
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
@@ -101,10 +115,11 @@ class ConcreteScenario(Scenario):
         # Return a simple mock strategy class for testing
         class TestStrategy(ScenarioStrategy):
             TEST = ("test", set())
+            ALL = ("all", {"all"})
 
             @classmethod
             def get_aggregate_tags(cls) -> set[str]:
-                return set()
+                return {"all"}
 
         return TestStrategy
 
@@ -126,7 +141,6 @@ class TestScenarioInitialization:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
         )
 
         assert scenario.name == "Test Scenario"
@@ -144,40 +158,33 @@ class TestScenarioInitialization:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=2,
-            objective_target=mock_objective_target,
-            memory_labels=memory_labels,
         )
 
-        assert scenario._memory_labels == memory_labels
+        assert scenario._memory_labels == {}  # Not set until initialize_async
 
     def test_init_with_custom_concurrency(self, mock_objective_target):
         """Test initialization with custom max_concurrency."""
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_concurrency=5,
         )
 
-        assert scenario._max_concurrency == 5
+        assert scenario._max_concurrency == 1  # Default until initialize_async
 
     def test_init_with_custom_max_retries(self, mock_objective_target):
         """Test initialization with custom max_retries."""
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=3,
         )
 
-        assert scenario._max_retries == 3
+        assert scenario._max_retries == 0  # Default until initialize_async
 
     def test_init_creates_scenario_identifier(self, mock_objective_target):
         """Test that initialization creates a proper ScenarioIdentifier."""
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=3,
-            objective_target=mock_objective_target,
         )
 
         assert isinstance(scenario._identifier, ScenarioIdentifier)
@@ -190,7 +197,6 @@ class TestScenarioInitialization:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
         )
 
         # Test that scenario initializes correctly without attack_strategies
@@ -207,13 +213,12 @@ class TestScenarioInitialization2:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
 
         assert scenario.atomic_attack_count == 0
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         assert scenario.atomic_attack_count == len(mock_atomic_attacks)
         assert scenario._atomic_attacks == mock_atomic_attacks
@@ -233,10 +238,9 @@ class TestScenarioExecution:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         result = await scenario.run_async()
 
@@ -267,11 +271,9 @@ class TestScenarioExecution:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_concurrency=5,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=5)
 
         result = await scenario.run_async()
 
@@ -296,10 +298,9 @@ class TestScenarioExecution:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         result = await scenario.run_async()
 
@@ -320,10 +321,9 @@ class TestScenarioExecution:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         with pytest.raises(Exception, match="Test error"):
             await scenario.run_async()
@@ -341,7 +341,6 @@ class TestScenarioExecution:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
         )
 
         with pytest.raises(ValueError, match="Cannot run scenario with no atomic attacks"):
@@ -358,10 +357,9 @@ class TestScenarioExecution:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=5,
-            objective_target=mock_objective_target,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         result = await scenario.run_async()
 
@@ -382,7 +380,6 @@ class TestScenarioProperties:
         scenario = ConcreteScenario(
             name="My Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
         )
 
         assert scenario.name == "My Test Scenario"
@@ -393,13 +390,12 @@ class TestScenarioProperties:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
 
         assert scenario.atomic_attack_count == 0
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         assert scenario.atomic_attack_count == 3
 
@@ -421,10 +417,9 @@ class TestScenarioProperties:
         scenario1 = ConcreteScenario(
             name="Single",
             version=1,
-            objective_target=mock_objective_target,
             atomic_attacks_to_return=single_run,
         )
-        await scenario1.initialize_async()
+        await scenario1.initialize_async(objective_target=mock_objective_target)
         assert scenario1.atomic_attack_count == 1
 
         many_runs = []
@@ -439,10 +434,9 @@ class TestScenarioProperties:
         scenario2 = ConcreteScenario(
             name="Many",
             version=1,
-            objective_target=mock_objective_target,
             atomic_attacks_to_return=many_runs,
         )
-        await scenario2.initialize_async()
+        await scenario2.initialize_async(objective_target=mock_objective_target)
         assert scenario2.atomic_attack_count == 10
 
 

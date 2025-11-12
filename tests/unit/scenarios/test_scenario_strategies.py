@@ -26,7 +26,7 @@ class TestScenarioStrategiesParameter:
 
     def test_all_scenarios_have_strategy_parameter(self, scenario_registry: ScenarioRegistry):
         """
-        Test that all built-in scenarios have a 'scenario_strategies' parameter in __init__.
+        Test that all built-in scenarios have a 'scenario_strategies' parameter in initialize_async.
 
         This ensures consistency across all scenarios and enables users to specify
         which strategies to run from the CLI or in code.
@@ -38,14 +38,14 @@ class TestScenarioStrategiesParameter:
             scenario_class = scenario_registry.get_scenario(scenario_name)
             assert scenario_class is not None, f"Could not load scenario: {scenario_name}"
 
-            # Get the __init__ signature
-            init_signature = inspect.signature(scenario_class.__init__)
-            parameters = init_signature.parameters
+            # Get the initialize_async signature
+            init_async_signature = inspect.signature(scenario_class.initialize_async)
+            parameters = init_async_signature.parameters
 
             # Check that scenario_strategies parameter exists
             assert (
                 "scenario_strategies" in parameters
-            ), f"{scenario_name} missing 'scenario_strategies' parameter in __init__"
+            ), f"{scenario_name} missing 'scenario_strategies' parameter in initialize_async"
 
             # Verify it's a keyword-only parameter (comes after *)
             param = parameters["scenario_strategies"]

@@ -11,7 +11,7 @@ AtomicAttack instances sequentially, enabling comprehensive security testing cam
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional, Sequence, Set, Type
 
 from tqdm.auto import tqdm
 
@@ -204,7 +204,7 @@ class Scenario(ABC):
         self,
         *,
         objective_target: PromptTarget,
-        scenario_strategies: Optional[List[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
+        scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
         max_concurrency: int = 1,
         max_retries: int = 0,
         memory_labels: Optional[Dict[str, str]] = None,
@@ -222,7 +222,7 @@ class Scenario(ABC):
 
         Args:
             objective_target (PromptTarget): The target system to attack.
-            scenario_strategies (Optional[List[ScenarioStrategy | ScenarioCompositeStrategy]]): 
+            scenario_strategies (Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]]): 
                 The strategies to execute. Can be a list of bare ScenarioStrategy enums or
                 ScenarioCompositeStrategy instances for advanced composition. Bare enums are
                 automatically wrapped into composites. If None, uses the default aggregate 
