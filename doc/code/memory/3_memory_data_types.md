@@ -80,7 +80,7 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 
 ## SeedPrompts
 
-[`SeedPrompt`](../../../pyrit/models/seed_prompt.py) objects represent the starting points of conversations or attack objectives. They are used to assemble and initiate attacks, and can be translated to and from `MessagePieces`.
+[`SeedPrompt`](../../../pyrit/models/seed_prompt.py) objects represent the starting points of conversations. They are used to assemble and initiate attacks, and can be translated to and from `MessagePieces`.
 
 **Key Fields:**
 
@@ -96,6 +96,33 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 - **`metadata`**: Arbitrary metadata that can be attached
 
 `SeedPrompts` support Jinja2 templating, allowing dynamic prompt generation with parameter substitution. They can be loaded from YAML files and organized into datasets and groups for systematic testing.
+
+## SeedObjectives
+
+[`SeedObjective`](../../../pyrit/models/seed_objective.py) objects represent the goal or objective of an attack or test scenario. They describe what the attacker is trying to achieve and are used alongside `SeedPrompts` to define complete attack scenarios.
+
+**Key Fields:**
+
+- **`value`**: The objective statement describing the goal (e.g., "Generate hate speech content")
+- **`data_type`**: Always `text` for objectives
+- **`name`**: Name identifying the objective
+- **`dataset_name`**: Name of the dataset this objective belongs to
+- **`harm_categories`**: Categories of harm the objective relates to
+- **`authors`**: Attribution information for the objective
+- **`groups`**: Group affiliations (e.g., "AI Red Team")
+- **`source`**: Source or reference for the objective
+- **`metadata`**: Additional metadata about the objective
+
+`SeedObjectives` support Jinja2 templating for dynamic objective generation and can be loaded from YAML files alongside prompts, making it easy to organize and reuse test objectives across different scenarios.
+
+**Relationship to SeedGroups:**
+
+`SeedObjective` and `SeedPrompt` objects are combined into [`SeedGroup`](../../../pyrit/models/seed_group.py) objects, which represent a complete test case with optional seed prompts and an objective. A SeedGroup can contain:
+
+- Multiple prompts (for multi-turn conversations)
+- A single objective (what the attack is trying to achieve)
+- Both prompts and an objective (complete attack specification)
+
 
 ## Scores
 
