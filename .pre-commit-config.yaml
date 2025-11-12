@@ -53,8 +53,9 @@ repos:
     rev: v0.14.4
     hooks:
       - id: ruff-check
-        # TODO: once existing docstring issues are fixed, we can remove all args
-        # https://github.com/Azure/PyRIT/issues/1176#issuecomment-3517216359
+        # TODO: once existing docstring issues are fixed,
+        # and https://github.com/Azure/PyRIT/issues/1176 is resolved,
+        # we can remove all args from here to use the pyproject.toml config only
         args:
           - --select
           - D202
