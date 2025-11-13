@@ -3,7 +3,10 @@
 
 from typing import Optional
 
+import pytest
+
 from pyrit.common.apply_defaults import (
+    REQUIRED_VALUE,
     DefaultValueScope,
     apply_defaults,
     get_global_default_values,
@@ -689,3 +692,188 @@ class TestSetGlobalVariable:
             # Cleanup
             if hasattr(sys.modules["__main__"], "test_none_var"):
                 delattr(sys.modules["__main__"], "test_none_var")
+
+
+class TestRequiredValue:
+    """Tests for the REQUIRED_VALUE sentinel."""
+
+    def setup_method(self) -> None:
+        """Clear any existing default values before each test."""
+        get_global_default_values()._default_values.clear()
+
+    def test_required_value_raises_when_not_provided_and_no_default(self) -> None:
+        """Test that REQUIRED_VALUE raises ValueError when parameter not provided and no default set."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.required_param = required_param
+
+        with pytest.raises(ValueError) as exc_info:
+            TestClass()
+
+        assert "required_param" in str(exc_info.value)
+        assert "is required" in str(exc_info.value)
+
+    def test_required_value_uses_default_when_provided(self) -> None:
+        """Test that REQUIRED_VALUE uses global default when registered."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.required_param = required_param
+
+        set_default_value(class_type=TestClass, parameter_name="required_param", value="default_value")
+
+        obj = TestClass()
+        assert obj.required_param == "default_value"
+
+    def test_required_value_accepts_explicit_value(self) -> None:
+        """Test that REQUIRED_VALUE accepts explicitly provided value."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.required_param = required_param
+
+        obj = TestClass(required_param="explicit_value")
+        assert obj.required_param == "explicit_value"
+
+    def test_required_value_explicit_overrides_default(self) -> None:
+        """Test that explicit value overrides registered default even with REQUIRED_VALUE."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.required_param = required_param
+
+        set_default_value(class_type=TestClass, parameter_name="required_param", value="default_value")
+
+        obj = TestClass(required_param="explicit_value")
+        assert obj.required_param == "explicit_value"
+
+    def test_required_value_with_multiple_params(self) -> None:
+        """Test REQUIRED_VALUE works alongside optional parameters."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(
+                self,
+                *,
+                required_param: str = REQUIRED_VALUE,  # type: ignore[assignment]
+                optional_param: Optional[str] = None,
+            ) -> None:
+                self.required_param = required_param
+                self.optional_param = optional_param
+
+        # Should raise for missing required param
+        with pytest.raises(ValueError) as exc_info:
+            TestClass(optional_param="optional")
+        assert "required_param" in str(exc_info.value)
+
+        # Should work with required param provided
+        obj = TestClass(required_param="required", optional_param="optional")
+        assert obj.required_param == "required"
+        assert obj.optional_param == "optional"
+
+    def test_required_value_with_inheritance(self) -> None:
+        """Test that REQUIRED_VALUE works with class inheritance."""
+
+        class ParentClass:
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.required_param = required_param
+
+        class ChildClass(ParentClass):
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                super().__init__(required_param=required_param)
+
+        # Set default for parent class
+        set_default_value(class_type=ParentClass, parameter_name="required_param", value="parent_default")
+
+        # Child should inherit parent's default
+        obj = ChildClass()
+        assert obj.required_param == "parent_default"
+
+    def test_required_value_child_default_overrides_parent(self) -> None:
+        """Test that child class default overrides parent default with REQUIRED_VALUE."""
+
+        class ParentClass:
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.required_param = required_param
+
+        class ChildClass(ParentClass):
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                super().__init__(required_param=required_param)
+
+        set_default_value(class_type=ParentClass, parameter_name="required_param", value="parent_default")
+        set_default_value(class_type=ChildClass, parameter_name="required_param", value="child_default")
+
+        obj = ChildClass()
+        assert obj.required_param == "child_default"
+
+    def test_required_value_sentinel_properties(self) -> None:
+        """Test the properties of REQUIRED_VALUE sentinel."""
+        # REQUIRED_VALUE should be falsy
+        assert not REQUIRED_VALUE
+
+        # REQUIRED_VALUE should have a readable repr
+        assert "REQUIRED_VALUE" in repr(REQUIRED_VALUE)
+
+    def test_required_value_complex_type(self) -> None:
+        """Test REQUIRED_VALUE with complex types like objects."""
+
+        class ComplexType:
+            def __init__(self, value: str):
+                self.value = value
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, required_param: ComplexType = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.required_param = required_param
+
+        complex_obj = ComplexType("test")
+        set_default_value(class_type=TestClass, parameter_name="required_param", value=complex_obj)
+
+        obj = TestClass()
+        assert obj.required_param is complex_obj
+        assert obj.required_param.value == "test"
+
+    def test_required_value_none_is_different(self) -> None:
+        """Test that None and REQUIRED_VALUE behave differently."""
+
+        class TestClass1:
+            @apply_defaults
+            def __init__(self, *, param: Optional[str] = None) -> None:
+                self.param = param
+
+        class TestClass2:
+            @apply_defaults
+            def __init__(self, *, param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.param = param
+
+        # With None default, no error even without registered default
+        obj1 = TestClass1()
+        assert obj1.param is None
+
+        # With REQUIRED_VALUE, raises error without registered default
+        with pytest.raises(ValueError):
+            TestClass2()
+
+    def test_required_value_raises_when_none_explicitly_passed(self) -> None:
+        """Test that REQUIRED_VALUE raises ValueError when None is explicitly passed."""
+
+        class TestClass:
+            @apply_defaults
+            def __init__(self, *, required_param: str = REQUIRED_VALUE) -> None:  # type: ignore[assignment]
+                self.required_param = required_param
+
+        # Explicitly passing None should raise error
+        with pytest.raises(ValueError) as exc_info:
+            TestClass(required_param=None)  # type: ignore[arg-type]
+
+        assert "required_param" in str(exc_info.value)
+        assert "is required" in str(exc_info.value)
