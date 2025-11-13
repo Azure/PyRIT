@@ -194,23 +194,19 @@ class CyberScenario(Scenario):
             AtomicAttack configured for the specified strategy.
         """
         attack_strategy: Optional[AttackStrategy] = None
-        match strategy:
-            case CyberStrategy.SingleTurn:
-                attack_strategy = PromptSendingAttack(
-                    objective_target=self._objective_target,
-                    attack_scoring_config=self._scorer_config,
-                )
-            case CyberStrategy.MultiTurn:
-                attack_strategy = RedTeamingAttack(
-                    objective_target=self._objective_target,
-                    attack_scoring_config=self._scorer_config,
-                    attack_adversarial_config=self._adversarial_config,
-                )
-            case _:
-                raise ValueError(f"Unknown CyberStrategy: {strategy}")
-
-        if not attack_strategy:
-            raise ValueError("Attack strategy not correctly populated!")
+        if strategy == CyberStrategy.SingleTurn:
+            attack_strategy = PromptSendingAttack(
+                objective_target=self._objective_target,
+                attack_scoring_config=self._scorer_config,
+            )
+        elif strategy == CyberStrategy.MultiTurn:
+            attack_strategy = RedTeamingAttack(
+                objective_target=self._objective_target,
+                attack_scoring_config=self._scorer_config,
+                attack_adversarial_config=self._adversarial_config,
+            )
+        else:
+            raise ValueError(f"Unknown CyberStrategy: {strategy}")
 
         return AtomicAttack(
             atomic_attack_name=f"cyber_{strategy.value}",
