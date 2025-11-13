@@ -75,5 +75,5 @@ scenario = RapidResponseHarmScenario(
 
 ## Additional Resources
 
-- See `content_harm_scenario.ipynb` for a complete working example
+- See `3_content_harm_scenario.ipynb` for a complete working example
 - Check the `ContentHarmStrategy` enum for all available strategies
