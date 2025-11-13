@@ -34,7 +34,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         endpoint (str): The endpoint for the OpenAI API
         model_name (str): The model name for the OpenAI API
         deployment_name (str): For Azure, the deployment name
-        api_version (str): The api version for the OpenAI API
         temperature (float): The temperature for the completion
         max_completion_tokens (int): The maximum number of tokens to be returned by the model.
             The total length of input tokens and generated tokens is limited by
