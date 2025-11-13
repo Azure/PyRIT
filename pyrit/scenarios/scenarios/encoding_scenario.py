@@ -5,7 +5,7 @@
 import pathlib
 from typing import Dict, List, Optional, Sequence
 
-from pyrit.common import apply_defaults
+from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
@@ -120,7 +120,7 @@ class EncodingScenario(Scenario):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         scenario_strategies: list[EncodingStrategy | ScenarioCompositeStrategy] | None = None,
         seed_prompts: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,

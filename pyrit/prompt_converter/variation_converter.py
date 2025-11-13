@@ -8,7 +8,7 @@ import uuid
 from textwrap import dedent
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -34,7 +34,10 @@ class VariationConverter(PromptConverter):
 
     @apply_defaults
     def __init__(
-        self, *, converter_target: Optional[PromptChatTarget] = None, prompt_template: Optional[SeedPrompt] = None
+        self,
+        *,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
+        prompt_template: Optional[SeedPrompt] = None,
     ):
         """
         Initializes the converter with the specified target and prompt template.
@@ -48,13 +51,6 @@ class VariationConverter(PromptConverter):
         Raises:
             ValueError: If converter_target is not provided and no default has been configured.
         """
-        if converter_target is None:
-            raise ValueError(
-                "converter_target is required for LLM-based converters. "
-                "Either pass it explicitly or configure a default via PyRIT initialization "
-                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
-            )
-
         self.converter_target = converter_target
 
         # set to default strategy if not provided
