@@ -157,7 +157,9 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
         return response
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool | str) -> dict:
+    async def _construct_request_body(
+        self, conversation: MutableSequence[Message], is_json_response: bool | str
+    ) -> dict:
         raise NotImplementedError
 
     def _construct_message_from_openai_json(

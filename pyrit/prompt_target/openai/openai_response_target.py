@@ -291,7 +291,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 request["role"] = "developer"
         return
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool | str) -> dict:
+    async def _construct_request_body(
+        self, conversation: MutableSequence[Message], is_json_response: bool | str
+    ) -> dict:
         """
         Construct the request body to send to the Responses API.
 
