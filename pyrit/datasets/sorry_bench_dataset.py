@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
+import os
 from typing import List, Optional
 
 from datasets import load_dataset
@@ -84,9 +85,11 @@ VALID_PROMPT_STYLES = [
 
 
 def fetch_sorry_bench_dataset(
+    *,
     cache_dir: Optional[str] = None,
     categories: Optional[List[str]] = None,
     prompt_style: Optional[str] = None,
+    token: Optional[str] = None,
 ) -> SeedDataset:
     """
     Fetch Sorry-Bench dataset from Hugging Face (updated 2025/03 version).
@@ -97,22 +100,28 @@ def fetch_sorry_bench_dataset(
     Reference: https://arxiv.org/abs/2406.14598
 
     Args:
-        cache_dir: Optional cache directory for Hugging Face datasets
-        categories: Optional list of categories to filter. Full list in:
+        cache_dir (Optional[str]): Optional cache directory for Hugging Face datasets.
+        categories (Optional[List[str]]): Optional list of categories to filter. Full list in:
             https://huggingface.co/datasets/sorry-bench/sorry-bench-202503/blob/main/meta_info.py
-        prompt_style: Optional prompt style to filter. Available styles:
+        prompt_style (Optional[str]): Optional prompt style to filter. Available styles:
             "base", "ascii", "caesar", "slang", "authority_endorsement", etc.
             Default: "base" (only base prompts, no mutations)
             Full list: https://huggingface.co/datasets/sorry-bench/sorry-bench-202503
+        token (Optional[str]): Hugging Face authentication token. If not provided,
+            will attempt to read from HUGGINGFACE_TOKEN environment variable. This is needed for
+            accessing gated datasets on Hugging Face.
 
     Returns:
-        SeedDataset containing Sorry-Bench prompts with harm categories.
+        SeedDataset: SeedDataset containing Sorry-Bench prompts with harm categories.
 
     Raises:
         ValueError: If invalid categories or prompt_style are provided.
     """
     if prompt_style is None:
         prompt_style = "base"
+
+    if token is None:
+        token = os.environ.get("HUGGINGFACE_TOKEN")
 
     if prompt_style not in VALID_PROMPT_STYLES:
         raise ValueError(f"Invalid prompt_style '{prompt_style}'. Must be one of: {', '.join(VALID_PROMPT_STYLES)}")
@@ -128,7 +137,7 @@ def fetch_sorry_bench_dataset(
     try:
         source = "sorry-bench/sorry-bench-202503"
         logger.info(f"Loading Sorry-Bench dataset from {source}")
-        data = load_dataset(source, cache_dir=cache_dir)
+        data = load_dataset(source, cache_dir=cache_dir, token=token)
 
         dataset_split = data["train"]
 

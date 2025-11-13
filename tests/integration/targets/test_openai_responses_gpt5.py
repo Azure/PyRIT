@@ -16,7 +16,7 @@ async def test_openai_responses_gpt5(sqlite_instance):
     args = {
         "endpoint": os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
         "model_name": os.getenv("AZURE_OPENAI_GPT5_MODEL"),
-        "api_key": os.getenv("AZURE_OPENAI_GPT5_RESPONSES_KEY"),
+        "api_key": os.getenv("AZURE_OPENAI_GPT5_KEY"),
     }
 
     target = OpenAIResponseTarget(**args)
