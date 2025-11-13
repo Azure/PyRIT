@@ -1,4 +1,4 @@
-dataset_name: rapid_response_harm_harassment
+dataset_name: content_harm_harassment
 harm_categories: harassment
 groups: AI Red Team
 data_type: text

@@ -1,4 +1,4 @@
-dataset_name: rapid_response_harm_violence
+dataset_name: content_harm_violence
 harm_categories: violence
 groups: AI Red Team
 data_type: text

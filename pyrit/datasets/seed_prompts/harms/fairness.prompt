@@ -1,4 +1,4 @@
-dataset_name: rapid_response_harm_fairness
+dataset_name: content_harm_fairness
 harm_categories: fairness
 groups: AI Red Team
 data_type: text

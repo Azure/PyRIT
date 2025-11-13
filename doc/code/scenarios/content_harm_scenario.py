@@ -11,7 +11,7 @@
 # %% [markdown]
 # # Rapid Response Harm Testing
 #
-# This notebook demonstrates the usage of the RapidResponseHarmScenario class to test model behavior with respect to various harm categories.
+# This notebook demonstrates the usage of the ContentHarmScenario class to test model behavior with respect to various harm categories.
 
 # %% [markdown]
 # ## Initialization
@@ -55,31 +55,31 @@ import os
 
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
-from pyrit.scenarios.scenarios.ai_rt.rapid_response_harm_scenario import (
-    RapidResponseHarmScenario,
-    RapidResponseHarmStrategy,
+from pyrit.scenarios.scenarios.ai_rt.content_harm_scenario import (
+    ContentHarmScenario,
+    ContentHarmStrategy,
 )
 
 printer = ConsoleScenarioResultPrinter()
 
-# Create RapidResponseHarmScenario instance for all harm strategies
-rapid_response_harm_scenario = RapidResponseHarmScenario(
+# Create ContentHarmScenario instance for all harm strategies
+content_harm_scenario = ContentHarmScenario(
     objective_target=OpenAIChatTarget(
         endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
         api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
     ),
-    scenario_strategies=[RapidResponseHarmStrategy.ALL],
+    scenario_strategies=[ContentHarmStrategy.ALL],
     # Uncomment the following line to use a custom dataset prefix, we're using the default here
     # seed_dataset_prefix=="custom_prefix",
 )
 
 # Run strategies
-print(f"Created scenario: {rapid_response_harm_scenario.name}")
-await rapid_response_harm_scenario.initialize_async()  # type: ignore
+print(f"Created scenario: {content_harm_scenario.name}")
+await content_harm_scenario.initialize_async()  # type: ignore
 
 # Execute the entire scenario
-rapid_response_harm_results = await rapid_response_harm_scenario.run_async()  # type: ignore
-await printer.print_summary_async(rapid_response_harm_results)  # type: ignore
+content_harm_results = await content_harm_scenario.run_async()  # type: ignore
+await printer.print_summary_async(content_harm_results)  # type: ignore
 
 
 # %% [markdown]
@@ -88,25 +88,37 @@ await printer.print_summary_async(rapid_response_harm_results)  # type: ignore
 
 # %%
 
-# Create RapidResponseHarmScenario instance for hate, violence, and harassment testing
-rapid_response_harm_scenario = RapidResponseHarmScenario(
+# Create ContentHarmScenario instance for hate, violence, and harassment testing
+content_harm_scenario = ContentHarmScenario(
     objective_target=OpenAIChatTarget(
         endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
         api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
     ),
     scenario_strategies=[
-        RapidResponseHarmStrategy.Hate,
-        RapidResponseHarmStrategy.Violence,
-        RapidResponseHarmStrategy.Harassment,
+        ContentHarmStrategy.Hate,
+        ContentHarmStrategy.Violence,
+        ContentHarmStrategy.Harassment,
     ],
     # Uncomment the following line to use a custom dataset prefix, we're using the default here
     # seed_dataset_prefix=="custom_prefix",
 )
 
 # Run strategies
-print(f"Created scenario: {rapid_response_harm_scenario.name}")
-await rapid_response_harm_scenario.initialize_async()  # type: ignore
+print(f"Created scenario: {content_harm_scenario.name}")
+await content_harm_scenario.initialize_async()  # type: ignore
 
 # Execute the entire scenario
-rapid_response_harm_results = await rapid_response_harm_scenario.run_async()  # type: ignore
-await printer.print_summary_async(rapid_response_harm_results)  # type: ignore
+content_harm_results = await content_harm_scenario.run_async()  # type: ignore
+await printer.print_summary_async(content_harm_results)  # type: ignore
+
+
+# %% [markdown]
+# We can then inspect individual results from the different harm categories. Below is an example of printing out the results from the Violence strategy.
+# %%
+
+
+from pyrit.executor.attack.printer.console_printer import ConsoleAttackResultPrinter
+
+
+for result in content_harm_results.attack_results['violence']:
+    await ConsoleAttackResultPrinter().print_summary_async(result=result) # type: ignore

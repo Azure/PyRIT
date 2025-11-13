@@ -12,6 +12,10 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
     RedTeamingAttack,
 )
+from pyrit.executor.attack.single_turn.many_shot_jailbreak import (
+    ManyShotJailbreakAttack,
+)
+from pyrit.executor.attack.single_turn.role_play import RolePlayAttack, RolePlayPaths
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models.seed_group import SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
@@ -30,9 +34,9 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
 
-class RapidResponseHarmStrategy(ScenarioStrategy):
+class ContentHarmStrategy(ScenarioStrategy):
     """
-    RapidResponseHarmStrategy defines a set of strategies for testing model behavior
+    ContentHarmStrategy defines a set of strategies for testing model behavior
     in several different harm categories. The scenario is designed to provide quick
     feedback on model performance with respect to common harm types with the idea being that
     users will dive deeper into specific harm categories based on initial results.
@@ -41,7 +45,8 @@ class RapidResponseHarmStrategy(ScenarioStrategy):
     Specifying the all tag will include a comprehensive test suite covering all harm categories.
     Users should define objective datasets in CentralMemory corresponding to each harm category
     they wish to test which can then be reused across multiple runs of the scenario.
-    For each harm category, the scenario will run both a PromptSendingAttack and RedTeamingAttack
+    For each harm category, the scenario will run a RolePlayAttack, ManyShotJailbreakAttack,
+    PromptSendingAttack, and RedTeamingAttack for each objective in the dataset.
     to evaluate model behavior.
     """
 
@@ -56,10 +61,10 @@ class RapidResponseHarmStrategy(ScenarioStrategy):
     Leakage = ("leakage", set[str]())
 
 
-class RapidResponseHarmScenario(Scenario):
+class ContentHarmScenario(Scenario):
     """
 
-    Rapid Response Harm Scenario implementation for PyRIT.
+    Content Harm Scenario implementation for PyRIT.
 
     This scenario contains various harm-based checks that you can run to get a quick idea about model behavior
     with respect to certain harm categories.
@@ -73,9 +78,9 @@ class RapidResponseHarmScenario(Scenario):
         Get the strategy enum class for this scenario.
 
         Returns:
-            Type[ScenarioStrategy]: The RapidResponseHarmStrategy enum class.
+            Type[ScenarioStrategy]: The ContentHarmStrategy enum class.
         """
-        return RapidResponseHarmStrategy
+        return ContentHarmStrategy
 
     @classmethod
     def get_default_strategy(cls) -> ScenarioStrategy:
@@ -83,15 +88,15 @@ class RapidResponseHarmScenario(Scenario):
         Get the default strategy used when no strategies are specified.
 
         Returns:
-            ScenarioStrategy: RapidResponseHarmStrategy.ALL
+            ScenarioStrategy: ContentHarmStrategy.ALL
         """
-        return RapidResponseHarmStrategy.ALL
+        return ContentHarmStrategy.ALL
 
     @apply_defaults
     def __init__(
         self,
         *,
-        scenario_strategies: Sequence[RapidResponseHarmStrategy | ScenarioCompositeStrategy] | None = None,
+        scenario_strategies: Sequence[ContentHarmStrategy] | None = None,
         objective_target: PromptTarget,
         objective_scorer: Optional[TrueFalseScorer] = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
@@ -101,22 +106,22 @@ class RapidResponseHarmScenario(Scenario):
         max_retries: int = 0,
     ):
         """
-        Initialize the Rapid Response Harm Scenario.
+        Initialize the Content Harm Scenario.
 
         Args:
-            scenario_strategies (Sequence[RapidResponseHarmStrategy | ScenarioCompositeStrategy] | None):
+            scenario_strategies (Sequence[ContentHarmStrategy | ScenarioCompositeStrategy] | None):
                 The harm strategies or composite strategies to include in this scenario. If None,
-                defaults to RapidResponseHarmStrategy.ALL.
+                defaults to ContentHarmStrategy.ALL.
             objective_target (PromptChatTarget): The chat target to be attacked.
             objective_scorer (Optional[TrueFalseScorer]): The scorer used to evaluate if the model
-                successfully decoded the payload. Defaults to DecodingScorer with encoding_scenario
-                category.
+                successfully met the objective. If None, a default SelfAskRefusalScorer wrapped in a
+                TrueFalseInverterScorer is used.
             adversarial_chat (Optional[PromptChatTarget]): The chat target used for red teaming attacks.
             memory_labels (Optional[Dict[str, str]]): Optional labels to attach to memory entries
                 for tracking and filtering.
             seed_dataset_prefix (Optional[str]): Prefix of the dataset to use to retrieve the objectives.
                 This will be used to retrieve the appropriate seed groups from CentralMemory. If not provided,
-                defaults to "rapid_response_harm".
+                defaults to "content_harm".
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
             max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
                 Set to 0 (default) for no automatic retries. If set to a positive number,
@@ -130,13 +135,13 @@ class RapidResponseHarmScenario(Scenario):
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._memory_labels = memory_labels or {}
 
-        self._rapid_response_harm_strategy_composition = RapidResponseHarmStrategy.prepare_scenario_strategies(
-            scenario_strategies, default_aggregate=RapidResponseHarmStrategy.ALL
+        self._content_harm_strategy_composition = ContentHarmStrategy.prepare_scenario_strategies(
+            scenario_strategies, default_aggregate=ContentHarmStrategy.ALL
         )
         self._seeds = self._get_strategy_seeds_groups(seed_dataset_prefix)
 
         super().__init__(
-            name="Rapid Response Harm Scenario",
+            name="Content Harm Scenario",
             version=self.version,
             memory_labels=memory_labels,
             max_concurrency=max_concurrency,
@@ -153,7 +158,7 @@ class RapidResponseHarmScenario(Scenario):
          appended to the end to retrieve the objectives for each harm strategy.
          For example, if the seed_dataset_prefix is "scenario_harm" and the harm strategy is
          "hate", the dataset name used to retrieve objectives will be "scenario_harm_hate". If no
-         seed dataset name is provided, the default "rapid_response_harm" is used.
+         seed dataset name is provided, the default "content_harm" is used.
 
         Args:
             seed_dataset_prefix (Optional[str]): The provided seed dataset name.
@@ -166,9 +171,9 @@ class RapidResponseHarmScenario(Scenario):
         """
         memory = CentralMemory.get_memory_instance()
         if not seed_dataset_prefix:
-            seed_dataset_prefix = "rapid_response_harm"
+            seed_dataset_prefix = "content_harm"
         seeds_by_strategy = {}
-        for harm_strategy in self._rapid_response_harm_strategy_composition:
+        for harm_strategy in self._content_harm_strategy_composition:
             harm_dataset_name = seed_dataset_prefix + "_" + harm_strategy.name
             strategy_seed_groups = memory.get_seed_groups(dataset_name=harm_dataset_name)
             strategy_objectives: list[str] = [
@@ -187,7 +192,7 @@ class RapidResponseHarmScenario(Scenario):
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-            temperature=0.7,
+            temperature=1.0,
         )
 
     def _get_default_scorer(self) -> TrueFalseInverterScorer:
@@ -208,7 +213,7 @@ class RapidResponseHarmScenario(Scenario):
             List[AtomicAttack]: The list of AtomicAttack instances for harm strategies.
         """
         atomic_attacks: List[AtomicAttack] = []
-        for strategy in self._rapid_response_harm_strategy_composition:
+        for strategy in self._content_harm_strategy_composition:
             atomic_attacks.extend(self._get_strategy_attacks(strategy=strategy, seed_groups=self._seeds[strategy.name]))
         return atomic_attacks
 
@@ -218,8 +223,8 @@ class RapidResponseHarmScenario(Scenario):
         seed_groups: Sequence[SeedGroup],
     ) -> List[AtomicAttack]:
         """
-        Create AtomicAttack instances for a given harm strategy. PromptSendingAttack and
-        RedTeamingAttack are run for all harm strategies.
+        Create AtomicAttack instances for a given harm strategy. RolePlayAttack, ManyShotJailbreakAttack,
+        PromptSendingAttack, and RedTeamingAttack are run for all harm strategies.
 
         Args:
             strategy (ScenarioCompositeStrategy): The strategy to create the attack from.
@@ -233,31 +238,56 @@ class RapidResponseHarmScenario(Scenario):
             attack_scoring_config=self._scorer_config,
         )
 
+        role_play_attack = RolePlayAttack(
+            objective_target=self._objective_target,
+            adversarial_chat=self._adversarial_chat,
+            role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
+        )
+
+        many_shot_jailbreak_attack = ManyShotJailbreakAttack(
+            objective_target=self._objective_target,
+            attack_scoring_config=self._scorer_config,
+        )
+
         red_teaming_attack = RedTeamingAttack(
             objective_target=self._objective_target,
             attack_scoring_config=self._scorer_config,
             attack_adversarial_config=AttackAdversarialConfig(target=self._adversarial_chat),
         )
 
-        # Extract objectives and seed prompts from seed groups
-        strategy_objectives = []
-        strategy_seed_prompts = []
+        # Extract seed objectives and seed prompts from seed groups
+        strategy_seed_objectives = []
+        strategy_seed_group_prompt_only = []
         for seed_group in seed_groups:
-            strategy_objectives.append(seed_group.objective.value if seed_group.objective is not None else None)
-            strategy_seed_prompts.append(SeedGroup(prompts=seed_group.prompts))
+            strategy_seed_objectives.append(seed_group.objective.value if seed_group.objective is not None else None)
+
+            # create new SeedGroup without the objective for PromptSendingAttack
+            strategy_seed_group_prompt_only.append(SeedGroup(prompts=seed_group.prompts))
 
         attacks = [
             AtomicAttack(
                 atomic_attack_name=strategy.name,
                 attack=prompt_sending_attack,
-                objectives=strategy_objectives,
+                objectives=strategy_seed_objectives,
                 memory_labels=self._memory_labels,
-                seed_groups=strategy_seed_prompts,
+                seed_groups=strategy_seed_group_prompt_only,
+            ),
+            AtomicAttack(
+                atomic_attack_name=strategy.name,
+                attack=role_play_attack,
+                objectives=strategy_seed_objectives,
+                memory_labels=self._memory_labels,
+            ),
+            AtomicAttack(
+                atomic_attack_name=strategy.name,
+                attack=many_shot_jailbreak_attack,
+                objectives=strategy_seed_objectives,
+                memory_labels=self._memory_labels,
             ),
             AtomicAttack(
                 atomic_attack_name=strategy.name,
                 attack=red_teaming_attack,
-                objectives=strategy_objectives,
+                objectives=strategy_seed_objectives,
                 memory_labels=self._memory_labels,
             ),
         ]

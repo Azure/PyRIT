@@ -140,12 +140,12 @@
 #
 # - **EncodingScenario**: Tests encoding attacks (Base64, ROT13, etc.) with seed prompts and decoding templates
 # - **FoundryScenario**: Comprehensive converter and multi-turn attack testing with difficulty-based strategies
-# - **RapidResponseHarmScenario**: Tests harm categories (hate, violence, etc.) by loading datasets from CentralMemory
+# - **ContentHarmScenario**: Tests harm categories (hate, violence, etc.) by loading datasets from CentralMemory
 #
 #
 # See [`FoundryScenario`](../../../pyrit/scenarios/scenarios/foundry_scenario.py),
 # [`EncodingScenario`](../../../pyrit/scenarios/scenarios/encoding_scenario.py), and
-# [`RapidResponseHarmScenario`](../../../pyrit/scenarios/scenarios/ai_rt/rapid_response_harm_scenario.py) for complete examples.
+# [`ContentHarmScenario`](../../../pyrit/scenarios/scenarios/ai_rt/content_harm_scenario.py) for complete examples.
 #
 # ## Using Scenarios
 #
