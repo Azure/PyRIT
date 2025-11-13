@@ -15,7 +15,7 @@
 # %% [markdown]
 # # The PyRIT CLI
 #
-# The PyRIT cli tool that allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategies and [configuration](../setup/1_configuration.ipynb).
+# The PyRIT cli tool that allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/0_scenarios.md) for strategies and [configuration](../setup/1_configuration.ipynb).
 #
 # Note in this doc the ! prefaces all commands in the terminal so we can run in a Jupyter Notebook.
 #
