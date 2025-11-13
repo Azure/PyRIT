@@ -140,7 +140,6 @@ target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
     api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
     model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL"),
-    api_version=None,
     extra_body_parameters={
         "tools": [web_search_tool()],
         "tool_choice": "auto",
