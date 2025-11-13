@@ -206,7 +206,7 @@ class Scenario(ABC):
     async def initialize_async(
         self,
         *,
-        objective_target: PromptTarget = REQUIRED_VALUE, # type: ignore
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore
         scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
         max_concurrency: int = 1,
         max_retries: int = 0,

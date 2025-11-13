@@ -439,13 +439,19 @@ class TestFoundryScenarioGetAttack:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_get_attack_single_turn_with_converters(
+    @pytest.mark.asyncio
+    async def test_get_attack_single_turn_with_converters(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating a single-turn attack with converters."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
+        )
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.Base64],
         )
 
         attack = scenario._get_attack(
@@ -463,7 +469,8 @@ class TestFoundryScenarioGetAttack:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_get_attack_multi_turn_with_adversarial_target(
+    @pytest.mark.asyncio
+    async def test_get_attack_multi_turn_with_adversarial_target(
         self, mock_harmbench, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating a multi-turn attack."""
@@ -471,6 +478,11 @@ class TestFoundryScenarioGetAttack:
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
+        )
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.Crescendo],
         )
 
         attack = scenario._get_attack(
@@ -604,6 +616,7 @@ class TestFoundryScenarioProperties:
         scenario = FoundryScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
+            include_baseline=False,
         )
 
         # Before initialize_async, composites should be empty
