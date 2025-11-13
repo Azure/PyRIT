@@ -89,9 +89,6 @@ node_modules/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# uv (Package Manager)
-uv.lock
-
 # IPython
 profile_default/
 ipython_config.py
