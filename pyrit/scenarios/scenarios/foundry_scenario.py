@@ -13,7 +13,7 @@ import os
 from inspect import signature
 from typing import Dict, List, Optional, Sequence, Type, TypeVar
 
-from pyrit.common import apply_defaults
+from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
 from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
@@ -233,7 +233,7 @@ class FoundryScenario(Scenario):
     def __init__(
         self,
         *,
-        objective_target: Optional[PromptTarget] = None,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         scenario_strategies: Sequence[FoundryStrategy | ScenarioCompositeStrategy] | None = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[list[str]] = None,
