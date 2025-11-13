@@ -18,8 +18,8 @@ def gpt5_args():
     return {
         "endpoint": os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
         "model_name": os.getenv("AZURE_OPENAI_GPT5_MODEL"),
-        "api_key": os.getenv("AZURE_OPENAI_GPT5_KEY"),
-        # use_entra_auth: True,
+        # "api_key": os.getenv("AZURE_OPENAI_GPT5_KEY"),
+        "use_entra_auth": True,
     }
 
 
@@ -96,7 +96,7 @@ async def test_openai_responses_gpt5_json_schema(sqlite_instance, gpt5_args):
         prompt_metadata={"response_format": "json", "json_schema": json.dumps(cat_schema)},
     )
 
-    response = await target.send_prompt_async(prompt_request=user_piece.to_message())
+    response = await target.send_prompt_async(message=user_piece.to_message())
 
     response_content = response.get_value(1)
     response_json = json.loads(response_content)
@@ -129,7 +129,7 @@ async def test_openai_responses_gpt5_json_object(sqlite_instance, gpt5_args):
         conversation_id=conv_id,
         prompt_metadata={"response_format": "json"},
     )
-    response = await target.send_prompt_async(prompt_request=user_piece.to_message())
+    response = await target.send_prompt_async(message=user_piece.to_message())
 
     response_content = response.get_value(1)
     response_json = json.loads(response_content)

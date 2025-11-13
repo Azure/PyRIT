@@ -66,7 +66,7 @@ class PromptChatTarget(PromptTarget):
         """
         pass
 
-    def is_response_format_json(self, message_piece: MessagePiece) -> bool:
+    def is_response_format_json(self, message_piece: MessagePiece) -> bool | str:
         """
         Checks if the response format is JSON and ensures the target supports it.
 
@@ -75,7 +75,7 @@ class PromptChatTarget(PromptTarget):
                 include a "response_format" key.
 
         Returns:
-            bool: True if the response format is JSON and supported, False otherwise.
+            bool | str: True if the response format is JSON and supported, False otherwise, or the JSON schema string if provided.
 
         Raises:
             ValueError: If "json" response format is requested but unsupported.
@@ -86,5 +86,12 @@ class PromptChatTarget(PromptTarget):
                 if not self.is_json_response_supported():
                     target_name = self.get_identifier()["__type__"]
                     raise ValueError(f"This target {target_name} does not support JSON response format.")
+                schema_val = message_piece.prompt_metadata.get("json_schema")
+                if schema_val:
+                    schema_str = str(schema_val)
+                    if len(schema_str) > 0:
+                        # Don't return an empty schema string, since Python considers
+                        # an empty string to be False in a boolean context.
+                        return schema_str
                 return True
         return False

@@ -243,9 +243,30 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, conversation: MutableSequence[Message], is_json_response: bool | str
+    ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
 
+        response_format = None
+        if is_json_response:
+            if isinstance(is_json_response, str) and len(is_json_response) > 0:
+                json_schema_str = is_json_response
+                try:
+                    json_schema = json.loads(json_schema_str)
+                except json.JSONDecodeError as e:
+                    raise PyritException(
+                        message=f"Failed to parse provided JSON schema for response_format as JSON.\n"
+                        f"Schema: {json_schema_str}\nFull error: {e}"
+                    )
+                response_format = {
+                    "type": "json_schema",
+                    "name": "CustomSchema",
+                    "schema": json_schema,
+                    "strict": True,
+                }
+            else:
+                response_format = {"type": "json_object"}
         body_parameters = {
             "model": self._model_name,
             "max_completion_tokens": self._max_completion_tokens,
@@ -258,7 +279,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             "seed": self._seed,
             "n": self._n,
             "messages": messages,
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "response_format": response_format,
         }
 
         if self._extra_body_parameters:
@@ -274,7 +295,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         open_ai_str_response: str,
         message_piece: MessagePiece,
     ) -> Message:
-
         try:
             response = json.loads(open_ai_str_response)
         except json.JSONDecodeError as e:
