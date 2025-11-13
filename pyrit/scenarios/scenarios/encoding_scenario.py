@@ -5,7 +5,7 @@
 import pathlib
 from typing import List, Optional, Sequence
 
-from pyrit.common import apply_defaults
+from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,

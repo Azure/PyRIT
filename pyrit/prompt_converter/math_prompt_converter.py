@@ -5,7 +5,7 @@ import logging
 import pathlib
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
@@ -23,7 +23,10 @@ class MathPromptConverter(LLMGenericTextConverter):
 
     @apply_defaults
     def __init__(
-        self, *, converter_target: Optional[PromptChatTarget] = None, prompt_template: Optional[SeedPrompt] = None
+        self,
+        *,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
+        prompt_template: Optional[SeedPrompt] = None,
     ):
         """
         Initializes the converter with a specific target and template.

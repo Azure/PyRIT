@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Sequence, Set, Type
 
 from tqdm.auto import tqdm
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import ScenarioResultEntry
@@ -206,7 +206,7 @@ class Scenario(ABC):
     async def initialize_async(
         self,
         *,
-        objective_target: PromptTarget | None = None,
+        objective_target: PromptTarget = REQUIRED_VALUE, # type: ignore
         scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
         max_concurrency: int = 1,
         max_retries: int = 0,

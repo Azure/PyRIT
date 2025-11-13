@@ -13,7 +13,7 @@ import os
 from inspect import signature
 from typing import List, Optional, Sequence, Type, TypeVar
 
-from pyrit.common import apply_defaults
+from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
 from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
