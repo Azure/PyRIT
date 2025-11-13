@@ -18,8 +18,8 @@ def gpt5_args():
     return {
         "endpoint": os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
         "model_name": os.getenv("AZURE_OPENAI_GPT5_MODEL"),
-        "api_key": os.getenv("AZURE_OPENAI_GPT5_RESPONSES_KEY"),
-        # "use_entra_auth": True,
+        "api_key": os.getenv("AZURE_OPENAI_GPT5_KEY"),
+        # use_entra_auth: True,
     }
 
 

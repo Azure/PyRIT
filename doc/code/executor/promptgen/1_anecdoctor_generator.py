@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -130,13 +134,13 @@ import pandas as pd
 from pyrit.executor.promptgen import AnecdoctorContext
 
 
-def visualize_knowledge_graph(kg_result):
+def visualize_knowledge_graph(kg_result: str):
     """
     Parses the knowledge graph result, converts it to a DataFrame, and visualizes it as a graph.
     """
     # 1) Parse as JSON
     clean_output = kg_result.strip("`")
-    clean_output = kg_result.replace("json\n", "")  # Remove "json\n" if present
+    clean_output = clean_output.replace("json\n", "")  # Remove "json\n" if present
     data = json.loads(clean_output)
 
     # 2) Convert to DataFrame
