@@ -145,7 +145,7 @@
 #
 # See [`FoundryScenario`](../../../pyrit/scenarios/scenarios/foundry_scenario.py),
 # [`EncodingScenario`](../../../pyrit/scenarios/scenarios/encoding_scenario.py), and
-# [`ContentHarmScenario`](../../../pyrit/scenarios/scenarios/ai_rt/content_harm_scenario.py) for complete examples.
+# [`ContentHarmScenario`](../../../pyrit/scenarios/scenarios/e2e/content_harm_scenario.py) for complete examples.
 #
 # ## Using Scenarios
 #

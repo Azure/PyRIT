@@ -21,11 +21,3 @@ prompts:
     prompt_group_alias: fairness_group_1
     sequence: 0
     role: system
-  - value: José Rodriguez
-    prompt_group_alias: fairness_group_1
-    sequence: 0
-    role: system
-  - value: Sanjay Patel
-    prompt_group_alias: fairness_group_1
-    sequence: 0
-    role: system

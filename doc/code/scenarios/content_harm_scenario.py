@@ -55,7 +55,7 @@ import os
 
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
-from pyrit.scenarios.scenarios.ai_rt.content_harm_scenario import (
+from pyrit.scenarios.scenarios.e2e.content_harm_scenario import (
     ContentHarmScenario,
     ContentHarmStrategy,
 )
@@ -119,6 +119,5 @@ await printer.print_summary_async(content_harm_results)  # type: ignore
 
 from pyrit.executor.attack.printer.console_printer import ConsoleAttackResultPrinter
 
-
-for result in content_harm_results.attack_results['violence']:
-    await ConsoleAttackResultPrinter().print_summary_async(result=result) # type: ignore
+for result in content_harm_results.attack_results["violence"]:
+    await ConsoleAttackResultPrinter().print_summary_async(result=result)  # type: ignore

@@ -9,7 +9,7 @@ import pytest
 
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenarios.scenarios.ai_rt.content_harm_scenario import (
+from pyrit.scenarios.scenarios.e2e.content_harm_scenario import (
     ContentHarmScenario,
     ContentHarmStrategy,
 )
@@ -234,8 +234,8 @@ class TestContentHarmStrategy:
 class TestContentHarmScenarioBasic:
     """Basic tests for ContentHarmScenario initialization and properties."""
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_minimal_parameters(
         self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -253,8 +253,8 @@ class TestContentHarmScenarioBasic:
         assert scenario.name == "Content Harm Scenario"
         assert scenario.version == 1
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_custom_strategies(
         self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -275,8 +275,8 @@ class TestContentHarmScenarioBasic:
 
         assert len(scenario._content_harm_strategy_composition) == 2
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_memory_labels(
         self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -294,7 +294,7 @@ class TestContentHarmScenarioBasic:
 
         assert scenario._memory_labels == memory_labels
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_custom_scorer(
         self, mock_get_seeds, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -310,8 +310,8 @@ class TestContentHarmScenarioBasic:
         # The scorer is stored in _scorer_config.objective_scorer
         assert scenario._scorer_config.objective_scorer == mock_objective_scorer
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_custom_max_concurrency(
         self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -327,8 +327,8 @@ class TestContentHarmScenarioBasic:
 
         assert scenario._max_concurrency == 10
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_custom_dataset_path(
         self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -349,8 +349,8 @@ class TestContentHarmScenarioBasic:
         # Verify the method was called with the custom prefix
         mock_get_seeds.assert_called_once_with(custom_prefix)
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_defaults_to_all_strategy(
         self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -370,7 +370,7 @@ class TestContentHarmScenarioBasic:
         """Test that get_default_strategy returns ALL strategy."""
         assert ContentHarmScenario.get_default_strategy() == ContentHarmStrategy.ALL
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     @patch.dict(
         "os.environ",
         {
@@ -388,7 +388,7 @@ class TestContentHarmScenarioBasic:
 
         assert scenario._adversarial_chat is not None
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     @patch.dict(
         "os.environ",
         {
@@ -410,8 +410,8 @@ class TestContentHarmScenarioBasic:
         """Test that scenario has correct version."""
         assert ContentHarmScenario.version == 1
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_max_retries(
         self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -427,8 +427,8 @@ class TestContentHarmScenarioBasic:
 
         assert scenario._max_retries == 3
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_memory_labels_are_stored(
         self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
@@ -446,7 +446,7 @@ class TestContentHarmScenarioBasic:
 
         assert scenario._memory_labels == memory_labels
 
-    @patch("pyrit.scenarios.scenarios.ai_rt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_all_parameters(
         self, mock_get_seeds, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):

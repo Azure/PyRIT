@@ -10,7 +10,7 @@ from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.scenarios.scenarios.encoding_scenario import EncodingScenario, EncodingStrategy
 from pyrit.scenarios.scenarios.foundry_scenario import FoundryStrategy, FoundryScenario
 from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
-from pyrit.scenarios.scenarios.ai_rt.content_harm_scenario import (
+from pyrit.scenarios.scenarios.e2e.content_harm_scenario import (
     ContentHarmScenario,
     ContentHarmStrategy,
 )
