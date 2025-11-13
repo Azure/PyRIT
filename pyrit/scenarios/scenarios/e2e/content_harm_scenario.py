@@ -4,7 +4,7 @@
 import os
 from typing import Dict, List, Optional, Sequence, Type, TypeVar
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -97,7 +97,7 @@ class ContentHarmScenario(Scenario):
         self,
         *,
         scenario_strategies: Sequence[ContentHarmStrategy] | None = None,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         objective_scorer: Optional[TrueFalseScorer] = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
         memory_labels: Optional[Dict[str, str]] = None,
