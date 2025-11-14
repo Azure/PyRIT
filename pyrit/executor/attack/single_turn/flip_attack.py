@@ -6,7 +6,7 @@ import pathlib
 import uuid
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
@@ -38,7 +38,7 @@ class FlipAttack(PromptSendingAttack):
     @apply_defaults
     def __init__(
         self,
-        objective_target: PromptChatTarget,
+        objective_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,

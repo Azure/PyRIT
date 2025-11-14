@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -97,7 +97,6 @@ target = OpenAIResponseTarget(
         "tool_choice": "auto",
     },
     httpx_client_kwargs={"timeout": 60.0},
-    # api_version=None,  # this can be uncommented if using api.openai.com
 )
 
 # Build the user prompt
@@ -141,7 +140,6 @@ target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
     api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
     model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL"),
-    api_version=None,
     extra_body_parameters={
         "tools": [web_search_tool()],
         "tool_choice": "auto",
@@ -203,7 +201,6 @@ target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
     api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
     model_name="gpt-5",
-    api_version=None,
     extra_body_parameters={"tools": [grammar_tool], "tool_choice": "required"},
     temperature=1.0,
 )
@@ -212,7 +209,6 @@ unconstrained_target = OpenAIResponseTarget(
     endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
     api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
     model_name="gpt-5",
-    api_version=None,
     temperature=1.0,
 )
 
@@ -231,5 +227,3 @@ print("Constrained Response:")
 for idx, piece in enumerate(result.message_pieces):
     if piece.original_value_data_type != "reasoning":
         print(f"{idx} | {piece.role}: {piece.original_value}")
-
-# %%

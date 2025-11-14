@@ -6,7 +6,7 @@ import logging
 import pathlib
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -56,7 +56,7 @@ class RolePlayAttack(PromptSendingAttack):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         adversarial_chat: PromptChatTarget,
         role_play_definition_path: pathlib.Path,
         attack_converter_config: Optional[AttackConverterConfig] = None,
