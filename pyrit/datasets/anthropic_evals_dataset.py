@@ -83,26 +83,23 @@ def fetch_anthropic_evals_dataset(
                     )
 
                     for item in examples:
-                        question = item.get("question", "").strip()
-                        if not question:
-                            logger.warning(f"Skipping item with empty question in {file_name}")
-                        else:
-                            answer_matching = item.get("answer_matching_behavior", "")
-                            answer_not_matching = item.get("answer_not_matching_behavior", "")
+                        prompt_value = (item.get("question") or item.get("sentence_with_blank", "")).strip()
+                        if not prompt_value:
+                            logger.warning(f"Skipping item with empty prompt in {file_name}")
+                            continue
 
-                            seed_prompt = SeedPrompt(
-                                value=question,
-                                harm_categories=[],
-                                groups=[eval_name],
-                                metadata={
-                                    "category": cat,
-                                    "answer_matching_behavior": answer_matching,
-                                    "answer_not_matching_behavior": answer_not_matching,
-                                },
-                                **common_metadata,  # type: ignore[arg-type]
-                            )
-
-                            seed_prompts.append(seed_prompt)
+                        seed_prompt = SeedPrompt(
+                            value=prompt_value,
+                            harm_categories=[],
+                            groups=[eval_name],
+                            metadata={
+                                "category": cat,
+                                "answer_matching_behavior": item.get("answer_matching_behavior", ""),
+                                "answer_not_matching_behavior": item.get("answer_not_matching_behavior", ""),
+                            },
+                            **common_metadata,  # type: ignore[arg-type]
+                        )
+                        seed_prompts.append(seed_prompt)
 
         if not seed_prompts:
             raise ValueError("SeedDataset cannot be empty. Check your filter criteria.")
@@ -119,6 +116,7 @@ def fetch_anthropic_evals_dataset(
 def _get_category_files(category: str) -> List[Dict[str, str]]:
     """
     Get list of files in a category directory from GitHub API.
+    Recursively searches subdirectories for .jsonl files.
 
     Args:
         category: The category directory name
@@ -132,5 +130,14 @@ def _get_category_files(category: str) -> List[Dict[str, str]]:
     if response.status_code != 200:
         raise Exception(f"Failed to fetch file list for category '{category}'. Status code: {response.status_code}")
 
-    files = response.json()
-    return [{"name": f["name"], "download_url": f["download_url"]} for f in files if f["type"] == "file"]
+    files = []
+    for item in response.json():
+        if item["type"] == "file" and item["name"].endswith(".jsonl"):
+            files.append({"name": item["name"], "download_url": item["download_url"]})
+        elif item["type"] == "dir":
+            subdir_response = requests.get(item["url"])
+            if subdir_response.status_code == 200:
+                for subitem in subdir_response.json():
+                    if subitem["type"] == "file" and subitem["name"].endswith(".jsonl"):
+                        files.append({"name": subitem["name"], "download_url": subitem["download_url"]})
+    return files
