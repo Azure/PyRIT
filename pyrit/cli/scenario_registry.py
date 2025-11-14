@@ -26,7 +26,7 @@ import inspect
 import logging
 import pkgutil
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 # Compute PYRIT_PATH directly to avoid importing pyrit package
 # (which triggers heavy imports from __init__.py)

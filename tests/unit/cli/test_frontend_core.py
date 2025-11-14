@@ -630,7 +630,9 @@ class TestRunScenarioAsync:
         )
 
         assert result == mock_result
-        mock_scenario_instance.initialize_async.assert_called_once()
+        # Verify scenario was instantiated with no arguments (runtime params go to initialize_async)
+        mock_scenario_class.assert_called_once_with()
+        mock_scenario_instance.initialize_async.assert_called_once_with()
         mock_scenario_instance.run_async.assert_called_once()
         mock_printer.print_summary_async.assert_called_once_with(mock_result)
 
@@ -692,8 +694,10 @@ class TestRunScenarioAsync:
             scenario_strategies=["strategy1"],
         )
 
-        # Verify strategy was passed
-        call_kwargs = mock_scenario_class.call_args[1]
+        # Verify scenario was instantiated with no arguments
+        mock_scenario_class.assert_called_once_with()
+        # Verify strategy was passed to initialize_async
+        call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
         assert "scenario_strategies" in call_kwargs
 
     @patch("pyrit.setup.initialize_pyrit")
@@ -768,8 +772,10 @@ class TestRunScenarioAsync:
             max_concurrency=5,
         )
 
-        # Verify max_concurrency was passed
-        call_kwargs = mock_scenario_class.call_args[1]
+        # Verify scenario was instantiated with no arguments
+        mock_scenario_class.assert_called_once_with()
+        # Verify max_concurrency was passed to initialize_async
+        call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
         assert call_kwargs["max_concurrency"] == 5
 
     @patch("pyrit.setup.initialize_pyrit")

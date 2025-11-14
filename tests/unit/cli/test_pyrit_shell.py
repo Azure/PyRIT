@@ -6,9 +6,7 @@ Unit tests for the pyrit_shell CLI module.
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, call, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from pyrit.cli import pyrit_shell
 

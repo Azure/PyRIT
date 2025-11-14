@@ -240,8 +240,8 @@ async def run_scenario_async(
         available = ", ".join(context.scenario_registry.get_scenario_names())
         raise ValueError(f"Scenario '{scenario_name}' not found.\n" f"Available scenarios: {available}")
 
-    # Build kwargs
-    cli_kwargs: dict[str, Any] = {}
+    # Build initialization kwargs (these go to initialize_async, not __init__)
+    init_kwargs: dict[str, Any] = {}
 
     if scenario_strategies:
         strategy_class = scenario_class.get_strategy_class()
@@ -255,21 +255,23 @@ async def run_scenario_async(
                     f"Strategy '{name}' not found for scenario '{scenario_name}'. "
                     f"Available: {', '.join(available_strategies)}"
                 ) from None
-        cli_kwargs["scenario_strategies"] = strategy_enums
+        init_kwargs["scenario_strategies"] = strategy_enums
 
     if max_concurrency is not None:
-        cli_kwargs["max_concurrency"] = max_concurrency
+        init_kwargs["max_concurrency"] = max_concurrency
     if max_retries is not None:
-        cli_kwargs["max_retries"] = max_retries
+        init_kwargs["max_retries"] = max_retries
     if memory_labels is not None:
-        cli_kwargs["memory_labels"] = memory_labels
+        init_kwargs["memory_labels"] = memory_labels
 
     # Instantiate and run
     print(f"\nRunning scenario: {scenario_name}")
     sys.stdout.flush()
 
-    scenario = scenario_class(**cli_kwargs)
-    await scenario.initialize_async()
+    # Scenarios here are a concrete subclass
+    # Runtime parameters are passed to initialize_async()
+    scenario = scenario_class()  # type: ignore[call-arg]
+    await scenario.initialize_async(**init_kwargs)
     result = await scenario.run_async()
 
     # Print results if requested

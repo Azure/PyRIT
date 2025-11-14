@@ -6,7 +6,7 @@ Unit tests for the pyrit_scan CLI module.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
