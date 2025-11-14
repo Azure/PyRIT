@@ -10,8 +10,9 @@ AtomicAttack instances sequentially, enabling comprehensive security testing cam
 
 import asyncio
 import logging
+import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Sequence, Set, Type
+from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
 from tqdm.auto import tqdm
 
@@ -81,7 +82,7 @@ class Scenario(ABC):
         default_aggregate: ScenarioStrategy,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
         include_default_baseline: bool = True,
-        scenario_result_id: Optional[str] = None,
+        scenario_result_id: Optional[Union[uuid.UUID, str]] = None,
     ) -> None:
         """
         Initialize a scenario.
@@ -97,7 +98,8 @@ class Scenario(ABC):
                 from the first atomic attack without modifications. Most scenarios should have some kind of
                 baseline so users can understand the impact of strategies, but subclasses can optionally write
                 their own custom baselines. Defaults to True.
-            scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
+            scenario_result_id (Optional[Union[uuid.UUID, str]]): Optional ID of an existing scenario result to resume.
+                Can be either a UUID object or a string representation of a UUID.
                 If provided and found in memory, the scenario will resume from prior progress.
                 All other parameters must still match the stored scenario configuration.
 
@@ -131,7 +133,7 @@ class Scenario(ABC):
         self._name = name
         self._memory = CentralMemory.get_memory_instance()
         self._atomic_attacks: List[AtomicAttack] = []
-        self._scenario_result_id: Optional[str] = scenario_result_id
+        self._scenario_result_id: Optional[str] = str(scenario_result_id) if scenario_result_id else None
         self._result_lock = asyncio.Lock()
 
         self._include_baseline = include_default_baseline
