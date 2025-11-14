@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -75,6 +79,16 @@ harm_category_map = {
         "dataset_name": "exploit_eval_dataset",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "exploits.yaml")),
     },
+    "hate_speech": {
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/hate_speech_dataset_v1.csv",
+        "dataset_name": "hate_speech_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "hate_speech.yaml")),
+    },
+    "information_integrity": {
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/information_integrity_dataset_v1.csv",
+        "dataset_name": "information_integrity_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "information_integrity.yaml")),
+    },
     "self-harm": {
         "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/self_harm_dataset_v1.csv",
         "dataset_name": "self_harm_eval_dataset",
@@ -82,7 +96,7 @@ harm_category_map = {
     },
 }
 # set this list to the categories you want to evaluate
-harm_categories_to_evaluate = ["self-harm"]
+harm_categories_to_evaluate = ["information_integrity"]
 
 for harm_category in harm_categories_to_evaluate:
     if harm_category not in harm_category_map:
