@@ -17,7 +17,6 @@ exclude =
     pyrit/prompt_converter/morse_converter.py,
     pyrit/prompt_converter/emoji_converter.py,
     pyrit/scenarios/printer/console_printer.py,
-    doc/code/setup/2_resiliency.py,
     tests/unit/converter/test_prompt_converter.py,
     tests/unit/converter/test_unicode_confusable_converter.py,
     tests/unit/converter/test_first_letter_converter.py,

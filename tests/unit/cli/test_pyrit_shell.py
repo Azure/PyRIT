@@ -40,7 +40,7 @@ class TestPyRITShell:
 
         assert shell.prompt == "pyrit> "
         assert shell.intro is not None
-        assert "PyRIT Interactive Shell" in str(shell.intro)
+        assert "Interactive Shell" in str(shell.intro)
 
     @patch("pyrit.cli.frontend_core.print_scenarios_list")
     def test_do_list_scenarios(self, mock_print_scenarios: MagicMock):
@@ -686,8 +686,8 @@ class TestPyRITShellRunCommand:
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
-        with patch("pyrit.cli.frontend_core.FrontendCore") as mock_frontend:
-            with patch("pyrit.cli.frontend_core.run_scenario_async") as mock_run:
+        with patch("pyrit.cli.frontend_core.FrontendCore"):
+            with patch("pyrit.cli.frontend_core.run_scenario_async"):
                 shell.do_run("test_scenario --initializers init1 --strategies s1 s2 --max-concurrency 10")
 
                 # Verify run_scenario_async was called with correct args

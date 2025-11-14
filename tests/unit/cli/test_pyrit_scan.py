@@ -379,8 +379,6 @@ class TestMain:
         mock_asyncio_run: MagicMock,
     ):
         """Test main properly calls run_scenario_async."""
-        from pyrit.cli import frontend_core
-
         pyrit_scan.main(["test_scenario", "--initializers", "test_init", "--strategies", "s1"])
 
         # Verify asyncio.run was called with run_scenario_async

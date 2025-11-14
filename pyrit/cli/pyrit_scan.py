@@ -69,7 +69,10 @@ Examples:
         "--database",
         type=frontend_core.validate_database_argparse,
         default=frontend_core.SQLITE,
-        help=f"Database type to use for memory storage ({frontend_core.IN_MEMORY}, {frontend_core.SQLITE}, {frontend_core.AZURE_SQL}) (default: {frontend_core.SQLITE})",
+        help=(
+            f"Database type to use for memory storage ({frontend_core.IN_MEMORY}, "
+            f"{frontend_core.SQLITE}, {frontend_core.AZURE_SQL}) (default: {frontend_core.SQLITE})"
+        ),
     )
 
     parser.add_argument(

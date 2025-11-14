@@ -45,7 +45,7 @@
 #
 # ## Initializers
 #
-# PyRITInitializers are how you can configure the CLI scanner. PyRIT includes several built-in initializers you can use with the `--initializers` flag. 
+# PyRITInitializers are how you can configure the CLI scanner. PyRIT includes several built-in initializers you can use with the `--initializers` flag.
 #
 # The `--list-initializers` command shows all available initializers. Initializers are referenced by their filename (e.g., `objective_target`, `objective_list`, `simple`) regardless of which subdirectory they're in.
 #
@@ -120,17 +120,21 @@
 # You can define your own scenarios in initialization scripts. The CLI will automatically discover any `Scenario` subclasses and make them available:
 #
 
+from pyrit.common.apply_defaults import apply_defaults
+
 # %%
 # my_custom_scenarios.py
 from pyrit.scenarios import Scenario
-from pyrit.common.apply_defaults import apply_defaults
 from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+
 
 class MyCustomStrategy(ScenarioStrategy):
     """Strategies for my custom scenario."""
+
     ALL = ("all", {"all"})
     Strategy1 = ("strategy1", set[str]())
     Strategy2 = ("strategy2", set[str]())
+
 
 @apply_defaults
 class MyCustomScenario(Scenario):
@@ -158,6 +162,7 @@ class MyCustomScenario(Scenario):
     async def _get_atomic_attacks_async(self):
         # Build and return your atomic attacks
         return []
+
 
 # %% [markdown]
 # Then discover and run it:

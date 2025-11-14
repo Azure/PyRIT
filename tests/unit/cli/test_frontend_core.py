@@ -688,7 +688,7 @@ class TestRunScenarioAsync:
         context._initialized = True
 
         # Run with strategies
-        result = await frontend_core.run_scenario_async(
+        await frontend_core.run_scenario_async(
             scenario_name="test_scenario",
             context=context,
             scenario_strategies=["strategy1"],
@@ -731,7 +731,7 @@ class TestRunScenarioAsync:
         context._initialized = True
 
         # Run with initializers
-        result = await frontend_core.run_scenario_async(
+        await frontend_core.run_scenario_async(
             scenario_name="test_scenario",
             context=context,
         )
@@ -766,7 +766,7 @@ class TestRunScenarioAsync:
         context._initialized = True
 
         # Run with max_concurrency
-        result = await frontend_core.run_scenario_async(
+        await frontend_core.run_scenario_async(
             scenario_name="test_scenario",
             context=context,
             max_concurrency=5,
@@ -804,7 +804,7 @@ class TestRunScenarioAsync:
         context._initialized = True
 
         # Run without printing
-        result = await frontend_core.run_scenario_async(
+        await frontend_core.run_scenario_async(
             scenario_name="test_scenario",
             context=context,
             print_summary=False,
