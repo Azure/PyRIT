@@ -7,7 +7,7 @@ from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 
-from pyrit.scenarios.scenarios.cyber_scenario import CyberScenario, CyberStrategy
+from pyrit.scenarios.scenarios.airt.cyber_scenario import CyberScenario, CyberStrategy
 from pyrit.scenarios.scenarios.encoding_scenario import EncodingScenario, EncodingStrategy
 from pyrit.scenarios.scenarios.foundry_scenario import FoundryStrategy, FoundryScenario
 from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
