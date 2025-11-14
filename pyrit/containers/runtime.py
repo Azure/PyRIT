@@ -5,10 +5,11 @@ from __future__ import annotations
 
 import functools
 import logging
-from typing import Any, Callable, TypeVar, Optional
+from typing import Any, Callable, Dict, TypeVar, Optional
 from pyrit.models.message import Message
 from pyrit.models.message_piece import MessagePiece
 from pyrit.containers.utils import DockerComposeConfig, DockerImageFile
+import uuid
 
 import docker
 
@@ -45,12 +46,17 @@ def wrap_runtime(func: Callable) -> Callable:
 
 
 class Runtime:
+    
     def __init__(self, *, image: DockerImageFile, config: DockerComposeConfig) -> None:
         """
         The runtime object enables a PromptTarget to access a simulated
-        environment, e.g. a Docker container.
-        >>> PromptTarget._runtime = <runtime_object at xxxx>
-        >>> PromptTarget.send_prompt_async calls PromptTarget._runtime.send_async to parse messages.
+        environment, e.g. a Docker container. Timeline:
+        1. PromptTarget is created with non-None runtime.
+        2. PromptTarget.send_prompt_async is called for request.
+        3. Runtime.send_async is called.
+        
+        Note that this only supports sequential tool execution (assistant -> system -> memory)
+        not (assistant <-loop-> system) --> memory.
         """
 
         self._client = docker.from_env()
@@ -62,13 +68,32 @@ class Runtime:
     async def send_async(self, request: Message) -> Message:
         """
         Process the target input (called from PromptTarget) into a result.
-        Returns: 
+        Returns:
+            Message (original request with server response.)
         """
-        contents = [c.original_value + "\n" for c in request.message_pieces]
-        output = "Not Implemented"
-        # TODO: output = self._client.mcp.send(contents)
-        new_piece = MessagePiece(role="system", original_value=output)
+        
+        mcp_request = self._encode_mcp(request)
+        # TODO: This method doesn't exist. Need to use fastmcp + httpx to make HTTPS request
+        client_response = self._client.send()
+        new_piece = self._decode_mcp(client_response)
+        old_pieces = list(request.message_pieces)
         response = Message(
-            message_pieces=request.message_pieces
+            message_pieces=old_pieces + [new_piece]
         )
-
+        return response
+    
+    @classmethod
+    def _encode_mcp(cls, contents: Message) -> Dict:
+        """
+        Encode Message object into HTTPS request for MCP server.
+        Use fastmcp + httpx.
+        """
+        raise NotImplemented
+    
+    @classmethod
+    def _decode_mcp(cls, contents: Dict) -> MessagePiece:
+        """
+        Decode HTTPS response from MCP into MessagePiece.
+        Assign role "system" for container outputs.
+        """
+        raise NotImplemented

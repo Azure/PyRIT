@@ -45,6 +45,10 @@ class DockerComposeConfig:
     """
     Config for Docker Compose.
     Responsibility is securely creating container, not image or contents. 
+    
+    TODO: Choose alternative port if 8080 is taken
+    TODO: Check system to see if Docker supported
+    TODO: Check system to see if resources to deploy
     """
     
     # Source file takes priority if given when building DockerImage.
@@ -74,7 +78,6 @@ class DockerComposeConfig:
     def _parse_config_file(self, src: Path) -> Dict:
         with open(src) as f:
             return json.loads(f)
-    
     
     def unpack(self) -> Dict:
         return {
