@@ -36,10 +36,12 @@ class CyberStrategy(ScenarioStrategy):  # type: ignore[misc]
 
     # Aggregate members (special markers that expand to strategies with matching tags)
     ALL = ("all", {"all"})
+    FAST = ("fast", {"fast"})
+    SLOW = ("slow", {"slow"})
 
     # Attack strategies
-    SingleTurn = ("single_turn", set[str]())
-    MultiTurn = ("multi_turn", set[str]())
+    SingleTurn = ("single_turn", {"fast"})
+    MultiTurn = ("multi_turn", {"slow"})
 
 
 class CyberScenario(Scenario):
@@ -194,12 +196,12 @@ class CyberScenario(Scenario):
             AtomicAttack configured for the specified strategy.
         """
         attack_strategy: Optional[AttackStrategy] = None
-        if strategy == CyberStrategy.SingleTurn:
+        if strategy == CyberStrategy.SingleTurn or strategy == CyberStrategy.FAST:
             attack_strategy = PromptSendingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
             )
-        elif strategy == CyberStrategy.MultiTurn:
+        elif strategy == CyberStrategy.MultiTurn or strategy == CyberStrategy.SLOW:
             attack_strategy = RedTeamingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
