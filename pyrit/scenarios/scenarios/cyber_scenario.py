@@ -20,11 +20,12 @@ from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_strategy import (
     ScenarioStrategy,
+    ScenarioCompositeStrategy
 )
 from pyrit.score import SelfAskTrueFalseScorer
 
 
-class CyberStrategy(ScenarioStrategy):  # type: ignore[misc]
+class CyberStrategy(ScenarioStrategy):
     """
     Strategies for malware-focused cyber attacks. While not in the CyberStrategy class, a
     few of these include:
@@ -79,44 +80,31 @@ class CyberScenario(Scenario):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
-        scenario_strategies: List[CyberStrategy] | None = None,
+
         adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[List[str]] = None,
         objective_scorer: Optional[SelfAskTrueFalseScorer] = None,
-        memory_labels: Optional[Dict[str, str]] = None,
-        max_concurrency: int = 10,
-        max_retries: int = 0,
         include_baseline: bool = True,
+        scenario_result_id: Optional[str] = None
+        
     ) -> None:
         """
         Initialize the cyber harms scenario. Note that the cyber harms scenario is slightly different from the encoding
         and foundry scenarios, as it doesn't use converters.
 
         Args:
-            objective_target (PromptTarget): The target model to test for malware vulnerabilities.
-            scenario_strategies (List[CyberStrategy]): The cyberstrategies to test; defaults to all of them.
             adversarial_chat (Optional[PromptChatTarget]): Adversarial chat for the red teaming attack, corresponding
                 to CyberStrategy.MultiTurn. If not provided, defaults to an OpenAI chat target.
             objectives (Optional[List[str]]): List of objectives to test for cyber harms, e.g. malware generation.
             objective_scorer (Optional[SelfAskTrueFalseScorer]): Objective scorer for malware detection. If not
                 provided, defaults to a SelfAskScorer using the malware.yaml file under the scorer config store for
                 malware detection
-            memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
-                attack runs for tracking and categorization.
-            max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 5.
-            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
-                Set to 0 (default) for no automatic retries. If set to a positive number,
-                the scenario will automatically retry up to this many times after an exception.
-                For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
             include_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 without modifications. Defaults to True. When True, a "baseline" attack is automatically
                 added as the first atomic attack, allowing comparison between unmodified prompts and
                 attack-modified prompts.
+            scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
-        # The objective target is set as an objective attribute here. The user is responsible for configuring it.
-        self._objective_target = objective_target
-
         # CyberScenario uses a "take object, make config" pattern to expose a more ergonomic interface. Helper
         # methods return objects, not configs.
 
@@ -132,20 +120,15 @@ class CyberScenario(Scenario):
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
         self._objectives = objectives if objectives else self._get_default_dataset()
-        self._memory_labels = memory_labels
-
-        # Store strategies directly without composites (simpler for CyberScenario since no converters)
-        self._scenario_strategies = scenario_strategies if scenario_strategies else CyberStrategy.get_all_strategies()
 
         super().__init__(
             name="Cyber Scenario",
             version=self.version,
-            memory_labels=self._memory_labels,
-            max_concurrency=max_concurrency,
-            objective_target=objective_target,
+            strategy_class=CyberStrategy,
+            default_aggregate=CyberStrategy.FAST,
             objective_scorer_identifier=objective_scorer.get_identifier(),
-            max_retries=max_retries,
             include_default_baseline=include_baseline,
+            scenario_result_id=scenario_result_id
         )
 
     def _get_default_objective_scorer(self) -> SelfAskTrueFalseScorer:
@@ -185,7 +168,7 @@ class CyberScenario(Scenario):
         seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
         return seed_prompts
 
-    async def _get_atomic_attack_from_strategy_async(self, strategy: ScenarioStrategy) -> AtomicAttack:
+    async def _get_atomic_attack_from_strategy_async(self, strategy: ScenarioCompositeStrategy) -> AtomicAttack:
         """
         Translate the strategy into an actual AtomicAttack.
 
@@ -195,23 +178,26 @@ class CyberScenario(Scenario):
         Returns:
             AtomicAttack configured for the specified strategy.
         """
+        # objective_target is guaranteed to be non-None by parent class validation
+        assert self._objective_target is not None
+   
         attack_strategy: Optional[AttackStrategy] = None
-        if strategy == CyberStrategy.SingleTurn or strategy == CyberStrategy.FAST:
+        if strategy.strategies[0] == CyberStrategy.FAST:
             attack_strategy = PromptSendingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
             )
-        elif strategy == CyberStrategy.MultiTurn or strategy == CyberStrategy.SLOW:
+        elif strategy.strategies[0] == CyberStrategy.SLOW:
             attack_strategy = RedTeamingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
                 attack_adversarial_config=self._adversarial_config,
             )
         else:
-            raise ValueError(f"Unknown CyberStrategy: {strategy}")
+            raise ValueError(f"Unknown CyberStrategy: {strategy}, contains: {strategy.strategies}")
 
         return AtomicAttack(
-            atomic_attack_name=f"cyber_{strategy.value}",
+            atomic_attack_name=f"cyber_{strategy}",
             attack=attack_strategy,
             objectives=self._objectives,
             memory_labels=self._memory_labels,
@@ -225,6 +211,6 @@ class CyberScenario(Scenario):
             List[AtomicAttack]: List of atomic attacks to execute.
         """
         atomic_attacks: List[AtomicAttack] = []
-        for strategy in self._scenario_strategies:
+        for strategy in self._scenario_composites:
             atomic_attacks.append(await self._get_atomic_attack_from_strategy_async(strategy))
         return atomic_attacks

@@ -16,6 +16,13 @@ from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenarios import CyberScenario, CyberStrategy
 from pyrit.score import SelfAskTrueFalseScorer
 
+@pytest.fixture
+def fast_cyberstrategy():
+    return CyberStrategy.FAST
+
+@pytest.fixture
+def slow_cyberstrategy():
+    return CyberStrategy.SLOW
 
 @pytest.fixture
 def malware_prompts():
@@ -76,84 +83,60 @@ FIXTURES = ["patch_central_database", "mock_runtime_env"]
 class TestCyberScenarioInitialization:
     """Tests for CyberScenario initialization."""
 
-    def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives):
+    def test_init_with_custom_objectives(self, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objectives."""
 
         scenario = CyberScenario(
             objectives=sample_objectives,
-            objective_target=mock_objective_target,
             objective_scorer=mock_objective_scorer,
         )
 
         assert len(scenario._objectives) == len(sample_objectives)
-        assert scenario._objective_target == mock_objective_target
         assert scenario.name == "Cyber Scenario"
         assert scenario.version == 1
 
-    def test_init_with_default_objectives(self, mock_objective_target, mock_objective_scorer, malware_prompts):
+    def test_init_with_default_objectives(self, mock_objective_scorer, malware_prompts):
         """Test initialization with default objectives."""
 
-        scenario = CyberScenario(objective_target=mock_objective_target, objective_scorer=mock_objective_scorer)
+        scenario = CyberScenario(objective_scorer=mock_objective_scorer)
 
         assert scenario._objectives == malware_prompts
-        assert scenario._objective_target == mock_objective_target
         assert scenario.name == "Cyber Scenario"
         assert scenario.version == 1
 
-    def test_init_with_custom_scorer(self, mock_objective_target):
-        """Test initialization with custom scorer."""
-
-        scorer = MagicMock(SelfAskTrueFalseScorer)
-        scenario = CyberScenario(objective_target=mock_objective_target, objective_scorer=scorer)
-        assert isinstance(scenario._scorer_config, AttackScoringConfig)
-        assert scenario._objective_target == mock_objective_target
-
-    def test_init_with_default_scorer(self, mock_objective_target, mock_objective_scorer):
+    def test_init_with_default_scorer(self):
         """Test initialization with default scorer."""
-        scenario = CyberScenario(objective_target=mock_objective_target, objective_scorer=mock_objective_scorer)
-        assert scenario._objective_target == mock_objective_target
+        scenario = CyberScenario()
+        assert scenario._objective_scorer_identifier
 
-    def test_init_default_adversarial_chat(self, mock_objective_target, mock_objective_scorer):
+    def test_init_with_custom_scorer(self, mock_objective_scorer):
+        """Test initialization with custom scorer."""
+        scorer = MagicMock(SelfAskTrueFalseScorer)
+        scenario = CyberScenario(objective_scorer=scorer)
+        assert isinstance(scenario._scorer_config, AttackScoringConfig)
+
+    def test_init_default_adversarial_chat(self, mock_objective_scorer):
         """Test initialization with default adversarial chat."""
         scenario = CyberScenario(
-            objective_target=mock_objective_target,
             objective_scorer=mock_objective_scorer,
         )
 
         assert isinstance(scenario._adversarial_chat, OpenAIChatTarget)
         assert scenario._adversarial_chat._temperature == 1.2
 
-    def test_init_with_adversarial_chat(self, mock_objective_target, mock_objective_scorer):
+    def test_init_with_adversarial_chat(self, mock_objective_scorer):
         """Test initialization with adversarial chat (for red teaming attack variation)."""
         adversarial_chat = MagicMock(OpenAIChatTarget)
         adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
 
         scenario = CyberScenario(
-            objective_target=mock_objective_target,
             adversarial_chat=adversarial_chat,
             objective_scorer=mock_objective_scorer,
         )
         assert scenario._adversarial_chat == adversarial_chat
         assert scenario._adversarial_config.target == adversarial_chat
 
-    def test_init_with_max_concurrency(self, mock_objective_target, mock_objective_scorer):
-        """Test initialization with custom max_concurrency."""
-        scenario = CyberScenario(
-            objective_target=mock_objective_target, objective_scorer=mock_objective_scorer, max_concurrency=20
-        )
-        assert scenario._max_concurrency == 20
 
-    def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer):
-        """Test initialization with memory labels."""
-        memory_labels = {"test": "cyber", "category": "scenario"}
-
-        scenario = CyberScenario(
-            objective_target=mock_objective_target,
-            memory_labels=memory_labels,
-            objective_scorer=mock_objective_scorer,
-        )
-
-        assert scenario._memory_labels == memory_labels
 
 
 @pytest.mark.usefixtures(*FIXTURES)
@@ -163,9 +146,9 @@ class TestCyberScenarioAttackGeneration:
     @pytest.mark.asyncio
     async def test_attack_generation_for_all(self, mock_objective_target, mock_objective_scorer):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        scenario = CyberScenario(objective_target=mock_objective_target, objective_scorer=mock_objective_scorer)
+        scenario = CyberScenario(objective_scorer=mock_objective_scorer)
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         assert len(atomic_attacks) > 0
@@ -173,35 +156,38 @@ class TestCyberScenarioAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_singleturn(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, fast_cyberstrategy
     ):
         """Test that the single turn attack generation works."""
         scenario = CyberScenario(
-            objective_target=mock_objective_target,
-            scenario_strategies=[CyberStrategy.SingleTurn],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[fast_cyberstrategy]
+        )
         atomic_attacks = await scenario._get_atomic_attacks_async()
         for run in atomic_attacks:
             assert isinstance(run._attack, PromptSendingAttack)
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_multiturn(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, slow_cyberstrategy
     ):
         """Test that the multi turn attack generation works."""
         scenario = CyberScenario(
-            objective_target=mock_objective_target,
-            scenario_strategies=[CyberStrategy.MultiTurn],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[slow_cyberstrategy]
+        )
         atomic_attacks = await scenario._get_atomic_attacks_async()
+        
         for run in atomic_attacks:
             assert isinstance(run._attack, RedTeamingAttack)
 
@@ -211,12 +197,11 @@ class TestCyberScenarioAttackGeneration:
     ):
         """Test that attack runs include objectives for each seed prompt."""
         scenario = CyberScenario(
-            objective_target=mock_objective_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         # Check that objectives are created for each seed prompt
@@ -231,28 +216,54 @@ class TestCyberScenarioAttackGeneration:
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = CyberScenario(
-            objective_target=mock_objective_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
         atomic_attacks = await scenario._get_atomic_attacks_async()
         assert len(atomic_attacks) > 0
         assert all(hasattr(run, "_attack") for run in atomic_attacks)
 
+@pytest.mark.usefixtures(*FIXTURES)
+class TestCyberScenarioLifecycle:
+    """
+    Tests for CyberScenario lifecycle, including initialize_async and execution.
+    """
+    
+    async def test_initialize_async_with_max_concurrency(self, mock_objective_target, mock_objective_scorer):
+        """Test initialization with custom max_concurrency."""
+        scenario = CyberScenario(
+            objective_scorer=mock_objective_scorer
+        )
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_concurrency=20
+        )
+        assert scenario._max_concurrency == 20
 
+    async def test_initialize_async_with_memory_labels(self, mock_objective_target, mock_objective_scorer):
+        """Test initialization with memory labels."""
+        memory_labels = {"test": "cyber", "category": "scenario"}
+
+        scenario = CyberScenario(
+            objective_scorer=mock_objective_scorer,
+        )
+        await scenario.initialize_async(
+            memory_labels=memory_labels,
+            objective_target=mock_objective_target,    
+        )
+
+        assert scenario._memory_labels == memory_labels
 @pytest.mark.usefixtures(*FIXTURES)
 class TestCyberScenarioProperties:
     """
     Tests for CyberScenario properties and attributes.
     """
 
-    def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer, sample_objectives):
+    def test_scenario_version_is_set(self, mock_objective_scorer, sample_objectives):
         """Test that scenario version is properly set."""
         scenario = CyberScenario(
-            objective_target=mock_objective_target,
-            scenario_strategies=[CyberStrategy.SingleTurn],
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -262,8 +273,8 @@ class TestCyberScenarioProperties:
     @pytest.mark.asyncio
     async def test_no_target_duplication(self, mock_objective_target):
         """Test that all three targets (adversarial, object, scorer) are distinct."""
-        scenario = CyberScenario(objective_target=mock_objective_target)
-        await scenario.initialize_async()
+        scenario = CyberScenario()
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         objective_target = scenario._objective_target
         scorer_target = scenario._scorer_config.objective_scorer._prompt_target
