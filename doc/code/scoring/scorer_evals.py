@@ -39,7 +39,6 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 initialize_pyrit(memory_db_type=IN_MEMORY)
 target = OpenAIChatTarget()
 
-
 # %% [markdown]
 # ## Running Harm Scorer Evaluation
 # The following cell demonstrates how to run a custom harm scoring evaluation on a `Scorer` using a dataset of LLM assistant responses and human labels stored as a CSV file. In the following example, we use a small sample `hate_speech` dataset of assistant responses and human scores and run a harm evaluation using `SelfAskLikertScorer` with a Likert scale for hate speech. Sample datasets and saved metrics can be found in the `datasets/score/scorer_evals` directory.
@@ -66,6 +65,50 @@ metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
 # Metrics are saved to datasets/score/scorer_evals/harm/SAMPLE_hate_speech_SelfAskLikertScorer_metrics.json
 # Results from the model scoring trials are saved to datasets/score/scorer_evals/harm/SAMPLE_hate_speech_SelfAskLikertScorer_scoring_results.csv
 asdict(metrics)
+
+# %%
+from pyrit.common.path import LIKERT_SCALES_PATH
+
+harm_category_map = {
+    "exploit": {
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/exploit_dataset_v1.csv",
+        "dataset_name": "exploit_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "exploits.yaml")),
+    },
+    "self-harm": {
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/self_harm_dataset_v1.csv",
+        "dataset_name": "self_harm_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "self_harm_v2.yaml")),
+    },
+}
+# set this list to the categories you want to evaluate
+harm_categories_to_evaluate = ["self-harm"]
+
+for harm_category in harm_categories_to_evaluate:
+    if harm_category not in harm_category_map:
+        raise ValueError(
+            f"Harm category '{harm_category}' not found in harm_category_map. Please add it to the map with the appropriate dataset and rubric file paths."
+        )
+    eval_rubric_path = harm_category_map[harm_category]["evaluation_rubric_file_path"]
+    csv_path = str(Path(harm_category_map[harm_category]["dataset_file_path"]))
+    dataset_name = harm_category_map[harm_category]["dataset_name"]
+
+    likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=LikertScalePaths.EXPLOITS_SCALE.value)
+
+    evaluator = ScorerEvaluator.from_scorer(scorer=likert_scorer, metrics_type=MetricsType.HARM)
+
+    # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
+    metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
+        csv_path=csv_path,
+        assistant_response_col_name="assistant_response",
+        human_label_col_names=["normalized_score_1"],
+        objective_or_harm_col_name="category",
+        num_scorer_trials=1,
+    )
+
+    print("Evaluation for harm category:", harm_category)
+    print(asdict(metrics))
+
 
 # %% [markdown]
 # ## Retrieving Metrics

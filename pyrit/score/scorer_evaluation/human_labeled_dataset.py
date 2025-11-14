@@ -135,8 +135,12 @@ class HumanLabeledDataset:
         if not os.path.exists(csv_path):
             raise ValueError(f"CSV file does not exist: {csv_path}")
 
-        eval_df = pd.read_csv(csv_path)
-        # cls._validate_fields
+        # Try UTF-8 first, fall back to latin-1 if that fails
+        try:
+            eval_df = pd.read_csv(csv_path, encoding="utf-8")
+        except UnicodeDecodeError:
+            eval_df = pd.read_csv(csv_path, encoding="latin-1")
+
         cls._validate_columns(
             eval_df=eval_df,
             human_label_col_names=human_label_col_names,
