@@ -835,6 +835,28 @@ class TestExecuteSingleTurnAttacksAsync:
                 prepended_conversations=prepended_conversations,
             )
 
+    @pytest.mark.asyncio
+    async def test_execute_single_turn_with_attack_execute_params(self, mock_single_turn_attack_strategy):
+        executor = AttackExecutor(max_concurrency=1)
+        objectives = ["Obj1", "Obj2", "Obj3"]
+
+        mock_single_turn_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_single_turn_attacks_async(
+            attack=mock_single_turn_attack_strategy,
+            objectives=objectives,
+            custom_param="test_value",
+            batch_size=10,
+            another_param=42,
+        )
+
+        # Verify all calls included the custom params
+        assert mock_single_turn_attack_strategy.execute_async.call_count == 3
+        for call in mock_single_turn_attack_strategy.execute_async.call_args_list:
+            assert call.kwargs["custom_param"] == "test_value"
+            assert call.kwargs["batch_size"] == 10
+            assert call.kwargs["another_param"] == 42
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestExecuteMultiTurnAttacksAsync:
@@ -1027,6 +1049,28 @@ class TestExecuteMultiTurnAttacksAsync:
             max_concurrent = max(max_concurrent, current_concurrent)
 
         assert max_concurrent <= 2
+
+    @pytest.mark.asyncio
+    async def test_execute_multi_turn_with_attack_execute_params(self, mock_multi_turn_attack_strategy):
+        executor = AttackExecutor(max_concurrency=1)
+        objectives = ["Obj1", "Obj2", "Obj3"]
+
+        mock_multi_turn_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_multi_turn_attacks_async(
+            attack=mock_multi_turn_attack_strategy,
+            objectives=objectives,
+            custom_param="test_value",
+            max_turns=5,
+            temperature=0.7,
+        )
+
+        # Verify all calls included the custom params
+        assert mock_multi_turn_attack_strategy.execute_async.call_count == 3
+        for call in mock_multi_turn_attack_strategy.execute_async.call_args_list:
+            assert call.kwargs["custom_param"] == "test_value"
+            assert call.kwargs["max_turns"] == 5
+            assert call.kwargs["temperature"] == 0.7
 
 
 @pytest.mark.usefixtures("patch_central_database")
