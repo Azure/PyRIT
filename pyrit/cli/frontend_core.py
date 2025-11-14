@@ -119,8 +119,6 @@ class FrontendCore:
         self._initializer_registry = InitializerRegistry()
 
         self._initialized = True
-        print("Ready!")
-        sys.stdout.flush()
 
     @property
     def scenario_registry(self) -> "ScenarioRegistry":
