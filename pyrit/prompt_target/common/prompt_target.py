@@ -2,13 +2,16 @@
 # Licensed under the MIT license.
 
 import abc
+import functools
 import logging
-from typing import Optional
+from typing import Callable, Optional
 
+from pyrit.containers import Runtime, wrap_runtime
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Identifier, Message
 
 logger = logging.getLogger(__name__)
+
 
 
 class PromptTarget(abc.ABC, Identifier):
@@ -26,16 +29,19 @@ class PromptTarget(abc.ABC, Identifier):
         max_requests_per_minute: Optional[int] = None,
         endpoint: str = "",
         model_name: str = "",
+        runtime: Optional[Runtime] = None
     ) -> None:
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._max_requests_per_minute = max_requests_per_minute
         self._endpoint = endpoint
         self._model_name = model_name
+        self._runtime = runtime
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
 
+    @wrap_runtime
     @abc.abstractmethod
     async def send_prompt_async(self, *, message: Message) -> Message:
         """
