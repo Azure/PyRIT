@@ -15,6 +15,7 @@ from pyrit.exceptions import (
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
+    JsonResponseConfig,
     Message,
     MessagePiece,
 )
@@ -82,9 +83,9 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         super().__init__(**kwargs)
 
         if temperature is not None and (temperature < 0 or temperature > 2):
-            raise PyritException("temperature must be between 0 and 2 (inclusive).")
+            raise PyritException(message="temperature must be between 0 and 2 (inclusive).")
         if top_p is not None and (top_p < 0 or top_p > 1):
-            raise PyritException("top_p must be between 0 and 1 (inclusive).")
+            raise PyritException(message="top_p must be between 0 and 1 (inclusive).")
 
         self._temperature = temperature
         self._top_p = top_p
@@ -158,7 +159,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         return response
 
     async def _construct_request_body(
-        self, conversation: MutableSequence[Message], is_json_response: bool | str
+        self, conversation: MutableSequence[Message], json_config: JsonResponseConfig
     ) -> dict:
         raise NotImplementedError
 
