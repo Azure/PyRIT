@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -27,7 +27,7 @@ class LLMGenericTextConverter(PromptConverter):
     def __init__(
         self,
         *,
-        converter_target: Optional[PromptChatTarget] = None,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         system_prompt_template: Optional[SeedPrompt] = None,
         user_prompt_template_with_objective: Optional[SeedPrompt] = None,
         **kwargs,
@@ -46,13 +46,6 @@ class LLMGenericTextConverter(PromptConverter):
         Raises:
             ValueError: If converter_target is not provided and no default has been configured.
         """
-        if converter_target is None:
-            raise ValueError(
-                "converter_target is required for LLM-based converters. "
-                "Either pass it explicitly or configure a default via PyRIT initialization "
-                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
-            )
-
         self._converter_target = converter_target
         self._system_prompt_template = system_prompt_template
         self._prompt_kwargs = kwargs

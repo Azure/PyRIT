@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import (
@@ -66,7 +66,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,

@@ -10,11 +10,13 @@ AtomicAttack instances sequentially, enabling comprehensive security testing cam
 
 import asyncio
 import logging
+import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
 from tqdm.auto import tqdm
 
+from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import ScenarioResultEntry
@@ -22,7 +24,10 @@ from pyrit.models import AttackResult
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+from pyrit.scenarios.scenario_strategy import (
+    ScenarioCompositeStrategy,
+    ScenarioStrategy,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,13 +78,11 @@ class Scenario(ABC):
         *,
         name: str,
         version: int,
-        max_concurrency: int = 1,
-        max_retries: int = 0,
-        memory_labels: Optional[Dict[str, str]] = None,
-        objective_target: Optional[PromptTarget] = None,
+        strategy_class: Type[ScenarioStrategy],
+        default_aggregate: ScenarioStrategy,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
         include_default_baseline: bool = True,
-        scenario_result_id: Optional[str] = None,
+        scenario_result_id: Optional[Union[uuid.UUID, str]] = None,
     ) -> None:
         """
         Initialize a scenario.
@@ -87,26 +90,22 @@ class Scenario(ABC):
         Args:
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
-            max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
-            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
-                Set to 0 (default) for no automatic retries. If set to a positive number,
-                the scenario will automatically retry up to this many times after an exception.
-                For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
-            memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
-                attack runs in the scenario. These help track and categorize the scenario.
-            objective_target (Optional[PromptTarget]): The target system to attack.
+            strategy_class (Type[ScenarioStrategy]): The strategy enum class for this scenario.
+            default_aggregate (ScenarioStrategy): The default aggregate strategy to use when
+                scenario_strategies is None in initialize_async.
             objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
             include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 from the first atomic attack without modifications. Most scenarios should have some kind of
                 baseline so users can understand the impact of strategies, but subclasses can optionally write
                 their own custom baselines. Defaults to True.
-            scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
+            scenario_result_id (Optional[Union[uuid.UUID, str]]): Optional ID of an existing scenario result to resume.
+                Can be either a UUID object or a string representation of a UUID.
                 If provided and found in memory, the scenario will resume from prior progress.
                 All other parameters must still match the stored scenario configuration.
 
         Note:
             Attack runs are populated by calling initialize_async(), which invokes the
-            subclass's _get_attack_runs_async() method.
+            subclass's _get_atomic_attacks_async() method.
 
             The scenario description is automatically extracted from the class's docstring (__doc__)
             with whitespace normalized for display.
@@ -118,24 +117,29 @@ class Scenario(ABC):
             name=type(self).__name__, scenario_version=version, description=description
         )
 
-        self._objective_target = objective_target
+        # Store strategy configuration for use in initialize_async
+        self._strategy_class = strategy_class
+        self._default_aggregate = default_aggregate
 
-        if not objective_target:
-            raise ValueError("Objective target must be provided.")
+        # These will be set in initialize_async
+        self._objective_target: Optional[PromptTarget] = None
+        self._objective_target_identifier: Optional[Dict[str, str]] = None
+        self._memory_labels: Dict[str, str] = {}
+        self._max_concurrency: int = 1
+        self._max_retries: int = 0
 
-        self._objective_target_identifier = objective_target.get_identifier()
         self._objective_scorer_identifier = objective_scorer_identifier or {}
 
         self._name = name
-        self._memory_labels = memory_labels or {}
         self._memory = CentralMemory.get_memory_instance()
-        self._max_concurrency = max_concurrency
-        self._max_retries = max_retries
         self._atomic_attacks: List[AtomicAttack] = []
-        self._scenario_result_id: Optional[str] = scenario_result_id
+        self._scenario_result_id: Optional[str] = str(scenario_result_id) if scenario_result_id else None
         self._result_lock = asyncio.Lock()
 
         self._include_baseline = include_default_baseline
+
+        # Store prepared strategy composites for use in _get_atomic_attacks_async
+        self._scenario_composites: List[ScenarioCompositeStrategy] = []
 
         # Store original objectives for each atomic attack (before any mutations)
         # Key: atomic_attack_name, Value: tuple of original objectives
@@ -200,7 +204,16 @@ class Scenario(ABC):
         """
         pass
 
-    async def initialize_async(self) -> None:
+    @apply_defaults
+    async def initialize_async(
+        self,
+        *,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore
+        scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
+        max_concurrency: int = 1,
+        max_retries: int = 0,
+        memory_labels: Optional[Dict[str, str]] = None,
+    ) -> None:
         """
         Initialize the scenario by populating self._atomic_attacks and creating the ScenarioResult.
 
@@ -213,30 +226,67 @@ class Scenario(ABC):
         doesn't exist, a new scenario result will be created.
 
         Args:
-            atomic_attacks: List of AtomicAttack instances to execute in this scenario.
+            objective_target (PromptTarget): The target system to attack.
+            scenario_strategies (Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]]):
+                The strategies to execute. Can be a list of bare ScenarioStrategy enums or
+                ScenarioCompositeStrategy instances for advanced composition. Bare enums are
+                automatically wrapped into composites. If None, uses the default aggregate
+                from the scenario's configuration.
+            max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
+            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
+                Set to 0 (default) for no automatic retries. If set to a positive number,
+                the scenario will automatically retry up to this many times after an exception.
+                For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
+            memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
+                attack runs in the scenario. These help track and categorize the scenario.
 
         Returns:
-            Scenario: Self for method chaining.
+            None
 
         Example:
             >>> # New scenario
             >>> scenario = MyScenario(
-            ...     objective_target=target,
-            ...     attack_strategies=["base64", "leetspeak"]
+            ...     name="Security Test",
+            ...     version=1
             ... )
-            >>> await scenario.initialize_async()
+            >>> await scenario.initialize_async(
+            ...     objective_target=target,
+            ...     scenario_strategies=[MyStrategy.Base64, MyStrategy.ROT13]
+            ... )
             >>> results = await scenario.run_async()
             >>>
             >>> # Resume existing scenario
             >>> scenario_id = results.id
             >>> resumed_scenario = MyScenario(
-            ...     objective_target=target,
-            ...     attack_strategies=["base64", "leetspeak"],
+            ...     name="Security Test",
+            ...     version=1,
             ...     scenario_result_id=str(scenario_id)
             ... )
-            >>> await resumed_scenario.initialize_async()
+            >>> await resumed_scenario.initialize_async(
+            ...     objective_target=target,
+            ...     scenario_strategies=[MyStrategy.Base64, MyStrategy.ROT13]
+            ... )
             >>> results = await resumed_scenario.run_async()  # Resumes from progress
         """
+        # Validate required parameters
+        if objective_target is None:
+            raise ValueError(
+                "objective_target is required. "
+                "Provide it either as a parameter or via set_default_value() in an initialization script."
+            )
+
+        # Set instance variables from parameters
+        self._objective_target = objective_target
+        self._objective_target_identifier = objective_target.get_identifier()
+        self._max_concurrency = max_concurrency
+        self._max_retries = max_retries
+        self._memory_labels = memory_labels or {}
+
+        # Prepare scenario strategies using the stored configuration
+        self._scenario_composites = self._strategy_class.prepare_scenario_strategies(
+            scenario_strategies, default_aggregate=self._default_aggregate
+        )
+
         self._atomic_attacks = await self._get_atomic_attacks_async()
 
         if self._include_baseline:
@@ -521,6 +571,9 @@ class Scenario(ABC):
         if not self._scenario_result_id:
             raise ValueError("Scenario not properly initialized. Call await scenario.initialize_async() first.")
 
+        # Type narrowing: create local variable that type checker knows is non-None
+        scenario_result_id: str = self._scenario_result_id
+
         # Implement retry logic
         last_exception = None
         for retry_attempt in range(self._max_retries + 1):  # +1 for initial attempt
@@ -531,7 +584,7 @@ class Scenario(ABC):
                 last_exception = e
 
                 # Get current scenario to check number of tries
-                scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
+                scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
                 current_tries = scenario_results[0].number_tries if scenario_results else retry_attempt + 1
 
                 # Check if we have more retries available
@@ -575,8 +628,13 @@ class Scenario(ABC):
         """
         logger.info(f"Starting scenario '{self._name}' execution with {len(self._atomic_attacks)} atomic attacks")
 
+        # Type narrowing: _scenario_result_id is guaranteed to be non-None at this point
+        # (verified in run_async before calling this method)
+        assert self._scenario_result_id is not None
+        scenario_result_id: str = self._scenario_result_id
+
         # Increment number_tries at the start of each run
-        scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
+        scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
         if scenario_results:
             current_scenario = scenario_results[0]
             current_scenario.number_tries += 1
@@ -584,7 +642,7 @@ class Scenario(ABC):
             self._memory._update_entry(entry)
             logger.info(f"Scenario '{self._name}' attempt #{current_scenario.number_tries}")
         else:
-            raise ValueError(f"Scenario result with ID {self._scenario_result_id} not found")
+            raise ValueError(f"Scenario result with ID {scenario_result_id} not found")
 
         # Get remaining atomic attacks (filters out completed ones and updates objectives)
         remaining_attacks = await self._get_remaining_atomic_attacks_async()
@@ -593,14 +651,14 @@ class Scenario(ABC):
             logger.info(f"Scenario '{self._name}' has no remaining objectives to execute")
             # Mark scenario as completed
             self._memory.update_scenario_run_state(
-                scenario_result_id=self._scenario_result_id, scenario_run_state="COMPLETED"
+                scenario_result_id=scenario_result_id, scenario_run_state="COMPLETED"
             )
             # Retrieve and return the current scenario result
-            scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
+            scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
             if scenario_results:
                 return scenario_results[0]
             else:
-                raise ValueError(f"Scenario result with ID {self._scenario_result_id} not found")
+                raise ValueError(f"Scenario result with ID {scenario_result_id} not found")
 
         logger.info(
             f"Scenario '{self._name}' has {len(remaining_attacks)} atomic attacks "
@@ -608,9 +666,7 @@ class Scenario(ABC):
         )
 
         # Mark scenario as in progress
-        self._memory.update_scenario_run_state(
-            scenario_result_id=self._scenario_result_id, scenario_run_state="IN_PROGRESS"
-        )
+        self._memory.update_scenario_run_state(scenario_result_id=scenario_result_id, scenario_run_state="IN_PROGRESS")
 
         # Calculate starting index based on completed attacks
         completed_count = len(self._atomic_attacks) - len(remaining_attacks)
@@ -660,7 +716,7 @@ class Scenario(ABC):
 
                         # Mark scenario as failed
                         self._memory.update_scenario_run_state(
-                            scenario_result_id=self._scenario_result_id, scenario_run_state="FAILED"
+                            scenario_result_id=scenario_result_id, scenario_run_state="FAILED"
                         )
 
                         # Raise exception with detailed information
@@ -683,10 +739,10 @@ class Scenario(ABC):
                     )
 
                     # Mark scenario as failed if not already done
-                    scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
+                    scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
                     if scenario_results and scenario_results[0].scenario_run_state != "FAILED":
                         self._memory.update_scenario_run_state(
-                            scenario_result_id=self._scenario_result_id, scenario_run_state="FAILED"
+                            scenario_result_id=scenario_result_id, scenario_run_state="FAILED"
                         )
 
                     raise
@@ -695,11 +751,11 @@ class Scenario(ABC):
 
             # Mark scenario as completed
             self._memory.update_scenario_run_state(
-                scenario_result_id=self._scenario_result_id, scenario_run_state="COMPLETED"
+                scenario_result_id=scenario_result_id, scenario_run_state="COMPLETED"
             )
 
             # Retrieve and return final scenario result
-            scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
+            scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
             if not scenario_results:
                 raise ValueError(f"Scenario result with ID {self._scenario_result_id} not found")
 

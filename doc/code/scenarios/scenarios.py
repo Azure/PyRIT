@@ -81,13 +81,12 @@ scenario_strategies = [
 
 
 # Create a scenario from the pre-configured Foundry scenario
-foundry_scenario = FoundryScenario(
+foundry_scenario = FoundryScenario(objectives=objectives)
+await foundry_scenario.initialize_async(  # type: ignore
     objective_target=objective_target,
-    max_concurrency=10,
     scenario_strategies=scenario_strategies,
-    objectives=objectives,
+    max_concurrency=10,
 )
-await foundry_scenario.initialize_async()  # type: ignore
 
 print(f"Created scenario: {foundry_scenario.name}")
 
