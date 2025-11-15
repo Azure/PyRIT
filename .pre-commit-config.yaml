@@ -52,42 +52,8 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.4
     hooks:
-      # TODO: once existing docstring issues are fixed,
-      # and https://github.com/Azure/PyRIT/issues/1176 is resolved,
-      # we can remove all args from here to use the pyproject.toml config only
       - id: ruff-check
-        name: ruff-check (doc rules for pyrit/)
-        args:
-          - --select
-          - D202
-          - --select
-          - D204
-          - --select
-          - D209
-          - --select
-          - D213
-          - --select
-          - D214
-          - --select
-          - D300
-          - --select
-          - D301
-          - --select
-          - D403
-          - --select
-          - D410
-          - --select
-          - D411
-          - --select
-          - D415
-          - --select
-          - D416
-        files: ^pyrit/
-      - id: ruff-check
-        name: ruff-check (other rules for entire repo)
-        args:
-          - --select
-          - F401  # unused imports
+        name: ruff-check
 
   - repo: https://github.com/PyCQA/flake8
     rev: 7.1.2
