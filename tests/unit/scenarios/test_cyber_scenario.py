@@ -16,13 +16,16 @@ from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenarios import CyberScenario, CyberStrategy
 from pyrit.score import SelfAskTrueFalseScorer
 
+
 @pytest.fixture
 def fast_cyberstrategy():
     return CyberStrategy.FAST
 
+
 @pytest.fixture
 def slow_cyberstrategy():
     return CyberStrategy.SLOW
+
 
 @pytest.fixture
 def malware_prompts():
@@ -137,8 +140,6 @@ class TestCyberScenarioInitialization:
         assert scenario._adversarial_config.target == adversarial_chat
 
 
-
-
 @pytest.mark.usefixtures(*FIXTURES)
 class TestCyberScenarioAttackGeneration:
     """Tests for CyberScenario attack generation."""
@@ -165,8 +166,7 @@ class TestCyberScenarioAttackGeneration:
         )
 
         await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[fast_cyberstrategy]
+            objective_target=mock_objective_target, scenario_strategies=[fast_cyberstrategy]
         )
         atomic_attacks = await scenario._get_atomic_attacks_async()
         for run in atomic_attacks:
@@ -183,11 +183,10 @@ class TestCyberScenarioAttackGeneration:
         )
 
         await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[slow_cyberstrategy]
+            objective_target=mock_objective_target, scenario_strategies=[slow_cyberstrategy]
         )
         atomic_attacks = await scenario._get_atomic_attacks_async()
-        
+
         for run in atomic_attacks:
             assert isinstance(run._attack, RedTeamingAttack)
 
@@ -225,21 +224,17 @@ class TestCyberScenarioAttackGeneration:
         assert len(atomic_attacks) > 0
         assert all(hasattr(run, "_attack") for run in atomic_attacks)
 
+
 @pytest.mark.usefixtures(*FIXTURES)
 class TestCyberScenarioLifecycle:
     """
     Tests for CyberScenario lifecycle, including initialize_async and execution.
     """
-    
+
     async def test_initialize_async_with_max_concurrency(self, mock_objective_target, mock_objective_scorer):
         """Test initialization with custom max_concurrency."""
-        scenario = CyberScenario(
-            objective_scorer=mock_objective_scorer
-        )
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            max_concurrency=20
-        )
+        scenario = CyberScenario(objective_scorer=mock_objective_scorer)
+        await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20)
         assert scenario._max_concurrency == 20
 
     async def test_initialize_async_with_memory_labels(self, mock_objective_target, mock_objective_scorer):
@@ -251,10 +246,12 @@ class TestCyberScenarioLifecycle:
         )
         await scenario.initialize_async(
             memory_labels=memory_labels,
-            objective_target=mock_objective_target,    
+            objective_target=mock_objective_target,
         )
 
         assert scenario._memory_labels == memory_labels
+
+
 @pytest.mark.usefixtures(*FIXTURES)
 class TestCyberScenarioProperties:
     """

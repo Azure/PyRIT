@@ -3,7 +3,7 @@
 
 import os
 import pathlib
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH, SCORER_CONFIG_PATH
@@ -15,12 +15,12 @@ from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedDataset
-from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
+from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_strategy import (
+    ScenarioCompositeStrategy,
     ScenarioStrategy,
-    ScenarioCompositeStrategy
 )
 from pyrit.score import SelfAskTrueFalseScorer
 
@@ -80,13 +80,11 @@ class CyberScenario(Scenario):
     def __init__(
         self,
         *,
-
         adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[List[str]] = None,
         objective_scorer: Optional[SelfAskTrueFalseScorer] = None,
         include_baseline: bool = True,
-        scenario_result_id: Optional[str] = None
-        
+        scenario_result_id: Optional[str] = None,
     ) -> None:
         """
         Initialize the cyber harms scenario. Note that the cyber harms scenario is slightly different from the encoding
@@ -128,7 +126,7 @@ class CyberScenario(Scenario):
             default_aggregate=CyberStrategy.FAST,
             objective_scorer_identifier=objective_scorer.get_identifier(),
             include_default_baseline=include_baseline,
-            scenario_result_id=scenario_result_id
+            scenario_result_id=scenario_result_id,
         )
 
     def _get_default_objective_scorer(self) -> SelfAskTrueFalseScorer:
@@ -180,7 +178,7 @@ class CyberScenario(Scenario):
         """
         # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None
-   
+
         attack_strategy: Optional[AttackStrategy] = None
         if strategy.strategies[0] == CyberStrategy.FAST:
             attack_strategy = PromptSendingAttack(
