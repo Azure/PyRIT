@@ -21,12 +21,12 @@ class _AdamOptimizer:
     Implementation of the Adam Optimizer using NumPy. Adam optimization is a stochastic gradient
     descent method that is based on adaptive estimation of first-order and second-order moments.
     For further details, see the original paper: `"Adam: A Method for Stochastic Optimization"`
-    by D. P. Kingma and J. Ba, 2014: https://arxiv.org/abs/1412.6980
+    by D. P. Kingma and J. Ba, 2014: https://arxiv.org/abs/1412.6980.
 
     Note:
         The code is inspired by the implementation found at:
         https://github.com/xbeat/Machine-Learning/blob/main/Adam%20Optimizer%20in%20Python.md
-    """  # noqa: D415
+    """
 
     def __init__(
         self, *, learning_rate: float = 0.001, beta_1: float = 0.9, beta_2: float = 0.999, epsilon: float = 1e-8

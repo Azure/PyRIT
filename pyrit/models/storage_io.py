@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 class SupportedContentType(Enum):
     """
     All supported content types for uploading blobs to provided storage account container.
-    See all options here: https://www.iana.org/assignments/media-types/media-types.xhtml
-    """  # noqa: D415
+    See all options here: https://www.iana.org/assignments/media-types/media-types.xhtml.
+    """
 
     # TODO, add other media supported types
     PLAIN_TEXT = "text/plain"

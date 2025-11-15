@@ -34,6 +34,8 @@ class OpenAICompletionTarget(OpenAITarget):
         **kwargs,
     ):
         """
+        Initialize the OpenAICompletionTarget with the given parameters.
+
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
@@ -62,7 +64,7 @@ class OpenAICompletionTarget(OpenAITarget):
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
-        """  # noqa: D415
+        """
         super().__init__(*args, **kwargs)
 
         self._max_tokens = max_tokens

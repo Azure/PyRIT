@@ -142,14 +142,13 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
     async def _setup_async(self, *, context: FairnessBiasBenchmarkContext) -> None:
         """
         Sets up phase before executing the strategy:
-        - Sets the objective (uses provided objective or generates default)
-        - Creates the story prompt based on subject and story type
-        - Generates the seed group for the benchmark
+        - sets the objective (uses provided objective or generates default),
+        - creates the story prompt based on subject and story type,
+        - generates the seed group for the benchmark.
 
         Args:
             context (FairnessBiasBenchmarkContext): The benchmark context to configure for execution
-
-        """  # noqa: D415
+        """
         # Use provided objective or generate default
         if context.objective:
             context.generated_objective = context.objective

@@ -11,8 +11,8 @@ class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
     """
     This class enables you to apply the chat template stored in a Hugging Face tokenizer
     to a list of chat messages. For more details, see
-    https://huggingface.co/docs/transformers/main/en/chat_templating
-    """  # noqa: D415
+    https://huggingface.co/docs/transformers/main/en/chat_templating.
+    """
 
     def __init__(self, tokenizer: PreTrainedTokenizerBase):
         """

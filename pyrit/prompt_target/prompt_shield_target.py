@@ -103,8 +103,8 @@ class PromptShieldTarget(PromptTarget):
         """
         Parses the text in message to separate the userPrompt and documents contents,
         then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
-        https://learn.microsoft.com/en-us/azure/ai-services/content-safety/quickstart-jailbreak
-        """  # noqa: D415
+        https://learn.microsoft.com/en-us/azure/ai-services/content-safety/quickstart-jailbreak.
+        """
         self._validate_request(message=message)
 
         request = message.message_pieces[0]
@@ -178,8 +178,8 @@ class PromptShieldTarget(PromptTarget):
     def _input_parser(self, input_str: str) -> dict[str, Any]:
         """
         Parses the input given to the target to extract the two fields sent to
-        Prompt Shield: userPrompt: str, and documents: list[str]
-        """  # noqa: D415
+        Prompt Shield: userPrompt: str, and documents: list[str].
+        """
         match self._force_entry_field:
             case "userPrompt":
                 return {"userPrompt": input_str, "documents": []}

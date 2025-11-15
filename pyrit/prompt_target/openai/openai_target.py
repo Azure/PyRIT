@@ -118,9 +118,9 @@ class OpenAITarget(PromptChatTarget):
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:
         """
-        Sets deployment_environment_variable, endpoint_environment_variable, and api_key_environment_variable
-        which are read from .env
-        """  # noqa: D415
+        Sets deployment_environment_variable, endpoint_environment_variable,
+        and api_key_environment_variable which are read from .env file.
+        """
         raise NotImplementedError
 
     def _warn_if_irregular_endpoint(self, expected_url_regex) -> None:
