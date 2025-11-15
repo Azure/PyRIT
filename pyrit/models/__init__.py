@@ -25,6 +25,7 @@ from pyrit.models.data_type_serializer import (
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.identifiers import Identifier
+from pyrit.models.json_response_config import JsonResponseConfig
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.message import (
     Message,
@@ -68,6 +69,7 @@ __all__ = [
     "group_message_pieces_into_conversations",
     "Identifier",
     "ImagePathDataTypeSerializer",
+    "JsonResponseConfig",
     "Message",
     "MessagePiece",
     "PromptDataType",
