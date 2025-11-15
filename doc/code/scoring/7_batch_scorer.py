@@ -64,13 +64,14 @@ for id in conversation_ids:
 # Once the prompts are in the database (which again, is often automatic) we can use `BatchScorer` to score them with whatever scorers we want. It works in parallel with batches.
 
 # %%
+# pylint: disable=W0611
 from pyrit.memory import CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import AzureContentFilterScorer  # noqa: F401
-from pyrit.score import HumanInTheLoopScorerGradio  # noqa: F401
 from pyrit.score import (
+    AzureContentFilterScorer,
     BatchScorer,
     ContentClassifierPaths,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 
@@ -112,15 +113,16 @@ for score in scores:
 # - Converted Value SHA256
 
 # %%
+# pylint: disable=W0611
 import uuid
 
 from pyrit.memory import CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import AzureContentFilterScorer  # noqa: F401
-from pyrit.score import HumanInTheLoopScorerGradio  # noqa: F401
 from pyrit.score import (
+    AzureContentFilterScorer,
     BatchScorer,
     ContentClassifierPaths,
+    HumanInTheLoopScorerGradio,
     SelfAskCategoryScorer,
 )
 
