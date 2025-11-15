@@ -8,7 +8,7 @@ import pytest
 from pyrit.models import JsonResponseConfig
 
 
-def test_smoke():
+def test_with_none():
     config = JsonResponseConfig.from_metadata(metadata=None)
     assert config.enabled is False
     assert config.schema is None
