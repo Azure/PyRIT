@@ -82,12 +82,12 @@ class PromptChatTarget(PromptTarget):
         """
         config = self.get_json_response_config(message_piece=message_piece)
         return config.enabled
-    
+
     def get_json_response_config(self, *, message_piece: MessagePiece) -> JsonResponseConfig:
         config = JsonResponseConfig.from_metadata(metadata=message_piece.prompt_metadata)
-        
+
         if config.enabled and not self.is_json_response_supported():
             target_name = self.get_identifier()["__type__"]
             raise ValueError(f"This target {target_name} does not support JSON response format.")
-            
+
         return config

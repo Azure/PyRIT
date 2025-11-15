@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
+from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
