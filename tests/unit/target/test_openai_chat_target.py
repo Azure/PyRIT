@@ -23,7 +23,7 @@ from pyrit.exceptions.exception_classes import (
     RateLimitException,
 )
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import Message, MessagePiece
+from pyrit.models import JsonResponseConfig, Message, MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 
 
@@ -177,29 +177,31 @@ async def test_construct_request_body_includes_extra_body_params(
 
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["key"] == "value"
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("is_json", [True, False, '{"type": "object", "properties": {"name": {"type": "string"}}}'])
-async def test_construct_request_body_includes_json(
-    is_json: bool | str, target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
-):
+async def test_construct_request_body_json_object(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
     request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata={"response_format": "json"})
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
-    if isinstance(is_json, str):
-        assert body["response_format"] == {
-            "type": "json_schema",
-            "schema": json.loads(is_json),
-            "name": "CustomSchema",
-            "strict": True,
-        }
-    elif is_json:
-        assert body["response_format"] == {"type": "json_object"}
-    else:
-        assert "response_format" not in body
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["response_format"] == {"type": "json_object"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_json_schema(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    schema_obj = {"type": "object", "properties": {"name": {"type": "string"}}}
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata={"response_format": "json", "json_schema": schema_obj})
+
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "CustomSchema", "schema": schema_obj, "strict": True},
+    }
 
 
 @pytest.mark.asyncio
@@ -208,13 +210,15 @@ async def test_construct_request_body_removes_empty_values(
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert "max_completion_tokens" not in body
     assert "max_tokens" not in body
     assert "temperature" not in body
     assert "top_p" not in body
     assert "frequency_penalty" not in body
     assert "presence_penalty" not in body
+    assert "response_format" not in body
 
 
 @pytest.mark.asyncio
@@ -222,11 +226,12 @@ async def test_construct_request_body_serializes_text_message(
     target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
-    assert (
-        body["messages"][0]["content"] == "dummy text"
-    ), "Text messages are serialized in a simple way that's more broadly supported"
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["messages"][0]["content"] == "dummy text", (
+        "Text messages are serialized in a simple way that's more broadly supported"
+    )
 
 
 @pytest.mark.asyncio
@@ -236,8 +241,9 @@ async def test_construct_request_body_serializes_complex_message(
     image_piece = get_image_message_piece()
     image_piece.conversation_id = dummy_text_message_piece.conversation_id  # Match conversation IDs
     request = Message(message_pieces=[dummy_text_message_piece, image_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     messages = body["messages"][0]["content"]
     assert len(messages) == 2, "Complex messages are serialized as a list"
     assert messages[0]["type"] == "text", "Text messages are serialized properly when multi-modal"
@@ -538,9 +544,9 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(message=message)
 
-    assert "This target only supports text and image_path." in str(
-        excinfo.value
-    ), "Error not raised for unsupported data types"
+    assert "This target only supports text and image_path." in str(excinfo.value), (
+        "Error not raised for unsupported data types"
+    )
 
     os.remove(image_piece.original_value)
 
@@ -559,9 +565,9 @@ def test_inheritance_from_prompt_chat_target_base():
 
     # Create a minimal instance to test inheritance
     target = OpenAIChatTarget(model_name="test-model", endpoint="https://test.com", api_key="test-key")
-    assert isinstance(
-        target, PromptChatTarget
-    ), "OpenAIChatTarget must inherit from PromptChatTarget through OpenAIChatTargetBase"
+    assert isinstance(target, PromptChatTarget), (
+        "OpenAIChatTarget must inherit from PromptChatTarget through OpenAIChatTargetBase"
+    )
 
 
 def test_is_response_format_json_supported(target: OpenAIChatTarget):
@@ -594,10 +600,7 @@ def test_is_response_format_json_schema_supported(target: OpenAIChatTarget):
     )
 
     result = target.is_response_format_json(message_piece)
-
-    assert isinstance(result, str)
-    result_schema = json.loads(result)
-    assert result_schema == schema
+    assert result
 
 
 def test_is_response_format_json_no_metadata(target: OpenAIChatTarget):

@@ -250,8 +250,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         messages = await self._build_chat_messages_async(conversation)
         response_format = self._build_response_format(json_config)
 
-        response_format = None
-
         body_parameters = {
             "model": self._model_name,
             "max_completion_tokens": self._max_completion_tokens,
