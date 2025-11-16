@@ -245,10 +245,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         return chat_messages
 
     async def _construct_request_body(
-        self,
-        *,
-        conversation: MutableSequence[Message],
-        json_config: JsonResponseConfig
+        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
     ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
         response_format = self._build_response_format(json_config)
@@ -328,19 +325,19 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
-    
+
     def _build_response_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
         if not json_config.enabled:
             return None
-            
+
         if json_config.schema:
             return {
                 "type": "json_schema",
                 "json_schema": {
                     "name": json_config.schema_name,
                     "schema": json_config.schema,
-                    "strict": json_config.strict
-                }
+                    "strict": json_config.strict,
+                },
             }
-        
+
         return {"type": "json_object"}
