@@ -229,9 +229,9 @@ async def test_construct_request_body_serializes_text_message(
     jrc = JsonResponseConfig.from_metadata(metadata=None)
 
     body = await target._construct_request_body(conversation=[request], json_config=jrc)
-    assert body["messages"][0]["content"] == "dummy text", (
-        "Text messages are serialized in a simple way that's more broadly supported"
-    )
+    assert (
+        body["messages"][0]["content"] == "dummy text"
+    ), "Text messages are serialized in a simple way that's more broadly supported"
 
 
 @pytest.mark.asyncio
@@ -544,9 +544,9 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(message=message)
 
-    assert "This target only supports text and image_path." in str(excinfo.value), (
-        "Error not raised for unsupported data types"
-    )
+    assert "This target only supports text and image_path." in str(
+        excinfo.value
+    ), "Error not raised for unsupported data types"
 
     os.remove(image_piece.original_value)
 
@@ -565,9 +565,9 @@ def test_inheritance_from_prompt_chat_target_base():
 
     # Create a minimal instance to test inheritance
     target = OpenAIChatTarget(model_name="test-model", endpoint="https://test.com", api_key="test-key")
-    assert isinstance(target, PromptChatTarget), (
-        "OpenAIChatTarget must inherit from PromptChatTarget through OpenAIChatTargetBase"
-    )
+    assert isinstance(
+        target, PromptChatTarget
+    ), "OpenAIChatTarget must inherit from PromptChatTarget through OpenAIChatTargetBase"
 
 
 def test_is_response_format_json_supported(target: OpenAIChatTarget):
