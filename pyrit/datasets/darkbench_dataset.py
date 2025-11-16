@@ -18,7 +18,7 @@ def fetch_darkbench_dataset() -> SeedDataset:
         - https://huggingface.co/datasets/apart/darkbench \n
         - https://darkbench.ai/ \n
         - https://openreview.net/forum?id=odjMSBSWRt
-    """  # noqa: D301
+    """
     data = load_dataset("apart/darkbench", "default", split="train", data_files="darkbench.tsv")
 
     seed_prompts = [

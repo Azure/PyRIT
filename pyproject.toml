@@ -234,6 +234,7 @@ ignore = [
     "D200",  # One-line docstring should fit on one line
     "D205",  # 1 blank line required between summary line and description
     "D212",  # Multi-line docstring summary should start at the first line
+    "D301",  # Use r""" if any backslashes in a docstring
     "DOC502",  # Raised exception is not explicitly raised
 ]
 extend-select = [
