@@ -41,6 +41,13 @@ RUN apt-get update \
       libpulse0 \
  && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js 20.x and npm for frontend development
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+ && apt-get install -y nodejs \
+ && npm install -g npm@latest \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
 # Create conda env and install pyodbc into it
 RUN conda create -n pyrit-dev python=3.11 -y && \
     conda install -n pyrit-dev -c conda-forge pyodbc -y && \

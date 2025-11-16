@@ -107,6 +107,10 @@ gradio = [
     "rpyc>=6.0.1",
     "pywebview>=5.4"
 ]
+fastapi = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+]
 fairness_bias = [
     "spacy>=3.8.7",
 ]
@@ -125,6 +129,7 @@ all = [
     "azure-ai-ml>=1.27.1",
     "azure-cognitiveservices-speech>=1.44.0",
     "azureml-mlflow>=1.60.0",
+    "fastapi>=0.115.0",
     "flask>=3.1.0",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
@@ -140,6 +145,7 @@ all = [
     "torch>=2.7.0",
     "types-PyYAML>=6.0.12.20250516",
     "types-requests>=2.31.0.20250515",
+    "uvicorn[standard]>=0.32.0",
 ]
 
 [project.scripts]

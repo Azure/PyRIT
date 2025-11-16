@@ -58,4 +58,22 @@ else
     echo "✅ pyproject.toml has not changed, skipping installation."
 fi
 
+# Install frontend dependencies if frontend directory exists
+if [ -d "/workspace/frontend" ]; then
+    echo "📦 Installing frontend dependencies..."
+    
+    # Fix node_modules permissions (volume is owned by root)
+    if [ -d "/workspace/frontend/node_modules" ]; then
+        echo "Fixing node_modules permissions..."
+        sudo chown -R vscode:vscode /workspace/frontend/node_modules
+    fi
+    
+    cd /workspace/frontend
+    if [ -f "package.json" ]; then
+        npm install
+        echo "✅ Frontend dependencies installed."
+    fi
+    cd /workspace
+fi
+
 echo "🚀 Dev container setup complete!"
