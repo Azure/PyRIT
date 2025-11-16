@@ -170,26 +170,31 @@ async def test_construct_request_body_includes_extra_body_params(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("is_json", [True, False, '{"type": "object", "properties": {"name": {"type": "string"}}}'])
-async def test_construct_request_body_includes_json(
-    is_json: bool | str, target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
-):
+async def test_construct_request_body_json_object(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    json_response_config = JsonResponseConfig(enabled=True)
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
-    if isinstance(is_json, str):
-        assert body["text"] == {
-            "format": {
-                "type": "json_schema",
-                "schema": json.loads(is_json),
-                "name": "CustomSchema",
-                "strict": True,
-            }
+    body = await target._construct_request_body(conversation=[request], json_config=json_response_config)
+    assert body["text"] == {"format": {"type": "json_object"}}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_json_schema(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    schema_object = {"type": "object", "properties": {"name": {"type": "string"}}}
+    json_response_config = JsonResponseConfig.from_metadata(
+        metadata={"response_format": "json", "json_schema": schema_object}
+    )
+    request = Message(message_pieces=[dummy_text_message_piece])
+
+    body = await target._construct_request_body(conversation=[request], json_config=json_response_config)
+    assert body["text"] == {
+        "format": {
+            "type": "json_schema",
+            "schema": schema_object,
+            "name": "CustomSchema",
+            "strict": True,
         }
-    elif is_json:
-        assert body["text"] == {"format": {"type": "json_object"}}
-    else:
-        assert "text" not in body
+    }
 
 
 @pytest.mark.asyncio
@@ -198,13 +203,15 @@ async def test_construct_request_body_removes_empty_values(
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    json_response_config = JsonResponseConfig(enabled=False)
+    body = await target._construct_request_body(conversation=[request], json_config=json_response_config)
     assert "max_completion_tokens" not in body
     assert "max_tokens" not in body
     assert "temperature" not in body
     assert "top_p" not in body
     assert "frequency_penalty" not in body
     assert "presence_penalty" not in body
+    assert "text" not in body
 
 
 @pytest.mark.asyncio
@@ -213,7 +220,8 @@ async def test_construct_request_body_serializes_text_message(
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["input"][0]["content"][0]["text"] == "dummy text"
 
 
@@ -225,8 +233,9 @@ async def test_construct_request_body_serializes_complex_message(
     dummy_text_message_piece.conversation_id = image_piece.conversation_id
 
     request = Message(message_pieces=[dummy_text_message_piece, image_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     messages = body["input"][0]["content"]
     assert len(messages) == 2
     assert messages[0]["type"] == "input_text"
@@ -574,10 +583,7 @@ def test_is_response_format_json_schema_supported(target: OpenAIResponseTarget):
     )
 
     result = target.is_response_format_json(message_piece)
-
-    assert isinstance(result, str)
-    result_schema = json.loads(result)
-    assert result_schema == schema
+    assert result
 
 
 def test_is_response_format_json_no_metadata(target: OpenAIResponseTarget):
@@ -781,7 +787,8 @@ async def test_construct_request_body_filters_none(
     target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
 ):
     req = Message(message_pieces=[dummy_text_message_piece])
-    body = await target._construct_request_body([req], is_json_response=False)
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[req], json_config=jrc)
     assert "max_output_tokens" not in body or body["max_output_tokens"] is None
     assert "temperature" not in body or body["temperature"] is None
     assert "top_p" not in body or body["top_p"] is None
