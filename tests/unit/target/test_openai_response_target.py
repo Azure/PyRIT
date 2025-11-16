@@ -23,7 +23,7 @@ from pyrit.exceptions.exception_classes import (
     RateLimitException,
 )
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import Message, MessagePiece
+from pyrit.models import JsonResponseConfig, Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget, PromptChatTarget
 
 
@@ -164,7 +164,8 @@ async def test_construct_request_body_includes_extra_body_params(
 
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["key"] == "value"
 
 
