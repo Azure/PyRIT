@@ -321,23 +321,21 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
-    
+
     def _build_text_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
         if not json_config.enabled:
             return None
-            
+
         if json_config.schema:
             return {
                 "format": {
                     "type": "json_schema",
-                    "json_schema": {
-                        "name": json_config.schema_name,
-                        "schema": json_config.schema,
-                        "strict": json_config.strict
-                    }
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
                 }
             }
-        
+
         logger.info("Using json_object format without schema - consider providing a schema for better results")
         return {"format": {"type": "json_object"}}
 
