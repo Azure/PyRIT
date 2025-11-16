@@ -21,6 +21,7 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
 )
 from pyrit.models import (
+    JsonResponseConfig,
     Message,
     MessagePiece,
     PromptDataType,
@@ -292,7 +293,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return
 
     async def _construct_request_body(
-        self, conversation: MutableSequence[Message], is_json_response: bool | str
+        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
     ) -> dict:
         """
         Construct the request body to send to the Responses API.
@@ -302,28 +303,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         """
         input_items = await self._build_input_for_multi_modal_async(conversation)
 
-        text_format = None
-        if is_json_response:
-            if isinstance(is_json_response, str) and len(is_json_response) > 0:
-                json_schema_str = is_json_response
-                try:
-                    json_schema = json.loads(json_schema_str)
-                except json.JSONDecodeError as e:
-                    raise PyritException(
-                        message=f"Failed to parse provided JSON schema for response_format as JSON.\n"
-                        f"Schema: {json_schema_str}\nFull error: {e}"
-                    )
-                text_format = {
-                    "format": {
-                        "type": "json_schema",
-                        "name": "CustomSchema",
-                        "schema": json_schema,
-                        "strict": True,
-                    }
-                }
-            else:
-                logger.info("Falling back to json_object; not recommended for new models")
-                text_format = {"format": {"type": "json_object"}}
+        text_format = self._build_text_format(json_config=json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -341,6 +321,25 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
+    
+    def _build_text_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+            
+        if json_config.schema:
+            return {
+                "format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": json_config.schema_name,
+                        "schema": json_config.schema,
+                        "strict": json_config.strict
+                    }
+                }
+            }
+        
+        logger.info("Using json_object format without schema - consider providing a schema for better results")
+        return {"format": {"type": "json_object"}}
 
     def _construct_message_from_openai_json(
         self,

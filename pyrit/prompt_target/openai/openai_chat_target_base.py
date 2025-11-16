@@ -109,14 +109,14 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
         message_piece: MessagePiece = message.message_pieces[0]
 
-        is_json_response = self.is_response_format_json(message_piece)
+        json_response_config = self.get_json_response_config(message_piece=message_piece)
 
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
         conversation.append(message)
 
         logger.info(f"Sending the following prompt to the prompt target: {message}")
 
-        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+        body = await self._construct_request_body(conversation=conversation, json_config=json_response_config)
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
@@ -159,7 +159,7 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         return response
 
     async def _construct_request_body(
-        self, conversation: MutableSequence[Message], json_config: JsonResponseConfig
+        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
     ) -> dict:
         raise NotImplementedError
 

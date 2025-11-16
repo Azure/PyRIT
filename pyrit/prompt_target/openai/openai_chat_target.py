@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, MutableSequence, Optional
+from typing import Any, Dict, MutableSequence, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -14,6 +14,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     ChatMessage,
     ChatMessageListDictContent,
+    JsonResponseConfig,
     Message,
     MessagePiece,
     construct_response_from_request,
@@ -244,29 +245,16 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         return chat_messages
 
     async def _construct_request_body(
-        self, conversation: MutableSequence[Message], is_json_response: bool | str
+        self,
+        *,
+        conversation: MutableSequence[Message],
+        json_config: JsonResponseConfig
     ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
+        response_format = self._build_response_format(json_config)
 
         response_format = None
-        if is_json_response:
-            if isinstance(is_json_response, str) and len(is_json_response) > 0:
-                json_schema_str = is_json_response
-                try:
-                    json_schema = json.loads(json_schema_str)
-                except json.JSONDecodeError as e:
-                    raise PyritException(
-                        message=f"Failed to parse provided JSON schema for response_format as JSON.\n"
-                        f"Schema: {json_schema_str}\nFull error: {e}"
-                    )
-                response_format = {
-                    "type": "json_schema",
-                    "name": "CustomSchema",
-                    "schema": json_schema,
-                    "strict": True,
-                }
-            else:
-                response_format = {"type": "json_object"}
+
         body_parameters = {
             "model": self._model_name,
             "max_completion_tokens": self._max_completion_tokens,
@@ -340,3 +328,19 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
+    
+    def _build_response_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+            
+        if json_config.schema:
+            return {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict
+                }
+            }
+        
+        return {"type": "json_object"}
