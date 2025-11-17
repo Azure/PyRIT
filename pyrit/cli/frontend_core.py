@@ -19,7 +19,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 
 try:
     import termcolor  # type: ignore
@@ -434,6 +434,19 @@ def validate_integer(value: str, *, name: str = "value", min_value: Optional[int
     Raises:
         ValueError: If value is not a valid integer or violates constraints.
     """
+    # Reject boolean types explicitly (int(True) == 1, int(False) == 0)
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be an integer string, got boolean: {value}")
+
+    # Ensure value is a string
+    if not isinstance(value, str):
+        raise ValueError(f"{name} must be a string, got {type(value).__name__}: {value}")
+
+    # Strip whitespace and validate it looks like an integer
+    value = value.strip()
+    if not value:
+        raise ValueError(f"{name} cannot be empty")
+
     try:
         int_value = int(value)
     except (ValueError, TypeError) as e:
@@ -445,7 +458,7 @@ def validate_integer(value: str, *, name: str = "value", min_value: Optional[int
     return int_value
 
 
-def _argparse_validator(validator_func):
+def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], Any]:
     """
     Decorator to convert ValueError to argparse.ArgumentTypeError.
 
