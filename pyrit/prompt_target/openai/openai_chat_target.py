@@ -28,6 +28,32 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
     This class facilitates multimodal (image and text) input and text output generation
 
     This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
+
+    Args:
+        api_key (str): The api key for the OpenAI API
+        endpoint (str): The endpoint for the OpenAI API
+        model_name (str): The model name for the OpenAI API
+        deployment_name (str): For Azure, the deployment name
+        temperature (float): The temperature for the completion
+        max_completion_tokens (int): The maximum number of tokens to be returned by the model.
+            The total length of input tokens and generated tokens is limited by
+            the model's context length.
+        max_tokens (int): Deprecated. Use max_completion_tokens instead
+        top_p (float): The nucleus sampling probability.
+        frequency_penalty (float): Number between -2.0 and 2.0. Positive values
+            penalize new tokens based on their existing frequency in the text so far,
+            decreasing the model's likelihood to repeat the same line verbatim.
+        presence_penalty (float): Number between -2.0 and 2.0. Positive values
+            penalize new tokens based on whether they appear in the text so far,
+            increasing the model's likelihood to talk about new topics.
+        seed (int): This feature is in Beta. If specified, our system will make a best effort to sample
+            deterministically, such that repeated requests with the same seed
+            and parameters should return the same result.
+        n (int): How many chat completion choices to generate for each input message.
+            Note that you will be charged based on the number of generated tokens across all
+            of the choices. Keep n as 1 to minimize costs.
+        extra_body_parameters (dict): Additional parameters to send in the request body
+
     """
 
     def __init__(
@@ -56,8 +82,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-10-21".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -102,10 +126,13 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             json.JSONDecodeError: If the response from the target is not valid JSON.
             Exception: If the request fails for any other reason.
         """
-        super().__init__(temperature=temperature, top_p=top_p, **kwargs)
+        super().__init__(temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs)
 
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
+
+        chat_url_patterns = [r"/chat/completions"]
+        self._warn_if_irregular_endpoint(chat_url_patterns)
 
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
@@ -275,19 +302,18 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
         return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        """Validates the structure and content of a prompt request for compatibility of this target.
+    def _validate_request(self, *, message: Message) -> None:
+        """Validates the structure and content of a message for compatibility of this target.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Raises:
-            ValueError: If more than two message pieces are provided.
             ValueError: If any of the message pieces have a data type other than 'text' or 'image_path'.
         """
 
         converted_prompt_data_types = [
-            message_piece.converted_value_data_type for message_piece in prompt_request.message_pieces
+            message_piece.converted_value_data_type for message_piece in message.message_pieces
         ]
 
         # Some models may not support all of these

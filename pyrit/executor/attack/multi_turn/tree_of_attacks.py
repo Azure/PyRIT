@@ -7,10 +7,11 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, overload
+from typing import Dict, List, Optional, cast, overload
 
 from treelib.tree import Tree
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.exceptions import (
@@ -34,8 +35,8 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -402,12 +403,12 @@ class _TreeOfAttacksNode:
         Side Effects:
             - Sets self.last_response to the target's response text
         """
-        # Create seed prompt group from the generated prompt
-        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
+        # Create seed group from the generated prompt
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
 
         # Send prompt with configured converters
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
             conversation_id=self.objective_target_conversation_id,
@@ -791,13 +792,11 @@ class _TreeOfAttacksNode:
         """
         # Configure for JSON response
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_prompt_group = SeedPromptGroup(
-            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
-        )
+        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
 
         # Send and get response
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             conversation_id=self.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             labels=self._memory_labels,
@@ -931,10 +930,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
     )
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        objective_target: PromptChatTarget,
+        objective_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_adversarial_config: AttackAdversarialConfig,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
@@ -979,7 +979,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             raise ValueError("The batch size must be at least 1.")
 
         # Initialize base class
-        super().__init__(logger=logger, context_type=TAPAttackContext)
+        super().__init__(objective_target=objective_target, logger=logger, context_type=TAPAttackContext)
 
         self._memory = CentralMemory.get_memory_instance()
 
@@ -992,8 +992,6 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         self._on_topic_checking_enabled = on_topic_checking_enabled
         self._desired_response_prefix = desired_response_prefix
         self._batch_size = batch_size
-
-        self._objective_target = objective_target
 
         # Initialize adversarial configuration
         self._adversarial_chat = attack_adversarial_config.target
@@ -1061,6 +1059,20 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         # Load initial seed prompt
         self._adversarial_chat_seed_prompt = SeedPrompt.from_yaml_file(
             TreeOfAttacksWithPruningAttack.DEFAULT_ADVERSARIAL_SEED_PROMPT_PATH
+        )
+
+    def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
+        """
+        Get the attack scoring configuration used by this strategy.
+
+        Returns:
+            Optional[AttackScoringConfig]: The scoring configuration with objective scorer,
+                auxiliary scorers, and threshold.
+        """
+        return AttackScoringConfig(
+            objective_scorer=self._objective_scorer,
+            auxiliary_scorers=self._auxiliary_scorers,
+            successful_objective_threshold=self._successful_objective_threshold,
         )
 
     def _validate_context(self, *, context: TAPAttackContext) -> None:
@@ -1442,7 +1454,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
                 generate adversarial prompts and evaluate responses.
         """
         node = _TreeOfAttacksNode(
-            objective_target=self._objective_target,
+            objective_target=cast(PromptChatTarget, self._objective_target),
             adversarial_chat=self._adversarial_chat,
             adversarial_chat_seed_prompt=self._adversarial_chat_seed_prompt,
             adversarial_chat_system_seed_prompt=self._adversarial_chat_system_seed_prompt,

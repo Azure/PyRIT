@@ -7,9 +7,9 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fpdf import FPDF
-from fpdf.enums import XPos, YPos
 from pypdf import PageObject, PdfReader
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 from pyrit.models import DataTypeSerializer, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PDFConverter
@@ -45,7 +45,7 @@ def pdf_converter_with_template(
 @pytest.fixture
 def pdf_converter_nonexistent_template():
     """A PDFConverter with a non-existent template path."""
-    return PDFConverter(prompt_template="nonexistent_prompt_template.txt")
+    return PDFConverter(prompt_template=None)
 
 
 @pytest.mark.asyncio
@@ -166,16 +166,16 @@ def mock_pdf_path(tmp_path):
     """Create and return the path for a mock PDF with multiple pages."""
     pdf_path = tmp_path / "mock_test.pdf"
 
-    # Create a multi-page PDF
-    pdf = FPDF(format="A4")
-    pdf.add_page()
-    pdf.set_font("Helvetica", size=12)
-    pdf.cell(200, 10, text="Page 1 content", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="L")
-    pdf.add_page()
-    pdf.cell(200, 10, text="Page 2 content", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="L")
-
+    # Create a multi-page PDF using ReportLab
     pdf_bytes = BytesIO()
-    pdf.output(pdf_bytes)
+    c = canvas.Canvas(pdf_bytes, pagesize=A4)
+    width, height = A4
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height - 50, "Page 1 content")
+    c.showPage()
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height - 50, "Page 2 content")
+    c.save()
     pdf_bytes.seek(0)
 
     with open(pdf_path, "wb") as pdf_file:
@@ -344,12 +344,12 @@ def test_inject_text_y_exceeds_page_height(dummy_page):
 
 def test_pdf_reader_repeated_access():
     # Create a simple PDF in memory
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Helvetica", size=12)
-    pdf.cell(200, 10, text="Test Content", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf_bytes = BytesIO()
-    pdf.output(pdf_bytes)
+    c = canvas.Canvas(pdf_bytes, pagesize=A4)
+    width, height = A4
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height - 50, "Test Content")
+    c.save()
     pdf_bytes.seek(0)
 
     # Use PdfReader to read the PDF

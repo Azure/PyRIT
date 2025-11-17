@@ -5,6 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
@@ -19,8 +20,8 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -48,10 +49,11 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     and multiple scorer types for comprehensive evaluation.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -71,10 +73,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(logger=logger, context_type=SingleTurnAttackContext)
-
-        # Store the objective target
-        self._objective_target = objective_target
+        super().__init__(objective_target=objective_target, logger=logger, context_type=SingleTurnAttackContext)
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -102,6 +101,18 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             raise ValueError("max_attempts_on_failure must be a non-negative integer")
 
         self._max_attempts_on_failure = max_attempts_on_failure
+
+    def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
+        """
+        Get the attack scoring configuration used by this strategy.
+
+        Returns:
+            Optional[AttackScoringConfig]: The scoring configuration with objective and auxiliary scorers.
+        """
+        return AttackScoringConfig(
+            objective_scorer=self._objective_scorer,
+            auxiliary_scorers=self._auxiliary_scorers,
+        )
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -253,33 +264,33 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Nothing to be done here, no-op
         pass
 
-    def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedPromptGroup:
+    def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedGroup:
         """
-        Prepare the seed prompt group for the attack.
+        Prepare the seed group for the attack.
 
-        If a seed_prompt_group is provided in the context, it will be used directly.
-        Otherwise, creates a new SeedPromptGroup with the objective as a text prompt.
+        If a seed_group is provided in the context, it will be used directly.
+        Otherwise, creates a new SeedGroup with the objective as a text prompt.
 
         Args:
             context (SingleTurnAttackContext): The attack context containing the objective
-                and optionally a pre-configured seed_prompt_group.
+                and optionally a pre-configured seed_group.
 
         Returns:
-            SeedPromptGroup: The seed prompt group to be used in the attack.
+            SeedGroup: The seed group to be used in the attack.
         """
-        if context.seed_prompt_group:
-            return context.seed_prompt_group
+        if context.seed_group:
+            return context.seed_group
 
-        return SeedPromptGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
+        return SeedGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
 
     async def _send_prompt_to_objective_target_async(
-        self, *, prompt_group: SeedPromptGroup, context: SingleTurnAttackContext
+        self, *, prompt_group: SeedGroup, context: SingleTurnAttackContext
     ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
         Args:
-            prompt_group (SeedPromptGroup): The seed prompt group to send.
+            prompt_group (SeedGroup): The seed group to send.
             context (SingleTurnAttackContext): The attack context containing parameters and labels.
 
         Returns:
@@ -288,7 +299,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         """
 
         return await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=prompt_group,
+            seed_group=prompt_group,
             target=self._objective_target,
             conversation_id=context.conversation_id,
             request_converter_configurations=self._request_converters,

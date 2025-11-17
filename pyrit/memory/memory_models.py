@@ -11,6 +11,7 @@ from sqlalchemy import (
     ARRAY,
     INTEGER,
     JSON,
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -37,7 +38,11 @@ from pyrit.models import (
     ConversationType,
     MessagePiece,
     PromptDataType,
+    ScenarioIdentifier,
+    ScenarioResult,
     Score,
+    Seed,
+    SeedObjective,
     SeedPrompt,
 )
 
@@ -216,7 +221,8 @@ class EmbeddingDataEntry(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite"))  # type: ignore
+    # Use ARRAY for PostgreSQL, JSON for SQLite and MSSQL (SQL Server/Azure SQL)
+    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite").with_variant(JSON, "mssql"))  # type: ignore
     embedding_type_name = mapped_column(String)
 
     def __str__(self):
@@ -254,13 +260,34 @@ class ScoreEntry(Base):  # type: ignore
         self.score_category = entry.score_category
         self.score_rationale = entry.score_rationale
         self.score_metadata = entry.score_metadata
-        self.scorer_class_identifier = entry.scorer_class_identifier
+        self.scorer_class_identifier = self._normalize_scorer_identifier(entry.scorer_class_identifier)
         self.prompt_request_response_id = entry.message_piece_id if entry.message_piece_id else None
         self.timestamp = entry.timestamp
         # Store in both columns for backward compatibility
         # New code should only read from objective
         self.task = entry.objective
         self.objective = entry.objective
+
+    @staticmethod
+    def _normalize_scorer_identifier(identifier: Dict) -> Dict[str, str]:
+        """
+        Normalize scorer identifier to ensure all values are strings for database storage.
+        Handles nested sub_identifiers by converting them to JSON strings.
+
+        Args:
+            identifier: The scorer class identifier dictionary.
+
+        Returns:
+            Dict[str, str]: Normalized identifier with all string values.
+        """
+        normalized = {}
+        for key, value in identifier.items():
+            if key == "sub_identifier" and value is not None:
+                # Convert dict or list of dicts to JSON string
+                normalized[key] = json.dumps(value)
+            else:
+                normalized[key] = str(value) if value is not None else None
+        return normalized
 
     def get_score(self) -> Score:
         return Score(
@@ -271,11 +298,34 @@ class ScoreEntry(Base):  # type: ignore
             score_category=self.score_category,
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,
-            scorer_class_identifier=self.scorer_class_identifier,
+            scorer_class_identifier=self._denormalize_scorer_identifier(self.scorer_class_identifier),
             message_piece_id=self.prompt_request_response_id,
             timestamp=self.timestamp,
             objective=self.objective,
         )
+
+    @staticmethod
+    def _denormalize_scorer_identifier(identifier: Dict[str, str]) -> Dict:
+        """
+        Denormalize scorer identifier when reading from database.
+        Parses JSON strings back into dicts/lists for sub_identifier field.
+
+        Args:
+            identifier: The normalized identifier from the database.
+
+        Returns:
+            Dict: Denormalized identifier with proper nested structures.
+        """
+        denormalized = dict(identifier)
+        if "sub_identifier" in denormalized and denormalized["sub_identifier"] is not None:
+            try:
+                # Try to parse as JSON if it's a string
+                if isinstance(denormalized["sub_identifier"], str):
+                    denormalized["sub_identifier"] = json.loads(denormalized["sub_identifier"])
+            except (json.JSONDecodeError, TypeError):
+                # If it fails to parse, keep as-is (backward compatibility)
+                pass
+        return denormalized
 
     def to_dict(self) -> dict:
         return {
@@ -308,7 +358,7 @@ class EmbeddingMessageWithSimilarity(BaseModel):
     score: float = 0.0
 
 
-class SeedPromptEntry(Base):
+class SeedEntry(Base):
     """
     Represents the raw prompt or prompt template data as found in open datasets.
 
@@ -342,6 +392,7 @@ class SeedPromptEntry(Base):
         sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
         role (str): The role of the prompt (e.g., user, system, assistant).
+        is_objective (bool): Whether this prompt is used as an objective.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -367,12 +418,15 @@ class SeedPromptEntry(Base):
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
+    is_objective: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
-    def __init__(self, *, entry: SeedPrompt):
+    def __init__(self, *, entry: Seed):
+        is_objective = isinstance(entry, SeedObjective)
+
         self.id = entry.id
         self.value = entry.value
         self.value_sha256 = entry.value_sha256
-        self.data_type = entry.data_type
+        self.data_type = entry.data_type  # type: ignore
         self.name = entry.name
         self.dataset_name = entry.dataset_name
         self.harm_categories = entry.harm_categories  # type: ignore
@@ -382,13 +436,32 @@ class SeedPromptEntry(Base):
         self.source = entry.source
         self.date_added = entry.date_added
         self.added_by = entry.added_by
-        self.prompt_metadata = entry.metadata
-        self.parameters = entry.parameters  # type: ignore
+        self.prompt_metadata = entry.metadata  # type: ignore
+        self.parameters = None if is_objective else entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
-        self.sequence = entry.sequence
-        self.role = entry.role
+        self.sequence = None if is_objective else entry.sequence  # type: ignore
+        self.role = None if is_objective else entry.role  # type: ignore
+        self.is_objective = is_objective
 
-    def get_seed_prompt(self) -> SeedPrompt:
+    def get_seed(self) -> Seed:
+        if self.is_objective:
+            return SeedObjective(
+                id=self.id,
+                value=self.value,
+                value_sha256=self.value_sha256,
+                data_type=self.data_type,
+                name=self.name,
+                dataset_name=self.dataset_name,
+                harm_categories=self.harm_categories,
+                description=self.description,
+                authors=self.authors,
+                groups=self.groups,
+                source=self.source,
+                date_added=self.date_added,
+                added_by=self.added_by,
+                metadata=self.prompt_metadata,
+                prompt_group_id=self.prompt_group_id,
+            )
         return SeedPrompt(
             id=self.id,
             value=self.value,
@@ -581,3 +654,131 @@ class AttackResultEntry(Base):
             related_conversations=related_conversations,
             metadata=self.attack_metadata or {},
         )
+
+
+class ScenarioResultEntry(Base):
+    """
+    Represents a scenario execution result in the database.
+
+    This class stores the high-level metadata and results of a PyRIT scenario execution,
+    including references to all attack results generated during the scenario run. The actual
+    AttackResult objects are stored separately in AttackResultEntries and can be retrieved
+    using the conversation IDs stored here.
+
+    Attributes:
+        __tablename__ (str): The name of the database table ("ScenarioResultEntries").
+        __table_args__ (dict): Additional arguments for the database table.
+        id (Uuid): Unique identifier for this scenario result entry.
+        scenario_name (str): Name of the scenario that was executed.
+        scenario_description (str): Optional detailed description of the scenario.
+        scenario_version (int): Version number of the scenario definition (default: 1).
+        pyrit_version (str): Version of PyRIT framework used during scenario execution.
+        scenario_init_data (dict): Optional initialization parameters used to configure the scenario.
+        objective_target_identifier (dict): Identifier for the target being evaluated in the scenario.
+        objective_scorer_identifier (dict): Optional identifier for the scorer used to evaluate results.
+        scenario_run_state (Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]): Current execution state
+            of the scenario.
+        attack_results_json (str): JSON-serialized dictionary mapping attack names to conversation IDs.
+            Format: {"attack_name": ["conversation_id1", "conversation_id2", ...]}.
+            The full AttackResult objects are stored in AttackResultEntries and can be queried by conversation_id.
+        labels (dict): Optional key-value pairs for categorization and filtering.
+        number_tries (int): Number of times run_async has been called on this scenario (incremented at each run).
+        completion_time (DateTime): When the scenario execution completed.
+        timestamp (DateTime): When this database entry was created.
+
+    Methods:
+        get_scenario_result(): Returns a ScenarioResult object with scenario metadata.
+            Note: attack_results will be empty. Use memory_interface.get_scenario_results()
+            to automatically populate AttackResults from the database.
+        get_conversation_ids_by_attack_name(): Returns the mapping of attack names to conversation IDs.
+        __str__(): Returns a human-readable string representation.
+    """
+
+    __tablename__ = "ScenarioResultEntries"
+    __table_args__ = {"extend_existing": True}
+    id = mapped_column(CustomUUID, nullable=False, primary_key=True)
+    scenario_name = mapped_column(String, nullable=False)
+    scenario_description = mapped_column(Unicode, nullable=True)
+    scenario_version = mapped_column(INTEGER, nullable=False, default=1)
+    pyrit_version = mapped_column(String, nullable=False)
+    scenario_init_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    objective_target_identifier: Mapped[dict] = mapped_column(JSON, nullable=False)
+    objective_scorer_identifier: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    scenario_run_state: Mapped[Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]] = mapped_column(
+        String, nullable=False, default="CREATED"
+    )
+    attack_results_json: Mapped[str] = mapped_column(Unicode, nullable=False)
+    labels: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    number_tries: Mapped[int] = mapped_column(INTEGER, nullable=False, default=0)
+    completion_time = mapped_column(DateTime, nullable=False)
+    timestamp = mapped_column(DateTime, nullable=False)
+
+    def __init__(self, *, entry: ScenarioResult):
+        self.id = entry.id
+        self.scenario_name = entry.scenario_identifier.name
+        self.scenario_description = entry.scenario_identifier.description
+        self.scenario_version = entry.scenario_identifier.version
+        self.pyrit_version = entry.scenario_identifier.pyrit_version
+        self.scenario_init_data = entry.scenario_identifier.init_data
+        self.objective_target_identifier = entry.objective_target_identifier
+        self.objective_scorer_identifier = entry.objective_scorer_identifier
+        self.scenario_run_state = entry.scenario_run_state  # type: ignore
+        self.labels = entry.labels
+        self.number_tries = entry.number_tries
+        self.completion_time = entry.completion_time
+
+        # Serialize attack_results: dict[str, List[AttackResult]] -> dict[str, List[str]]
+        # Store only conversation_ids - the full AttackResults can be queried from the database
+        serialized_attack_results = {}
+        for attack_name, results in entry.attack_results.items():
+            serialized_attack_results[attack_name] = [result.conversation_id for result in results]
+        self.attack_results_json = json.dumps(serialized_attack_results)
+
+        self.timestamp = datetime.now()
+
+    def get_scenario_result(self) -> ScenarioResult:
+        """
+        Convert the database entry back to a ScenarioResult object.
+
+        Note: This returns a ScenarioResult with empty attack_results.
+        Use memory_interface.get_scenario_results() to automatically populate
+        the full AttackResults by querying the database.
+
+        Returns:
+            ScenarioResult object with scenario metadata but empty attack_results
+        """
+        # Recreate ScenarioIdentifier with the stored pyrit_version
+        scenario_identifier = ScenarioIdentifier(
+            name=self.scenario_name,
+            description=self.scenario_description or "",
+            scenario_version=self.scenario_version,
+            init_data=self.scenario_init_data,
+            pyrit_version=self.pyrit_version,
+        )
+
+        # Return empty attack_results - will be populated by memory_interface
+        attack_results: dict[str, list[AttackResult]] = {}
+
+        return ScenarioResult(
+            id=self.id,
+            scenario_identifier=scenario_identifier,
+            objective_target_identifier=self.objective_target_identifier,
+            attack_results=attack_results,
+            objective_scorer_identifier=self.objective_scorer_identifier,
+            scenario_run_state=self.scenario_run_state,
+            labels=self.labels,
+            number_tries=self.number_tries,
+            completion_time=self.completion_time,
+        )
+
+    def get_conversation_ids_by_attack_name(self) -> dict[str, list[str]]:
+        """
+        Get the conversation IDs grouped by attack name.
+
+        Returns:
+            Dictionary mapping attack names to lists of conversation IDs
+        """
+        return json.loads(self.attack_results_json)
+
+    def __str__(self):
+        return f"ScenarioResultEntry: {self.scenario_name} (version {self.scenario_version})"

@@ -9,6 +9,7 @@ import logging
 import pathlib
 from typing import Optional
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
@@ -28,12 +29,19 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
     https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/toxic_sentence_generator.py
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None):
+    @apply_defaults
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
+        prompt_template: Optional[SeedPrompt] = None,
+    ):
         """
         Initializes the converter with a specific target and template.
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
+                Can be omitted if a default has been configured via PyRIT initialization.
             prompt_template (SeedPrompt): The seed prompt template to use. If not provided,
                                           defaults to the ``toxic_sentence_generator.yaml``.
         """

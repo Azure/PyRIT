@@ -4,8 +4,8 @@
 import json
 import logging
 import uuid
-from typing import Optional
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -32,14 +32,24 @@ class FuzzerConverter(PromptConverter):
     GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None):
+    @apply_defaults
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
+        prompt_template: SeedPrompt,
+    ):
         """
         Initializes the converter with the specified chat target and prompt template.
 
         Args:
             converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt.
-            prompt_template (SeedPrompt, Optional): Template to be used instead of the default system prompt with
+                Can be omitted if a default has been configured via PyRIT initialization.
+            prompt_template (SeedPrompt): Template to be used instead of the default system prompt with
                 instructions for the chat target.
+
+        Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
         """
         self.converter_target = converter_target
         self.system_prompt = prompt_template.value
@@ -99,8 +109,8 @@ class FuzzerConverter(PromptConverter):
 
     @pyrit_json_retry
     async def send_prompt_async(self, request):
-        """Sends the prompt request to the converter target and processes the response."""
-        response = await self.converter_target.send_prompt_async(prompt_request=request)
+        """Sends the message to the converter target and processes the response."""
+        response = await self.converter_target.send_prompt_async(message=request)
 
         response_msg = response.get_value()
         response_msg = remove_markdown_json(response_msg)

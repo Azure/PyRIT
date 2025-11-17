@@ -12,7 +12,8 @@ from typing import List, Optional, Union, overload
 from pyrit.common.logger import logger
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import AttackContext, AttackStrategy
-from pyrit.models import AttackResult, Message, SeedPromptGroup
+from pyrit.models import AttackResult, Message, SeedGroup
+from pyrit.prompt_target import PromptTarget
 
 
 @dataclass
@@ -23,7 +24,7 @@ class SingleTurnAttackContext(AttackContext):
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # Group of seed prompts from which single-turn prompts will be drawn
-    seed_prompt_group: Optional[SeedPromptGroup] = None
+    seed_group: Optional[SeedGroup] = None
 
     # System prompt for chat-based targets
     system_prompt: Optional[str] = None
@@ -39,15 +40,22 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
     of interaction with the target model.
     """
 
-    def __init__(self, *, context_type: type[SingleTurnAttackContext], logger: logging.Logger = logger):
+    def __init__(
+        self,
+        *,
+        objective_target: PromptTarget,
+        context_type: type[SingleTurnAttackContext],
+        logger: logging.Logger = logger,
+    ):
         """
         The base class for single-turn attack strategies.
 
         Args:
+            objective_target (PromptTarget): The target system to attack.
             context_type (type[SingleTurnAttackContext]): The type of context this strategy will use
             logger (logging.Logger): Logger instance for logging events and messages
         """
-        super().__init__(context_type=context_type, logger=logger)
+        super().__init__(objective_target=objective_target, context_type=context_type, logger=logger)
 
     @overload
     async def execute_async(
@@ -55,7 +63,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         *,
         objective: str,
         prepended_conversation: Optional[List[Message]] = None,
-        seed_prompt_group: Optional[SeedPromptGroup] = None,
+        seed_group: Optional[SeedGroup] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
     ) -> AttackResult:
@@ -65,7 +73,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         Args:
             objective (str): The objective of the attack.
             prepended_conversation (Optional[List[Message]]): Conversation to prepend.
-            seed_prompt_group (Optional[SeedPromptGroup]): Group of seed prompts for the attack.
+            seed_group (Optional[SeedGroup]): Group of seed prompts for the attack.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.
 
@@ -89,8 +97,20 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         """
 
         # Validate parameters before creating context
-        seed_prompt_group = get_kwarg_param(
-            kwargs=kwargs, param_name="seed_prompt_group", expected_type=SeedPromptGroup, required=False
-        )
+        seed_group = get_kwarg_param(kwargs=kwargs, param_name="seed_group", expected_type=SeedGroup, required=False)
+        objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str, required=False)
+
+        # Because objective is a required parameter for single-turn attacks, SeedGroups that have objectives
+        # are invalid
+        if seed_group and not seed_group.is_single_turn():
+            raise ValueError(
+                "Attack can only specify one objective per turn. Objective parameter '%s' and seed"
+                " prompt group objective '%s' are both defined",
+                objective,
+                seed_group.objective.value,
+            )
+
         system_prompt = get_kwarg_param(kwargs=kwargs, param_name="system_prompt", expected_type=str, required=False)
-        return await super().execute_async(**kwargs, seed_prompt_group=seed_prompt_group, system_prompt=system_prompt)
+        return await super().execute_async(
+            **kwargs, seed_group=seed_group, system_prompt=system_prompt, objective=objective
+        )

@@ -13,7 +13,7 @@ from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     Message,
     MessagePiece,
-    SeedPromptGroup,
+    SeedGroup,
     construct_response_from_request,
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
@@ -42,7 +42,7 @@ class PromptNormalizer:
     async def send_prompt_async(
         self,
         *,
-        seed_prompt_group: SeedPromptGroup,
+        seed_group: SeedGroup,
         target: PromptTarget,
         conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
@@ -54,7 +54,7 @@ class PromptNormalizer:
         Sends a single request to a target.
 
         Args:
-            seed_prompt_group (SeedPromptGroup): The seed prompt group to be sent.
+            seed_group (SeedGroup): The seed group to be sent.
             target (PromptTarget): The target to which the prompt is sent.
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
             request_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
@@ -67,17 +67,17 @@ class PromptNormalizer:
 
             Raises:
             Exception: If an error occurs during the request processing.
-            ValueError: If the prompts in the SeedPromptGroup are not part of the same sequence.
+            ValueError: If the prompts in the SeedGroup are not part of the same sequence.
 
         Returns:
             Message: The response received from the target.
         """
-        # Validates that the SeedPrompts in the SeedPromptGroup are part of the same sequence
-        if len(set(prompt.sequence for prompt in seed_prompt_group.prompts)) > 1:
-            raise ValueError("All SeedPrompts in the SeedPromptGroup must have the same sequence.")
+        # Validates that the SeedPrompts in the SeedGroup are part of the same sequence
+        if len(set(prompt.sequence for prompt in seed_group.prompts)) > 1:
+            raise ValueError("All SeedPrompts in the SeedGroup must have the same sequence.")
 
         request = await self._build_message(
-            seed_prompt_group=seed_prompt_group,
+            seed_group=seed_group,
             conversation_id=conversation_id,
             request_converter_configurations=request_converter_configurations,
             target=target,
@@ -93,7 +93,7 @@ class PromptNormalizer:
         response = None
 
         try:
-            response = await target.send_prompt_async(prompt_request=request)
+            response = await target.send_prompt_async(message=request)
             self._memory.add_message_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
@@ -158,14 +158,14 @@ class PromptNormalizer:
         """
 
         batch_items: List[List[Any]] = [
-            [request.seed_prompt_group for request in requests],
+            [request.seed_group for request in requests],
             [request.request_converter_configurations for request in requests],
             [request.response_converter_configurations for request in requests],
             [request.conversation_id for request in requests],
         ]
 
         batch_item_keys = [
-            "seed_prompt_group",
+            "seed_group",
             "request_converter_configurations",
             "response_converter_configurations",
             "conversation_id",
@@ -270,16 +270,16 @@ class PromptNormalizer:
 
         self._skip_value_type = skip_value_type
 
-    def _should_skip_based_on_skip_criteria(self, prompt_request: Message) -> bool:
+    def _should_skip_based_on_skip_criteria(self, message: Message) -> bool:
         """
-        Filters out prompts from prompt_request_list that match the skip criteria.
+        Filters out prompts from message_list that match the skip criteria.
 
-        Every message_piece of the prompt_request needs to have matching sha256 to skip.
+        Every message_piece of the message needs to have matching sha256 to skip.
         """
         if not self._skip_criteria:
             return False
 
-        for user_prompt in prompt_request.message_pieces:
+        for user_prompt in message.message_pieces:
             if self._skip_value_type == "converted":
                 if user_prompt.converted_value_sha256 not in self._converted_sha256_prompts_to_skip:
                     return False
@@ -298,7 +298,7 @@ class PromptNormalizer:
     async def _build_message(
         self,
         *,
-        seed_prompt_group: SeedPromptGroup,
+        seed_group: SeedGroup,
         conversation_id: str,
         request_converter_configurations: list[PromptConverterConfiguration],
         target: PromptTarget,
@@ -311,7 +311,7 @@ class PromptNormalizer:
         Applies parameters and converters to the prompt text and puts all the pieces together.
 
         Args:
-            seed_prompt_group (SeedPromptGroup): The group of seed prompts to be used.
+            seed_group (SeedGroup): The group of seed prompts to be used.
             conversation_id (str): The ID of the conversation.
             request_converter_configurations (list[PromptConverterConfiguration]): List of configurations for
                 request converters.
@@ -327,7 +327,7 @@ class PromptNormalizer:
 
         # All message pieces within Message needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
-        for seed_prompt in seed_prompt_group.prompts:
+        for seed_prompt in seed_group.prompts:
             message_piece = MessagePiece(
                 role=seed_prompt.role,
                 original_value=seed_prompt.value,

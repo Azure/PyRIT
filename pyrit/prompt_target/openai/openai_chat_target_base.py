@@ -54,8 +54,6 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-10-21".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -95,33 +93,29 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
-        """Asynchronously sends a prompt request and handles the response within a managed conversation context.
+    async def send_prompt_async(self, *, message: Message) -> Message:
+        """Asynchronously sends a message and handles the response within a managed conversation context.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Returns:
             Message: The updated conversation entry with the response from the prompt target.
         """
 
-        self._validate_request(prompt_request=prompt_request)
+        self._validate_request(message=message)
         self.refresh_auth_headers()
 
-        message_piece: MessagePiece = prompt_request.message_pieces[0]
+        message_piece: MessagePiece = message.message_pieces[0]
 
         is_json_response = self.is_response_format_json(message_piece)
 
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
-        conversation.append(prompt_request)
+        conversation.append(message)
 
-        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
+        logger.info(f"Sending the following prompt to the prompt target: {message}")
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
-
-        params = {}
-        if self._api_version is not None:
-            params["api-version"] = self._api_version
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
@@ -129,7 +123,6 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
                 method="POST",
                 headers=self._headers,
                 request_body=body,
-                params=params,
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:

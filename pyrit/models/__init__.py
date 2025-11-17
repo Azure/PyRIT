@@ -13,6 +13,7 @@ from pyrit.models.conversation_reference import ConversationReference, Conversat
 
 from pyrit.models.attack_result import AttackResult, AttackOutcome, AttackResultT
 from pyrit.models.strategy_result import StrategyResult, StrategyResultT
+from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
     AudioPathDataTypeSerializer,
@@ -33,9 +34,11 @@ from pyrit.models.message import (
 )
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
+from pyrit.models.seed import Seed
+from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_prompt_dataset import SeedPromptDataset
-from pyrit.models.seed_prompt_group import SeedPromptGroup
+from pyrit.models.seed_dataset import SeedDataset
+from pyrit.models.seed_group import SeedGroup
 from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
@@ -74,9 +77,13 @@ __all__ = [
     "QuestionChoice",
     "Score",
     "ScoreType",
+    "ScenarioIdentifier",
+    "ScenarioResult",
+    "Seed",
+    "SeedObjective",
     "SeedPrompt",
-    "SeedPromptDataset",
-    "SeedPromptGroup",
+    "SeedDataset",
+    "SeedGroup",
     "sort_message_pieces",
     "StorageIO",
     "StrategyResult",

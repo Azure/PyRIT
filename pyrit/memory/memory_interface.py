@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_, exists, func
+from sqlalchemy import MetaData, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
@@ -27,8 +27,9 @@ from pyrit.memory.memory_models import (
     Base,
     EmbeddingDataEntry,
     PromptMemoryEntry,
+    ScenarioResultEntry,
     ScoreEntry,
-    SeedPromptEntry,
+    SeedEntry,
 )
 from pyrit.models import (
     AttackResult,
@@ -36,10 +37,11 @@ from pyrit.models import (
     DataTypeSerializer,
     Message,
     MessagePiece,
+    ScenarioResult,
     Score,
-    SeedPrompt,
-    SeedPromptDataset,
-    SeedPromptGroup,
+    Seed,
+    SeedDataset,
+    SeedGroup,
     StorageIO,
     data_serializer_factory,
     group_conversation_message_pieces_by_sequence,
@@ -134,7 +136,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_seed_prompts_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
+    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
         Returns a condition for filtering seed prompt entries based on prompt metadata.
 
@@ -189,6 +191,39 @@ class MemoryInterface(abc.ABC):
         """Inserts multiple entries into the database."""
 
     @abc.abstractmethod
+    def get_session(self):  # type: ignore
+        """
+        Provides a SQLAlchemy session for transactional operations.
+
+        Returns:
+            Session: A SQLAlchemy session bound to the engine.
+        """
+
+    def _update_entry(self, entry: Base) -> None:  # type: ignore
+        """
+        Updates an existing entry in the Table using merge.
+
+        This method uses SQLAlchemy's merge operation which will:
+        - Update the existing record if the primary key matches
+        - Insert a new record if the primary key doesn't exist
+
+        Args:
+            entry: An instance of a SQLAlchemy model to be updated in the Table.
+        """
+        from contextlib import closing
+
+        from sqlalchemy.exc import SQLAlchemyError
+
+        with closing(self.get_session()) as session:
+            try:
+                session.merge(entry)
+                session.commit()
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error updating entry in the table: {e}")
+                raise
+
+    @abc.abstractmethod
     def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
@@ -196,6 +231,68 @@ class MemoryInterface(abc.ABC):
         Args:
             entries (Sequence[Base]): A list of SQLAlchemy model instances to be updated.
             update_fields (dict): A dictionary of field names and their new values.
+        """
+
+    @abc.abstractmethod
+    def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
+        """
+        Returns a database-specific condition for filtering AttackResults by targeted harm categories
+        in the associated PromptMemoryEntry records.
+
+        Args:
+            targeted_harm_categories: List of harm categories that must ALL be present.
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        Returns a database-specific condition for filtering AttackResults by labels
+        in the associated PromptMemoryEntry records.
+
+        Args:
+            labels: Dictionary of labels that must ALL be present.
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by labels.
+
+        Args:
+            labels: Dictionary of labels that must ALL be present.
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by target endpoint.
+
+        Args:
+            endpoint: Endpoint substring to search for (case-insensitive).
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
+        """
+        Returns a database-specific condition for filtering ScenarioResults by target model name.
+
+        Args:
+            model_name: Model name substring to search for (case-insensitive).
+
+        Returns:
+            Database-specific SQLAlchemy condition.
         """
 
     def add_scores_to_memory(self, *, scores: Sequence[Score]) -> None:
@@ -325,6 +422,22 @@ class MemoryInterface(abc.ABC):
         """
         message_pieces = self.get_message_pieces(conversation_id=conversation_id)
         return group_conversation_message_pieces_by_sequence(message_pieces=message_pieces)
+
+    def get_request_from_response(self, *, response: Message) -> Message:
+        """
+        Retrieves the request that produced the given response.
+        Args:
+            request (Message): The message object to match.
+        Returns:
+            Message: The corresponding message object.
+        """
+        if response.role != "assistant":
+            raise ValueError("The provided request is not a response (role must be 'assistant').")
+        if response.sequence < 1:
+            raise ValueError("The provided request does not have a preceding request (sequence < 1).")
+
+        conversation = self.get_conversation(conversation_id=response.conversation_id)
+        return conversation[response.sequence - 1]
 
     def get_message_pieces(
         self,
@@ -628,7 +741,7 @@ class MemoryInterface(abc.ABC):
         memory_entries = self.get_message_pieces(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
 
-    def get_seed_prompts(
+    def get_seeds(
         self,
         *,
         value: Optional[str] = None,
@@ -640,9 +753,10 @@ class MemoryInterface(abc.ABC):
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
+        is_objective: Optional[bool] = None,
         parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
-    ) -> Sequence[SeedPrompt]:
+    ) -> Sequence[Seed]:
         """
         Retrieves a list of seed prompts based on the specified filters.
 
@@ -661,8 +775,10 @@ class MemoryInterface(abc.ABC):
                 is "A. Jones", "Jones, Adam", etc. If None, all authors are considered.
             groups (Sequence[str]): A list of groups to filter by. If None, all groups are considered.
             source (str): The source to filter by. If None, all sources are considered.
+            is_objective (bool): Whether to filter by prompts that are used as objectives.
             parameters (Sequence[str]): A list of parameters to filter by. Specifying parameters effectively returns
                 prompt templates instead of prompts.
+            metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
 
         Returns:
             Sequence[SeedPrompt]: A list of prompts matching the criteria.
@@ -671,35 +787,37 @@ class MemoryInterface(abc.ABC):
 
         # Apply filters for non-list fields
         if value:
-            conditions.append(SeedPromptEntry.value.contains(value))
+            conditions.append(SeedEntry.value.contains(value))
         if value_sha256:
-            conditions.append(SeedPromptEntry.value_sha256.in_(value_sha256))
+            conditions.append(SeedEntry.value_sha256.in_(value_sha256))
         if dataset_name:
-            conditions.append(SeedPromptEntry.dataset_name == dataset_name)
+            conditions.append(SeedEntry.dataset_name == dataset_name)
         if data_types:
-            data_type_conditions = SeedPromptEntry.data_type.in_(data_types)
+            data_type_conditions = SeedEntry.data_type.in_(data_types)
             conditions.append(data_type_conditions)
         if added_by:
-            conditions.append(SeedPromptEntry.added_by == added_by)
+            conditions.append(SeedEntry.added_by == added_by)
         if source:
-            conditions.append(SeedPromptEntry.source == source)
+            conditions.append(SeedEntry.source == source)
+        if is_objective is not None:
+            conditions.append(SeedEntry.is_objective == is_objective)
 
-        self._add_list_conditions(field=SeedPromptEntry.harm_categories, values=harm_categories, conditions=conditions)
-        self._add_list_conditions(field=SeedPromptEntry.authors, values=authors, conditions=conditions)
-        self._add_list_conditions(field=SeedPromptEntry.groups, values=groups, conditions=conditions)
+        self._add_list_conditions(field=SeedEntry.harm_categories, values=harm_categories, conditions=conditions)
+        self._add_list_conditions(field=SeedEntry.authors, values=authors, conditions=conditions)
+        self._add_list_conditions(field=SeedEntry.groups, values=groups, conditions=conditions)
 
         if parameters:
-            self._add_list_conditions(field=SeedPromptEntry.parameters, values=parameters, conditions=conditions)
+            self._add_list_conditions(field=SeedEntry.parameters, values=parameters, conditions=conditions)
 
         if metadata:
-            conditions.append(self._get_seed_prompts_metadata_conditions(metadata=metadata))
+            conditions.append(self._get_seed_metadata_conditions(metadata=metadata))
 
         try:
-            memory_entries: Sequence[SeedPromptEntry] = self._query_entries(
-                SeedPromptEntry,
+            memory_entries: Sequence[SeedEntry] = self._query_entries(
+                SeedEntry,
                 conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
-            return [memory_entry.get_seed_prompt() for memory_entry in memory_entries]
+            return [memory_entry.get_seed() for memory_entry in memory_entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             return []
@@ -711,12 +829,12 @@ class MemoryInterface(abc.ABC):
             for value in values:
                 conditions.append(field.contains(value))
 
-    async def _serialize_seed_prompt_value(self, prompt: SeedPrompt) -> str:
+    async def _serialize_seed_value(self, prompt: Seed) -> str:
         """
         Serializes the value of a seed prompt based on its data type.
 
         Args:
-            prompt (SeedPrompt): The seed prompt to serialize. Must have a valid `data_type`.
+            prompt (Seed): The seed prompt to serialize. Must have a valid `data_type`.
 
         Returns:
             str: The serialized value for the prompt.
@@ -743,17 +861,15 @@ class MemoryInterface(abc.ABC):
             serialized_prompt_value = str(serializer.value)
         return serialized_prompt_value
 
-    async def add_seed_prompts_to_memory_async(
-        self, *, prompts: Sequence[SeedPrompt], added_by: Optional[str] = None
-    ) -> None:
+    async def add_seeds_to_memory_async(self, *, prompts: Sequence[Seed], added_by: Optional[str] = None) -> None:
         """
         Inserts a list of prompts into the memory storage.
 
         Args:
-            prompts (Sequence[SeedPrompt]): A list of prompts to insert.
+            prompts (Sequence[Seed]): A list of prompts to insert.
             added_by (str): The user who added the prompts.
         """
-        entries: MutableSequence[SeedPromptEntry] = []
+        entries: MutableSequence[SeedEntry] = []
         current_time = datetime.now()
         for prompt in prompts:
             if added_by:
@@ -768,27 +884,26 @@ class MemoryInterface(abc.ABC):
 
             prompt.set_encoding_metadata()
 
-            serialized_prompt_value = await self._serialize_seed_prompt_value(prompt)
-            if serialized_prompt_value:
+            # Handle serialization for image, audio & video SeedPrompts
+            if prompt.data_type in ["image_path", "audio_path", "video_path"]:
+                serialized_prompt_value = await self._serialize_seed_value(prompt=prompt)
                 prompt.value = serialized_prompt_value
 
             await prompt.set_sha256_value_async()
 
-            if not self.get_seed_prompts(value_sha256=[prompt.value_sha256], dataset_name=prompt.dataset_name):
-                entries.append(SeedPromptEntry(entry=prompt))
+            if not self.get_seeds(value_sha256=[prompt.value_sha256], dataset_name=prompt.dataset_name):
+                entries.append(SeedEntry(entry=prompt))
 
         self._insert_entries(entries=entries)
 
-    def get_seed_prompt_dataset_names(self) -> Sequence[str]:
+    def get_seed_dataset_names(self) -> Sequence[str]:
         """
-        Returns a list of all seed prompt dataset names in the memory storage.
+        Returns a list of all seed dataset names in the memory storage.
         """
         try:
-            entries: Sequence[SeedPromptEntry] = self._query_entries(
-                SeedPromptEntry,
-                conditions=and_(
-                    SeedPromptEntry.dataset_name is not None, SeedPromptEntry.dataset_name != ""  # type: ignore
-                ),
+            entries: Sequence[SeedEntry] = self._query_entries(
+                SeedEntry,
+                conditions=and_(SeedEntry.dataset_name is not None, SeedEntry.dataset_name != ""),  # type: ignore
                 distinct=True,
             )
             # Extract unique dataset names from the entries
@@ -801,14 +916,14 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             return []
 
-    async def add_seed_prompt_groups_to_memory(
-        self, *, prompt_groups: Sequence[SeedPromptGroup], added_by: Optional[str] = None
+    async def add_seed_groups_to_memory(
+        self, *, prompt_groups: Sequence[SeedGroup], added_by: Optional[str] = None
     ) -> None:
         """
-        Inserts a list of seed prompt groups into the memory storage.
+        Inserts a list of seed groups into the memory storage.
 
         Args:
-            prompt_groups (Sequence[SeedPromptGroup]): A list of prompt groups to insert.
+            prompt_groups (Sequence[SeedGroup]): A list of prompt groups to insert.
             added_by (str): The user who added the prompt groups.
 
         Raises:
@@ -819,7 +934,7 @@ class MemoryInterface(abc.ABC):
             raise ValueError("At least one prompt group must be provided.")
         # Validates the prompt group IDs and sets them if possible before leveraging
         # the add_seed_prompts_to_memory method.
-        all_prompts: MutableSequence[SeedPrompt] = []
+        all_prompts: MutableSequence[Seed] = []
         for prompt_group in prompt_groups:
             if not prompt_group.prompts:
                 raise ValueError("Prompt group must have at least one prompt.")
@@ -835,10 +950,14 @@ class MemoryInterface(abc.ABC):
             prompt_group_id = group_id_set.pop() or uuid.uuid4()
             for prompt in prompt_group.prompts:
                 prompt.prompt_group_id = prompt_group_id
-            all_prompts.extend(prompt_group.prompts)
-        await self.add_seed_prompts_to_memory_async(prompts=all_prompts, added_by=added_by)
 
-    def get_seed_prompt_groups(
+            all_prompts.extend(prompt_group.prompts)
+            if prompt_group.objective:
+                prompt_group.objective.prompt_group_id = prompt_group_id
+                all_prompts.append(prompt_group.objective)
+        await self.add_seeds_to_memory_async(prompts=all_prompts, added_by=added_by)
+
+    def get_seed_groups(
         self,
         *,
         value_sha256: Optional[Sequence[str]] = None,
@@ -849,24 +968,24 @@ class MemoryInterface(abc.ABC):
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
-    ) -> Sequence[SeedPromptGroup]:
+    ) -> Sequence[SeedGroup]:
         """Retrieves groups of seed prompts based on the provided filtering criteria
 
         Args:
-            value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed prompt groups by.
+            value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed groups by.
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
             data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
             harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
-            added_by (Optional[str], Optional): The user who added the seed prompt groups to filter by.
-            authors (Optional[Sequence[str]], Optional): List of authors to filter seed prompt groups by.
-            groups (Optional[Sequence[str]], Optional): List of groups to filter seed prompt groups by.
+            added_by (Optional[str], Optional): The user who added the seed groups to filter by.
+            authors (Optional[Sequence[str]], Optional): List of authors to filter seed groups by.
+            groups (Optional[Sequence[str]], Optional): List of groups to filter seed groups by.
             source (Optional[str], Optional): The source from which the seed prompts originated.
 
         Returns:
-            Sequence[SeedPromptGroup]: A list of `SeedPromptGroup` objects that match the filtering criteria.
+            Sequence[SeedGroup]: A list of `SeedGroup` objects that match the filtering criteria.
         """
-        seed_prompts = self.get_seed_prompts(
+        seeds = self.get_seeds(
             value_sha256=value_sha256,
             dataset_name=dataset_name,
             data_types=data_types,
@@ -876,8 +995,8 @@ class MemoryInterface(abc.ABC):
             groups=groups,
             source=source,
         )
-        seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
-        return seed_prompt_groups
+        seed_groups = SeedDataset.group_seed_prompts_by_prompt_group_id(seeds)
+        return seed_groups
 
     def export_conversations(
         self,
@@ -1001,38 +1120,15 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.outcome == outcome)
 
         if targeted_harm_categories:
-            # construct query to ensure ALL categories must be present in the SAME conversation
-            targeted_harm_categories_subquery = exists().where(
-                and_(
-                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
-                    # Exclude empty strings, None, and empty lists
-                    PromptMemoryEntry.targeted_harm_categories.isnot(None),
-                    PromptMemoryEntry.targeted_harm_categories != "",
-                    PromptMemoryEntry.targeted_harm_categories != "[]",
-                    and_(
-                        *[
-                            func.json_extract(PromptMemoryEntry.targeted_harm_categories, "$").like(f'%"{category}"%')
-                            for category in targeted_harm_categories
-                        ]
-                    ),
-                )
+            # Use database-specific JSON query method
+            conditions.append(
+                self._get_attack_result_harm_category_condition(targeted_harm_categories=targeted_harm_categories)
             )
-            conditions.append(targeted_harm_categories_subquery)
+
         if labels:
-            # ALL labels must be present in the SAME conversation
-            labels_subquery = exists().where(
-                and_(
-                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
-                    PromptMemoryEntry.labels.isnot(None),
-                    and_(
-                        *[
-                            func.json_extract(PromptMemoryEntry.labels, f"$.{key}") == value
-                            for key, value in labels.items()
-                        ]
-                    ),
-                )
-            )
-            conditions.append(labels_subquery)
+            # Use database-specific JSON query method
+            conditions.append(self._get_attack_result_label_condition(labels=labels))
+
         try:
             entries: Sequence[AttackResultEntry] = self._query_entries(
                 AttackResultEntry, conditions=and_(*conditions) if conditions else None
@@ -1040,6 +1136,237 @@ class MemoryInterface(abc.ABC):
             return [entry.get_attack_result() for entry in entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
+            return []
+
+    def add_scenario_results_to_memory(self, *, scenario_results: Sequence[ScenarioResult]) -> None:
+        """
+        Inserts a list of scenario results into the memory storage.
+
+        Args:
+            scenario_results: Sequence of ScenarioResult objects to store in the database.
+        """
+        self._insert_entries(
+            entries=[ScenarioResultEntry(entry=scenario_result) for scenario_result in scenario_results]
+        )
+
+    def add_attack_results_to_scenario(
+        self,
+        *,
+        scenario_result_id: str,
+        atomic_attack_name: str,
+        attack_results: Sequence[AttackResult],
+    ) -> bool:
+        """
+        Add attack results to an existing scenario result in memory.
+
+        This method efficiently updates a scenario result by appending new attack results
+        to a specific atomic attack name without requiring a full retrieve-modify-save cycle.
+
+        Args:
+            scenario_result_id (str): The ID of the scenario result to update.
+            atomic_attack_name (str): The name of the atomic attack to add results for.
+            attack_results (Sequence[AttackResult]): The attack results to add.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+
+        Example:
+            >>> memory.add_attack_results_to_scenario(
+            ...     scenario_result_id="123e4567-e89b-12d3-a456-426614174000",
+            ...     atomic_attack_name="base64_attack",
+            ...     attack_results=[result1, result2]
+            ... )
+        """
+        try:
+            # Retrieve current scenario result
+            scenario_results = self.get_scenario_results(scenario_result_ids=[scenario_result_id])
+
+            if not scenario_results:
+                logger.error(f"Scenario result with ID {scenario_result_id} not found in memory")
+                return False
+
+            scenario_result = scenario_results[0]
+
+            # Update attack results for this atomic attack name
+            if atomic_attack_name not in scenario_result.attack_results:
+                scenario_result.attack_results[atomic_attack_name] = []
+
+            scenario_result.attack_results[atomic_attack_name].extend(list(attack_results))
+
+            # Save updated result back to memory using update
+            entry = ScenarioResultEntry(entry=scenario_result)
+            self._update_entry(entry)
+
+            logger.info(
+                f"Added {len(attack_results)} attack results to scenario {scenario_result_id} "
+                f"for atomic attack '{atomic_attack_name}'"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to add attack results to scenario {scenario_result_id}: {str(e)}", exc_info=True)
+            return False
+
+    def update_scenario_run_state(self, *, scenario_result_id: str, scenario_run_state: str) -> bool:
+        """
+        Update the run state of an existing scenario result.
+
+        Args:
+            scenario_result_id (str): The ID of the scenario result to update.
+            scenario_run_state (str): The new state for the scenario
+                (e.g., "CREATED", "IN_PROGRESS", "COMPLETED", "FAILED").
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+
+        Example:
+            >>> memory.update_scenario_run_state(
+            ...     scenario_result_id="123e4567-e89b-12d3-a456-426614174000",
+            ...     scenario_run_state="COMPLETED"
+            ... )
+        """
+        try:
+            # Retrieve current scenario result
+            scenario_results = self.get_scenario_results(scenario_result_ids=[scenario_result_id])
+
+            if not scenario_results:
+                logger.error(f"Scenario result with ID {scenario_result_id} not found in memory")
+                return False
+
+            scenario_result = scenario_results[0]
+
+            # Update the scenario run state
+            scenario_result.scenario_run_state = scenario_run_state  # type: ignore
+
+            # Save updated result back to memory using update
+            entry = ScenarioResultEntry(entry=scenario_result)
+            self._update_entry(entry)
+
+            logger.info(f"Updated scenario {scenario_result_id} state to '{scenario_run_state}'")
+            return True
+
+        except Exception as e:
+            logger.error(
+                f"Failed to update scenario {scenario_result_id} state to '{scenario_run_state}': {str(e)}",
+                exc_info=True,
+            )
+            return False
+
+    def get_scenario_results(
+        self,
+        *,
+        scenario_result_ids: Optional[Sequence[str]] = None,
+        scenario_name: Optional[str] = None,
+        scenario_version: Optional[int] = None,
+        pyrit_version: Optional[str] = None,
+        added_after: Optional[datetime] = None,
+        added_before: Optional[datetime] = None,
+        labels: Optional[dict[str, str]] = None,
+        objective_target_endpoint: Optional[str] = None,
+        objective_target_model_name: Optional[str] = None,
+    ) -> Sequence[ScenarioResult]:
+        """
+        Retrieves a list of ScenarioResult objects based on the specified filters.
+
+        Args:
+            scenario_result_ids (Optional[Sequence[str]], optional): A list of scenario result IDs.
+                Defaults to None.
+            scenario_name (Optional[str], optional): The scenario name to filter by (substring match).
+                Defaults to None.
+            scenario_version (Optional[int], optional): The scenario version to filter by. Defaults to None.
+            pyrit_version (Optional[str], optional): The PyRIT version to filter by. Defaults to None.
+            added_after (Optional[datetime], optional): Filter for scenarios completed after this datetime.
+                Defaults to None.
+            before_time (Optional[datetime], optional): Filter for scenarios completed before this datetime.
+                Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter by.
+                Defaults to None.
+            objective_target_endpoint (Optional[str], optional): Filter for scenarios where the
+                objective_target_identifier has an endpoint attribute containing this value (case-insensitive).
+                Defaults to None.
+            objective_target_model_name (Optional[str], optional): Filter for scenarios where the
+                objective_target_identifier has a model_name attribute containing this value (case-insensitive).
+                Defaults to None.
+
+        Returns:
+            Sequence[ScenarioResult]: A list of ScenarioResult objects that match the specified filters.
+        """
+        conditions: list[ColumnElement[bool]] = []
+
+        if scenario_result_ids is not None:
+            if len(scenario_result_ids) == 0:
+                # Empty list means no results
+                return []
+            conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))
+
+        if scenario_name:
+            conditions.append(ScenarioResultEntry.scenario_name.contains(scenario_name))
+
+        if scenario_version is not None:
+            conditions.append(ScenarioResultEntry.scenario_version == scenario_version)
+
+        if pyrit_version:
+            conditions.append(ScenarioResultEntry.pyrit_version == pyrit_version)
+
+        if added_after:
+            conditions.append(ScenarioResultEntry.completion_time >= added_after)
+
+        if added_before:
+            conditions.append(ScenarioResultEntry.completion_time <= added_before)
+
+        if labels:
+            # Use database-specific JSON query method
+            conditions.append(self._get_scenario_result_label_condition(labels=labels))
+
+        if objective_target_endpoint:
+            # Use database-specific JSON query method
+            conditions.append(self._get_scenario_result_target_endpoint_condition(endpoint=objective_target_endpoint))
+
+        if objective_target_model_name:
+            # Use database-specific JSON query method
+            conditions.append(self._get_scenario_result_target_model_condition(model_name=objective_target_model_name))
+
+        try:
+            entries: Sequence[ScenarioResultEntry] = self._query_entries(
+                ScenarioResultEntry, conditions=and_(*conditions) if conditions else None
+            )
+
+            # Convert entries to ScenarioResults and populate attack_results efficiently
+            scenario_results = []
+            for entry in entries:
+                scenario_result = entry.get_scenario_result()
+
+                # Get conversation IDs grouped by attack name
+                conversation_ids_by_attack = entry.get_conversation_ids_by_attack_name()
+
+                # Collect all conversation IDs to query in a single batch
+                all_conversation_ids = []
+                for conv_ids in conversation_ids_by_attack.values():
+                    all_conversation_ids.extend(conv_ids)
+
+                # Query all AttackResults in a single batch if there are any
+                if all_conversation_ids:
+                    # Build condition to query multiple conversation IDs at once
+                    attack_conditions = [AttackResultEntry.conversation_id.in_(all_conversation_ids)]
+                    attack_entries: Sequence[AttackResultEntry] = self._query_entries(
+                        AttackResultEntry, conditions=and_(*attack_conditions)
+                    )
+
+                    # Build a dict for quick lookup
+                    attack_results_dict = {entry.conversation_id: entry.get_attack_result() for entry in attack_entries}
+
+                    # Populate attack_results by attack name, preserving order
+                    scenario_result.attack_results = {}
+                    for attack_name, conv_ids in conversation_ids_by_attack.items():
+                        scenario_result.attack_results[attack_name] = [
+                            attack_results_dict[conv_id] for conv_id in conv_ids if conv_id in attack_results_dict
+                        ]
+
+                scenario_results.append(scenario_result)
+
+            return scenario_results
+        except Exception as e:
+            logger.exception(f"Failed to retrieve scenario results with error {e}")
             return []
 
     def print_schema(self):

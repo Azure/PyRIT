@@ -26,6 +26,7 @@ from pyrit.models import (
     PromptDataType,
     PromptResponseError,
 )
+from pyrit.prompt_target import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         self,
         *,
         custom_functions: Optional[Dict[str, ToolExecutor]] = None,
-        api_version: Optional[str] = "2025-03-01-preview",
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
@@ -82,8 +82,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the OPENAI_RESPONSES_KEY environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2025-03-01-preview".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -117,8 +115,11 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             json.JSONDecodeError: If the response from the target is not valid JSON.
             Exception: If the request fails for any other reason.
         """
-        super().__init__(api_version=api_version, temperature=temperature, top_p=top_p, **kwargs)
+        super().__init__(temperature=temperature, top_p=top_p, **kwargs)
         self._max_output_tokens = max_output_tokens
+
+        response_url_patterns = [r"/responses"]
+        self._warn_if_irregular_endpoint(response_url_patterns)
 
         # Reasoning parameters are not yet supported by PyRIT.
         # See https://platform.openai.com/docs/api-reference/responses/create#responses-create-reasoning
@@ -129,6 +130,20 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # Per-instance tool/func registries:
         self._custom_functions: Dict[str, ToolExecutor] = custom_functions or {}
         self._fail_on_missing_function: bool = fail_on_missing_function
+
+        # Extract the grammar 'tool' if one is present
+        # See
+        # https://platform.openai.com/docs/guides/function-calling#context-free-grammars
+        self._grammar_name: str | None = None
+        if extra_body_parameters:
+            tools = extra_body_parameters.get("tools", [])
+            for tool in tools:
+                if tool.get("type") == "custom" and tool.get("format", {}).get("type") == "grammar":
+                    if self._grammar_name is not None:
+                        raise ValueError("Multiple grammar tools detected; only one is supported.")
+                    tool_name = tool.get("name")
+                    logger.debug("Detected grammar tool: %s", tool_name)
+                    self._grammar_name = tool_name
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
@@ -170,7 +185,10 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 image paths.
         """
         if piece.converted_value_data_type == "text":
-            return {"type": "input_text" if piece.role == "user" else "output_text", "text": piece.converted_value}
+            return {
+                "type": "input_text" if piece.role in ["developer", "user"] else "output_text",
+                "text": piece.converted_value,
+            }
         if piece.converted_value_data_type == "image_path":
             data_url = await convert_local_image_to_data_url(piece.converted_value)
             return {"type": "input_image", "image_url": {"url": data_url}}
@@ -348,36 +366,37 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         return Message(message_pieces=extracted_response_pieces)
 
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    @limit_requests_per_minute
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """
         Send prompt, handle agentic tool calls (function_call), return assistant output.
 
         Args:
-            prompt_request: The initial prompt from the user.
+            message: The initial prompt from the user.
 
         Returns:
             The final Message with the assistant's answer.
         """
-        conversation: MutableSequence[Message] = [prompt_request]
+        conversation: MutableSequence[Message] = [message]
         send_prompt_async = super().send_prompt_async  # bind for inner function
 
         async def _send_prompt_and_find_tool_call_async(
-            prompt_request: Message,
+            message: Message,
         ) -> Optional[dict[str, Any]]:
             """Send the prompt and return the last pending tool call, if any."""
-            assistant_reply = await send_prompt_async(prompt_request=prompt_request)
+            assistant_reply = await send_prompt_async(message=message)
             conversation.append(assistant_reply)
             return self._find_last_pending_tool_call(assistant_reply)
 
-        tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
+        tool_call_section = await _send_prompt_and_find_tool_call_async(message=message)
         while tool_call_section:
             # Execute the tool/function
             tool_output = await self._execute_call_section(tool_call_section)
 
             # Add the tool result as a tool message to the conversation
             # NOTE: Responses API expects a top-level {type:function_call_output, call_id, output}
-            # Use the first piece from the original prompt_request as reference for conversation context
-            reference_piece = prompt_request.message_pieces[0]
+            # Use the first piece from the original message as reference for conversation context
+            reference_piece = message.message_pieces[0]
             tool_message = self._make_tool_message(
                 tool_output, tool_call_section["call_id"], reference_piece=reference_piece
             )
@@ -389,10 +408,10 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 merged.extend(msg.message_pieces)
 
             # TODO: There is likely a bug here; there are different roles in a single response??
-            prompt_request = Message(message_pieces=merged, skip_validation=True)
+            message = Message(message_pieces=merged, skip_validation=True)
 
             # Send again and check for another tool call
-            tool_call_section = await _send_prompt_and_find_tool_call_async(prompt_request=prompt_request)
+            tool_call_section = await _send_prompt_and_find_tool_call_async(message=message)
 
         # No other tool call found, so assistant message is complete and return last assistant reply!
         return conversation[-1]
@@ -436,6 +455,21 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             piece_value = json.dumps(section, separators=(",", ":"))
             piece_type = "tool_call"
 
+        elif section_type == "custom_tool_call":
+            # Had a Lark grammar (hopefully)
+            # See
+            # https://platform.openai.com/docs/guides/function-calling#context-free-grammars
+            logger.debug("Detected custom_tool_call in response, assuming grammar constraint.")
+            extracted_grammar_name = section.get("name")
+            if extracted_grammar_name != self._grammar_name:
+                msg = "Mismatched grammar name in custom_tool_call "
+                msg += f"(expected {self._grammar_name}, got {extracted_grammar_name})"
+                logger.error(msg)
+                raise ValueError(msg)
+            piece_value = section.get("input", "")
+            if len(piece_value) == 0:
+                raise EmptyResponseException(message="The chat returned an empty message section.")
+
         else:
             # Other possible types are not yet handled in PyRIT
             return None
@@ -455,11 +489,11 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             response_error=error or "none",
         )
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        """Validates the structure and content of a prompt request for compatibility of this target.
+    def _validate_request(self, *, message: Message) -> None:
+        """Validates the structure and content of a message for compatibility of this target.
 
         Args:
-            prompt_request (Message): The message object.
+            message (Message): The message object.
 
         Raises:
             ValueError: If any of the message pieces have a data type other than supported set.
@@ -467,7 +501,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # Some models may not support all of these; we accept them at the transport layer
         # so the Responses API can decide. We include reasoning and function_call_output now.
         allowed_types = {"text", "image_path", "function_call", "tool_call", "function_call_output", "reasoning"}
-        for message_piece in prompt_request.message_pieces:
+        for message_piece in message.message_pieces:
             if message_piece.converted_value_data_type not in allowed_types:
                 raise ValueError(f"Unsupported data type: {message_piece.converted_value_data_type}")
         return

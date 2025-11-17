@@ -14,6 +14,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
     Message,
@@ -32,10 +33,11 @@ class TranslationConverter(PromptConverter):
     Translates prompts into different languages using an LLM.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         language: str,
         prompt_template: Optional[SeedPrompt] = None,
         max_retries: int = 3,
@@ -46,12 +48,14 @@ class TranslationConverter(PromptConverter):
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
+                Can be omitted if a default has been configured via PyRIT initialization.
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
             max_retries (int): Maximum number of retries for the conversion.
             max_wait_time_in_seconds (int): Maximum wait time in seconds between retries.
 
         Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
             ValueError: If the language is not provided.
         """
         self.converter_target = converter_target
@@ -133,7 +137,7 @@ class TranslationConverter(PromptConverter):
         ):
             with attempt:
                 logger.debug(f"Attempt {attempt.retry_state.attempt_number} for translation")
-                response = await self.converter_target.send_prompt_async(prompt_request=request)
+                response = await self.converter_target.send_prompt_async(message=request)
                 response_msg = response.get_value()
                 return response_msg.strip()
 

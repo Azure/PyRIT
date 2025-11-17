@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -23,7 +27,7 @@
 # Before you begin, ensure you have the correct version of PyRIT installed and any necessary secrets configured as
 # described [here](../../setup/populating_secrets.md).
 #
-# To run the Flask app, you also must download and run Ollama, making sure the flask is using a correct model.
+# To run the Flask app, you also must [download](https://ollama.com/download) and run Ollama, making sure the flask is using a correct model. For example, `ollama run llama3.2:1b` runs the Llama 3.2 1B model.
 #
 # Additionally, you need to install playwright by executing `playwright install`.
 
@@ -88,15 +92,15 @@ flask_process = start_flask_app()
 # %%
 from playwright.async_api import Page, async_playwright
 
-from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import MessagePiece
+from pyrit.models import Message
 from pyrit.prompt_target import PlaywrightTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # Define the interaction function
-async def interact_with_my_app(page: Page, message_piece: MessagePiece) -> str:
+async def interact_with_my_app(page: Page, message: Message) -> str:
     # Define selectors
     input_selector = "#message-input"
     send_button_selector = "#send-button"
@@ -109,8 +113,8 @@ async def interact_with_my_app(page: Page, message_piece: MessagePiece) -> str:
     # Wait for the page to be ready
     await page.wait_for_selector(input_selector)
 
-    # Send the prompt text
-    prompt_text = message_piece.converted_value
+    # Send the prompt text (get from first request piece)
+    prompt_text = message.message_pieces[0].converted_value
     await page.fill(input_selector, prompt_text)
     await page.click(send_button_selector)
 

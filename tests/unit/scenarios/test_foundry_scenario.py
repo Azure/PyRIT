@@ -12,26 +12,32 @@ from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenarios import AttackRun, FoundryAttackStrategy, FoundryScenario
+from pyrit.scenarios import AtomicAttack, FoundryScenario, FoundryStrategy
 from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
 def mock_objective_target():
     """Create a mock objective target for testing."""
-    return MagicMock(spec=PromptTarget)
+    mock = MagicMock(spec=PromptTarget)
+    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    return mock
 
 
 @pytest.fixture
 def mock_adversarial_target():
     """Create a mock adversarial target for testing."""
-    return MagicMock(spec=PromptChatTarget)
+    mock = MagicMock(spec=PromptChatTarget)
+    mock.get_identifier.return_value = {"__type__": "MockAdversarialTarget", "__module__": "test"}
+    return mock
 
 
 @pytest.fixture
 def mock_objective_scorer():
     """Create a mock objective scorer for testing."""
-    return MagicMock(spec=TrueFalseScorer)
+    mock = MagicMock(spec=TrueFalseScorer)
+    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    return mock
 
 
 @pytest.fixture
@@ -44,7 +50,7 @@ def sample_objectives():
 class TestFoundryScenarioInitialization:
     """Tests for FoundryScenario initialization."""
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -52,22 +58,25 @@ class TestFoundryScenarioInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_init_with_single_strategy(self, mock_harmbench, mock_objective_target, mock_objective_scorer):
+    @pytest.mark.asyncio
+    async def test_init_with_single_strategy(self, mock_harmbench, mock_objective_target, mock_objective_scorer):
         """Test initialization with a single attack strategy."""
         mock_dataset = Mock()
         mock_dataset.get_random_values.return_value = ["test objective"]
         mock_harmbench.return_value = mock_dataset
 
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.attack_run_count > 0
-        assert "Base64" in scenario.name or "base64" in scenario.name
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.Base64],
+        )
+        assert scenario.atomic_attack_count > 0
+        assert scenario.name == "Foundry Scenario"
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -75,27 +84,30 @@ class TestFoundryScenarioInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_init_with_multiple_strategies(self, mock_harmbench, mock_objective_target, mock_objective_scorer):
+    @pytest.mark.asyncio
+    async def test_init_with_multiple_strategies(self, mock_harmbench, mock_objective_target, mock_objective_scorer):
         """Test initialization with multiple attack strategies."""
         mock_dataset = Mock()
         mock_dataset.get_random_values.return_value = ["test objective"]
         mock_harmbench.return_value = mock_dataset
 
-        strategies = {
-            FoundryAttackStrategy.Base64,
-            FoundryAttackStrategy.ROT13,
-            FoundryAttackStrategy.Leetspeak,
-        }
+        strategies = [
+            FoundryStrategy.Base64,
+            FoundryStrategy.ROT13,
+            FoundryStrategy.Leetspeak,
+        ]
 
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies=strategies,
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.attack_run_count >= len(strategies)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=strategies,
+        )
+        assert scenario.atomic_attack_count >= len(strategies)
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -108,8 +120,6 @@ class TestFoundryScenarioInitialization:
     ):
         """Test initialization with custom objectives."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -118,7 +128,7 @@ class TestFoundryScenarioInitialization:
         # Should not call fetch_harmbench_dataset when objectives provided
         mock_harmbench.assert_not_called()
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -131,8 +141,6 @@ class TestFoundryScenarioInitialization:
     ):
         """Test initialization with custom adversarial target."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
@@ -140,7 +148,7 @@ class TestFoundryScenarioInitialization:
 
         assert scenario._adversarial_chat == mock_adversarial_target
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -153,15 +161,13 @@ class TestFoundryScenarioInitialization:
     ):
         """Test initialization with custom objective scorer."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
             objective_scorer=mock_objective_scorer,
             objectives=sample_objectives,
         )
 
         assert scenario._objective_scorer == mock_objective_scorer
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -169,24 +175,29 @@ class TestFoundryScenarioInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_init_with_memory_labels(
+    @pytest.mark.asyncio
+    async def test_init_with_memory_labels(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test initialization with memory labels."""
         memory_labels = {"test": "foundry", "category": "attack"}
 
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
-            memory_labels=memory_labels,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
+        assert scenario._memory_labels == {}
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            memory_labels=memory_labels,
+        )
+
         assert scenario._memory_labels == memory_labels
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
-    @patch("pyrit.scenarios.config.foundry_scenario.TrueFalseCompositeScorer")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.TrueFalseCompositeScorer")
     @patch.dict(
         "os.environ",
         {
@@ -207,10 +218,7 @@ class TestFoundryScenarioInitialization:
         mock_dataset.get_random_values.return_value = ["harmbench1", "harmbench2", "harmbench3", "harmbench4"]
         mock_harmbench.return_value = mock_dataset
 
-        scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
-        )
+        scenario = FoundryScenario()
 
         # Verify default scorer was created
         mock_composite.assert_called_once()
@@ -224,7 +232,7 @@ class TestFoundryScenarioInitialization:
 class TestFoundryScenarioStrategyNormalization:
     """Tests for attack strategy normalization."""
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -232,21 +240,24 @@ class TestFoundryScenarioStrategyNormalization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_normalize_easy_strategies(
+    @pytest.mark.asyncio
+    async def test_normalize_easy_strategies(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that EASY strategy expands to easy attack strategies."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.EASY},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.EASY],
+        )
         # EASY should expand to multiple attack strategies
-        assert scenario.attack_run_count > 1
+        assert scenario.atomic_attack_count > 1
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -254,21 +265,24 @@ class TestFoundryScenarioStrategyNormalization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_normalize_moderate_strategies(
+    @pytest.mark.asyncio
+    async def test_normalize_moderate_strategies(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that MODERATE strategy expands to moderate attack strategies."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.MODERATE},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        # MODERATE should expand to multiple attack strategies
-        assert scenario.attack_run_count > 1
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.MODERATE],
+        )
+        # MODERATE should expand to moderate attack strategies (currently only 1: Tense)
+        assert scenario.atomic_attack_count >= 1
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -276,21 +290,24 @@ class TestFoundryScenarioStrategyNormalization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_normalize_difficult_strategies(
+    @pytest.mark.asyncio
+    async def test_normalize_difficult_strategies(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that DIFFICULT strategy expands to difficult attack strategies."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.DIFFICULT},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.DIFFICULT],
+        )
         # DIFFICULT should expand to multiple attack strategies
-        assert scenario.attack_run_count > 1
+        assert scenario.atomic_attack_count > 1
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -298,21 +315,24 @@ class TestFoundryScenarioStrategyNormalization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_normalize_mixed_difficulty_levels(
+    @pytest.mark.asyncio
+    async def test_normalize_mixed_difficulty_levels(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that multiple difficulty levels expand correctly."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.EASY, FoundryAttackStrategy.MODERATE},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.EASY, FoundryStrategy.MODERATE],
+        )
         # Combined difficulty levels should expand to multiple strategies
-        assert scenario.attack_run_count > 5  # EASY has 6, MODERATE has 5, combined should have more
+        assert scenario.atomic_attack_count > 5  # EASY has 20, MODERATE has 1, combined should have more
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -320,29 +340,32 @@ class TestFoundryScenarioStrategyNormalization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_normalize_with_specific_and_difficulty_levels(
+    @pytest.mark.asyncio
+    async def test_normalize_with_specific_and_difficulty_levels(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that specific strategies combined with difficulty levels work correctly."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={
-                FoundryAttackStrategy.EASY,
-                FoundryAttackStrategy.Baseline,  # Specific strategy
-            },
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        # EASY expands to 6 strategies, but Baseline might already be in EASY, so at least 6
-        assert scenario.attack_run_count >= 6
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[
+                FoundryStrategy.EASY,
+                FoundryStrategy.Base64,  # Specific strategy
+            ],
+        )
+        # EASY expands to 20 strategies, but Base64 might already be in EASY, so at least 20
+        assert scenario.atomic_attack_count >= 20
 
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestFoundryScenarioAttackCreation:
     """Tests for attack creation from strategies."""
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -350,23 +373,29 @@ class TestFoundryScenarioAttackCreation:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_get_attack_from_single_turn_strategy(
+    @pytest.mark.asyncio
+    async def test_get_attack_from_single_turn_strategy(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating an attack from a single-turn strategy."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        attack_run = scenario._get_attack_from_strategy(FoundryAttackStrategy.Base64)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.Base64],
+        )
 
-        assert isinstance(attack_run, AttackRun)
-        assert attack_run._objectives == sample_objectives
+        # Get the composite strategy that was created during initialization
+        composite_strategy = scenario._scenario_composites[0]
+        atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+        assert isinstance(atomic_attack, AtomicAttack)
+        assert atomic_attack._objectives == sample_objectives
+
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -374,29 +403,35 @@ class TestFoundryScenarioAttackCreation:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_get_attack_from_multi_turn_strategy(
+    @pytest.mark.asyncio
+    async def test_get_attack_from_multi_turn_strategy(
         self, mock_harmbench, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating a multi-turn attack strategy."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Crescendo},
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        attack_run = scenario._get_attack_from_strategy(FoundryAttackStrategy.Crescendo)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.Crescendo],
+        )
 
-        assert isinstance(attack_run, AttackRun)
-        assert attack_run._objectives == sample_objectives
+        # Get the composite strategy that was created during initialization
+        composite_strategy = scenario._scenario_composites[0]
+        atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
+
+        assert isinstance(atomic_attack, AtomicAttack)
+        assert atomic_attack._objectives == sample_objectives
 
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestFoundryScenarioGetAttack:
     """Tests for the _get_attack method."""
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -404,15 +439,19 @@ class TestFoundryScenarioGetAttack:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_get_attack_single_turn_with_converters(
+    @pytest.mark.asyncio
+    async def test_get_attack_single_turn_with_converters(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating a single-turn attack with converters."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
+        )
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.Base64],
         )
 
         attack = scenario._get_attack(
@@ -422,7 +461,7 @@ class TestFoundryScenarioGetAttack:
 
         assert isinstance(attack, PromptSendingAttack)
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -430,16 +469,20 @@ class TestFoundryScenarioGetAttack:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_get_attack_multi_turn_with_adversarial_target(
+    @pytest.mark.asyncio
+    async def test_get_attack_multi_turn_with_adversarial_target(
         self, mock_harmbench, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating a multi-turn attack."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Crescendo},
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
+        )
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[FoundryStrategy.Crescendo],
         )
 
         attack = scenario._get_attack(
@@ -454,7 +497,7 @@ class TestFoundryScenarioGetAttack:
 class TestFoundryScenarioAllStrategies:
     """Tests that all strategies can be instantiated."""
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -465,45 +508,50 @@ class TestFoundryScenarioAllStrategies:
     @pytest.mark.parametrize(
         "strategy",
         [
-            FoundryAttackStrategy.AnsiAttack,
-            FoundryAttackStrategy.AsciiArt,
-            FoundryAttackStrategy.AsciiSmuggler,
-            FoundryAttackStrategy.Atbash,
-            FoundryAttackStrategy.Base64,
-            FoundryAttackStrategy.Binary,
-            FoundryAttackStrategy.Caesar,
-            FoundryAttackStrategy.CharacterSpace,
-            FoundryAttackStrategy.CharSwap,
-            FoundryAttackStrategy.Diacritic,
-            FoundryAttackStrategy.Flip,
-            FoundryAttackStrategy.Leetspeak,
-            FoundryAttackStrategy.Morse,
-            FoundryAttackStrategy.ROT13,
-            FoundryAttackStrategy.SuffixAppend,
-            FoundryAttackStrategy.StringJoin,
-            FoundryAttackStrategy.Tense,
-            FoundryAttackStrategy.UnicodeConfusable,
-            FoundryAttackStrategy.UnicodeSubstitution,
-            FoundryAttackStrategy.Url,
-            FoundryAttackStrategy.Baseline,
-            FoundryAttackStrategy.Jailbreak,
+            FoundryStrategy.AnsiAttack,
+            FoundryStrategy.AsciiArt,
+            FoundryStrategy.AsciiSmuggler,
+            FoundryStrategy.Atbash,
+            FoundryStrategy.Base64,
+            FoundryStrategy.Binary,
+            FoundryStrategy.Caesar,
+            FoundryStrategy.CharacterSpace,
+            FoundryStrategy.CharSwap,
+            FoundryStrategy.Diacritic,
+            FoundryStrategy.Flip,
+            FoundryStrategy.Leetspeak,
+            FoundryStrategy.Morse,
+            FoundryStrategy.ROT13,
+            FoundryStrategy.SuffixAppend,
+            FoundryStrategy.StringJoin,
+            FoundryStrategy.Tense,
+            FoundryStrategy.UnicodeConfusable,
+            FoundryStrategy.UnicodeSubstitution,
+            FoundryStrategy.Url,
+            FoundryStrategy.Jailbreak,
         ],
     )
-    def test_all_single_turn_strategies_create_attack_runs(
+    @pytest.mark.asyncio
+    async def test_all_single_turn_strategies_create_attack_runs(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives, strategy
     ):
         """Test that all single-turn strategies can create attack runs."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={strategy},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        attack_run = scenario._get_attack_from_strategy(strategy)
-        assert isinstance(attack_run, AttackRun)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[strategy],
+        )
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+        # Get the composite strategy that was created during initialization
+        composite_strategy = scenario._scenario_composites[0]
+        atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
+        assert isinstance(atomic_attack, AtomicAttack)
+
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -514,11 +562,12 @@ class TestFoundryScenarioAllStrategies:
     @pytest.mark.parametrize(
         "strategy",
         [
-            FoundryAttackStrategy.MultiTurn,
-            FoundryAttackStrategy.Crescendo,
+            FoundryStrategy.MultiTurn,
+            FoundryStrategy.Crescendo,
         ],
     )
-    def test_all_multi_turn_strategies_create_attack_runs(
+    @pytest.mark.asyncio
+    async def test_all_multi_turn_strategies_create_attack_runs(
         self,
         mock_harmbench,
         mock_objective_target,
@@ -529,22 +578,27 @@ class TestFoundryScenarioAllStrategies:
     ):
         """Test that all multi-turn strategies can create attack runs."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={strategy},
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        attack_run = scenario._get_attack_from_strategy(strategy)
-        assert isinstance(attack_run, AttackRun)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[strategy],
+        )
+
+        # Get the composite strategy that was created during initialization
+        composite_strategy = scenario._scenario_composites[0]
+        atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
+        assert isinstance(atomic_attack, AtomicAttack)
 
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestFoundryScenarioProperties:
     """Tests for FoundryScenario properties and attributes."""
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -552,23 +606,32 @@ class TestFoundryScenarioProperties:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_scenario_name_includes_strategies(
+    @pytest.mark.asyncio
+    async def test_scenario_composites_set_after_initialize(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
-        """Test that scenario name includes the strategies used."""
-        strategies = {FoundryAttackStrategy.Base64, FoundryAttackStrategy.ROT13}
+        """Test that scenario composites are set after initialize_async."""
+        strategies = [FoundryStrategy.Base64, FoundryStrategy.ROT13]
 
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies=strategies,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
+            include_baseline=False,
         )
 
-        assert "base64" in scenario.name.lower() or "Base64" in scenario.name
-        assert "rot13" in scenario.name.lower() or "ROT13" in scenario.name
+        # Before initialize_async, composites should be empty
+        assert len(scenario._scenario_composites) == 0
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=strategies,
+        )
+
+        # After initialize_async, composites should be set
+        assert len(scenario._scenario_composites) == len(strategies)
+        assert scenario.atomic_attack_count == len(strategies)
+
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -581,15 +644,13 @@ class TestFoundryScenarioProperties:
     ):
         """Test that scenario version is properly set."""
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies={FoundryAttackStrategy.Base64},
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
         assert scenario.version == 1
 
-    @patch("pyrit.scenarios.config.foundry_scenario.fetch_harmbench_dataset")
+    @patch("pyrit.scenarios.scenarios.foundry_scenario.fetch_harmbench_dataset")
     @patch.dict(
         "os.environ",
         {
@@ -597,23 +658,25 @@ class TestFoundryScenarioProperties:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_scenario_attack_run_count_matches_strategies(
+    @pytest.mark.asyncio
+    async def test_scenario_atomic_attack_count_matches_strategies(
         self, mock_harmbench, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
-        """Test that attack run count is reasonable for the number of strategies."""
-        strategies = {
-            FoundryAttackStrategy.Base64,
-            FoundryAttackStrategy.ROT13,
-            FoundryAttackStrategy.Leetspeak,
-            FoundryAttackStrategy.Baseline,
-        }
+        """Test that atomic attack count is reasonable for the number of strategies."""
+        strategies = [
+            FoundryStrategy.Base64,
+            FoundryStrategy.ROT13,
+            FoundryStrategy.Leetspeak,
+        ]
 
         scenario = FoundryScenario(
-            objective_target=mock_objective_target,
-            attack_strategies=strategies,
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=strategies,
+        )
         # Should have at least as many runs as specific strategies provided
-        assert scenario.attack_run_count >= len(strategies)
+        assert scenario.atomic_attack_count >= len(strategies)

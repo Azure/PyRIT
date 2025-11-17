@@ -5,6 +5,7 @@ import logging
 import pathlib
 from typing import Optional
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
@@ -20,10 +21,11 @@ class DenylistConverter(LLMGenericTextConverter):
     An existing ``PromptChatTarget`` is used to perform the conversion (like Azure OpenAI).
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         system_prompt_template: Optional[SeedPrompt] = None,
         denylist: list[str] = [],
     ):
@@ -32,6 +34,7 @@ class DenylistConverter(LLMGenericTextConverter):
 
         Args:
             converter_target (PromptChatTarget): The target for the prompt conversion.
+                Can be omitted if a default has been configured via PyRIT initialization.
             system_prompt_template (Optional[SeedPrompt]): The system prompt template to use for the conversion.
                 If not provided, a default template will be used.
             denylist (list[str]): A list of words or phrases that should be replaced in the prompt.

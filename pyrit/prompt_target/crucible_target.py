@@ -28,17 +28,27 @@ class CrucibleTarget(PromptTarget):
         api_key: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__(max_requests_per_minute=max_requests_per_minute)
+        """
+        Initialize the Crucible target.
 
-        self._endpoint = endpoint
+        Args:
+            endpoint (str): The endpoint URL for the Crucible service.
+            api_key (str, Optional): The API key for accessing the Crucible service.
+                Defaults to the `CRUCIBLE_API_KEY` environment variable.
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
+        """
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
+
         self._api_key: str = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+    async def send_prompt_async(self, *, message: Message) -> Message:
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -55,12 +65,12 @@ class CrucibleTarget(PromptTarget):
 
         return response_entry
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        n_pieces = len(prompt_request.message_pieces)
+    def _validate_request(self, *, message: Message) -> None:
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        piece_type = message.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 

@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import (
@@ -21,8 +22,8 @@ from pyrit.models import (
     AttackResult,
     Message,
     Score,
+    SeedGroup,
     SeedPrompt,
-    SeedPromptGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -61,10 +62,11 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
     and multiple scorer types for comprehensive evaluation.
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -82,10 +84,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(logger=logger, context_type=MultiPromptSendingAttackContext)
-
-        # Store the objective target
-        self._objective_target = objective_target
+        super().__init__(objective_target=objective_target, logger=logger, context_type=MultiPromptSendingAttackContext)
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -97,12 +96,26 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
+        self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold
 
         # Initialize prompt normalizer and conversation manager
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
         self._conversation_manager = ConversationManager(
             attack_identifier=self.get_identifier(),
             prompt_normalizer=self._prompt_normalizer,
+        )
+
+    def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
+        """
+        Get the attack scoring configuration used by this strategy.
+
+        Returns:
+            Optional[AttackScoringConfig]: The scoring configuration with objective and auxiliary scorers.
+        """
+        return AttackScoringConfig(
+            objective_scorer=self._objective_scorer,
+            auxiliary_scorers=self._auxiliary_scorers,
+            successful_objective_threshold=self._successful_objective_threshold,
         )
 
     def _validate_context(self, *, context: MultiPromptSendingAttackContext) -> None:
@@ -172,8 +185,8 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             logger.info(f"Processing prompt {prompt_index + 1}/{len(context.prompt_sequence)}")
             logger.debug(f"Prompt content: {prompt_text}")
 
-            # Create seed prompt group for this prompt
-            prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+            # Create seed group for this prompt
+            prompt_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
 
             # Send the prompt
             message = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
@@ -254,13 +267,13 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         pass
 
     async def _send_prompt_to_objective_target_async(
-        self, *, prompt_group: SeedPromptGroup, context: MultiPromptSendingAttackContext
+        self, *, prompt_group: SeedGroup, context: MultiPromptSendingAttackContext
     ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
         Args:
-            prompt_group (SeedPromptGroup): The seed prompt group to send.
+            prompt_group (SeedGroup): The seed group to send.
             context (MultiPromptSendingAttackContext): The attack context containing parameters and labels.
 
         Returns:
@@ -268,7 +281,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
                 the request was filtered, blocked, or encountered an error.
         """
         return await self._prompt_normalizer.send_prompt_async(
-            seed_prompt_group=prompt_group,
+            seed_group=prompt_group,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,

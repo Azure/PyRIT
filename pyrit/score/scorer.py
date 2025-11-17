@@ -90,7 +90,7 @@ class Scorer(abc.ABC):
         """
         self._validator.validate(message, objective=objective)
 
-        if role_filter is not None and message.get_role() != role_filter:
+        if role_filter is not None and message.role != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
 
@@ -345,8 +345,18 @@ class Scorer(abc.ABC):
         identifier = {}
         identifier["__type__"] = self.__class__.__name__
         identifier["__module__"] = self.__class__.__module__
-        identifier["sub_identifier"] = None
+        identifier["sub_identifier"] = self._get_sub_identifier()
         return identifier
+
+    def _get_sub_identifier(self) -> Optional[Union[Dict, List[Dict]]]:
+        """
+        Returns the sub-identifier for composite scorers.
+        Override this method in subclasses that wrap other scorers.
+
+        Returns:
+            None, dict, or list[dict]: The sub-identifier(s) of wrapped scorer(s), or None for non-composite scorers.
+        """
+        return None
 
     @pyrit_json_retry
     async def _score_value_with_llm(
@@ -354,8 +364,8 @@ class Scorer(abc.ABC):
         *,
         prompt_target: PromptChatTarget,
         system_prompt: str,
-        prompt_request_value: str,
-        prompt_request_data_type: PromptDataType,
+        message_value: str,
+        message_data_type: PromptDataType,
         scored_prompt_id: str,
         category: Optional[Sequence[str] | str] = None,
         objective: Optional[str] = None,
@@ -373,10 +383,10 @@ class Scorer(abc.ABC):
         description fields.
 
         Args:
-            prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
+            prompt_target (PromptChatTarget): The target LLM to send the message to.
             system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
-            prompt_request_value (str): The actual value or content to be scored by the LLM.
-            prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
+            message_value (str): The actual value or content to be scored by the LLM.
+            message_data_type (PromptDataType): The type of the data being sent in the message.
             scored_prompt_id (str): The ID of the scored prompt.
             category (str, Optional): The category of the score. Can also be parsed from the JSON response if
                 not provided.
@@ -409,9 +419,9 @@ class Scorer(abc.ABC):
             [
                 MessagePiece(
                     role="user",
-                    original_value=prompt_request_value,
-                    original_value_data_type=prompt_request_data_type,
-                    converted_value_data_type=prompt_request_data_type,
+                    original_value=message_value,
+                    original_value_data_type=message_data_type,
+                    converted_value_data_type=message_data_type,
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                     prompt_metadata=prompt_metadata,
@@ -419,7 +429,7 @@ class Scorer(abc.ABC):
             ]
         )
         try:
-            response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
+            response = await prompt_target.send_prompt_async(message=scorer_llm_request)
         except Exception as ex:
             raise Exception(f"Error scoring prompt with original prompt ID: {scored_prompt_id}") from ex
 

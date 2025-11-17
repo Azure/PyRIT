@@ -5,6 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -22,10 +23,11 @@ class LLMGenericTextConverter(PromptConverter):
     Represents a generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format).
     """
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         system_prompt_template: Optional[SeedPrompt] = None,
         user_prompt_template_with_objective: Optional[SeedPrompt] = None,
         **kwargs,
@@ -35,16 +37,23 @@ class LLMGenericTextConverter(PromptConverter):
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
+                Can be omitted if a default has been configured via PyRIT initialization.
             system_prompt_template (SeedPrompt, Optional): The prompt template to set as the system prompt.
             user_prompt_template_with_objective (SeedPrompt, Optional): The prompt template to set as the user prompt.
                 expects
             kwargs: Additional parameters for the prompt template.
+
+        Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
         """
         self._converter_target = converter_target
         self._system_prompt_template = system_prompt_template
         self._prompt_kwargs = kwargs
 
-        if user_prompt_template_with_objective and "objective" not in user_prompt_template_with_objective.parameters:
+        if user_prompt_template_with_objective and (
+            user_prompt_template_with_objective.parameters is None
+            or "objective" not in user_prompt_template_with_objective.parameters
+        ):
             raise ValueError("user_prompt_template_with_objective must contain the 'objective' parameter")
 
         self._user_prompt_template_with_objective = user_prompt_template_with_objective
@@ -96,7 +105,7 @@ class LLMGenericTextConverter(PromptConverter):
             ]
         )
 
-        response = await self._converter_target.send_prompt_async(prompt_request=request)
+        response = await self._converter_target.send_prompt_async(message=request)
         return ConverterResult(output_text=response.get_value(), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

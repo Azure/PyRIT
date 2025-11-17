@@ -137,7 +137,7 @@ class MockNodeFactory:
 class AttackBuilder:
     """Builder for creating TreeOfAttacksWithPruningAttack instances with common configurations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.objective_target: Optional[PromptTarget] = None
         self.adversarial_chat: Optional[PromptChatTarget] = None
         self.objective_scorer: Optional[Scorer] = None
@@ -147,29 +147,29 @@ class AttackBuilder:
         self.successful_threshold: float = 0.8
         self.prompt_normalizer: Optional[PromptNormalizer] = None
 
-    def with_default_mocks(self):
+    def with_default_mocks(self) -> "AttackBuilder":
         """Set up default mocks for all required components."""
         self.objective_target = self._create_mock_target()
         self.adversarial_chat = self._create_mock_chat()
         self.objective_scorer = self._create_mock_scorer("MockScorer")
         return self
 
-    def with_tree_params(self, **kwargs):
+    def with_tree_params(self, **kwargs) -> "AttackBuilder":
         """Set tree parameters (width, depth, branching_factor, batch_size)."""
         self.tree_params = kwargs
         return self
 
-    def with_threshold(self, threshold: float):
+    def with_threshold(self, threshold: float) -> "AttackBuilder":
         """Set successful objective threshold."""
         self.successful_threshold = threshold
         return self
 
-    def with_auxiliary_scorers(self, count: int = 1):
+    def with_auxiliary_scorers(self, count: int = 1) -> "AttackBuilder":
         """Add auxiliary scorers."""
         self.auxiliary_scorers = [self._create_mock_aux_scorer(f"MockAuxScorer{i}") for i in range(count)]
         return self
 
-    def with_prompt_normalizer(self):
+    def with_prompt_normalizer(self) -> "AttackBuilder":
         """Add a mock prompt normalizer."""
         normalizer = MagicMock(spec=PromptNormalizer)
         normalizer.send_prompt_async = AsyncMock(return_value=None)
@@ -277,7 +277,7 @@ class TestHelpers:
         mock_dataset = MagicMock()
         mock_dataset.prompts = mock_seed_prompts
 
-        with patch("pyrit.models.seed_prompt_dataset.SeedPromptDataset.from_yaml_file", return_value=mock_dataset):
+        with patch("pyrit.models.seed_dataset.SeedDataset.from_yaml_file", return_value=mock_dataset):
             attack._load_adversarial_prompts()
 
 
@@ -354,6 +354,23 @@ class TestTreeOfAttacksInitialization:
         """Test initialization with auxiliary scorers."""
         attack = attack_builder.with_default_mocks().with_auxiliary_scorers(2).build()
         assert len(attack._auxiliary_scorers) == 2
+
+    def test_get_objective_target_returns_correct_target(self, attack_builder):
+        """Test that get_objective_target returns the target passed to constructor"""
+        attack = attack_builder.with_default_mocks().build()
+
+        assert attack.get_objective_target() == attack_builder.objective_target
+
+    def test_get_attack_scoring_config_returns_config(self, attack_builder):
+        """Test that get_attack_scoring_config returns the scoring configuration"""
+        attack = attack_builder.with_default_mocks().with_auxiliary_scorers(1).with_threshold(0.75).build()
+
+        result = attack.get_attack_scoring_config()
+
+        assert result is not None
+        assert result.objective_scorer == attack_builder.objective_scorer
+        assert len(result.auxiliary_scorers) == 1
+        assert result.successful_objective_threshold == 0.75
 
 
 @pytest.mark.usefixtures("patch_central_database")

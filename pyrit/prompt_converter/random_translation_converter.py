@@ -7,8 +7,9 @@ import re
 from pathlib import Path
 from typing import List, Optional, Union
 
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptDataType, SeedPrompt, SeedPromptDataset
+from pyrit.models import PromptDataType, SeedDataset, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -26,10 +27,11 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
     # Default language list
     _DEFAULT_LANGUAGES_SEED_PROMPT_PATH = Path(DATASETS_PATH) / "lexicons" / "languages_most_spoken.yaml"
 
+    @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: PromptChatTarget,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         system_prompt_template: Optional[SeedPrompt] = None,
         languages: Optional[List[str]] = None,
         indices: Optional[List[int]] = None,
@@ -42,6 +44,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
 
         Args:
             converter_target (PromptChatTarget): The target for the prompt conversion.
+                Can be omitted if a default has been configured via PyRIT initialization.
             system_prompt_template (Optional[SeedPrompt]): The system prompt template to use for the conversion.
                 If not provided, a default template will be used.
             languages (Optional[List[str]]): The list of available languages to use for translation.
@@ -49,7 +52,16 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
             keywords (Optional[List[str]]): Keywords to select words for conversion.
             proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
             regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
+
+        Raises:
+            ValueError: If converter_target is not provided and no default has been configured.
         """
+        if converter_target is None:
+            raise ValueError(
+                "converter_target is required for LLM-based converters. "
+                "Either pass it explicitly or configure a default via PyRIT initialization "
+                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
+            )
         # set to default strategy if not provided
         system_prompt_template = (
             system_prompt_template
@@ -70,7 +82,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
         )
 
         if not languages:
-            default_languages = SeedPromptDataset.from_yaml_file(
+            default_languages = SeedDataset.from_yaml_file(
                 RandomTranslationConverter._DEFAULT_LANGUAGES_SEED_PROMPT_PATH
             )
             self.languages = [prompt.value for prompt in default_languages.prompts]

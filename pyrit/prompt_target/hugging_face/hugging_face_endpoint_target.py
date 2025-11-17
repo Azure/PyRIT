@@ -2,10 +2,11 @@
 # Licensed under the MIT license.
 
 import logging
+from typing import Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.models import Message, construct_response_from_request
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         max_tokens: int = 400,
         temperature: float = 1.0,
         top_p: float = 1.0,
+        max_requests_per_minute: Optional[int] = None,
         verbose: bool = False,
     ) -> None:
         """Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
@@ -36,9 +38,12 @@ class HuggingFaceEndpointTarget(PromptTarget):
             max_tokens (int, Optional): The maximum number of tokens to generate. Defaults to 400.
             temperature (float, Optional): The sampling temperature to use. Defaults to 1.0.
             top_p (float, Optional): The cumulative probability for nucleus sampling. Defaults to 1.0.
+            max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
             verbose (bool, Optional): Flag to enable verbose logging. Defaults to False.
         """
-        super().__init__(verbose=verbose)
+        super().__init__(
+            max_requests_per_minute=max_requests_per_minute, verbose=verbose, endpoint=endpoint, model_name=model_id
+        )
         self.hf_token = hf_token
         self.endpoint = endpoint
         self.model_id = model_id
@@ -46,12 +51,13 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self.temperature = temperature
         self.top_p = top_p
 
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    @limit_requests_per_minute
+    async def send_prompt_async(self, *, message: Message) -> Message:
         """
         Sends a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
 
         Args:
-            prompt_request (Message): The prompt request containing the input data and associated details
+            message (Message): The message containing the input data and associated details
             such as conversation ID and role.
 
         Returns:
@@ -63,8 +69,8 @@ class HuggingFaceEndpointTarget(PromptTarget):
             ValueError: If the response from the Hugging Face API is not successful.
             Exception: If an error occurs during the HTTP request to the Hugging Face endpoint.
         """
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
         headers = {"Authorization": f"Bearer {self.hf_token}"}
         payload: dict[str, object] = {
             "inputs": request.converted_value,
@@ -107,21 +113,21 @@ class HuggingFaceEndpointTarget(PromptTarget):
             logger.error(f"Error occurred during HTTP request to the Hugging Face endpoint: {e}")
             raise
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """
         Validates the provided message.
 
         Args:
-            prompt_request (Message): The prompt request to validate.
+            message (Message): The message to validate.
 
         Raises:
             ValueError: If the request is not valid for this target.
         """
-        n_pieces = len(prompt_request.message_pieces)
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        piece_type = message.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
