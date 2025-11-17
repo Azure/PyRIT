@@ -53,20 +53,17 @@ def start_backend():
     # Change to workspace root
     os.chdir(WORKSPACE_ROOT)
     
-    # Start backend process
+    # Start backend with uvicorn
     if is_windows():
-        # Windows: use CREATE_NEW_PROCESS_GROUP to allow it to run in background
         backend = subprocess.Popen(
-            [sys.executable, "-m", "pyrit.backend.main"],
+            [sys.executable, "-m", "uvicorn", "pyrit.backend.main:app", 
+             "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"],
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
         )
     else:
         backend = subprocess.Popen(
-            [sys.executable, "-m", "pyrit.backend.main"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            [sys.executable, "-m", "uvicorn", "pyrit.backend.main:app", 
+             "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"],
         )
     
     return backend
@@ -99,7 +96,8 @@ def start_servers():
     print()
     
     backend = start_backend()
-    time.sleep(2)  # Give backend time to start
+    print("⏳ Waiting for backend to initialize...")
+    time.sleep(5)  # Give backend more time to fully start up
     
     frontend = start_frontend()
     time.sleep(2)
@@ -157,10 +155,37 @@ def main():
             stop_servers()
             time.sleep(1)
         elif command == "start":
-            pass  # Just start
+            pass  # Just start both
+        elif command == "backend":
+            print("🚀 Starting backend only...")
+            backend = start_backend()
+            print(f"✅ Backend running on http://localhost:8000 (PID: {backend.pid})")
+            print("   API Docs: http://localhost:8000/docs")
+            print("\nPress Ctrl+C to stop")
+            try:
+                backend.wait()
+            except KeyboardInterrupt:
+                print("\n🛑 Stopping backend...")
+                backend.terminate()
+                backend.wait(timeout=5)
+                print("✅ Backend stopped")
+            return
+        elif command == "frontend":
+            print("🎨 Starting frontend only...")
+            frontend = start_frontend()
+            print(f"✅ Frontend running on http://localhost:3000 (PID: {frontend.pid})")
+            print("\nPress Ctrl+C to stop")
+            try:
+                frontend.wait()
+            except KeyboardInterrupt:
+                print("\n🛑 Stopping frontend...")
+                frontend.terminate()
+                frontend.wait(timeout=5)
+                print("✅ Frontend stopped")
+            return
         else:
             print(f"Unknown command: {command}")
-            print("Usage: python dev.py [start|stop|restart]")
+            print("Usage: python dev.py [start|stop|restart|backend|frontend]")
             sys.exit(1)
     
     # Start servers

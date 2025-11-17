@@ -9,13 +9,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from pyrit.backend.routes import chat, health, targets
+from pyrit.setup.initialization import initialize_pyrit
+from pyrit.backend.routes import health, chat, targets, config
 
 app = FastAPI(
     title="PyRIT API",
     description="Python Risk Identification Tool for LLMs - REST API",
     version="0.10.0",
 )
+
+# Initialize PyRIT on startup to load .env and .env.local files
+@app.on_event("startup")
+async def startup_event():
+    # Use in-memory to avoid database initialization delays
+    initialize_pyrit(memory_db_type="InMemory")
 
 # Configure CORS
 app.add_middleware(
@@ -31,6 +38,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(targets.router, prefix="/api", tags=["targets"])
+app.include_router(config.router, prefix="/api/config", tags=["config"])
 
 
 @app.exception_handler(Exception)

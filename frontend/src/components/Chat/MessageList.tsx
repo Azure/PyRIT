@@ -45,6 +45,35 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     marginTop: tokens.spacingVerticalXS,
   },
+  loadingEllipsis: {
+    fontSize: tokens.fontSizeBase500,
+    animationName: {
+      '0%': { opacity: '0.3' },
+      '50%': { opacity: '1' },
+      '100%': { opacity: '0.3' },
+    },
+    animationDuration: '1.5s',
+    animationIterationCount: 'infinite',
+  },
+  attachmentsContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: tokens.spacingHorizontalS,
+    marginTop: tokens.spacingVerticalS,
+  },
+  attachmentPreview: {
+    maxWidth: '200px',
+    maxHeight: '200px',
+    borderRadius: tokens.borderRadiusMedium,
+    objectFit: 'cover',
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+  },
+  attachmentFile: {
+    padding: tokens.spacingVerticalS,
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderRadius: tokens.borderRadiusMedium,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+  },
   emptyState: {
     display: 'flex',
     flexDirection: 'column',
@@ -83,6 +112,11 @@ export default function MessageList({ messages }: MessageListProps) {
       {messages.map((message, index) => {
         const isUser = message.role === 'user'
         const timestamp = new Date(message.timestamp).toLocaleTimeString()
+        
+        // Debug attachments
+        if (message.attachments && message.attachments.length > 0) {
+          console.log('Message has attachments:', message.attachments)
+        }
 
         return (
           <div
@@ -94,7 +128,40 @@ export default function MessageList({ messages }: MessageListProps) {
               color={isUser ? 'colorful' : 'brand'}
             />
             <div className={`${styles.messageContent} ${isUser ? styles.userMessageContent : ''}`}>
-              <Text className={styles.messageText}>{message.content}</Text>
+              {message.content && (
+                <Text className={message.content === '...' ? styles.loadingEllipsis : styles.messageText}>
+                  {message.content}
+                </Text>
+              )}
+              {message.attachments && message.attachments.length > 0 && (
+                <div className={styles.attachmentsContainer}>
+                  {message.attachments.map((att, attIndex) => (
+                    <div key={attIndex}>
+                      {att.type === 'image' && (
+                        <img 
+                          src={att.url} 
+                          alt={att.name} 
+                          className={styles.attachmentPreview}
+                        />
+                      )}
+                      {att.type === 'video' && (
+                        <video 
+                          src={att.url} 
+                          controls 
+                          className={styles.attachmentPreview}
+                        />
+                      )}
+                      {att.type === 'audio' && (
+                        <audio src={att.url} controls />
+                      )}
+                      {att.type === 'file' && (
+                        <div className={styles.attachmentFile}>
+                          <Text size={200}>📄 {att.name}</Text>
+                        </div>
+                      )}
+                    </div>
+                  ))}\n                </div>
+              )}
               <Text className={styles.timestamp} block>{timestamp}</Text>
             </div>
           </div>

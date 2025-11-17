@@ -1,13 +1,24 @@
+export interface MessageAttachment {
+  type: 'image' | 'audio' | 'video' | 'file'
+  name: string
+  url: string
+  mimeType: string
+  size: number
+  file?: File  // Keep reference to original file for upload
+}
+
 export interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: string
+  attachments?: MessageAttachment[]
 }
 
 export interface ChatRequest {
   message: string
   conversation_id?: string
   target_id?: string
+  attachments?: MessageAttachment[]
 }
 
 export interface ChatResponse {

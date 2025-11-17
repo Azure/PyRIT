@@ -26,7 +26,8 @@ class ChatService:
         self.conversations: dict[str, ConversationHistory] = {}
 
     async def send_message(
-        self, message: str, conversation_id: Optional[str] = None, target_id: Optional[str] = None
+        self, message: str, conversation_id: Optional[str] = None, target_id: Optional[str] = None,
+        attachments: Optional[list] = None
     ) -> ChatResponse:
         """
         Send a message and get a response
@@ -56,7 +57,7 @@ class ChatService:
 
         # Get response from PyRIT target
         try:
-            assistant_response = await self._get_target_response(message, target_id, conversation_id)
+            assistant_response = await self._get_target_response(message, target_id, conversation_id, attachments)
         except Exception as e:
             logger.error(f"Error getting target response: {e}")
             assistant_response = f"Error: {str(e)}"
@@ -88,11 +89,15 @@ class ChatService:
             return True
         return False
 
-    async def _get_target_response(self, message: str, target_id: Optional[str], conversation_id: str) -> str:
+    async def _get_target_response(self, message: str, target_id: Optional[str], conversation_id: str, attachments: Optional[list] = None) -> str:
         """
-        Get response from PyRIT target
+        Get response from PyRIT target with multimodal support
         """
         try:
+            logger.info(f"Getting target response for conversation {conversation_id}")
+            logger.info(f"Message: {message[:100] if message else 'None'}...")
+            logger.info(f"Attachments: {len(attachments) if attachments else 0}")
+            
             # Create target instance
             if target_id:
                 target = TargetRegistry.create_target_instance(target_id)
@@ -103,20 +108,41 @@ class ChatService:
             if not target:
                 return "Error: Target not configured. Please check your environment variables."
             
-            # Create PyRIT message
-            message_piece = MessagePiece(
-                role="user",
-                conversation_id=conversation_id,
-                original_value=message,
-                converted_value=message,
-                original_value_data_type="text",
-                converted_value_data_type="text",
-            )
+            logger.info(f"Using target: {type(target).__name__}")
             
-            pyrit_message = PyRITMessage(message_pieces=[message_piece])
+            # Create PyRIT message pieces
+            message_pieces = []
             
+            # Add text message if present
+            if message:
+                message_pieces.append(MessagePiece(
+                    role="user",
+                    conversation_id=conversation_id,
+                    original_value=message,
+                    converted_value=message,
+                    original_value_data_type="text",
+                    converted_value_data_type="text",
+                ))
+            
+            # Add attachments as separate message pieces
+            if attachments:
+                for att in attachments:
+                    logger.info(f"Adding attachment: {att['name']} as {att['data_type']}")
+                    message_pieces.append(MessagePiece(
+                        role="user",
+                        conversation_id=conversation_id,
+                        original_value=att['path'],
+                        converted_value=att['path'],
+                        original_value_data_type=att['data_type'],
+                        converted_value_data_type=att['data_type'],
+                    ))
+            
+            pyrit_message = PyRITMessage(message_pieces=message_pieces)
+            
+            logger.info(f"Sending message with {len(message_pieces)} pieces to target")
             # Send to target
-            response = await target.send_prompt_async(prompt_request=pyrit_message)
+            response = await target.send_prompt_async(message=pyrit_message)
+            logger.info(f"Received response from target")
             
             # Extract response text
             if response and response.message_pieces:

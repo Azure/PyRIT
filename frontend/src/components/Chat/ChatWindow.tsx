@@ -5,7 +5,7 @@ import {
 } from '@fluentui/react-components'
 import MessageList from './MessageList'
 import InputBox from './InputBox'
-import { Message } from '../../types'
+import { Message, MessageAttachment } from '../../types'
 import { chatApi } from '../../services/api'
 
 const useStyles = makeStyles({
@@ -33,14 +33,23 @@ export default function ChatWindow({
   const styles = useStyles()
   const [isSending, setIsSending] = useState(false)
 
-  const handleSend = async (text: string) => {
-    // Add user message
+  const handleSend = async (text: string, attachments: MessageAttachment[]) => {
+    // Add user message with attachments for display
     const userMessage: Message = {
       role: 'user',
       content: text,
       timestamp: new Date().toISOString(),
+      attachments: attachments.length > 0 ? attachments : undefined,
     }
     onSendMessage(userMessage)
+
+    // Add temporary loading message
+    const loadingMessage: Message = {
+      role: 'assistant',
+      content: '...',  // Will be styled as animated ellipsis
+      timestamp: new Date().toISOString(),
+    }
+    onSendMessage(loadingMessage)
 
     // Send to API
     setIsSending(true)
@@ -48,18 +57,27 @@ export default function ChatWindow({
       const response = await chatApi.sendMessage({
         message: text,
         conversation_id: conversationId || undefined,
+        attachments: attachments,
       })
 
-      // Add assistant response
+      // Remove loading message and add real response
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.message,
         timestamp: response.timestamp,
       }
+      // This will replace the loading message since we're using the callback
       onReceiveMessage(assistantMessage, response.conversation_id)
     } catch (error) {
       console.error('Failed to send message:', error)
-      // Optionally show error message to user
+      // Replace loading message with detailed error
+      const errorDetails = error instanceof Error ? error.message : String(error)
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: `❌ Error: ${errorDetails}\n\nPlease check the browser console for more details.`,
+        timestamp: new Date().toISOString(),
+      }
+      onReceiveMessage(errorMessage, conversationId || '')
     } finally {
       setIsSending(false)
     }

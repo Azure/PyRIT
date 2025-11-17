@@ -12,8 +12,35 @@ const apiClient = axios.create({
 
 export const chatApi = {
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
-    const response = await apiClient.post<ChatResponse>('/chat', request)
-    return response.data
+    // If there are attachments with files, use multipart/form-data
+    if (request.attachments && request.attachments.length > 0 && request.attachments.some(a => a.file)) {
+      const formData = new FormData()
+      formData.append('message', request.message)
+      if (request.conversation_id) {
+        formData.append('conversation_id', request.conversation_id)
+      }
+      if (request.target_id) {
+        formData.append('target_id', request.target_id)
+      }
+      
+      // Add all files
+      request.attachments.forEach((attachment) => {
+        if (attachment.file) {
+          formData.append('files', attachment.file)
+        }
+      })
+      
+      const response = await apiClient.post<ChatResponse>('/chat', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      return response.data
+    } else {
+      // Regular JSON request
+      const response = await apiClient.post<ChatResponse>('/chat', request)
+      return response.data
+    }
   },
 
   getConversations: async (): Promise<ConversationHistory[]> => {
@@ -44,13 +71,27 @@ export const targetsApi = {
 }
 
 export const healthApi = {
-  checkHealth: async (): Promise<{ status: string; timestamp: string; service: string }> => {
+  checkHealth: async () => {
     const response = await apiClient.get('/health')
     return response.data
   },
-
-  getVersion: async (): Promise<{ version: string; api_version: string }> => {
+  getVersion: async () => {
     const response = await apiClient.get('/version')
+    return response.data
+  },
+}
+
+export const configApi = {
+  getEnvVars: async () => {
+    const response = await apiClient.get('/config/env-vars')
+    return response.data
+  },
+  getEnvVarValue: async (varName: string) => {
+    const response = await apiClient.get(`/config/env-vars/${varName}`)
+    return response.data
+  },
+  getTargetTypes: async () => {
+    const response = await apiClient.get('/config/target-types')
     return response.data
   },
 }

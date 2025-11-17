@@ -5,8 +5,15 @@
 Chat endpoints for conversation management
 """
 
-from fastapi import APIRouter, HTTPException
-from typing import List
+from fastapi import APIRouter, HTTPException, File, UploadFile, Form
+from typing import List, Optional
+import base64
+import os
+import uuid
+import logging
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from pyrit.backend.models.requests import ChatRequest
 from pyrit.backend.models.responses import ChatResponse, ConversationHistory
@@ -17,18 +24,76 @@ chat_service = ChatService()
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def send_message(request: ChatRequest):
+async def send_message(
+    message: str = Form(...),
+    conversation_id: Optional[str] = Form(None),
+    target_id: Optional[str] = Form(None),
+    files: List[UploadFile] = File(default=[])
+):
     """
     Send a message and get a response from the configured target
+    Supports multimodal input with file attachments
     """
     try:
+        # Process uploaded files - save them locally
+        attachments = []
+        upload_dir = Path("/workspace/dbdata/prompt-memory-entries")
+        
+        logger.info(f"Received message request with {len(files)} files")
+        
+        for file in files:
+            logger.info(f"Processing file: {file.filename}, type: {file.content_type}")
+            content = await file.read()
+            
+            # Determine subdirectory based on content type
+            if file.content_type and file.content_type.startswith('image/'):
+                subdir = upload_dir / "images"
+            elif file.content_type and file.content_type.startswith('audio/'):
+                subdir = upload_dir / "audio"
+            elif file.content_type and file.content_type.startswith('video/'):
+                subdir = upload_dir / "videos"
+            else:
+                subdir = upload_dir / "urls"  # generic files
+            
+            subdir.mkdir(parents=True, exist_ok=True)
+            
+            # Generate unique filename
+            file_ext = os.path.splitext(file.filename)[1]
+            unique_filename = f"{uuid.uuid4()}{file_ext}"
+            file_path = subdir / unique_filename
+            
+            # Save file
+            with open(file_path, 'wb') as f:
+                f.write(content)
+            
+            # Determine data type for PyRIT
+            data_type = "text"
+            if file.content_type:
+                if file.content_type.startswith('image/'):
+                    data_type = "image_path"
+                elif file.content_type.startswith('audio/'):
+                    data_type = "audio_path"
+                elif file.content_type.startswith('video/'):
+                    data_type = "video_path"
+            
+            attachments.append({
+                'path': str(file_path),
+                'name': file.filename,
+                'content_type': file.content_type,
+                'data_type': data_type,
+                'size': len(content)
+            })
+        
+        logger.info(f"Sending message with {len(attachments)} attachments to chat service")
         response = await chat_service.send_message(
-            message=request.message,
-            conversation_id=request.conversation_id,
-            target_id=request.target_id,
+            message=message,
+            conversation_id=conversation_id,
+            target_id=target_id,
+            attachments=attachments if attachments else None,
         )
         return response
     except Exception as e:
+        logger.exception(f"Failed to send message: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send message: {str(e)}")
 
 

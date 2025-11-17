@@ -4,146 +4,255 @@ import {
   Text,
   Button,
   tokens,
-  Spinner,
+  Dialog,
+  DialogTrigger,
+  DialogSurface,
+  DialogTitle,
+  DialogBody,
+  DialogActions,
+  DialogContent,
+  Input,
+  Field,
+  Select,
 } from '@fluentui/react-components'
 import {
   ChatRegular,
-  TargetArrowRegular,
   HistoryRegular,
   SettingsRegular,
+  WeatherMoonRegular,
+  WeatherSunnyRegular,
 } from '@fluentui/react-icons'
-import { targetsApi } from '../../services/api'
-import { TargetInfo } from '../../types'
+import { configApi } from '../../services/api'
 
 const useStyles = makeStyles({
   root: {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    padding: tokens.spacingVerticalL,
-  },
-  header: {
-    marginBottom: tokens.spacingVerticalXL,
-  },
-  title: {
-    fontSize: tokens.fontSizeHero700,
-    fontWeight: tokens.fontWeightSemibold,
-    color: tokens.colorBrandForeground1,
-  },
-  subtitle: {
-    fontSize: tokens.fontSizeBase300,
-    color: tokens.colorNeutralForeground3,
-    marginTop: tokens.spacingVerticalXS,
-  },
-  navSection: {
-    marginBottom: tokens.spacingVerticalXXL,
-  },
-  navButton: {
-    width: '100%',
-    justifyContent: 'flex-start',
-    marginBottom: tokens.spacingVerticalS,
-  },
-  targetsList: {
-    flex: 1,
-    overflowY: 'auto',
-    marginTop: tokens.spacingVerticalM,
-  },
-  targetItem: {
-    width: '100%',
-    justifyContent: 'flex-start',
-    marginBottom: tokens.spacingVerticalXS,
-    padding: tokens.spacingHorizontalS,
-  },
-  loadingContainer: {
-    display: 'flex',
-    justifyContent: 'center',
+    padding: tokens.spacingVerticalM,
     alignItems: 'center',
-    padding: tokens.spacingVerticalXL,
+    gap: tokens.spacingVerticalM,
+  },
+  iconButton: {
+    width: '44px',
+    height: '44px',
+    minWidth: '44px',
+    padding: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spacer: {
+    flex: 1,
   },
 })
 
-export default function Navigation() {
+interface NavigationProps {
+  onToggleTheme: () => void
+  isDarkMode: boolean
+}
+
+export default function Navigation({ onToggleTheme, isDarkMode }: NavigationProps) {
   const styles = useStyles()
-  const [targets, setTargets] = useState<TargetInfo[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedTarget, setSelectedTarget] = useState<string | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [targetConfig, setTargetConfig] = useState({
+    targetType: '',
+    apiKeyVar: '',
+    endpointVar: '',
+    modelVar: '',
+  })
+  const [availableEnvVars, setAvailableEnvVars] = useState<string[]>([])
+  const [availableTargetTypes, setAvailableTargetTypes] = useState<any[]>([])
+  const [endpointValue, setEndpointValue] = useState('')
+  const [modelValue, setModelValue] = useState('')
 
   useEffect(() => {
-    loadTargets()
+    loadEnvVars()
+    loadTargetTypes()
   }, [])
 
-  const loadTargets = async () => {
+  const loadEnvVars = async () => {
     try {
-      const data = await targetsApi.listTargets()
-      setTargets(data)
+      const data = await configApi.getEnvVars()
+      setAvailableEnvVars(data.all || [])
     } catch (error) {
-      console.error('Failed to load targets:', error)
-    } finally {
-      setLoading(false)
+      console.error('Failed to load env vars:', error)
+    }
+  }
+
+  const loadTargetTypes = async () => {
+    try {
+      const data = await configApi.getTargetTypes()
+      setAvailableTargetTypes(data)
+    } catch (error) {
+      console.error('Failed to load target types:', error)
+    }
+  }
+
+  const loadEnvVarValue = async (varName: string, field: 'endpoint' | 'model') => {
+    try {
+      const data = await configApi.getEnvVarValue(varName)
+      if (field === 'endpoint') {
+        setEndpointValue(data.value || '')
+      } else {
+        setModelValue(data.value || '')
+      }
+    } catch (error) {
+      console.error('Failed to load env var value:', error)
     }
   }
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <Text className={styles.title}>PyRIT</Text>
-        <Text className={styles.subtitle}>AI Red Team Tool</Text>
-      </div>
-
-      <div className={styles.navSection}>
-        <Button
-          className={styles.navButton}
-          appearance="subtle"
-          icon={<ChatRegular />}
-        >
-          New Chat
-        </Button>
-        <Button
-          className={styles.navButton}
-          appearance="subtle"
-          icon={<HistoryRegular />}
-        >
-          History
-        </Button>
-        <Button
-          className={styles.navButton}
-          appearance="subtle"
-          icon={<SettingsRegular />}
-        >
-          Settings
-        </Button>
-      </div>
-
-      <div className={styles.navSection}>
-        <Text weight="semibold" block style={{ marginBottom: tokens.spacingVerticalS }}>
-          <TargetArrowRegular style={{ marginRight: tokens.spacingHorizontalXS }} />
-          Targets
-        </Text>
-        
-        {loading ? (
-          <div className={styles.loadingContainer}>
-            <Spinner size="small" />
-          </div>
-        ) : (
-          <div className={styles.targetsList}>
-            {targets.map((target) => (
-              <Button
-                key={target.id}
-                className={styles.targetItem}
-                appearance={selectedTarget === target.id ? 'primary' : 'subtle'}
-                onClick={() => setSelectedTarget(target.id)}
-              >
-                <div style={{ textAlign: 'left', width: '100%' }}>
-                  <Text block weight="semibold">{target.name}</Text>
-                  <Text block size={200} style={{ color: tokens.colorNeutralForeground3 }}>
-                    {target.type}
-                  </Text>
+      <Button
+        className={styles.iconButton}
+        appearance="subtle"
+        icon={<ChatRegular />}
+        title="New Chat"
+      />
+      
+      <Button
+        className={styles.iconButton}
+        appearance="subtle"
+        icon={<HistoryRegular />}
+        title="History"
+      />
+      
+      <Dialog open={settingsOpen} onOpenChange={(_, data: any) => setSettingsOpen(data.open)}>
+        <DialogTrigger disableButtonEnhancement>
+          <Button
+            className={styles.iconButton}
+            appearance="subtle"
+            icon={<SettingsRegular />}
+            title="Target Settings"
+          />
+        </DialogTrigger>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>Target Configuration</DialogTitle>
+            <DialogContent>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM }}>
+                  <Field label="Target Type">
+                    <Select
+                      value={targetConfig.targetType}
+                      onChange={(_, data) => {
+                        const selectedType = availableTargetTypes.find(t => t.name === data.value)
+                        const newConfig = {
+                          targetType: data.value,
+                          apiKeyVar: selectedType?.default_env_vars?.api_key || '',
+                          endpointVar: selectedType?.default_env_vars?.endpoint || '',
+                          modelVar: selectedType?.default_env_vars?.model || '',
+                        }
+                        setTargetConfig(newConfig)
+                        // Clear old values
+                        setEndpointValue('')
+                        setModelValue('')
+                        // Load values for endpoint and model if they're set
+                        if (newConfig.endpointVar) {
+                          loadEnvVarValue(newConfig.endpointVar, 'endpoint')
+                        }
+                        if (newConfig.modelVar) {
+                          loadEnvVarValue(newConfig.modelVar, 'model')
+                        }
+                      }}
+                    >
+                      <option value="">Select target type...</option>
+                      {availableTargetTypes.map((type) => (
+                        <option key={type.name} value={type.name}>
+                          {type.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  {targetConfig.targetType && (
+                    <>
+                      <Field label="API Key Environment Variable">
+                        <Select
+                          value={targetConfig.apiKeyVar}
+                          onChange={(_, data) => setTargetConfig({ ...targetConfig, apiKeyVar: data.value })}
+                        >
+                          <option value="">Select API key var...</option>
+                          {availableEnvVars.map((varName) => (
+                            <option key={varName} value={varName}>
+                              {varName}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field label="Endpoint Environment Variable">
+                        <Select
+                          value={targetConfig.endpointVar}
+                          onChange={(_, data) => {
+                            const newVar = data.value
+                            setTargetConfig({ ...targetConfig, endpointVar: newVar })
+                            if (newVar) loadEnvVarValue(newVar, 'endpoint')
+                          }}
+                        >
+                          <option value="">Select endpoint var...</option>
+                          {availableEnvVars.map((varName) => (
+                            <option key={varName} value={varName}>
+                              {varName}
+                            </option>
+                          ))}
+                        </Select>
+                        {endpointValue && (
+                          <Text size={200} style={{ marginTop: tokens.spacingVerticalXS, color: tokens.colorNeutralForeground3 }}>
+                            Value: {endpointValue}
+                          </Text>
+                        )}
+                      </Field>
+                      <Field label="Model Environment Variable">
+                        <Select
+                          value={targetConfig.modelVar}
+                          onChange={(_, data) => {
+                            const newVar = data.value
+                            setTargetConfig({ ...targetConfig, modelVar: newVar })
+                            if (newVar) loadEnvVarValue(newVar, 'model')
+                          }}
+                        >
+                          <option value="">Select model var...</option>
+                          {availableEnvVars.map((varName) => (
+                            <option key={varName} value={varName}>
+                              {varName}
+                            </option>
+                          ))}
+                        </Select>
+                        {modelValue && (
+                          <Text size={200} style={{ marginTop: tokens.spacingVerticalXS, color: tokens.colorNeutralForeground3 }}>
+                            Value: {modelValue}
+                          </Text>
+                        )}
+                      </Field>
+                    </>
+                  )}
                 </div>
-              </Button>
-            ))}
-          </div>
-        )}
+              </DialogContent>
+              <DialogActions>
+                <DialogTrigger disableButtonEnhancement>
+                  <Button appearance="secondary">Cancel</Button>
+                </DialogTrigger>
+                <Button appearance="primary" onClick={() => {
+                  // TODO: Save configuration to backend
+                  console.log('Saving config:', targetConfig)
+                  setSettingsOpen(false)
+                }}>
+                  Save
+                </Button>
+              </DialogActions>
+            </DialogBody>
+          </DialogSurface>
+        </Dialog>
+
+        <div className={styles.spacer} />
+
+        <Button
+          className={styles.iconButton}
+          appearance="subtle"
+          icon={isDarkMode ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
+          onClick={onToggleTheme}
+          title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+        />
       </div>
-    </div>
-  )
-}
+    )
+  }
+
