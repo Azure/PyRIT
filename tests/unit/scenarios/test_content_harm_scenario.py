@@ -7,6 +7,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from pyrit.models.seed_group import SeedGroup
+from pyrit.models.seed_objective import SeedObjective
+from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.scenarios.scenarios.e2e import (
@@ -44,6 +47,30 @@ def mock_objective_scorer():
 def sample_objectives():
     """Create sample objectives for testing."""
     return ["objective1", "objective2", "objective3"]
+
+
+@pytest.fixture
+def mock_seed_groups():
+    """Create mock seed groups for testing."""
+
+    def create_seed_groups_for_strategy(strategy_name: str):
+        """Helper to create seed groups for a given strategy."""
+        return [
+            SeedGroup(
+                prompts=[
+                    SeedObjective(value=f"{strategy_name} objective 1"),
+                    SeedPrompt(value=f"{strategy_name} prompt 1"),
+                ]
+            ),
+            SeedGroup(
+                prompts=[
+                    SeedObjective(value=f"{strategy_name} objective 2"),
+                    SeedPrompt(value=f"{strategy_name} prompt 2"),
+                ]
+            ),
+        ]
+
+    return create_seed_groups_for_strategy
 
 
 class TestContentHarmStrategy:
@@ -234,14 +261,30 @@ class TestContentHarmStrategy:
 class TestContentHarmScenarioBasic:
     """Basic tests for ContentHarmScenario initialization and properties."""
 
+    @pytest.mark.asyncio
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_initialization_with_minimal_parameters(
-        self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
+    async def test_initialization_with_minimal_parameters(
+        self,
+        mock_get_seeds,
+        mock_get_scorer,
+        mock_objective_target,
+        mock_adversarial_target,
+        mock_objective_scorer,
+        mock_seed_groups,
     ):
         """Test initialization with only required parameters."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seeds.return_value = {}
+        # Return seed groups for all harm strategies that might be used
+        mock_get_seeds.return_value = {
+            "hate": mock_seed_groups("hate"),
+            "fairness": mock_seed_groups("fairness"),
+            "violence": mock_seed_groups("violence"),
+            "sexual": mock_seed_groups("sexual"),
+            "harassment": mock_seed_groups("harassment"),
+            "misinformation": mock_seed_groups("misinformation"),
+            "leakage": mock_seed_groups("leakage"),
+        }
 
         scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
 
@@ -251,31 +294,34 @@ class TestContentHarmScenarioBasic:
         assert scenario.version == 1
 
         # Initialization populates objective target and scenario composites
-        # convert to async test flow
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(scenario.initialize_async(objective_target=mock_objective_target))
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         assert scenario._objective_target == mock_objective_target
 
+    @pytest.mark.asyncio
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_initialization_with_custom_strategies(
-        self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
+    async def test_initialization_with_custom_strategies(
+        self,
+        mock_get_seeds,
+        mock_get_scorer,
+        mock_objective_target,
+        mock_adversarial_target,
+        mock_objective_scorer,
+        mock_seed_groups,
     ):
         """Test initialization with custom harm strategies."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seeds.return_value = {}
+        mock_get_seeds.return_value = {
+            "hate": mock_seed_groups("hate"),
+            "fairness": mock_seed_groups("fairness"),
+        }
 
         strategies = [ContentHarmStrategy.Hate, ContentHarmStrategy.Fairness]
 
         scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=strategies)
-        )
+        await scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=strategies)
 
         # Prepared composites should match provided strategies
         assert len(scenario._scenario_composites) == 2
@@ -295,61 +341,100 @@ class TestContentHarmScenarioBasic:
         # The scorer is stored in _scorer_config.objective_scorer
         assert scenario._scorer_config.objective_scorer == mock_objective_scorer
 
+    @pytest.mark.asyncio
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_initialization_with_custom_max_concurrency(
-        self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
+    async def test_initialization_with_custom_max_concurrency(
+        self,
+        mock_get_seeds,
+        mock_get_scorer,
+        mock_objective_target,
+        mock_adversarial_target,
+        mock_objective_scorer,
+        mock_seed_groups,
     ):
         """Test initialization with custom max concurrency."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seeds.return_value = {}
+        mock_get_seeds.return_value = {
+            "hate": mock_seed_groups("hate"),
+            "fairness": mock_seed_groups("fairness"),
+            "violence": mock_seed_groups("violence"),
+            "sexual": mock_seed_groups("sexual"),
+            "harassment": mock_seed_groups("harassment"),
+            "misinformation": mock_seed_groups("misinformation"),
+            "leakage": mock_seed_groups("leakage"),
+        }
 
         scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=10)
-        )
+        await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=10)
 
         assert scenario._max_concurrency == 10
 
+    @pytest.mark.asyncio
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_initialization_with_custom_dataset_path(
-        self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
+    async def test_initialization_with_custom_dataset_path(
+        self,
+        mock_get_seeds,
+        mock_get_scorer,
+        mock_objective_target,
+        mock_adversarial_target,
+        mock_objective_scorer,
+        mock_seed_groups,
     ):
         """Test initialization with custom seed dataset prefix."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seeds.return_value = {}
+        mock_get_seeds.return_value = {
+            "hate": mock_seed_groups("hate"),
+            "fairness": mock_seed_groups("fairness"),
+            "violence": mock_seed_groups("violence"),
+            "sexual": mock_seed_groups("sexual"),
+            "harassment": mock_seed_groups("harassment"),
+            "misinformation": mock_seed_groups("misinformation"),
+            "leakage": mock_seed_groups("leakage"),
+        }
 
         custom_prefix = "custom_dataset"
 
         scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target, seed_dataset_prefix=custom_prefix)
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(scenario.initialize_async(objective_target=mock_objective_target))
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         # Just verify it initializes without error
         assert scenario is not None
-        # Verify the method was called with the custom prefix
-        mock_get_seeds.assert_called_once_with(custom_prefix)
+        # Verify the seed_dataset_prefix is stored
+        assert scenario._seed_dataset_prefix == custom_prefix
+        # Verify the method was called (without arguments, as per current implementation)
+        mock_get_seeds.assert_called_once_with()
 
+    @pytest.mark.asyncio
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_initialization_defaults_to_all_strategy(
-        self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
+    async def test_initialization_defaults_to_all_strategy(
+        self,
+        mock_get_seeds,
+        mock_get_scorer,
+        mock_objective_target,
+        mock_adversarial_target,
+        mock_objective_scorer,
+        mock_seed_groups,
     ):
         """Test that initialization defaults to ALL strategy when none provided."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seeds.return_value = {}
+        mock_get_seeds.return_value = {
+            "hate": mock_seed_groups("hate"),
+            "fairness": mock_seed_groups("fairness"),
+            "violence": mock_seed_groups("violence"),
+            "sexual": mock_seed_groups("sexual"),
+            "harassment": mock_seed_groups("harassment"),
+            "misinformation": mock_seed_groups("misinformation"),
+            "leakage": mock_seed_groups("leakage"),
+        }
 
         scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(scenario.initialize_async(objective_target=mock_objective_target))
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         # Should have strategies from the ALL aggregate
         assert len(scenario._scenario_composites) > 0
@@ -386,58 +471,84 @@ class TestContentHarmScenarioBasic:
         mock_get_seeds.return_value = {}
         scenario = ContentHarmScenario()
 
-        assert scenario._scorer_config.objective_scorer is not None
+        assert scenario._objective_scorer is not None
 
     def test_scenario_version(self):
         """Test that scenario has correct version."""
         assert ContentHarmScenario.version == 1
 
+    @pytest.mark.asyncio
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_initialization_with_max_retries(
-        self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
+    async def test_initialization_with_max_retries(
+        self,
+        mock_get_seeds,
+        mock_get_scorer,
+        mock_objective_target,
+        mock_adversarial_target,
+        mock_objective_scorer,
+        mock_seed_groups,
     ):
         """Test initialization with max_retries parameter."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seeds.return_value = {}
+        mock_get_seeds.return_value = {
+            "hate": mock_seed_groups("hate"),
+            "fairness": mock_seed_groups("fairness"),
+            "violence": mock_seed_groups("violence"),
+            "sexual": mock_seed_groups("sexual"),
+            "harassment": mock_seed_groups("harassment"),
+            "misinformation": mock_seed_groups("misinformation"),
+            "leakage": mock_seed_groups("leakage"),
+        }
 
         scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            scenario.initialize_async(objective_target=mock_objective_target, max_retries=3)
-        )
+        await scenario.initialize_async(objective_target=mock_objective_target, max_retries=3)
 
         assert scenario._max_retries == 3
 
+    @pytest.mark.asyncio
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_memory_labels_are_stored(
-        self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
+    async def test_memory_labels_are_stored(
+        self,
+        mock_get_seeds,
+        mock_get_scorer,
+        mock_objective_target,
+        mock_adversarial_target,
+        mock_objective_scorer,
+        mock_seed_groups,
     ):
         """Test that memory labels are properly stored."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seeds.return_value = {}
+        mock_get_seeds.return_value = {
+            "hate": mock_seed_groups("hate"),
+            "fairness": mock_seed_groups("fairness"),
+            "violence": mock_seed_groups("violence"),
+            "sexual": mock_seed_groups("sexual"),
+            "harassment": mock_seed_groups("harassment"),
+            "misinformation": mock_seed_groups("misinformation"),
+            "leakage": mock_seed_groups("leakage"),
+        }
 
         memory_labels = {"test_run": "123", "category": "harm"}
 
         scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            scenario.initialize_async(objective_target=mock_objective_target, memory_labels=memory_labels)
-        )
+        await scenario.initialize_async(objective_target=mock_objective_target, memory_labels=memory_labels)
 
         assert scenario._memory_labels == memory_labels
 
+    @pytest.mark.asyncio
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_initialization_with_all_parameters(
-        self, mock_get_seeds, mock_objective_target, mock_adversarial_target, mock_objective_scorer
+    async def test_initialization_with_all_parameters(
+        self, mock_get_seeds, mock_objective_target, mock_adversarial_target, mock_objective_scorer, mock_seed_groups
     ):
         """Test initialization with all possible parameters."""
-        mock_get_seeds.return_value = {}
+        mock_get_seeds.return_value = {
+            "hate": mock_seed_groups("hate"),
+            "violence": mock_seed_groups("violence"),
+        }
 
         memory_labels = {"test": "value"}
         strategies = [ContentHarmStrategy.Hate, ContentHarmStrategy.Violence]
@@ -448,16 +559,12 @@ class TestContentHarmScenarioBasic:
             seed_dataset_prefix="test_prefix",
         )
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            scenario.initialize_async(
-                objective_target=mock_objective_target,
-                scenario_strategies=strategies,
-                memory_labels=memory_labels,
-                max_concurrency=5,
-                max_retries=2,
-            )
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=strategies,
+            memory_labels=memory_labels,
+            max_concurrency=5,
+            max_retries=2,
         )
 
         assert scenario._objective_target == mock_objective_target

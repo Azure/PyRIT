@@ -11,7 +11,7 @@
 # %% [markdown]
 # Scenarios
 
-#A `Scenario` is a higher-level construct that groups multiple Attack Configurations together. This allows you to execute a comprehensive testing campaign with multiple attack methods sequentially. Scenarios are meant to be configured and written to test for specific workflows. As such, it is okay to hard code some values.
+# A `Scenario` is a higher-level construct that groups multiple Attack Configurations together. This allows you to execute a comprehensive testing campaign with multiple attack methods sequentially. Scenarios are meant to be configured and written to test for specific workflows. As such, it is okay to hard code some values.
 
 ## What is a Scenario?
 
@@ -71,6 +71,7 @@
 ### Example Structure
 # %%
 from typing import List, Optional, Type
+
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.scenarios import AtomicAttack, Scenario, ScenarioStrategy
@@ -81,6 +82,7 @@ class MyStrategy(ScenarioStrategy):
     ALL = ("all", {"all"})
     StrategyA = ("strategy_a", {"tag1", "tag2"})
     StrategyB = ("strategy_b", {"tag1"})
+
 
 class MyScenario(Scenario):
     version: int = 1
@@ -114,18 +116,20 @@ class MyScenario(Scenario):
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         atomic_attacks = []
         assert self._objective_target is not None
-        for strategy in self._strategy_compositions: # type: ignore
+        for strategy in self._strategy_compositions:  # type: ignore
             # Create attack instances based on strategy
             attack = PromptSendingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
             )
-            atomic_attacks.append(AtomicAttack(
-                atomic_attack_name=strategy.name,
-                attack=attack,
-                objectives=["objective1", "objective2"],
-                memory_labels=self._memory_labels,
-            ))
+            atomic_attacks.append(
+                AtomicAttack(
+                    atomic_attack_name=strategy.name,
+                    attack=attack,
+                    objectives=["objective1", "objective2"],
+                    memory_labels=self._memory_labels,
+                )
+            )
         return atomic_attacks
 
 

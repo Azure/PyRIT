@@ -74,7 +74,7 @@ content_harm_scenario = ContentHarmScenario(
     # Uncomment the following line to use a custom dataset prefix, we're using the default here
     # seed_dataset_prefix=="custom_prefix",
 )
-await content_harm_scenario.initialize_async( # type: ignore
+await content_harm_scenario.initialize_async(  # type: ignore
     scenario_strategies=[
         ContentHarmStrategy.Hate,
         ContentHarmStrategy.Violence,
