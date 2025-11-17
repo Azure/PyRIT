@@ -29,7 +29,7 @@ class ConversationAnalytics:
         self, *, chat_message_content: str
     ) -> list[ConversationMessageWithSimilarity]:
         """
-        Retrieves chat messages that have the same converted content
+        Retrieves chat messages that have the same converted content.
 
         Args:
             chat_message_content (str): The content of the chat message to find similar messages for.
@@ -68,7 +68,6 @@ class ConversationAnalytics:
             List[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on embedding similarity.
         """
-
         all_embdedding_memory = self.memory_interface.get_all_embeddings()
         similar_messages = []
 

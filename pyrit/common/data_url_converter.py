@@ -9,7 +9,8 @@ AZURE_OPENAI_GPT4O_SUPPORTED_IMAGE_FORMATS = [".jpg", ".jpeg", ".png", ".gif", "
 
 
 async def convert_local_image_to_data_url(image_path: str) -> str:
-    """Converts a local image file to a data URL encoded in base64.
+    """
+    Converts a local image file to a data URL encoded in base64.
 
     Args:
         image_path (str): The file system path to the image file.

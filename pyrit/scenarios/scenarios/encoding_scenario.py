@@ -143,7 +143,6 @@ class EncodingScenario(Scenario):
                 encoding-modified prompts.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
-
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
@@ -253,7 +252,6 @@ class EncodingScenario(Scenario):
         Returns:
             list[AtomicAttack]: List of atomic attacks for this encoding scheme.
         """
-
         converter_configs = [
             AttackConverterConfig(
                 request_converters=PromptConverterConfiguration.from_converters(converters=converters)

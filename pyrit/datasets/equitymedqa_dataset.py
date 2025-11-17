@@ -57,6 +57,7 @@ def fetch_equitymedqa_dataset_unique_values(
 ) -> SeedDataset:
     """
     Fetches the EquityMedQA dataset from Hugging Face and returns a SeedDataset.
+
     Args:
         subset_name (str | list): The name(s) of the subset to fetch. Defaults to "all" which returns all values.
 
@@ -101,6 +102,7 @@ def fetch_equitymedqa_dataset_unique_values(
 def get_sub_dataset(subset_name: str) -> list:
     """
     Fetches a specific subset of the EquityMedQA dataset and returns a list of unique prompts.
+
     Args:
         subset_name (str): The name of the subset to fetch.
     """

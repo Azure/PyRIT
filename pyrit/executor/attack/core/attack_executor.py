@@ -235,7 +235,6 @@ class AttackExecutor:
             ...     seed_groups=[SeedGroup(...), SeedGroup(...)]
             ... )
         """
-
         # Validate that the attack uses SingleTurnAttackContext
         if hasattr(attack, "_context_type") and not issubclass(attack._context_type, SingleTurnAttackContext):
             raise TypeError(
@@ -336,7 +335,6 @@ class AttackExecutor:
             ...     custom_prompts=["Tell me about chemistry", "Explain system administration"]
             ... )
         """
-
         # Validate that the attack uses MultiTurnAttackContext
         if hasattr(attack, "_context_type") and not issubclass(attack._context_type, MultiTurnAttackContext):
             raise TypeError(

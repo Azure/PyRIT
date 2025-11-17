@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class ManyShotJailbreakAttack(PromptSendingAttack):
     """
     This attack implements implements the Many Shot Jailbreak method as discussed in research found here:
-    https://www.anthropic.com/research/many-shot-jailbreaking
+    https://www.anthropic.com/research/many-shot-jailbreaking.
 
     Prepends the seed prompt with a faux dialogue between a human and an AI, using examples from a dataset
     to demonstrate successful jailbreaking attempts. This method leverages the model's ability to learn from
@@ -74,8 +74,10 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
         Validate the context before executing the attack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing parameters and objective.
+
         Raises:
             ValueError: If the context is invalid.
         """
@@ -86,8 +88,10 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
         Perform the ManyShotJailbreakAttack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
+
         Returns:
             AttackResult: The result of the attack.
         """
