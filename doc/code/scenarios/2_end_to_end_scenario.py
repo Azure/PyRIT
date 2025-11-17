@@ -5,11 +5,15 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
-# # Rapid Response Harm Testing
+# # Content Harm Testing
 #
 # This notebook demonstrates the usage of the ContentHarmScenario class to test model behavior with respect to various harm categories.
 
@@ -48,64 +52,37 @@ for harm in ["hate", "violence", "harassment", "leakage", "sexual", "fairness", 
 # %% [markdown]
 # ### Running Multiple Harm Strategies
 #
-# Now we can run the strategies using the datasets we defined above! In this first example, we'll run all the strategies.
+# Now we can run the strategies using the datasets we defined above! We can selectively choose which strategies to run. In this example, we'll only run the Hate, Violence, and Harassment strategies.
 
 # %%
-import os
 
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
-from pyrit.scenarios.scenarios.e2e.content_harm_scenario import (
+from pyrit.scenarios.scenarios.e2e import (
     ContentHarmScenario,
     ContentHarmStrategy,
 )
+from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
+from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 
 printer = ConsoleScenarioResultPrinter()
-
-# Create ContentHarmScenario instance for all harm strategies
-content_harm_scenario = ContentHarmScenario(
-    objective_target=OpenAIChatTarget(
-        endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
-        api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-    ),
-    scenario_strategies=[ContentHarmStrategy.ALL],
-    # Uncomment the following line to use a custom dataset prefix, we're using the default here
-    # seed_dataset_prefix=="custom_prefix",
-)
-
-# Run strategies
-print(f"Created scenario: {content_harm_scenario.name}")
-await content_harm_scenario.initialize_async()  # type: ignore
-
-# Execute the entire scenario
-content_harm_results = await content_harm_scenario.run_async()  # type: ignore
-await printer.print_summary_async(content_harm_results)  # type: ignore
-
-
-# %% [markdown]
-#
-# We can also selectively choose which strategies to run. In this next example, we'll only run the Hate, Violence, and Harassment strategies.
-
-# %%
+objective_target = OpenAIChatTarget()
 
 # Create ContentHarmScenario instance for hate, violence, and harassment testing
 content_harm_scenario = ContentHarmScenario(
-    objective_target=OpenAIChatTarget(
-        endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
-        api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-    ),
+    objective_scorer=TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=OpenAIChatTarget())),
+    # Uncomment the following line to use a custom dataset prefix, we're using the default here
+    # seed_dataset_prefix=="custom_prefix",
+)
+await content_harm_scenario.initialize_async( # type: ignore
     scenario_strategies=[
         ContentHarmStrategy.Hate,
         ContentHarmStrategy.Violence,
         ContentHarmStrategy.Harassment,
     ],
-    # Uncomment the following line to use a custom dataset prefix, we're using the default here
-    # seed_dataset_prefix=="custom_prefix",
+    objective_target=objective_target,
 )
-
-# Run strategies
 print(f"Created scenario: {content_harm_scenario.name}")
-await content_harm_scenario.initialize_async()  # type: ignore
 
 # Execute the entire scenario
 content_harm_results = await content_harm_scenario.run_async()  # type: ignore

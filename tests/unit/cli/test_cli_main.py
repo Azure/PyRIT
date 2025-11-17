@@ -482,11 +482,14 @@ class TestRunScenarioAsync:
                 scenario_name="test_scenario", registry=mock_registry, scenario_strategies=["base64"]
             )
 
-        # Verify scenario was instantiated with composite strategies
-        mock_scenario_class.assert_called_once()
-        call_kwargs = mock_scenario_class.call_args[1]
-        assert "scenario_strategies" in call_kwargs
-        strategies = call_kwargs["scenario_strategies"]
+        # Verify scenario was instantiated without strategies (they go to initialize_async now)
+        mock_scenario_class.assert_called_once_with()
+
+        # Verify initialize_async was called with strategies
+        mock_scenario_instance.initialize_async.assert_called_once()
+        init_call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
+        assert "scenario_strategies" in init_call_kwargs
+        strategies = init_call_kwargs["scenario_strategies"]
         assert len(strategies) == 1
 
     @pytest.mark.asyncio
@@ -528,11 +531,14 @@ class TestRunScenarioAsync:
                 scenario_name="test_scenario", registry=mock_registry, scenario_strategies=["base64", "rot13", "morse"]
             )
 
-        # Verify scenario was instantiated with composite strategies
-        mock_scenario_class.assert_called_once()
-        call_kwargs = mock_scenario_class.call_args[1]
-        assert "scenario_strategies" in call_kwargs
-        strategies = call_kwargs["scenario_strategies"]
+        # Verify scenario was instantiated without strategies (they go to initialize_async now)
+        mock_scenario_class.assert_called_once_with()
+
+        # Verify initialize_async was called with strategies
+        mock_scenario_instance.initialize_async.assert_called_once()
+        init_call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
+        assert "scenario_strategies" in init_call_kwargs
+        strategies = init_call_kwargs["scenario_strategies"]
         assert len(strategies) == 3
 
     @pytest.mark.asyncio

@@ -11,7 +11,12 @@
 # %% [markdown]
 # # Foundry Scenario Example
 #
-# This notebook demonstrates how to use the `FoundryScenario` to test a target with multiple attack strategies.
+# This notebook demonstrates how to use a composite scenario — the `FoundryScenario` — to test a target with multiple attack strategies.
+# A "composite scenario" orchestrates a campaign composed of multiple atomic attacks and
+# strategies. Instead of running single, isolated attack techniques, a composite scenario
+# combines converters, multi-turn attacks, and other techniques into organized compositions
+#  This enables testing complex, realistic workflows where multiple transformations
+# or attack steps are applied together and results are aggregated into a single ScenarioResult.
 #
 # The `FoundryScenario` provides a comprehensive testing approach that includes:
 # - **Converter-based attacks**: Apply various encoding/obfuscation techniques (Base64, Caesar cipher, etc.)
@@ -70,13 +75,12 @@ scenario_strategies = [
 # The scenario needs to be initialized before execution. This builds the atomic attacks based on the selected strategies.
 
 # %%
-foundry_scenario = FoundryScenario(
+foundry_scenario = FoundryScenario(objectives=objectives)
+await foundry_scenario.initialize_async(  # type: ignore
     objective_target=objective_target,
-    max_concurrency=10,
     scenario_strategies=scenario_strategies,
-    objectives=objectives,
+    max_concurrency=10,
 )
-await foundry_scenario.initialize_async()  # type: ignore
 
 print(f"Created scenario: {foundry_scenario.name}")
 print(f"Number of atomic attacks: {foundry_scenario.atomic_attack_count}")

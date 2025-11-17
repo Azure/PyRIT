@@ -9,7 +9,7 @@ import pytest
 
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenarios.scenarios.e2e.content_harm_scenario import (
+from pyrit.scenarios.scenarios.e2e import (
     ContentHarmScenario,
     ContentHarmStrategy,
 )
@@ -243,15 +243,20 @@ class TestContentHarmScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seeds.return_value = {}
 
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_target,
-        )
+        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
 
-        assert scenario._objective_target == mock_objective_target
+        # Constructor should set adversarial chat and basic metadata
         assert scenario._adversarial_chat == mock_adversarial_target
         assert scenario.name == "Content Harm Scenario"
         assert scenario.version == 1
+
+        # Initialization populates objective target and scenario composites
+        # convert to async test flow
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(scenario.initialize_async(objective_target=mock_objective_target))
+
+        assert scenario._objective_target == mock_objective_target
 
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
@@ -262,37 +267,18 @@ class TestContentHarmScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seeds.return_value = {}
 
-        strategies = [
-            ContentHarmStrategy.Hate,
-            ContentHarmStrategy.Fairness,
-        ]
+        strategies = [ContentHarmStrategy.Hate, ContentHarmStrategy.Fairness]
 
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_target,
-            scenario_strategies=strategies,
+        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=strategies)
         )
 
-        assert len(scenario._content_harm_strategy_composition) == 2
-
-    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
-    def test_initialization_with_memory_labels(
-        self, mock_get_seeds, mock_get_scorer, mock_objective_target, mock_adversarial_target, mock_objective_scorer
-    ):
-        """Test initialization with memory labels."""
-        mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seeds.return_value = {}
-
-        memory_labels = {"test_id": "123", "environment": "test"}
-
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_target,
-            memory_labels=memory_labels,
-        )
-
-        assert scenario._memory_labels == memory_labels
+        # Prepared composites should match provided strategies
+        assert len(scenario._scenario_composites) == 2
 
     @patch("pyrit.scenarios.scenarios.e2e.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
     def test_initialization_with_custom_scorer(
@@ -302,7 +288,6 @@ class TestContentHarmScenarioBasic:
         mock_get_seeds.return_value = {}
 
         scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_target,
             objective_scorer=mock_objective_scorer,
         )
@@ -319,10 +304,12 @@ class TestContentHarmScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seeds.return_value = {}
 
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_target,
-            max_concurrency=10,
+        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=10)
         )
 
         assert scenario._max_concurrency == 10
@@ -338,11 +325,11 @@ class TestContentHarmScenarioBasic:
 
         custom_prefix = "custom_dataset"
 
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_target,
-            seed_dataset_prefix=custom_prefix,
-        )
+        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target, seed_dataset_prefix=custom_prefix)
+
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(scenario.initialize_async(objective_target=mock_objective_target))
 
         # Just verify it initializes without error
         assert scenario is not None
@@ -358,13 +345,14 @@ class TestContentHarmScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seeds.return_value = {}
 
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_target,
-        )
+        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(scenario.initialize_async(objective_target=mock_objective_target))
 
         # Should have strategies from the ALL aggregate
-        assert len(scenario._content_harm_strategy_composition) > 0
+        assert len(scenario._scenario_composites) > 0
 
     def test_get_default_strategy_returns_all(self):
         """Test that get_default_strategy returns ALL strategy."""
@@ -381,10 +369,7 @@ class TestContentHarmScenarioBasic:
     def test_get_default_adversarial_target(self, mock_get_seeds, mock_objective_target):
         """Test default adversarial target creation."""
         mock_get_seeds.return_value = {}
-
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-        )
+        scenario = ContentHarmScenario()
 
         assert scenario._adversarial_chat is not None
 
@@ -399,10 +384,7 @@ class TestContentHarmScenarioBasic:
     def test_get_default_scorer(self, mock_get_seeds, mock_objective_target):
         """Test default scorer creation."""
         mock_get_seeds.return_value = {}
-
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-        )
+        scenario = ContentHarmScenario()
 
         assert scenario._scorer_config.objective_scorer is not None
 
@@ -419,10 +401,12 @@ class TestContentHarmScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seeds.return_value = {}
 
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_target,
-            max_retries=3,
+        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            scenario.initialize_async(objective_target=mock_objective_target, max_retries=3)
         )
 
         assert scenario._max_retries == 3
@@ -438,10 +422,12 @@ class TestContentHarmScenarioBasic:
 
         memory_labels = {"test_run": "123", "category": "harm"}
 
-        scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
-            adversarial_chat=mock_adversarial_target,
-            memory_labels=memory_labels,
+        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            scenario.initialize_async(objective_target=mock_objective_target, memory_labels=memory_labels)
         )
 
         assert scenario._memory_labels == memory_labels
@@ -457,14 +443,21 @@ class TestContentHarmScenarioBasic:
         strategies = [ContentHarmStrategy.Hate, ContentHarmStrategy.Violence]
 
         scenario = ContentHarmScenario(
-            objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_target,
-            scenario_strategies=strategies,
             objective_scorer=mock_objective_scorer,
-            memory_labels=memory_labels,
             seed_dataset_prefix="test_prefix",
-            max_concurrency=5,
-            max_retries=2,
+        )
+
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=strategies,
+                memory_labels=memory_labels,
+                max_concurrency=5,
+                max_retries=2,
+            )
         )
 
         assert scenario._objective_target == mock_objective_target

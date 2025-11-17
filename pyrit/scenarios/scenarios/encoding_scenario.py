@@ -3,9 +3,9 @@
 
 
 import pathlib
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
-from pyrit.common import REQUIRED_VALUE, apply_defaults
+from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
@@ -33,18 +33,16 @@ from pyrit.prompt_converter.nato_converter import NatoConverter
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
-from pyrit.prompt_target import PromptTarget
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_strategy import (
-    ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
 from pyrit.score import TrueFalseScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
 
 
-class EncodingStrategy(ScenarioStrategy):  # type: ignore[misc]
+class EncodingStrategy(ScenarioStrategy):
     """
     Strategies for encoding attacks.
 
@@ -120,25 +118,16 @@ class EncodingScenario(Scenario):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
-        scenario_strategies: list[EncodingStrategy | ScenarioCompositeStrategy] | None = None,
         seed_prompts: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
-        memory_labels: Optional[Dict[str, str]] = None,
         encoding_templates: Optional[Sequence[str]] = None,
-        max_concurrency: int = 10,
-        max_retries: int = 0,
         include_baseline: bool = True,
+        scenario_result_id: Optional[str] = None,
     ):
         """
         Initialize the EncodingScenario.
 
         Args:
-            objective_target (PromptTarget): The target model to test for encoding vulnerabilities.
-            scenario_strategies (list[EncodingStrategy | ScenarioCompositeStrategy] | None):
-                Strategies to test. Can be a list of EncodingStrategy enums (simple case) or
-                ScenarioCompositeStrategy instances (advanced case).
-                If None, defaults to all encoding strategies.
             seed_prompts (Optional[list[str]]): The list of text strings that will be encoded and
                 used to test the model. These are the pieces the scenario is trying to get the model
                 to decode and repeat. If not provided, defaults to slur terms and XSS payloads from
@@ -146,41 +135,29 @@ class EncodingScenario(Scenario):
             objective_scorer (Optional[TrueFalseScorer]): The scorer used to evaluate if the model
                 successfully decoded the payload. Defaults to DecodingScorer with encoding_scenario
                 category.
-            memory_labels (Optional[Dict[str, str]]): Optional labels to attach to memory entries
-                for tracking and filtering.
             encoding_templates (Optional[Sequence[str]]): Templates used to construct the decoding
                 prompts. Defaults to AskToDecodeConverter.garak_templates.
-            max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
-            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
-                Set to 0 (default) for no automatic retries. If set to a positive number,
-                the scenario will automatically retry up to this many times after an exception.
-                For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
             include_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 without modifications. Defaults to True. When True, a "baseline" attack is automatically
                 added as the first atomic attack, allowing comparison between unmodified prompts and
                 encoding-modified prompts.
+            scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
-
-        self._encoding_composites = EncodingStrategy.prepare_scenario_strategies(
-            scenario_strategies, default_aggregate=EncodingStrategy.ALL
-        )
 
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
         self._seed_prompts: list[str] = seed_prompts if seed_prompts else self._get_default_dataset()
-        self._memory_labels = memory_labels or {}
         self._encoding_templates = encoding_templates or AskToDecodeConverter.garak_templates
 
         super().__init__(
             name="Encoding Scenario",
             version=self.version,
-            memory_labels=memory_labels,
-            max_concurrency=max_concurrency,
+            strategy_class=EncodingStrategy,
+            default_aggregate=EncodingStrategy.ALL,
             objective_scorer_identifier=objective_scorer.get_identifier(),
-            objective_target=objective_target,
-            max_retries=max_retries,
             include_default_baseline=include_baseline,
+            scenario_result_id=scenario_result_id,
         )
 
     # Use the same as Garak by default
@@ -249,7 +226,7 @@ class EncodingScenario(Scenario):
 
         # Filter to only include selected strategies
         # Extract strategy names from composites (each has exactly one strategy since composition not supported)
-        selected_encoding_names = {comp.strategies[0].value for comp in self._encoding_composites if comp.strategies}
+        selected_encoding_names = {comp.strategies[0].value for comp in self._scenario_composites if comp.strategies}
         converters_with_encodings = [
             (conv, name) for conv, name in all_converters_with_encodings if name in selected_encoding_names
         ]

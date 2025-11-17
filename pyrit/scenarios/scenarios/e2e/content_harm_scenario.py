@@ -4,13 +4,14 @@
 import os
 from typing import Dict, List, Optional, Sequence, Type, TypeVar
 
-from pyrit.common import REQUIRED_VALUE, apply_defaults
+from pyrit.common import apply_defaults
 from pyrit.executor.attack import (
-    AttackAdversarialConfig,
     AttackScoringConfig,
     AttackStrategy,
     PromptSendingAttack,
-    RedTeamingAttack,
+)
+from pyrit.executor.attack.multi_turn.multi_prompt_sending import (
+    MultiPromptSendingAttack,
 )
 from pyrit.executor.attack.single_turn.many_shot_jailbreak import (
     ManyShotJailbreakAttack,
@@ -18,11 +19,10 @@ from pyrit.executor.attack.single_turn.many_shot_jailbreak import (
 from pyrit.executor.attack.single_turn.role_play import RolePlayAttack, RolePlayPaths
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models.seed_group import SeedGroup
-from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
+from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenarios import (
     AtomicAttack,
     Scenario,
-    ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
 from pyrit.score import (
@@ -96,30 +96,21 @@ class ContentHarmScenario(Scenario):
     def __init__(
         self,
         *,
-        scenario_strategies: Sequence[ContentHarmStrategy] | None = None,
-        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         objective_scorer: Optional[TrueFalseScorer] = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
-        memory_labels: Optional[Dict[str, str]] = None,
         seed_dataset_prefix: Optional[str] = None,
-        max_concurrency: int = 10,
-        max_retries: int = 0,
+        scenario_result_id: Optional[str] = None,
     ):
         """
         Initialize the Content Harm Scenario.
 
         Args:
-            scenario_strategies (Sequence[ContentHarmStrategy | ScenarioCompositeStrategy] | None):
-                The harm strategies or composite strategies to include in this scenario. If None,
-                defaults to ContentHarmStrategy.ALL.
-            objective_target (PromptChatTarget): The chat target to be attacked.
-            objective_scorer (Optional[TrueFalseScorer]): The scorer used to evaluate if the model
-                successfully met the objective. If None, a default SelfAskRefusalScorer wrapped in a
-                TrueFalseInverterScorer is used.
-            adversarial_chat (Optional[PromptChatTarget]): The chat target used for red teaming attacks.
-            memory_labels (Optional[Dict[str, str]]): Optional labels to attach to memory entries
-                for tracking and filtering.
-            seed_dataset_prefix (Optional[str]): Prefix of the dataset to use to retrieve the objectives.
+            adversarial_chat (Optional[PromptChatTarget]): Additionally used for scoring defaults.
+                If not provided, a default OpenAI target will be created using environment variables.
+            objective_scorer (Optional[TrueFalseScorer]): Scorer to evaluate attack success.
+                If not provided, creates a default composite scorer using Azure Content Filter
+                and SelfAsk Refusal scorers.
+                seed_dataset_prefix (Optional[str]): Prefix of the dataset to use to retrieve the objectives.
                 This will be used to retrieve the appropriate seed groups from CentralMemory. If not provided,
                 defaults to "content_harm".
             max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
@@ -129,25 +120,18 @@ class ContentHarmScenario(Scenario):
                 For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
         """
 
-        self._objective_target = objective_target
-        objective_scorer = objective_scorer or self._get_default_scorer()
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
-        self._memory_labels = memory_labels or {}
-
-        self._content_harm_strategy_composition = ContentHarmStrategy.prepare_scenario_strategies(
-            scenario_strategies, default_aggregate=ContentHarmStrategy.ALL
-        )
-        self._seeds = self._get_strategy_seeds_groups(seed_dataset_prefix)
+        self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
+        self._seed_dataset_prefix = seed_dataset_prefix
 
         super().__init__(
             name="Content Harm Scenario",
             version=self.version,
-            memory_labels=memory_labels,
-            max_concurrency=max_concurrency,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
-            objective_target=objective_target,
-            max_retries=max_retries,
+            objective_scorer_identifier=self._objective_scorer.get_identifier(),
+            strategy_class=ContentHarmStrategy,
+            default_aggregate=ContentHarmStrategy.ALL,
+            scenario_result_id=scenario_result_id,
         )
 
     def _get_strategy_seeds_groups(self, seed_dataset_prefix: Optional[str] = None) -> Dict[str, Sequence[SeedGroup]]:
@@ -173,19 +157,20 @@ class ContentHarmScenario(Scenario):
         if not seed_dataset_prefix:
             seed_dataset_prefix = "content_harm"
         seeds_by_strategy = {}
-        for harm_strategy in self._content_harm_strategy_composition:
-            harm_dataset_name = seed_dataset_prefix + "_" + harm_strategy.name
+        selected_harms = {comp.strategies[0].value for comp in self._scenario_composites if comp.strategies}
+        for harm_strategy in selected_harms:
+            harm_dataset_name = seed_dataset_prefix + "_" + harm_strategy
             strategy_seed_groups = memory.get_seed_groups(dataset_name=harm_dataset_name)
             strategy_objectives: list[str] = [
                 obj.objective.value for obj in strategy_seed_groups if obj.objective is not None
             ]
             if len(strategy_objectives) == 0:
                 raise ValueError(
-                    f"No objectives found for {harm_strategy.name} in the dataset {harm_dataset_name}.\n"
+                    f"No objectives found for {harm_strategy} in the dataset {harm_dataset_name}.\n"
                     f"Ensure that the dataset is properly loaded into CentralMemory and follows the naming "
-                    f"schema seed_dataset_prefix + _ + {harm_strategy.name}."
+                    f"schema seed_dataset_prefix + _ + {harm_strategy}."
                 )
-            seeds_by_strategy[harm_strategy.name] = strategy_seed_groups
+            seeds_by_strategy[harm_strategy] = strategy_seed_groups
         return seeds_by_strategy
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
@@ -213,13 +198,15 @@ class ContentHarmScenario(Scenario):
             List[AtomicAttack]: The list of AtomicAttack instances for harm strategies.
         """
         atomic_attacks: List[AtomicAttack] = []
-        for strategy in self._content_harm_strategy_composition:
-            atomic_attacks.extend(self._get_strategy_attacks(strategy=strategy, seed_groups=self._seeds[strategy.name]))
+        selected_harms = {comp.strategies[0].value for comp in self._scenario_composites if comp.strategies}
+        seeds = self._get_strategy_seeds_groups()
+        for strategy in selected_harms:
+            atomic_attacks.extend(self._get_strategy_attacks(strategy=strategy, seed_groups=seeds[strategy]))
         return atomic_attacks
 
     def _get_strategy_attacks(
         self,
-        strategy: ScenarioCompositeStrategy,
+        strategy: str,
         seed_groups: Sequence[SeedGroup],
     ) -> List[AtomicAttack]:
         """
@@ -233,6 +220,9 @@ class ContentHarmScenario(Scenario):
         Returns:
             List[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
         """
+        # objective_target is guaranteed to be non-None by parent class validation
+        assert self._objective_target is not None
+
         prompt_sending_attack = PromptSendingAttack(
             objective_target=self._objective_target,
             attack_scoring_config=self._scorer_config,
@@ -249,46 +239,53 @@ class ContentHarmScenario(Scenario):
             attack_scoring_config=self._scorer_config,
         )
 
-        red_teaming_attack = RedTeamingAttack(
+        multi_prompt_sending_attack = MultiPromptSendingAttack(
             objective_target=self._objective_target,
             attack_scoring_config=self._scorer_config,
-            attack_adversarial_config=AttackAdversarialConfig(target=self._adversarial_chat),
         )
 
         # Extract seed objectives and seed prompts from seed groups
         strategy_seed_objectives = []
         strategy_seed_group_prompt_only = []
+        # prompt sequence for multi prompt attack, includes objective followed by seed prompts
+        strategy_prompt_sequence = []
         for seed_group in seed_groups:
-            strategy_seed_objectives.append(seed_group.objective.value if seed_group.objective is not None else None)
+            objective = seed_group.objective.value if seed_group.objective is not None else None
+            if objective:
+                strategy_seed_objectives.append(objective)
+                # strategy_prompt_sequence.append(objective)
 
             # create new SeedGroup without the objective for PromptSendingAttack
             strategy_seed_group_prompt_only.append(SeedGroup(prompts=seed_group.prompts))
+            for prompt in seed_group.prompts:
+                strategy_prompt_sequence.append(prompt.value)
 
         attacks = [
             AtomicAttack(
-                atomic_attack_name=strategy.name,
+                atomic_attack_name=strategy,
                 attack=prompt_sending_attack,
                 objectives=strategy_seed_objectives,
                 memory_labels=self._memory_labels,
                 seed_groups=strategy_seed_group_prompt_only,
             ),
             AtomicAttack(
-                atomic_attack_name=strategy.name,
+                atomic_attack_name=strategy,
                 attack=role_play_attack,
                 objectives=strategy_seed_objectives,
                 memory_labels=self._memory_labels,
             ),
             AtomicAttack(
-                atomic_attack_name=strategy.name,
+                atomic_attack_name=strategy,
                 attack=many_shot_jailbreak_attack,
                 objectives=strategy_seed_objectives,
                 memory_labels=self._memory_labels,
             ),
             AtomicAttack(
-                atomic_attack_name=strategy.name,
-                attack=red_teaming_attack,
+                atomic_attack_name=strategy,
+                attack=multi_prompt_sending_attack,
                 objectives=strategy_seed_objectives,
                 memory_labels=self._memory_labels,
+                prompt_sequence=strategy_prompt_sequence,
             ),
         ]
         return attacks
