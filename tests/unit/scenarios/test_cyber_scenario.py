@@ -14,7 +14,7 @@ from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenarios import CyberScenario, CyberStrategy
-from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.score import TrueFalseCompositeScorer
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ def mock_objective_target():
 @pytest.fixture
 def mock_objective_scorer():
     """Create a mock objective scorer for testing."""
-    mock = MagicMock(spec=SelfAskTrueFalseScorer)
+    mock = MagicMock(spec=TrueFalseCompositeScorer)
     mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
     return mock
 
@@ -114,7 +114,7 @@ class TestCyberScenarioInitialization:
 
     def test_init_with_custom_scorer(self, mock_objective_scorer):
         """Test initialization with custom scorer."""
-        scorer = MagicMock(SelfAskTrueFalseScorer)
+        scorer = MagicMock(TrueFalseCompositeScorer)
         scenario = CyberScenario(objective_scorer=scorer)
         assert isinstance(scenario._scorer_config, AttackScoringConfig)
 
@@ -274,7 +274,10 @@ class TestCyberScenarioProperties:
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         objective_target = scenario._objective_target
-        scorer_target = scenario._scorer_config.objective_scorer._prompt_target
+
+        # this works because TrueFalseCompositeScorer subclasses TrueFalseScorer,
+        # but TrueFalseScorer itself (the type for ScorerConfig) does not have ._scorers.
+        scorer_target = scenario._scorer_config.objective_scorer._scorers[0]  # type: ignore
         adversarial_target = scenario._adversarial_chat
 
         assert objective_target != scorer_target
