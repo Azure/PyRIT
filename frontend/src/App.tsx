@@ -22,13 +22,18 @@ function App() {
     setConversationId(convId)
   }
 
+  const handleNewChat = () => {
+    setMessages([])
+    setConversationId(null)
+  }
+
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode)
   }
 
   return (
     <FluentProvider theme={isDarkMode ? webDarkTheme : webLightTheme}>
-      <MainLayout onToggleTheme={toggleTheme} isDarkMode={isDarkMode}>
+      <MainLayout onToggleTheme={toggleTheme} isDarkMode={isDarkMode} onNewChat={handleNewChat}>
         <ChatWindow
           messages={messages}
           conversationId={conversationId}

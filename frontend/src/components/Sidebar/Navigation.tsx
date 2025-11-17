@@ -50,9 +50,10 @@ const useStyles = makeStyles({
 interface NavigationProps {
   onToggleTheme: () => void
   isDarkMode: boolean
+  onNewChat: () => void
 }
 
-export default function Navigation({ onToggleTheme, isDarkMode }: NavigationProps) {
+export default function Navigation({ onToggleTheme, isDarkMode, onNewChat }: NavigationProps) {
   const styles = useStyles()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [targetConfig, setTargetConfig] = useState({
@@ -108,6 +109,7 @@ export default function Navigation({ onToggleTheme, isDarkMode }: NavigationProp
         className={styles.iconButton}
         appearance="subtle"
         icon={<ChatRegular />}
+        onClick={onNewChat}
         title="New Chat"
       />
       

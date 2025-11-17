@@ -25,16 +25,28 @@ chat_service = ChatService()
 
 @router.post("/chat", response_model=ChatResponse)
 async def send_message(
-    message: str = Form(...),
+    original_value: str = Form(...),  # The user's original text before conversion
+    converted_value: Optional[str] = Form(None),  # The text after conversion (if converters applied)
     conversation_id: Optional[str] = Form(None),
     target_id: Optional[str] = Form(None),
+    converter_identifiers: Optional[str] = Form(None),  # JSON string of PyRIT converter identifiers
     files: List[UploadFile] = File(default=[])
 ):
     """
-    Send a message and get a response from the configured target
-    Supports multimodal input with file attachments
+    Send a message and get a response from the configured target.
+    Supports multimodal input with file attachments.
+    Accepts converter_identifiers from preview to properly track conversion history.
     """
     try:
+        # Parse converter_identifiers if provided
+        converter_ids = None
+        if converter_identifiers:
+            import json
+            try:
+                converter_ids = json.loads(converter_identifiers)
+            except json.JSONDecodeError as je:
+                logger.warning(f"Failed to parse converter_identifiers JSON: {je}")
+        
         # Process uploaded files - save them locally
         attachments = []
         upload_dir = Path("/workspace/dbdata/prompt-memory-entries")
@@ -86,10 +98,12 @@ async def send_message(
         
         logger.info(f"Sending message with {len(attachments)} attachments to chat service")
         response = await chat_service.send_message(
-            message=message,
+            original_value=original_value,
+            converted_value=converted_value,
             conversation_id=conversation_id,
             target_id=target_id,
             attachments=attachments if attachments else None,
+            converter_identifiers=converter_ids,
         )
         return response
     except Exception as e:

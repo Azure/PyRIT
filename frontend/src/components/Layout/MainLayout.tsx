@@ -61,9 +61,10 @@ interface MainLayoutProps {
   children: ReactNode
   onToggleTheme: () => void
   isDarkMode: boolean
+  onNewChat: () => void
 }
 
-export default function MainLayout({ children, onToggleTheme, isDarkMode }: MainLayoutProps) {
+export default function MainLayout({ children, onToggleTheme, isDarkMode, onNewChat }: MainLayoutProps) {
   const styles = useStyles()
 
   return (
@@ -79,7 +80,7 @@ export default function MainLayout({ children, onToggleTheme, isDarkMode }: Main
       </div>
       <div className={styles.contentArea}>
         <aside className={styles.sidebar}>
-          <Navigation onToggleTheme={onToggleTheme} isDarkMode={isDarkMode} />
+          <Navigation onToggleTheme={onToggleTheme} isDarkMode={isDarkMode} onNewChat={onNewChat} />
         </aside>
         <main className={styles.main}>{children}</main>
       </div>

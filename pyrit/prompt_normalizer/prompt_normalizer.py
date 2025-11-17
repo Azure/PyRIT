@@ -76,7 +76,7 @@ class PromptNormalizer:
         if len(set(prompt.sequence for prompt in seed_group.prompts)) > 1:
             raise ValueError("All SeedPrompts in the SeedGroup must have the same sequence.")
 
-        request = await self._build_message(
+        request = await self.build_message(
             seed_group=seed_group,
             conversation_id=conversation_id,
             request_converter_configurations=request_converter_configurations,
@@ -84,23 +84,53 @@ class PromptNormalizer:
             labels=labels,
             attack_identifier=attack_identifier,
         )
+        
+        return await self.send_message_async(
+            message=request,
+            target=target,
+            response_converter_configurations=response_converter_configurations,
+        )
 
-        await self._calc_hash(request=request)
+    async def send_message_async(
+        self,
+        *,
+        message: Message,
+        target: PromptTarget,
+        response_converter_configurations: list[PromptConverterConfiguration] = [],
+    ) -> Message:
+        """
+        Sends a pre-built message to a target.
+        This is useful when you want to build the message separately (using build_message)
+        and then send it later.
 
-        if self._should_skip_based_on_skip_criteria(request):
+        Args:
+            message (Message): The pre-built message to send.
+            target (PromptTarget): The target to which the message is sent.
+            response_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
+                converting the response. Defaults to an empty list.
+
+        Returns:
+            Message: The response received from the target.
+
+        Raises:
+            Exception: If an error occurs during the request processing.
+        """
+        await self._calc_hash(request=message)
+
+        if self._should_skip_based_on_skip_criteria(message):
             return None
 
         response = None
 
         try:
-            response = await target.send_prompt_async(message=request)
-            self._memory.add_message_to_memory(request=request)
+            response = await target.send_prompt_async(message=message)
+            self._memory.add_message_to_memory(request=message)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
-            self._memory.add_message_to_memory(request=request)
+            self._memory.add_message_to_memory(request=message)
 
             response = construct_response_from_request(
-                request=request.message_pieces[0],
+                request=message.message_pieces[0],
                 response_text_pieces=[""],
                 response_type="text",
                 error="empty",
@@ -108,10 +138,10 @@ class PromptNormalizer:
 
         except Exception as ex:
             # Ensure request to memory before processing exception
-            self._memory.add_message_to_memory(request=request)
+            self._memory.add_message_to_memory(request=message)
 
             error_response = construct_response_from_request(
-                request=request.message_pieces[0],
+                request=message.message_pieces[0],
                 response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],
                 response_type="error",
                 error="processing",
@@ -119,7 +149,7 @@ class PromptNormalizer:
 
             await self._calc_hash(request=error_response)
             self._memory.add_message_to_memory(request=error_response)
-            cid = request.message_pieces[0].conversation_id if request and request.message_pieces else None
+            cid = message.message_pieces[0].conversation_id if message and message.message_pieces else None
             raise Exception(f"Error sending prompt with conversation ID: {cid}") from ex
 
         if response is None:
@@ -295,7 +325,7 @@ class PromptNormalizer:
         tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.message_pieces]
         await asyncio.gather(*tasks)
 
-    async def _build_message(
+    async def build_message(
         self,
         *,
         seed_group: SeedGroup,

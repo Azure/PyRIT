@@ -5,15 +5,35 @@ import {
 } from '@fluentui/react-components'
 import MessageList from './MessageList'
 import InputBox from './InputBox'
+import ConverterDrawer from './ConverterDrawer'
 import { Message, MessageAttachment } from '../../types'
 import { chatApi } from '../../services/api'
 
 const useStyles = makeStyles({
   root: {
     display: 'flex',
+    flexDirection: 'row',
+    height: '100%',
+    width: '100%',
+    backgroundColor: tokens.colorNeutralBackground2,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  chatContainer: {
+    display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    backgroundColor: tokens.colorNeutralBackground1,
+    minWidth: 0,
+    flex: '1 1 auto',
+    transition: 'all 0.3s ease-in-out',
+    overflow: 'hidden',
+  },
+  converterContainer: {
+    height: '100%',
+    flex: '0 0 auto',
+    transition: 'all 0.3s ease-in-out',
+    overflow: 'hidden',
+    borderRight: `1px solid ${tokens.colorNeutralStroke1}`,
   },
 })
 
@@ -32,12 +52,23 @@ export default function ChatWindow({
 }: ChatWindowProps) {
   const styles = useStyles()
   const [isSending, setIsSending] = useState(false)
+  const [isConverterOpen, setIsConverterOpen] = useState(false)
+  const [inputText, setInputText] = useState('')
+  const [onApplyCallback, setOnApplyCallback] = useState<((text: string, identifiers: Array<Record<string, string>>) => void) | null>(null)
 
-  const handleSend = async (text: string, attachments: MessageAttachment[]) => {
-    // Add user message with attachments for display
+  const handleConverterApply = (convertedText: string, _converters: any[], identifiers: Array<Record<string, string>>) => {
+    // Call back to InputBox to update its state
+    if (onApplyCallback) {
+      onApplyCallback(convertedText, identifiers)
+    }
+  }
+
+  const handleSend = async (originalValue: string, convertedValue: string | undefined, attachments: MessageAttachment[], converterIdentifiers?: Array<Record<string, string>>) => {
+    // Add user message with attachments for display (show converted if available)
+    const displayText = convertedValue || originalValue
     const userMessage: Message = {
       role: 'user',
-      content: text,
+      content: displayText,
       timestamp: new Date().toISOString(),
       attachments: attachments.length > 0 ? attachments : undefined,
     }
@@ -55,9 +86,11 @@ export default function ChatWindow({
     setIsSending(true)
     try {
       const response = await chatApi.sendMessage({
-        message: text,
+        original_value: originalValue,
+        converted_value: convertedValue,
         conversation_id: conversationId || undefined,
         attachments: attachments,
+        converter_identifiers: converterIdentifiers,
       })
 
       // Remove loading message and add real response
@@ -85,8 +118,30 @@ export default function ChatWindow({
 
   return (
     <div className={styles.root}>
-      <MessageList messages={messages} />
-      <InputBox onSend={handleSend} disabled={isSending} />
+      {isConverterOpen && (
+        <div className={styles.converterContainer} style={{ flexBasis: '40%' }}>
+          <ConverterDrawer
+            isOpen={isConverterOpen}
+            onClose={() => setIsConverterOpen(false)}
+            onApply={handleConverterApply}
+            initialText={inputText}
+          />
+        </div>
+      )}
+      <div className={styles.chatContainer} style={{ flexBasis: isConverterOpen ? '60%' : '100%' }}>
+        <MessageList messages={messages} />
+        <InputBox 
+          onSend={handleSend} 
+          disabled={isSending}
+          onConverterToggle={(isOpen, text) => {
+            setIsConverterOpen(isOpen)
+            setInputText(text)
+          }}
+          registerApplyCallback={(callback: (text: string, identifiers: Array<Record<string, string>>) => void) => {
+            setOnApplyCallback(() => callback)
+          }}
+        />
+      </div>
     </div>
   )
 }

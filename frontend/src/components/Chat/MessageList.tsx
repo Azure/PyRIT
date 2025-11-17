@@ -34,7 +34,6 @@ const useStyles = makeStyles({
   },
   userMessageContent: {
     backgroundColor: tokens.colorBrandBackground,
-    color: tokens.colorNeutralForegroundOnBrand,
   },
   messageText: {
     whiteSpace: 'pre-wrap',
