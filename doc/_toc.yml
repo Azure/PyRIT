@@ -129,6 +129,7 @@ chapters:
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
     - file: code/scenarios/scenarios
+    - file: code/scenarios/cyberscenarios
     - file: code/front_end/0_cli
   - file: deployment/README
     sections:
