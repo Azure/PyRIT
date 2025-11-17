@@ -64,7 +64,6 @@ class LookBackScorer(FloatScaleScorer):
             list[Score]: A list containing a single Score object representing the detected
                 amount of behavior change throughout the conversation.
         """
-
         # Retrieve conversation from provided MessagePiece
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
 

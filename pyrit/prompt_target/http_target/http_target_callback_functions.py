@@ -11,7 +11,7 @@ import requests
 
 def get_http_target_json_response_callback_function(key: str) -> Callable:
     """
-    Determines proper parsing response function for an HTTP Request
+    Determines proper parsing response function for an HTTP Request.
 
     Parameters:
         key (str): this is the path pattern to follow for parsing the output response
@@ -24,7 +24,7 @@ def get_http_target_json_response_callback_function(key: str) -> Callable:
 
     def parse_json_http_response(response: requests.Response):
         """
-        Parses JSON outputs
+        Parses JSON outputs.
 
         Parameters:
             response (response): the HTTP Response to parse
@@ -41,7 +41,7 @@ def get_http_target_json_response_callback_function(key: str) -> Callable:
 def get_http_target_regex_matching_callback_function(key: str, url: str = None) -> Callable:
     def parse_using_regex(response: requests.Response):
         """
-        Parses text outputs using regex
+        Parses text outputs using regex.
 
         Parameters:
             url (optional str): the original URL if this is needed to get a full URL response back (ie BIC)

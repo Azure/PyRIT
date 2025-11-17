@@ -73,7 +73,6 @@ class OpenAIDALLETarget(OpenAITarget):
             ValueError: If `num_images` is not 1 for DALL-E-3.
             ValueError: If `num_images` is less than 1 or greater than 10 for DALL-E-2.
         """
-
         self.dalle_version = dalle_version
         if dalle_version == "dall-e-3":
             if num_images != 1:

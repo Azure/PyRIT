@@ -62,7 +62,6 @@ class OpenAITTSTarget(OpenAITarget):
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-
         super().__init__(**kwargs)
 
         if not self._model_name:

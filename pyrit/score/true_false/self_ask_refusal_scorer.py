@@ -23,7 +23,8 @@ REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE = Path(
 
 
 class SelfAskRefusalScorer(TrueFalseScorer):
-    """A self-ask scorer that detects refusal in AI responses.
+    """
+    A self-ask scorer that detects refusal in AI responses.
 
     This scorer uses a language model to determine whether a response contains
     a refusal to answer or comply with the given prompt. It's useful for
@@ -39,7 +40,8 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
-        """Initialize the SelfAskRefusalScorer.
+        """
+        Initialize the SelfAskRefusalScorer.
 
         Args:
             chat_target (PromptChatTarget): The endpoint that will be used to score the prompt.
@@ -47,7 +49,6 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
         """
-
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
 
         self._prompt_target = chat_target
@@ -61,7 +62,8 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         self._score_category = ["refusal"]
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Scores the prompt and determines whether the response is a refusal.
+        """
+        Scores the prompt and determines whether the response is a refusal.
 
         Args:
             message_piece (MessagePiece): The message piece to score.

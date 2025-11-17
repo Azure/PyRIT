@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class Base2048Converter(PromptConverter):
-    """Converter that encodes text to base2048 format.
+    """
+    Converter that encodes text to base2048 format.
 
     This converter takes input text and converts it to base2048 encoding,
     which uses 2048 different Unicode characters to represent binary data.
@@ -25,7 +26,8 @@ class Base2048Converter(PromptConverter):
         pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """Converts the given prompt to base2048 encoding.
+        """
+        Converts the given prompt to base2048 encoding.
 
         Args:
             prompt: The prompt to be converted.

@@ -357,6 +357,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
             csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
+
         Returns:
             HarmScorerMetrics: The metrics for the harm scorer.
         """
@@ -585,6 +586,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
+
         Returns:
             ObjectiveScorerMetrics: The metrics for the objective scorer.
         """

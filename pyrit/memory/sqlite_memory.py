@@ -65,7 +65,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         self.results_storage_io = DiskStorageIO()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
-        """Creates the SQLAlchemy engine for SQLite.
+        """
+        Creates the SQLAlchemy engine for SQLite.
 
         Creates an engine bound to the specified database file. The `has_echo` parameter
         controls the verbosity of SQL execution logging.
@@ -150,7 +151,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
-        Inserts embedding data into memory storage
+        Inserts embedding data into memory storage.
         """
         self._insert_entries(entries=embedding_data)
 

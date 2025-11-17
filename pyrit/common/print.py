@@ -15,7 +15,8 @@ def print_chat_messages_with_color(
     left_padding_width: int = 20,
     custom_colors: Optional[dict[str, str]] = None,
 ) -> None:
-    """Print chat messages with color to console.
+    """
+    Print chat messages with color to console.
 
     Args:
         messages: List of chat messages.

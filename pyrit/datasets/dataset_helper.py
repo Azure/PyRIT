@@ -115,7 +115,6 @@ def fetch_examples(
     Returns:
         List[Dict[str, str]]: A list of examples.
     """
-
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
         valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
