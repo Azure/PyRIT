@@ -2,12 +2,17 @@ import { useState } from 'react'
 import { FluentProvider, webLightTheme, webDarkTheme } from '@fluentui/react-components'
 import MainLayout from './components/Layout/MainLayout'
 import ChatWindow from './components/Chat/ChatWindow'
+import HistoryPage from './components/History/HistoryPage'
 import { Message } from './types'
+import { chatApi } from './services/api'
+
+type View = 'chat' | 'history'
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([])
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [currentView, setCurrentView] = useState<View>('chat')
 
   const handleSendMessage = (message: Message) => {
     setMessages(prev => [...prev, message])
@@ -25,6 +30,28 @@ function App() {
   const handleNewChat = () => {
     setMessages([])
     setConversationId(null)
+    setCurrentView('chat')
+  }
+
+  const handleShowHistory = () => {
+    setCurrentView('history')
+  }
+
+  const handleSelectConversation = async (convId: string) => {
+    try {
+      const conversation = await chatApi.getConversation(convId)
+      // Convert backend messages to frontend Message format
+      const loadedMessages: Message[] = conversation.messages.map(msg => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }))
+      setMessages(loadedMessages)
+      setConversationId(convId)
+      setCurrentView('chat')
+    } catch (error) {
+      console.error('Failed to load conversation:', error)
+    }
   }
 
   const toggleTheme = () => {
@@ -33,13 +60,22 @@ function App() {
 
   return (
     <FluentProvider theme={isDarkMode ? webDarkTheme : webLightTheme}>
-      <MainLayout onToggleTheme={toggleTheme} isDarkMode={isDarkMode} onNewChat={handleNewChat}>
-        <ChatWindow
-          messages={messages}
-          conversationId={conversationId}
-          onSendMessage={handleSendMessage}
-          onReceiveMessage={handleReceiveMessage}
-        />
+      <MainLayout 
+        onToggleTheme={toggleTheme} 
+        isDarkMode={isDarkMode} 
+        onNewChat={handleNewChat}
+        onShowHistory={handleShowHistory}
+      >
+        {currentView === 'chat' ? (
+          <ChatWindow
+            messages={messages}
+            conversationId={conversationId}
+            onSendMessage={handleSendMessage}
+            onReceiveMessage={handleReceiveMessage}
+          />
+        ) : (
+          <HistoryPage onSelectConversation={handleSelectConversation} />
+        )}
       </MainLayout>
     </FluentProvider>
   )

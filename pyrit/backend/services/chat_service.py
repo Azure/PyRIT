@@ -71,6 +71,9 @@ class ChatService:
         # Create MessagePiece with proper original and converted values
         # - original_value: text before any conversion
         # - converted_value: text after conversion (or same as original if no conversion)
+        # Strip whitespace to avoid sending empty/newline-only text
+        original_value = original_value.strip() if original_value else ""
+        converted_value = converted_value.strip() if converted_value else None
         final_converted_value = converted_value if converted_value else original_value
         
         # Build list of message pieces (text + attachments)

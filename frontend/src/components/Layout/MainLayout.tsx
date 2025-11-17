@@ -62,9 +62,10 @@ interface MainLayoutProps {
   onToggleTheme: () => void
   isDarkMode: boolean
   onNewChat: () => void
+  onShowHistory: () => void
 }
 
-export default function MainLayout({ children, onToggleTheme, isDarkMode, onNewChat }: MainLayoutProps) {
+export default function MainLayout({ children, onToggleTheme, isDarkMode, onNewChat, onShowHistory }: MainLayoutProps) {
   const styles = useStyles()
 
   return (
@@ -80,7 +81,14 @@ export default function MainLayout({ children, onToggleTheme, isDarkMode, onNewC
       </div>
       <div className={styles.contentArea}>
         <aside className={styles.sidebar}>
-          <Navigation onToggleTheme={onToggleTheme} isDarkMode={isDarkMode} onNewChat={onNewChat} />
+                <div className={styles.sidebar}>
+        <Navigation 
+          onToggleTheme={onToggleTheme} 
+          isDarkMode={isDarkMode} 
+          onNewChat={onNewChat}
+          onShowHistory={onShowHistory}
+        />
+      </div>
         </aside>
         <main className={styles.main}>{children}</main>
       </div>

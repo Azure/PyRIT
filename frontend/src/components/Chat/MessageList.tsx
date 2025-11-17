@@ -159,7 +159,8 @@ export default function MessageList({ messages }: MessageListProps) {
                         </div>
                       )}
                     </div>
-                  ))}\n                </div>
+                  ))}
+                </div>
               )}
               <Text className={styles.timestamp} block>{timestamp}</Text>
             </div>

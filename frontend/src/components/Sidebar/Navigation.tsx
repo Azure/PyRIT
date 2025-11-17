@@ -51,9 +51,10 @@ interface NavigationProps {
   onToggleTheme: () => void
   isDarkMode: boolean
   onNewChat: () => void
+  onShowHistory: () => void
 }
 
-export default function Navigation({ onToggleTheme, isDarkMode, onNewChat }: NavigationProps) {
+export default function Navigation({ onToggleTheme, isDarkMode, onNewChat, onShowHistory }: NavigationProps) {
   const styles = useStyles()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [targetConfig, setTargetConfig] = useState({
@@ -117,6 +118,7 @@ export default function Navigation({ onToggleTheme, isDarkMode, onNewChat }: Nav
         className={styles.iconButton}
         appearance="subtle"
         icon={<HistoryRegular />}
+        onClick={onShowHistory}
         title="History"
       />
       

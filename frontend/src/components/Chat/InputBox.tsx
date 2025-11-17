@@ -175,8 +175,11 @@ export default function InputBox({ onSend, disabled = false, onConverterToggle, 
   const handleSend = () => {
     if ((input.trim() || attachments.length > 0) && !disabled) {
       // Send both original (pre-conversion) and converted (post-conversion) values
-      const original = originalInput || input  // Use original if set, otherwise current input
-      const converted = originalInput ? input : undefined  // Only set if conversion happened
+      // Trim whitespace when there's no actual text content
+      const trimmedInput = input.trim()
+      const trimmedOriginal = originalInput?.trim()
+      const original = trimmedOriginal || trimmedInput  // Use original if set, otherwise current input
+      const converted = trimmedOriginal ? trimmedInput : undefined  // Only set if conversion happened
       onSend(original, converted, attachments, converterIdentifiers.length > 0 ? converterIdentifiers : undefined)
       setInput('')
       setOriginalInput('')
