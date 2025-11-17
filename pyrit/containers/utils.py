@@ -76,14 +76,15 @@ class DockerComposeConfig:
             config = self._parse_config_file(self.source_file)
                 
     def _parse_config_file(self, src: Path) -> Dict:
-        with open(src) as f:
-            return json.loads(f)
+        # with open(src) as f:
+        #     return json.loads(f)
+        raise NotImplementedError
     
     def unpack(self) -> Dict:
-        return {
-            "image": self.image 
-        }
-        
+        # return {
+        #     "image": self.image 
+        # }
+        raise NotImplementedError
 
 @dataclass(frozen=True)
 class CTF(DockerImageFile):

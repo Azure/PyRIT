@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import functools
 import logging
-from typing import Any, Callable, Dict, TypeVar, Optional
+from typing import Any, Callable, Dict, List, Self, TypeVar, Optional
 from pyrit.models.message import Message
 from pyrit.models.message_piece import MessagePiece
 from pyrit.containers.utils import DockerComposeConfig, DockerImageFile
@@ -36,8 +36,13 @@ def wrap_runtime(func: Callable) -> Callable:
 
         if self._runtime:
             logger.info(f"Processing response through runtime: {self._runtime}")
-            runtime_response = await self._runtime.send_async(response)
-            return runtime_response
+            
+            # # TODO: Callback for multi-step tool calls
+            # while not self._runtime.parse_for_done(response):
+            #     new_response = await self._runtime.send_async(response)
+            #     response.append(new_response)
+            # return response
+            raise NotImplementedError
 
         # If there is no runtime, silently return the model output.
         return response
@@ -46,24 +51,34 @@ def wrap_runtime(func: Callable) -> Callable:
 
 
 class Runtime:
+    _registry: Dict[int, Self] = dict()
+    # {port: Runtime}
     
-    def __init__(self, *, image: DockerImageFile, config: DockerComposeConfig) -> None:
+    def __init__(self, *, image: DockerImageFile, config: DockerComposeConfig, engine: str = "linux") -> None:
         """
         The runtime object enables a PromptTarget to access a simulated
         environment, e.g. a Docker container. Timeline:
         1. PromptTarget is created with non-None runtime.
         2. PromptTarget.send_prompt_async is called for request.
         3. Runtime.send_async is called.
-        
-        Note that this only supports sequential tool execution (assistant -> system -> memory)
-        not (assistant <-loop-> system) --> memory.
-        """
 
-        self._client = docker.from_env()
-        self._client.containers.run(
-            image=str(image),
-            **config.unpack()
-        )
+        Loopback/ multi-tool calls are handled in the wrapper and use some classmethods belonging
+        to Runtime.        
+
+        To use it in a scorer you will need to extract the attribute, like:
+        MalwareScorer(runtime=target._runtime)
+        """
+        
+        if engine == "linux":    
+            self._client = docker.from_env()
+            self._client.containers.run(
+                image=str(image),
+                **config.unpack()
+            )
+        else:
+            raise ValueError("Non-linux virtualization not supported yet.")
+        
+        self._registry[config.mcp_port] = self
         
     async def send_async(self, request: Message) -> Message:
         """
@@ -88,7 +103,7 @@ class Runtime:
         Encode Message object into HTTPS request for MCP server.
         Use fastmcp + httpx.
         """
-        raise NotImplemented
+        raise NotImplementedError
     
     @classmethod
     def _decode_mcp(cls, contents: Dict) -> MessagePiece:
@@ -96,4 +111,12 @@ class Runtime:
         Decode HTTPS response from MCP into MessagePiece.
         Assign role "system" for container outputs.
         """
-        raise NotImplemented
+        raise NotImplementedError
+    
+    @classmethod
+    def parse_for_done(cls, message: Message) -> bool:
+        """
+        Parse message for done signal (e.g. whether to call
+        MCP tools again or not)
+        """
+        raise NotImplementedError
