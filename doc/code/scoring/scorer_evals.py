@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -89,14 +85,29 @@ harm_category_map = {
         "dataset_name": "information_integrity_eval_dataset",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "information_integrity.yaml")),
     },
+    "privacy": {
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/privacy_dataset_v1.csv",
+        "dataset_name": "privacy_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "privacy.yaml")),
+    },
     "self-harm": {
         "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/self_harm_dataset_v1.csv",
         "dataset_name": "self_harm_eval_dataset",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "self_harm_v2.yaml")),
     },
+    "sexual_content": {
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/sexual_content_dataset_v1.csv",
+        "dataset_name": "sexual_content_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "sexual_v2.yaml")),
+    },
+    "violence": {
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/violence_dataset_v1.csv",
+        "dataset_name": "violence_eval_dataset",
+        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "violence.yaml")),
+    },
 }
 # set this list to the categories you want to evaluate
-harm_categories_to_evaluate = ["information_integrity"]
+harm_categories_to_evaluate = ["sexual_content"]
 
 for harm_category in harm_categories_to_evaluate:
     if harm_category not in harm_category_map:
