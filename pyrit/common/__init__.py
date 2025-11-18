@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""This module contains common utilities for PyRIT."""
+
+"""Common utilities and helpers for PyRIT."""
 
 from pyrit.common.apply_defaults import (
     apply_defaults,
