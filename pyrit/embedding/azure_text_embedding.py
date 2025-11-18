@@ -24,7 +24,8 @@ class AzureTextEmbedding(_TextEmbedding):
         api_version: str = "2024-02-01",
         use_entra_auth: bool = False,
     ) -> None:
-        """Generate embedding using the Azure API. Authenticate with either an API key or Entra authentication.
+        """
+        Generate embedding using the Azure API. Authenticate with either an API key or Entra authentication.
 
         Args:
             api_key: The API key to use (only if you're not using Entra authentication). Defaults to

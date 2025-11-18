@@ -215,7 +215,6 @@ def set_global_variable(*, name: str, value: Any) -> None:
         variable accessible to code that imports or executes after the initialization
         script runs.
     """
-
     # Set the variable in the __main__ module's global namespace
     sys.modules["__main__"].__dict__[name] = value
 

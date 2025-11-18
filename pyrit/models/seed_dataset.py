@@ -223,7 +223,8 @@ class SeedDataset(YamlLoadable):
         return cls(prompts=merged_prompts, **dataset_defaults)
 
     def render_template_value(self, **kwargs):
-        """Renders self.value as a template, applying provided parameters in kwargs
+        """
+        Renders self.value as a template, applying provided parameters in kwargs.
 
         Args:
             kwargs:Key-value pairs to replace in the SeedDataset value.
@@ -234,14 +235,13 @@ class SeedDataset(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-
         for prompt in self.prompts:
             prompt.value = prompt.render_template_value(**kwargs)
 
     @staticmethod
     def _set_seed_group_id_by_alias(seed_prompts: Sequence[dict]):
         """
-        Sets all seed_group_ids based on prompt_group_alias matches
+        Sets all seed_group_ids based on prompt_group_alias matches.
 
         This is important so the prompt_group_alias can be set in yaml to group prompts
         """
@@ -260,7 +260,7 @@ class SeedDataset(YamlLoadable):
     def group_seed_prompts_by_prompt_group_id(seed: Sequence[Seed]) -> Sequence[SeedGroup]:
         """
         Groups the given list of Seeds by their prompt_group_id and creates
-        SeedGroup instances. All seed prompts in a group must share the same prompt_group_id
+        SeedGroup instances. All seed prompts in a group must share the same prompt_group_id.
 
         Args:
             seed: A list of Seed objects.

@@ -123,7 +123,6 @@ class AtomicAttack:
             TypeError: If seed_groups is provided for multi-turn attacks or
                 custom_prompts is provided for single-turn attacks.
         """
-
         self.atomic_attack_name = atomic_attack_name
 
         if not objectives:

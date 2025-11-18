@@ -6,7 +6,7 @@ from pyrit.models import QuestionAnsweringEntry
 
 def construct_evaluation_prompt(entry: QuestionAnsweringEntry) -> str:
     """
-    From question and choices in entry, creates prompt to be send to target
+    From question and choices in entry, creates prompt to be send to target.
 
     Args:
         entry (QuestionAnsweringEntry): A single entry from which the prompt is constructed

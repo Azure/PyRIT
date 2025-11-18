@@ -13,7 +13,6 @@ def fetch_many_shot_jailbreaking_dataset() -> List[Dict[str, str]]:
     Returns:
         List[Dict[str, str]]: A list of many-shot jailbreaking examples.
     """
-
     source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json"
     source_type: Literal["public_url"] = "public_url"
 

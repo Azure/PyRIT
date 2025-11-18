@@ -46,7 +46,6 @@ class QuestionAnsweringEntry(BaseModel):
 
     def get_correct_answer_text(self) -> str:
         """Get the text of the correct answer."""
-
         correct_answer_index = self.correct_answer
         try:
             # Match using the explicit choice.index (not enumerate position) so non-sequential indices are supported

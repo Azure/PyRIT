@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def get_required_value(*, env_var_name: str, passed_value: str) -> str:
     """
     Gets a required value from an environment variable or a passed value,
-    preferring the passed value
+    preferring the passed value.
 
     If no value is found, raises a KeyError
 

@@ -78,7 +78,6 @@ class PromptShieldTarget(PromptTarget):
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
         """
-
         endpoint_value = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
@@ -104,9 +103,8 @@ class PromptShieldTarget(PromptTarget):
         """
         Parses the text in message to separate the userPrompt and documents contents,
         then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
-        https://learn.microsoft.com/en-us/azure/ai-services/content-safety/quickstart-jailbreak
+        https://learn.microsoft.com/en-us/azure/ai-services/content-safety/quickstart-jailbreak.
         """
-
         self._validate_request(message=message)
 
         request = message.message_pieces[0]
@@ -165,7 +163,6 @@ class PromptShieldTarget(PromptTarget):
         """
         Ensures that every field sent to the Prompt Shield was analyzed.
         """
-
         user_prompt_sent: str | None = request_body.get("userPrompt")
         documents_sent: list[str] | None = request_body.get("documents")
 
@@ -181,9 +178,8 @@ class PromptShieldTarget(PromptTarget):
     def _input_parser(self, input_str: str) -> dict[str, Any]:
         """
         Parses the input given to the target to extract the two fields sent to
-        Prompt Shield: userPrompt: str, and documents: list[str]
+        Prompt Shield: userPrompt: str, and documents: list[str].
         """
-
         match self._force_entry_field:
             case "userPrompt":
                 return {"userPrompt": input_str, "documents": []}

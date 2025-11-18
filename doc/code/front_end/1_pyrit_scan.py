@@ -6,12 +6,16 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
-# # The PyRIT CLI
+# # 1. PyRIT Scan
 #
-# The PyRIT cli tool that allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategies and [configuration](../setup/1_configuration.ipynb).
+# `pyrit_scan` allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategies and [configuration](../setup/1_configuration.ipynb).
 #
 # Note in this doc the ! prefaces all commands in the terminal so we can run in a Jupyter Notebook.
 #
@@ -62,7 +66,13 @@
 # Basic usage will look something like:
 #
 # ```shell
-# pyrit_scan <scenario> --initializers <initializer1> <initializer2> --scenario-strategies <stragegy1> <strategy2>
+# pyrit_scan <scenario> --initializers <initializer1> <initializer2> --scenario-strategies <strategy1> <strategy2>
+# ```
+#
+# You can also override scenario parameters directly from the CLI:
+#
+# ```shell
+# pyrit_scan <scenario> --max-concurrency 10 --max-retries 3 --memory-labels '{"experiment": "test1", "version": "v2"}'
 # ```
 #
 # Or concretely:
@@ -74,7 +84,7 @@
 # Example with a basic configuration that runs the Foundry scenario against the objective target defined in `openai_objective_target` (which just is an OpenAIChatTarget with `DEFAULT_OPENAI_FRONTEND_ENDPOINT` and `DEFAULT_OPENAI_FRONTEND_KEY`).
 
 # %%
-# !pyrit_scan foundry_scenario --initializers openai_objective_target --scenario-strategies base64
+# !pyrit_scan foundry_scenario --initializers openai_objective_target --strategies base64
 
 # %% [markdown]
 # Or with all options and multiple initializers and multiple strategies:
@@ -83,67 +93,86 @@
 # pyrit_scan foundry_scenario --database InMemory --initializers simple objective_target objective_list --scenario-strategies easy crescendo
 # ```
 #
+# You can also override scenario execution parameters:
+#
+# ```shell
+# # Override concurrency and retry settings
+# pyrit_scan foundry_scenario --initializers simple objective_target --max-concurrency 10 --max-retries 3
+#
+# # Add custom memory labels for tracking (must be valid JSON)
+# pyrit_scan foundry_scenario --initializers simple objective_target --memory-labels '{"experiment": "test1", "version": "v2", "researcher": "alice"}'
+# ```
+#
+# Available CLI parameter overrides:
+# - `--max-concurrency <int>`: Maximum number of concurrent attack executions
+# - `--max-retries <int>`: Maximum number of automatic retries if the scenario raises an exception
+# - `--memory-labels <json>`: Additional labels to apply to all attack runs (must be a JSON string with string keys and values)
+#
 # You can also use custom initialization scripts by passing file paths. It is relative to your current working directory, but to avoid confusion, full paths are always better:
 #
 # ```shell
 # pyrit_scan encoding_scenario --initialization-scripts ./my_custom_config.py
 # ```
-#
+
+# %% [markdown]
 # #### Using Custom Scenarios
 #
 # You can define your own scenarios in initialization scripts. The CLI will automatically discover any `Scenario` subclasses and make them available:
 #
-# ```python
-# # my_custom_scenarios.py
-# from pyrit.scenarios import Scenario
-# from pyrit.common.apply_defaults import apply_defaults
-#
-# @apply_defaults
-# class MyCustomScenario(Scenario):
-#     """My custom scenario that does XYZ."""
-#
-#     def __init__(self, objective_target=None):
-#         super().__init__(name="My Custom Scenario", version="1.0")
-#         self.objective_target = objective_target
-#         # ... your initialization code
-#
-#     async def initialize_async(self):
-#         # Load your atomic attacks
-#         pass
-#
-#     # ... implement other required methods
-# ```
-#
+
+from pyrit.common.apply_defaults import apply_defaults
+
+# %%
+# my_custom_scenarios.py
+from pyrit.scenarios import Scenario
+from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+
+
+class MyCustomStrategy(ScenarioStrategy):
+    """Strategies for my custom scenario."""
+
+    ALL = ("all", {"all"})
+    Strategy1 = ("strategy1", set[str]())
+    Strategy2 = ("strategy2", set[str]())
+
+
+@apply_defaults
+class MyCustomScenario(Scenario):
+    """My custom scenario that does XYZ."""
+
+    @classmethod
+    def get_strategy_class(cls):
+        return MyCustomStrategy
+
+    @classmethod
+    def get_default_strategy(cls):
+        return MyCustomStrategy.ALL
+
+    def __init__(self, *, scenario_result_id=None, **kwargs):
+        # Scenario-specific configuration only - no runtime parameters
+        super().__init__(
+            name="My Custom Scenario",
+            version=1,
+            strategy_class=MyCustomStrategy,
+            default_aggregate=MyCustomStrategy.ALL,
+            scenario_result_id=scenario_result_id,
+        )
+        # ... your scenario-specific initialization code
+
+    async def _get_atomic_attacks_async(self):
+        # Build and return your atomic attacks
+        return []
+
+
+# %% [markdown]
 # Then discover and run it:
 #
 # ```shell
 # # List to see it's available
 # pyrit_scan --list-scenarios --initialization-scripts ./my_custom_scenarios.py
 #
-# # Run it
-# pyrit_scan my_custom_scenario --initialization-scripts ./my_custom_scenarios.py
+# # Run it with parameter overrides
+# pyrit_scan my_custom_scenario --initialization-scripts ./my_custom_scenarios.py --max-concurrency 10
 # ```
 #
 # The scenario name is automatically converted from the class name (e.g., `MyCustomScenario` becomes `my_custom_scenario`).
-#
-#
-# ## When to Use the Scanner
-#
-# The scanner is ideal for:
-#
-# - **Automated testing pipelines**: CI/CD integration for continuous security testing
-# - **Batch testing**: Running multiple attack scenarios against various targets
-# - **Repeatable tests**: Standardized testing with consistent configurations
-# - **Team collaboration**: Shareable configuration files for consistent testing approaches
-# - **Quick testing**: Fast execution without writing Python code
-#
-#
-# ## Complete Documentation
-#
-# For comprehensive documentation about initialization files and setting defaults see:
-#
-# - **Configuration**: See [configuration](../setup/1_configuration.ipynb)
-# - **Setting Default Values**: See [default values](../setup/default_values.md)
-# - **Writing Initializers**: See [Initializers](../setup/pyrit_initializer.ipynb)
-#
-# Or visit the [PyRIT documentation website](https://azure.github.io/PyRIT/)

@@ -291,7 +291,6 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         """
         Execute the benchmark strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         question_answering_entry = get_kwarg_param(
             kwargs=kwargs,
