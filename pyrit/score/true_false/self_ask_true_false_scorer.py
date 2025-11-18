@@ -127,7 +127,6 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
                 The score_value is True or False based on which description fits best.
                 Metadata can be configured to provide additional information.
         """
-
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,

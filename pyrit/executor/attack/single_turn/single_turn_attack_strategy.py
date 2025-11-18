@@ -18,7 +18,7 @@ from pyrit.prompt_target import PromptTarget
 
 @dataclass
 class SingleTurnAttackContext(AttackContext):
-    """Context for single-turn attacks"""
+    """Context for single-turn attacks."""
 
     # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -95,7 +95,6 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         """
         Execute the attack strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         seed_group = get_kwarg_param(kwargs=kwargs, param_name="seed_group", expected_type=SeedGroup, required=False)
         objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str, required=False)

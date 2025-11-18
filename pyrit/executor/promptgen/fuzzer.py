@@ -1183,7 +1183,6 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         """
         Execute the Fuzzer generation strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         prompts = get_kwarg_param(kwargs=kwargs, param_name="prompts", expected_type=list)
 

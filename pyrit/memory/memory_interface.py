@@ -55,7 +55,8 @@ Model = TypeVar("Model")
 
 
 class MemoryInterface(abc.ABC):
-    """Abstract interface for conversation memory storage systems.
+    """
+    Abstract interface for conversation memory storage systems.
 
     This interface defines the contract for storing and retrieving chat messages
     and conversation history. Implementations can use different storage backends
@@ -68,7 +69,8 @@ class MemoryInterface(abc.ABC):
     engine: Engine = None
 
     def __init__(self, embedding_model=None):
-        """Initialize the MemoryInterface.
+        """
+        Initialize the MemoryInterface.
 
         Args:
             embedding_model: If set, this includes embeddings in the memory entries
@@ -157,7 +159,7 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
-        Inserts embedding data into memory storage
+        Inserts embedding data into memory storage.
         """
 
     @abc.abstractmethod
@@ -426,8 +428,10 @@ class MemoryInterface(abc.ABC):
     def get_request_from_response(self, *, response: Message) -> Message:
         """
         Retrieves the request that produced the given response.
+
         Args:
             request (Message): The message object to match.
+
         Returns:
             Message: The corresponding message object.
         """
@@ -474,13 +478,14 @@ class MemoryInterface(abc.ABC):
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
             converted_value_sha256 (Optional[Sequence[str]], optional): A list of SHA256 hashes of converted values.
                 Defaults to None.
+
         Returns:
             Sequence[MessagePiece]: A list of MessagePiece objects that match the specified filters.
+
         Raises:
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
         """
-
         conditions = []
         if attack_id:
             conditions.append(self._get_message_pieces_attack_conditions(attack_id=str(attack_id)))
@@ -522,7 +527,7 @@ class MemoryInterface(abc.ABC):
 
     def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
         """
-        Duplicates a conversation for reuse
+        Duplicates a conversation for reuse.
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
         One cannot continue both branches with the same attack and conversation IDs since that would corrupt
@@ -532,6 +537,7 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID with existing conversations.
             new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
                 If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
+
         Returns:
             The uuid for the new conversation.
         """
@@ -565,6 +571,7 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID with existing conversations.
             new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
                 If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
+
         Returns:
             The uuid for the new conversation.
         """
@@ -638,7 +645,6 @@ class MemoryInterface(abc.ABC):
         Args:
             message_pieces (Sequence[MessagePiece]): The list of message pieces to update.
         """
-
         prev_conversations = self.get_message_pieces(conversation_id=message_pieces[0].conversation_id)
 
         sequence = 0
@@ -720,7 +726,7 @@ class MemoryInterface(abc.ABC):
 
     def cleanup(self):
         """
-        Ensure cleanup on process exit
+        Ensure cleanup on process exit.
         """
         # Ensure cleanup at process exit
         atexit.register(self.dispose_engine)
@@ -969,7 +975,8 @@ class MemoryInterface(abc.ABC):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
     ) -> Sequence[SeedGroup]:
-        """Retrieves groups of seed prompts based on the provided filtering criteria
+        """
+        Retrieves groups of seed prompts based on the provided filtering criteria.
 
         Args:
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed groups by.
@@ -1099,6 +1106,7 @@ class MemoryInterface(abc.ABC):
             labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter results by.
                 These labels are associated with the prompts themselves, used for custom tagging and tracking.
                 Defaults to None.
+
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
         """

@@ -37,7 +37,7 @@ class SeedPrompt(Seed):
     parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
 
     def __post_init__(self) -> None:
-        """Post-initialization to render the template to replace existing values"""
+        """Post-initialization to render the template to replace existing values."""
         self.value = self.render_template_value_silent(**PATHS_DICT)
 
         if not self.data_type:

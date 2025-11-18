@@ -119,7 +119,6 @@ class ContentHarmScenario(Scenario):
                 the scenario will automatically retry up to this many times after an exception.
                 For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
         """
-
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
@@ -136,7 +135,7 @@ class ContentHarmScenario(Scenario):
 
     def _get_strategy_seeds_groups(self, seed_dataset_prefix: Optional[str] = None) -> Dict[str, Sequence[SeedGroup]]:
         """
-        Get the objectives from the provided seed dataset name from central memory
+        Get the objectives from the provided seed dataset name from central memory.
 
         If a seed dataset prefix is provided, it is used directly with the harm strategy name
          appended to the end to retrieve the objectives for each harm strategy.
@@ -146,9 +145,11 @@ class ContentHarmScenario(Scenario):
 
         Args:
             seed_dataset_prefix (Optional[str]): The provided seed dataset name.
+
         Returns:
             Dict[str, List[str]]: A dictionary which maps harms to the seed groups retrieved from
             the seed dataset in CentralMemory.
+
         Raises:
             ValueError: If no objectives are found in the specified dataset or the dataset cannot
             be found.

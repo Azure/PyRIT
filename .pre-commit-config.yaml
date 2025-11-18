@@ -49,13 +49,20 @@ repos:
       name: Import Sort (Jupyter Notebooks)
       args: [--profile=black]
 
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.4
+    hooks:
+      - id: ruff-check
+        name: ruff-check
+        args: [--fix]
+
   - repo: https://github.com/PyCQA/flake8
     rev: 7.1.2
     hooks:
       - id: flake8
         additional_dependencies: ['flake8-copyright']
         types: [python]
-        exclude: (doc/|.github/|pyrit/prompt_converter/morse_converter.py|tests/unit/converter/test_prompt_converter.py|pyrit/prompt_converter/emoji_converter.py|tests/unit/models/test_seed.py|tests/unit/converter/test_unicode_confusable_converter.py|tests/unit/converter/test_first_letter_converter.py|tests/unit/converter/test_base2048_converter.py|tests/unit/converter/test_ecoji_converter.py|tests/unit/converter/test_bin_ascii_converter.py|pyrit/scenarios/printer/console_printer.py)
+        exclude: ^doc/
 
   - repo: local
     hooks:
@@ -66,13 +73,6 @@ repos:
       files: ^doc.*\.(py|md)$
       additional_dependencies: ['requests']
       exclude: (release_process.md|git.md|^doc/deployment/|tests|pyrit/prompt_converter/morse_converter.py|.github|pyrit/prompt_converter/emoji_converter.py|pyrit/score/markdown_injection.py|^pyrit/datasets/|^pyrit/auxiliary_attacks/gcg/)
-
-  - repo: https://github.com/pycqa/pylint
-    rev: v3.3.7
-    hooks:
-      - id: pylint
-        args: [--disable=all, --enable=unused-import]
-        exclude: NOTICE.txt
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.15.0

@@ -85,7 +85,6 @@ class RealtimeTarget(OpenAITarget):
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-
         super().__init__(**kwargs)
 
         self.system_prompt = system_prompt or "You are a helpful AI assistant"
@@ -102,7 +101,6 @@ class RealtimeTarget(OpenAITarget):
         Connects to Realtime API Target using websockets.
         Returns the WebSocket connection.
         """
-
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
         query_params = {
@@ -167,7 +165,6 @@ class RealtimeTarget(OpenAITarget):
         Args:
             conversation_id (str): Conversation ID
         """
-
         config_variables = self._set_system_prompt_and_config_vars()
 
         await self.send_event(
@@ -266,7 +263,7 @@ class RealtimeTarget(OpenAITarget):
 
     async def cleanup_conversation(self, conversation_id: str):
         """
-        Disconnects from the WebSocket server for a specific conversation
+        Disconnects from the WebSocket server for a specific conversation.
 
         Args:
             conversation_id (str): The conversation ID to disconnect from.
@@ -449,6 +446,7 @@ class RealtimeTarget(OpenAITarget):
     async def send_text_async(self, text: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
         """
         Sends text prompt to the WebSocket server.
+
         Args:
             text: prompt to send.
             conversation_id: conversation ID
@@ -517,7 +515,8 @@ class RealtimeTarget(OpenAITarget):
         return output_audio_path, result
 
     def _validate_request(self, *, message: Message) -> None:
-        """Validates the structure and content of a message for compatibility of this target.
+        """
+        Validates the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.
@@ -526,7 +525,6 @@ class RealtimeTarget(OpenAITarget):
             ValueError: If more than two message pieces are provided.
             ValueError: If any of the message pieces have a data type other than 'text' or 'audio_path'.
         """
-
         # Check the number of message pieces
         n_pieces = len(message.message_pieces)
         if n_pieces != 1:

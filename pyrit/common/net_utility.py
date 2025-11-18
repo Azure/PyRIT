@@ -10,7 +10,6 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 def get_httpx_client(use_async: bool = False, debug: bool = False, **httpx_client_kwargs: Optional[Any]):
     """Get the httpx client for making requests."""
-
     client_class = httpx.AsyncClient if use_async else httpx.Client
     proxy = "http://localhost:8080" if debug else None
 

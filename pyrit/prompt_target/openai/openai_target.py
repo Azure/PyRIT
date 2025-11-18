@@ -108,16 +108,18 @@ class OpenAITarget(PromptChatTarget):
             self._headers["Authorization"] = f"Bearer {self._api_key}"
 
     def refresh_auth_headers(self) -> None:
-        """Refresh the authentication headers. This is particularly useful for Entra authentication
-        where tokens need to be refreshed periodically."""
+        """
+        Refresh the authentication headers. This is particularly useful for Entra authentication
+        where tokens need to be refreshed periodically.
+        """
         if self._azure_auth:
             self._headers["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
 
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:
         """
-        Sets deployment_environment_variable, endpoint_environment_variable, and api_key_environment_variable
-        which are read from .env
+        Sets deployment_environment_variable, endpoint_environment_variable,
+        and api_key_environment_variable which are read from .env file.
         """
         raise NotImplementedError
 

@@ -99,7 +99,6 @@ async def download_file(url, token, download_dir, num_splits):
 
 async def download_files(urls: list[str], token: str, download_dir: Path, num_splits=3, parallel_downloads=4):
     """Download multiple files with parallel downloads and segmented downloading."""
-
     # Limit the number of parallel downloads
     semaphore = asyncio.Semaphore(parallel_downloads)
 

@@ -394,7 +394,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
     async def _teardown_async(self, *, context: CrescendoAttackContext) -> None:
         """
-        Clean up after attack execution
+        Clean up after attack execution.
 
         Args:
             context (CrescendoAttackContext): The attack context.

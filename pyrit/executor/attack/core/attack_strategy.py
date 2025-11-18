@@ -34,7 +34,7 @@ AttackStrategyResultT = TypeVar("AttackStrategyResultT", bound="AttackResult")
 
 @dataclass
 class AttackContext(StrategyContext, ABC):
-    """Base class for all attack contexts"""
+    """Base class for all attack contexts."""
 
     # Natural-language description of what the attack tries to achieve
     objective: str
@@ -124,7 +124,6 @@ class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyCont
         Args:
             result (AttackResult): The result of the attack strategy execution.
         """
-
         if not event_data.result:
             raise ValueError("Attack result is None. Cannot log or record the outcome.")
 
@@ -220,11 +219,13 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
     ) -> AttackStrategyResultT:
         """
         Execute the attack strategy asynchronously with the provided parameters.
+
         Args:
             objective (str): The objective of the attack.
             prepended_conversation (Optional[List[Message]]): Conversation to prepend.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.
+
         Returns:
             AttackStrategyResultT: The result of the attack execution.
         """
@@ -243,7 +244,6 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         """
         Execute the attack strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str)
 

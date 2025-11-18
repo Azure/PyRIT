@@ -14,7 +14,8 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class SubStringScorer(TrueFalseScorer):
-    """Scorer that checks if a given substring is present in the text.
+    """
+    Scorer that checks if a given substring is present in the text.
 
     This scorer performs substring matching using a configurable text matching strategy.
     Supports both exact substring matching and approximate matching.
@@ -31,7 +32,8 @@ class SubStringScorer(TrueFalseScorer):
         aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
-        """Initialize the SubStringScorer.
+        """
+        Initialize the SubStringScorer.
 
         Args:
             substring (str): The substring to search for in the text.
@@ -48,7 +50,8 @@ class SubStringScorer(TrueFalseScorer):
         self._score_categories = categories if categories else []
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Score the given message piece based on presence of the substring.
+        """
+        Score the given message piece based on presence of the substring.
 
         Args:
             message_piece (MessagePiece): The message piece to score.
