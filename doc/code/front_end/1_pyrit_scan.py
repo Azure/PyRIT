@@ -154,7 +154,6 @@ class MyCustomScenario(Scenario):
             name="My Custom Scenario",
             version=1,
             strategy_class=MyCustomStrategy,
-            default_aggregate=MyCustomStrategy.ALL,
             scenario_result_id=scenario_result_id,
         )
         # ... your scenario-specific initialization code

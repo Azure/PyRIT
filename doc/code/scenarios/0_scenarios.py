@@ -109,7 +109,6 @@ class MyScenario(Scenario):
             name="My Custom Scenario",
             version=self.version,
             strategy_class=MyStrategy,
-            default_aggregate=MyStrategy.ALL,
             objective_scorer_identifier=objective_scorer.get_identifier(),
         )
 

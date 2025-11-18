@@ -129,7 +129,6 @@ class ContentHarmScenario(Scenario):
             version=self.version,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
             strategy_class=ContentHarmStrategy,
-            default_aggregate=ContentHarmStrategy.ALL,
             scenario_result_id=scenario_result_id,
         )
 
