@@ -10,8 +10,7 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.scenario import ScenarioResult, ScenarioStrategy
+from pyrit.scenarios import AtomicAttack, Scenario, ScenarioResult, ScenarioStrategy
 
 
 @pytest.fixture
