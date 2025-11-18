@@ -259,7 +259,6 @@ class FoundryScenario(Scenario):
         Raises:
             ValueError: If attack_strategies is empty or contains unsupported strategies.
         """
-
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
         self._objectives: list[str] = (
@@ -276,7 +275,6 @@ class FoundryScenario(Scenario):
             name="Foundry Scenario",
             version=self.version,
             strategy_class=FoundryStrategy,
-            default_aggregate=FoundryStrategy.EASY,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,

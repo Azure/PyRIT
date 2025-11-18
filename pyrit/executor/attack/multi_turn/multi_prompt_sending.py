@@ -262,7 +262,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         return AttackOutcome.FAILURE, "At least one prompt was filtered or failed to get a response"
 
     async def _teardown_async(self, *, context: MultiPromptSendingAttackContext) -> None:
-        """Clean up after attack execution"""
+        """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 
@@ -327,7 +327,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         """
         Execute the attack strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         prompt_sequence = get_kwarg_param(
             kwargs=kwargs, param_name="prompt_sequence", expected_type=list, required=True

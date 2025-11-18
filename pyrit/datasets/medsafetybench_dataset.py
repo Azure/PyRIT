@@ -33,7 +33,6 @@ def fetch_medsafetybench_dataset(
         https://proceedings.neurips.cc/paper_files/paper/2024/hash/3ac952d0264ef7a505393868a70a46b6-Abstract-Datasets_and_Benchmarks_Track.html
         Authors: Tessa Han, Aounon Kumar, Chirag Agarwal, Himabindu Lakkaraju.
     """
-
     base_url = "https://raw.githubusercontent.com/AI4LIFE-GROUP/" "med-safety-bench/main/datasets"
 
     sources = []

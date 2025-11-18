@@ -60,7 +60,8 @@ class SeedGroup(YamlLoadable):
             )
 
     def render_template_value(self, **kwargs):
-        """Renders self.value as a template, applying provided parameters in kwargs
+        """
+        Renders self.value as a template, applying provided parameters in kwargs.
 
         Args:
             kwargs:Key-value pairs to replace in the SeedGroup value.
@@ -71,7 +72,6 @@ class SeedGroup(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-
         for prompt in self.prompts:
             prompt.value = prompt.render_template_value(**kwargs)
 

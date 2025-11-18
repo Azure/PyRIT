@@ -204,7 +204,6 @@ def initialize_pyrit(
             to execute directly. These provide type-safe, validated configuration with clear documentation.
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
     """
-
     # Handle DuckDB deprecation before validation
     if memory_db_type == "DuckDB":
         logger.warning(

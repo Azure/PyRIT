@@ -25,7 +25,8 @@ if TYPE_CHECKING:
 
 
 class HuggingFaceChatTarget(PromptChatTarget):
-    """The HuggingFaceChatTarget interacts with HuggingFace models, specifically for conducting red teaming activities.
+    """
+    The HuggingFaceChatTarget interacts with HuggingFace models, specifically for conducting red teaming activities.
     Inherits from PromptTarget to comply with the current design standards.
     """
 
@@ -59,7 +60,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
         attn_implementation: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        """Initializes the HuggingFaceChatTarget.
+        """
+        Initializes the HuggingFaceChatTarget.
 
         Args:
             model_id (Optional[str]): The Hugging Face model ID. Either model_id or model_path must be provided.
@@ -149,7 +151,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
             return False
 
     async def load_model_and_tokenizer(self):
-        """Loads the model and tokenizer, downloading if necessary.
+        """
+        Loads the model and tokenizer, downloading if necessary.
 
         Downloads the model to the HF_MODELS_DIR folder if it does not exist,
         then loads it from there.
