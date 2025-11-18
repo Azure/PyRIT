@@ -317,7 +317,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
-        assistant_response_data_type_col_name: Optional[str] = None,
+        assistant_response_data_type_col_name: Optional[str] = "assistant_response",
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
