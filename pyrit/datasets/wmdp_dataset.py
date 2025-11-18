@@ -21,7 +21,7 @@ def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDatas
 
     Returns:
         QuestionAnsweringDataset: A QuestionAnsweringDataset containing the examples.
-    
+
     Raises:
         ValueError: If the category parameter is not one of the expected values.
 

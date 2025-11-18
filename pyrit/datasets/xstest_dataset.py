@@ -25,7 +25,7 @@ def fetch_xstest_dataset(
 
     Returns:
         SeedDataset: A SeedDataset containing the examples.
-    
+
     Raises:
         ValueError: If the file_type extracted from the source URL is not supported.
 
