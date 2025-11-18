@@ -275,7 +275,6 @@ class FoundryScenario(Scenario):
             name="Foundry Scenario",
             version=self.version,
             strategy_class=FoundryStrategy,
-            default_aggregate=FoundryStrategy.EASY,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
