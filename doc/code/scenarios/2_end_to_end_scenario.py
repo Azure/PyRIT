@@ -58,7 +58,7 @@ for harm in ["hate", "violence", "harassment", "leakage", "sexual", "fairness", 
 
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
-from pyrit.scenarios.scenarios.e2e import (
+from pyrit.scenarios.scenarios.harms import (
     ContentHarmScenario,
     ContentHarmStrategy,
 )

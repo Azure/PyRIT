@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.scenarios.scenarios.e2e.content_harm_scenario import (
+from pyrit.scenarios.scenarios.harms.content_harm_scenario import (
     ContentHarmScenario,
     ContentHarmStrategy,
 )

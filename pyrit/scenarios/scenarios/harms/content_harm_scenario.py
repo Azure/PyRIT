@@ -37,7 +37,7 @@ AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 class ContentHarmStrategy(ScenarioStrategy):
     """
     ContentHarmStrategy defines a set of strategies for testing model behavior
-    in several different harm categories. The scenario is designed to provide quick
+    across several different harm categories. The scenario is designed to provide quick
     feedback on model performance with respect to common harm types with the idea being that
     users will dive deeper into specific harm categories based on initial results.
 

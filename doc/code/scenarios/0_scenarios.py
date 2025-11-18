@@ -137,13 +137,13 @@ class MyScenario(Scenario):
 
 ### Existing Scenarios
 
-# - **EncodingScenario**: Tests encoding attacks (Base64, ROT13, etc.) with seed prompts and decoding templates
-# - **FoundryScenario**: Comprehensive converter and multi-turn attack testing with difficulty-based strategies
-# - **ContentHarmScenario**: Tests harm categories (hate, violence, etc.) by loading datasets from CentralMemory
+# %%
 
-# See [`FoundryScenario`](../../../pyrit/scenarios/scenarios/foundry_scenario.py),
-# [`EncodingScenario`](../../../pyrit/scenarios/scenarios/encoding_scenario.py), and
-# [`ContentHarmScenario`](../../../pyrit/scenarios/scenarios/e2e/content_harm_scenario.py) for complete examples.
+from pyrit.cli.frontend_core import FrontendCore, print_scenarios_list
+
+print_scenarios_list(context=FrontendCore())
+
+# %% [markdown]
 
 ## Resiliency
 
