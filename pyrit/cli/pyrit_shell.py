@@ -323,7 +323,7 @@ class PyRITShell(cmd.Cmd):
                 print(f"Error: Invalid scenario number '{arg}'. Must be an integer.")
 
     def do_help(self, arg):
-        """Show help. Usage: help [command]"""
+        """Show help. Usage: help [command]."""
         if not arg:
             # Show general help
             super().do_help(arg)
@@ -374,7 +374,7 @@ class PyRITShell(cmd.Cmd):
             super().do_help(arg)
 
     def do_exit(self, arg):
-        """Exit the shell. Aliases: quit, q"""
+        """Exit the shell. Aliases: quit, q."""
         print("\nGoodbye!")
         return True
 
