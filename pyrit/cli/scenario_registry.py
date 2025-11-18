@@ -26,7 +26,7 @@ import inspect
 import logging
 import pkgutil
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
 # Compute PYRIT_PATH directly to avoid importing pyrit package
 # (which triggers heavy imports from __init__.py)
@@ -34,6 +34,7 @@ PYRIT_PATH = Path(__file__).parent.parent.resolve()
 
 # Lazy import to avoid loading heavy scenario modules when just listing scenarios
 if TYPE_CHECKING:
+    from pyrit.cli.frontend_core import ScenarioInfo
     from pyrit.scenarios.scenario import Scenario
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ class ScenarioRegistry:
     def __init__(self) -> None:
         """Initialize the scenario registry with lazy discovery."""
         self._scenarios: Dict[str, Type[Scenario]] = {}
-        self._scenario_metadata: Optional[List[Dict[str, Any]]] = None
+        self._scenario_metadata: Optional[List[ScenarioInfo]] = None
         self._discovered = False
 
     def _ensure_discovered(self) -> None:
@@ -188,16 +189,18 @@ class ScenarioRegistry:
         self._ensure_discovered()
         return self._scenarios.get(name)
 
-    def list_scenarios(self) -> List[Dict[str, str]]:
+    def list_scenarios(self) -> List[ScenarioInfo]:
         """
         List all available scenarios with their metadata.
 
         Returns:
-            List[Dict[str, str]]: List of scenario information dictionaries containing:
+            List[ScenarioInfo]: List of scenario information dictionaries containing:
                 - name: Scenario identifier
                 - class_name: Class name
                 - description: Full class docstring
                 - default_strategy: The default strategy used when none specified
+                - all_strategies: All available strategy values
+                - aggregate_strategies: Aggregate strategy values
         """
         # If we already have metadata, return it
         if self._scenario_metadata is not None:
@@ -205,7 +208,7 @@ class ScenarioRegistry:
 
         # Discover scenarios and build metadata
         self._ensure_discovered()
-        scenarios_info = []
+        scenarios_info: List[ScenarioInfo] = []
 
         for name, scenario_class in sorted(self._scenarios.items()):
             # Extract full docstring as description, clean up whitespace

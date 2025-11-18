@@ -19,7 +19,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, TypedDict
 
 try:
     import termcolor  # type: ignore
@@ -46,6 +46,17 @@ logger = logging.getLogger(__name__)
 IN_MEMORY = "InMemory"
 SQLITE = "SQLite"
 AZURE_SQL = "AzureSQL"
+
+
+class ScenarioInfo(TypedDict):
+    """Type definition for scenario information dictionary."""
+
+    name: str
+    class_name: str
+    description: str
+    default_strategy: str
+    all_strategies: list[str]
+    aggregate_strategies: list[str]
 
 
 class FrontendCore:
@@ -137,7 +148,7 @@ class FrontendCore:
         return self._initializer_registry
 
 
-def list_scenarios(*, context: FrontendCore) -> list[dict[str, Any]]:
+def list_scenarios(*, context: FrontendCore) -> list[ScenarioInfo]:
     """
     List all available scenarios.
 
@@ -321,7 +332,7 @@ def _print_header(*, text: str) -> None:
         print(f"\n  {text}")
 
 
-def format_scenario_info(*, scenario_info: dict[str, Any]) -> None:
+def format_scenario_info(*, scenario_info: ScenarioInfo) -> None:
     """
     Print formatted information about a scenario.
 
