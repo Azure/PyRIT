@@ -11,7 +11,7 @@ from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.scenario import (
+from pyrit.scenarios import (
     ScenarioIdentifier,
     ScenarioResult,
     ScenarioStrategy,

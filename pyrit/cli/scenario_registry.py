@@ -15,7 +15,7 @@ import pkgutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Type
 
-from pyrit.scenarios.scenario import Scenario
+from pyrit.scenarios.core.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 
