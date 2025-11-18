@@ -5,9 +5,13 @@ import json
 import logging
 from typing import Any, MutableSequence, Optional
 
-import httpx
+from openai import (
+    BadRequestError,
+    RateLimitError,
+    ContentFilterFinishReasonError,
+    APIStatusError,
+)
 
-from pyrit.common import net_utility
 from pyrit.exceptions import (
     PyritException,
     handle_bad_request_exception,
@@ -120,54 +124,99 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
         try:
-            str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._endpoint,
-                method="POST",
-                headers=self._headers,
-                request_body=body,
-                **self._httpx_client_kwargs,
+            # Use the OpenAI SDK for making the request
+            response = await self._make_chat_completion_request(body)
+            
+            # Convert the SDK response to our Message format
+            return self._construct_message_from_completion_response(
+                completion_response=response, message_piece=message_piece
             )
-        except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
-                # Handle Bad Request
-                error_response_text = StatusError.response.text
-                # Content filter errors are handled differently from other 400 errors.
-                # 400 Bad Request with content_filter error code indicates that the input was filtered
-                # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
+            
+        except ContentFilterFinishReasonError as e:
+            # Content filter error - this is raised by the SDK when finish_reason is "content_filter"
+            logger.error(f"Content filter error: {e}")
+            return handle_bad_request_exception(
+                response_text=str(e),
+                request=message_piece,
+                error_code=200,  # Content filter with 200 status
+                is_content_filter=True,
+            )
+        except BadRequestError as e:
+            # Handle Bad Request from the SDK
+            error_response_text = e.body if hasattr(e, 'body') else str(e)
+            
+            # Check if it's a content filter issue
+            is_content_filter = False
+            if isinstance(error_response_text, dict):
+                is_content_filter = error_response_text.get("error", {}).get("code") == "content_filter"
+            elif isinstance(error_response_text, str):
                 try:
                     json_error = json.loads(error_response_text)
                     is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
                 except json.JSONDecodeError:
-                    # Not valid JSON, set content filter to False
-                    is_content_filter = False
+                    is_content_filter = "content_filter" in error_response_text
 
-                return handle_bad_request_exception(
-                    response_text=error_response_text,
-                    request=message_piece,
-                    error_code=StatusError.response.status_code,
-                    is_content_filter=is_content_filter,
-                )
-            elif StatusError.response.status_code == 429:
+            return handle_bad_request_exception(
+                response_text=str(error_response_text),
+                request=message_piece,
+                error_code=400,
+                is_content_filter=is_content_filter,
+            )
+        except RateLimitError as e:
+            # SDK's RateLimitError - convert to our exception
+            logger.warning(f"Rate limit hit: {e}")
+            raise RateLimitException()
+        except APIStatusError as e:
+            # Other API errors
+            if e.status_code == 429:
                 raise RateLimitException()
             else:
                 raise
 
-        logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-        response: Message = self._construct_message_from_openai_json(
-            open_ai_str_response=str_response.text, message_piece=message_piece
-        )
-
-        return response
-
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _make_chat_completion_request(self, body: dict):
+        """
+        Make the actual chat completion request using the OpenAI SDK.
+        This method should be overridden by subclasses to use the appropriate SDK method.
+        
+        Args:
+            body (dict): The request body parameters.
+            
+        Returns:
+            The completion response from the OpenAI SDK.
+        """
         raise NotImplementedError
 
-    def _construct_message_from_openai_json(
+    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+        """
+        Construct the request body from a conversation.
+        This method should be overridden by subclasses.
+        
+        Args:
+            conversation (MutableSequence[Message]): The conversation history.
+            is_json_response (bool): Whether to request JSON response format.
+            
+        Returns:
+            dict: The request body parameters.
+        """
+        raise NotImplementedError
+
+    def _construct_message_from_completion_response(
         self,
         *,
-        open_ai_str_response: str,
+        completion_response,
         message_piece: MessagePiece,
     ) -> Message:
+        """
+        Construct a Message from the OpenAI SDK completion response.
+        This method should be overridden by subclasses.
+        
+        Args:
+            completion_response: The completion response from the OpenAI SDK.
+            message_piece (MessagePiece): The original request message piece.
+            
+        Returns:
+            Message: The constructed message.
+        """
         raise NotImplementedError
 
     def is_json_response_supported(self) -> bool:

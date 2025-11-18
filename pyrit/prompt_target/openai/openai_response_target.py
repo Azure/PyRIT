@@ -118,7 +118,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         super().__init__(temperature=temperature, top_p=top_p, **kwargs)
         self._max_output_tokens = max_output_tokens
 
-        response_url_patterns = [r"/responses"]
+        # Accept both old Azure format (/responses) and new format (/openai/v1)
+        response_url_patterns = [r"/responses", r"/openai/v1"]
         self._warn_if_irregular_endpoint(response_url_patterns)
 
         # Reasoning parameters are not yet supported by PyRIT.
@@ -316,6 +317,44 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
+
+    async def _make_chat_completion_request(self, body: dict):
+        """
+        Make the actual responses request using the OpenAI SDK.
+        
+        Args:
+            body (dict): The request body parameters.
+            
+        Returns:
+            The response from the OpenAI SDK.
+        """
+        # The Responses API is accessed via client.responses.create()
+        # It returns a different response format than chat completions
+        return await self._async_client.responses.create(**body)
+
+    def _construct_message_from_completion_response(
+        self,
+        *,
+        completion_response,
+        message_piece: MessagePiece,
+    ) -> Message:
+        """
+        Construct a Message from the OpenAI SDK responses response.
+        
+        Args:
+            completion_response: The response from the OpenAI SDK.
+            message_piece (MessagePiece): The original request message piece.
+            
+        Returns:
+            Message: The constructed message.
+        """
+        # Convert the SDK response to JSON string for processing
+        # The SDK response object can be converted to dict via model_dump()
+        response_json = completion_response.model_dump_json()
+        return self._construct_message_from_openai_json(
+            open_ai_str_response=response_json,
+            message_piece=message_piece,
+        )
 
     def _construct_message_from_openai_json(
         self,

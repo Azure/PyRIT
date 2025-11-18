@@ -140,6 +140,11 @@ async def test_connect_required_openai_text_targets(sqlite_instance, endpoint, a
             "PLATFORM_OPENAI_RESPONSES_MODEL",
         ),
         ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL"),
+        (
+            "AZURE_OPENAI_RESPONSES_NEW_FORMAT_ENDPOINT",
+            "AZURE_OPENAI_RESPONSES_KEY",
+            "AZURE_OPENAI_RESPONSES_MODEL",
+        ),
     ],
 )
 async def test_connect_required_openai_response_targets(sqlite_instance, endpoint, api_key, model_name):

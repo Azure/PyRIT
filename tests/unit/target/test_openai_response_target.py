@@ -27,6 +27,25 @@ from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget, PromptChatTarget
 
 
+def create_mock_response(response_dict: dict = None) -> MagicMock:
+    """
+    Helper function to create a mock OpenAI SDK response object.
+    
+    Args:
+        response_dict: Optional dictionary to use as response data. 
+                      If None, uses default from openai_response_json_dict().
+    
+    Returns:
+        A mock object that simulates the OpenAI SDK response.
+    """
+    if response_dict is None:
+        response_dict = openai_response_json_dict()
+    
+    mock_response = MagicMock()
+    mock_response.model_dump_json.return_value = json.dumps(response_dict)
+    return mock_response
+
+
 def fake_construct_response_from_request(request, response_text_pieces):
     return {"dummy": True, "request": request, "response": response_text_pieces}
 
@@ -267,24 +286,19 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
     )
     # Make assistant response empty
     openai_response_json["output"][0]["content"][0]["text"] = ""
-
-    openai_mock_return = MagicMock()
-    openai_mock_return.text = json.dumps(openai_response_json)
+    mock_response = create_mock_response(openai_response_json)
 
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        with patch(
-            "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-        ) as mock_create:
-            mock_create.return_value = openai_mock_return
-            target._memory = MagicMock(MemoryInterface)
+        target._async_client.responses.create = AsyncMock(return_value=mock_response)
+        target._memory = MagicMock(MemoryInterface)
 
-            with pytest.raises(EmptyResponseException):
-                await target.send_prompt_async(message=message)
+        with pytest.raises(EmptyResponseException):
+            await target.send_prompt_async(message=message)
 
-            assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        assert target._async_client.responses.create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -297,21 +311,19 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
 
     target._memory = mock_memory
 
-    response = MagicMock()
-    response.status_code = 429
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
-    side_effect = httpx.HTTPStatusError("Rate Limit Reached", response=response, request=MagicMock())
+    # Mock the SDK to raise RateLimitError
+    target._async_client.responses.create = AsyncMock(side_effect=RateLimitError(
+        "Rate limit exceeded",
+        response=MagicMock(status_code=429),
+        body=None
+    ))
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-
-        message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
-
-        with pytest.raises(RateLimitException) as rle:
-            await target.send_prompt_async(message=message)
-            target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_message_to_memory.assert_called_once_with(request=message)
-
-            assert str(rle.value) == "Rate Limit Reached"
+    with pytest.raises(RateLimitException):
+        await target.send_prompt_async(message=message)
+        target._memory.get_conversation.assert_called_once_with(conversation_id="123")
+        target._memory.add_message_to_memory.assert_called_once_with(request=message)
 
 
 @pytest.mark.asyncio
@@ -324,19 +336,17 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
-    response = MagicMock()
-    response.status_code = 400
-    response.text = "Some error text"
+    # Mock the SDK to raise BadRequestError (non-content-filter)
+    target._async_client.responses.create = AsyncMock(side_effect=BadRequestError(
+        "Bad request",
+        response=MagicMock(status_code=400),
+        body={"error": {"message": "Invalid request"}}
+    ))
 
-    side_effect = httpx.HTTPStatusError("Bad Request", response=response, request=MagicMock())
-
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-        with pytest.raises(httpx.HTTPStatusError) as bre:
-            await target.send_prompt_async(message=message)
-            target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_message_to_memory.assert_called_once_with(request=message)
-
-            assert str(bre.value) == "Bad Request"
+    with pytest.raises(BadRequestError):
+        await target.send_prompt_async(message=message)
+        target._memory.get_conversation.assert_called_once_with(conversation_id="123")
+        target._memory.add_message_to_memory.assert_called_once_with(request=message)
 
 
 @pytest.mark.asyncio
@@ -370,19 +380,16 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
             ),
         ]
     )
+    mock_response = create_mock_response(openai_response_json)
+    
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        with patch(
-            "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-        ) as mock_create:
-            openai_mock_return = MagicMock()
-            openai_mock_return.text = json.dumps(openai_response_json)
-            mock_create.return_value = openai_mock_return
-            response: Message = await target.send_prompt_async(message=message)
-            assert len(response.message_pieces) == 1
-            assert response.get_value() == "hi"
+        target._async_client.responses.create = AsyncMock(return_value=mock_response)
+        response: Message = await target.send_prompt_async(message=message)
+        assert len(response.message_pieces) == 1
+        assert response.get_value() == "hi"
     os.remove(tmp_file_name)
 
 
@@ -419,23 +426,19 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
     )
     # Make assistant response empty
     openai_response_json["output"][0]["content"][0]["text"] = ""
+    mock_response = create_mock_response(openai_response_json)
+    
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        with patch(
-            "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-        ) as mock_create:
+        target._async_client.responses.create = AsyncMock(return_value=mock_response)
+        target._memory = MagicMock(MemoryInterface)
 
-            openai_mock_return = MagicMock()
-            openai_mock_return.text = json.dumps(openai_response_json)
-            mock_create.return_value = openai_mock_return
-            target._memory = MagicMock(MemoryInterface)
+        with pytest.raises(EmptyResponseException):
+            await target.send_prompt_async(message=message)
 
-            with pytest.raises(EmptyResponseException):
-                await target.send_prompt_async(message=message)
-
-            assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        assert target._async_client.responses.create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -443,50 +446,38 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResp
 
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
-    response = MagicMock()
-    response.status_code = 429
+    # Mock SDK to raise RateLimitError
+    target._async_client.responses.create = AsyncMock(side_effect=RateLimitError(
+        "Rate limit exceeded", 
+        response=MagicMock(status_code=429), 
+        body="Rate limit reached"
+    ))
 
-    side_effect = RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
-
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
-    ) as mock_request:
-
-        with pytest.raises(RateLimitError):
-            await target.send_prompt_async(message=message)
-            assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+    # Our code converts RateLimitError to RateLimitException, which has retry logic
+    with pytest.raises(RateLimitException):
+        await target.send_prompt_async(message=message)
+        # The retry decorator will call it multiple times before giving up
+        assert target._async_client.responses.create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_error(target: OpenAIResponseTarget):
 
-    response = MagicMock()
-    response.status_code = 400
-
-    side_effect = BadRequestError("Bad Request Error", response=response, body="Bad request")
-
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")])
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-        with pytest.raises(BadRequestError) as bre:
-            await target.send_prompt_async(message=message)
-            assert str(bre.value) == "Bad Request Error"
+    # Mock SDK to raise BadRequestError
+    target._async_client.responses.create = AsyncMock(side_effect=BadRequestError(
+        "Bad request", 
+        response=MagicMock(status_code=400), 
+        body="Bad request"
+    ))
+
+    with pytest.raises(BadRequestError):
+        await target.send_prompt_async(message=message)
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
-
-    response_body = json.dumps(
-        {
-            "error": {
-                "code": "content_filter",
-                "innererror": {
-                    "code": "ResponsibleAIPolicyViolation",
-                    "content_filter_result": {"violence": {"filtered": True, "severity": "medium"}},
-                },
-            }
-        }
-    )
 
     message = Message(
         message_pieces=[
@@ -498,16 +489,28 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
         ]
     )
 
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.text = response_body
+    # Create a response with content filter error in the status field
+    content_filter_response = {
+        "id": "resp_123",
+        "object": "response",
+        "status": None,
+        "error": {
+            "code": "content_filter",
+            "innererror": {
+                "code": "ResponsibleAIPolicyViolation",
+                "content_filter_result": {"violence": {"filtered": True, "severity": "medium"}},
+            },
+        },
+        "model": "o4-mini",
+    }
+    mock_response = create_mock_response(content_filter_response)
+    target._async_client.responses.create = AsyncMock(return_value=mock_response)
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", return_value=mock_response):
-        response = await target.send_prompt_async(message=message)
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "blocked"
-        assert response.message_pieces[0].converted_value_data_type == "error"
-        assert "content_filter_result" in response.get_value()
+    response = await target.send_prompt_async(message=message)
+    assert len(response.message_pieces) == 1
+    assert response.message_pieces[0].response_error == "blocked"
+    assert response.message_pieces[0].converted_value_data_type == "error"
+    assert "content_filter_result" in response.get_value()
 
 
 def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
@@ -614,29 +617,28 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIRespon
     target._azure_auth = MagicMock()
     target._memory = mock_memory
 
+    mock_response = create_mock_response(openai_response_json)
+    target._async_client.responses.create = AsyncMock(return_value=mock_response)
+
     with (
         patch.object(target, "refresh_auth_headers") as mock_refresh,
         patch.object(target, "_validate_request"),
         patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
     ):
-
         mock_construct.return_value = {}
 
-        with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-            mock_make_request.return_value = MagicMock(text=json.dumps(openai_response_json))
-
-            message = Message(
-                message_pieces=[
-                    MessagePiece(
-                        role="user",
-                        original_value="test prompt",
-                        converted_value="test prompt",
-                        converted_value_data_type="text",
-                    )
-                ]
-            )
-            await target.send_prompt_async(message=message)
-            mock_refresh.assert_called_once()
+        message = Message(
+            message_pieces=[
+                MessagePiece(
+                    role="user",
+                    original_value="test prompt",
+                    converted_value="test prompt",
+                    converted_value_data_type="text",
+                )
+            ]
+        )
+        await target.send_prompt_async(message=message)
+        mock_refresh.assert_called_once()
 
 
 def test_construct_message_from_openai_json_invalid_json(

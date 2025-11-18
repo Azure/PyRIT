@@ -270,13 +270,82 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
+    async def _make_chat_completion_request(self, body: dict):
+        """
+        Make the actual chat completion request using the OpenAI SDK.
+        
+        Args:
+            body (dict): The request body parameters.
+            
+        Returns:
+            The completion response from the OpenAI SDK.
+        """
+        # Use the OpenAI SDK client to make the request
+        completion = await self._async_client.chat.completions.create(**body)
+        return completion
+
+    def _construct_message_from_completion_response(
+        self,
+        *,
+        completion_response,
+        message_piece: MessagePiece,
+    ) -> Message:
+        """
+        Construct a Message from the OpenAI SDK completion response.
+        
+        Args:
+            completion_response: The completion response from the OpenAI SDK (ChatCompletion object).
+            message_piece (MessagePiece): The original request message piece.
+            
+        Returns:
+            Message: The constructed message.
+        """
+        # Extract the finish reason and content from the SDK response
+        if not completion_response.choices:
+            raise PyritException(message="No choices returned in the completion response.")
+            
+        choice = completion_response.choices[0]
+        finish_reason = choice.finish_reason
+        extracted_response: str = ""
+        
+        # finish_reason="stop" means API returned complete message and
+        # "length" means API returned incomplete message due to max_tokens limit.
+        if finish_reason in ["stop", "length"]:
+            extracted_response = choice.message.content or ""
+
+            # Handle empty response
+            if not extracted_response:
+                logger.error("The chat returned an empty response.")
+                raise EmptyResponseException(message="The chat returned an empty response.")
+        elif finish_reason == "content_filter":
+            # Content filter with status 200 indicates that the model output was filtered
+            # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
+            # Note: The SDK should raise ContentFilterFinishReasonError for this case,
+            # but we handle it here as a fallback
+            return handle_bad_request_exception(
+                response_text=completion_response.model_dump_json(), 
+                request=message_piece, 
+                error_code=200, 
+                is_content_filter=True
+            )
+        else:
+            raise PyritException(
+                message=f"Unknown finish_reason {finish_reason} from response: {completion_response.model_dump_json()}"
+            )
+
+        return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
+
     def _construct_message_from_openai_json(
         self,
         *,
         open_ai_str_response: str,
         message_piece: MessagePiece,
     ) -> Message:
-
+        """
+        Legacy method for backward compatibility.
+        Parses a JSON string response from OpenAI API.
+        The SDK-based implementation uses _construct_message_from_completion_response instead.
+        """
         try:
             response = json.loads(open_ai_str_response)
         except json.JSONDecodeError as e:
