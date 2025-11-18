@@ -20,6 +20,9 @@ def fetch_babelscape_alert_dataset(
 
     Returns:
         SeedDataset: A SeedDataset containing the examples.
+    
+    Raises:
+        ValueError: If an invalid category is provided.
     """
     data_categories = None
     if category is None:  # if category is explicitly None, read both subsets

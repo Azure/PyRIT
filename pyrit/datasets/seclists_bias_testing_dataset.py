@@ -41,6 +41,9 @@ def fetch_seclists_bias_testing_dataset(
 
     Returns:
         SeedDataset: A SeedDataset containing the examples with placeholders replaced.
+
+    Raises:
+        ValueError: If the file type is invalid.
     """
     if random_seed is not None:
         random.seed(random_seed)

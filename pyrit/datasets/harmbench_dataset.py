@@ -29,6 +29,9 @@ def fetch_harmbench_dataset(
     Returns:
         SeedDataset: A SeedDataset containing the examples.
 
+    Raises:
+        ValueError: If any example is missing required keys or if the file type is invalid.
+
     Note:
         For more information and access to the original dataset and related materials, visit:
         https://github.com/centerforaisafety/HarmBench
