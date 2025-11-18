@@ -129,8 +129,10 @@ class RolePlayAttack(PromptSendingAttack):
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
         Validate the context before executing the attack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing parameters and objective.
+
         Raises:
             ValueError: If the context is invalid.
         """

@@ -265,7 +265,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         Returns:
             AttackResult: The result of the attack execution.
         """
-
         # Log the attack configuration
         logger.info(f"Starting red teaming attack with objective: {context.objective}")
         logger.info(f"Max turns: {self._max_turns}")
@@ -314,7 +313,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         )
 
     async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:
-        """Clean up after attack execution"""
+        """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 

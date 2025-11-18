@@ -403,7 +403,6 @@ class Scorer(abc.ABC):
             UnvalidatedScore: The score object containing the response from the target LLM.
                 score_value still needs to be normalized and validated.
         """
-
         conversation_id = str(uuid.uuid4())
 
         if attack_identifier:
@@ -504,7 +503,6 @@ class Scorer(abc.ABC):
         Returns:
             str: The objective extracted from the response.
         """
-
         if not response.message_pieces:
             return ""
 

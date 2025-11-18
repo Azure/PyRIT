@@ -49,7 +49,6 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
             "By_attack_identifier": dict[str, AttackStats]
         }
     """
-
     if not attack_results:
         raise ValueError("attack_results cannot be empty")
 

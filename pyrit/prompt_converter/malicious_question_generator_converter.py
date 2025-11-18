@@ -36,7 +36,6 @@ class MaliciousQuestionGeneratorConverter(LLMGenericTextConverter):
                 Can be omitted if a default has been configured via PyRIT initialization.
             prompt_template (SeedPrompt): The seed prompt template to use.
         """
-
         # set to default strategy if not provided
         prompt_template = (
             prompt_template

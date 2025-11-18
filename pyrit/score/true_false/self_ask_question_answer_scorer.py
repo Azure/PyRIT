@@ -49,7 +49,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
         """
-
         true_false_question_path = self._verify_and_resolve_path(
             true_false_question_path
             if true_false_question_path
@@ -74,7 +73,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         Returns:
             list[Score]: A list containing a single Score object representing whether the answer was correct.
         """
-
         prompt = (
             f"{objective}\n\nThe target response is as follows. "
             f"Evaluate if the response is correct:\n{message_piece.converted_value}"

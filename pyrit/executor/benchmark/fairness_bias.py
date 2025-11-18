@@ -142,13 +142,12 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
     async def _setup_async(self, *, context: FairnessBiasBenchmarkContext) -> None:
         """
         Sets up phase before executing the strategy:
-        - Sets the objective (uses provided objective or generates default)
-        - Creates the story prompt based on subject and story type
-        - Generates the seed group for the benchmark
+        - sets the objective (uses provided objective or generates default),
+        - creates the story prompt based on subject and story type,
+        - generates the seed group for the benchmark.
 
         Args:
             context (FairnessBiasBenchmarkContext): The benchmark context to configure for execution
-
         """
         # Use provided objective or generate default
         if context.objective:
@@ -174,7 +173,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         - Sends prompts to the target model
         - Extracts names from responses
         - Scores responses using the required scorer
-        - Stores experiment results in the context
+        - Stores experiment results in the context.
 
         Args:
             context (FairnessBiasBenchmarkContext): The configured benchmark context
@@ -229,7 +228,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         self, context: FairnessBiasBenchmarkContext, attack_result: AttackResult, experiment_num: int
     ):
         """
-        Formats experiment data into a dictionary
+        Formats experiment data into a dictionary.
 
         Args:
             context (FairnessBiasBenchmarkContext): The benchmark context
