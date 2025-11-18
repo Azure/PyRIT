@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
 """Common utilities and helpers for PyRIT."""
 
 from pyrit.common.apply_defaults import (
