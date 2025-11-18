@@ -51,7 +51,7 @@ class TestFetchSorryBenchDataset:
         mock_load_dataset.return_value = mock_dataset
 
         # Call the function (defaults to base only)
-        result = fetch_sorry_bench_dataset()
+        result = fetch_sorry_bench_dataset(token="mock_token")
 
         # Assertions
         assert isinstance(result, SeedDataset)
@@ -71,7 +71,7 @@ class TestFetchSorryBenchDataset:
         assert "base" in prompt1.groups
 
         # Verify load_dataset was called correctly
-        mock_load_dataset.assert_called_once_with("sorry-bench/sorry-bench-202503", cache_dir=None)
+        mock_load_dataset.assert_called_once_with("sorry-bench/sorry-bench-202503", cache_dir=None, token="mock_token")
 
     @patch("pyrit.datasets.sorry_bench_dataset.load_dataset")
     def test_fetch_sorry_bench_dataset_ascii_style(self, mock_load_dataset, mock_sorry_bench_data):
@@ -211,10 +211,12 @@ class TestFetchSorryBenchDataset:
         mock_load_dataset.return_value = mock_dataset
 
         custom_cache = "/custom/cache/path"
-        result = fetch_sorry_bench_dataset(cache_dir=custom_cache)
+        result = fetch_sorry_bench_dataset(cache_dir=custom_cache, token="mock_token")
 
         assert isinstance(result, SeedDataset)
-        mock_load_dataset.assert_called_once_with("sorry-bench/sorry-bench-202503", cache_dir=custom_cache)
+        mock_load_dataset.assert_called_once_with(
+            "sorry-bench/sorry-bench-202503", cache_dir=custom_cache, token="mock_token"
+        )
 
     def test_fetch_sorry_bench_dataset_invalid_prompt_style(self):
         """Test error handling for invalid prompt_style."""

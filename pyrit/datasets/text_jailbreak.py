@@ -10,7 +10,7 @@ from pyrit.models import SeedPrompt
 
 class TextJailBreak:
     """
-    A class that manages jailbreak datasets (like DAN, etc.)
+    A class that manages jailbreak datasets (like DAN, etc.).
     """
 
     def __init__(

@@ -52,7 +52,6 @@ class SelfAskCategoryScorer(TrueFalseScorer):
                 Defaults to TrueFalseScoreAggregator.OR.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
-
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
         content_classifier_path = self._verify_and_resolve_path(content_classifier_path)
 

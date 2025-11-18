@@ -32,7 +32,7 @@ class AttackOutcome(Enum):
 
 @dataclass
 class AttackResult(StrategyResult):
-    """Base class for all attack results"""
+    """Base class for all attack results."""
 
     # Identity
     # Unique identifier of the conversation that produced this result

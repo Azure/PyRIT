@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 async def display_image_response(response_piece: MessagePiece) -> None:
-    """Displays response images if running in notebook environment.
+    """
+    Displays response images if running in notebook environment.
 
     Args:
         response_piece (MessagePiece): The response piece to display.

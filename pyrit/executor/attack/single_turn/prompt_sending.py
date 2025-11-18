@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
@@ -53,7 +53,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -260,7 +260,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         return AttackOutcome.FAILURE, "All attempts were filtered or failed to get a response"
 
     async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
-        """Clean up after attack execution"""
+        """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 
@@ -297,7 +297,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
-
         return await self._prompt_normalizer.send_prompt_async(
             seed_group=prompt_group,
             target=self._objective_target,
@@ -329,7 +328,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
-
         scoring_results = await Scorer.score_response_async(
             response=response,
             objective_scorer=self._objective_scorer,

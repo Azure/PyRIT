@@ -21,7 +21,6 @@ def fetch_babelscape_alert_dataset(
     Returns:
         SeedDataset: A SeedDataset containing the examples.
     """
-
     data_categories = None
     if category is None:  # if category is explicitly None, read both subsets
         data_categories = ["alert_adversarial", "alert"]

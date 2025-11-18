@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Union
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import (
@@ -84,7 +84,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_adversarial_config: AttackAdversarialConfig,
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
@@ -265,7 +265,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         Returns:
             AttackResult: The result of the attack execution.
         """
-
         # Log the attack configuration
         logger.info(f"Starting red teaming attack with objective: {context.objective}")
         logger.info(f"Max turns: {self._max_turns}")
@@ -314,7 +313,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         )
 
     async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:
-        """Clean up after attack execution"""
+        """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 

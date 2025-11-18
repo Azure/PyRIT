@@ -14,7 +14,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
     Message,
@@ -37,7 +37,7 @@ class TranslationConverter(PromptConverter):
     def __init__(
         self,
         *,
-        converter_target: Optional[PromptChatTarget] = None,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         language: str,
         prompt_template: Optional[SeedPrompt] = None,
         max_retries: int = 3,
@@ -58,13 +58,6 @@ class TranslationConverter(PromptConverter):
             ValueError: If converter_target is not provided and no default has been configured.
             ValueError: If the language is not provided.
         """
-        if converter_target is None:
-            raise ValueError(
-                "converter_target is required for LLM-based converters. "
-                "Either pass it explicitly or configure a default via PyRIT initialization "
-                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
-            )
-
         self.converter_target = converter_target
 
         # Retry strategy for the conversion
@@ -100,7 +93,6 @@ class TranslationConverter(PromptConverter):
         Raises:
             ValueError: If the input type is not supported.
         """
-
         conversation_id = str(uuid.uuid4())
 
         self.converter_target.set_system_prompt(system_prompt=self.system_prompt, conversation_id=conversation_id)

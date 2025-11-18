@@ -13,7 +13,7 @@ StrategyResultT = TypeVar("StrategyResultT", bound="StrategyResult")
 
 @dataclass
 class StrategyResult(ABC):
-    """Base class for all strategy results"""
+    """Base class for all strategy results."""
 
     def duplicate(self: StrategyResultT) -> StrategyResultT:
         """
