@@ -417,18 +417,6 @@ class ScenarioCompositeStrategy:
 
         Raises:
             ValueError: If any composite contains multiple strategies.
-
-        Example:
-            >>> # For composites containing Base64 and ROT13 strategies
-            >>> values = ScenarioCompositeStrategy.extract_single_strategy_values(
-            ...     composites, strategy_type=EncodingStrategy
-            ... )
-            >>> # Returns: {"base64", "rot13"}
-            >>>
-            >>> # Error if any composite has multiple strategies
-            >>> multi_strategy = ScenarioCompositeStrategy(strategies=[EncodingStrategy.Base64, EncodingStrategy.ROT13])
-            >>> ScenarioCompositeStrategy.extract_single_strategy_values([multi_strategy], strategy_type=EncodingStrategy)
-            >>> # Raises: ValueError
         """
         # Check that all composites are single-strategy
         multi_strategy_composites = [comp for comp in composites if not comp.is_single_strategy]
