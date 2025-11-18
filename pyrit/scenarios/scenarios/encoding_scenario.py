@@ -36,6 +36,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_strategy import (
+    ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
 from pyrit.score import TrueFalseScorer
@@ -223,8 +224,9 @@ class EncodingScenario(Scenario):
         ]
 
         # Filter to only include selected strategies
-        # Extract strategy names from composites (each has exactly one strategy since composition not supported)
-        selected_encoding_names = {comp.strategies[0].value for comp in self._scenario_composites if comp.strategies}
+        selected_encoding_names = ScenarioCompositeStrategy.extract_single_strategy_values(
+            self._scenario_composites, strategy_type=EncodingStrategy
+        )
         converters_with_encodings = [
             (conv, name) for conv, name in all_converters_with_encodings if name in selected_encoding_names
         ]

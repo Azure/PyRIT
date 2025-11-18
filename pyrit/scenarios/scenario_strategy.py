@@ -394,6 +394,59 @@ class ScenarioCompositeStrategy:
         return len(self._strategies) == 1
 
     @staticmethod
+    def extract_single_strategy_values(
+        composites: Sequence["ScenarioCompositeStrategy"], *, strategy_type: type[T]
+    ) -> Set[str]:
+        """
+        Extract strategy values from single-strategy composites.
+
+        This is a helper method for scenarios that don't support composition and need
+        to filter or map strategies by their values. It flattens the composites into
+        a simple set of strategy values.
+
+        This method enforces that all composites contain only a single strategy. If any
+        composite contains multiple strategies, a ValueError is raised.
+
+        Args:
+            composites (Sequence[ScenarioCompositeStrategy]): List of composite strategies.
+                Each composite must contain only a single strategy.
+            strategy_type (type[T]): The strategy enum type to filter by.
+
+        Returns:
+            Set[str]: Set of strategy values (e.g., {"base64", "rot13", "morse_code"}).
+
+        Raises:
+            ValueError: If any composite contains multiple strategies.
+
+        Example:
+            >>> # For composites containing Base64 and ROT13 strategies
+            >>> values = ScenarioCompositeStrategy.extract_single_strategy_values(
+            ...     composites, strategy_type=EncodingStrategy
+            ... )
+            >>> # Returns: {"base64", "rot13"}
+            >>>
+            >>> # Error if any composite has multiple strategies
+            >>> multi_strategy = ScenarioCompositeStrategy(strategies=[EncodingStrategy.Base64, EncodingStrategy.ROT13])
+            >>> ScenarioCompositeStrategy.extract_single_strategy_values([multi_strategy], strategy_type=EncodingStrategy)
+            >>> # Raises: ValueError
+        """
+        # Check that all composites are single-strategy
+        multi_strategy_composites = [comp for comp in composites if not comp.is_single_strategy]
+        if multi_strategy_composites:
+            composite_names = [comp.name for comp in multi_strategy_composites]
+            raise ValueError(
+                f"extract_single_strategy_values() requires all composites to contain a single strategy. "
+                f"Found composites with multiple strategies: {composite_names}"
+            )
+
+        return {
+            strategy.value
+            for composite in composites
+            for strategy in composite.strategies
+            if isinstance(strategy, strategy_type)
+        }
+
+    @staticmethod
     def get_composite_name(strategies: Sequence[ScenarioStrategy]) -> str:
         """
         Generate a descriptive name for a composition of strategies.
