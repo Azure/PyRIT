@@ -78,6 +78,7 @@ class TestScenarioRegistry:
         """Test get_scenario_names with no scenarios."""
         registry = ScenarioRegistry()
         registry._scenarios = {}
+        registry._discovered = True  # Prevent auto-discovery
         names = registry.get_scenario_names()
         assert names == []
 
@@ -89,6 +90,7 @@ class TestScenarioRegistry:
             "apple_scenario": MockScenario,
             "middle_scenario": MockScenario,
         }
+        registry._discovered = True  # Prevent auto-discovery
 
         names = registry.get_scenario_names()
         assert names == ["apple_scenario", "middle_scenario", "zebra_scenario"]
@@ -114,6 +116,7 @@ class TestScenarioRegistry:
         registry._scenarios = {
             "test_scenario": DocumentedScenario,
         }
+        registry._discovered = True  # Prevent auto-discovery
 
         scenarios = registry.list_scenarios()
 
@@ -142,6 +145,7 @@ class TestScenarioRegistry:
 
         registry = ScenarioRegistry()
         registry._scenarios = {"undocumented": UndocumentedScenario}
+        registry._discovered = True  # Prevent auto-discovery
 
         scenarios = registry.list_scenarios()
 
