@@ -153,7 +153,6 @@ class EncodingScenario(Scenario):
             name="Encoding Scenario",
             version=self.version,
             strategy_class=EncodingStrategy,
-            default_aggregate=EncodingStrategy.ALL,
             objective_scorer_identifier=objective_scorer.get_identifier(),
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,

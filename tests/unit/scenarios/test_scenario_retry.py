@@ -122,9 +122,8 @@ class ConcreteScenario(Scenario):
 
         # Get strategy_class from kwargs or use default
         strategy_class = kwargs.pop("strategy_class", None) or self.get_strategy_class()
-        default_aggregate = kwargs.pop("default_aggregate", None) or self.get_default_strategy()
 
-        super().__init__(strategy_class=strategy_class, default_aggregate=default_aggregate, **kwargs)
+        super().__init__(strategy_class=strategy_class, **kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
     @classmethod
@@ -133,7 +132,7 @@ class ConcreteScenario(Scenario):
 
         # Return a simple mock strategy class for testing
         class TestStrategy(ScenarioStrategy):
-            CONCRETE = ("concrete", set())
+            CONCRETE = ("concrete", {"concrete"})
             ALL = ("all", {"all"})
 
             @classmethod
