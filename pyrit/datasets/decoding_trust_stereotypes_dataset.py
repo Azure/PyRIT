@@ -42,6 +42,9 @@ def fetch_decoding_trust_stereotypes_dataset(
     Returns:
         SeedDataset: A SeedDataset containing the examples.
 
+    Raises:
+        ValueError: If the system_prompt_type or file_type is invalid.
+
     Note:
         For more information and access to the original dataset and related materials, visit:
         https://github.com/AI-secure/DecodingTrust
