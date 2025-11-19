@@ -24,6 +24,8 @@ class SeedGroup(YamlLoadable):
     All prompts in the group should share the same `prompt_group_id`.
     """
 
+    # TODO->REVIEW Why is this here? These are eventually populated as instance attributes but by default they're class attributes.
+    # It's much more intuitive to annotate like this in my opinion, but I'd like to be consistent across the codebase
     objective: Optional[SeedObjective] = None
     prompts: Sequence[SeedPrompt]
 
@@ -31,6 +33,7 @@ class SeedGroup(YamlLoadable):
         self,
         *,
         prompts: Union[Sequence[Seed], Sequence[Dict[str, Any]]],
+        objective: Optional[SeedObjective] = None
     ):
         if not prompts:
             raise ValueError("SeedGroup cannot be empty.")
@@ -58,6 +61,8 @@ class SeedGroup(YamlLoadable):
             self.prompts = sorted(
                 self.prompts, key=lambda prompt: prompt.sequence if prompt.sequence is not None else 0
             )
+            
+        self.objective = objective if objective else None
 
     def render_template_value(self, **kwargs):
         """

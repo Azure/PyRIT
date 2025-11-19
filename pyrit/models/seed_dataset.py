@@ -8,7 +8,7 @@ import random
 import uuid
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from pydantic.types import PositiveInt
 
@@ -178,6 +178,10 @@ class SeedDataset(YamlLoadable):
         """
         prompts = self.get_values(harm_categories=harm_categories)
         return random.sample(prompts, min(len(prompts), number))
+
+    def get_as_list_of_groups(self) -> List[SeedGroup]:
+        # TODO: Docstring, filters as argument
+        return [SeedGroup(objective=obj, prompts=self.prompts) for obj in self.objectives]
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> SeedDataset:

@@ -18,10 +18,16 @@ SUPPORTED_FORMATS = [
 @final
 class ScenarioDatasetLoader:
     """
-    The ScenarioDatasetLoader is a lazy and stateful dataset handling component for Scenarios.
+    The ScenarioDatasetLoader is a lazy dataset handling component for Scenarios.
     It contains several methods for data wrangling, parsing, storage, and retrieval to keep them
     out of Scenario. Note that this class does NOT contain the dataset itself; that is Scenario's
     responsibility.
+    
+    TODO Should this be stateless?
+    With state: keeps ._path and ._loaded
+    Without state: Scenario responsible for both and .load requires path
+    Leaning towards state because Scenario is already quite large, but treat dataset itself as 
+    ephemeral
     """
     def __init__(self, dataset: Union[Path, str]) -> None:
         """

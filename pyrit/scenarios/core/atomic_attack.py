@@ -91,10 +91,9 @@ class AtomicAttack:
         *,
         atomic_attack_name: str,
         attack: AttackStrategy,
-        objectives: List[str],
+        objective: str,
+        prompts: List[str],
         prepended_conversations: Optional[List[List[Message]]] = None,
-        seed_groups: Optional[List[SeedGroup]] = None,
-        custom_prompts: Optional[List[str]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_execute_params: Any,
     ) -> None:
@@ -105,14 +104,12 @@ class AtomicAttack:
             atomic_attack_name (str): Used to group an AtomicAttack with related attacks for a
                 strategy.
             attack (AttackStrategy): The configured attack strategy to execute.
-            objectives (List[str]): List of attack objectives to test against.
+            objective (str): The single atomic objective of this attack.
+            prompts (List[str]): Prompts to send during this attack. If multi-turn, in series. If
+                single-turn, in parallel.
             prepended_conversations (Optional[List[List[Message]]]): Optional
                 list of conversation histories to prepend to each attack execution. This will be
                 used for all objectives.
-            seed_groups (Optional[List[SeedGroup]]): List of seed groups
-                for single-turn attacks. Only valid for single-turn attacks.
-            custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
-                Only valid for multi-turn attacks.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
                 These labels help track and categorize the atomic attack in memory.
             **attack_execute_params (Any): Additional parameters to pass to the attack
@@ -125,8 +122,6 @@ class AtomicAttack:
         """
         self.atomic_attack_name = atomic_attack_name
 
-        if not objectives:
-            raise ValueError("objectives list cannot be empty")
 
         # Store attack first so we can use it in helper methods
         self._attack = attack
@@ -134,26 +129,22 @@ class AtomicAttack:
         # Determine context type once during initialization
         self._context_type: Literal["single_turn", "multi_turn", "unknown"] = self._determine_context_type(attack)
 
-        # Validate attack context type and parameters
-        self._validate_parameters(
-            seed_groups=seed_groups,
-            custom_prompts=custom_prompts,
-        )
+        # We don't need AtomicAttack to "know" about SeedGroup, just that it has an objective
+        # and prompts to include in the context window.
+        self._objective = objective
+        self._prompts = prompts
 
-        self._objectives = objectives
         self._prepended_conversations = prepended_conversations
-        self._seed_groups = seed_groups
-        self._custom_prompts = custom_prompts
         self._memory_labels = memory_labels or {}
         self._attack_execute_params = attack_execute_params
 
         logger.info(
-            f"Initialized atomic attack with {len(self._objectives)} objectives, "
+            f"Initialized atomic attack with objective `{self._objective}` and {len(self._prompts)} prompts, "
             f"attack type: {type(attack).__name__}, context type: {self._context_type}"
         )
 
     @property
-    def objectives(self) -> List[str]:
+    def objective(self) -> str:
         """
         Get a copy of the objectives list for this atomic attack.
 
@@ -162,7 +153,11 @@ class AtomicAttack:
         Returns:
             List[str]: A copy of the objectives list.
         """
-        return list(self._objectives)
+        return str(self._objective)
+    
+    @property
+    def prompts(self) -> List[str]:
+        return list(self._prompts)
 
     def _determine_context_type(self, attack: AttackStrategy) -> Literal["single_turn", "multi_turn", "unknown"]:
         """
@@ -184,8 +179,7 @@ class AtomicAttack:
     def _validate_parameters(
         self,
         *,
-        seed_groups: Optional[List[SeedGroup]],
-        custom_prompts: Optional[List[str]],
+        seed_group: SeedGroup,
     ) -> None:
         """
         Validate that parameters match the attack context type.
@@ -197,19 +191,26 @@ class AtomicAttack:
         Raises:
             TypeError: If parameters don't match the attack context type.
         """
-        # Validate seed_groups is only used with single-turn attacks
-        if seed_groups is not None and self._context_type != "single_turn":
-            raise TypeError(
-                f"seed_groups can only be used with single-turn attacks. "
-                f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
-            )
+        #TODO->Review This makes dataset loading really hard, because AtomicAttack has to validate a format
+        # an earlier component in the callstack should have already cleaned. I'd rather expose the same
+        # fields with the understanding that Scenario will create different attacks using fewer well-parameterized
+        # fields than use custom_prompts.
+        
+        # # Validate seed_groups is only used with single-turn attacks
+        # if seed_groups is not None and self._context_type != "single_turn":
+        #     raise TypeError(
+        #         f"seed_groups can only be used with single-turn attacks. "
+        #         f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
+        #     )
 
-        # Validate custom_prompts is only used with multi-turn attacks
-        if custom_prompts is not None and self._context_type != "multi_turn":
-            raise TypeError(
-                f"custom_prompts can only be used with multi-turn attacks. "
-                f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
-            )
+        # # Validate custom_prompts is only used with multi-turn attacks
+        # if custom_prompts is not None and self._context_type != "multi_turn":
+        #     raise TypeError(
+        #         f"custom_prompts can only be used with multi-turn attacks. "
+        #         f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
+        #     )
+            
+        raise NotImplementedError
 
     async def run_async(
         self,
@@ -264,11 +265,19 @@ class AtomicAttack:
 
         try:
             # Execute based on context type with common parameters
+            # TODO->Review I think it makes more sense to expose objectives for Attack as List[str] under the assumption
+            # that notebook users will fill it with multiple objectives, but that for the purpose of atomizing it
+            # you should just pass objectives with len == 1.
+            # I'd rather reuse prompts for the multi_turn attack under the expectation it fills the role of custom_prompts,
+            # and recycle it in single_turn under the expectation it's just equivalent to bundle of MessagePieces.
+            # reusing the interface lets us make Scenario much more concise and robust but still let attacks be invoked
+            # manually ergonomically.
+            
             if self._context_type == "single_turn":
                 results = await executor.execute_single_turn_attacks_async(
                     attack=self._attack,
-                    objectives=self._objectives,
-                    seed_groups=self._seed_groups,
+                    objectives=[self._objective],
+                    seed_groups=self._single_turn_seed_group_factory(),
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
                     return_partial_on_failure=return_partial_on_failure,
@@ -277,8 +286,8 @@ class AtomicAttack:
             elif self._context_type == "multi_turn":
                 results = await executor.execute_multi_turn_attacks_async(
                     attack=self._attack,
-                    objectives=self._objectives,
-                    custom_prompts=self._custom_prompts,
+                    objectives=[self._objective],
+                    custom_prompts=self._multi_turn_custom_prompt_factory(),
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
                     return_partial_on_failure=return_partial_on_failure,
@@ -289,7 +298,7 @@ class AtomicAttack:
                 # Note: This method uses prepended_conversation (singular) instead of prepended_conversations
                 results = await executor.execute_multi_objective_attack_async(
                     attack=self._attack,
-                    objectives=self._objectives,
+                    objectives=[self._objective],
                     prepended_conversation=prepended_conversations[0] if prepended_conversations else None,
                     memory_labels=merged_memory_labels,
                     return_partial_on_failure=return_partial_on_failure,
@@ -312,3 +321,15 @@ class AtomicAttack:
         except Exception as e:
             logger.error(f"Atomic attack execution failed: {str(e)}")
             raise ValueError(f"Failed to execute atomic attack: {str(e)}") from e
+
+    def _single_turn_seed_group_factory(self) -> List[SeedGroup]:
+        """
+        Adapter method for single turn attacks.
+        """
+        raise NotImplementedError
+    
+    def _multi_turn_custom_prompt_factory(self) -> List[str]:
+        """
+        Adapter method for multi turn attacks.
+        """
+        raise NotImplementedError

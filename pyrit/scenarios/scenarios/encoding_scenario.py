@@ -247,7 +247,7 @@ class EncodingScenario(Scenario):
         # Lazy loading is on by default, so this 
         # TODO: Abstract this into a set of assertions in the base class for self._* where * is namespace.special.
         assert self._seed_dataset is not None
-        seed_prompts = self.load_objectives
+        seed_prompts = self.load_objectives()
         
         converter_configs = [
             AttackConverterConfig(

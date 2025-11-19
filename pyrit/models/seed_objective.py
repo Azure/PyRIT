@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SeedObjective(Seed):
-    """Represents a seed objective with various attributes and metadata."""
+    """
+    Represents a seed objective with various attributes and metadata.
+    Note that this "a seed which is an objective," and not necessarily
+    "an objective which is a seed."
+    """
 
     def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values."""

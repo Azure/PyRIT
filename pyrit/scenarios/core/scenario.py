@@ -155,7 +155,8 @@ class Scenario(ABC):
         # Create lazy dataset loader object with the dataset in question
         self._dataset_loader = ScenarioDatasetLoader(dataset=dataset)
         if not lazy_load_dataset:
-            self._seed_dataset = 
+            # should load take dataset path?
+            self._seed_dataset = self._dataset_loader.load()
 
     @property
     def name(self) -> str:
@@ -287,6 +288,12 @@ class Scenario(ABC):
                 "Provide it either as a parameter or via set_default_value() in an initialization script."
             )
 
+        # Load in our dataset.
+        # This is a deliberate choice. We just care that self._seed_dataset exists prior to attack creation;
+        # it's meant not to be idempotent so that it's forgiving for more complicated scenarios.
+        if not self._dataset_loader._loaded:
+            self._seed_dataset = self._dataset_loader.load()
+
         # Set instance variables from parameters
         self._objective_target = objective_target
         self._objective_target_identifier = objective_target.get_identifier()
@@ -299,7 +306,9 @@ class Scenario(ABC):
             scenario_strategies, default_aggregate=self._default_aggregate
         )
 
-        self._atomic_attacks = await self._get_atomic_attacks_async()
+        # TODO->Review
+        # self._atomic_attacks = await self._get_atomic_attacks_async()
+        self._atomic_attacks = await 
 
         if self._include_baseline:
             baseline_attack = self._get_baseline_from_first_attack()
@@ -534,18 +543,7 @@ class Scenario(ABC):
                     f"for atomic attack '{atomic_attack_name}'"
                 )
 
-    def load_objectives(self) -> List[str]:
-        """
-        Converts the self._seed_dataset into a list of objectives that can be passed
-        to _get_atomic_attacks_async.
-        
-        Override this if you have some custom logic you want to implement for objective
-        extraction from the SeedDataset.
-        """
-        assert self._seed_dataset is not None
-        return [str(prompt) for prompt in self._seed_dataset.prompts]
-
-    @abstractmethod
+    # @abstractmethod
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances in this scenario.
@@ -556,7 +554,19 @@ class Scenario(ABC):
         Returns:
             List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
-        pass
+        
+        # This is the eventual goal. Attack strategies themselves are the scenario subclass responsibility,
+        # while dataset boilerplate is totally abstracted.
+        attacks = []
+        for group in self._seed_dataset.get_as_list_of_groups():
+            attacks.append(AtomicAttack(
+                atomic_attack_name="foobar",
+                attack="foobar",
+                objective=group.objective,
+                prompts=group.prompts
+            ))
+        return attacks
+        # pass
 
     async def run_async(self) -> ScenarioResult:
         """
