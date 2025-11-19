@@ -36,6 +36,9 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
+      - name: Remove unused Docker images
+        run: docker system prune -af
+
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
