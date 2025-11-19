@@ -18,7 +18,7 @@ class ConversationAnalytics:
 
     def __init__(self, *, memory_interface: MemoryInterface):
         """
-        Initializes the ConversationAnalytics with a memory interface for data access.
+        Initialize the ConversationAnalytics with a memory interface for data access.
 
         Args:
             memory_interface (MemoryInterface): An instance of MemoryInterface for accessing conversation data.
@@ -29,7 +29,7 @@ class ConversationAnalytics:
         self, *, chat_message_content: str
     ) -> list[ConversationMessageWithSimilarity]:
         """
-        Retrieves chat messages that have the same converted content.
+        Retrieve chat messages that have the same converted content.
 
         Args:
             chat_message_content (str): The content of the chat message to find similar messages for.
@@ -58,7 +58,7 @@ class ConversationAnalytics:
         self, *, chat_message_embedding: list[float], threshold: float = 0.8
     ) -> list[EmbeddingMessageWithSimilarity]:
         """
-        Retrieves chat messages that are similar to the given embedding based on cosine similarity.
+        Retrieve chat messages that are similar to the given embedding based on cosine similarity.
 
         Args:
             chat_message_embedding (List[float]): The embedding of the chat message to find similar messages for.
