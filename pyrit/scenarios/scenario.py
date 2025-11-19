@@ -31,7 +31,7 @@ from pyrit.scenarios.scenario_strategy import (
 
 logger = logging.getLogger(__name__)
 
-# comment for update
+# comment for updat
 
 
 class Scenario(ABC):
