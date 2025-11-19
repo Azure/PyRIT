@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Sequence, Set, Type, Union
 from tqdm.auto import tqdm
 
 from pyrit.common import REQUIRED_VALUE, apply_defaults
+from pyrit.executor.attack import AttackStrategy
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import ScenarioResultEntry
@@ -542,6 +543,10 @@ class Scenario(ABC):
                     f"Failed to update scenario result with {len(attack_results)} results "
                     f"for atomic attack '{atomic_attack_name}'"
                 )
+
+    @abstractmethod
+    async def _get_atomic_attack_strategies_async(self) -> List[AttackStrategy]:
+        raise NotImplementedError()
 
     # @abstractmethod
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:

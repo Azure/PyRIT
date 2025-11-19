@@ -191,7 +191,7 @@ class AtomicAttack:
         Raises:
             TypeError: If parameters don't match the attack context type.
         """
-        #TODO->Review This makes dataset loading really hard, because AtomicAttack has to validate a format
+        #TODO->Review This makes dataset loading challenging, because AtomicAttack has to validate a format
         # an earlier component in the callstack should have already cleaned. I'd rather expose the same
         # fields with the understanding that Scenario will create different attacks using fewer well-parameterized
         # fields than use custom_prompts.
