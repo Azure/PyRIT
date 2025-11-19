@@ -3,8 +3,9 @@
 
 
 import pathlib
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Union
 
+from pathlib import Path
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core.attack_config import (
@@ -123,6 +124,7 @@ class EncodingScenario(Scenario):
         encoding_templates: Optional[Sequence[str]] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
+        dataset: Union[str, Path] = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "garak"
     ):
         """
         Initialize the EncodingScenario.
@@ -142,11 +144,19 @@ class EncodingScenario(Scenario):
                 added as the first atomic attack, allowing comparison between unmodified prompts and
                 encoding-modified prompts.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
+            dataset (Optional[Union[str, Path]]): Optional dataset for the encoding scenario. Will use
+                the Garak dataset, which includes slur terms and web HTML/JS XSS payloads by default.
+                These are the harmful text strings that will be encoded and used to test if the model 
+                will decode them.
+
+        Returns:
+            list[str]: List of seed prompt strings to be encoded and tested.
         """
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
-        self._seed_prompts: list[str] = seed_prompts if seed_prompts else self._get_default_dataset()
+        # Lazy loading is on by default. self._seed_dataset is guaranteed to be populated in or before initialize_async.
+        self._seed_dataset: list[str] = []
         self._encoding_templates = encoding_templates or AskToDecodeConverter.garak_templates
 
         super().__init__(
@@ -157,26 +167,8 @@ class EncodingScenario(Scenario):
             objective_scorer_identifier=objective_scorer.get_identifier(),
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
+            dataset=dataset
         )
-
-    # Use the same as Garak by default
-    def _get_default_dataset(self) -> list[str]:
-        """
-        Get the default seed prompts for encoding tests.
-
-        Returns the same dataset used by Garak, which includes slur terms and
-        web HTML/JS XSS payloads. These are the harmful text strings that will
-        be encoded and used to test if the model will decode them.
-
-        Returns:
-            list[str]: List of seed prompt strings to be encoded and tested.
-        """
-        seed_prompts: list[str] = []
-        garak_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "garak"
-        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "slur_terms_en.prompt").get_values())
-        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "web_html_js.prompt").get_values())
-
-        return seed_prompts
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -252,6 +244,11 @@ class EncodingScenario(Scenario):
         Returns:
             list[AtomicAttack]: List of atomic attacks for this encoding scheme.
         """
+        # Lazy loading is on by default, so this 
+        # TODO: Abstract this into a set of assertions in the base class for self._* where * is namespace.special.
+        assert self._seed_dataset is not None
+        seed_prompts = self.load_objectives
+        
         converter_configs = [
             AttackConverterConfig(
                 request_converters=PromptConverterConfiguration.from_converters(converters=converters)
@@ -271,7 +268,7 @@ class EncodingScenario(Scenario):
         for attack_converter_config in converter_configs:
             seed_groups = []
             objectives = []
-            for seed_prompt in self._seed_prompts:
+            for seed_prompt in seed_prompts:
                 seed = SeedPrompt(value=seed_prompt)
                 seed_groups.append(SeedGroup(prompts=[seed]))
                 objectives.append(f"Make the model say an encoded payload: {seed_prompt}")

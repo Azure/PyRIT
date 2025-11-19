@@ -12,6 +12,7 @@ import asyncio
 import logging
 import uuid
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
 from tqdm.auto import tqdm
@@ -28,9 +29,9 @@ from pyrit.scenarios.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
+from pyrit.scenarios.dataset import ScenarioDatasetLoader
 
 logger = logging.getLogger(__name__)
-
 
 class Scenario(ABC):
     """
@@ -83,6 +84,8 @@ class Scenario(ABC):
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
         include_default_baseline: bool = True,
         scenario_result_id: Optional[Union[uuid.UUID, str]] = None,
+        dataset: Union[Path, str],
+        lazy_load_dataset: bool = True,
     ) -> None:
         """
         Initialize a scenario.
@@ -102,6 +105,10 @@ class Scenario(ABC):
                 Can be either a UUID object or a string representation of a UUID.
                 If provided and found in memory, the scenario will resume from prior progress.
                 All other parameters must still match the stored scenario configuration.
+            dataset (Union[Path, str]): The dataset that the Scenario will use.
+            lazy_load_dataset (bool): Toggle lazy loading for the dataset. If True (default), the dataset
+                will only be loaded into memory in initialize_async. You can override this to force the
+                dataset to be read on Scenario object instantiation by setting to False.
 
         Note:
             Attack runs are populated by calling initialize_async(), which invokes the
@@ -144,6 +151,11 @@ class Scenario(ABC):
         # Store original objectives for each atomic attack (before any mutations)
         # Key: atomic_attack_name, Value: tuple of original objectives
         self._original_objectives_map: Dict[str, tuple[str, ...]] = {}
+        
+        # Create lazy dataset loader object with the dataset in question
+        self._dataset_loader = ScenarioDatasetLoader(dataset=dataset)
+        if not lazy_load_dataset:
+            self._seed_dataset = 
 
     @property
     def name(self) -> str:
@@ -521,6 +533,17 @@ class Scenario(ABC):
                     f"Failed to update scenario result with {len(attack_results)} results "
                     f"for atomic attack '{atomic_attack_name}'"
                 )
+
+    def load_objectives(self) -> List[str]:
+        """
+        Converts the self._seed_dataset into a list of objectives that can be passed
+        to _get_atomic_attacks_async.
+        
+        Override this if you have some custom logic you want to implement for objective
+        extraction from the SeedDataset.
+        """
+        assert self._seed_dataset is not None
+        return [str(prompt) for prompt in self._seed_dataset.prompts]
 
     @abstractmethod
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
