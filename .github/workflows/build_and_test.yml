@@ -60,7 +60,17 @@ jobs:
         run: df -all -h
 
       - name: Install dev extras
-        run: pip install --cache-dir "$PIP_CACHE_DIR" .[dev,all]
+        run: pip install --cache-dir "$PIP_CACHE_DIR" .[all]
+      
+      - name: disk space
+        run: df -all -h
+
+      - name: Install dev extras
+        run: |
+          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[dev]'
+
+      - name: disk space
+        run: df -all -h
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
@@ -112,19 +122,9 @@ jobs:
       - name: disk space
         run: df -all -h
 
-      - name: Install all
-        run: |
-          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[all]'
-      
-      - name: disk space
-        run: df -all -h
-        
       - name: Install dev extras
         run: |
-          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[dev]'
-      
-      - name: disk space
-        run: df -all -h
+          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[dev,all]'
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
