@@ -15,6 +15,10 @@ from azure.identity import (
     ManagedIdentityCredential,
     get_bearer_token_provider,
 )
+from azure.identity.aio import (
+    DefaultAzureCredential as AsyncDefaultAzureCredential,
+    get_bearer_token_provider as get_async_bearer_token_provider,
+)
 
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
 from pyrit.auth.authenticator import Authenticator
@@ -143,13 +147,34 @@ def get_token_provider_from_default_azure_credential(scope: str) -> Callable[[],
     Connect to an AOAI endpoint via default Azure credential.
 
     Returns:
-        Authentication token provider
+        Authentication token provider (synchronous)
     """
     try:
         token_provider = get_bearer_token_provider(DefaultAzureCredential(), scope)
         return token_provider
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}': {e}")
+        raise
+
+
+def get_async_token_provider_from_default_azure_credential(scope: str) -> Callable[[], str]:
+    """
+    Connect to an AOAI endpoint via default Azure credential with async support.
+    
+    This returns an async callable that can be awaited, suitable for use with
+    async clients like OpenAI's AsyncOpenAI.
+
+    Args:
+        scope (str): The scope to request tokens for.
+
+    Returns:
+        Authentication token provider (async callable)
+    """
+    try:
+        token_provider = get_async_bearer_token_provider(AsyncDefaultAzureCredential(), scope)
+        return token_provider
+    except Exception as e:
+        logger.error(f"Failed to obtain async token provider for '{scope}': {e}")
         raise
 
 

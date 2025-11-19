@@ -19,32 +19,35 @@ from pyrit.prompt_target import (
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "model_name"),
+    ("endpoint", "model_name", "supports_seed"),
     [
-        ("AZURE_OPENAI_GPT4O_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4O_ENDPOINT2", ""),
-        ("AZURE_OPENAI_GPT4O_AAD_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", ""),
-        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", ""),
-        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", ""),
-        ("AZURE_FOUNDRY_PHI4_ENDPOINT", ""),
-        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", ""),
-        ("XPIAI_OPENAI_GPT4O_CHAT_ENDPOINT", "XPIA_OPENAI_MODEL"),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT", "", True),
+        ("AZURE_OPENAI_GPT4O_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_GPT4O_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT2", "", True),
+        ("AZURE_OPENAI_GPT4O_AAD_ENDPOINT", "", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "", True),
+        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "", True),
+        ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", "", True),
+        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "", True),
+        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "", True),
+        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "", True),
+        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "", True),
+        ("AZURE_FOUNDRY_PHI4_ENDPOINT", "", True),
+        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "", False),
+        ("XPIA_OPENAI_GPT4O_ENDPOINT", "XPIA_OPENAI_MODEL", True),
     ],
 )
-async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_name):
+async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_name, supports_seed):
     args = {
         "endpoint": os.getenv(endpoint),
         "temperature": 0.0,
-        "seed": 42,
         "use_entra_auth": True,
         "model_name": os.getenv(model_name),
     }
+
+    if supports_seed:
+        args["seed"] = 42
 
     # These endpoints should have Entra authentication enabled in the current context
     # e.g. Cognitive Services OpenAI Contributor or Cognitive Services User/Contributor role (for non-OpenAI resources)
@@ -105,6 +108,7 @@ async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint):
     ("endpoint", "model_name"),
     [
         ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_RESPONSES_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_RESPONSES_MODEL"),
     ],
 )
 async def test_openai_responses_target_entra_auth(sqlite_instance, endpoint, model_name):

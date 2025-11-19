@@ -110,7 +110,6 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
             Message: The updated conversation entry with the response from the prompt target.
         """
         self._validate_request(message=message)
-        self.refresh_auth_headers()
 
         message_piece: MessagePiece = message.message_pieces[0]
 

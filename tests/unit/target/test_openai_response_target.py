@@ -607,40 +607,6 @@ def test_construct_message_empty_response(
     assert "The chat returned an empty response." in str(excinfo.value)
 
 
-@pytest.mark.asyncio
-@pytest.mark.asyncio
-async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIResponseTarget, openai_response_json: dict):
-    mock_memory = MagicMock(spec=MemoryInterface)
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_message_to_memory = AsyncMock()
-
-    target._azure_auth = MagicMock()
-    target._memory = mock_memory
-
-    mock_response = create_mock_response(openai_response_json)
-    target._async_client.responses.create = AsyncMock(return_value=mock_response)
-
-    with (
-        patch.object(target, "refresh_auth_headers") as mock_refresh,
-        patch.object(target, "_validate_request"),
-        patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
-    ):
-        mock_construct.return_value = {}
-
-        message = Message(
-            message_pieces=[
-                MessagePiece(
-                    role="user",
-                    original_value="test prompt",
-                    converted_value="test prompt",
-                    converted_value_data_type="text",
-                )
-            ]
-        )
-        await target.send_prompt_async(message=message)
-        mock_refresh.assert_called_once()
-
-
 def test_construct_message_from_openai_json_invalid_json(
     target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
 ):

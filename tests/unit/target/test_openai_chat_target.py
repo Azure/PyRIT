@@ -614,42 +614,6 @@ def test_construct_message_unknown_finish_reason(target: OpenAIChatTarget, dummy
 
 
 @pytest.mark.asyncio
-@pytest.mark.asyncio
-async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTarget):
-    mock_memory = MagicMock(spec=MemoryInterface)
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_message_to_memory = AsyncMock()
-
-    target._azure_auth = MagicMock()
-    target._memory = mock_memory
-
-    with (
-        patch.object(target, "refresh_auth_headers") as mock_refresh,
-        patch.object(target, "_validate_request"),
-        patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
-    ):
-
-        mock_construct.return_value = {"model": "gpt-4", "messages": [], "stream": False}
-
-        # Mock the OpenAI SDK client
-        mock_completion = create_mock_completion(content="test response")
-        target._async_client.chat.completions.create = AsyncMock(return_value=mock_completion)
-
-        message = Message(
-            message_pieces=[
-                MessagePiece(
-                    role="user",
-                    original_value="test prompt",
-                    converted_value="test prompt",
-                    converted_value_data_type="text",
-                )
-            ]
-        )
-        await target.send_prompt_async(message=message)
-        mock_refresh.assert_called_once()
-
-
-@pytest.mark.asyncio
 async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
     mock_memory.get_conversation.return_value = []
