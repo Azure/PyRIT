@@ -49,7 +49,7 @@ likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=Likert
 
 # factory method that creates an HarmScorerEvaluator in this case since metrics_type is HARM.
 evaluator = ScorerEvaluator.from_scorer(scorer=likert_scorer, metrics_type=MetricsType.HARM)
-csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/SAMPLE_hate_speech.csv"
+csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/mini_hate_speech.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
 # csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/hate_speech.csv"
 
@@ -60,10 +60,12 @@ metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
     human_label_col_names=["human_score_1", "human_score_2", "human_score_3"],
     objective_or_harm_col_name="category",
     num_scorer_trials=1,
+    dataset_name="mini_hate_speech",
+    assistant_response_data_type_col_name=None,
 )
 
-# Metrics are saved to datasets/score/scorer_evals/harm/SAMPLE_hate_speech_SelfAskLikertScorer_metrics.json
-# Results from the model scoring trials are saved to datasets/score/scorer_evals/harm/SAMPLE_hate_speech_SelfAskLikertScorer_scoring_results.csv
+# Metrics are saved to datasets/score/scorer_evals/harm/results/mini_hate_speech_metrics.json
+# Results from the model scoring trials are saved to datasets/score/scorer_evals/harm/results/mini_hate_speech_scoring_results.csv
 asdict(metrics)
 
 # %%
@@ -71,39 +73,39 @@ from pyrit.common.path import LIKERT_SCALES_PATH
 
 harm_category_map = {
     "exploit": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/exploit_dataset_v1.csv",
-        "dataset_name": "exploit_eval_dataset",
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/exploit.csv",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "exploits.yaml")),
+        "dataset_name": "exploit_dataset",
     },
     "hate_speech": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/hate_speech_dataset_v1.csv",
-        "dataset_name": "hate_speech_eval_dataset",
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/hate_speech_single_score.csv",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "hate_speech.yaml")),
+        "dataset_name": "hate_speech_dataset",
     },
     "information_integrity": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/information_integrity_dataset_v1.csv",
-        "dataset_name": "information_integrity_eval_dataset",
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/info_integrity.csv",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "information_integrity.yaml")),
+        "dataset_name": "information_integrity_dataset",
     },
     "privacy": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/privacy_dataset_v1.csv",
-        "dataset_name": "privacy_eval_dataset",
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/privacy.csv",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "privacy.yaml")),
+        "dataset_name": "privacy_dataset",
     },
     "self-harm": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/self_harm_dataset_v1.csv",
-        "dataset_name": "self_harm_eval_dataset",
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/self_harm.csv",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "self_harm_v2.yaml")),
+        "dataset_name": "self_harm_dataset",
     },
     "sexual_content": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/sexual_content_dataset_v1.csv",
-        "dataset_name": "sexual_content_eval_dataset",
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/sexual_content.csv",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "sexual_v2.yaml")),
+        "dataset_name": "sexual_content_dataset",
     },
     "violence": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/human_labeled_evals/violence_dataset_v1.csv",
-        "dataset_name": "violence_eval_dataset",
+        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/violence_single_score.csv",
         "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "violence.yaml")),
+        "dataset_name": "violence_dataset",
     },
 }
 # set this list to the categories you want to evaluate
@@ -116,9 +118,8 @@ for harm_category in harm_categories_to_evaluate:
         )
     eval_rubric_path = harm_category_map[harm_category]["evaluation_rubric_file_path"]
     csv_path = str(Path(harm_category_map[harm_category]["dataset_file_path"]))
-    dataset_name = harm_category_map[harm_category]["dataset_name"]
 
-    likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=LikertScalePaths.EXPLOITS_SCALE.value)
+    likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=eval_rubric_path)
 
     evaluator = ScorerEvaluator.from_scorer(scorer=likert_scorer, metrics_type=MetricsType.HARM)
 
@@ -129,6 +130,8 @@ for harm_category in harm_categories_to_evaluate:
         human_label_col_names=["normalized_score_1"],
         objective_or_harm_col_name="category",
         num_scorer_trials=1,
+        assistant_response_data_type_col_name=None,
+        dataset_name=harm_category_map[harm_category]["dataset_name"],
     )
 
     print("Evaluation for harm category:", harm_category)
@@ -141,8 +144,8 @@ for harm_category in harm_categories_to_evaluate:
 
 # %%
 # Either work for fetching the hate_speech metrics
-evaluator.get_scorer_metrics(dataset_name="SAMPLE_hate_speech")
-likert_scorer.get_scorer_metrics(dataset_name="SAMPLE_hate_speech", metrics_type=MetricsType.HARM)
+evaluator.get_scorer_metrics(dataset_name="mini_hate_speech")
+likert_scorer.get_scorer_metrics(dataset_name="mini_hate_speech", metrics_type=MetricsType.HARM)
 
 # Retrieve metrics for the full hate_speech dataset that have already been computed and saved by the PyRIT team.
 # full_metrics = likert_scorer.get_scorer_metrics(dataset_name="hate_speech")
@@ -156,9 +159,9 @@ refusal_scorer = SelfAskRefusalScorer(chat_target=target)
 
 # factory method that creates an ObjectiveScorerEvaluator in this case because the refusal scorer is a true/false scorer.
 evaluator = ScorerEvaluator.from_scorer(scorer=refusal_scorer)
-csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_09_22_2025/SAMPLE_mixed_objective_refusal.csv"
+csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/mini_refusal.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
-# csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}//evaluation_datasets_09_22_2025/mixed_objective_refusal.csv"
+# csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/mixed_objective_refusal.csv"
 
 # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
 metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
@@ -170,7 +173,7 @@ metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
     num_scorer_trials=1,
 )
 
-refusal_scorer.get_scorer_metrics(dataset_name="SAMPLE_mixed_objective_refusal")
+refusal_scorer.get_scorer_metrics(dataset_name="mini_refusal")
 
 # Retrieve metrics for the full refusal scorer dataset that have already been computed and saved by the PyRIT team.
 # full_metrics = likert_scorer.get_scorer_metrics(dataset_name="mixed_objective_refusal")
@@ -184,37 +187,37 @@ refusal_scorer.get_scorer_metrics(dataset_name="SAMPLE_mixed_objective_refusal")
 # This also allows for easy editing of dataset file paths and evaluation rubric file paths without changing code logic.
 harm_category_map = {
     "exploit": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/exploit_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/exploit.csv",
         "dataset_name": "exploit_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "exploits.yaml")),
     },
     "hate_speech": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/hate_speech_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/hate_speech.csv",
         "dataset_name": "hate_speech_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "hate_speech.yaml")),
     },
     "information_integrity": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/information_integrity_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/info_integrity.csv",
         "dataset_name": "information_integrity_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "information_integrity.yaml")),
     },
     "privacy": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/privacy_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/privacy.csv",
         "dataset_name": "privacy_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "privacy.yaml")),
     },
     "self-harm": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/self_harm_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/self_harm.csv",
         "dataset_name": "self_harm_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "self-harm.yaml")),
     },
     "sexual_content": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/sexual_content_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/sexual.csv",
         "dataset_name": "sexual_content_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "sexual_content.yaml")),
     },
     "violence": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_10_21_2025/violence_eval_dataset.csv",
+        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/violence.csv",
         "dataset_name": "violence_eval_dataset",
         "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "violence.yaml")),
     },
