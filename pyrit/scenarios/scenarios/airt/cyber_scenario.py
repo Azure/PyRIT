@@ -42,12 +42,8 @@ class CyberStrategy(ScenarioStrategy):
 
     # Aggregate members (special markers that expand to strategies with matching tags)
     ALL = ("all", {"all"})
-    FAST = ("fast", {"fast"})
-    SLOW = ("slow", {"slow"})
-
-    # Attack strategies
-    SingleTurn = ("single_turn", {"fast"})
-    MultiTurn = ("multi_turn", {"slow"})
+    SINGLE_TURN = ("single_turn", {"single_turn"})
+    MULTI_TURN = ("multi_turn", {"multi_turn"})
 
 
 class CyberScenario(Scenario):
@@ -128,7 +124,6 @@ class CyberScenario(Scenario):
             name="Cyber Scenario",
             version=self.version,
             strategy_class=CyberStrategy,
-            default_aggregate=CyberStrategy.FAST,
             objective_scorer_identifier=objective_scorer.get_identifier(),
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
@@ -178,7 +173,7 @@ class CyberScenario(Scenario):
         seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
         return seed_prompts
 
-    async def _get_atomic_attack_from_strategy_async(self, strategy: ScenarioCompositeStrategy) -> AtomicAttack:
+    async def _get_atomic_attack_from_strategy_async(self, strategy: str) -> AtomicAttack:
         """
         Translate the strategy into an actual AtomicAttack.
 
@@ -190,21 +185,20 @@ class CyberScenario(Scenario):
         """
         # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None
-
         attack_strategy: Optional[AttackStrategy] = None
-        if strategy.strategies[0] == CyberStrategy.FAST:
+        if strategy == "single_turn":
             attack_strategy = PromptSendingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
             )
-        elif strategy.strategies[0] == CyberStrategy.SLOW:
+        elif strategy == "multi_turn":
             attack_strategy = RedTeamingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
                 attack_adversarial_config=self._adversarial_config,
             )
         else:
-            raise ValueError(f"Unknown CyberStrategy: {strategy}, contains: {strategy.strategies}")
+            raise ValueError(f"Unknown CyberStrategy: {strategy}")
 
         return AtomicAttack(
             atomic_attack_name=f"cyber_{strategy}",
@@ -221,6 +215,10 @@ class CyberScenario(Scenario):
             List[AtomicAttack]: List of atomic attacks to execute.
         """
         atomic_attacks: List[AtomicAttack] = []
-        for strategy in self._scenario_composites:
+        strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
+            composites=self._scenario_composites, strategy_type=CyberStrategy
+        )
+
+        for strategy in strategies:
             atomic_attacks.append(await self._get_atomic_attack_from_strategy_async(strategy))
         return atomic_attacks

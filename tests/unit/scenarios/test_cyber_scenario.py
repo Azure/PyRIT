@@ -19,12 +19,12 @@ from pyrit.score import TrueFalseCompositeScorer
 
 @pytest.fixture
 def fast_cyberstrategy():
-    return CyberStrategy.FAST
+    return CyberStrategy.SINGLE_TURN
 
 
 @pytest.fixture
 def slow_cyberstrategy():
-    return CyberStrategy.SLOW
+    return CyberStrategy.MULTI_TURN
 
 
 @pytest.fixture
