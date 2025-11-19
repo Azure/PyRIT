@@ -60,14 +60,7 @@ jobs:
         run: df -all -h
 
       - name: Install dev extras
-        run: pip install --cache-dir "$PIP_CACHE_DIR" .[all]
-      
-      - name: disk space
-        run: df -all -h
-
-      - name: Install dev extras
-        run: |
-          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[dev]'
+        run: pip install --cache-dir "$PIP_CACHE_DIR" .[all, dev]
 
       - name: disk space
         run: df -all -h
