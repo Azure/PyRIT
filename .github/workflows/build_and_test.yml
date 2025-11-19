@@ -59,15 +59,6 @@ jobs:
       - name: disk space
         run: df -all -h
 
-  pre-commit-linux2:
-    runs-on: ubuntu-latest
-    needs: pre-commit-linux
-    permissions:
-      contents: read
-
-    env:
-      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
-    steps:
       - name: Install dev extras
         run: pip install --cache-dir "$PIP_CACHE_DIR" .[dev,all]
 
@@ -81,7 +72,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           pre-commit run --all-files
-  
+
   pre-commit-windows:
     runs-on: windows-latest
     permissions:
@@ -121,9 +112,19 @@ jobs:
       - name: disk space
         run: df -all -h
 
+      - name: Install all
+        run: |
+          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[all]'
+      
+      - name: disk space
+        run: df -all -h
+        
       - name: Install dev extras
         run: |
-          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[dev,all]'
+          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[dev]'
+      
+      - name: disk space
+        run: df -all -h
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
