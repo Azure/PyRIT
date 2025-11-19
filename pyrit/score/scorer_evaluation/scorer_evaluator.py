@@ -173,9 +173,9 @@ class ScorerEvaluator(abc.ABC):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
@@ -188,7 +188,7 @@ class ScorerEvaluator(abc.ABC):
             csv_path (str): The path to the CSV file, which will be used to construct the HumanLabeledDataset
                 object.
             assistant_response_col_name (str): The name of the column in the CSV file that contains the assistant
-                responses.
+                responses. Defaults to "assistant_response".
             human_label_col_names (List[str]): The names of the columns in the CSV file that contain the human labels.
             objective_or_harm_col_name (str): The name of the column in the CSV file that contains the objective or harm
                 category associated with each response.
@@ -317,7 +317,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
-        assistant_response_data_type_col_name: Optional[str] = "assistant_response",
+        assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
