@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 # comment for update
 
+
 class Scenario(ABC):
     """
     Groups and executes multiple AtomicAttack instances sequentially.
