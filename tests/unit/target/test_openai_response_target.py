@@ -1059,3 +1059,41 @@ def test_construct_message_skips_unhandled_types(target: OpenAIResponseTarget, d
     # Only the 'message' section becomes a piece; image_generation_call is skipped
     assert len(resp.message_pieces) == 1
     assert resp.message_pieces[0].original_value == "Hi"
+
+
+def test_invalid_temperature_raises(patch_central_database):
+    """Test that invalid temperature values raise PyritException."""
+    from pyrit.prompt_target import OpenAIResponseTarget
+    
+    with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
+        OpenAIResponseTarget(
+            endpoint="https://test.com",
+            api_key="test",
+            temperature=-0.1,
+        )
+    
+    with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
+        OpenAIResponseTarget(
+            endpoint="https://test.com",
+            api_key="test",
+            temperature=2.1,
+        )
+
+
+def test_invalid_top_p_raises(patch_central_database):
+    """Test that invalid top_p values raise PyritException."""
+    from pyrit.prompt_target import OpenAIResponseTarget
+    
+    with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
+        OpenAIResponseTarget(
+            endpoint="https://test.com",
+            api_key="test",
+            top_p=-0.1,
+        )
+    
+    with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
+        OpenAIResponseTarget(
+            endpoint="https://test.com",
+            api_key="test",
+            top_p=1.1,
+        )
