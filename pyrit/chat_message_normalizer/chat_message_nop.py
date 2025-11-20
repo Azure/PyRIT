@@ -12,7 +12,7 @@ class ChatMessageNop(ChatMessageNormalizer[list[ChatMessage]]):
 
     def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
         """
-        Returns the same list as was passed in.
+        Return the same list as was passed in.
 
         Args:
             messages (list[ChatMessage]): The list of messages to normalize.
