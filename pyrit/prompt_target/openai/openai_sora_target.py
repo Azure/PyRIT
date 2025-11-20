@@ -70,6 +70,11 @@ class OpenAISoraTarget(OpenAITarget):
         """
         super().__init__(**kwargs)
 
+        # Accept base URLs (/v1), specific API paths (/videos, /v1/videos), Azure formats
+        # Note: Only Sora v2 API is supported (uses SDK's videos.create_and_poll)
+        sora_url_patterns = [r"/v1$", r"/videos", r"/v1/videos", r"openai/v1", r"\.models\.ai\.azure\.com"]
+        self._warn_if_irregular_endpoint(sora_url_patterns)
+
         self._n_seconds = n_seconds
         self._validate_duration()
         self._size = self._validate_resolution(resolution_dimensions=resolution_dimensions)

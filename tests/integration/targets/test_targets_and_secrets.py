@@ -264,14 +264,13 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key):
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_SORA1_ENDPOINT", "OPENAI_SORA1_KEY", "OPENAI_SORA1_MODEL"),
         ("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL"),
         # OpenAI Platform Sora returns HTTP 401 "Missing scopes: api.videos.write" for all requests
         # ("PLATFORM_OPENAI_SORA_ENDPOINT", "PLATFORM_OPENAI_SORA_KEY", "PLATFORM_OPENAI_SORA_MODEL"),
     ],
 )
 async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
-    """Test OpenAISoraTarget with both Sora-1 and Sora-2 APIs (auto-detected via endpoint)."""
+    """Test OpenAISoraTarget with Sora-2 API."""
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
     model_name_value = _get_required_env_var(model_name)
@@ -291,8 +290,6 @@ async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
 @pytest.mark.parametrize(
     ("endpoint_var", "api_key_var", "model_var", "resolution"),
     [
-        # Sora-1 - test unsupported resolution (should return processing error)
-        ("OPENAI_SORA1_ENDPOINT", "OPENAI_SORA1_KEY", "OPENAI_SORA1_MODEL", "640x360"),
         # Azure OpenAI Sora-2 - test unsupported resolution (should return processing error)
         ("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL", "640x360"),
         # OpenAI Platform Sora - 1024x1792 returns HTTP 401 "Missing scopes: api.videos.write"
@@ -305,9 +302,9 @@ async def test_connect_sora_unsupported_resolution_returns_processing_error(
     """
     Test that unsupported resolutions return proper processing errors.
 
-    Sora-1: Tests with 640x360 which is not in the supported resolution list.
-    Sora-2: The API spec claims support for 1024x1792 and 1792x1024, but these are
-            not supported on Azure OpenAI Sora-2 (only on Sora-2-Pro).
+    Sora-2: Tests with 640x360 which is not in the supported resolution list.
+    The API spec claims support for 1024x1792 and 1792x1024, but these are
+    not supported on Azure OpenAI Sora-2 (only on Sora-2-Pro).
 
     This test verifies that such errors are properly categorized as error="processing"
     rather than crashing or returning unknown error types.
@@ -352,15 +349,15 @@ async def test_connect_sora_unsupported_resolution_returns_processing_error(
 @pytest.mark.asyncio
 async def test_sora_multiple_prompts_create_separate_files(sqlite_instance):
     """
-    Test that sending multiple prompts to Sora-1 using PromptSendingAttack
+    Test that sending multiple prompts to Sora-2 using PromptSendingAttack
     creates separate video files and doesn't override previous files.
 
     This verifies that each video generation creates a unique file based on
-    the task_id/generation_id mechanism.
+    the video ID mechanism.
     """
-    endpoint_value = _get_required_env_var("OPENAI_SORA1_ENDPOINT")
-    api_key_value = _get_required_env_var("OPENAI_SORA1_KEY")
-    model_name_value = _get_required_env_var("OPENAI_SORA1_MODEL")
+    endpoint_value = _get_required_env_var("OPENAI_SORA2_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_SORA2_KEY")
+    model_name_value = _get_required_env_var("OPENAI_SORA2_MODEL")
 
     target = OpenAISoraTarget(
         endpoint=endpoint_value,

@@ -5,11 +5,20 @@ import json
 import logging
 from typing import Any, MutableSequence, Optional
 
+from openai import (
+    BadRequestError,
+    RateLimitError,
+    ContentFilterFinishReasonError,
+    APIStatusError,
+)
+
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
+    RateLimitException,
     handle_bad_request_exception,
+    pyrit_target_retry,
 )
 from pyrit.models import (
     ChatMessage,
@@ -18,12 +27,12 @@ from pyrit.models import (
     MessagePiece,
     construct_response_from_request,
 )
-from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
+from pyrit.prompt_target import OpenAITarget, PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
 
-class OpenAIChatTarget(OpenAIChatTargetBase):
+class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     """
     This class facilitates multimodal (image and text) input and text output generation.
 
@@ -126,14 +135,24 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             json.JSONDecodeError: If the response from the target is not valid JSON.
             Exception: If the request fails for any other reason.
         """
-        super().__init__(temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs)
+        super().__init__(**kwargs)
+
+        # Validate temperature and top_p
+        if temperature is not None and (temperature < 0 or temperature > 2):
+            raise PyritException("temperature must be between 0 and 2 (inclusive).")
+        if top_p is not None and (top_p < 0 or top_p > 1):
+            raise PyritException("top_p must be between 0 and 1 (inclusive).")
 
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
-        chat_url_patterns = [r"/chat/completions"]
+        # Accept base URLs (/v1), specific API paths (/chat/completions), Azure formats
+        chat_url_patterns = [r"/v1$", r"/chat/completions", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
         self._warn_if_irregular_endpoint(chat_url_patterns)
 
+        self._temperature = temperature
+        self._top_p = top_p
+        self._is_json_supported = is_json_supported
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
         self._frequency_penalty = frequency_penalty
@@ -146,6 +165,85 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+
+    @limit_requests_per_minute
+    @pyrit_target_retry
+    async def send_prompt_async(self, *, message: Message) -> Message:
+        """
+        Asynchronously sends a message and handles the response within a managed conversation context.
+
+        Args:
+            message (Message): The message object.
+
+        Returns:
+            Message: The updated conversation entry with the response from the prompt target.
+        """
+        self._validate_request(message=message)
+
+        message_piece: MessagePiece = message.message_pieces[0]
+
+        is_json_response = self.is_response_format_json(message_piece)
+
+        conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
+        conversation.append(message)
+
+        logger.info(f"Sending the following prompt to the prompt target: {message}")
+
+        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+
+        try:
+            # Use the OpenAI SDK for making the request
+            completion = await self._async_client.chat.completions.create(**body)
+            
+            # Convert the SDK response to our Message format
+            return self._construct_message_from_completion_response(
+                completion_response=completion, message_piece=message_piece
+            )
+            
+        except ContentFilterFinishReasonError as e:
+            # Content filter error - this is raised by the SDK when finish_reason is "content_filter"
+            logger.error(f"Content filter error: {e}")
+            return handle_bad_request_exception(
+                response_text=str(e),
+                request=message_piece,
+                error_code=200,  # Content filter with 200 status
+                is_content_filter=True,
+            )
+        except BadRequestError as e:
+            # Handle Bad Request from the SDK
+            error_response_text = e.body if hasattr(e, 'body') else str(e)
+            
+            # Check if it's a content filter issue
+            is_content_filter = False
+            if isinstance(error_response_text, dict):
+                is_content_filter = error_response_text.get("error", {}).get("code") == "content_filter"
+            elif isinstance(error_response_text, str):
+                try:
+                    json_error = json.loads(error_response_text)
+                    is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
+                except json.JSONDecodeError:
+                    is_content_filter = "content_filter" in error_response_text
+
+            return handle_bad_request_exception(
+                response_text=str(error_response_text),
+                request=message_piece,
+                error_code=400,
+                is_content_filter=is_content_filter,
+            )
+        except RateLimitError as e:
+            # SDK's RateLimitError - convert to our exception
+            logger.warning(f"Rate limit hit: {e}")
+            raise RateLimitException()
+        except APIStatusError as e:
+            # Other API errors
+            if e.status_code == 429:
+                raise RateLimitException()
+            else:
+                raise
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return self._is_json_supported
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
@@ -269,20 +367,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
-
-    async def _make_chat_completion_request(self, body: dict):
-        """
-        Make the actual chat completion request using the OpenAI SDK.
-        
-        Args:
-            body (dict): The request body parameters.
-            
-        Returns:
-            The completion response from the OpenAI SDK.
-        """
-        # Use the OpenAI SDK client to make the request
-        completion = await self._async_client.chat.completions.create(**body)
-        return completion
 
     def _construct_message_from_completion_response(
         self,

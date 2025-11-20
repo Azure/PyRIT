@@ -65,6 +65,10 @@ class OpenAICompletionTarget(OpenAITarget):
         """
         super().__init__(*args, **kwargs)
 
+        # Accept base URLs (/v1), specific API paths (/completions), Azure formats
+        completion_url_patterns = [r"/v1$", r"/completions", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
+        self._warn_if_irregular_endpoint(completion_url_patterns)
+
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._top_p = top_p

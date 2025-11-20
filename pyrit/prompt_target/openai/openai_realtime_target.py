@@ -66,9 +66,11 @@ class RealtimeTarget(OpenAITarget):
 
         Args:
             model_name (str, Optional): The name of the model.
+                Defaults to `OPENAI_REALTIME_MODEL` environment variable.
             endpoint (str, Optional): The target URL for the OpenAI service.
+                Defaults to the `OPENAI_REALTIME_ENDPOINT` environment variable.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the `OPENAI_CHAT_KEY` environment variable.
+                Defaults to the `OPENAI_REALTIME_API_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -93,7 +95,7 @@ class RealtimeTarget(OpenAITarget):
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_REALTIME_MODEL"
-        self.endpoint_environment_variable = "AZURE_OPENAI_REALTIME_ENDPOINT"
+        self.endpoint_environment_variable = "OPENAI_REALTIME_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_REALTIME_API_KEY"
 
     async def connect(self):

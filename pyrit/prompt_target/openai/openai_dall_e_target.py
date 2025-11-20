@@ -86,7 +86,8 @@ class OpenAIDALLETarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
-        dalle_url_patterns = [r"/images/generations"]
+        # Accept base URLs (/v1), specific API paths (/images/generations), Azure formats
+        dalle_url_patterns = [r"/v1$", r"/images/generations", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
         self._warn_if_irregular_endpoint(dalle_url_patterns)
 
     def _set_openai_env_configuration_vars(self):

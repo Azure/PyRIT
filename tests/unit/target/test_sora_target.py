@@ -262,3 +262,29 @@ async def test_sora_send_prompt_async_api_error(
         
         with pytest.raises(APIStatusError):
             await sora_target.send_prompt_async(message=Message([request]))
+
+
+@pytest.mark.asyncio
+async def test_sora_send_prompt_async_unexpected_status(
+    sora_target: OpenAISoraTarget, sample_conversations: MutableSequence[MessagePiece]
+):
+    request = sample_conversations[0]
+    request.conversation_id = str(uuid.uuid4())
+    
+    # Mock video with unexpected status
+    mock_video = MagicMock()
+    mock_video.id = "video_unexpected"
+    mock_video.status = "pending"  # Unexpected status
+    mock_video.error = None
+    
+    with patch.object(
+        sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_video
+        
+        response = await sora_target.send_prompt_async(message=Message([request]))
+        
+        # Verify response is error with unknown status
+        assert len(response.message_pieces) == 1
+        assert response.message_pieces[0].response_error == "unknown"
+        assert "unexpected status: pending" in response.message_pieces[0].converted_value

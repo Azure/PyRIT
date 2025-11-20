@@ -66,7 +66,8 @@ class OpenAITTSTarget(OpenAITarget):
         if not self._model_name:
             self._model_name = "tts-1"
 
-        tts_url_patterns = [r"/audio/speech"]
+        # Accept base URLs (/v1), specific API paths (/audio/speech), Azure formats
+        tts_url_patterns = [r"/v1$", r"/audio/speech", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
         self._warn_if_irregular_endpoint(tts_url_patterns)
 
         self._voice = voice

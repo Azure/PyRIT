@@ -14,11 +14,20 @@ from typing import (
     Optional,
 )
 
+from openai import (
+    BadRequestError,
+    RateLimitError,
+    ContentFilterFinishReasonError,
+    APIStatusError,
+)
+
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
+    RateLimitException,
     handle_bad_request_exception,
+    pyrit_target_retry,
 )
 from pyrit.models import (
     Message,
@@ -26,8 +35,7 @@ from pyrit.models import (
     PromptDataType,
     PromptResponseError,
 )
-from pyrit.prompt_target import limit_requests_per_minute
-from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
+from pyrit.prompt_target import OpenAITarget, PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +59,7 @@ class MessagePieceType(str, Enum):
     MCP_APPROVAL_REQUEST = "mcp_approval_request"
 
 
-class OpenAIResponseTarget(OpenAIChatTargetBase):
+class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     """
     This class enables communication with endpoints that support the OpenAI Response API.
 
@@ -115,11 +123,21 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             json.JSONDecodeError: If the response from the target is not valid JSON.
             Exception: If the request fails for any other reason.
         """
-        super().__init__(temperature=temperature, top_p=top_p, **kwargs)
+        super().__init__(**kwargs)
+
+        # Validate temperature and top_p
+        if temperature is not None and (temperature < 0 or temperature > 2):
+            raise PyritException("temperature must be between 0 and 2 (inclusive).")
+        if top_p is not None and (top_p < 0 or top_p > 1):
+            raise PyritException("top_p must be between 0 and 1 (inclusive).")
+
+        self._temperature = temperature
+        self._top_p = top_p
         self._max_output_tokens = max_output_tokens
 
         # Accept both old Azure format (/responses) and new format (/openai/v1)
-        response_url_patterns = [r"/responses", r"/openai/v1"]
+        # Accept base URLs (/v1), specific API paths (/responses), Azure formats
+        response_url_patterns = [r"/v1$", r"/responses", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
         self._warn_if_irregular_endpoint(response_url_patterns)
 
         # Reasoning parameters are not yet supported by PyRIT.
@@ -318,20 +336,6 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    async def _make_chat_completion_request(self, body: dict):
-        """
-        Make the actual responses request using the OpenAI SDK.
-        
-        Args:
-            body (dict): The request body parameters.
-            
-        Returns:
-            The response from the OpenAI SDK.
-        """
-        # The Responses API is accessed via client.responses.create()
-        # It returns a different response format than chat completions
-        return await self._async_client.responses.create(**body)
-
     def _construct_message_from_completion_response(
         self,
         *,
@@ -406,6 +410,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         return Message(message_pieces=extracted_response_pieces)
 
     @limit_requests_per_minute
+    @limit_requests_per_minute
+    @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> Message:
         """
         Send prompt, handle agentic tool calls (function_call), return assistant output.
@@ -417,15 +423,74 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             The final Message with the assistant's answer.
         """
         conversation: MutableSequence[Message] = [message]
-        send_prompt_async = super().send_prompt_async  # bind for inner function
 
         async def _send_prompt_and_find_tool_call_async(
             message: Message,
         ) -> Optional[dict[str, Any]]:
             """Send the prompt and return the last pending tool call, if any."""
-            assistant_reply = await send_prompt_async(message=message)
-            conversation.append(assistant_reply)
-            return self._find_last_pending_tool_call(assistant_reply)
+            # Core send logic with error handling
+            self._validate_request(message=message)
+            message_piece: MessagePiece = message.message_pieces[0]
+            is_json_response = self.is_response_format_json(message_piece)
+            
+            conv = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
+            conv.append(message)
+            logger.info(f"Sending the following prompt to the prompt target: {message}")
+            
+            body = await self._construct_request_body(conversation=conv, is_json_response=is_json_response)
+            
+            try:
+                # Use the OpenAI SDK for making the request
+                response = await self._async_client.responses.create(**body)
+                
+                # Convert the SDK response to our Message format
+                assistant_reply = self._construct_message_from_completion_response(
+                    completion_response=response, message_piece=message_piece
+                )
+                
+                conversation.append(assistant_reply)
+                return self._find_last_pending_tool_call(assistant_reply)
+                
+            except ContentFilterFinishReasonError as e:
+                # Content filter error - this is raised by the SDK when finish_reason is "content_filter"
+                logger.error(f"Content filter error: {e}")
+                return handle_bad_request_exception(
+                    response_text=str(e),
+                    request=message_piece,
+                    error_code=200,  # Content filter with 200 status
+                    is_content_filter=True,
+                )
+            except BadRequestError as e:
+                # Handle Bad Request from the SDK
+                error_response_text = e.body if hasattr(e, 'body') else str(e)
+                
+                # Check if it's a content filter issue
+                is_content_filter = False
+                if isinstance(error_response_text, dict):
+                    is_content_filter = error_response_text.get("error", {}).get("code") == "content_filter"
+                elif isinstance(error_response_text, str):
+                    try:
+                        json_error = json.loads(error_response_text)
+                        is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
+                    except json.JSONDecodeError:
+                        is_content_filter = "content_filter" in error_response_text
+
+                return handle_bad_request_exception(
+                    response_text=str(error_response_text),
+                    request=message_piece,
+                    error_code=400,
+                    is_content_filter=is_content_filter,
+                )
+            except RateLimitError as e:
+                # SDK's RateLimitError - convert to our exception
+                logger.warning(f"Rate limit hit: {e}")
+                raise RateLimitException()
+            except APIStatusError as e:
+                # Other API errors
+                if e.status_code == 429:
+                    raise RateLimitException()
+                else:
+                    raise
 
         tool_call_section = await _send_prompt_and_find_tool_call_async(message=message)
         while tool_call_section:
@@ -454,6 +519,10 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         # No other tool call found, so assistant message is complete and return last assistant reply!
         return conversation[-1]
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return True
 
     def _parse_response_output_section(
         self, *, section: dict, message_piece: MessagePiece, error: Optional[PromptResponseError]

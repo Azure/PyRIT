@@ -1007,17 +1007,19 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
 
     call_counter = {"n": 0}
 
-    # 4) Mock the base class send to return first the function_call reply, then the final reply
-    async def fake_send(message: Message) -> Message:
+    # 4) Mock the internal parts to return first the function_call reply, then the final reply
+    def fake_construct_message(*, completion_response, message_piece: MessagePiece) -> Message:
         # Return first reply on first call, second on subsequent calls
         call_counter["n"] += 1
         return first_reply if call_counter["n"] == 1 else second_reply
 
+    # Mock the SDK client's response creation and the message construction
     with patch.object(
-        target.__class__.__bases__[0],  # OpenAIChatTargetBase
-        "send_prompt_async",
-        new_callable=AsyncMock,
-        side_effect=fake_send,
+        target._async_client.responses, "create", new_callable=AsyncMock
+    ) as mock_create, \
+    patch.object(
+        target, "_construct_message_from_completion_response",
+        side_effect=fake_construct_message,
     ):
         final = await target.send_prompt_async(message=user_req)
 

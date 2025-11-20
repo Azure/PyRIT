@@ -3,10 +3,11 @@
 
 import json
 import logging
+import os
 import re
 from abc import abstractmethod
 from typing import Optional, Union
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from openai import AsyncOpenAI, AsyncAzureOpenAI
 
@@ -150,6 +151,45 @@ class OpenAITarget(PromptChatTarget):
         if self._azure_auth:
             self._headers["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
 
+    def _initialize_azure_openai_old_format(self, *, httpx_kwargs: dict) -> None:
+        """
+        Initialize AsyncAzureOpenAI client for old Azure format.
+        
+        Old Azure format: https://{resource}.openai.azure.com/openai/deployments/{deployment}/...?api-version=...
+        Uses AsyncAzureOpenAI client with api-version parameter (supports both API key and Entra auth)
+        
+        Note: This method can be removed once old Azure format is no longer supported.
+        """
+        # Extract API version from query parameter if present
+        parsed_url = urlparse(self._endpoint)
+        query_params = parse_qs(parsed_url.query)
+        
+        # Get api_version from query param, environment variable, or default
+        if "api-version" in query_params:
+            api_version = query_params["api-version"][0]
+        else:
+            api_version = os.environ.get("OPENAI_API_VERSION", "2024-02-15-preview")
+        
+        # Azure SDK expects ONLY the base endpoint (scheme://netloc)
+        # It will automatically append paths like /openai/deployments/{deployment}/chat/completions
+        azure_endpoint = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        
+        # Get the token provider for Entra auth
+        azure_ad_token_provider = None
+        if self._use_entra_auth and self._azure_auth:
+            # Create a token provider function for async operations
+            async def token_provider():
+                return self._azure_auth.refresh_token()
+            azure_ad_token_provider = token_provider
+        
+        self._async_client = AsyncAzureOpenAI(
+            azure_endpoint=azure_endpoint,
+            api_version=api_version,
+            api_key=self._api_key if not self._use_entra_auth else None,
+            azure_ad_token_provider=azure_ad_token_provider,
+            **httpx_kwargs,
+        )
+
     def _initialize_openai_client(self) -> None:
         """
         Initialize the OpenAI client based on whether it's Azure or standard OpenAI.
@@ -162,6 +202,11 @@ class OpenAITarget(PromptChatTarget):
            - With API key: pass api_key parameter
            - With Entra: pass token provider function as api_key parameter
         """
+        # Merge custom headers with httpx_client_kwargs
+        httpx_kwargs = self._httpx_client_kwargs.copy()
+        if self._headers:
+            httpx_kwargs.setdefault("default_headers", {}).update(self._headers)
+        
         # Determine if this is Azure OpenAI based on the endpoint
         is_azure = "azure" in self._endpoint.lower() if self._endpoint else False
         
@@ -170,56 +215,17 @@ class OpenAITarget(PromptChatTarget):
         # - https://{resource}.openai.azure.com/openai/v1
         # - https://{resource}.models.ai.azure.com/... (Azure Foundry endpoints)
         is_azure_new_format = False
+        
+        # Only old Azure format uses AsyncAzureOpenAI
+        # Everything else (platform OpenAI, new Azure format, Azure Foundry) uses standard AsyncOpenAI
         if is_azure:
-            from urllib.parse import urlparse
-            
             parsed_url = urlparse(self._endpoint)
             # New format has /openai/v1 path OR uses models.ai.azure.com domain
             is_azure_new_format = "/openai/v1" in parsed_url.path or ".models.ai.azure.com" in parsed_url.netloc
         
-        # Merge custom headers with httpx_client_kwargs
-        httpx_kwargs = self._httpx_client_kwargs.copy()
-        if self._headers:
-            httpx_kwargs.setdefault("default_headers", {}).update(self._headers)
-        
-        # Only old Azure format uses AsyncAzureOpenAI
-        # Everything else (platform OpenAI, new Azure format, Azure Foundry) uses standard AsyncOpenAI
         if is_azure and not is_azure_new_format:
-            # Old Azure format - uses AsyncAzureOpenAI client
-            # Endpoint format: https://{resource}.openai.azure.com/openai/deployments/{deployment}/...
-            
-            # Extract API version from query parameter if present
-            import os
-            from urllib.parse import parse_qs
-            
-            parsed_url = urlparse(self._endpoint)
-            query_params = parse_qs(parsed_url.query)
-            
-            # Get api_version from query param, environment variable, or default
-            if "api-version" in query_params:
-                api_version = query_params["api-version"][0]
-            else:
-                api_version = os.environ.get("OPENAI_API_VERSION", "2024-02-15-preview")
-            
-            # Azure SDK expects ONLY the base endpoint (scheme://netloc)
-            # It will automatically append paths like /openai/deployments/{deployment}/chat/completions
-            azure_endpoint = f"{parsed_url.scheme}://{parsed_url.netloc}"
-            
-            # Get the token provider for Entra auth
-            azure_ad_token_provider = None
-            if self._use_entra_auth and self._azure_auth:
-                # Create a token provider function for async operations
-                async def token_provider():
-                    return self._azure_auth.refresh_token()
-                azure_ad_token_provider = token_provider
-            
-            self._async_client = AsyncAzureOpenAI(
-                azure_endpoint=azure_endpoint,
-                api_version=api_version,
-                api_key=self._api_key if not self._use_entra_auth else None,
-                azure_ad_token_provider=azure_ad_token_provider,
-                **httpx_kwargs,
-            )
+            # Old Azure format - delegate to separate method for easy removal later
+            self._initialize_azure_openai_old_format(httpx_kwargs=httpx_kwargs)
         else:
             # Standard OpenAI client (used for platform OpenAI, new Azure format, and Azure Foundry)
             # The SDK expects base_url to be the base (e.g., https://api.openai.com/v1)
@@ -246,7 +252,6 @@ class OpenAITarget(PromptChatTarget):
                     base_url = base_url[:-len("/videos")]
             
             # For Azure Foundry endpoints (*.models.ai.azure.com), ensure they end with /v1
-            from urllib.parse import urlparse
             parsed = urlparse(base_url)
             if ".models.ai.azure.com" in parsed.netloc and not base_url.endswith("/v1"):
                 base_url = base_url.rstrip("/") + "/v1"

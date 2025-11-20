@@ -188,3 +188,36 @@ async def test_tts_send_prompt_async_rate_limit_exception_retries(
 
 def test_is_json_response_supported(tts_target: OpenAITTSTarget):
     assert tts_target.is_json_response_supported() is False
+
+
+@pytest.mark.asyncio
+async def test_tts_send_prompt_with_speed_parameter(
+    patch_central_database,
+    sample_conversations: MutableSequence[MessagePiece],
+) -> None:
+    tts_target = OpenAITTSTarget(model_name="test", endpoint="test", api_key="test", speed=1.5)
+
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = str(uuid.uuid4())
+    request = Message(message_pieces=[message_piece])
+    
+    # Mock SDK response
+    mock_audio_response = MagicMock()
+    mock_audio_response.content = b"audio data"
+    
+    with patch.object(
+        tts_target._async_client.audio.speech, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_audio_response
+        response = await tts_target.send_prompt_async(message=request)
+
+        # Verify speed parameter was passed
+        mock_create.assert_called_once()
+        call_kwargs = mock_create.call_args.kwargs
+        assert call_kwargs["speed"] == 1.5
+        
+        # Verify audio was saved
+        file_path = response.get_value()
+        assert file_path
+        assert os.path.exists(file_path)
+        os.remove(file_path)
