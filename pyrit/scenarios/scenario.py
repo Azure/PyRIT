@@ -79,7 +79,6 @@ class Scenario(ABC):
         name: str,
         version: int,
         strategy_class: Type[ScenarioStrategy],
-        default_aggregate: ScenarioStrategy,
         objective_scorer_identifier: Optional[Dict[str, str]] = None,
         include_default_baseline: bool = True,
         scenario_result_id: Optional[Union[uuid.UUID, str]] = None,
@@ -91,8 +90,6 @@ class Scenario(ABC):
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
             strategy_class (Type[ScenarioStrategy]): The strategy enum class for this scenario.
-            default_aggregate (ScenarioStrategy): The default aggregate strategy to use when
-                scenario_strategies is None in initialize_async.
             objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
             include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 from the first atomic attack without modifications. Most scenarios should have some kind of
@@ -119,7 +116,6 @@ class Scenario(ABC):
 
         # Store strategy configuration for use in initialize_async
         self._strategy_class = strategy_class
-        self._default_aggregate = default_aggregate
 
         # These will be set in initialize_async
         self._objective_target: Optional[PromptTarget] = None
@@ -284,7 +280,7 @@ class Scenario(ABC):
 
         # Prepare scenario strategies using the stored configuration
         self._scenario_composites = self._strategy_class.prepare_scenario_strategies(
-            scenario_strategies, default_aggregate=self._default_aggregate
+            scenario_strategies, default_aggregate=self.get_default_strategy()
         )
 
         self._atomic_attacks = await self._get_atomic_attacks_async()
@@ -626,7 +622,6 @@ class Scenario(ABC):
         Raises:
             Exception: Any exception that occurs during scenario execution.
         """
-
         logger.info(f"Starting scenario '{self._name}' execution with {len(self._atomic_attacks)} atomic attacks")
 
         # Type narrowing: _scenario_result_id is guaranteed to be non-None at this point

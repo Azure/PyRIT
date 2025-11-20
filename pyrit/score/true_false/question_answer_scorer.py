@@ -62,7 +62,6 @@ class QuestionAnswerScorer(TrueFalseScorer):
         Returns:
             list[Score]: A list containing a single Score object indicating whether the correct answer was found.
         """
-
         result = False
         matching_text = None
 

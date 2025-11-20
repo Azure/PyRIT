@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class SupportedContentType(Enum):
     """
     All supported content types for uploading blobs to provided storage account container.
-    See all options here: https://www.iana.org/assignments/media-types/media-types.xhtml
+    See all options here: https://www.iana.org/assignments/media-types/media-types.xhtml.
     """
 
     PLAIN_TEXT = "text/plain"
@@ -68,9 +68,11 @@ class AzureBlobStorageTarget(PromptTarget):
         super().__init__(endpoint=self._container_url, max_requests_per_minute=max_requests_per_minute)
 
     async def _create_container_client_async(self) -> None:
-        """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
+        """
+        Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
-        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
+        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication.
+        """
         container_url, _ = self._parse_url()
         try:
             sas_token: str = default_values.get_required_value(
@@ -94,7 +96,6 @@ class AzureBlobStorageTarget(PromptTarget):
             data (bytes): Byte representation of content to upload to container.
             content_type (str): Content type to upload.
         """
-
         content_settings = ContentSettings(content_type=f"{content_type}")
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 

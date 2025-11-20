@@ -10,7 +10,7 @@ from pyrit.models import SeedPrompt
 
 class TextJailBreak:
     """
-    A class that manages jailbreak datasets (like DAN, etc.)
+    A class that manages jailbreak datasets (like DAN, etc.).
     """
 
     def __init__(
@@ -92,7 +92,22 @@ class TextJailBreak:
             self.template.value = self.template.render_template_value_silent(**kwargs)
 
     def get_jailbreak_system_prompt(self):
+        """
+        Get the jailbreak template as a system prompt without a specific user prompt.
+
+        Returns:
+            str: The rendered jailbreak template with an empty prompt parameter.
+        """
         return self.get_jailbreak(prompt="")
 
     def get_jailbreak(self, prompt: str):
+        """
+        Render the jailbreak template with the provided user prompt.
+
+        Args:
+            prompt (str): The user prompt to insert into the jailbreak template.
+
+        Returns:
+            str: The rendered jailbreak template with the prompt parameter filled in.
+        """
         return self.template.render_template_value(prompt=prompt)

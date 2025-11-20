@@ -45,6 +45,8 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         **kwargs,
     ):
         """
+        Initialize the OpenAIChatTargetBase with the given parameters.
+
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
@@ -95,7 +97,8 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
     @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> Message:
-        """Asynchronously sends a message and handles the response within a managed conversation context.
+        """
+        Asynchronously sends a message and handles the response within a managed conversation context.
 
         Args:
             message (Message): The message object.
@@ -103,7 +106,6 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         Returns:
             Message: The updated conversation entry with the response from the prompt target.
         """
-
         self._validate_request(message=message)
         self.refresh_auth_headers()
 

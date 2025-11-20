@@ -62,6 +62,12 @@ class DefaultValueScope:
     include_subclasses: bool = True
 
     def __hash__(self) -> int:
+        """
+        Return a hash based on class type, parameter name, and subclass inclusion flag.
+
+        Returns:
+            int: Hash value for this scope.
+        """
         return hash((self.class_type, self.parameter_name, self.include_subclasses))
 
 
@@ -74,6 +80,7 @@ class GlobalDefaultValues:
     """
 
     def __init__(self) -> None:
+        """Initialize the global default values registry."""
         self._default_values: Dict[DefaultValueScope, Any] = {}
 
     def set_default_value(
@@ -153,7 +160,12 @@ _global_default_values = GlobalDefaultValues()
 
 
 def get_global_default_values() -> GlobalDefaultValues:
-    """Get the global default values registry."""
+    """
+    Get the global default values registry.
+
+    Returns:
+        GlobalDefaultValues: The global default values registry instance.
+    """
     return _global_default_values
 
 
@@ -215,14 +227,13 @@ def set_global_variable(*, name: str, value: Any) -> None:
         variable accessible to code that imports or executes after the initialization
         script runs.
     """
-
     # Set the variable in the __main__ module's global namespace
     sys.modules["__main__"].__dict__[name] = value
 
 
 def apply_defaults_to_method(method):
     """
-    Decorator that applies default values to a method's parameters.
+    Apply default values to a method's parameters.
 
     This decorator looks up default values for the method's class and applies them
     to parameters that are None or not provided.
@@ -284,7 +295,7 @@ def apply_defaults_to_method(method):
 
 def apply_defaults(method):
     """
-    Decorator that applies default values to a class constructor.
+    Apply default values to a class constructor.
 
     This is an alias for apply_defaults_to_method for backward compatibility.
 

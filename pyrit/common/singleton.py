@@ -14,8 +14,10 @@ class Singleton(abc.ABCMeta):
 
     def __call__(cls, *args, **kwargs):
         """
-        Overrides the default __call__ behavior to ensure only one instance of the singleton class is created.
-        Returns the singleton instance if it exists, otherwise creates a new one and returns it.
+        Override the default __call__ behavior to ensure only one instance of the singleton class is created.
+
+        Returns:
+            The singleton instance if it exists, otherwise creates a new one and returns it.
         """
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)

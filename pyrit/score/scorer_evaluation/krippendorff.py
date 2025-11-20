@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-"""Krippendorff's alpha for ordinal data.
+"""
+Krippendorff's alpha for ordinal data.
 
 This implementation follows the standard Krippendorff's alpha formulation and
 is inspired by LightTag/simpledorff's clean decomposition of expected/observed
@@ -20,7 +21,8 @@ def _validate_and_prepare_data(
     level_of_measurement: str,
     missing: float | None,
 ) -> tuple["np.ndarray", "np.ndarray", "np.ndarray"]:
-    """Validate inputs and prepare data for reliability calculation.
+    """
+    Validate inputs and prepare data for reliability calculation.
 
     Args:
         reliability_data: Ratings array of shape (num_raters_or_trials, num_items).
@@ -65,7 +67,8 @@ def _build_value_counts_matrix(
     valid_mask: "np.ndarray",
     categories: "np.ndarray",
 ) -> "np.ndarray":
-    """Build matrix counting how many raters assigned each category to each item.
+    """
+    Build matrix counting how many raters assigned each category to each item.
 
     Args:
         data: Float64 array of ratings.
@@ -94,7 +97,8 @@ def _build_value_counts_matrix(
 def _build_coincidence_matrix(
     value_counts: "np.ndarray",
 ) -> "np.ndarray":
-    """Build coincidence matrix from value counts.
+    """
+    Build coincidence matrix from value counts.
 
     Args:
         value_counts: Matrix of shape (num_items, num_categories) with counts.
@@ -130,7 +134,8 @@ def _build_coincidence_matrix(
 def _build_expected_matrix(
     coincidence_matrix: "np.ndarray",
 ) -> tuple["np.ndarray", "np.ndarray", float]:
-    """Build expected coincidence matrix from observed coincidences.
+    """
+    Build expected coincidence matrix from observed coincidences.
 
     Args:
         coincidence_matrix: Observed coincidence matrix.
@@ -157,7 +162,8 @@ def _build_ordinal_distance_matrix(
     num_categories: int,
     n_v: "np.ndarray",
 ) -> "np.ndarray":
-    """Build ordinal distance matrix using category marginals.
+    """
+    Build ordinal distance matrix using category marginals.
 
     Args:
         num_categories: Number of unique categories.
@@ -183,7 +189,8 @@ def _compute_alpha_from_disagreements(
     observed_disagreement: float,
     expected_disagreement: float,
 ) -> float:
-    """Compute Krippendorff's alpha from observed and expected disagreements.
+    """
+    Compute Krippendorff's alpha from observed and expected disagreements.
 
     Args:
         observed_disagreement: Observed disagreement value.
@@ -213,7 +220,8 @@ def krippendorff_alpha(
     level_of_measurement: str = "ordinal",
     missing: float | None = np.nan,
 ) -> float:
-    """Compute Krippendorff's alpha inter-rater reliability for ordinal data.
+    """
+    Compute Krippendorff's alpha inter-rater reliability for ordinal data.
 
     Computes inter-rater reliability for ordered categories, ignoring missing
     entries and supporting varying numbers of raters per item.

@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class SemanticCategory(Enum):
+    """Semantic categories in the HarmBench multimodal dataset."""
+
     CYBERCRIME_INTRUSION = "cybercrime_intrusion"  # n=54
     ILLEGAL = "illegal"  # 36
     HARMFUL = "harmful"  # 9

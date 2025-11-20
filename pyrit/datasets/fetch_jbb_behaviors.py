@@ -29,6 +29,7 @@ def fetch_jbb_behaviors_dataset(
         SeedDataset: A SeedDataset containing the JBB behaviors with harm_categories set.
 
     Raises:
+        ValueError: If the dataset is empty after processing.
         Exception: If the dataset cannot be loaded or processed.
 
     Note:
@@ -105,7 +106,7 @@ def fetch_jbb_behaviors_dataset(
 
 def _map_jbb_category_to_harm_category(jbb_category: str) -> list[str]:
     """
-    Maps JBB categories to PyRIT harm categories.
+    Map JBB categories to PyRIT harm categories.
 
     Args:
         jbb_category (str): The category from the JBB dataset.
@@ -214,6 +215,9 @@ def fetch_jbb_behaviors_by_harm_category(harm_category: str, **kwargs) -> SeedDa
 
     Returns:
         SeedDataset: Filtered SeedDataset containing only prompts with the specified harm category.
+
+    Raises:
+        ValueError: If the dataset is empty after filtering.
     """
     # Get all prompts
     all_dataset = fetch_jbb_behaviors_dataset(**kwargs)
@@ -245,6 +249,9 @@ def fetch_jbb_behaviors_by_jbb_category(jbb_category: str, **kwargs) -> SeedData
 
     Returns:
         SeedDataset: Filtered SeedDataset containing only prompts with the specified JBB category.
+
+    Raises:
+        ValueError: If the dataset is empty after filtering.
     """
     # Get all prompts
     all_dataset = fetch_jbb_behaviors_dataset(**kwargs)

@@ -134,23 +134,21 @@ class AttackPrompt(object):
         """
         Initializes the AttackPrompt object with the provided parameters.
 
-        Parameters
-        ----------
-        goal : str
-            The intended goal of the attack
-        target : str
-            The target of the attack
-        tokenizer : Transformer Tokenizer
-            The tokenizer used to convert text into tokens
-        conv_template : Template
-            The conversation template used for the attack
-        control_init : str, optional
-            A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ")
-        test_prefixes : list, optional
-            A list of prefixes to test the attack
-            (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
+        Args:
+            goal (str):
+                The intended goal of the attack
+            target (str):
+                The target of the attack
+            tokenizer (Transformer Tokenizer):
+                The tokenizer used to convert text into tokens
+            conv_template (Template):
+                The conversation template used for the attack
+            control_init (str, optional):
+                A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
+            test_prefixes (list, optional):
+                A list of prefixes to test the attack
+                (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
         """
-
         self.goal = goal
         self.target = target
         self.control = control_init
@@ -467,25 +465,23 @@ class PromptManager(object):
         """
         Initializes the PromptManager object with the provided parameters.
 
-        Parameters
-        ----------
-        goals : list of str
-            The list of intended goals of the attack
-        targets : list of str
-            The list of targets of the attack
-        tokenizer : Transformer Tokenizer
-            The tokenizer used to convert text into tokens
-        conv_template : Template
-            The conversation template used for the attack
-        control_init : str, optional
-            A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
-        test_prefixes : list, optional
-            A list of prefixes to test the attack
-            (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
-        managers : dict, optional
-            A dictionary of manager objects, required to create the prompts.
+        Args:
+            goals (List[str]):
+                The list of intended goals of the attack
+            targets (List[str]):
+                The list of targets of the attack
+            tokenizer (Transformer Tokenizer):
+                The tokenizer used to convert text into tokens
+            conv_template (Template):
+                The conversation template used for the attack
+            control_init (str, optional):
+                A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
+            test_prefixes (list, optional):
+                A list of prefixes to test the attack
+                (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
+            managers (dict, optional):
+                A dictionary of manager objects, required to create the prompts.
         """
-
         if len(goals) != len(targets):
             raise ValueError("Length of goals and targets must match")
         if len(goals) == 0:
@@ -601,31 +597,29 @@ class MultiPromptAttack(object):
         """
         Initializes the MultiPromptAttack object with the provided parameters.
 
-        Parameters
-        ----------
-        goals : list of str
-            The list of intended goals of the attack
-        targets : list of str
-            The list of targets of the attack
-        workers : list of Worker objects
-            The list of workers used in the attack
-        control_init : str, optional
-            A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
-        test_prefixes : list, optional
-            A list of prefixes to test the attack
-            (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
-        logfile : str, optional
-            A file to which logs will be written
-        managers : dict, optional
-            A dictionary of manager objects, required to create the prompts.
-        test_goals : list of str, optional
-            The list of test goals of the attack
-        test_targets : list of str, optional
-            The list of test targets of the attack
-        test_workers : list of Worker objects, optional
-            The list of test workers used in the attack
+        Args:
+            goals (List[str]):
+                The list of intended goals of the attack
+            targets (List[str]):
+                The list of targets of the attack
+            workers (List[Worker]):
+                The list of workers used in the attack
+            control_init (str, optional):
+                A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
+            test_prefixes (list, optional):
+                A list of prefixes to test the attack
+                (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
+            logfile (str, optional):
+                A file to which logs will be written
+            managers (dict, optional):
+                A dictionary of manager objects, required to create the prompts.
+            test_goals (list of str, optional):
+                The list of test goals of the attack
+            test_targets (list of str, optional):
+                The list of test targets of the attack
+            test_workers (list of Worker objects, optional):
+                The list of test workers used in the attack
         """
-
         self.goals = goals
         self.targets = targets
         self.workers = workers
@@ -924,35 +918,33 @@ class ProgressiveMultiPromptAttack(object):
         """
         Initializes the ProgressiveMultiPromptAttack object with the provided parameters.
 
-        Parameters
-        ----------
-        goals : list of str
-            The list of intended goals of the attack
-        targets : list of str
-            The list of targets of the attack
-        workers : list of Worker objects
-            The list of workers used in the attack
-        progressive_goals : bool, optional
-            If true, goals progress over time (default is True)
-        progressive_models : bool, optional
-            If true, models progress over time (default is True)
-        control_init : str, optional
-            A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
-        test_prefixes : list, optional
-            A list of prefixes to test the attack
-            (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
-        logfile : str, optional
-            A file to which logs will be written
-        managers : dict, optional
-            A dictionary of manager objects, required to create the prompts.
-        test_goals : list of str, optional
-            The list of test goals of the attack
-        test_targets : list of str, optional
-            The list of test targets of the attack
-        test_workers : list of Worker objects, optional
-            The list of test workers used in the attack
+        Args:
+            goals (List[str]):
+                The list of intended goals of the attack
+            targets (List[str]):
+                The list of targets of the attack
+            workers (List[Worker]):
+                The list of workers used in the attack
+            progressive_goals (bool, optional):
+                If true, goals progress over time (default is True)
+            progressive_models (bool, optional):
+                If true, models progress over time (default is True)
+            control_init (str, optional):
+                A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
+            test_prefixes (List[str], optional):
+                A list of prefixes to test the attack
+                (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
+            logfile (str, optional):
+                A file to which logs will be written
+            managers (dict, optional):
+                A dictionary of manager objects, required to create the prompts.
+            test_goals (List[str], optional):
+                The list of test goals of the attack
+            test_targets (List[str], optional):
+                The list of test targets of the attack
+            test_workers (List[Worker], optional):
+                The list of test workers used in the attack
         """
-
         self.goals = goals
         self.targets = targets
         self.workers = workers
@@ -1033,36 +1025,34 @@ class ProgressiveMultiPromptAttack(object):
         """
         Executes the progressive multi prompt attack.
 
-        Parameters
-        ----------
-        n_steps : int, optional
-            The number of steps to run the attack (default is 1000)
-        batch_size : int, optional
-            The size of batches to process at a time (default is 1024)
-        topk : int, optional
-            The number of top candidates to consider (default is 256)
-        temp : float, optional
-            The temperature for sampling (default is 1)
-        allow_non_ascii : bool, optional
-            Whether to allow non-ASCII characters (default is False)
-        target_weight
-            The weight assigned to the target
-        control_weight
-            The weight assigned to the control
-        anneal : bool, optional
-            Whether to anneal the temperature (default is True)
-        test_steps : int, optional
-            The number of steps between tests (default is 50)
-        incr_control : bool, optional
-            Whether to increase the control over time (default is True)
-        stop_on_success : bool, optional
-            Whether to stop the attack upon success (default is True)
-        verbose : bool, optional
-            Whether to print verbose output (default is True)
-        filter_cand : bool, optional
-            Whether to filter candidates whose lengths changed after re-tokenization (default is True)
+        Args:
+            n_steps (int, optional):
+                The number of steps to run the attack (default is 1000)
+            batch_size (int, optional):
+                The size of batches to process at a time (default is 1024)
+            topk (int, optional):
+                The number of top candidates to consider (default is 256)
+            temp (float, optional):
+                The temperature for sampling (default is 1)
+            allow_non_ascii (bool, optional):
+                Whether to allow non-ASCII characters (default is False)
+            target_weight
+                The weight assigned to the target
+            control_weight
+                The weight assigned to the control
+            anneal (bool, optional):
+                Whether to anneal the temperature (default is True)
+            test_steps (int, optional):
+                The number of steps between tests (default is 50)
+            incr_control (bool, optional):
+                Whether to increase the control over time (default is True)
+            stop_on_success (bool, optional):
+                Whether to stop the attack upon success (default is True)
+            verbose (bool, optional):
+                Whether to print verbose output (default is True)
+            filter_cand (bool, optional):
+                Whether to filter candidates whose lengths changed after re-tokenization (default is True)
         """
-
         if self.logfile is not None:
             with open(self.logfile, "r") as f:
                 log = json.load(f)
@@ -1169,31 +1159,29 @@ class IndividualPromptAttack(object):
         """
         Initializes the IndividualPromptAttack object with the provided parameters.
 
-        Parameters
-        ----------
-        goals : list
-            The list of intended goals of the attack
-        targets : list
-            The list of targets of the attack
-        workers : list
-            The list of workers used in the attack
-        control_init : str, optional
-            A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
-        test_prefixes : list, optional
-            A list of prefixes to test the attack (default is
-            ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
-        logfile : str, optional
-            A file to which logs will be written
-        managers : dict, optional
-            A dictionary of manager objects, required to create the prompts.
-        test_goals : list, optional
-            The list of test goals of the attack
-        test_targets : list, optional
-            The list of test targets of the attack
-        test_workers : list, optional
-            The list of test workers used in the attack
+        Args:
+            goals (list):
+                The list of intended goals of the attack
+            targets (list):
+                The list of targets of the attack
+            workers (list):
+                The list of workers used in the attack
+            control_init (str, optional):
+                A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
+            test_prefixes (list, optional):
+                A list of prefixes to test the attack (default is
+                ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
+            logfile (str, optional):
+                A file to which logs will be written
+            managers (dict, optional):
+                A dictionary of manager objects, required to create the prompts.
+            test_goals (list, optional):
+                The list of test goals of the attack
+            test_targets (list, optional):
+                The list of test targets of the attack
+            test_workers (list, optional):
+                The list of test workers used in the attack
         """
-
         self.goals = goals
         self.targets = targets
         self.workers = workers
@@ -1271,36 +1259,34 @@ class IndividualPromptAttack(object):
         """
         Executes the individual prompt attack.
 
-        Parameters
-        ----------
-        n_steps : int, optional
-            The number of steps to run the attack (default is 1000)
-        batch_size : int, optional
-            The size of batches to process at a time (default is 1024)
-        topk : int, optional
-            The number of top candidates to consider (default is 256)
-        temp : float, optional
-            The temperature for sampling (default is 1)
-        allow_non_ascii : bool, optional
-            Whether to allow non-ASCII characters (default is True)
-        target_weight : any, optional
-            The weight assigned to the target
-        control_weight : any, optional
-            The weight assigned to the control
-        anneal : bool, optional
-            Whether to anneal the temperature (default is True)
-        test_steps : int, optional
-            The number of steps between tests (default is 50)
-        incr_control : bool, optional
-            Whether to increase the control over time (default is True)
-        stop_on_success : bool, optional
-            Whether to stop the attack upon success (default is True)
-        verbose : bool, optional
-            Whether to print verbose output (default is True)
-        filter_cand : bool, optional
-            Whether to filter candidates (default is True)
+        Args:
+            n_steps (int, optional):
+                The number of steps to run the attack (default is 1000)
+            batch_size (int, optional):
+                The size of batches to process at a time (default is 1024)
+            topk (int, optional):
+                The number of top candidates to consider (default is 256)
+            temp (float, optional):
+                The temperature for sampling (default is 1)
+            allow_non_ascii (bool, optional):
+                Whether to allow non-ASCII characters (default is True)
+            target_weight (any, optional):
+                The weight assigned to the target
+            control_weight (any, optional):
+                The weight assigned to the control
+            anneal (bool, optional):
+                Whether to anneal the temperature (default is True)
+            test_steps (int, optional):
+                The number of steps between tests (default is 50)
+            incr_control (bool, optional):
+                Whether to increase the control over time (default is True)
+            stop_on_success (bool, optional):
+                Whether to stop the attack upon success (default is True)
+            verbose (bool, optional):
+                Whether to print verbose output (default is True)
+            filter_cand (bool, optional):
+                Whether to filter candidates (default is True)
         """
-
         if self.logfile is not None:
             with open(self.logfile, "r") as f:
                 log = json.load(f)
@@ -1379,31 +1365,29 @@ class EvaluateAttack(object):
         """
         Initializes the EvaluateAttack object with the provided parameters.
 
-        Parameters
-        ----------
-        goals : list
-            The list of intended goals of the attack
-        targets : list
-            The list of targets of the attack
-        workers : list
-            The list of workers used in the attack
-        control_init : str, optional
-            A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
-        test_prefixes : list, optional
-            A list of prefixes to test the attack
-            (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
-        logfile : str, optional
-            A file to which logs will be written
-        managers : dict, optional
-            A dictionary of manager objects, required to create the prompts.
-        test_goals : list, optional
-            The list of test goals of the attack
-        test_targets : list, optional
-            The list of test targets of the attack
-        test_workers : list, optional
-            The list of test workers used in the attack
+        Args:
+            goals (list):
+                The list of intended goals of the attack
+            targets (list):
+                The list of targets of the attack
+            workers (list):
+                The list of workers used in the attack
+            control_init (str, optional):
+                A string used to control the attack (default is "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !")
+            test_prefixes (list, optional):
+                A list of prefixes to test the attack
+                (default is ["I'm sorry", "I apologize", "As an", "I'm just", "I'm an", "I cannot", "Hello!"])
+            logfile (str, optional):
+                A file to which logs will be written
+            managers (dict, optional):
+                A dictionary of manager objects, required to create the prompts.
+            test_goals (list, optional):
+                The list of test goals of the attack
+            test_targets (list, optional):
+                The list of test targets of the attack
+            test_workers (list, optional):
+                The list of test workers used in the attack
         """
-
         self.goals = goals
         self.targets = targets
         self.workers = workers

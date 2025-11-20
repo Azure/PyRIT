@@ -29,6 +29,9 @@ FILE_TYPE_HANDLERS: Dict[str, Dict[str, Callable]] = {
 def _get_cache_file_name(source: str, file_type: str) -> str:
     """
     Generate a cache file name based on the source URL and file type.
+
+    Returns:
+        str: The generated cache file name.
     """
     hash_source = hashlib.md5(source.encode("utf-8")).hexdigest()
     return f"{hash_source}.{file_type}"
@@ -37,6 +40,12 @@ def _get_cache_file_name(source: str, file_type: str) -> str:
 def _read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
     """
     Read data from cache.
+
+    Returns:
+        List[Dict[str, str]]: The cached examples.
+
+    Raises:
+        ValueError: If the file_type is invalid.
     """
     with cache_file.open("r", encoding="utf-8") as file:
         if file_type in FILE_TYPE_HANDLERS:
@@ -49,6 +58,9 @@ def _read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
 def _write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: str):
     """
     Write data to cache.
+
+    Raises:
+        ValueError: If the file_type is invalid.
     """
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     with cache_file.open("w", encoding="utf-8") as file:
@@ -62,6 +74,13 @@ def _write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: st
 def _fetch_from_public_url(source: str, file_type: str) -> List[Dict[str, str]]:
     """
     Fetch examples from a repository.
+
+    Returns:
+        List[Dict[str, str]]: The fetched examples.
+
+    Raises:
+        ValueError: If the file_type is invalid.
+        Exception: If the request to fetch examples fails.
     """
     response = requests.get(source)
     if response.status_code == 200:
@@ -82,6 +101,12 @@ def _fetch_from_public_url(source: str, file_type: str) -> List[Dict[str, str]]:
 def _fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
     """
     Fetch examples from a local file.
+
+    Returns:
+        List[Dict[str, str]]: The fetched examples.
+
+    Raises:
+        ValueError: If the file_type is invalid.
     """
     with open(source, "r", encoding="utf-8") as file:
         if file_type in FILE_TYPE_HANDLERS:
@@ -114,8 +139,10 @@ def fetch_examples(
 
     Returns:
         List[Dict[str, str]]: A list of examples.
-    """
 
+    Raises:
+        ValueError: If the file_type is invalid.
+    """
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
         valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())

@@ -81,6 +81,7 @@ dev = [
     "pytest-cov>=6.1.1",
     "pytest-timeout>=2.4.0",
     "respx>=0.22.0",
+    "ruff>=0.14.4",
     "sphinxcontrib-mermaid>=1.0.0",
     "types-PyYAML>=6.0.12.20250516",
     "types-requests>=2.31.0.20250515",
@@ -143,7 +144,8 @@ all = [
 ]
 
 [project.scripts]
-pyrit_scan = "pyrit.cli.__main__:main"
+pyrit_scan = "pyrit.cli.pyrit_scan:main"
+pyrit_shell = "pyrit.cli.pyrit_shell:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -174,6 +176,9 @@ formats = "ipynb,py:percent"
 
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.lint]
+preview = true
 fixable = [
     "A",
     "B",
@@ -220,3 +225,34 @@ fixable = [
     "UP",
     "YTT",
 ]
+select = [
+    "D",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
+    "DOC",  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
+    "F401",  # unused-import
+]
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D200",  # One-line docstring should fit on one line
+    "D205",  # 1 blank line required between summary line and description
+    "D212",  # Multi-line docstring summary should start at the first line
+    "D301",  # Use r""" if any backslashes in a docstring
+    "DOC502",  # Raised exception is not explicitly raised
+]
+extend-select = [
+    "D204",  # 1 blank line required after class docstring
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D401",  # First line of docstring should be in imperative mood
+    "D404",  # First word of the docstring should not be "This"
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore D and DOC rules everywhere except for the pyrit/ directory
+"!pyrit/**.py" = ["D", "DOC"]
+# Temporary ignores for pyrit/ subdirectories until issue #1176
+# https://github.com/Azure/PyRIT/issues/1176 is fully resolved
+# TODO: Remove these ignores once the issues are fixed
+"pyrit/{auxiliary_attacks,chat_message_normalizer,cli,embedding,exceptions,executor,memory,models,prompt_converter,prompt_normalizer,prompt_target,scenarios,score,setup,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501"]
+"pyrit/__init__.py" = ["D104"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
