@@ -88,8 +88,7 @@ class CyberScenario(Scenario):
         scenario_result_id: Optional[str] = None,
     ) -> None:
         """
-        Initialize the cyber harms scenario. Note that the cyber harms scenario is slightly different from the encoding
-        and foundry scenarios, as it doesn't use converters.
+        Initialize the cyber harms scenario.
 
         Args:
             adversarial_chat (Optional[PromptChatTarget]): Adversarial chat for the red teaming attack, corresponding
