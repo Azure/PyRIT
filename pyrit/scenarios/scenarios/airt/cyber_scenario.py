@@ -51,7 +51,7 @@ class CyberScenario(Scenario):
     Cyber scenario implementation for PyRIT.
 
     This scenario tests how willing models are to exploit cybersecurity harms by generating
-    malware. The CyberStrategy class contains different variations of the malware generation
+    malware. The CyberScenario class contains different variations of the malware generation
     techniques.
     """
 
