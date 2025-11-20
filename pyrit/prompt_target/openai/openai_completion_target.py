@@ -1,13 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import logging
 from typing import Optional
 
-import httpx
+from openai import BadRequestError, RateLimitError, APIStatusError
 
-from pyrit.common import net_utility
 from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
     RateLimitException,
@@ -88,40 +86,10 @@ class OpenAICompletionTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {message_piece}")
 
-        self.refresh_auth_headers()
-
-        body = await self._construct_request_body(request=message_piece)
-
-        try:
-            str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._endpoint,
-                method="POST",
-                headers=self._headers,
-                request_body=body,
-                **self._httpx_client_kwargs,
-            )
-        except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
-                # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=message_piece)
-            elif StatusError.response.status_code == 429:
-                raise RateLimitException()
-            else:
-                raise
-
-        logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-
-        response_entry = self._construct_message_from_openai_json(
-            open_ai_str_response=str_response.text, message_piece=message_piece
-        )
-
-        return response_entry
-
-    async def _construct_request_body(self, request: MessagePiece) -> dict:
-
+        # Build request parameters
         body_parameters = {
             "model": self._model_name,
-            "prompt": request.converted_value,
+            "prompt": message_piece.converted_value,
             "top_p": self._top_p,
             "temperature": self._temperature,
             "frequency_penalty": self._frequency_penalty,
@@ -131,24 +99,28 @@ class OpenAICompletionTarget(OpenAITarget):
         }
 
         # Filter out None values
-        return {k: v for k, v in body_parameters.items() if v is not None}
+        request_params = {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _construct_message_from_openai_json(
-        self,
-        *,
-        open_ai_str_response: str,
-        message_piece: MessagePiece,
-    ) -> Message:
+        try:
+            completion_response = await self._async_client.completions.create(**request_params)
+        except BadRequestError as bre:
+            # Handle bad request (including content filter)
+            return handle_bad_request_exception(response_text=bre.response.text, request=message_piece)
+        except RateLimitError:
+            raise RateLimitException()
+        except APIStatusError:
+            raise
 
-        response = json.loads(open_ai_str_response)
+        logger.info(f'Received response from the prompt target with {len(completion_response.choices)} choices')
 
+        # Extract response text from choices
         extracted_response = []
-        for response_piece in response["choices"]:
-            extracted_response.append(response_piece["text"])
+        for choice in completion_response.choices:
+            extracted_response.append(choice.text)
 
         if not extracted_response:
-            logger.log(logging.ERROR, "The chat returned an empty response.")
-            raise EmptyResponseException(message="The chat returned an empty response.")
+            logger.log(logging.ERROR, "The completion returned an empty response.")
+            raise EmptyResponseException(message="The completion returned an empty response.")
 
         return construct_response_from_request(request=message_piece, response_text_pieces=extracted_response)
 

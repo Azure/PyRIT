@@ -230,8 +230,20 @@ class OpenAITarget(PromptChatTarget):
             base_url = self._endpoint
             if base_url.endswith("/chat/completions"):
                 base_url = base_url[:-len("/chat/completions")]
+            elif base_url.endswith("/completions"):
+                base_url = base_url[:-len("/completions")]
             elif base_url.endswith("/responses"):
                 base_url = base_url[:-len("/responses")]
+            elif base_url.endswith("/images/generations"):
+                base_url = base_url[:-len("/images/generations")]
+            elif base_url.endswith("/audio/speech"):
+                base_url = base_url[:-len("/audio/speech")]
+            elif base_url.endswith("/v1/videos") or base_url.endswith("/videos"):
+                # Strip videos path for Sora API
+                if base_url.endswith("/v1/videos"):
+                    base_url = base_url[:-len("/videos")]  # Keep /v1
+                else:
+                    base_url = base_url[:-len("/videos")]
             
             # For Azure Foundry endpoints (*.models.ai.azure.com), ensure they end with /v1
             from urllib.parse import urlparse

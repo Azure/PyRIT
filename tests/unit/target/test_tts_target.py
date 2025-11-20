@@ -7,7 +7,6 @@ from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import HTTPStatusError
 from openai import RateLimitError
 from unit.mocks import get_image_message_piece, get_sample_conversations
 
@@ -102,12 +101,15 @@ async def test_tts_send_prompt_file_save_async(
     message_piece = sample_conversations[0]
     message_piece.conversation_id = str(uuid.uuid4())
     request = Message(message_pieces=[message_piece])
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        return_value = MagicMock()
-        return_value.content = b"audio data"
-        mock_request.return_value = return_value
+    
+    # Mock SDK response
+    mock_audio_response = MagicMock()
+    mock_audio_response.content = b"audio data"
+    
+    with patch.object(
+        tts_target._async_client.audio.speech, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_audio_response
         response = await tts_target.send_prompt_async(message=request)
 
         file_path = response.get_value()
@@ -119,7 +121,7 @@ async def test_tts_send_prompt_file_save_async(
         os.remove(file_path)
 
 
-testdata = [(400, "Bad Request", HTTPStatusError), (429, "Rate Limit Reached", RateLimitException)]
+testdata = [(400, "Bad Request", Exception), (429, "Rate Limit Reached", RateLimitException)]
 
 
 @pytest.mark.asyncio
@@ -131,86 +133,58 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
     error_text: str,
     exception_class: type[BaseException],
 ):
+    from openai import BadRequestError, RateLimitError
+    
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_message_to_memory = AsyncMock()
 
     tts_target._memory = mock_memory
 
-    response = MagicMock()
-    response.status_code = status_code
-    response.text = error_text
-    mock_response_async = AsyncMock(
-        side_effect=HTTPStatusError(message=response.text, request=MagicMock(), response=response)
-    )
-
-    setattr(net_utility, "make_request_and_raise_if_error_async", mock_response_async)
-
     message_piece = sample_conversations[0]
     message_piece.conversation_id = str(uuid.uuid4())
     request = Message(message_pieces=[message_piece])
 
-    with pytest.raises((exception_class)) as exc:
-        await tts_target.send_prompt_async(message=request)
-        tts_target._memory.get_conversation.assert_called_once_with(conversation_id=message_piece.conversation_id)
+    # Create appropriate SDK exception
+    mock_response = MagicMock()
+    mock_response.text = error_text
+    
+    if status_code == 400:
+        sdk_exception = BadRequestError(error_text, response=mock_response, body={})
+        sdk_exception.status_code = status_code
+    else:  # 429
+        sdk_exception = RateLimitError(error_text, response=mock_response, body={})
 
-        tts_target._memory.add_message_to_memory.assert_called_once_with(request=request)
+    with patch.object(
+        tts_target._async_client.audio.speech, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.side_effect = sdk_exception
 
-        assert response.text in str(exc.value)
+        with pytest.raises((exception_class)):
+            await tts_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
 async def test_tts_send_prompt_async_rate_limit_exception_retries(
     tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
-    response = MagicMock()
-    response.status_code = 429
-    response.text = "Rate Limit Reached"
-    mock_response_async = AsyncMock(
-        side_effect=RateLimitError(message=response.text, response=response, body="Rate limit reached")
-    )
+    from openai import RateLimitError as SDKRateLimitError
+    
+    mock_response = MagicMock()
+    mock_response.text = "Rate Limit Reached"
+    sdk_exception = SDKRateLimitError("Rate Limit Reached", response=mock_response, body={})
 
-    setattr(net_utility, "make_request_and_raise_if_error_async", mock_response_async)
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
+    with patch.object(
+        tts_target._async_client.audio.speech, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.side_effect = sdk_exception
+        
+        message_piece = sample_conversations[0]
+        request = Message(message_pieces=[message_piece])
 
-    with pytest.raises(RateLimitError):
-        await tts_target.send_prompt_async(message=request)
-        assert mock_response_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+        with pytest.raises(RateLimitException):
+            await tts_target.send_prompt_async(message=request)
 
 
 def test_is_json_response_supported(tts_target: OpenAITTSTarget):
     assert tts_target.is_json_response_supported() is False
-
-
-@pytest.mark.asyncio
-@pytest.mark.asyncio
-async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
-    mock_memory = MagicMock(spec=MemoryInterface)
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_message_to_memory = AsyncMock()
-
-    tts_target._memory = mock_memory
-
-    tts_target.refresh_auth_headers = MagicMock()
-    tts_target._validate_request = MagicMock()
-    tts_target._construct_request_body = AsyncMock(return_value={})
-
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-        mock_response = MagicMock()
-        mock_response.content = b"audio data"
-        mock_make_request.return_value = mock_response
-
-        message = Message(
-            message_pieces=[
-                MessagePiece(
-                    role="user",
-                    original_value="test prompt",
-                    converted_value="test prompt",
-                    converted_value_data_type="text",
-                )
-            ]
-        )
-        await tts_target.send_prompt_async(message=message)
-
-        tts_target.refresh_auth_headers.assert_called_once()

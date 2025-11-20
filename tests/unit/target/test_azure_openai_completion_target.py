@@ -75,13 +75,16 @@ async def test_azure_complete_async_return(
     message_piece = sample_conversations[0]
     request = Message(message_pieces=[message_piece])
 
-    openai_mock_return = MagicMock()
-    openai_mock_return.text = json.dumps(completions_response_json)
+    # Mock SDK response
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.text = "hi"
+    mock_response.choices = [mock_choice]
 
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        mock_request.return_value = openai_mock_return
+    with patch.object(
+        azure_completion_target._async_client.completions, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
         response: Message = await azure_completion_target.send_prompt_async(message=request)
         assert len(response.message_pieces) == 1
         assert response.get_value() == "hi"
@@ -103,38 +106,3 @@ def test_azure_invalid_endpoint_raises():
                     endpoint="",
                     api_key="xxxxx",
                 )
-
-
-@pytest.mark.asyncio
-@pytest.mark.asyncio
-async def test_send_prompt_async_calls_refresh_auth_headers(azure_completion_target: OpenAICompletionTarget):
-    mock_memory = MagicMock(spec=MemoryInterface)
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_message_to_memory = AsyncMock()
-
-    azure_completion_target._memory = mock_memory
-
-    with (
-        patch.object(azure_completion_target, "refresh_auth_headers") as mock_refresh,
-        patch.object(azure_completion_target, "_validate_request"),
-        patch.object(azure_completion_target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
-    ):
-
-        mock_construct.return_value = {}
-
-        with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-            mock_make_request.return_value = MagicMock(text='{"choices": [{"text": "test response"}]}')
-
-            message = Message(
-                message_pieces=[
-                    MessagePiece(
-                        role="user",
-                        original_value="test prompt",
-                        converted_value="test prompt",
-                        converted_value_data_type="text",
-                    )
-                ]
-            )
-            await azure_completion_target.send_prompt_async(message=message)
-
-            mock_refresh.assert_called_once()

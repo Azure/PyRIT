@@ -1,12 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import json
 import logging
 from typing import Any, Dict, Literal
 
-import httpx
+from openai import BadRequestError, RateLimitError, APIStatusError
 
-from pyrit.common import net_utility
 from pyrit.exceptions import (
     EmptyResponseException,
     handle_bad_request_exception,
@@ -117,57 +115,50 @@ class OpenAIDALLETarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        # Refresh auth headers if using Entra authentication
-        self.refresh_auth_headers()
-
-        body = self._construct_request_body(prompt=request.converted_value)
+        # Construct request parameters
+        image_generation_args: Dict[str, Any] = {
+            "model": self._model_name,
+            "prompt": request.converted_value,
+            "n": self.num_images,
+            "size": self.image_size,
+            "response_format": "b64_json",
+        }
+        if self.dalle_version == "dall-e-3" and self.quality and self.style:
+            image_generation_args["quality"] = self.quality
+            image_generation_args["style"] = self.style
 
         try:
-            http_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._endpoint,
-                method="POST",
-                headers=self._headers,
-                request_body=body,
-                **self._httpx_client_kwargs,
+            image_response = await self._async_client.images.generate(**image_generation_args)
+        except BadRequestError as bre:
+            # The SDK wraps content policy violations in BadRequestError
+            # Check if it's a content filter by examining the error response
+            is_content_filter = False
+            try:
+                if hasattr(bre, 'body') and bre.body:
+                    error_code = bre.body.get('error', {}).get('code', '')
+                    is_content_filter = error_code in ['content_policy_violation', 'content_filter']
+            except (AttributeError, TypeError):
+                pass
+            
+            return handle_bad_request_exception(
+                response_text=bre.response.text if bre.response else str(bre),
+                request=request,
+                error_code=bre.status_code if hasattr(bre, 'status_code') else 400,
+                is_content_filter=is_content_filter,
             )
+        except RateLimitError:
+            raise RateLimitException()
+        except APIStatusError:
+            raise
 
-        except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
-                # Handle Bad Request
-                error_response_text = StatusError.response.text
-
-                try:
-                    json_error = json.loads(error_response_text).get("error", {})
-
-                    is_content_policy_violation = json_error.get("code") == "content_policy_violation"
-                    is_content_filter = json_error.get("code") == "content_filter"
-
-                    return handle_bad_request_exception(
-                        response_text=error_response_text,
-                        request=request,
-                        error_code=StatusError.response.status_code,
-                        is_content_filter=is_content_policy_violation or is_content_filter,
-                    )
-                except json.JSONDecodeError:
-                    # Invalid JSON response, proceed without parsing
-                    pass
-                return handle_bad_request_exception(
-                    response_text=error_response_text,
-                    request=request,
-                    error_code=StatusError.response.status_code,
-                )
-            elif StatusError.response.status_code == 429:
-                raise RateLimitException()
-            else:
-                raise
-
-        json_response = json.loads(http_response.text)
-        b64_data = json_response["data"][0]["b64_json"]
+        # Extract base64 image data from response
+        b64_data = image_response.data[0].b64_json
 
         # Handle empty response using retry
         if not b64_data:
-            raise EmptyResponseException(message="The chat returned an empty response.")
+            raise EmptyResponseException(message="The image generation returned an empty response.")
 
+        # Save the image and get the file path
         data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
         await data.save_b64_image(data=b64_data)
         resp_text = data.value
@@ -178,20 +169,6 @@ class OpenAIDALLETarget(OpenAITarget):
         )
 
         return response_entry
-
-    def _construct_request_body(self, prompt: str):
-        image_generation_args: Dict[str, Any] = {
-            "model": self._model_name,
-            "prompt": prompt,
-            "n": self.num_images,
-            "size": self.image_size,
-            "response_format": "b64_json",
-        }
-        if self.dalle_version == "dall-e-3" and self.quality and self.style:
-            image_generation_args["quality"] = self.quality
-            image_generation_args["style"] = self.style
-
-        return image_generation_args
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

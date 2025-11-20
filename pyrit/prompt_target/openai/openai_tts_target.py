@@ -4,9 +4,8 @@
 import logging
 from typing import Literal, Optional
 
-import httpx
+from openai import BadRequestError, RateLimitError, APIStatusError
 
-from pyrit.common import net_utility
 from pyrit.exceptions import (
     RateLimitException,
     handle_bad_request_exception,
@@ -88,27 +87,33 @@ class OpenAITTSTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        # Refresh auth headers if using Entra authentication
-        self.refresh_auth_headers()
-
-        body = self._construct_request_body(request=request)
+        # Construct request parameters for SDK
+        body_parameters: dict[str, object] = {
+            "model": self._model_name,
+            "input": request.converted_value,
+            "voice": self._voice,
+            "response_format": self._response_format,
+        }
+        
+        # Add optional parameters
+        if self._speed is not None:
+            body_parameters["speed"] = self._speed
 
         try:
-            response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._endpoint,
-                method="POST",
-                headers=self._headers,
-                request_body=body,
-                **self._httpx_client_kwargs,
+            # SDK returns audio content directly
+            audio_content = await self._async_client.audio.speech.create(**body_parameters)
+            audio_bytes = audio_content.content
+        except BadRequestError as bre:
+            # Handle bad request (including content filter)
+            return handle_bad_request_exception(
+                response_text=bre.response.text if bre.response else str(bre),
+                request=request,
+                error_code=bre.status_code if hasattr(bre, 'status_code') else 400,
             )
-        except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
-                # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=request)
-            elif StatusError.response.status_code == 429:
-                raise RateLimitException()
-            else:
-                raise
+        except RateLimitError:
+            raise RateLimitException()
+        except APIStatusError:
+            raise
 
         logger.info("Received valid response from the prompt target")
 
@@ -116,29 +121,13 @@ class OpenAITTSTarget(OpenAITarget):
             category="prompt-memory-entries", data_type="audio_path", extension=self._response_format
         )
 
-        data = response.content
-
-        await audio_response.save_data(data=data)
+        await audio_response.save_data(data=audio_bytes)
 
         response_entry = construct_response_from_request(
             request=request, response_text_pieces=[str(audio_response.value)], response_type="audio_path"
         )
 
         return response_entry
-
-    def _construct_request_body(self, request: MessagePiece) -> dict:
-
-        body_parameters: dict[str, object] = {
-            "model": self._model_name,
-            "input": request.converted_value,
-            "voice": self._voice,
-            "file": self._response_format,
-            "language": self._language,
-            "speed": self._speed,
-        }
-
-        # Filter out None values
-        return {k: v for k, v in body_parameters.items() if v is not None}
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)
