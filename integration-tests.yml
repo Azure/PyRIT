@@ -66,7 +66,7 @@ jobs:
 
       echo "Microsoft ODBC Driver 18 installed successfully."
     displayName: 'Install ODBC Driver 18 for SQL Server'
-  - bash: pip install .[dev,all] -v
+  - bash: pip install .[dev,all] -v --no-cache-dir
     name: install_PyRIT
   # This step ensures that integration tests are run outside of the PyRIT repository to test that .env files are accessed correctly.
   - bash: |
@@ -103,8 +103,10 @@ jobs:
         # Run integration tests
         make integration-test
   - bash: rm -f .env
-    name: clean_up_env_file
+    name: clean_up_env_files
+    condition: always()
   - task: PublishTestResults@2
+    condition: always()
     inputs:
       testResultsFormat: 'JUnit'
       testResultsFiles: 'junit/test-results.xml'
