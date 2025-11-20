@@ -374,7 +374,12 @@ class PyRITShell(cmd.Cmd):
             super().do_help(arg)
 
     def do_exit(self, arg):
-        """Exit the shell. Aliases: quit, q."""
+        """
+        Exit the shell. Aliases: quit, q.
+
+        Returns:
+            bool: True to exit the shell.
+        """
         print("\nGoodbye!")
         return True
 
@@ -390,11 +395,21 @@ class PyRITShell(cmd.Cmd):
     do_EOF = do_exit  # Ctrl+D on Unix, Ctrl+Z on Windows
 
     def emptyline(self) -> bool:
-        """Don't repeat last command on empty line."""
+        """
+        Don't repeat last command on empty line.
+
+        Returns:
+            bool: False to prevent repeating the last command.
+        """
         return False
 
     def default(self, line):
-        """Handle unknown commands and convert hyphens to underscores."""
+        """
+        Handle unknown commands and convert hyphens to underscores.
+
+        Returns:
+            None
+        """
         # Try converting hyphens to underscores for command lookup
         parts = line.split(None, 1)
         if parts:
@@ -411,7 +426,12 @@ class PyRITShell(cmd.Cmd):
 
 
 def main():
-    """Entry point for pyrit_shell."""
+    """
+    Entry point for pyrit_shell.
+
+    Returns:
+        int: Exit code.
+    """
     import argparse
 
     parser = argparse.ArgumentParser(
