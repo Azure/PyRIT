@@ -60,6 +60,9 @@ jobs:
       - name: Install dev extras
         run: pip install --cache-dir "$PIP_CACHE_DIR" .[dev,all]
 
+      - name: disk space
+        run: df -all -h
+
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
         run: |
@@ -134,6 +137,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
+      TMPDIR: ${{ github.workspace }}/.cache/pip
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
       contents: read
@@ -175,7 +179,7 @@ jobs:
           else
             extras="${{ matrix.package_extras }}"
           fi
-          TMPDIR="$env:PIP_CACHE_DIR" pip install --cache-dir "$env:PIP_CACHE_DIR" --build "$env:PIP_CACHE_DIR" ".[${extras}]"
+            pip install --cache-dir "$PIP_CACHE_DIR" --build "$PIP_CACHE_DIR" ".[${extras}]"
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
