@@ -58,7 +58,7 @@ jobs:
         run: python -m pip install --upgrade pip setuptools packaging
 
       - name: Install dev extras
-        run: pip install --cache-dir "$PIP_CACHE_DIR" --build="$PIP_CACHE_DIR" '.[dev,all]'
+        run: pip install --cache-dir "$PIP_CACHE_DIR" --build="$PIP_CACHE_DIR" .[dev,all]
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
