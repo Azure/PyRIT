@@ -29,7 +29,7 @@ jobs:
 
     env:
       PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
-      TMPDIR: ${{ github.workspace }}/.cache/pip
+      TMPDIR: ${{ github.workspace }}/.tmp/pip
 
     steps:
       - uses: actions/checkout@v3
@@ -140,7 +140,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
-      TMPDIR: ${{ github.workspace }}/.cache/pip
+      TMPDIR: ${{ github.workspace }}/.tmp/pip
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
       contents: read
