@@ -485,16 +485,16 @@ async def test_filename_extension_default(sqlite_instance):
 async def test_filename_extension_existing_pdf(sqlite_instance):
     import tempfile
 
-    import requests
+    from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 
-    url = (
-        "https://raw.githubusercontent.com/Azure/PyRIT/main/pyrit/datasets/prompt_converters/pdf_converters/fake_CV.pdf"
-    )
+    # Use the local fake_CV.pdf file instead of downloading from GitHub
+    source_pdf_path = CONVERTER_SEED_PROMPT_PATH / "pdf_converters" / "fake_CV.pdf"
+    
+    # Create a temporary copy to work with
     with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as tmp_file:
-        response = requests.get(url)
-        tmp_file.write(response.content)
-
-    cv_pdf_path = Path(tmp_file.name)
+        with open(source_pdf_path, "rb") as source_file:
+            tmp_file.write(source_file.read())
+        cv_pdf_path = Path(tmp_file.name)
 
     # Define injection items
     injection_items = [

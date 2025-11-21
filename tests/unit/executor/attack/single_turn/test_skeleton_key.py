@@ -162,7 +162,7 @@ class TestSkeletonKeyAttackInitialization:
 
     def test_default_skeleton_key_prompt_path_exists(self):
         """Test that the default skeleton key prompt path is correctly set."""
-        expected_path = Path("pyrit/datasets/executors/skeleton_key/skeleton_key.prompt")
+        expected_path = Path("pyrit/executor/seed_prompts/skeleton_key/skeleton_key.prompt")
         assert str(SkeletonKeyAttack.DEFAULT_SKELETON_KEY_PROMPT_PATH).endswith(str(expected_path))
 
 

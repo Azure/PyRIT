@@ -15,7 +15,7 @@ from tenacity import (
 )
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -69,7 +69,7 @@ class TranslationConverter(PromptConverter):
             prompt_template
             if prompt_template
             else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "translation_converter.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "translation_converter.yaml"
             )
         )
 

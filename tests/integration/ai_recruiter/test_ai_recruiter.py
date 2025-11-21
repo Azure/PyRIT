@@ -10,7 +10,7 @@ import time
 import pytest
 import requests
 
-from pyrit.common.path import DATASETS_PATH, HOME_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH, DATASETS_PATH, HOME_PATH
 from pyrit.exceptions import PyritException
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.executor.workflow import XPIATestWorkflow
@@ -125,7 +125,7 @@ def ensure_ai_recruiter_running():
 @pytest.mark.asyncio
 async def test_ai_recruiter_workflow():
     # Define PDF Path
-    cv_pdf_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "Jonathon_Sanchez.pdf"
+    cv_pdf_path = pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "pdf_converters" / "Jonathon_Sanchez.pdf"
 
     # Expected best candidate name
     expected_best_candidate = f"Best Candidate: {cv_pdf_path.stem}"

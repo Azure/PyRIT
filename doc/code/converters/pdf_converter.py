@@ -32,7 +32,7 @@
 # %%
 import pathlib
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH, DATASETS_PATH
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
@@ -56,7 +56,7 @@ prompt_data = {
 
 # Load the YAML template for the PDF generation
 template_path = (
-    pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "red_teaming_application_template.yaml"
+    pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "pdf_converters" / "red_teaming_application_template.yaml"
 )
 if not template_path.exists():
     raise FileNotFoundError(f"Template file not found: {template_path}")

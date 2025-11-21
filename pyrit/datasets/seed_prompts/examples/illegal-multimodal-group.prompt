@@ -14,7 +14,7 @@ prompts:
       - illegal
     source: AI Red Team
     value: |
-      {{ datasets_path }}/seed_prompts/multimodal_data/molotov.wav
+      {{ datasets_path }}/seed_prompts/examples/multimodal_data/molotov.wav
     data_type: audio_path
     sequence: 1
     prompt_group_alias: group_1
@@ -32,7 +32,7 @@ prompts:
   - dataset_name: TestMultimodalTextImageAudioVideo
     source: AI Red Team
     value: |
-      {{ datasets_path }}/seed_prompts/multimodal_data/roakey_potion.png
+      {{ datasets_path }}/seed_prompts/examples/multimodal_data/roakey_potion.png
     data_type: image_path
     sequence: 2
     prompt_group_alias: group_1

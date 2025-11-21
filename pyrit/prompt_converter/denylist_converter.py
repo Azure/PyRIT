@@ -6,7 +6,7 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -44,7 +44,7 @@ class DenylistConverter(LLMGenericTextConverter):
             system_prompt_template
             if system_prompt_template
             else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "denylist_converter.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "denylist_converter.yaml"
             )
         )
 

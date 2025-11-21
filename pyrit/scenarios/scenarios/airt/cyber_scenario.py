@@ -6,7 +6,7 @@ import pathlib
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH, SCORER_CONFIG_PATH
+from pyrit.common.path import DATASETS_PATH, SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -138,7 +138,7 @@ class CyberScenario(Scenario):
         """
         presence_of_malware = SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(),
-            true_false_question_path=SCORER_CONFIG_PATH / "true_false_question" / "malware.yaml",
+            true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "malware.yaml",
         )
 
         backstop = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=OpenAIChatTarget()))

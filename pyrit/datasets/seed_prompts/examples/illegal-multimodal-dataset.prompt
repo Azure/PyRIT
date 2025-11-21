@@ -14,7 +14,7 @@ prompts:
     sequence: 0
     role: user
   - value: |
-      {{ datasets_path }}/seed_prompts/multimodal_data/molotov.wav
+      {{ datasets_path }}/seed_prompts/examples/multimodal_data/molotov.wav
     data_type: audio_path
     prompt_group_alias: audio_request
     sequence: 1
@@ -40,13 +40,13 @@ prompts:
     sequence: 0
     role: user
   - value: |
-      {{ datasets_path }}/seed_prompts/multimodal_data/pyrit_architecture.png
+      {{ datasets_path }}/seed_prompts/examples/multimodal_data/pyrit_architecture.png
     data_type: image_path
     prompt_group_alias: image_request
     sequence: 0
     role: user
   - value: |
-      {{ datasets_path }}/seed_prompts/multimodal_data/kinetics_0107.mp4
+      {{ datasets_path }}/seed_prompts/examples/multimodal_data/kinetics_0107.mp4
     data_type: video_path
     is_objective: false
     role: user

@@ -22,7 +22,7 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "airt" / "illegal.prompt")
 
 print(seed_dataset.prompts[0])
 
@@ -70,7 +70,7 @@ print(jailbreak_prompt)
 # %%
 # Load a dataset containing only an objective
 objective_dataset = SeedDataset.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-objective-only-group.prompt"
+    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "examples" / "illegal-objective-only-group.prompt"
 )
 
 # The objective is stored separately from prompts

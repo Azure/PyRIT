@@ -95,7 +95,7 @@ target = OpenAIChatTarget()
 prompt_converters = PromptConverterConfiguration.from_converters(converters=[Base64Converter()])
 attack_converter_config = AttackConverterConfig(request_converters=prompt_converters)
 
-seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "airt" / "illegal.prompt")
 
 objectives = list(seed_dataset.get_values())
 for objective in objectives:

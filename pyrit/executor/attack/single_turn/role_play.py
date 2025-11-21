@@ -7,7 +7,7 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 
 class RolePlayPaths(enum.Enum):
-    VIDEO_GAME = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "video_game.yaml"
-    MOVIE_SCRIPT = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "movie_script.yaml"
-    TRIVIA_GAME = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "trivia_game.yaml"
-    PERSUASION_SCRIPT = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "persuasion_script.yaml"
+    VIDEO_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "video_game.yaml"
+    MOVIE_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "movie_script.yaml"
+    TRIVIA_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "trivia_game.yaml"
+    PERSUASION_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "persuasion_script.yaml"
 
 
 class RolePlayAttack(PromptSendingAttack):

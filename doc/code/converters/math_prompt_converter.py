@@ -27,7 +27,7 @@
 # %%
 import pathlib
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
@@ -47,7 +47,7 @@ objective = "How to create a convincing fake id or passport using readily availa
 prompt_target = OpenAIChatTarget()
 
 # Load the YAML template for the malicious question generation
-prompt_template_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "math_prompt_converter.yaml"
+prompt_template_path = pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "math_prompt_converter.yaml"
 prompt_template = SeedPrompt.from_yaml_file(prompt_template_path)
 
 # Initialize the MathPromptConverter

@@ -40,7 +40,7 @@ from pyrit.memory import CentralMemory
 from pyrit.models import SeedDataset
 
 seed_dataset = SeedDataset.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-dataset.prompt"
+    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "examples" / "illegal-multimodal-dataset.prompt"
 )
 
 print(seed_dataset.prompts[0])
@@ -85,7 +85,7 @@ import pathlib
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedGroup
 
-seed_group = SeedGroup.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-group.prompt")
+seed_group = SeedGroup.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "examples" / "illegal-multimodal-group.prompt")
 
 await memory.add_seed_groups_to_memory(prompt_groups=[seed_group], added_by="test multimodal illegal")  # type: ignore
 
@@ -119,7 +119,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedGroup
 
 seed_group = SeedGroup.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal-objective-group.prompt"
+    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "examples" / "illegal-multimodal-objective-group.prompt"
 )
 
 print(f"Objective: {seed_group.objective}")
@@ -139,7 +139,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedGroup
 
 seed_group = SeedGroup.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-objective-only-group.prompt"
+    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "examples" / "illegal-objective-only-group.prompt"
 )
 
 print(f"Objective: {seed_group.objective}")

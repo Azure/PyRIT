@@ -22,7 +22,7 @@ prompts:
   - dataset_name: TestObjectiveMultiModal
     source: AI Red Team
     value: |
-      {{ datasets_path }}/seed_prompts/multimodal_data/roakey_potion.png
+      {{ datasets_path }}/seed_prompts/examples/multimodal_data/roakey_potion.png
     data_type: image_path
     sequence: 1
     prompt_group_alias: group_1

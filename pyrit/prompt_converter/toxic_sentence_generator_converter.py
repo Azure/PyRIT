@@ -10,7 +10,7 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -50,7 +50,7 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
             prompt_template
             if prompt_template
             else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "toxic_sentence_generator.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "toxic_sentence_generator.yaml"
             )
         )
 
