@@ -157,17 +157,17 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
             result (ScenarioResult): The scenario result.
         """
         print()
-        self._print_colored("═" * self._width, Fore.CYAN)
+        self._print_colored("=" * self._width, Fore.CYAN)
         header_text = f"📊 SCENARIO RESULTS: {result.scenario_identifier.name}"
         self._print_colored(header_text.center(self._width), Style.BRIGHT, Fore.CYAN)
-        self._print_colored("═" * self._width, Fore.CYAN)
+        self._print_colored("=" * self._width, Fore.CYAN)
 
     def _print_footer(self) -> None:
         """
         Print a footer separator.
         """
         print()
-        self._print_colored("═" * self._width, Fore.CYAN)
+        self._print_colored("=" * self._width, Fore.CYAN)
         print()
 
     def _print_scorer_info(self, scorer_identifier: dict, *, indent_level: int = 2) -> None:
