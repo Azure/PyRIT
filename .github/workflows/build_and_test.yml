@@ -28,7 +28,7 @@ jobs:
       contents: read
 
     env:
-      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip/
+      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
 
     steps:
       - uses: actions/checkout@v3
