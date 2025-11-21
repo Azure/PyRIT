@@ -7,7 +7,7 @@ from __future__ import annotations
 Scenario registry for discovering and instantiating PyRIT scenarios.
 
 This module provides functionality to discover all available Scenario subclasses
-from the pyrit.scenarios.scenarios module and from user-defined initialization scripts.
+from the pyrit.scenario.scenarios module and from user-defined initialization scripts.
 
 PERFORMANCE OPTIMIZATION:
 This module uses lazy imports to minimize overhead during CLI operations:
@@ -45,7 +45,7 @@ class ScenarioRegistry:
     Registry for discovering and managing available scenarios.
 
     This class discovers all Scenario subclasses from:
-    1. Built-in scenarios in pyrit.scenarios.scenarios module
+    1. Built-in scenarios in pyrit.scenario.scenarios module
     2. User-defined scenarios from initialization scripts (set via globals)
 
     Scenarios are identified by their simple name (e.g., "encoding_scenario", "foundry_scenario").
@@ -65,7 +65,7 @@ class ScenarioRegistry:
 
     def _discover_builtin_scenarios(self) -> None:
         """
-        Discover all built-in scenarios from pyrit.scenarios.scenarios module.
+        Discover all built-in scenarios from pyrit.scenario.scenarios module.
 
         This method dynamically imports all modules in the scenarios package
         and registers any Scenario subclasses found.
@@ -94,7 +94,7 @@ class ScenarioRegistry:
 
                 try:
                     # Import the module
-                    full_module_name = f"pyrit.scenarios.scenarios.{module_name}"
+                    full_module_name = f"pyrit.scenario.scenarios.{module_name}"
                     module = importlib.import_module(full_module_name)
 
                     # Find all Scenario subclasses in the module
@@ -142,8 +142,8 @@ class ScenarioRegistry:
                 # Look for Scenario subclasses in the module
                 for name, obj in inspect.getmembers(module, inspect.isclass):
                     if issubclass(obj, Scenario) and obj is not Scenario:
-                        # Check if this is a user-defined class (not from pyrit.scenarios.scenarios)
-                        if not obj.__module__.startswith("pyrit.scenarios.scenarios"):
+                        # Check if this is a user-defined class (not from pyrit.scenario.scenarios)
+                        if not obj.__module__.startswith("pyrit.scenario.scenarios"):
                             # Convert class name to snake_case for scenario name
                             scenario_name = self._class_name_to_scenario_name(obj.__name__)
                             self._scenarios[scenario_name] = obj

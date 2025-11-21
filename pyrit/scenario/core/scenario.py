@@ -41,7 +41,7 @@ class Scenario(ABC):
     aggregates the results into a ScenarioResult.
 
     Example:
-        >>> from pyrit.scenarios import Scenario, AtomicAttack
+        >>> from pyrit.scenario import Scenario, AtomicAttack
         >>> from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
         >>> from pyrit.prompt_target import OpenAIChatTarget
         >>> from pyrit.prompt_converter import Base64Converter
