@@ -108,7 +108,7 @@ jobs:
 
       - name: Install dev extras
         run: |
-          TMPDIR="$env:PIP_CACHE_DIR" pip install --cache-dir "$env:PIP_CACHE_DIR" --build "$env:PIP_CACHE_DIR" '.[dev,all]'
+          pip install --cache-dir "$env:PIP_CACHE_DIR" '.[dev,all]'
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
