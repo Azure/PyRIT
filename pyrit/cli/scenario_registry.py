@@ -35,7 +35,7 @@ PYRIT_PATH = Path(__file__).parent.parent.resolve()
 # Lazy import to avoid loading heavy scenario modules when just listing scenarios
 if TYPE_CHECKING:
     from pyrit.cli.frontend_core import ScenarioInfo
-    from pyrit.scenarios.scenario import Scenario
+    from pyrit.scenario.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 
@@ -70,10 +70,10 @@ class ScenarioRegistry:
         This method dynamically imports all modules in the scenarios package
         and registers any Scenario subclasses found.
         """
-        from pyrit.scenarios.scenario import Scenario
+        from pyrit.scenario.scenario import Scenario
 
         try:
-            import pyrit.scenarios.scenarios as scenarios_package
+            import pyrit.scenario.scenarios as scenarios_package
 
             # Get the path to the scenarios package
             package_file = scenarios_package.__file__
@@ -121,7 +121,7 @@ class ScenarioRegistry:
 
         User scenarios will override built-in scenarios with the same name.
         """
-        from pyrit.scenarios.scenario import Scenario
+        from pyrit.scenario.scenario import Scenario
 
         try:
             # Check the global namespace for Scenario subclasses

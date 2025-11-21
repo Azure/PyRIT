@@ -23,8 +23,8 @@ from pyrit.memory.memory_models import ScenarioResultEntry
 from pyrit.models import AttackResult
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.prompt_target import PromptTarget
-from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario_strategy import (
+from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )

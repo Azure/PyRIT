@@ -16,9 +16,9 @@ from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
-from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_strategy import (
+from pyrit.scenario.atomic_attack import AtomicAttack
+from pyrit.scenario.scenario import Scenario
+from pyrit.scenario.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )

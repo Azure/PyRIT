@@ -211,7 +211,7 @@ async def run_scenario_async(
     Note:
         Initializers from PyRITContext will be run before the scenario executes.
     """
-    from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
+    from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
     from pyrit.setup import initialize_pyrit
 
     # Ensure context is initialized first (loads registries)
