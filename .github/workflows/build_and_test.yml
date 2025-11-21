@@ -29,7 +29,7 @@ jobs:
 
     env:
       PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip/
-      TMPDIR: ${{ github.workspace }}/.cache/pip/
+      # TMPDIR: ${{ github.workspace }}/.cache/pip/
 
     steps:
       - uses: actions/checkout@v3
@@ -40,7 +40,7 @@ jobs:
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.TMPDIR }}
+          path: ${{ env.PIP_CACHE_DIR }}
           key: ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
@@ -58,7 +58,7 @@ jobs:
         run: python -m pip install --upgrade pip setuptools packaging
 
       - name: Install dev extras
-        run: pip install --cache-dir "$TMPDIR" --build "$TMPDIR" .[dev,all]
+        run: pip install --cache-dir "$PIP_CACHE_DIR" .[dev,all]
 
       - name: Log disk space
         run: df -all -h
