@@ -10,8 +10,9 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenario import ScenarioResult, ScenarioIdentifier
+from pyrit.scenario import ScenarioIdentifier, ScenarioResult
 from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
+
 
 def save_attack_results_to_memory(attack_results):
     """Helper function to save attack results to memory (mimics what real attacks do)."""

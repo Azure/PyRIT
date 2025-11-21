@@ -236,8 +236,8 @@ class Scenario(ABC):
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to all
                 attack runs in the scenario. These help track and categorize the scenario.
 
-        Returns:
-            None
+        Raises:
+            ValueError: If no objective_target is provided.
 
         Example:
             >>> # New scenario
@@ -552,6 +552,7 @@ class Scenario(ABC):
             ValueError: If the scenario has no atomic attacks configured. If your scenario
                 requires initialization, call await scenario.initialize() first.
             ValueError: If the scenario raises an exception after exhausting all retry attempts.
+            RuntimeError: If the scenario fails for any other reason while executing.
 
         Example:
             >>> result = await scenario.run_async()
@@ -610,7 +611,7 @@ class Scenario(ABC):
 
     async def _execute_scenario_async(self) -> ScenarioResult:
         """
-        Internal method that performs a single execution attempt of the scenario.
+        Perform a single execution attempt of the scenario.
 
         This method contains the core execution logic and can be called multiple times
         for retry attempts. It increments the try counter, executes remaining atomic attacks,
@@ -621,6 +622,8 @@ class Scenario(ABC):
 
         Raises:
             Exception: Any exception that occurs during scenario execution.
+            ValueError: If a lookup for a scenario for a given ID fails.
+            ValueError: If atomic attack execution fails.
         """
         logger.info(f"Starting scenario '{self._name}' execution with {len(self._atomic_attacks)} atomic attacks")
 
