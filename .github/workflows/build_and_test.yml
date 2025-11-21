@@ -60,7 +60,7 @@ jobs:
       - name: Install dev extras
         run: pip install --cache-dir "$PIP_CACHE_DIR" .[dev,all]
 
-      - name: disk space
+      - name: Log disk space
         run: df -all -h
 
       - name: Run pre-commit incrementally (on PR)
@@ -113,6 +113,9 @@ jobs:
       - name: Install dev extras
         run: |
           pip install --cache-dir "$env:PIP_CACHE_DIR" '.[dev,all]'
+
+      - name: Log disk space
+        run: df -all -h
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
@@ -179,7 +182,8 @@ jobs:
           else
             extras="${{ matrix.package_extras }}"
           fi
-            pip install --cache-dir "$PIP_CACHE_DIR" --build "$PIP_CACHE_DIR" ".[${extras}]"
+            
+          pip install --cache-dir "$PIP_CACHE_DIR" --build "$PIP_CACHE_DIR" ".[${extras}]"
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
