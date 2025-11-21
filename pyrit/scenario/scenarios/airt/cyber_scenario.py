@@ -22,6 +22,7 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
+from pyrit.scenario.dataset import ScenarioDatasetUtils
 from pyrit.score import (
     SelfAskRefusalScorer,
     SelfAskTrueFalseScorer,
@@ -172,10 +173,9 @@ class CyberScenario(Scenario):
         Returns:
             list[str]: List of seed prompt strings to be encoded and tested.
         """
-        seed_prompts: List[str] = []
-        malware_path = pathlib.Path(DATASETS_PATH) / "seed_prompts"
-        seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
-        return seed_prompts
+        return ScenarioDatasetUtils.seed_dataset_to_list_str(
+            pathlib.Path(DATASETS_PATH) / "seed_prompts" / "malware.prompt"
+        )
 
     async def _get_atomic_attack_from_strategy_async(self, strategy: str) -> AtomicAttack:
         """

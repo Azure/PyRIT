@@ -14,7 +14,6 @@ from inspect import signature
 from typing import List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
-from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
 from pyrit.datasets.text_jailbreak import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
@@ -62,6 +61,7 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
+from pyrit.scenario.dataset import ScenarioDatasetUtils
 from pyrit.score import (
     AzureContentFilterScorer,
     FloatScaleThresholdScorer,
@@ -265,7 +265,13 @@ class FoundryScenario(Scenario):
             objectives
             if objectives
             else list(
-                fetch_harmbench_dataset().get_random_values(
+                ScenarioDatasetUtils.get_seed_dataset("harmbench").get_random_values(
+                    number=4, harm_categories=["harmful", "harassment_bullying"]
+                )
+            )
+            
+            else list(
+                .get_random_values(
                     number=4, harm_categories=["harmful", "harassment_bullying"]
                 )
             )
