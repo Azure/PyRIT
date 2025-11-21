@@ -10,12 +10,8 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.scenario import (
-    ScenarioIdentifier,
-    ScenarioResult,
-    ScenarioStrategy,
-)
+from pyrit.scenario import ScenarioIdentifier, ScenarioResult
+from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
 
 
 def save_attack_results_to_memory(attack_results):
@@ -113,7 +109,7 @@ class ConcreteScenario(Scenario):
     def get_strategy_class(cls):
         """Return a mock strategy class for testing."""
 
-        from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+        from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
 
         # Return a simple mock strategy class for testing
         class TestStrategy(ScenarioStrategy):

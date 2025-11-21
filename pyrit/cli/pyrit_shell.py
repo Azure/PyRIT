@@ -296,7 +296,7 @@ class PyRITShell(cmd.Cmd):
                 print(f"\n{'#' * 80}")
                 print(f"Scenario Run #{idx}: {command}")
                 print(f"{'#' * 80}")
-                from pyrit.scenarios.printer.console_printer import (
+                from pyrit.scenario.printer.console_printer import (
                     ConsoleScenarioResultPrinter,
                 )
 
@@ -313,7 +313,7 @@ class PyRITShell(cmd.Cmd):
                 command, result = self._scenario_history[scenario_num - 1]
                 print(f"\nScenario Run #{scenario_num}: {command}")
                 print("=" * 80)
-                from pyrit.scenarios.printer.console_printer import (
+                from pyrit.scenario.printer.console_printer import (
                     ConsoleScenarioResultPrinter,
                 )
 
