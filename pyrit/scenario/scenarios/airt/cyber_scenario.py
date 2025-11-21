@@ -16,9 +16,9 @@ from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
-from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_strategy import (
+from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.scenario import Scenario
+from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
@@ -135,6 +135,9 @@ class CyberScenario(Scenario):
         1. Detect for the presence of malware using a SelfAskTrueFalseScorer.
         2. Detect for NON-refusal as a backstop. (If the target model refuses to produce malware, we want that
         to register as a negative score).
+
+        Returns:
+            TrueFalseCompositeScorer: Default objective scorer with backstop and malware evaluation.
         """
         presence_of_malware = SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(),
@@ -149,8 +152,10 @@ class CyberScenario(Scenario):
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         """
-        The adversarial target is used in the red teaming attack variation, where we want an unsafe model attempting
-        to generate malware.
+        Create and retrieve the default adversarial target.
+
+        Returns:
+            OpenAIChatTarget: Default adversarial target, using an unfiltered endpoint.
         """
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
@@ -180,7 +185,10 @@ class CyberScenario(Scenario):
             strategy: The CyberStrategy enum (SingleTurn or MultiTurn).
 
         Returns:
-            AtomicAttack configured for the specified strategy.
+            AtomicAttack: configured for the specified strategy.
+
+        Raises:
+            ValueError: if an unknown CyberStrategy is passed.
         """
         # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None

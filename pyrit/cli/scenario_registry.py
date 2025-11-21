@@ -7,7 +7,7 @@ from __future__ import annotations
 Scenario registry for discovering and instantiating PyRIT scenarios.
 
 This module provides functionality to discover all available Scenario subclasses
-from the pyrit.scenarios.scenarios module and from user-defined initialization scripts.
+from the pyrit.scenario.scenarios module and from user-defined initialization scripts.
 
 PERFORMANCE OPTIMIZATION:
 This module uses lazy imports to minimize overhead during CLI operations:
@@ -35,7 +35,7 @@ PYRIT_PATH = Path(__file__).parent.parent.resolve()
 # Lazy import to avoid loading heavy scenario modules when just listing scenarios
 if TYPE_CHECKING:
     from pyrit.cli.frontend_core import ScenarioInfo
-    from pyrit.scenarios.scenario import Scenario
+    from pyrit.scenario.core import Scenario
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ScenarioRegistry:
     Registry for discovering and managing available scenarios.
 
     This class discovers all Scenario subclasses from:
-    1. Built-in scenarios in pyrit.scenarios.scenarios module
+    1. Built-in scenarios in pyrit.scenario.scenarios module
     2. User-defined scenarios from initialization scripts (set via globals)
 
     Scenarios are identified by their simple name (e.g., "encoding_scenario", "foundry_scenario").
@@ -65,15 +65,15 @@ class ScenarioRegistry:
 
     def _discover_builtin_scenarios(self) -> None:
         """
-        Discover all built-in scenarios from pyrit.scenarios.scenarios module.
+        Discover all built-in scenarios from pyrit.scenario.scenarios module.
 
         This method dynamically imports all modules in the scenarios package
         and registers any Scenario subclasses found.
         """
-        from pyrit.scenarios.scenario import Scenario
+        from pyrit.scenario.core import Scenario
 
         try:
-            import pyrit.scenarios.scenarios as scenarios_package
+            import pyrit.scenario.scenarios as scenarios_package
 
             # Get the path to the scenarios package
             package_file = scenarios_package.__file__
@@ -94,7 +94,7 @@ class ScenarioRegistry:
 
                 try:
                     # Import the module
-                    full_module_name = f"pyrit.scenarios.scenarios.{module_name}"
+                    full_module_name = f"pyrit.scenario.scenarios.{module_name}"
                     module = importlib.import_module(full_module_name)
 
                     # Find all Scenario subclasses in the module
@@ -121,7 +121,7 @@ class ScenarioRegistry:
 
         User scenarios will override built-in scenarios with the same name.
         """
-        from pyrit.scenarios.scenario import Scenario
+        from pyrit.scenario.core import Scenario
 
         try:
             # Check the global namespace for Scenario subclasses
@@ -142,8 +142,8 @@ class ScenarioRegistry:
                 # Look for Scenario subclasses in the module
                 for name, obj in inspect.getmembers(module, inspect.isclass):
                     if issubclass(obj, Scenario) and obj is not Scenario:
-                        # Check if this is a user-defined class (not from pyrit.scenarios.scenarios)
-                        if not obj.__module__.startswith("pyrit.scenarios.scenarios"):
+                        # Check if this is a user-defined class (not from pyrit.scenario.scenarios)
+                        if not obj.__module__.startswith("pyrit.scenario.scenarios"):
                             # Convert class name to snake_case for scenario name
                             scenario_name = self._class_name_to_scenario_name(obj.__name__)
                             self._scenarios[scenario_name] = obj

@@ -597,7 +597,7 @@ class TestRunScenarioAsync:
     """Tests for run_scenario_async function."""
 
     @patch("pyrit.setup.initialize_pyrit")
-    @patch("pyrit.scenarios.printer.console_printer.ConsoleScenarioResultPrinter")
+    @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_basic(
         self,
         mock_printer_class: MagicMock,
@@ -655,7 +655,7 @@ class TestRunScenarioAsync:
             )
 
     @patch("pyrit.setup.initialize_pyrit")
-    @patch("pyrit.scenarios.printer.console_printer.ConsoleScenarioResultPrinter")
+    @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_strategies(
         self,
         mock_printer_class: MagicMock,
@@ -701,7 +701,7 @@ class TestRunScenarioAsync:
         assert "scenario_strategies" in call_kwargs
 
     @patch("pyrit.setup.initialize_pyrit")
-    @patch("pyrit.scenarios.printer.console_printer.ConsoleScenarioResultPrinter")
+    @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_initializers(
         self,
         mock_printer_class: MagicMock,
@@ -740,7 +740,7 @@ class TestRunScenarioAsync:
         mock_initializer_registry.get_initializer_class.assert_called_once_with(name="test_init")
 
     @patch("pyrit.setup.initialize_pyrit")
-    @patch("pyrit.scenarios.printer.console_printer.ConsoleScenarioResultPrinter")
+    @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_max_concurrency(
         self,
         mock_printer_class: MagicMock,
@@ -779,7 +779,7 @@ class TestRunScenarioAsync:
         assert call_kwargs["max_concurrency"] == 5
 
     @patch("pyrit.setup.initialize_pyrit")
-    @patch("pyrit.scenarios.printer.console_printer.ConsoleScenarioResultPrinter")
+    @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_without_print_summary(
         self,
         mock_printer_class: MagicMock,
