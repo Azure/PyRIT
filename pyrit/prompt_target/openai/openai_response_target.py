@@ -340,9 +340,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self,
         *,
         message: Message,
-        conversation: MutableSequence[Message],
-    ) -> Optional[dict[str, Any]]:
-        """Send the prompt and return the last pending tool call, if any."""
+    ) -> tuple[Message, Optional[dict[str, Any]]]:
+        """Send the prompt and return the assistant message and any pending tool call.
+        
+        Returns:
+            Tuple of (assistant_message, tool_call_dict_or_none)
+        """
         # Core send logic with error handling
         self._validate_request(message=message)
         message_piece: MessagePiece = message.message_pieces[0]
@@ -354,13 +357,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         
         body = await self._construct_request_body(conversation=conv, is_json_response=is_json_response)
         
-        # Post-process function to append to conversation and extract tool calls
-        def append_and_find_tool_call(assistant_reply):
-            conversation.append(assistant_reply)
-            return self._find_last_pending_tool_call(assistant_reply)
-        
         # Use unified error handling with Response API content filter check
-        return await handle_openai_completion_with_errors(
+        result = await handle_openai_completion_with_errors(
             make_request_fn=lambda: self._async_client.responses.create(**body),
             message_piece=message_piece,
             check_content_filter_fn=_check_response_api_content_filter,
@@ -369,8 +367,14 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 message_piece=message_piece,
                 parse_section_fn=self._parse_response_output_section,
             ),
-            post_process_fn=append_and_find_tool_call,
         )
+        
+        # Append the result (success or error) to memory conversation
+        conv.append(result)
+        
+        # Extract tool call if present (will be None for errors)
+        tool_call = self._find_last_pending_tool_call(result)
+        return result, tool_call
 
     @limit_requests_per_minute
     @limit_requests_per_minute
@@ -385,11 +389,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         Returns:
             The final Message with the assistant's answer.
         """
-        conversation: MutableSequence[Message] = [message]
-
-        tool_call_section = await self._send_prompt_and_find_tool_call_async(
-            message=message, conversation=conversation
-        )
+        assistant_message, tool_call_section = await self._send_prompt_and_find_tool_call_async(message=message)
+        
         while tool_call_section:
             # Execute the tool/function
             tool_output = await self._execute_call_section(tool_call_section)
@@ -401,65 +402,66 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             tool_message = self._make_tool_message(
                 tool_output, tool_call_section["call_id"], reference_piece=reference_piece
             )
-            conversation.append(tool_message)
-
-            # Re-ask with combined history (user + function_call + function_call_output)
+            
+            # Build combined message with all conversation history for next request
+            # Get full conversation from memory
+            conv = self._memory.get_conversation(conversation_id=reference_piece.conversation_id)
+            conv.append(tool_message)
+            
             merged: List[MessagePiece] = []
-            for msg in conversation:
+            for msg in conv:
                 merged.extend(msg.message_pieces)
 
             # TODO: There is likely a bug here; there are different roles in a single response??
             message = Message(message_pieces=merged, skip_validation=True)
 
             # Send again and check for another tool call
-            tool_call_section = await self._send_prompt_and_find_tool_call_async(
-                message=message, conversation=conversation
-            )
+            assistant_message, tool_call_section = await self._send_prompt_and_find_tool_call_async(message=message)
 
-        # No other tool call found, so assistant message is complete and return last assistant reply!
-        return conversation[-1]
+        # No other tool call found, return the final assistant message
+        return assistant_message
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return True
 
     def _parse_response_output_section(
-        self, *, section: dict, message_piece: MessagePiece, error: Optional[PromptResponseError]
+        self, *, section, message_piece: MessagePiece, error: Optional[PromptResponseError]
     ) -> MessagePiece | None:
         """
         Parse model output sections, forwarding tool-calls for the agentic loop.
 
         Args:
-            section: The section dict from OpenAI output.
+            section: The section object from OpenAI SDK (Pydantic model).
             message_piece: The original message piece.
             error: Any error information from OpenAI.
 
         Returns:
             A MessagePiece for this section, or None to skip.
         """
-        section_type = section.get("type", "")
+        section_type = section.type
         piece_type: PromptDataType = "text"  # Default, always set!
         piece_value = ""
 
         if section_type == MessagePieceType.MESSAGE:
-            section_content = section.get("content", [])
+            section_content = section.content
             if len(section_content) == 0:
                 raise EmptyResponseException(message="The chat returned an empty message section.")
-            piece_value = section_content[0].get("text", "")
+            piece_value = section_content[0].text
 
         elif section_type == MessagePieceType.REASONING:
             # Keep the full reasoning JSON as a piece (internal use / debugging)
-            piece_value = json.dumps(section, separators=(",", ":"))
+            piece_value = json.dumps(section.model_dump(), separators=(",", ":"))
             piece_type = "reasoning"
 
         elif section_type == MessagePieceType.FUNCTION_CALL:
             # Forward the tool call verbatim so the agentic loop can execute it
-            piece_value = json.dumps(section, separators=(",", ":"))
+            piece_value = json.dumps(section.model_dump(), separators=(",", ":"))
             piece_type = "function_call"
 
         elif section_type == MessagePieceType.WEB_SEARCH_CALL:
             # Forward web_search_call verbatim as a tool_call
-            piece_value = json.dumps(section, separators=(",", ":"))
+            piece_value = json.dumps(section.model_dump(), separators=(",", ":"))
             piece_type = "tool_call"
 
         elif section_type == "custom_tool_call":
@@ -467,13 +469,13 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             # See
             # https://platform.openai.com/docs/guides/function-calling#context-free-grammars
             logger.debug("Detected custom_tool_call in response, assuming grammar constraint.")
-            extracted_grammar_name = section.get("name")
+            extracted_grammar_name = section.name
             if extracted_grammar_name != self._grammar_name:
                 msg = "Mismatched grammar name in custom_tool_call "
                 msg += f"(expected {self._grammar_name}, got {extracted_grammar_name})"
                 logger.error(msg)
                 raise ValueError(msg)
-            piece_value = section.get("input", "")
+            piece_value = section.input
             if len(piece_value) == 0:
                 raise EmptyResponseException(message="The chat returned an empty message section.")
 

@@ -410,7 +410,6 @@ async def handle_openai_completion_with_errors(
     message_piece: MessagePiece,
     check_content_filter_fn: Callable[[Any], bool],
     construct_message_fn: Callable,
-    post_process_fn: Optional[Callable[[Any], Any]] = None,
     *args,
     **kwargs
 ) -> Any:
@@ -433,11 +432,10 @@ async def handle_openai_completion_with_errors(
         message_piece: The MessagePiece being processed (for error responses).
         check_content_filter_fn: Function to check if the completion has content_filter error.
         construct_message_fn: Function to convert completion response to Message format.
-        post_process_fn: Optional function to post-process the constructed message (e.g., extract tool calls).
         *args, **kwargs: Additional arguments to pass to make_request_fn.
         
     Returns:
-        The constructed Message from the completion (optionally post-processed), or an error Message.
+        The constructed Message from the completion, or an error Message.
         
     Raises:
         RateLimitException: For 429 rate limit errors.
@@ -450,21 +448,17 @@ async def handle_openai_completion_with_errors(
         # The SDK doesn't always raise ContentFilterFinishReasonError for standard completions
         if check_content_filter_fn(completion):
             logger.warning("Output content filtered (detected in response)")
+            # Extract the full error details including content_filter_result
+            error_details = completion.model_dump_json()
             return handle_bad_request_exception(
-                response_text="Output filtered by content policy.",
+                response_text=error_details,
                 request=message_piece,
                 error_code=200,  # Soft-fail with 200 for output filtering
                 is_content_filter=True,
             )
 
         # Convert the SDK response to Message format
-        result = construct_message_fn(completion_response=completion, message_piece=message_piece)
-        
-        # Apply optional post-processing (e.g., extract tool calls for Response API)
-        if post_process_fn is not None:
-            result = post_process_fn(result)
-        
-        return result
+        return construct_message_fn(completion_response=completion, message_piece=message_piece)
 
     except ContentFilterFinishReasonError as e:
         # Content filter error raised by SDK during parse/structured output flows

@@ -153,7 +153,9 @@ class OpenAISoraTarget(OpenAITarget):
                 logger.info(f"Video generation completed successfully: {video.id}")
                 
                 # Download video content using SDK
-                video_content = await self._async_client.videos.download_content(video.id)
+                video_response = await self._async_client.videos.download_content(video.id)
+                # Extract bytes from HttpxBinaryResponseContent
+                video_content = video_response.content
                 
                 # Save the video to storage
                 return await self._save_video_response(request=request, video_data=video_content)

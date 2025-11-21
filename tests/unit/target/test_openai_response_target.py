@@ -36,7 +36,7 @@ def create_mock_response(response_dict: dict = None) -> MagicMock:
                       If None, uses default from openai_response_json_dict().
     
     Returns:
-        A mock object that simulates the OpenAI SDK response.
+        A mock object that simulates the OpenAI SDK response with Pydantic-style attribute access.
     """
     if response_dict is None:
         response_dict = openai_response_json_dict()
@@ -48,14 +48,26 @@ def create_mock_response(response_dict: dict = None) -> MagicMock:
     mock_response.error = response_dict.get("error")  # Should be None for successful responses
     mock_response.status = response_dict.get("status")  # Should be "completed" for successful responses
     
-    # Mock the output sections
+    # Mock the output sections with Pydantic-style attribute access
     if "output" in response_dict:
-        # Create mock objects for each output section that support .get() like dicts
         output_mocks = []
         for section in response_dict["output"]:
             section_mock = MagicMock()
-            # Make the mock behave like a dict with .get()
-            section_mock.get = lambda key, default=None, section=section: section.get(key, default)
+            # Set attributes directly for Pydantic-style access
+            section_mock.type = section.get("type")
+            
+            # Handle different section types
+            if section.get("type") == "message":
+                # Mock content array with text attribute
+                content_mocks = []
+                for content_item in section.get("content", []):
+                    content_mock = MagicMock()
+                    content_mock.text = content_item.get("text", "")
+                    content_mocks.append(content_mock)
+                section_mock.content = content_mocks
+            
+            # Add model_dump for JSON serialization
+            section_mock.model_dump.return_value = section
             output_mocks.append(section_mock)
         mock_response.output = output_mocks
     else:
@@ -522,6 +534,12 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
         "model": "o4-mini",
     }
     mock_response = create_mock_response(content_filter_response)
+    # Fix the error object to have proper attributes
+    mock_error = MagicMock()
+    mock_error.code = "content_filter"
+    mock_error.message = "Content filtered"
+    mock_response.error = mock_error
+    mock_response.model_dump_json.return_value = json.dumps(content_filter_response)
     target._async_client.responses.create = AsyncMock(return_value=mock_response)
 
     response = await target.send_prompt_async(message=message)
@@ -941,25 +959,24 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
     call_counter = {"n": 0}
 
     # 4) Mock the internal parts to return first the function_call reply, then the final reply
-    def fake_construct_message(*, completion_response, message_piece: MessagePiece) -> Message:
-        # Return first reply on first call, second on subsequent calls
+    def fake_construct_message(*, completion_response, message_piece: MessagePiece, **kwargs) -> Message:
+        # Return first reply on first call, second on subsequent calls (ignore other kwargs like parse_section_fn)
         call_counter["n"] += 1
         return first_reply if call_counter["n"] == 1 else second_reply
 
-    # Mock the SDK client's response creation and the message construction
-    with patch.object(
-        target._async_client.responses, "create", new_callable=AsyncMock
-    ) as mock_create, \
-    patch.object(
-        target, "_construct_message_from_completion_response",
-        side_effect=fake_construct_message,
-    ):
-        final = await target.send_prompt_async(message=user_req)
+    # Patch construct_response_message where it's imported in the response_target module
+    with patch("pyrit.prompt_target.openai.openai_response_target.construct_response_message",
+               side_effect=fake_construct_message):
+        # Mock the SDK's create method - doesn't need proper structure since construct_response_message is patched
+        with patch.object(target._async_client.responses, "create", new_callable=AsyncMock) as mock_create:
+            mock_create.return_value = MagicMock()  # Dummy object, won't be used
+            
+            final = await target.send_prompt_async(message=user_req)
 
-        # Should get the final (non-tool-call) assistant message
-        assert len(final.message_pieces) == 1
-        assert final.message_pieces[0].original_value_data_type == "text"
-        assert final.message_pieces[0].original_value == "Done: 14"
+            # Should get the final (non-tool-call) assistant message
+            assert len(final.message_pieces) == 1
+            assert final.message_pieces[0].original_value_data_type == "text"
+            assert final.message_pieces[0].original_value == "Done: 14"
 
 
 def test_invalid_temperature_raises(patch_central_database):
