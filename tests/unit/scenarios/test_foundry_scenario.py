@@ -12,7 +12,7 @@ from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenarios import AtomicAttack, FoundryScenario, FoundryStrategy
+from pyrit.scenario import AtomicAttack, FoundryScenario, FoundryStrategy
 from pyrit.score import TrueFalseScorer
 
 
