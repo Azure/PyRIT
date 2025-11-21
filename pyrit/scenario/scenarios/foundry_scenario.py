@@ -269,12 +269,6 @@ class FoundryScenario(Scenario):
                     number=4, harm_categories=["harmful", "harassment_bullying"]
                 )
             )
-            
-            else list(
-                .get_random_values(
-                    number=4, harm_categories=["harmful", "harassment_bullying"]
-                )
-            )
         )
 
         super().__init__(
