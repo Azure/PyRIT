@@ -168,7 +168,7 @@ class CyberScenario(Scenario):
             list[str]: List of seed prompt strings to be encoded and tested.
         """
         seed_prompts: List[str] = []
-        malware_path = pathlib.Path(DATASETS_PATH) / "seed_prompts"
+        malware_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "airt"
         seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
         return seed_prompts
 
