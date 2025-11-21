@@ -188,7 +188,6 @@ class SkeletonKeyAttack(PromptSendingAttack):
         Returns:
             AttackResult: The failure result.
         """
-
         return AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,

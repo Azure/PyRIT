@@ -7,6 +7,15 @@ from pyrit.models import SeedDataset, SeedPrompt
 
 
 def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedDataset:
+    """
+    Fetch the LLM-LAT harmful dataset from Hugging Face.
+
+    This dataset contains prompts used to assess and analyze harmful behaviors in large
+    language models. It is sourced from the LLM-LAT/harmful-dataset repository.
+
+    Returns:
+        SeedDataset: A dataset containing harmful prompts for LLM testing.
+    """
     data = load_dataset("LLM-LAT/harmful-dataset", "default")
 
     prompts = [item["prompt"] for item in data["train"]]

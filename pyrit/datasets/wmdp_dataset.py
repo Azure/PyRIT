@@ -22,11 +22,13 @@ def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDatas
     Returns:
         QuestionAnsweringDataset: A QuestionAnsweringDataset containing the examples.
 
+    Raises:
+        ValueError: If the category parameter is not one of the expected values.
+
     Note:
         For more information and access to the original dataset and related materials, visit:
         https://huggingface.co/datasets/cais/wmdp
     """
-
     # Determine which subset of data to load
     data_categories = None
     if not category:  # if category is not specified, read in all 3 subsets of data

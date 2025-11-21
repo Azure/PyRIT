@@ -9,14 +9,14 @@ from pyrit.models import ChatMessage
 
 class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
     """
-    This class enables you to apply the chat template stored in a Hugging Face tokenizer
+    Enable application of the chat template stored in a Hugging Face tokenizer
     to a list of chat messages. For more details, see
-    https://huggingface.co/docs/transformers/main/en/chat_templating
+    https://huggingface.co/docs/transformers/main/en/chat_templating.
     """
 
     def __init__(self, tokenizer: PreTrainedTokenizerBase):
         """
-        Initializes an instance of the ChatMessageNormalizerTokenizerTemplate class.
+        Initialize an instance of the ChatMessageNormalizerTokenizerTemplate class.
 
         Args:
             tokenizer (PreTrainedTokenizerBase): A Hugging Face tokenizer.
@@ -25,7 +25,7 @@ class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
 
     def normalize(self, messages: list[ChatMessage]) -> str:
         """
-        Applies the chat template stored in the tokenizer to a list of chat messages.
+        Apply the chat template stored in the tokenizer to a list of chat messages.
 
         Args:
             messages (list[ChatMessage]): A list of ChatMessage objects.
@@ -33,7 +33,6 @@ class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
         Returns:
             str: The formatted chat messages.
         """
-
         messages_list = []
 
         formatted_messages: str = ""

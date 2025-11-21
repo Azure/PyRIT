@@ -1,6 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""
+Dataset fetching and loading utilities for various red teaming and safety evaluation datasets.
+"""
+
 from pyrit.datasets.adv_bench_dataset import fetch_adv_bench_dataset
 from pyrit.datasets.anthropic_evals_dataset import fetch_anthropic_evals_dataset
 from pyrit.datasets.aya_redteaming_dataset import fetch_aya_redteaming_dataset

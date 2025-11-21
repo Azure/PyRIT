@@ -123,7 +123,6 @@ class AtomicAttack:
             TypeError: If seed_groups is provided for multi-turn attacks or
                 custom_prompts is provided for single-turn attacks.
         """
-
         self.atomic_attack_name = atomic_attack_name
 
         if not objectives:
@@ -213,7 +212,11 @@ class AtomicAttack:
             )
 
     async def run_async(
-        self, *, max_concurrency: int = 1, return_partial_on_failure: bool = True
+        self,
+        *,
+        max_concurrency: int = 1,
+        return_partial_on_failure: bool = True,
+        **attack_params,
     ) -> AttackExecutorResult[AttackResult]:
         """
         Execute the atomic attack against all objectives in the dataset.
@@ -236,6 +239,7 @@ class AtomicAttack:
             return_partial_on_failure (bool): If True, returns partial results even when
                 some objectives don't complete execution. If False, raises an exception on
                 any execution failure. Defaults to True.
+            **attack_params: Additional parameters to pass to the attack strategy.
 
         Returns:
             AttackExecutorResult[AttackResult]: Result containing completed attack results and
@@ -268,6 +272,7 @@ class AtomicAttack:
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
                     return_partial_on_failure=return_partial_on_failure,
+                    **self._attack_execute_params,
                 )
             elif self._context_type == "multi_turn":
                 results = await executor.execute_multi_turn_attacks_async(
@@ -277,6 +282,7 @@ class AtomicAttack:
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
                     return_partial_on_failure=return_partial_on_failure,
+                    **self._attack_execute_params,
                 )
             else:
                 # Fall back to generic execute_multi_objective_attack_async

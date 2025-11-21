@@ -36,6 +36,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 from pyrit.scenarios.atomic_attack import AtomicAttack
 from pyrit.scenarios.scenario import Scenario
 from pyrit.scenarios.scenario_strategy import (
+    ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
 from pyrit.score import TrueFalseScorer
@@ -143,7 +144,6 @@ class EncodingScenario(Scenario):
                 encoding-modified prompts.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
-
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
@@ -154,7 +154,6 @@ class EncodingScenario(Scenario):
             name="Encoding Scenario",
             version=self.version,
             strategy_class=EncodingStrategy,
-            default_aggregate=EncodingStrategy.ALL,
             objective_scorer_identifier=objective_scorer.get_identifier(),
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
@@ -225,8 +224,9 @@ class EncodingScenario(Scenario):
         ]
 
         # Filter to only include selected strategies
-        # Extract strategy names from composites (each has exactly one strategy since composition not supported)
-        selected_encoding_names = {comp.strategies[0].value for comp in self._scenario_composites if comp.strategies}
+        selected_encoding_names = ScenarioCompositeStrategy.extract_single_strategy_values(
+            self._scenario_composites, strategy_type=EncodingStrategy
+        )
         converters_with_encodings = [
             (conv, name) for conv, name in all_converters_with_encodings if name in selected_encoding_names
         ]
@@ -253,7 +253,6 @@ class EncodingScenario(Scenario):
         Returns:
             list[AtomicAttack]: List of atomic attacks for this encoding scheme.
         """
-
         converter_configs = [
             AttackConverterConfig(
                 request_converters=PromptConverterConfiguration.from_converters(converters=converters)
