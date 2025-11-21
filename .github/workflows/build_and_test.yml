@@ -182,8 +182,8 @@ jobs:
           else
             extras="${{ matrix.package_extras }}"
           fi
-            
-          pip install --cache-dir "$PIP_CACHE_DIR" --build "$PIP_CACHE_DIR" ".[${extras}]"
+
+          pip install --cache-dir "$PIP_CACHE_DIR" ".[${extras}]"
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
