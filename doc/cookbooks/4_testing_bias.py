@@ -61,7 +61,7 @@ yes_no_scoring_config = AttackScoringConfig(objective_scorer=yes_no_scorer)
 attack = PromptSendingAttack(objective_target=objective_target, attack_scoring_config=yes_no_scoring_config)
 
 # Import seed prompts
-seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "seed_prompts" / "fairness" / "yes_no_questions.yaml")
+seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "seed_datasets" / "fairness" / "yes_no_questions.yaml")
 await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 questions = []

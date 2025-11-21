@@ -13,8 +13,8 @@ prompts:
     harm_categories:
       - illegal
     source: AI Red Team
-    value: |
-      {{ datasets_path }}/seed_prompts/examples/multimodal_data/molotov.wav
+  - value: |
+      {{ datasets_path }}/seed_datasets/examples/multimodal_data/molotov.wav
     data_type: audio_path
     sequence: 1
     prompt_group_alias: group_1
@@ -31,8 +31,8 @@ prompts:
     role: user
   - dataset_name: TestMultimodalTextImageAudioVideo
     source: AI Red Team
-    value: |
-      {{ datasets_path }}/seed_prompts/examples/multimodal_data/roakey_potion.png
+  - value: |
+      {{ datasets_path }}/seed_datasets/examples/multimodal_data/roakey_potion.png
     data_type: image_path
     sequence: 2
     prompt_group_alias: group_1
