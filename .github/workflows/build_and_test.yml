@@ -108,7 +108,7 @@ jobs:
 
       - name: Install dev extras
         run: |
-          TMPDIR="$env:PIP_CACHE_DIR" pip install --cache-dir "$env:PIP_CACHE_DIR" --build="$env:PIP_CACHE_DIR" '.[dev,all]'
+          TMPDIR="$env:PIP_CACHE_DIR" pip install --cache-dir "$env:PIP_CACHE_DIR" --build "$env:PIP_CACHE_DIR" '.[dev,all]'
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
@@ -174,7 +174,7 @@ jobs:
           else
             extras="${{ matrix.package_extras }}"
           fi
-          TMPDIR="$env:PIP_CACHE_DIR" pip install --cache-dir "$env:PIP_CACHE_DIR" --build="$env:PIP_CACHE_DIR" ".[${extras}]"
+          TMPDIR="$env:PIP_CACHE_DIR" pip install --cache-dir "$env:PIP_CACHE_DIR" --build "$env:PIP_CACHE_DIR" ".[${extras}]"
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
