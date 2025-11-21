@@ -56,9 +56,9 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 )
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
-from pyrit.scenario.atomic_attack import AtomicAttack
-from pyrit.scenario.scenario import Scenario
-from pyrit.scenario.scenario_strategy import (
+from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.scenario import Scenario
+from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )

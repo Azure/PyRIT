@@ -33,9 +33,9 @@ from pyrit.prompt_converter.nato_converter import NatoConverter
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
-from pyrit.scenario.atomic_attack import AtomicAttack
-from pyrit.scenario.scenario import Scenario
-from pyrit.scenario.scenario_strategy import (
+from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.scenario import Scenario
+from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
