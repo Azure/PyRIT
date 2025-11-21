@@ -140,6 +140,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
+      TMPDIR: ${{ github.workspace }}/.cache/pip
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
       contents: read
@@ -182,7 +183,7 @@ jobs:
             extras="${{ matrix.package_extras }}"
           fi
 
-          pip install --cache-dir $PIP_CACHE_DIR ".[${extras}]"
+          TMPDIR=$TMPDIR pip install --cache-dir $PIP_CACHE_DIR ".[${extras}]"
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
