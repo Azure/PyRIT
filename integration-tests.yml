@@ -72,9 +72,9 @@ jobs:
     displayName: 'Install ODBC Driver 18 for SQL Server'
   - bash: pip install .[dev,all] -v --no-cache-dir
     name: install_PyRIT
-  # This step ensures that integration tests are run outside of the PyRIT repository to test that .env files are accessed correctly.
   - bash: df -all -h
     name: disk_space_check
+# This step ensures that integration tests are run outside of the PyRIT repository to test that .env files are accessed correctly.
   - bash: |
       PyRIT_DIR=$(pwd)
       NEW_DIR="integration_test_directory"
