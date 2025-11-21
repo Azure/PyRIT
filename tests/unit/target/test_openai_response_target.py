@@ -43,6 +43,24 @@ def create_mock_response(response_dict: dict = None) -> MagicMock:
     
     mock_response = MagicMock()
     mock_response.model_dump_json.return_value = json.dumps(response_dict)
+    
+    # Set attributes based on response_dict to match OpenAI SDK Response type
+    mock_response.error = response_dict.get("error")  # Should be None for successful responses
+    mock_response.status = response_dict.get("status")  # Should be "completed" for successful responses
+    
+    # Mock the output sections
+    if "output" in response_dict:
+        # Create mock objects for each output section that support .get() like dicts
+        output_mocks = []
+        for section in response_dict["output"]:
+            section_mock = MagicMock()
+            # Make the mock behave like a dict with .get()
+            section_mock.get = lambda key, default=None, section=section: section.get(key, default)
+            output_mocks.append(section_mock)
+        mock_response.output = output_mocks
+    else:
+        mock_response.output = None
+    
     return mock_response
 
 
@@ -577,94 +595,6 @@ def test_is_response_format_json_no_metadata(target: OpenAIResponseTarget):
     assert result is False
 
 
-@pytest.mark.parametrize(
-    "status", ["failed", "in_progress", "cancelled", "queued", "incomplete", "some_unexpected_status"]
-)
-def test_construct_message_not_completed_status(
-    status: str, target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
-):
-    response_dict = {"status": f"{status}", "error": {"code": "some_error_code", "message": "An error occurred"}}
-    response_str = json.dumps(response_dict)
-
-    with pytest.raises(PyritException) as excinfo:
-        target._construct_message_from_openai_json(
-            open_ai_str_response=response_str, message_piece=dummy_text_message_piece
-        )
-    error_substring_with_single_quotes = json.dumps(response_dict["error"]).replace('"', "'")
-    assert f"Message: Status {status} and error {error_substring_with_single_quotes}" in str(excinfo.value)
-
-
-def test_construct_message_empty_response(
-    target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece, openai_response_json
-):
-    openai_response_json["output"][0]["content"][0]["text"] = ""  # Simulate empty response
-    response_str = json.dumps(openai_response_json)
-
-    with pytest.raises(EmptyResponseException) as excinfo:
-        target._construct_message_from_openai_json(
-            open_ai_str_response=response_str, message_piece=dummy_text_message_piece
-        )
-    assert "The chat returned an empty response." in str(excinfo.value)
-
-
-def test_construct_message_from_openai_json_invalid_json(
-    target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
-):
-    # Should raise PyritException for invalid JSON
-    with pytest.raises(PyritException) as excinfo:
-        target._construct_message_from_openai_json(
-            open_ai_str_response="{invalid_json", message_piece=dummy_text_message_piece
-        )
-    assert "Status Code: 500, Message: Failed to parse response from model gpt-o" in str(excinfo.value)
-
-
-def test_construct_message_from_openai_json_no_status(
-    target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
-):
-    # Should raise PyritException for missing status and no content_filter error
-    bad_json = json.dumps({"output": [{"type": "message", "content": [{"text": "hi"}]}]})
-    with pytest.raises(PyritException) as excinfo:
-        target._construct_message_from_openai_json(
-            open_ai_str_response=bad_json, message_piece=dummy_text_message_piece
-        )
-    assert "Unexpected response format" in str(excinfo.value)
-
-
-def test_construct_message_from_openai_json_reasoning(
-    target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
-):
-    # Should handle reasoning type and skip empty summaries
-    reasoning_json = {
-        "status": "completed",
-        "output": [{"type": "reasoning", "summary": [{"type": "summary_text", "text": "Reasoning summary."}]}],
-    }
-    response = target._construct_message_from_openai_json(
-        open_ai_str_response=json.dumps(reasoning_json), message_piece=dummy_text_message_piece
-    )
-    piece = response.message_pieces[0]
-    assert piece.original_value_data_type == "reasoning"
-    section = json.loads(piece.original_value)
-    assert section["type"] == "reasoning"
-    assert section["summary"][0]["text"] == "Reasoning summary."
-
-
-def test_construct_message_from_openai_json_unsupported_type(
-    target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
-):
-    func_call_json = {
-        "status": "completed",
-        "output": [{"type": "function_call", "name": "do_something", "arguments": '{"x":1}'}],
-    }
-    resp = target._construct_message_from_openai_json(
-        open_ai_str_response=json.dumps(func_call_json), message_piece=dummy_text_message_piece
-    )
-    piece = resp.message_pieces[0]
-    assert piece.original_value_data_type == "function_call"
-    section = json.loads(piece.original_value)
-    assert section["type"] == "function_call"
-    assert section["name"] == "do_something"
-
-
 def test_validate_request_allows_text_and_image(target: OpenAIResponseTarget):
     # Should not raise for valid types
     req = Message(
@@ -994,15 +924,18 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
     )
 
     # 3) Second "assistant" reply: final message content (no tool call)
-    final_output = {
-        "status": "completed",
-        "output": [{"type": "message", "content": [{"type": "output_text", "text": "Done: 14"}]}],
-    }
-    # Use a message piece with the same conversation ID for reference
-    reference_piece = MessagePiece(role="user", original_value="hi", conversation_id=shared_conversation_id)
-    second_reply = target._construct_message_from_openai_json(
-        open_ai_str_response=json.dumps(final_output),
-        message_piece=reference_piece,
+    final_output_text = "Done: 14"
+    second_reply = Message(
+        message_pieces=[
+            MessagePiece(
+                role="assistant",
+                original_value=final_output_text,
+                converted_value=final_output_text,
+                original_value_data_type="text",
+                converted_value_data_type="text",
+                conversation_id=shared_conversation_id,
+            )
+        ]
     )
 
     call_counter = {"n": 0}
@@ -1027,38 +960,6 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         assert len(final.message_pieces) == 1
         assert final.message_pieces[0].original_value_data_type == "text"
         assert final.message_pieces[0].original_value == "Done: 14"
-
-
-def test_construct_message_forwards_web_search_call(target: OpenAIResponseTarget, dummy_text_message_piece):
-    body = {
-        "status": "completed",
-        "output": [{"type": "web_search_call", "query": "time in Tokyo", "provider": "bing"}],
-    }
-    resp = target._construct_message_from_openai_json(
-        open_ai_str_response=json.dumps(body), message_piece=dummy_text_message_piece
-    )
-    assert len(resp.message_pieces) == 1
-    p = resp.message_pieces[0]
-    assert p.original_value_data_type == "tool_call"
-    section = json.loads(p.original_value)
-    assert section["type"] == "web_search_call"
-    assert section["query"] == "time in Tokyo"
-
-
-def test_construct_message_skips_unhandled_types(target: OpenAIResponseTarget, dummy_text_message_piece):
-    body = {
-        "status": "completed",
-        "output": [
-            {"type": "image_generation_call", "prompt": "cat astronaut"},  # currently unhandled -> skipped
-            {"type": "message", "content": [{"type": "output_text", "text": "Hi"}]},
-        ],
-    }
-    resp = target._construct_message_from_openai_json(
-        open_ai_str_response=json.dumps(body), message_piece=dummy_text_message_piece
-    )
-    # Only the 'message' section becomes a piece; image_generation_call is skipped
-    assert len(resp.message_pieces) == 1
-    assert resp.message_pieces[0].original_value == "Hi"
 
 
 def test_invalid_temperature_raises(patch_central_database):

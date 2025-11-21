@@ -14,18 +14,18 @@ from typing import (
     Optional,
 )
 
-from openai import (
-    BadRequestError,
-    RateLimitError,
-    ContentFilterFinishReasonError,
-    APIStatusError,
+from openai.types.responses import Response
+
+from pyrit.prompt_target.openai.openai_error_handling import (
+    _check_response_api_content_filter,
+    construct_response_message,
+    handle_openai_completion_with_errors,
 )
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
-    RateLimitException,
     handle_bad_request_exception,
     pyrit_target_retry,
 )
@@ -336,78 +336,41 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _construct_message_from_completion_response(
+    async def _send_prompt_and_find_tool_call_async(
         self,
         *,
-        completion_response,
-        message_piece: MessagePiece,
-    ) -> Message:
-        """
-        Construct a Message from the OpenAI SDK responses response.
+        message: Message,
+        conversation: MutableSequence[Message],
+    ) -> Optional[dict[str, Any]]:
+        """Send the prompt and return the last pending tool call, if any."""
+        # Core send logic with error handling
+        self._validate_request(message=message)
+        message_piece: MessagePiece = message.message_pieces[0]
+        is_json_response = self.is_response_format_json(message_piece)
         
-        Args:
-            completion_response: The response from the OpenAI SDK.
-            message_piece (MessagePiece): The original request message piece.
-            
-        Returns:
-            Message: The constructed message.
-        """
-        # Convert the SDK response to JSON string for processing
-        # The SDK response object can be converted to dict via model_dump()
-        response_json = completion_response.model_dump_json()
-        return self._construct_message_from_openai_json(
-            open_ai_str_response=response_json,
+        conv = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
+        conv.append(message)
+        logger.info(f"Sending the following prompt to the prompt target: {message}")
+        
+        body = await self._construct_request_body(conversation=conv, is_json_response=is_json_response)
+        
+        # Post-process function to append to conversation and extract tool calls
+        def append_and_find_tool_call(assistant_reply):
+            conversation.append(assistant_reply)
+            return self._find_last_pending_tool_call(assistant_reply)
+        
+        # Use unified error handling with Response API content filter check
+        return await handle_openai_completion_with_errors(
+            make_request_fn=lambda: self._async_client.responses.create(**body),
             message_piece=message_piece,
+            check_content_filter_fn=_check_response_api_content_filter,
+            construct_message_fn=lambda completion_response, message_piece: construct_response_message(
+                completion_response=completion_response,
+                message_piece=message_piece,
+                parse_section_fn=self._parse_response_output_section,
+            ),
+            post_process_fn=append_and_find_tool_call,
         )
-
-    def _construct_message_from_openai_json(
-        self,
-        *,
-        open_ai_str_response: str,
-        message_piece: MessagePiece,
-    ) -> Message:
-        """
-        Parse the Responses API JSON into internal Message.
-        """
-        response: dict[str, Any]
-        try:
-            response = json.loads(open_ai_str_response)
-        except json.JSONDecodeError as e:
-            response_start = open_ai_str_response[:100]
-            raise PyritException(
-                message=f"Failed to parse response from model {self._model_name} at {self._endpoint} as JSON.\n"
-                f"Response: {response_start}\nFull error: {e}"
-            )
-
-        status = response.get("status")
-        error = response.get("error")
-
-        # Handle error responses
-        if status is None:
-            if error and error.get("code", "") == "content_filter":
-                # TODO validate that this is correct with AOAI
-                # Content filter with status 200 indicates that the model output was filtered
-                # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
-                return handle_bad_request_exception(
-                    response_text=open_ai_str_response, request=message_piece, error_code=200, is_content_filter=True
-                )
-            else:
-                raise PyritException(message=f"Unexpected response format: {response}. Expected 'status' key.")
-        elif status != "completed" or error is not None:
-            raise PyritException(message=f"Status {status} and error {error} from response: {response}")
-
-        # Extract message pieces from the response object
-        extracted_response_pieces: List[MessagePiece] = []
-        for section in response.get("output", []):
-            piece = self._parse_response_output_section(section=section, message_piece=message_piece, error=error)
-            if piece is None:
-                continue
-            extracted_response_pieces.append(piece)
-
-        if not extracted_response_pieces:
-            raise PyritException(message="No valid message pieces found in the response.")
-
-        return Message(message_pieces=extracted_response_pieces)
 
     @limit_requests_per_minute
     @limit_requests_per_minute
@@ -424,75 +387,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         """
         conversation: MutableSequence[Message] = [message]
 
-        async def _send_prompt_and_find_tool_call_async(
-            message: Message,
-        ) -> Optional[dict[str, Any]]:
-            """Send the prompt and return the last pending tool call, if any."""
-            # Core send logic with error handling
-            self._validate_request(message=message)
-            message_piece: MessagePiece = message.message_pieces[0]
-            is_json_response = self.is_response_format_json(message_piece)
-            
-            conv = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
-            conv.append(message)
-            logger.info(f"Sending the following prompt to the prompt target: {message}")
-            
-            body = await self._construct_request_body(conversation=conv, is_json_response=is_json_response)
-            
-            try:
-                # Use the OpenAI SDK for making the request
-                response = await self._async_client.responses.create(**body)
-                
-                # Convert the SDK response to our Message format
-                assistant_reply = self._construct_message_from_completion_response(
-                    completion_response=response, message_piece=message_piece
-                )
-                
-                conversation.append(assistant_reply)
-                return self._find_last_pending_tool_call(assistant_reply)
-                
-            except ContentFilterFinishReasonError as e:
-                # Content filter error - this is raised by the SDK when finish_reason is "content_filter"
-                logger.error(f"Content filter error: {e}")
-                return handle_bad_request_exception(
-                    response_text=str(e),
-                    request=message_piece,
-                    error_code=200,  # Content filter with 200 status
-                    is_content_filter=True,
-                )
-            except BadRequestError as e:
-                # Handle Bad Request from the SDK
-                error_response_text = e.body if hasattr(e, 'body') else str(e)
-                
-                # Check if it's a content filter issue
-                is_content_filter = False
-                if isinstance(error_response_text, dict):
-                    is_content_filter = error_response_text.get("error", {}).get("code") == "content_filter"
-                elif isinstance(error_response_text, str):
-                    try:
-                        json_error = json.loads(error_response_text)
-                        is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
-                    except json.JSONDecodeError:
-                        is_content_filter = "content_filter" in error_response_text
-
-                return handle_bad_request_exception(
-                    response_text=str(error_response_text),
-                    request=message_piece,
-                    error_code=400,
-                    is_content_filter=is_content_filter,
-                )
-            except RateLimitError as e:
-                # SDK's RateLimitError - convert to our exception
-                logger.warning(f"Rate limit hit: {e}")
-                raise RateLimitException()
-            except APIStatusError as e:
-                # Other API errors
-                if e.status_code == 429:
-                    raise RateLimitException()
-                else:
-                    raise
-
-        tool_call_section = await _send_prompt_and_find_tool_call_async(message=message)
+        tool_call_section = await self._send_prompt_and_find_tool_call_async(
+            message=message, conversation=conversation
+        )
         while tool_call_section:
             # Execute the tool/function
             tool_output = await self._execute_call_section(tool_call_section)
@@ -515,7 +412,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             message = Message(message_pieces=merged, skip_validation=True)
 
             # Send again and check for another tool call
-            tool_call_section = await _send_prompt_and_find_tool_call_async(message=message)
+            tool_call_section = await self._send_prompt_and_find_tool_call_async(
+                message=message, conversation=conversation
+            )
 
         # No other tool call found, so assistant message is complete and return last assistant reply!
         return conversation[-1]

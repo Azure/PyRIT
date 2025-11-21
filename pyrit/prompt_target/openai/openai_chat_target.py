@@ -1,35 +1,27 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import logging
 from typing import Any, MutableSequence, Optional
 
-from openai import (
-    BadRequestError,
-    RateLimitError,
-    ContentFilterFinishReasonError,
-    APIStatusError,
-)
-
 from pyrit.common import convert_local_image_to_data_url
-from pyrit.exceptions import (
-    EmptyResponseException,
-    PyritException,
-    RateLimitException,
-    handle_bad_request_exception,
-    pyrit_target_retry,
-)
+from pyrit.exceptions import PyritException, pyrit_target_retry
 from pyrit.models import (
     ChatMessage,
     ChatMessageListDictContent,
     Message,
     MessagePiece,
-    construct_response_from_request,
 )
 from pyrit.prompt_target import OpenAITarget, PromptChatTarget, limit_requests_per_minute
+from pyrit.prompt_target.openai.openai_error_handling import (
+    _check_chat_completion_content_filter,
+    construct_chat_completion_message,
+    handle_openai_completion_with_errors,
+)
 
 logger = logging.getLogger(__name__)
+
+
 
 
 class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
@@ -191,55 +183,13 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
-        try:
-            # Use the OpenAI SDK for making the request
-            completion = await self._async_client.chat.completions.create(**body)
-            
-            # Convert the SDK response to our Message format
-            return self._construct_message_from_completion_response(
-                completion_response=completion, message_piece=message_piece
-            )
-            
-        except ContentFilterFinishReasonError as e:
-            # Content filter error - this is raised by the SDK when finish_reason is "content_filter"
-            logger.error(f"Content filter error: {e}")
-            return handle_bad_request_exception(
-                response_text=str(e),
-                request=message_piece,
-                error_code=200,  # Content filter with 200 status
-                is_content_filter=True,
-            )
-        except BadRequestError as e:
-            # Handle Bad Request from the SDK
-            error_response_text = e.body if hasattr(e, 'body') else str(e)
-            
-            # Check if it's a content filter issue
-            is_content_filter = False
-            if isinstance(error_response_text, dict):
-                is_content_filter = error_response_text.get("error", {}).get("code") == "content_filter"
-            elif isinstance(error_response_text, str):
-                try:
-                    json_error = json.loads(error_response_text)
-                    is_content_filter = json_error.get("error", {}).get("code") == "content_filter"
-                except json.JSONDecodeError:
-                    is_content_filter = "content_filter" in error_response_text
-
-            return handle_bad_request_exception(
-                response_text=str(error_response_text),
-                request=message_piece,
-                error_code=400,
-                is_content_filter=is_content_filter,
-            )
-        except RateLimitError as e:
-            # SDK's RateLimitError - convert to our exception
-            logger.warning(f"Rate limit hit: {e}")
-            raise RateLimitException()
-        except APIStatusError as e:
-            # Other API errors
-            if e.status_code == 429:
-                raise RateLimitException()
-            else:
-                raise
+        # Use unified error handling with shared message construction
+        return await handle_openai_completion_with_errors(
+            make_request_fn=lambda: self._async_client.chat.completions.create(**body),
+            message_piece=message_piece,
+            check_content_filter_fn=_check_chat_completion_content_filter,
+            construct_message_fn=construct_chat_completion_message,
+        )
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
@@ -367,95 +317,6 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
-
-    def _construct_message_from_completion_response(
-        self,
-        *,
-        completion_response,
-        message_piece: MessagePiece,
-    ) -> Message:
-        """
-        Construct a Message from the OpenAI SDK completion response.
-        
-        Args:
-            completion_response: The completion response from the OpenAI SDK (ChatCompletion object).
-            message_piece (MessagePiece): The original request message piece.
-            
-        Returns:
-            Message: The constructed message.
-        """
-        # Extract the finish reason and content from the SDK response
-        if not completion_response.choices:
-            raise PyritException(message="No choices returned in the completion response.")
-            
-        choice = completion_response.choices[0]
-        finish_reason = choice.finish_reason
-        extracted_response: str = ""
-        
-        # finish_reason="stop" means API returned complete message and
-        # "length" means API returned incomplete message due to max_tokens limit.
-        if finish_reason in ["stop", "length"]:
-            extracted_response = choice.message.content or ""
-
-            # Handle empty response
-            if not extracted_response:
-                logger.error("The chat returned an empty response.")
-                raise EmptyResponseException(message="The chat returned an empty response.")
-        elif finish_reason == "content_filter":
-            # Content filter with status 200 indicates that the model output was filtered
-            # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
-            # Note: The SDK should raise ContentFilterFinishReasonError for this case,
-            # but we handle it here as a fallback
-            return handle_bad_request_exception(
-                response_text=completion_response.model_dump_json(), 
-                request=message_piece, 
-                error_code=200, 
-                is_content_filter=True
-            )
-        else:
-            raise PyritException(
-                message=f"Unknown finish_reason {finish_reason} from response: {completion_response.model_dump_json()}"
-            )
-
-        return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
-
-    def _construct_message_from_openai_json(
-        self,
-        *,
-        open_ai_str_response: str,
-        message_piece: MessagePiece,
-    ) -> Message:
-        """
-        Legacy method for backward compatibility.
-        Parses a JSON string response from OpenAI API.
-        The SDK-based implementation uses _construct_message_from_completion_response instead.
-        """
-        try:
-            response = json.loads(open_ai_str_response)
-        except json.JSONDecodeError as e:
-            raise PyritException(message=f"Failed to parse JSON response. Please check your endpoint: {e}")
-
-        finish_reason = response["choices"][0]["finish_reason"]
-        extracted_response: str = ""
-        # finish_reason="stop" means API returned complete message and
-        # "length" means API returned incomplete message due to max_tokens limit.
-        if finish_reason in ["stop", "length"]:
-            extracted_response = response["choices"][0]["message"]["content"]
-
-            # Handle empty response
-            if not extracted_response:
-                logger.log(logging.ERROR, "The chat returned an empty response.")
-                raise EmptyResponseException(message="The chat returned an empty response.")
-        elif finish_reason == "content_filter":
-            # Content filter with status 200 indicates that the model output was filtered
-            # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
-            return handle_bad_request_exception(
-                response_text=open_ai_str_response, request=message_piece, error_code=200, is_content_filter=True
-            )
-        else:
-            raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
-
-        return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
     def _validate_request(self, *, message: Message) -> None:
         """

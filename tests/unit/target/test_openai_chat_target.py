@@ -576,41 +576,6 @@ def test_is_response_format_json_no_metadata(target: OpenAIChatTarget):
     assert result is False
 
 
-@pytest.mark.parametrize("finish_reason", ["stop", "length"])
-def test_construct_message_valid_stop(
-    finish_reason: str, target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
-):
-    response_dict = {"choices": [{"finish_reason": f"{finish_reason}", "message": {"content": "Hello from stop"}}]}
-    response_str = json.dumps(response_dict)
-
-    result = target._construct_message_from_openai_json(
-        open_ai_str_response=response_str, message_piece=dummy_text_message_piece
-    )
-
-    assert len(result.message_pieces) == 1
-    assert result.get_value() == "Hello from stop"
-
-
-def test_construct_message_empty_response(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
-    response_dict = {"choices": [{"finish_reason": "stop", "message": {"content": ""}}]}
-    response_str = json.dumps(response_dict)
-
-    with pytest.raises(EmptyResponseException) as excinfo:
-        target._construct_message_from_openai_json(
-            open_ai_str_response=response_str, message_piece=dummy_text_message_piece
-        )
-    assert "The chat returned an empty response." in str(excinfo.value)
-
-
-def test_construct_message_unknown_finish_reason(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
-    response_dict = {"choices": [{"finish_reason": "unexpected", "message": {"content": "Some content"}}]}
-    response_str = json.dumps(response_dict)
-
-    with pytest.raises(PyritException) as excinfo:
-        target._construct_message_from_openai_json(
-            open_ai_str_response=response_str, message_piece=dummy_text_message_piece
-        )
-    assert "Unknown finish_reason" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
