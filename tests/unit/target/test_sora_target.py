@@ -88,8 +88,9 @@ async def test_sora_send_prompt_async_success(
     mock_video.status = "completed"
     mock_video.error = None
     
-    # Mock video content
-    mock_video_content = b"video data content"
+    # Mock video content as HttpxBinaryResponseContent
+    mock_video_response = MagicMock()
+    mock_video_response.content = b"video data content"
     
     # Mock data serializer
     mock_serializer = MagicMock()
@@ -104,7 +105,7 @@ async def test_sora_send_prompt_async_success(
     ) as mock_download, \
     patch("pyrit.prompt_target.openai.openai_sora_target.data_serializer_factory") as mock_factory:
         mock_create.return_value = mock_video
-        mock_download.return_value = mock_video_content
+        mock_download.return_value = mock_video_response
         mock_factory.return_value = mock_serializer
         
         response = await sora_target.send_prompt_async(message=Message([request]))
@@ -117,7 +118,7 @@ async def test_sora_send_prompt_async_success(
             seconds="4",
         )
         mock_download.assert_called_once_with("video_123")
-        mock_serializer.save_data.assert_called_once_with(data=mock_video_content)
+        mock_serializer.save_data.assert_called_once_with(data=b"video data content")
         
         # Verify response
         assert len(response.message_pieces) == 1
