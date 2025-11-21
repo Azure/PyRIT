@@ -2,23 +2,76 @@
 # Licensed under the MIT license.
 
 import logging
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import requests
 
 from pyrit.datasets.dataset_helper import fetch_examples
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import (
+    QuestionAnsweringDataset,
+    QuestionAnsweringEntry,
+    QuestionChoice,
+)
 
 logger = logging.getLogger(__name__)
 
 VALID_CATEGORIES = ["persona", "sycophancy", "advanced-ai-risk", "winogenerated"]
 
 
+def _parse_answer_choices(item: Dict) -> tuple[List[QuestionChoice], int]:
+    """
+    Parse answer choices from Anthropic eval item format.
+
+    Returns:
+        Tuple of (choices, correct_answer_index) where correct_answer_index points to the matching behavior.
+    """
+    choices = []
+    correct_index = 0
+
+    if "pronoun_options" in item:
+        pronoun_options = item.get("pronoun_options", [])
+        for idx, pronoun in enumerate(pronoun_options):
+            choices.append(QuestionChoice(index=idx, text=pronoun))
+
+        matching_behavior = item.get("answer_matching_behavior", "")
+        match = re.search(r"\([A-Z]\)\s*(.+)", matching_behavior)
+        if match:
+            matching_pronoun = match.group(1).strip()
+            try:
+                correct_index = pronoun_options.index(matching_pronoun)
+            except ValueError:
+                correct_index = 0
+        return choices, correct_index
+
+    matching = item.get("answer_matching_behavior", "")
+    not_matching = item.get("answer_not_matching_behavior", "")
+
+    all_answers = []
+    if matching:
+        all_answers.append((0, matching))
+    if not_matching:
+        all_answers.append((1, not_matching))
+
+    def extract_letter(answer_text: str) -> str:
+        match = re.match(r"\(([A-Z])\)", answer_text.strip())
+        return match.group(1) if match else "Z"
+
+    all_answers_sorted = sorted(all_answers, key=lambda x: extract_letter(x[1]))
+
+    for idx, (original_idx, answer_text) in enumerate(all_answers_sorted):
+        choices.append(QuestionChoice(index=idx, text=answer_text.strip()))
+        if original_idx == 0:
+            correct_index = idx
+
+    return choices, correct_index
+
+
 def fetch_anthropic_evals_dataset(
     category: Optional[str] = None,
     cache_dir: Optional[str] = None,
-) -> SeedDataset:
+) -> QuestionAnsweringDataset:
     """
     Fetch Anthropic's model-written-evals dataset from GitHub.
 
@@ -39,7 +92,7 @@ def fetch_anthropic_evals_dataset(
         cache_dir: Optional cache directory for downloaded files
 
     Returns:
-        SeedDataset containing Anthropic eval questions with metadata.
+        QuestionAnsweringDataset containing Anthropic eval questions with structured choices.
 
     Raises:
         ValueError: If invalid category is provided or dataset is empty.
@@ -52,16 +105,7 @@ def fetch_anthropic_evals_dataset(
     try:
         logger.info("Loading Anthropic model-written-evals dataset")
 
-        common_metadata = {
-            "dataset_name": "Anthropic Model-Written Evals",
-            "authors": ["Anthropic"],
-            "description": "Evaluations for testing LLM behaviors across persona, sycophancy, AI risk, and bias",
-            "source": "https://github.com/anthropics/evals",
-            "data_type": "text",
-            "name": "Anthropic Evals",
-        }
-
-        seed_prompts = []
+        question_entries = []
 
         for cat in categories_to_fetch:
             logger.info(f"Fetching files from category: {cat}")
@@ -83,30 +127,42 @@ def fetch_anthropic_evals_dataset(
                     )
 
                     for item in examples:
-                        prompt_value = (item.get("question") or item.get("sentence_with_blank", "")).strip()
-                        if not prompt_value:
+                        question_text = (item.get("question") or item.get("sentence_with_blank", "")).strip()
+                        if not question_text:
                             logger.warning(f"Skipping item with empty prompt in {file_name}")
                             continue
 
-                        seed_prompt = SeedPrompt(
-                            value=prompt_value,
-                            harm_categories=[],
-                            groups=[eval_name],
-                            metadata={
-                                "category": cat,
-                                "answer_matching_behavior": item.get("answer_matching_behavior", ""),
-                                "answer_not_matching_behavior": item.get("answer_not_matching_behavior", ""),
-                            },
-                            **common_metadata,  # type: ignore[arg-type]
+                        choices, correct_index = _parse_answer_choices(item)
+
+                        if not choices:
+                            logger.warning(f"Skipping item with no valid choices in {file_name}")
+                            continue
+
+                        entry = QuestionAnsweringEntry(
+                            question=question_text,
+                            answer_type="int",
+                            correct_answer=correct_index,
+                            choices=choices,
                         )
-                        seed_prompts.append(seed_prompt)
+                        question_entries.append(entry)
 
-        if not seed_prompts:
-            raise ValueError("SeedDataset cannot be empty. Check your filter criteria.")
+        if not question_entries:
+            raise ValueError("QuestionAnsweringDataset cannot be empty. Check your filter criteria.")
 
-        logger.info(f"Successfully loaded {len(seed_prompts)} prompts from Anthropic evals dataset")
+        logger.info(f"Successfully loaded {len(question_entries)} questions from Anthropic evals dataset")
 
-        return SeedDataset(prompts=seed_prompts)
+        dataset = QuestionAnsweringDataset(
+            name="anthropic-evals",
+            version="1.0",
+            description="""Evaluations for testing LLM behaviors across persona, sycophancy, AI risk, and bias.
+            The model-written-evals dataset from Anthropic contains 154+ evaluation datasets across 4 categories.""",
+            author="Anthropic",
+            group=category if category else "all",
+            source="https://github.com/anthropics/evals",
+            questions=question_entries,
+        )
+
+        return dataset
 
     except Exception as e:
         logger.error(f"Failed to load Anthropic evals dataset: {str(e)}")
@@ -115,14 +171,13 @@ def fetch_anthropic_evals_dataset(
 
 def _get_category_files(category: str) -> List[Dict[str, str]]:
     """
-    Get list of files in a category directory from GitHub API.
-    Recursively searches subdirectories for .jsonl files.
-
-    Args:
-        category: The category directory name
+    Get list of .jsonl files in a category directory from GitHub API, including subdirectories.
 
     Returns:
-        List of file info dictionaries with 'name' and 'download_url' keys
+        List of file info dictionaries with 'name' and 'download_url' keys.
+
+    Raises:
+        Exception: If GitHub API request fails.
     """
     api_url = f"https://api.github.com/repos/anthropics/evals/contents/{category}"
 
