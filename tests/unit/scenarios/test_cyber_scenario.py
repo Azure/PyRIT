@@ -13,7 +13,7 @@ from pyrit.executor.attack import PromptSendingAttack, RedTeamingAttack
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
-from pyrit.scenarios import CyberScenario, CyberStrategy
+from pyrit.scenario import CyberScenario, CyberStrategy
 from pyrit.score import TrueFalseCompositeScorer
 
 
