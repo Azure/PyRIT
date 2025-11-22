@@ -47,7 +47,7 @@ class DarkBenchDataset(RemoteDatasetLoader):
 
     @property
     def dataset_name(self) -> str:
-        return "DarkBench"
+        return "dark_bench"
 
     async def fetch_dataset(self) -> SeedDataset:
         """

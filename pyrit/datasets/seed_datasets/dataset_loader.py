@@ -34,7 +34,7 @@ class DatasetLoader(ABC):
         """
         super().__init_subclass__(**kwargs)
         # Only register concrete (non-abstract) classes
-        if not inspect.isabstract(cls):
+        if not inspect.isabstract(cls) and getattr(cls, "should_register", True):
             DatasetLoader._registry[cls.__name__] = cls
             logger.debug(f"Registered dataset loader: {cls.__name__}")
 

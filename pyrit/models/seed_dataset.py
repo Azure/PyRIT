@@ -59,6 +59,7 @@ class SeedDataset(YamlLoadable):
         source: Optional[str] = None,
         date_added: Optional[datetime] = None,
         added_by: Optional[str] = None,
+        is_objective: bool = False,
     ):
         """
         Initialize the dataset.
@@ -90,28 +91,33 @@ class SeedDataset(YamlLoadable):
         self.objectives = []
         for p in prompts:
             if isinstance(p, dict):
-                if "is_objective" in p:
-                    if p["is_objective"]:
-                        self.objectives.append(
-                            SeedObjective(
-                                value=p["value"],
-                                data_type="text",
-                                value_sha256=p.get("value_sha256"),
-                                id=uuid.uuid4(),
-                                name=p.get("name"),
-                                dataset_name=p.get("dataset_name"),
-                                harm_categories=p.get("harm_categories", []),
-                                description=p.get("description"),
-                                authors=p.get("authors", []),
-                                groups=p.get("groups", []),
-                                source=p.get("source"),
-                                date_added=p.get("date_added"),
-                                added_by=p.get("added_by"),
-                                metadata=p.get("metadata", {}),
-                                prompt_group_id=p.get("prompt_group_id"),
-                            )
+                # Use top-level is_objective if not present in p
+                p_is_objective = p.get("is_objective", is_objective)
+                
+                if p_is_objective:
+                    self.objectives.append(
+                        SeedObjective(
+                            value=p["value"],
+                            data_type="text",
+                            value_sha256=p.get("value_sha256"),
+                            id=uuid.uuid4(),
+                            name=p.get("name"),
+                            dataset_name=p.get("dataset_name"),
+                            harm_categories=p.get("harm_categories", []),
+                            description=p.get("description"),
+                            authors=p.get("authors", []),
+                            groups=p.get("groups", []),
+                            source=p.get("source"),
+                            date_added=p.get("date_added"),
+                            added_by=p.get("added_by"),
+                            metadata=p.get("metadata", {}),
+                            prompt_group_id=p.get("prompt_group_id"),
                         )
+                    )
+                
+                if "is_objective" in p:
                     del p["is_objective"]
+                
                 self.prompts.append(SeedPrompt(**p))
             elif isinstance(p, SeedPrompt):
                 self.prompts.append(p)

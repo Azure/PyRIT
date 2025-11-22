@@ -18,6 +18,8 @@ class LocalDatasetLoader(DatasetLoader):
     Each YAML file should be in the standard SeedDataset format.
     """
 
+    should_register = False
+
     def __init__(self, *, file_path: Path):
         """
         Initialize the local dataset loader.
@@ -57,3 +59,47 @@ class LocalDatasetLoader(DatasetLoader):
         except Exception as e:
             logger.error(f"Failed to load local dataset from {self.file_path}: {e}")
             raise
+
+
+def _register_local_datasets():
+    """
+    Auto-discover and register all YAML files from the seed_datasets directory.
+    """
+    # Get the path to the seed_datasets directory (parent of this file)
+    seed_datasets_path = Path(__file__).parent
+
+    if seed_datasets_path.exists():
+        for yaml_file in seed_datasets_path.glob("**/*.prompt"):
+            try:
+                # Create a dynamic subclass for each file to register it
+                # The class name needs to be unique
+                class_name = f"LocalDataset_{yaml_file.stem.replace('-', '_').replace(' ', '_')}"
+
+                # Define the class dynamically
+                # We set should_register=True so it gets registered
+                # We override __init__ to pass the specific file_path
+
+                def make_init(path):
+                    def __init__(self):
+                        super(self.__class__, self).__init__(file_path=path)
+                    return __init__
+
+                type(
+                    class_name,
+                    (LocalDatasetLoader,),
+                    {
+                        "__init__": make_init(yaml_file),
+                        "should_register": True,
+                        "__module__": __name__
+                    }
+                )
+
+                logger.debug(f"Registered local dataset loader: {class_name} for {yaml_file.name}")
+            except Exception as e:
+                logger.warning(f"Failed to register local dataset {yaml_file}: {e}")
+    else:
+        logger.warning(f"Seed datasets directory not found: {seed_datasets_path}")
+
+
+# Execute registration
+_register_local_datasets()
