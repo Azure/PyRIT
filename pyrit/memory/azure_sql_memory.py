@@ -258,7 +258,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # for safe parameter passing, preventing SQL injection
-        condition = text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
+        # Note: We do NOT convert values to string here, to allow integer comparison in JSON
+        condition = text(conditions).bindparams(**{key: value for key, value in prompt_metadata.items()})
         return [condition]
 
     def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:

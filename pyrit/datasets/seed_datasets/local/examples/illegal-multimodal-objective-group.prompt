@@ -23,8 +23,9 @@ prompts:
   - dataset_name: pyrit_example_dataset
     source: AI Red Team
     value: |
-      {{ datasets_path }}/seed_datasets/examples/multimodal_data/roakey_potion.png
+      {{ datasets_path }}/seed_datasets/local/examples/multimodal_data/roakey_potion.png
     data_type: image_path
     sequence: 1
     prompt_group_alias: group_1
     is_objective: false
+    role: user

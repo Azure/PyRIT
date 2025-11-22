@@ -9,6 +9,7 @@ prompts:
     data_type: text
     sequence: 0
     prompt_group_alias: group_1
+    role: user
   - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal
@@ -26,3 +27,4 @@ prompts:
     data_type: text
     sequence: 2
     prompt_group_alias: group_1
+    role: assistant

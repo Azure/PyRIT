@@ -141,7 +141,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         json_conditions = " AND ".join([f"JSON_EXTRACT(prompt_metadata, '$.{key}') = :{key}" for key in metadata])
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
-        return text(json_conditions).bindparams(**{key: str(value) for key, value in metadata.items()})
+        # Note: We do NOT convert values to string here, to allow integer comparison in JSON
+        return text(json_conditions).bindparams(**{key: value for key, value in metadata.items()})
 
     def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """

@@ -10,7 +10,7 @@ from uuid import uuid4
 import pytest
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import MessagePiece, SeedGroup, SeedPrompt
+from pyrit.models import MessagePiece, SeedDataset, SeedGroup, SeedPrompt
 from pyrit.models.seed_objective import SeedObjective
 
 
@@ -887,3 +887,74 @@ async def test_add_seed_groups_without_objective_only_prompts_added(sqlite_insta
         assert all(isinstance(p, SeedPrompt) for p in captured_prompts)
         assert any(p.value == "Test prompt 1" for p in captured_prompts)
         assert any(p.value == "Test prompt 2" for p in captured_prompts)
+
+
+@pytest.mark.asyncio
+async def test_add_seed_datasets_to_memory_async(sqlite_instance: MemoryInterface):
+    """Test adding seed datasets to memory."""
+    prompts = [SeedPrompt(value="test prompt", dataset_name="test_dataset", data_type="text")]
+    dataset = SeedDataset(prompts=prompts, dataset_name="test_dataset", added_by="test_user")
+
+    await sqlite_instance.add_seed_datasets_to_memory_async(datasets=[dataset], added_by="test_user")
+
+    result = sqlite_instance.get_seeds(dataset_name="test_dataset")
+    assert len(result) == 1
+    assert result[0].value == "test prompt"
+    assert result[0].added_by == "test_user"
+
+
+@pytest.mark.asyncio
+async def test_get_seed_groups_deduplication_and_filtering(sqlite_instance: MemoryInterface):
+    """Test that get_seed_groups returns complete groups and deduplicates results."""
+    temp_files = []
+    temp_dir = tempfile.TemporaryDirectory()
+    sqlite_instance.results_path = temp_dir.name
+    try:
+        # Create a temporary audio file
+        audio_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        audio_file.write(b"dummy audio content")
+        audio_file.close()
+        temp_files.append(audio_file.name)
+
+        # Create prompts
+        prompt_text = SeedPrompt(
+            value="Test text prompt",
+            added_by="test_dedupe",
+            data_type="text",
+            sequence=0,
+            role="user"
+        )
+        prompt_audio = SeedPrompt(
+            value=audio_file.name,
+            added_by="test_dedupe",
+            data_type="audio_path",
+            sequence=1,
+            role="user"
+        )
+
+        # Create SeedGroup with both prompts
+        seed_group = SeedGroup(prompts=[prompt_text, prompt_audio])
+
+        # Add prompt group to memory
+        await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[seed_group], added_by="test_dedupe")
+
+        # Test 1: Filter by audio_path should return the whole group (including text)
+        groups_audio = sqlite_instance.get_seed_groups(data_types=["audio_path"])
+        assert len(groups_audio) == 1
+        assert len(groups_audio[0].prompts) == 2
+        
+        # Verify both modalities are present
+        data_types = {p.data_type for p in groups_audio[0].prompts}
+        assert "text" in data_types
+        assert "audio_path" in data_types
+
+        # Test 2: Filter by both types should return the group only once (deduplication)
+        groups_both = sqlite_instance.get_seed_groups(data_types=["text", "audio_path"])
+        assert len(groups_both) == 1
+        assert len(groups_both[0].prompts) == 2
+
+    finally:
+        for file_path in temp_files:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        temp_dir.cleanup()
