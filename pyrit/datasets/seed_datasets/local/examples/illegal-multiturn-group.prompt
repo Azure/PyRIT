@@ -1,6 +1,6 @@
 # This is an example of a multiturn SeedGroup using a single modality (text).
 dataset_name: pyrit_example_dataset
-prompts:
+seeds:
   - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal

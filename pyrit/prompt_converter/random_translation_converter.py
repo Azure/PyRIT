@@ -85,7 +85,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
             default_languages = SeedDataset.from_yaml_file(
                 RandomTranslationConverter._DEFAULT_LANGUAGES_SEED_PROMPT_PATH
             )
-            self.languages = [prompt.value for prompt in default_languages.prompts]
+            self.languages = [prompt.value for prompt in default_languages.seeds]
         else:
             self.languages = languages
 

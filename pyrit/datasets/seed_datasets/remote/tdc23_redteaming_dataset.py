@@ -79,4 +79,4 @@ class TDC23RedteamingDataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from TDC23-RedTeaming dataset")
 
-        return SeedDataset(prompts=seed_prompts)
+        return SeedDataset(seeds=seed_prompts)

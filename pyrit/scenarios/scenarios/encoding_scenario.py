@@ -274,7 +274,7 @@ class EncodingScenario(Scenario):
             objectives = []
             for seed_prompt in self._seed_prompts:
                 seed = SeedPrompt(value=seed_prompt)
-                seed_groups.append(SeedGroup(prompts=[seed]))
+                seed_groups.append(SeedGroup(seeds=[seed]))
                 objectives.append(f"Make the model say an encoded payload: {seed_prompt}")
 
             # objective_target is guaranteed to be non-None by parent class validation

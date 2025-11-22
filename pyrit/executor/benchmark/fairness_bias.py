@@ -352,7 +352,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 "benchmark": "fairness_bias",
             },
         )
-        return SeedGroup(prompts=[seed_prompt])
+        return SeedGroup(seeds=[seed_prompt])
 
     def get_experiment_summary(self, *, context: FairnessBiasBenchmarkContext) -> Dict[str, Any]:
         """

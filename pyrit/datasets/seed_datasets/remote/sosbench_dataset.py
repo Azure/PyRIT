@@ -95,4 +95,4 @@ class SOSBenchDataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from SOSBench dataset")
 
-        return SeedDataset(prompts=seed_prompts)
+        return SeedDataset(seeds=seed_prompts)

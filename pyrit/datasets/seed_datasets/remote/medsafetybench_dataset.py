@@ -138,4 +138,4 @@ class MedSafetyBenchDataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(all_prompts)} prompts from MedSafetyBench dataset")
 
-        return SeedDataset(prompts=all_prompts)
+        return SeedDataset(seeds=all_prompts)

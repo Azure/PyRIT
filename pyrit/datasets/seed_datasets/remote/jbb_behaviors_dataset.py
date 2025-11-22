@@ -117,7 +117,7 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
 
             logger.info(f"Successfully loaded {len(seed_prompts)} behaviors from JBB-Behaviors dataset")
 
-            return SeedDataset(prompts=seed_prompts)
+            return SeedDataset(seeds=seed_prompts)
 
         except Exception as e:
             logger.error(f"Failed to load JBB-Behaviors dataset: {str(e)}")

@@ -73,4 +73,4 @@ class LLMLatentAdversarialTrainingDataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from LLM-LAT harmful dataset")
 
-        return SeedDataset(prompts=seed_prompts)
+        return SeedDataset(seeds=seed_prompts)

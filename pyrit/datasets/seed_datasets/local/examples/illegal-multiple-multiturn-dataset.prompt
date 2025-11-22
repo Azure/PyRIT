@@ -3,7 +3,7 @@ harm_categories: illegal
 source: https://azure.github.io/PyRIT/
 groups: AI Red Team
 description: This is used to show how to create multiple multi turn prompts
-prompts:
+seeds:
   - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal

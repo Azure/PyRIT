@@ -96,4 +96,4 @@ class HarmBenchDataset(RemoteDatasetLoader):
             seed_prompts.append(seed_prompt)
 
         # Create and return SeedDataset
-        return SeedDataset(prompts=seed_prompts)
+        return SeedDataset(seeds=seed_prompts)

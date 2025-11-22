@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import uuid
 from collections import defaultdict
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.seed import Seed
@@ -24,40 +24,52 @@ class SeedGroup(YamlLoadable):
     All prompts in the group should share the same `prompt_group_id`.
     """
 
-    objective: Optional[SeedObjective] = None
-    prompts: Sequence[SeedPrompt]
+    seeds: Sequence[Seed]
 
     def __init__(
         self,
         *,
-        prompts: Union[Sequence[Seed], Sequence[Dict[str, Any]]],
+        seeds: Sequence[Union[Seed, Dict[str, Any]]],
     ):
-        if not prompts:
+        if not seeds:
             raise ValueError("SeedGroup cannot be empty.")
-        self.prompts = []
-        for prompt in prompts:
-            if isinstance(prompt, SeedPrompt):
-                self.prompts.append(prompt)
-            elif isinstance(prompt, SeedObjective):
-                self._set_objective_from_prompt(objective_prompt=prompt)
-            elif isinstance(prompt, dict):
+        
+        self.seeds = []
+        for seed in seeds:
+            if isinstance(seed, SeedObjective):
+                self.seeds.append(seed)
+            elif isinstance(seed, SeedPrompt):
+                self.seeds.append(seed)
+            elif isinstance(seed, dict):
                 # create a SeedObjective in addition to the SeedPrompt if is_objective is True
-                is_objective = prompt.pop("is_objective", False)
-                self.prompts.append(SeedPrompt(**prompt))
+                is_objective = seed.pop("is_objective", False)
                 if is_objective:
-                    self._set_objective_from_prompt()
-                    # if the only prompt is the objective, this is an objective only group
-                    if len(prompts) == 1:
-                        self.prompts = []
+                    self.seeds.append(SeedObjective(**seed))
+                else:
+                    self.seeds.append(SeedPrompt(**seed))
+            else:
+                raise ValueError(f"Invalid seed type: {type(seed)}")
 
         self._enforce_consistent_group_id()
         self._enforce_consistent_role()
+        self._enforce_max_one_objective()
+        
+        sorted_prompts = sorted(
+            self.prompts, key=lambda prompt: prompt.sequence if prompt.sequence is not None else 0
+        )
+        
+        self.seeds = ([self.objective] if self.objective else []) + sorted_prompts
 
-        # Check sequence and sort the prompts in the same loop
-        if len(self.prompts) >= 1:
-            self.prompts = sorted(
-                self.prompts, key=lambda prompt: prompt.sequence if prompt.sequence is not None else 0
-            )
+    @property
+    def objective(self) -> Optional[SeedObjective]:
+        for seed in self.seeds:
+            if isinstance(seed, SeedObjective):
+                return seed
+        return None
+
+    @property
+    def prompts(self) -> Sequence[SeedPrompt]:
+        return [seed for seed in self.seeds if isinstance(seed, SeedPrompt)]
 
     def render_template_value(self, **kwargs):
         """
@@ -72,33 +84,37 @@ class SeedGroup(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-        for prompt in self.prompts:
-            prompt.value = prompt.render_template_value(**kwargs)
+        for seed in self.seeds:
+            seed.value = seed.render_template_value(**kwargs)
+
+    def _enforce_max_one_objective(self):
+        if len([s for s in self.seeds if isinstance(s, SeedObjective)]) > 1:
+            raise ValueError("SeedGroups can only have one objective.")
 
     def _enforce_consistent_group_id(self):
         """
-        Ensures that if any of the prompts already have a group ID set,
+        Ensures that if any of the seeds already have a group ID set,
         they share the same ID. If none have a group ID set, assign a
-        new UUID to all prompts.
+        new UUID to all seeds.
 
         Raises:
-            ValueError: If multiple different group IDs exist among the prompts.
+            ValueError: If multiple different group IDs exist among the seeds.
         """
-        existing_group_ids = {prompt.prompt_group_id for prompt in self.prompts if prompt.prompt_group_id is not None}
+        existing_group_ids = {seed.prompt_group_id for seed in self.seeds if seed.prompt_group_id is not None}
 
         if len(existing_group_ids) > 1:
-            # More than one distinct group ID found among prompts.
-            raise ValueError("Inconsistent group IDs found across prompts.")
+            # More than one distinct group ID found among seeds.
+            raise ValueError("Inconsistent group IDs found across seeds.")
         elif len(existing_group_ids) == 1:
             # Exactly one group ID is set; apply it to all.
             group_id = existing_group_ids.pop()
-            for prompt in self.prompts:
-                prompt.prompt_group_id = group_id
+            for seed in self.seeds:
+                seed.prompt_group_id = group_id
         else:
             # No group IDs set; generate a fresh one and assign it to all.
             new_group_id = uuid.uuid4()
-            for prompt in self.prompts:
-                prompt.prompt_group_id = new_group_id
+            for seed in self.seeds:
+                seed.prompt_group_id = new_group_id
 
     def _enforce_consistent_role(self):
         """
@@ -133,27 +149,8 @@ class SeedGroup(YamlLoadable):
             for prompt in prompts:
                 prompt.role = role
 
-    def _set_objective_from_prompt(self, objective_prompt: Optional[SeedObjective] = None):
-        """Sets the objective from the prompt marked as objective."""
-        prompt = objective_prompt if objective_prompt else self.prompts[-1]
-        if self.objective is not None:
-            raise ValueError("SeedGroups can only have one objective.")
-        self.objective = SeedObjective(
-            value=prompt.value,
-            value_sha256=prompt.value_sha256,
-            # Note: all entries in database must have unique IDs
-            # generate a new UUID for the objective
-            id=uuid.uuid4(),
-            data_type=prompt.data_type,
-            name=prompt.name,
-            dataset_name=prompt.dataset_name,
-            authors=prompt.authors,
-            groups=prompt.groups,
-            source=prompt.source,
-            added_by=prompt.added_by,
-            harm_categories=prompt.harm_categories,
-            metadata=prompt.metadata,
-        )
+
+
 
     def is_single_turn(self) -> bool:
         return self.is_single_request() and not self.objective
@@ -166,4 +163,4 @@ class SeedGroup(YamlLoadable):
         return len(self.prompts) == 1 and self.prompts[0].data_type == "text"
 
     def __repr__(self):
-        return f"<SeedGroup(prompts={len(self.prompts)} prompts)>"
+        return f"<SeedGroup(seeds={len(self.prompts)} prompts)>"

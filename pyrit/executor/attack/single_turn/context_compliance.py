@@ -117,15 +117,15 @@ class ContextComplianceAttack(PromptSendingAttack):
         except Exception as e:
             raise ValueError(f"Failed to load context description instructions from {instructions_path}: {e}")
 
-        if len(context_description_instructions.prompts) < 3:
+        if len(context_description_instructions.seeds) < 3:
             raise ValueError(
                 f"Context description instructions must contain at least 3 prompts, "
-                f"but found {len(context_description_instructions.prompts)}"
+                f"but found {len(context_description_instructions.seeds)}"
             )
 
-        self._rephrase_objective_to_user_turn = context_description_instructions.prompts[0]
-        self._answer_user_turn = context_description_instructions.prompts[1]
-        self._rephrase_objective_to_question = context_description_instructions.prompts[2]
+        self._rephrase_objective_to_user_turn = context_description_instructions.seeds[0]
+        self._answer_user_turn = context_description_instructions.seeds[1]
+        self._rephrase_objective_to_question = context_description_instructions.seeds[2]
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -173,7 +173,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
         # Create the affirmative seed group
         affirmative_seed_prompt = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._affirmative_response,
                     data_type="text",
@@ -248,7 +248,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The objective rephrased as a benign question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
                     data_type="text",
@@ -279,7 +279,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The answer to the benign question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
                     data_type="text",
@@ -308,7 +308,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The objective rephrased as a question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._rephrase_objective_to_question.render_template_value(objective=objective),
                     data_type="text",

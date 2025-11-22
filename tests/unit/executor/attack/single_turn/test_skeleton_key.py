@@ -132,7 +132,7 @@ class TestSkeletonKeyAttackInitialization:
         """Test that default skeleton key prompt is loaded when none is provided."""
         mock_seed_prompt = MagicMock()
         mock_seed_prompt.value = "Default skeleton key prompt"
-        mock_dataset.return_value.prompts = [mock_seed_prompt]
+        mock_dataset.return_value.seeds = [mock_seed_prompt]
 
         attack = SkeletonKeyAttack(objective_target=mock_target)
 
@@ -184,7 +184,7 @@ class TestSkeletonKeyPromptLoading:
         """Test loading skeleton key prompt from default file."""
         mock_seed_prompt = MagicMock()
         mock_seed_prompt.value = "Default prompt from file"
-        mock_dataset.return_value.prompts = [mock_seed_prompt]
+        mock_dataset.return_value.seeds = [mock_seed_prompt]
 
         # Create attack with custom prompt to avoid calling dataset loading in __init__
         attack = SkeletonKeyAttack(objective_target=mock_target, skeleton_key_prompt="temp")
@@ -200,7 +200,7 @@ class TestSkeletonKeyPromptLoading:
         """Test that empty string triggers loading from default file."""
         mock_seed_prompt = MagicMock()
         mock_seed_prompt.value = "Default prompt"
-        mock_dataset.return_value.prompts = [mock_seed_prompt]
+        mock_dataset.return_value.seeds = [mock_seed_prompt]
 
         # Create attack with custom prompt to avoid calling dataset loading in __init__
         attack = SkeletonKeyAttack(objective_target=mock_target, skeleton_key_prompt="temp")

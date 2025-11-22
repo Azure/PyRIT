@@ -1,6 +1,6 @@
 # This is used to show how an objective can be set in a multi modality (text, image) group.
 dataset_name: pyrit_example_dataset
-prompts:
+seeds:
   - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal

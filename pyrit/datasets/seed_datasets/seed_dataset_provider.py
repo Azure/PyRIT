@@ -138,7 +138,7 @@ class SeedDatasetProvider(ABC):
                 if provider.dataset_name in datasets:
                     # Merge with existing dataset
                     existing_dataset = datasets[provider.dataset_name]
-                    existing_dataset.prompts.extend(dataset.prompts)
+                    existing_dataset.seeds.extend(dataset.seeds)
                 else:
                     datasets[provider.dataset_name] = dataset
                     

@@ -497,7 +497,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Set JSON format in metadata
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
 
         response = await self._prompt_normalizer.send_prompt_async(
             seed_group=seed_group,
@@ -569,7 +569,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Raises:
             ValueError: If no response is received from the objective target.
         """
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=attack_prompt, data_type="text")])
         objective_target_type = self._objective_target.get_identifier()["__type__"]
 
         # Send the generated prompt to the objective target

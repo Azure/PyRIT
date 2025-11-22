@@ -97,4 +97,4 @@ class DarkBenchDataset(RemoteDatasetLoader):
             for item in data
         ]
 
-        return SeedDataset(prompts=seed_prompts)
+        return SeedDataset(seeds=seed_prompts)

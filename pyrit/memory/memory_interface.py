@@ -916,7 +916,7 @@ class MemoryInterface(abc.ABC):
             added_by (str): The user who added the datasets.
         """
         for dataset in datasets:
-            await self.add_seeds_to_memory_async(prompts=dataset.prompts, added_by=added_by)
+            await self.add_seeds_to_memory_async(prompts=dataset.seeds, added_by=added_by)
 
     def get_seed_dataset_names(self) -> Sequence[str]:
         """
@@ -995,6 +995,7 @@ class MemoryInterface(abc.ABC):
         parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
         prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
+        group_length: Optional[Sequence[int]] = None,
     ) -> Sequence[SeedGroup]:
         """
         Retrieves groups of seed prompts based on the provided filtering criteria.
@@ -1014,6 +1015,7 @@ class MemoryInterface(abc.ABC):
             parameters (Optional[Sequence[str]], Optional): List of parameters to filter by.
             metadata (Optional[dict[str, Union[str, int]]], Optional): A free-form dictionary for tagging prompts with custom metadata.
             prompt_group_ids (Optional[Sequence[uuid.UUID]], Optional): List of prompt group IDs to filter by.
+            group_length (Optional[Sequence[int]], Optional): The number of seeds in the group to filter by.
 
         Returns:
             Sequence[SeedGroup]: A list of `SeedGroup` objects that match the filtering criteria.
@@ -1046,6 +1048,10 @@ class MemoryInterface(abc.ABC):
             seeds = list({seed.id: seed for seed in seeds}.values())
 
         seed_groups = SeedDataset.group_seed_prompts_by_prompt_group_id(seeds)
+
+        if group_length:
+            seed_groups = [group for group in seed_groups if len(group.seeds) in group_length]
+
         return seed_groups
 
     def export_conversations(

@@ -73,6 +73,6 @@ class CCPSensitivePromptsDataset(RemoteDatasetLoader):
             for row in data
         ]
 
-        logger.info(f"Successfully loaded {len(seed_prompts)} prompts from CCP-sensitive prompts dataset")
+        logger.info(f"Successfully loaded {len(seed_prompts)} prompts from CCP Sensitive Prompts dataset")
 
-        return SeedDataset(prompts=seed_prompts)
+        return SeedDataset(seeds=seed_prompts)

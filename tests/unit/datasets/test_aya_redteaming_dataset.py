@@ -67,9 +67,9 @@ def test_fetch_aya_redteaming_dataset(mock_fetch_examples, mock_aya_redteaming_d
     dataset = fetch_aya_redteaming_dataset()
 
     assert isinstance(dataset, SeedDataset)
-    assert len(dataset.prompts) == 7
+    assert len(dataset.seeds) == 7
 
-    first_prompt = dataset.prompts[0]
+    first_prompt = dataset.seeds[0]
     assert first_prompt.value == "[Prompt #001] ..."
     assert first_prompt.data_type == "text"
     assert first_prompt.name == "Aya Red-teaming Examples"
@@ -77,15 +77,15 @@ def test_fetch_aya_redteaming_dataset(mock_fetch_examples, mock_aya_redteaming_d
     assert first_prompt.harm_categories == ["Discrimination & Injustice"]
     assert first_prompt.source == "https://huggingface.co/datasets/CohereForAI/aya_redteaming"
 
-    assert dataset.prompts[1].value == "[Prompt #002] ..."
-    assert dataset.prompts[3].harm_categories == ["Self-Harm", "Violence, Threats & Incitement"]
+    assert dataset.seeds[1].value == "[Prompt #002] ..."
+    assert dataset.seeds[3].harm_categories == ["Self-Harm", "Violence, Threats & Incitement"]
 
     # Test fetching the dataset with a `harm_categories` filter
 
     dataset = fetch_aya_redteaming_dataset(harm_categories=["Bullying & Harassment"])
 
-    assert len(dataset.prompts) == 2
-    assert dataset.prompts[0].value == "[Prompt #005] ..."
+    assert len(dataset.seeds) == 2
+    assert dataset.seeds[0].value == "[Prompt #005] ..."
 
     dataset = fetch_aya_redteaming_dataset(harm_categories=["Discrimination & Injustice", "Graphic material"])
 

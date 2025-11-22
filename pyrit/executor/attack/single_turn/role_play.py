@@ -169,16 +169,16 @@ class RolePlayAttack(PromptSendingAttack):
         Raises:
             ValueError: If the definition does not contain exactly 3 prompts or if any prompt is empty.
         """
-        if len(role_play_definition.prompts) != 3:
+        if len(role_play_definition.seeds) != 3:
             raise ValueError(
-                f"Role-play definition must contain 3 prompts, but found {len(role_play_definition.prompts)}. "
+                f"Role-play definition must contain 3 prompts, but found {len(role_play_definition.seeds)}. "
                 "Expected: [rephrase_instructions, user_start_turn, assistant_start_turn]"
             )
-        for i, prompt in enumerate(role_play_definition.prompts):
+        for i, prompt in enumerate(role_play_definition.seeds):
             if not prompt.value or not prompt.value.strip():
                 prompt_names = ["rephrase_instructions", "user_start_turn", "assistant_start_turn"]
                 raise ValueError(f"Role-play definition prompt '{prompt_names[i]}' cannot be empty")
 
-        self._rephrase_instructions = role_play_definition.prompts[0]
-        self._user_start_turn = role_play_definition.prompts[1]
-        self._assistant_start_turn = role_play_definition.prompts[2]
+        self._rephrase_instructions = role_play_definition.seeds[0]
+        self._user_start_turn = role_play_definition.seeds[1]
+        self._assistant_start_turn = role_play_definition.seeds[2]

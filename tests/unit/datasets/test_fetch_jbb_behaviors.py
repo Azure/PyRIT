@@ -272,15 +272,15 @@ class TestFilteringFunctions:
                 dataset_name="test",
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedDataset(seeds=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test filtering
         result = fetch_jbb_behaviors_by_harm_category("hate")
 
         assert isinstance(result, SeedDataset)
-        assert len(result.prompts) == 2  # Two prompts contain "hate"
-        assert all("hate" in prompt.harm_categories for prompt in result.prompts)
+        assert len(result.seeds) == 2  # Two prompts contain "hate"
+        assert all("hate" in prompt.harm_categories for prompt in result.seeds)
 
     @patch("pyrit.datasets.fetch_jbb_behaviors.fetch_jbb_behaviors_dataset")
     def test_fetch_jbb_behaviors_by_harm_category_case_insensitive(self, mock_fetch_all):
@@ -294,15 +294,15 @@ class TestFilteringFunctions:
                 dataset_name="test",
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedDataset(seeds=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test case insensitive matching
         result = fetch_jbb_behaviors_by_harm_category("violence")
-        assert len(result.prompts) == 1
+        assert len(result.seeds) == 1
 
         result = fetch_jbb_behaviors_by_harm_category("VIOLENCE")
-        assert len(result.prompts) == 1
+        assert len(result.seeds) == 1
 
     @patch("pyrit.datasets.fetch_jbb_behaviors.fetch_jbb_behaviors_dataset")
     def test_fetch_jbb_behaviors_by_jbb_category(self, mock_fetch_all):
@@ -325,15 +325,15 @@ class TestFilteringFunctions:
                 metadata={"jbb_category": "hate"},
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedDataset(seeds=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test filtering by JBB category
         result = fetch_jbb_behaviors_by_jbb_category("violence")
 
         assert isinstance(result, SeedDataset)
-        assert len(result.prompts) == 1
-        assert result.prompts[0].metadata["jbb_category"] == "violence"
+        assert len(result.seeds) == 1
+        assert result.seeds[0].metadata["jbb_category"] == "violence"
 
     @patch("pyrit.datasets.fetch_jbb_behaviors.fetch_jbb_behaviors_dataset")
     def test_fetch_jbb_behaviors_by_jbb_category_no_metadata(self, mock_fetch_all):
@@ -356,7 +356,7 @@ class TestFilteringFunctions:
                 metadata={"jbb_category": "other"},
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedDataset(seeds=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         with pytest.raises(ValueError, match="SeedDataset cannot be empty."):

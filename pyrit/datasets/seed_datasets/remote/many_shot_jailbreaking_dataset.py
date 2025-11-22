@@ -69,4 +69,4 @@ class ManyShotJailbreakingDataset(RemoteDatasetLoader):
             for example in examples
         ]
 
-        return SeedDataset(prompts=seed_prompts)
+        return SeedDataset(seeds=seed_prompts)
