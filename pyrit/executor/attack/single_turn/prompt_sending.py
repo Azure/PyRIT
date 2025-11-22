@@ -55,6 +55,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         *,
         objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
+        apply_converters_to_prepended_conversation: bool = True,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
@@ -79,6 +80,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         attack_converter_config = attack_converter_config or AttackConverterConfig()
         self._request_converters = attack_converter_config.request_converters
         self._response_converters = attack_converter_config.response_converters
+        self._apply_converters_to_prepended_conversation = apply_converters_to_prepended_conversation
 
         # Initialize scoring configuration
         attack_scoring_config = attack_scoring_config or AttackScoringConfig()
@@ -141,11 +143,12 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
 
         # Process prepended conversation if provided
+        request_converters = self._request_converters if self._apply_converters_to_prepended_conversation else []
         await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
             conversation_id=context.conversation_id,
             prepended_conversation=context.prepended_conversation,
-            request_converters=self._request_converters,
+            request_converters=request_converters,
             response_converters=self._response_converters,
         )
 
