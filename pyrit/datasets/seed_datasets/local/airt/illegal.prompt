@@ -1,4 +1,4 @@
-dataset_name: 2025_06_pyrit_illegal_example
+dataset_name: airt_illegal
 harm_categories: illegal
 source: https://azure.github.io/PyRIT/
 groups: AI Red Team

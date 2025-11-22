@@ -5,7 +5,7 @@
 Dataset fetching and loading utilities for various red teaming and safety evaluation datasets.
 """
 
-from pyrit.datasets.adv_bench_dataset import fetch_adv_bench_dataset
+# from pyrit.datasets.adv_bench_dataset import fetch_adv_bench_dataset  # TODO: Module missing
 from pyrit.datasets.aya_redteaming_dataset import fetch_aya_redteaming_dataset
 from pyrit.datasets.babelscape_alert_dataset import fetch_babelscape_alert_dataset
 from pyrit.datasets.darkbench_dataset import fetch_darkbench_dataset
@@ -42,7 +42,7 @@ from pyrit.datasets.sorry_bench_dataset import fetch_sorry_bench_dataset
 
 
 __all__ = [
-    "fetch_adv_bench_dataset",
+    # "fetch_adv_bench_dataset",  # TODO: Module missing
     "fetch_aya_redteaming_dataset",
     "fetch_babelscape_alert_dataset",
     "fetch_ccp_sensitive_prompts_dataset",

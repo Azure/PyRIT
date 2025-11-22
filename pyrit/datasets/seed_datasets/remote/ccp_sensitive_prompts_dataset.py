@@ -1,0 +1,78 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+import logging
+from pathlib import Path
+from typing import Optional
+
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader
+from pyrit.models import SeedDataset, SeedPrompt
+
+logger = logging.getLogger(__name__)
+
+
+class CCPSensitivePromptsDataset(RemoteDatasetLoader):
+    """
+    Loader for the CCP-sensitive-prompts dataset.
+
+    This dataset contains prompts covering topics sensitive to the Chinese Communist Party (CCP).
+    These prompts are likely to be censored by certain models.
+
+    Reference: https://huggingface.co/datasets/promptfoo/CCP-sensitive-prompts
+    """
+
+    def __init__(
+        self,
+        *,
+        source: str = "promptfoo/CCP-sensitive-prompts",
+        cache: bool = True,
+        data_home: Optional[Path] = None,
+    ):
+        """
+        Initialize the CCP-sensitive prompts dataset loader.
+
+        Args:
+            source: HuggingFace dataset identifier. Defaults to "promptfoo/CCP-sensitive-prompts".
+            cache: Whether to cache the fetched examples. Defaults to True.
+            data_home: Directory to store cached data. Defaults to None.
+        """
+        self.source = source
+        self.cache = cache
+        self.data_home = data_home
+
+    @property
+    def dataset_name(self) -> str:
+        return "ccp_sensitive_prompts"
+
+    async def fetch_dataset(self) -> SeedDataset:
+        """
+        Fetch CCP-sensitive prompts dataset and return as SeedDataset.
+
+        Returns:
+            SeedDataset: A SeedDataset containing CCP-sensitive prompts.
+        """
+        logger.info(f"Loading CCP-sensitive prompts dataset from {self.source}")
+
+        # Load from HuggingFace
+        data = await self._fetch_from_huggingface(
+            dataset_name=self.source,
+            split="train",
+        )
+
+        seed_prompts = [
+            SeedPrompt(
+                value=row["prompt"],
+                data_type="text",
+                name=self.dataset_name,
+                dataset_name=self.dataset_name,
+                harm_categories=[row["subject"]],
+                description="Prompts covering topics sensitive to the CCP.",
+                groups=["promptfoo"],
+                source=f"https://huggingface.co/datasets/{self.source}",
+            )
+            for row in data
+        ]
+
+        logger.info(f"Successfully loaded {len(seed_prompts)} prompts from CCP-sensitive prompts dataset")
+
+        return SeedDataset(prompts=seed_prompts)
