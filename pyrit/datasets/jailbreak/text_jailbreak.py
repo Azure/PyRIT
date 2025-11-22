@@ -50,23 +50,23 @@ class TextJailBreak:
         elif string_template:
             self.template = SeedPrompt(value=string_template)
         else:
-            # Get all yaml files in the jailbreak directory and its subdirectories
-            jailbreak_dir = pathlib.Path(DATASETS_PATH) / "jailbreak"
+            # Get all yaml files in the jailbreak/templates directory and its subdirectories
+            jailbreak_dir = pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates"
             # Get all yaml files but exclude those in multi_parameter subdirectory
             yaml_files = [f for f in jailbreak_dir.rglob("*.yaml") if "multi_parameter" not in f.parts]
             if not yaml_files:
                 raise ValueError(
-                    "No YAML templates found in jailbreak directory (excluding multi_parameter subdirectory)"
+                    "No YAML templates found in jailbreak/templates directory (excluding multi_parameter subdirectory)"
                 )
 
             if template_file_name:
                 matching_files = [f for f in yaml_files if f.name == template_file_name]
                 if not matching_files:
                     raise ValueError(
-                        f"Template file '{template_file_name}' not found in jailbreak directory or its subdirectories"
+                        f"Template file '{template_file_name}' not found in jailbreak/templates directory or its subdirectories"
                     )
                 if len(matching_files) > 1:
-                    raise ValueError(f"Multiple files named '{template_file_name}' found in jailbreak directory")
+                    raise ValueError(f"Multiple files named '{template_file_name}' found in jailbreak/templates directory")
                 self.template = SeedPrompt.from_yaml_file(matching_files[0])
             else:
                 while True:

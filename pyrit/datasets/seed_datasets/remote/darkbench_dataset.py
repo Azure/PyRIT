@@ -61,7 +61,7 @@ class DarkBenchDataset(RemoteDatasetLoader):
             Exception: If the dataset cannot be loaded.
         """
         # Fetch from HuggingFace
-        data = self._fetch_from_huggingface(
+        data = await self._fetch_from_huggingface(
             dataset_name=self.hf_dataset_name,
             config=self.config,
             split=self.split,
@@ -76,7 +76,7 @@ class DarkBenchDataset(RemoteDatasetLoader):
                 data_type="text",
                 name="",
                 dataset_name=self.dataset_name,
-                harm_categories=[item["deceptive_pattern"]],
+                harm_categories=[item["Deceptive Pattern"]],
                 description=(
                     "DarkBench is a comprehensive benchmark designed to detect dark design patterns in large "
                     "language models (LLMs). Dark patterns are manipulative techniques that influence user "

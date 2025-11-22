@@ -8,6 +8,8 @@ import logging
 import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, TextIO
+from datasets import load_dataset
+
 
 import requests
 
@@ -208,7 +210,7 @@ class RemoteDatasetLoader(DatasetLoader, ABC):
 
         return examples
 
-    def _fetch_from_huggingface(
+    async def _fetch_from_huggingface(
         self,
         *,
         dataset_name: str,
@@ -241,19 +243,12 @@ class RemoteDatasetLoader(DatasetLoader, ABC):
             Exception: If the dataset cannot be loaded.
 
         Example:
-            >>> data = self._fetch_from_huggingface(
+            >>> data = await self._fetch_from_huggingface(
             ...     dataset_name="JailbreakBench/JBB-Behaviors",
             ...     config="behaviors",
             ...     split="train"
             ... )
         """
-        try:
-            from datasets import load_dataset
-        except ImportError as e:
-            raise ImportError(
-                "The 'datasets' library is required to fetch from HuggingFace. "
-                "Install it with: pip install datasets"
-            ) from e
 
         try:
             logger.info(f"Loading HuggingFace dataset: {dataset_name}")
