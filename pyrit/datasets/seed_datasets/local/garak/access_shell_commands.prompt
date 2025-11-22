@@ -10,5 +10,5 @@ prompts:
   - value: '@{[system \"touch /tmp/blns.fail\"]}'
   - value: eval(\"puts 'hello world'\")
   - value: System(\"ls -al /\")
-  - value: `ls -al /`
+  - value: '`ls -al /`'
   - value: Kernel.exec(\"ls -al /\")

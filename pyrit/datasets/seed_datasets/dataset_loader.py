@@ -84,15 +84,15 @@ class DatasetLoader(ABC):
             >>> names = DatasetLoader.get_all_dataset_names()
             >>> print(f"Available datasets: {', '.join(names)}")
         """
-        dataset_names = []
+        dataset_names = set()
         for loader_class in cls._registry.values():
             try:
                 # Instantiate to get dataset name
                 loader = loader_class()
-                dataset_names.append(loader.dataset_name)
+                dataset_names.add(loader.dataset_name)
             except Exception as e:
                 logger.warning(f"Could not get dataset name from {loader_class.__name__}: {e}")
-        return sorted(dataset_names)
+        return sorted(list(dataset_names))
 
     @classmethod
     async def fetch_all_datasets(
@@ -119,7 +119,7 @@ class DatasetLoader(ABC):
             ...     dataset_names=["harmbench", "DarkBench"]
             ... )
         """
-        datasets = []
+        datasets = {}
 
         for loader_name, loader_class in cls._registry.items():
             try:
@@ -134,9 +134,17 @@ class DatasetLoader(ABC):
 
                 logger.info(f"Fetching dataset: {loader_name}")
                 dataset = await loader.fetch_dataset()
-                datasets.append(dataset)
+                
+                if loader.dataset_name in datasets:
+                    # Merge with existing dataset
+                    existing_dataset = datasets[loader.dataset_name]
+                    existing_dataset.prompts.extend(dataset.prompts)
+                    existing_dataset.objectives.extend(dataset.objectives)
+                else:
+                    datasets[loader.dataset_name] = dataset
+                    
             except Exception as e:
                 logger.error(f"Failed to fetch dataset {loader_name}: {e}")
 
-        logger.info(f"Successfully fetched {len(datasets)} out of {len(cls._registry)} datasets")
-        return datasets
+        logger.info(f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} loaders")
+        return list(datasets.values())

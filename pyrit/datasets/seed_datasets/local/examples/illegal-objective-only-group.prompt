@@ -1,6 +1,7 @@
 # This is used to show how a single objective can be sent.
+dataset_name: pyrit_example_dataset
 prompts:
-  - dataset_name: TestObjective
+  - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal
     source: AI Red Team

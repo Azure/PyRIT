@@ -33,7 +33,7 @@ class LocalDatasetLoader(DatasetLoader):
         try:
             dataset = SeedDataset.from_yaml_file(file_path)
             # Use the dataset_name from the YAML if available, otherwise use filename
-            self._dataset_name = getattr(dataset, 'name', None) or file_path.stem
+            self._dataset_name = getattr(dataset, "dataset_name", None) or getattr(dataset, "name", None) or file_path.stem
         except Exception as e:
             logger.warning(f"Could not pre-load dataset from {file_path}: {e}")
             self._dataset_name = file_path.stem

@@ -1,6 +1,7 @@
 # This is used to show a multi modality (text, image, audio) group can be formatted.
+dataset_name: pyrit_example_dataset
 prompts:
-  - dataset_name: TestMultimodalTextImageAudioVideo
+  - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal
     source: AI Red Team
@@ -9,7 +10,7 @@ prompts:
     sequence: 0
     prompt_group_alias: group_1
     role: user
-  - dataset_name: TestMultimodalTextImageAudioVideo
+  - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal
     source: AI Red Team
@@ -19,7 +20,7 @@ prompts:
     sequence: 1
     prompt_group_alias: group_1
     role: user
-  - dataset_name: TestMultimodalTextImageAudioVideo
+  - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal
     source: AI Red Team
@@ -29,9 +30,9 @@ prompts:
     is_objective: true
     prompt_group_alias: group_1
     role: user
-  - dataset_name: TestMultimodalTextImageAudioVideo
+  - dataset_name: pyrit_example_dataset
     source: AI Red Team
-  - value: |
+    value: |
       {{ datasets_path }}/seed_datasets/examples/multimodal_data/roakey_potion.png
     data_type: image_path
     sequence: 2

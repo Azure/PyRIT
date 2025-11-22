@@ -1,6 +1,7 @@
 # This is used to show how an objective can be set in a multi modality (text, image) group.
+dataset_name: pyrit_example_dataset
 prompts:
-  - dataset_name: TestObjectiveMultiModal
+  - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal
     source: AI Red Team
@@ -9,7 +10,7 @@ prompts:
     sequence: 0
     prompt_group_alias: group_1
     role: user
-  - dataset_name: TestObjectiveMultiModal
+  - dataset_name: pyrit_example_dataset
     harm_categories:
       - illegal
     source: AI Red Team
@@ -19,9 +20,9 @@ prompts:
     sequence: 1
     prompt_group_alias: group_1
     role: user
-  - dataset_name: TestObjectiveMultiModal
+  - dataset_name: pyrit_example_dataset
     source: AI Red Team
-  - value: |
+    value: |
       {{ datasets_path }}/seed_datasets/examples/multimodal_data/roakey_potion.png
     data_type: image_path
     sequence: 1
