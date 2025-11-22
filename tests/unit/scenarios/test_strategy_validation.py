@@ -5,7 +5,7 @@
 
 import pytest
 
-from pyrit.scenarios import EncodingStrategy, FoundryStrategy, ScenarioCompositeStrategy
+from pyrit.scenario import EncodingStrategy, FoundryStrategy, ScenarioCompositeStrategy
 
 
 class TestStrategyValidation:

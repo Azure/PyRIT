@@ -45,7 +45,7 @@
 #
 # ## Creating Custom Scenarios
 #
-# To create a custom scenario, extend the `Scenario` base class. See [`FoundryScenario`](../../../pyrit/scenarios/scenarios/foundry_scenario.py) for an example.
+# To create a custom scenario, extend the `Scenario` base class. See [`FoundryScenario`](../../../pyrit/scenario/scenarios/foundry_scenario.py) for an example.
 #
 # ## Using Scenarios
 #
@@ -54,8 +54,9 @@
 
 # %%
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.scenarios import FoundryScenario, FoundryStrategy, ScenarioCompositeStrategy
-from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
+from pyrit.scenario.core import ScenarioCompositeStrategy
+from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
+from pyrit.scenario.scenarios import FoundryScenario, FoundryStrategy
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(

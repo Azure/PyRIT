@@ -3,15 +3,19 @@
 
 """High-level scenario classes for running attack configurations."""
 
-from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario import Scenario
+from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioCompositeStrategy, ScenarioStrategy
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 
-from pyrit.scenarios.scenarios.airt.cyber_scenario import CyberScenario, CyberStrategy
-from pyrit.scenarios.scenarios.airt.scam_scenario import ScamScenario, ScamStrategy
-from pyrit.scenarios.scenarios.encoding_scenario import EncodingScenario, EncodingStrategy
-from pyrit.scenarios.scenarios.foundry_scenario import FoundryStrategy, FoundryScenario
-from pyrit.scenarios.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
+from pyrit.scenario.scenarios import (
+    CyberScenario,
+    CyberStrategy,
+    ScamScenario,
+    ScamStrategy,
+    EncodingScenario,
+    EncodingStrategy,
+    FoundryStrategy,
+    FoundryScenario,
+)
 
 __all__ = [
     "AtomicAttack",

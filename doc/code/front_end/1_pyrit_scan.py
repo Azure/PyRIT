@@ -59,7 +59,7 @@
 #
 # You need a single scenario to run, you need two things:
 #
-# 1. A Scenario. Many are defined in `pyrit.scenarios.scenarios`. But you can also define your own in initialization_scripts.
+# 1. A Scenario. Many are defined in `pyrit.scenario.scenarios`. But you can also define your own in initialization_scripts.
 # 2. Initializers (which can be supplied via `--initializers` or `--initialization-scripts`). Scenarios often don't need many arguments, but they can be configured in different ways. And at the very least, most need an `objective_target` (the thing you're running a scan against).
 # 3. Scenario Strategies (optional). These are supplied by the `--scenario-strategies` flag and tell the scenario what to test, but they are always optional. Also note you can obtain these by running `--list-scenarios`
 #
@@ -124,8 +124,8 @@ from pyrit.common.apply_defaults import apply_defaults
 
 # %%
 # my_custom_scenarios.py
-from pyrit.scenarios import Scenario
-from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+from pyrit.scenario import Scenario
+from pyrit.scenario.scenario_strategy import ScenarioStrategy
 
 
 class MyCustomStrategy(ScenarioStrategy):

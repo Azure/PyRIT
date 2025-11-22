@@ -10,7 +10,7 @@ import pytest
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
-from pyrit.scenarios import EncodingScenario, EncodingStrategy
+from pyrit.scenario import EncodingScenario, EncodingStrategy
 from pyrit.score import DecodingScorer, TrueFalseScorer
 
 
