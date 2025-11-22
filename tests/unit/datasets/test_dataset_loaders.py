@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.datasets.seed_datasets import DatasetLoader
+from pyrit.datasets.seed_datasets import SeedDatasetProvider
 from pyrit.datasets.seed_datasets.local.local_dataset_loader import LocalDatasetLoader
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import DarkBenchDataset
 from pyrit.datasets.seed_datasets.remote.harmbench_dataset import HarmBenchDataset
@@ -43,21 +43,21 @@ def mock_darkbench_data():
     ]
 
 
-class TestDatasetLoader:
-    """Test the DatasetLoader base class and registration."""
+class TestSeedDatasetProvider:
+    """Test the SeedDatasetProvider base class and registration."""
 
-    def test_get_all_loaders(self):
-        """Test that loaders are automatically registered."""
-        loaders = DatasetLoader.get_all_loaders()
+    def test_get_all_providers(self):
+        """Test that providers are automatically registered."""
+        providers = SeedDatasetProvider.get_all_providers()
 
-        assert isinstance(loaders, dict)
-        assert len(loaders) >= 2  # At least HarmBench and DarkBench
-        assert "HarmBenchDataset" in loaders
-        assert "DarkBenchDataset" in loaders
+        assert isinstance(providers, dict)
+        assert len(providers) >= 2  # At least HarmBench and DarkBench
+        assert "HarmBenchDataset" in providers
+        assert "DarkBenchDataset" in providers
 
     def test_get_all_dataset_names(self):
         """Test getting all dataset names."""
-        names = DatasetLoader.get_all_dataset_names()
+        names = SeedDatasetProvider.get_all_dataset_names()
 
         assert isinstance(names, list)
         assert len(names) >= 2
@@ -68,10 +68,10 @@ class TestDatasetLoader:
 
     def test_local_loaders_registered(self):
         """Test that local dataset loaders are registered."""
-        loaders = DatasetLoader.get_all_loaders()
+        providers = SeedDatasetProvider.get_all_providers()
         
         # Check if any LocalDatasetLoader instances are registered
-        local_loaders = [k for k in loaders.keys() if "LocalDatasetLoader" in k]
+        local_loaders = [k for k in providers.keys() if "LocalDatasetLoader" in k]
         # Should have at least some local datasets if seed_datasets directory has files
         assert len(local_loaders) >= 0  # May be 0 if no .prompt files exist
 
@@ -81,7 +81,7 @@ class TestDatasetLoader:
         with patch.object(
             HarmBenchDataset, "_fetch_from_url", return_value=mock_harmbench_data
         ), patch.object(DarkBenchDataset, "_fetch_from_huggingface", return_value=mock_darkbench_data):
-            datasets = await DatasetLoader.fetch_all_datasets()
+            datasets = await SeedDatasetProvider.fetch_all_datasets()
 
             assert isinstance(datasets, list)
             assert len(datasets) >= 2
@@ -91,7 +91,7 @@ class TestDatasetLoader:
     async def test_fetch_all_datasets_with_filter(self, mock_harmbench_data):
         """Test fetching datasets with name filter."""
         with patch.object(HarmBenchDataset, "_fetch_from_url", return_value=mock_harmbench_data):
-            datasets = await DatasetLoader.fetch_all_datasets(dataset_names=["harmbench"])
+            datasets = await SeedDatasetProvider.fetch_all_datasets(dataset_names=["harmbench"])
 
             assert isinstance(datasets, list)
             assert len(datasets) == 1

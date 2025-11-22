@@ -2,7 +2,6 @@
 
 One way to think about PyRIT is that it is a framework for trying to get AI systems to do things they aren't supposed to do. But what are those things that AI systems aren't supposed to do?
 
-While it is not a goal to include these things within PyRIT, it is a goal to make it as easy as possible to include your own or those defined by others.
 
 ## Seeds
 
@@ -27,10 +26,3 @@ Multiple `SeedPrompts` can also be grouped together as part of multi-part messag
 
 `SeedPrompts` can also be used in other components. For example, a `Scorer` may use a `SeedPrompt` to help score a response, or a `PromptConverter` may use a `SeedPrompt` to convert a request.
 
-
-**Datasets Loading Process: Seed Prompt De-duplication**:
-PyRIT checks for existence of duplicate seed prompts using hashes to make sure it is not uploading duplicate seed prompts in the memory. The feature follows following decision-tree:
-
-1. If PyRIT receives duplicate seed prompts within the same dataset, it doesn't upload the seed prompt
-2. But if it receives a new seed prompt in the same dataset with even a slight modification and having a different hash, it accepts it.
-3. If PyRIT receives a duplicate seed prompt in a different dataset, it accepts it.

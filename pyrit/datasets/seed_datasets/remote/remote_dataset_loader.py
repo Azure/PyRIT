@@ -17,7 +17,7 @@ from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, read_jsonl, write_json, write_jsonl
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.text_helper import read_txt, write_txt
-from pyrit.datasets.seed_datasets.dataset_loader import DatasetLoader
+from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ FILE_TYPE_HANDLERS: Dict[str, Dict[str, Callable]] = {
 }
 
 
-class RemoteDatasetLoader(DatasetLoader, ABC):
+class RemoteDatasetLoader(SeedDatasetProvider, ABC):
     """
     Abstract base class for loading remote datasets.
 

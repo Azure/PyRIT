@@ -11,32 +11,32 @@ from pyrit.models.seed_dataset import SeedDataset
 logger = logging.getLogger(__name__)
 
 
-class DatasetLoader(ABC):
+class SeedDatasetProvider(ABC):
     """
-    Abstract base class for loading datasets with automatic registration.
+    Abstract base class for providing seed datasets with automatic registration.
 
     All concrete subclasses are automatically registered and can be discovered
-    via get_all_loaders() class method. This enables automatic discovery of
-    both local and remote dataset loaders.
+    via get_all_providers() class method. This enables automatic discovery of
+    both local and remote dataset providers.
 
     Subclasses must implement:
     - fetch_dataset(): Fetch and return the dataset as a SeedDataset
     - dataset_name property: Human-readable name for the dataset
     """
 
-    _registry: Dict[str, Type["DatasetLoader"]] = {}
+    _registry: Dict[str, Type["SeedDatasetProvider"]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """
         Automatically register non-abstract subclasses.
 
-        This is called when a class inherits from DatasetLoader.
+        This is called when a class inherits from SeedDatasetProvider.
         """
         super().__init_subclass__(**kwargs)
         # Only register concrete (non-abstract) classes
         if not inspect.isabstract(cls) and getattr(cls, "should_register", True):
-            DatasetLoader._registry[cls.__name__] = cls
-            logger.debug(f"Registered dataset loader: {cls.__name__}")
+            SeedDatasetProvider._registry[cls.__name__] = cls
+            logger.debug(f"Registered dataset provider: {cls.__name__}")
 
     @property
     @abstractmethod
@@ -63,12 +63,12 @@ class DatasetLoader(ABC):
         pass
 
     @classmethod
-    def get_all_loaders(cls) -> Dict[str, Type["DatasetLoader"]]:
+    def get_all_providers(cls) -> Dict[str, Type["SeedDatasetProvider"]]:
         """
-        Get all registered dataset loader classes.
+        Get all registered dataset provider classes.
 
         Returns:
-            Dict[str, Type[DatasetLoader]]: Dictionary mapping class names to loader classes.
+            Dict[str, Type[SeedDatasetProvider]]: Dictionary mapping class names to provider classes.
         """
         return cls._registry.copy()
 
@@ -78,20 +78,20 @@ class DatasetLoader(ABC):
         Get the names of all registered datasets.
 
         Returns:
-            List[str]: List of dataset names from all registered loaders.
+            List[str]: List of dataset names from all registered providers.
 
         Example:
-            >>> names = DatasetLoader.get_all_dataset_names()
+            >>> names = SeedDatasetProvider.get_all_dataset_names()
             >>> print(f"Available datasets: {', '.join(names)}")
         """
         dataset_names = set()
-        for loader_class in cls._registry.values():
+        for provider_class in cls._registry.values():
             try:
                 # Instantiate to get dataset name
-                loader = loader_class()
-                dataset_names.add(loader.dataset_name)
+                provider = provider_class()
+                dataset_names.add(provider.dataset_name)
             except Exception as e:
-                logger.warning(f"Could not get dataset name from {loader_class.__name__}: {e}")
+                logger.warning(f"Could not get dataset name from {provider_class.__name__}: {e}")
         return sorted(list(dataset_names))
 
     @classmethod
@@ -105,46 +105,46 @@ class DatasetLoader(ABC):
 
         Args:
             dataset_names: Optional list of dataset names to fetch. If None, fetches all.
-                          Names should match the dataset_name property of loaders.
+                          Names should match the dataset_name property of providers.
 
         Returns:
             List[SeedDataset]: List of all fetched datasets.
 
         Example:
             >>> # Fetch all datasets (local and remote)
-            >>> all_datasets = await DatasetLoader.fetch_all_datasets()
+            >>> all_datasets = await SeedDatasetProvider.fetch_all_datasets()
             >>> 
             >>> # Fetch specific datasets
-            >>> specific = await DatasetLoader.fetch_all_datasets(
+            >>> specific = await SeedDatasetProvider.fetch_all_datasets(
             ...     dataset_names=["harmbench", "DarkBench"]
             ... )
         """
         datasets = {}
 
-        for loader_name, loader_class in cls._registry.items():
+        for provider_name, provider_class in cls._registry.items():
             try:
                 # Instantiate to check dataset name for filtering
-                loader = loader_class()
+                provider = provider_class()
 
                 # Apply dataset name filter if specified
                 if dataset_names is not None:
-                    if loader.dataset_name not in dataset_names:
-                        logger.debug(f"Skipping {loader_name} - not in filter list")
+                    if provider.dataset_name not in dataset_names:
+                        logger.debug(f"Skipping {provider_name} - not in filter list")
                         continue
 
-                logger.info(f"Fetching dataset: {loader_name}")
-                dataset = await loader.fetch_dataset()
+                logger.info(f"Fetching dataset: {provider_name}")
+                dataset = await provider.fetch_dataset()
                 
-                if loader.dataset_name in datasets:
+                if provider.dataset_name in datasets:
                     # Merge with existing dataset
-                    existing_dataset = datasets[loader.dataset_name]
+                    existing_dataset = datasets[provider.dataset_name]
                     existing_dataset.prompts.extend(dataset.prompts)
                     existing_dataset.objectives.extend(dataset.objectives)
                 else:
-                    datasets[loader.dataset_name] = dataset
+                    datasets[provider.dataset_name] = dataset
                     
             except Exception as e:
-                logger.error(f"Failed to fetch dataset {loader_name}: {e}")
+                logger.error(f"Failed to fetch dataset {provider_name}: {e}")
 
-        logger.info(f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} loaders")
+        logger.info(f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
         return list(datasets.values())

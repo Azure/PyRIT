@@ -6,9 +6,10 @@ Dataset fetching and loading utilities for various red teaming and safety evalua
 """
 
 from pyrit.datasets.jailbreak.text_jailbreak import TextJailBreak
-from pyrit.datasets.seed_datasets.dataset_loader import DatasetLoader
+from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
+from pyrit.datasets.seed_datasets import local, remote  # noqa: F401
 
 __all__ = [
-    "DatasetLoader",
+    "SeedDatasetProvider",
     "TextJailBreak",
 ]

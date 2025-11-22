@@ -42,8 +42,7 @@ class SeedDataset(YamlLoadable):
     added_by: Optional[str]
 
     # Now the actual prompts
-    prompts: Sequence["SeedPrompt"]
-    objectives: Sequence["SeedObjective"]
+    prompts: Sequence["Seed"]
 
     def __init__(
         self,
@@ -88,14 +87,13 @@ class SeedDataset(YamlLoadable):
 
         # Convert any dictionaries in `prompts` to SeedPrompt and/or SeedObjective objects
         self.prompts = []
-        self.objectives = []
         for p in prompts:
             if isinstance(p, dict):
                 # Use top-level is_objective if not present in p
                 p_is_objective = p.get("is_objective", is_objective)
                 
                 if p_is_objective:
-                    self.objectives.append(
+                    self.prompts.append(
                         SeedObjective(
                             value=p["value"],
                             data_type="text",
@@ -114,15 +112,15 @@ class SeedDataset(YamlLoadable):
                             prompt_group_id=p.get("prompt_group_id"),
                         )
                     )
-                
-                if "is_objective" in p:
-                    del p["is_objective"]
-                
-                self.prompts.append(SeedPrompt(**p))
+                else:
+                    if "is_objective" in p:
+                        del p["is_objective"]
+                    
+                    self.prompts.append(SeedPrompt(**p))
             elif isinstance(p, SeedPrompt):
                 self.prompts.append(p)
             elif isinstance(p, SeedObjective):
-                self.objectives.append(p)
+                self.prompts.append(p)
             else:
                 raise ValueError(
                     "Prompts should be either dicts, SeedPrompt objects, or SeedObjective objects. Got something else."

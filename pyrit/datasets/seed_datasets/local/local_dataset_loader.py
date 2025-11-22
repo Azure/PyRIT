@@ -4,13 +4,13 @@
 import logging
 from pathlib import Path
 
-from pyrit.datasets.seed_datasets.dataset_loader import DatasetLoader
+from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
 from pyrit.models.seed_dataset import SeedDataset
 
 logger = logging.getLogger(__name__)
 
 
-class LocalDatasetLoader(DatasetLoader):
+class LocalDatasetLoader(SeedDatasetProvider):
     """
     Loader for local YAML dataset files.
 
