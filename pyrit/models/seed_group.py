@@ -201,8 +201,6 @@ class SeedGroup(YamlLoadable):
         Raises:
             ValueError: If conversion to Messages fails.
         """
-        from pyrit.models.message import Message
-        from pyrit.models.message_piece import MessagePiece
         
         result = DecomposedSeedGroup()
         
