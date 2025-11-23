@@ -13,7 +13,7 @@ from PIL import Image
 from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedDataset, SeedGroup, SeedObjective, SeedPrompt
+from pyrit.models import DecomposedSeedGroup, SeedDataset, SeedGroup, SeedObjective, SeedPrompt
 
 
 @pytest.fixture
@@ -762,3 +762,140 @@ def test_seed_group_mixed_prompt_types():
     # Should have the objective
     assert group.objective is not None
     assert group.objective.value == "Test objective"
+
+
+def test_to_attack_parameters_single_turn_no_objective():
+    """Test decomposing a single-turn SeedGroup with no objective."""
+    prompt = SeedPrompt(value="Hello", data_type="text", sequence=0, role="user")
+    group = SeedGroup(seeds=[prompt])
+
+    result = group.to_attack_parameters()
+
+    assert isinstance(result, DecomposedSeedGroup)
+    assert result.objective is None
+    assert result.prepended_conversation is None
+    assert result.current_turn_seed_group is not None
+    assert len(result.current_turn_seed_group.prompts) == 1
+    assert result.current_turn_seed_group.prompts[0].value == "Hello"
+
+
+def test_to_attack_parameters_single_turn_with_objective():
+    """Test decomposing a single-turn SeedGroup with an objective."""
+    prompt = SeedPrompt(value="Hello", data_type="text", sequence=0, role="user")
+    objective = SeedObjective(value="Test objective")
+    group = SeedGroup(seeds=[prompt, objective])
+
+    result = group.to_attack_parameters()
+
+    assert isinstance(result, DecomposedSeedGroup)
+    assert result.objective == "Test objective"
+    assert result.prepended_conversation is None
+    assert result.current_turn_seed_group is not None
+    assert len(result.current_turn_seed_group.prompts) == 1
+    assert result.current_turn_seed_group.prompts[0].value == "Hello"
+
+
+def test_to_attack_parameters_multi_turn_no_objective():
+    """Test decomposing a multi-turn SeedGroup with no objective."""
+    prompt1 = SeedPrompt(value="Turn 1", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Turn 2", data_type="text", sequence=1, role="assistant")
+    prompt3 = SeedPrompt(value="Turn 3", data_type="text", sequence=2, role="user")
+    group = SeedGroup(seeds=[prompt1, prompt2, prompt3])
+
+    result = group.to_attack_parameters()
+
+    assert isinstance(result, DecomposedSeedGroup)
+    assert result.objective is None
+    assert result.prepended_conversation is not None
+    assert len(result.prepended_conversation) == 2  # Two prior turns
+    assert result.prepended_conversation[0].get_value() == "Turn 1"
+    assert result.prepended_conversation[0].role == "user"
+    assert result.prepended_conversation[1].get_value() == "Turn 2"
+    assert result.prepended_conversation[1].role == "assistant"
+    assert result.current_turn_seed_group is not None
+    assert len(result.current_turn_seed_group.prompts) == 1
+    assert result.current_turn_seed_group.prompts[0].value == "Turn 3"
+
+
+def test_to_attack_parameters_multi_turn_with_objective():
+    """Test decomposing a multi-turn SeedGroup with an objective."""
+    prompt1 = SeedPrompt(value="Turn 1", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Turn 2", data_type="text", sequence=1, role="assistant")
+    prompt3 = SeedPrompt(value="Turn 3", data_type="text", sequence=2, role="user")
+    objective = SeedObjective(value="Multi-turn objective")
+    group = SeedGroup(seeds=[prompt1, prompt2, prompt3, objective])
+
+    result = group.to_attack_parameters()
+
+    assert isinstance(result, DecomposedSeedGroup)
+    assert result.objective == "Multi-turn objective"
+    assert result.prepended_conversation is not None
+    assert len(result.prepended_conversation) == 2
+    assert result.current_turn_seed_group is not None
+    assert len(result.current_turn_seed_group.prompts) == 1
+
+
+def test_to_attack_parameters_multi_part_single_turn():
+    """Test decomposing a single-turn SeedGroup with multiple parts in one turn."""
+    prompt1 = SeedPrompt(value="Part 1", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Part 2", data_type="text", sequence=0, role="user")
+    group = SeedGroup(seeds=[prompt1, prompt2])
+
+    result = group.to_attack_parameters()
+
+    assert isinstance(result, DecomposedSeedGroup)
+    assert result.objective is None
+    assert result.prepended_conversation is None
+    assert result.current_turn_seed_group is not None
+    assert len(result.current_turn_seed_group.prompts) == 2
+
+
+def test_to_attack_parameters_multi_part_last_turn():
+    """Test that the last turn can have multiple parts."""
+    prompt1 = SeedPrompt(value="Turn 1", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Turn 2 Part 1", data_type="text", sequence=1, role="user")
+    prompt3 = SeedPrompt(value="Turn 2 Part 2", data_type="text", sequence=1, role="user")
+    group = SeedGroup(seeds=[prompt1, prompt2, prompt3])
+
+    result = group.to_attack_parameters()
+
+    assert isinstance(result, DecomposedSeedGroup)
+    assert result.prepended_conversation is not None
+    assert len(result.prepended_conversation) == 1
+    assert result.prepended_conversation[0].get_value() == "Turn 1"
+    assert result.current_turn_seed_group is not None
+    assert len(result.current_turn_seed_group.prompts) == 2
+    assert result.current_turn_seed_group.prompts[0].value == "Turn 2 Part 1"
+    assert result.current_turn_seed_group.prompts[1].value == "Turn 2 Part 2"
+
+
+def test_to_attack_parameters_preserves_prompt_group_id():
+    """Test that the prompt_group_id is preserved across decomposition."""
+    group_id = uuid.uuid4()
+    prompt1 = SeedPrompt(value="Turn 1", data_type="text", sequence=0, role="user", prompt_group_id=group_id)
+    prompt2 = SeedPrompt(value="Turn 2", data_type="text", sequence=1, role="user", prompt_group_id=group_id)
+    group = SeedGroup(seeds=[prompt1, prompt2])
+
+    result = group.to_attack_parameters()
+
+    # Check that the conversation_id matches the group_id
+    assert result.prepended_conversation[0].conversation_id == str(group_id)
+    assert result.current_turn_seed_group.prompts[0].prompt_group_id == group_id
+
+
+def test_to_attack_parameters_message_pieces_structure():
+    """Test that message pieces have the correct structure."""
+    prompt1 = SeedPrompt(value="Part 1", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Part 2", data_type="image_path", sequence=0, role="user")
+    group = SeedGroup(seeds=[prompt1, prompt2])
+
+    result = group.to_attack_parameters()
+
+    assert result.prepended_conversation is None
+    assert result.current_turn_seed_group is not None
+
+    # Current turn should have both prompts
+    current_prompts = result.current_turn_seed_group.prompts
+    assert len(current_prompts) == 2
+    assert current_prompts[0].data_type == "text"
+    assert current_prompts[1].data_type == "image_path"
