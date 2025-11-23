@@ -131,4 +131,4 @@ class PKUSafeRLHFDataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from PKU-SafeRLHF dataset")
 
-        return SeedDataset(seeds=seed_prompts)
+        return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)

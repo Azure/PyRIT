@@ -99,10 +99,15 @@ class RedTeamSocialBiasDataset(RemoteDatasetLoader):
             }
 
             if prompt_type in ["Multi Turn"]:
+                # Get the prompt value - try different keys
+                prompt_data = item.get("prompt", item.get("Prompt", ""))
+                if not prompt_data:  # Skip if no prompt data
+                    continue
+                    
                 # Safely parse the user prompts, remove the unwanted ones such as "assistant" and "system"
                 user_prompts = [
                     turn["body"]
-                    for turn in ast.literal_eval(item.get("prompt", ""))
+                    for turn in ast.literal_eval(prompt_data)
                     if turn["role"].startswith("user")
                 ]
 
@@ -119,8 +124,13 @@ class RedTeamSocialBiasDataset(RemoteDatasetLoader):
                         )
                     )
             else:
+                # Get the prompt value - try different keys
+                prompt_value = item.get("prompt", item.get("Prompt", ""))
+                if not prompt_value:  # Skip empty prompts
+                    continue
+                    
                 # Clean up single turn prompts that contain unwanted lines of text
-                cleaned_value = item.get("prompt", "").replace("### Response:", "").replace("### Instruction:", "").strip()
+                cleaned_value = prompt_value.replace("### Response:", "").replace("### Instruction:", "").strip()
                 # some entries have contents that trip up jinja2, so we escape them
                 escaped_cleaned_value = f"{{% raw %}}{cleaned_value}{{% endraw %}}"
                 seed_prompts.append(
@@ -134,4 +144,4 @@ class RedTeamSocialBiasDataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from Red Team Social Bias dataset")
 
-        return SeedDataset(seeds=seed_prompts)
+        return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)

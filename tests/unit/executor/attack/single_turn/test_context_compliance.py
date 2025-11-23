@@ -90,6 +90,7 @@ def mock_seed_dataset():
 
     dataset = MagicMock(spec=SeedDataset)
     dataset.seeds = [prompt1, prompt2, prompt3]
+    dataset.prompts = [prompt1, prompt2, prompt3]  # Add prompts property for compatibility
     return dataset
 
 
@@ -786,8 +787,8 @@ class TestContextComplianceAttackErrorHandling:
                 attack_adversarial_config=mock_attack_adversarial_config,
             )
 
-            # Mock template rendering to fail
-            mock_seed_dataset.prompts[0].render_template_value.side_effect = KeyError("missing_param")
+            # Mock template rendering to fail - use seeds[0] since that's what the attack uses
+            mock_seed_dataset.seeds[0].render_template_value.side_effect = KeyError("missing_param")
 
             with pytest.raises(KeyError, match="missing_param"):
                 attack._rephrase_objective_to_user_turn.render_template_value(objective="test")

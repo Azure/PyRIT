@@ -3,11 +3,11 @@
 
 import logging
 import pathlib
+import requests
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
-from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn import SingleTurnAttackContext
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -16,6 +16,19 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
+
+
+def fetch_many_shot_jailbreaking_dataset() -> list[dict[str, str]]:
+    """
+    Fetch many-shot jailbreaking dataset from a specified source.
+
+    Returns:
+        list[dict[str, str]]: A list of many-shot jailbreaking examples.
+    """
+    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json"
+    response = requests.get(source)
+    response.raise_for_status()
+    return response.json()
 
 
 class ManyShotJailbreakAttack(PromptSendingAttack):

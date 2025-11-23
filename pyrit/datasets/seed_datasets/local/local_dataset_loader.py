@@ -55,6 +55,8 @@ class LocalDatasetLoader(SeedDatasetProvider):
         try:
             logger.info(f"Loading local dataset from {self.file_path}")
             dataset = SeedDataset.from_yaml_file(self.file_path)
+            if not dataset.dataset_name:
+                dataset.dataset_name = self.dataset_name
             return dataset
         except Exception as e:
             logger.error(f"Failed to load local dataset from {self.file_path}: {e}")

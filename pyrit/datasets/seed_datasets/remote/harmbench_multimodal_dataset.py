@@ -210,7 +210,7 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(prompts)} prompts from HarmBench multimodal dataset")
 
-        return SeedDataset(seeds=prompts)
+        return SeedDataset(seeds=prompts, dataset_name=self.dataset_name)
 
     async def _fetch_and_save_image_async(self, image_url: str, behavior_id: str) -> str:
         """

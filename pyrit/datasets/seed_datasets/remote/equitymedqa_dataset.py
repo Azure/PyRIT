@@ -137,7 +137,7 @@ class EquityMedQADataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(seed_prompts)} unique prompts from EquityMedQA dataset")
 
-        return SeedDataset(seeds=seed_prompts)
+        return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)
 
     async def _get_sub_dataset(self, subset_name: str) -> list[str]:
         """

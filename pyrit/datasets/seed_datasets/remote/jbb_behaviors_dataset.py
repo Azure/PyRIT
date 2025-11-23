@@ -65,10 +65,11 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
             logger.info(f"Loading JBB-Behaviors dataset from {self.source}")
 
             # Load from HuggingFace
+            # Note: JBB-Behaviors has 'harmful' and 'benign' splits
             data = await self._fetch_from_huggingface(
                 dataset_name=self.source,
                 config=self.split,
-                split="train",
+                split="harmful",
             )
 
             # Define common metadata
@@ -117,7 +118,7 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
 
             logger.info(f"Successfully loaded {len(seed_prompts)} behaviors from JBB-Behaviors dataset")
 
-            return SeedDataset(seeds=seed_prompts)
+            return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)
 
         except Exception as e:
             logger.error(f"Failed to load JBB-Behaviors dataset: {str(e)}")

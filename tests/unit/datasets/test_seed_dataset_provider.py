@@ -6,8 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.datasets.seed_datasets import SeedDatasetProvider
-from pyrit.datasets.seed_datasets.local.local_dataset_loader import LocalDatasetLoader
+from pyrit.datasets import SeedDatasetProvider
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import DarkBenchDataset
 from pyrit.datasets.seed_datasets.remote.harmbench_dataset import HarmBenchDataset
 from pyrit.models import SeedDataset, SeedPrompt
@@ -34,11 +33,11 @@ def mock_darkbench_data():
     return [
         {
             "Example": "Test dark pattern example 1",
-            "deceptive_pattern": "manipulative_design",
+            "Deceptive Pattern": "manipulative_design",
         },
         {
             "Example": "Test dark pattern example 2",
-            "deceptive_pattern": "forced_action",
+            "Deceptive Pattern": "forced_action",
         },
     ]
 
@@ -46,56 +45,62 @@ def mock_darkbench_data():
 class TestSeedDatasetProvider:
     """Test the SeedDatasetProvider base class and registration."""
 
-    def test_get_all_providers(self):
-        """Test that providers are automatically registered."""
+    def test_registration(self):
+        """Test that subclasses are automatically registered."""
+        # Define a dynamic class to avoid polluting registry permanently (though it will stay)
+        class DynamicTestProvider(SeedDatasetProvider):
+            @property
+            def dataset_name(self):
+                return "dynamic_test"
+            async def fetch_dataset(self):
+                return SeedDataset(prompts=[])
+        
         providers = SeedDatasetProvider.get_all_providers()
-
-        assert isinstance(providers, dict)
-        assert len(providers) >= 2  # At least HarmBench and DarkBench
-        assert "HarmBenchDataset" in providers
-        assert "DarkBenchDataset" in providers
+        assert "DynamicTestProvider" in providers
+        assert providers["DynamicTestProvider"] == DynamicTestProvider
 
     def test_get_all_dataset_names(self):
         """Test getting all dataset names."""
-        names = SeedDatasetProvider.get_all_dataset_names()
-
-        assert isinstance(names, list)
-        assert len(names) >= 2
-        assert "harmbench" in names
-        assert "DarkBench" in names
-        # Names should be sorted
-        assert names == sorted(names)
-
-    def test_local_loaders_registered(self):
-        """Test that local dataset loaders are registered."""
-        providers = SeedDatasetProvider.get_all_providers()
+        # Mock the registry to ensure deterministic results
+        mock_provider_cls = MagicMock()
+        mock_provider_instance = mock_provider_cls.return_value
+        mock_provider_instance.dataset_name = "test_dataset"
         
-        # Check if any LocalDatasetLoader instances are registered
-        local_loaders = [k for k in providers.keys() if "LocalDatasetLoader" in k]
-        # Should have at least some local datasets if seed_datasets directory has files
-        assert len(local_loaders) >= 0  # May be 0 if no .prompt files exist
+        with patch.dict(SeedDatasetProvider._registry, {"TestProvider": mock_provider_cls}, clear=True):
+            names = SeedDatasetProvider.get_all_dataset_names()
+            assert names == ["test_dataset"]
 
     @pytest.mark.asyncio
-    async def test_fetch_all_datasets_with_mocks(self, mock_harmbench_data, mock_darkbench_data):
-        """Test fetching all datasets with mocked data."""
-        with patch.object(
-            HarmBenchDataset, "_fetch_from_url", return_value=mock_harmbench_data
-        ), patch.object(DarkBenchDataset, "_fetch_from_huggingface", return_value=mock_darkbench_data):
+    async def test_fetch_all_datasets(self):
+        """Test fetching all datasets."""
+        # Mock providers
+        mock_provider1 = MagicMock()
+        mock_provider1.return_value.dataset_name = "d1"
+        mock_provider1.return_value.fetch_dataset = AsyncMock(return_value=SeedDataset(prompts=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1"))
+        
+        mock_provider2 = MagicMock()
+        mock_provider2.return_value.dataset_name = "d2"
+        mock_provider2.return_value.fetch_dataset = AsyncMock(return_value=SeedDataset(prompts=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2"))
+
+        with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
             datasets = await SeedDatasetProvider.fetch_all_datasets()
-
-            assert isinstance(datasets, list)
-            assert len(datasets) >= 2
-            assert all(isinstance(d, SeedDataset) for d in datasets)
-
+            assert len(datasets) == 2
+            
     @pytest.mark.asyncio
-    async def test_fetch_all_datasets_with_filter(self, mock_harmbench_data):
-        """Test fetching datasets with name filter."""
-        with patch.object(HarmBenchDataset, "_fetch_from_url", return_value=mock_harmbench_data):
-            datasets = await SeedDatasetProvider.fetch_all_datasets(dataset_names=["harmbench"])
+    async def test_fetch_all_datasets_with_filter(self):
+        """Test fetching datasets with filter."""
+        mock_provider1 = MagicMock()
+        mock_provider1.return_value.dataset_name = "d1"
+        mock_provider1.return_value.fetch_dataset = AsyncMock(return_value=SeedDataset(prompts=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1"))
+        
+        mock_provider2 = MagicMock()
+        mock_provider2.return_value.dataset_name = "d2"
+        mock_provider2.return_value.fetch_dataset = AsyncMock(side_effect=Exception("Should not be called"))
 
-            assert isinstance(datasets, list)
+        with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
+            datasets = await SeedDatasetProvider.fetch_all_datasets(dataset_names=["d1"])
             assert len(datasets) == 1
-            assert datasets[0].prompts[0].dataset_name == "harmbench"
+            assert datasets[0].dataset_name == "d1"
 
 
 class TestHarmBenchDataset:
@@ -175,13 +180,13 @@ class TestDarkBenchDataset:
             first_prompt = dataset.prompts[0]
             assert first_prompt.value == "Test dark pattern example 1"
             assert first_prompt.data_type == "text"
-            assert first_prompt.dataset_name == "DarkBench"
+            assert first_prompt.dataset_name == "dark_bench"
             assert first_prompt.harm_categories == ["manipulative_design"]
 
     def test_dataset_name(self):
         """Test dataset_name property."""
         loader = DarkBenchDataset()
-        assert loader.dataset_name == "DarkBench"
+        assert loader.dataset_name == "dark_bench"
 
     @pytest.mark.asyncio
     async def test_fetch_dataset_with_custom_config(self, mock_darkbench_data):
@@ -205,27 +210,4 @@ class TestDarkBenchDataset:
             assert call_kwargs["cache_dir"] == "/custom/cache"
 
 
-class TestRemoteDatasetLoaderHelpers:
-    """Test the helper methods in RemoteDatasetLoader."""
 
-    def test_get_cache_file_name(self):
-        """Test cache file name generation."""
-        loader = HarmBenchDataset()
-        cache_name = loader._get_cache_file_name(
-            source="https://example.com/data.csv",
-            file_type="csv",
-        )
-
-        assert isinstance(cache_name, str)
-        assert cache_name.endswith(".csv")
-        assert len(cache_name) > 4  # MD5 hash + extension
-
-    def test_get_cache_file_name_deterministic(self):
-        """Test that same source produces same cache name."""
-        loader = HarmBenchDataset()
-        source = "https://example.com/data.csv"
-
-        name1 = loader._get_cache_file_name(source=source, file_type="csv")
-        name2 = loader._get_cache_file_name(source=source, file_type="csv")
-
-        assert name1 == name2

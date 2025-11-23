@@ -12,7 +12,7 @@ from pyrit.models import SeedPrompt
 @pytest.fixture(scope="module")
 def many_shot_template():
     # Load the template from the YAML file
-    template_path = Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "many_shot_template.yaml"
+    template_path = Path(DATASETS_PATH) / "jailbreak" / "templates" / "multi_parameter" / "many_shot_template.yaml"
     return SeedPrompt.from_yaml_file(template_path)
 
 

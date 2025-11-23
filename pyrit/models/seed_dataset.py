@@ -106,13 +106,13 @@ class SeedDataset(YamlLoadable):
                             data_type="text",
                             value_sha256=p.get("value_sha256"),
                             id=uuid.uuid4(),
-                            name=p.get("name"),
-                            dataset_name=p.get("dataset_name"),
+                            name=p.get("name") or self.name,
+                            dataset_name=p.get("dataset_name") or self.dataset_name or self.name,
                             harm_categories=p.get("harm_categories", []),
-                            description=p.get("description"),
+                            description=p.get("description") or self.description,
                             authors=p.get("authors", []),
                             groups=p.get("groups", []),
-                            source=p.get("source"),
+                            source=p.get("source") or self.source,
                             date_added=p.get("date_added"),
                             added_by=p.get("added_by"),
                             metadata=p.get("metadata", {}),
@@ -310,6 +310,16 @@ class SeedDataset(YamlLoadable):
     @property
     def objectives(self) -> Sequence[SeedObjective]:
         return [s for s in self.seeds if isinstance(s, SeedObjective)]
+
+    @property
+    def seed_groups(self) -> Sequence[SeedGroup]:
+        """
+        Returns the seeds grouped by their prompt_group_id.
+
+        Returns:
+            Sequence[SeedGroup]: A list of SeedGroup objects, with seeds grouped by prompt_group_id.
+        """
+        return self.group_seed_prompts_by_prompt_group_id(self.seeds)
 
     def __repr__(self):
         return f"<SeedDataset(seeds={len(self.seeds)} seeds)>"

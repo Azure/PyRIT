@@ -97,4 +97,4 @@ class BabelscapeAlertDataset(RemoteDatasetLoader):
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from Babelscape Alert dataset")
 
-        return SeedDataset(seeds=seed_prompts)
+        return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)
