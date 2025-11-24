@@ -193,7 +193,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             # Using the 'checkfirst=True' parameter to avoid attempting to recreate existing tables
             Base.metadata.create_all(self.engine, checkfirst=True)
         except Exception as e:
-            logger.error(f"Error during table creation: {e}")
+            logger.exception(f"Error during table creation: {e}")
+            raise
 
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
@@ -258,8 +259,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # for safe parameter passing, preventing SQL injection
-        # Note: We do NOT convert values to string here, to allow integer comparison in JSON
-        condition = text(conditions).bindparams(**{key: value for key, value in prompt_metadata.items()})
+        # Note: JSON_VALUE always returns nvarchar in SQL Server, so we must convert all values to strings
+        # to avoid type conversion errors when comparing mixed types (e.g., int and string)
+        condition = text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
     def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
@@ -451,6 +453,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
+                raise
 
     # The following methods are not part of MemoryInterface, but seem
     # common between SQLAlchemy-based implementations, regardless of engine.
@@ -509,7 +512,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {Model.__tablename__}: {e}")
-                return []
+                raise
 
     def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
@@ -546,7 +549,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error updating entries: {e}")
-                return False
+                raise
 
     def reset_database(self):
         """Drop and recreate existing tables."""

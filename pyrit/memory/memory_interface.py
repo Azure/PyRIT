@@ -523,7 +523,7 @@ class MemoryInterface(abc.ABC):
             return sort_message_pieces(message_pieces=message_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
-            return []
+            raise
 
     def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
         """
@@ -830,7 +830,7 @@ class MemoryInterface(abc.ABC):
             return [memory_entry.get_seed() for memory_entry in memory_entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
-            return []
+            raise
 
     def _add_list_conditions(
         self, field: InstrumentedAttribute, conditions: list, values: Optional[Sequence[str]] = None
@@ -936,7 +936,7 @@ class MemoryInterface(abc.ABC):
             return list(dataset_names)
         except Exception as e:
             logger.exception(f"Failed to retrieve dataset names with error {e}")
-            return []
+            raise
 
     async def add_seed_groups_to_memory(
         self, *, prompt_groups: Sequence[SeedGroup], added_by: Optional[str] = None
@@ -1193,7 +1193,7 @@ class MemoryInterface(abc.ABC):
             return [entry.get_attack_result() for entry in entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
-            return []
+            raise
 
     def add_scenario_results_to_memory(self, *, scenario_results: Sequence[ScenarioResult]) -> None:
         """
@@ -1261,8 +1261,8 @@ class MemoryInterface(abc.ABC):
             return True
 
         except Exception as e:
-            logger.error(f"Failed to add attack results to scenario {scenario_result_id}: {str(e)}", exc_info=True)
-            return False
+            logger.exception(f"Failed to add attack results to scenario {scenario_result_id}: {str(e)}")
+            raise
 
     def update_scenario_run_state(self, *, scenario_result_id: str, scenario_run_state: str) -> bool:
         """
@@ -1303,11 +1303,10 @@ class MemoryInterface(abc.ABC):
             return True
 
         except Exception as e:
-            logger.error(
-                f"Failed to update scenario {scenario_result_id} state to '{scenario_run_state}': {str(e)}",
-                exc_info=True,
+            logger.exception(
+                f"Failed to update scenario {scenario_result_id} state to '{scenario_run_state}': {str(e)}"
             )
-            return False
+            raise
 
     def get_scenario_results(
         self,
@@ -1424,7 +1423,7 @@ class MemoryInterface(abc.ABC):
             return scenario_results
         except Exception as e:
             logger.exception(f"Failed to retrieve scenario results with error {e}")
-            return []
+            raise
 
     def print_schema(self):
         """Prints the schema of all tables in the database."""
