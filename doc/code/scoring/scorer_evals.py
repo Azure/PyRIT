@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -22,7 +26,7 @@
 from dataclasses import asdict
 from pathlib import Path
 
-from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PATH
+from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_TRUE_FALSE_PATH
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     LikertScalePaths,
@@ -33,7 +37,6 @@ from pyrit.score import (
     SelfAskRefusalScorer,
     SelfAskTrueFalseScorer,
 )
-from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -42,6 +45,11 @@ target = OpenAIChatTarget()
 # %% [markdown]
 # ## Running Harm Scorer Evaluation
 # The following cell demonstrates how to run a custom harm scoring evaluation on a `Scorer` using a dataset of LLM assistant responses and human labels stored as a CSV file. In the following example, we use a small sample `hate_speech` dataset of assistant responses and human scores and run a harm evaluation using `SelfAskLikertScorer` with a Likert scale for hate speech. Sample datasets and saved metrics can be found in the `datasets/score/scorer_evals` directory.
+
+# %% [markdown]
+# ### Multiple Evaluators:
+#
+# With multiple evaluators, we can measure inter-reliability alignment between evaluators shown below:
 
 # %%
 target = OpenAIChatTarget()
@@ -68,56 +76,21 @@ metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
 # Results from the model scoring trials are saved to datasets/score/scorer_evals/harm/results/mini_hate_speech_scoring_results.csv
 asdict(metrics)
 
-# %%
-from pyrit.common.path import LIKERT_SCALES_PATH
+# %% [markdown]
+# ### Single-Evaluators:
+#
+# The sample files below have only one human evaluator and thus the inter-reliability metric is not scored between human evaluators
 
-harm_category_map = {
-    "exploit": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/exploit.csv",
-        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "exploits.yaml")),
-        "dataset_name": "exploit_dataset",
-    },
-    "hate_speech": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/hate_speech_single_score.csv",
-        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "hate_speech.yaml")),
-        "dataset_name": "hate_speech_dataset",
-    },
-    "information_integrity": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/info_integrity.csv",
-        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "information_integrity.yaml")),
-        "dataset_name": "information_integrity_dataset",
-    },
-    "privacy": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/privacy.csv",
-        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "privacy.yaml")),
-        "dataset_name": "privacy_dataset",
-    },
-    "self-harm": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/self_harm.csv",
-        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "self_harm_v2.yaml")),
-        "dataset_name": "self_harm_dataset",
-    },
-    "sexual_content": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/sexual_content.csv",
-        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "sexual_v2.yaml")),
-        "dataset_name": "sexual_content_dataset",
-    },
-    "violence": {
-        "dataset_file_path": f"{str(SCORER_EVALS_HARM_PATH)}/violence_single_score.csv",
-        "evaluation_rubric_file_path": str(Path(LIKERT_SCALES_PATH, "violence.yaml")),
-        "dataset_name": "violence_dataset",
-    },
-}
-# set this list to the categories you want to evaluate
+# %%
+from pyrit.score.scorer_evaluation.config_eval_datasets import get_harm_eval_datasets
+
 harm_categories_to_evaluate = ["sexual_content"]
 
 for harm_category in harm_categories_to_evaluate:
-    if harm_category not in harm_category_map:
-        raise ValueError(
-            f"Harm category '{harm_category}' not found in harm_category_map. Please add it to the map with the appropriate dataset and rubric file paths."
-        )
-    eval_rubric_path = harm_category_map[harm_category]["evaluation_rubric_file_path"]
-    csv_path = str(Path(harm_category_map[harm_category]["dataset_file_path"]))
+    harm_category_map = get_harm_eval_datasets(category=harm_category, score_type="harm")
+
+    eval_rubric_path = harm_category_map["evaluation_rubric_file_path"]
+    csv_path = str(Path(harm_category_map["dataset_file_path"]))
 
     likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=eval_rubric_path)
 
@@ -131,7 +104,7 @@ for harm_category in harm_categories_to_evaluate:
         objective_or_harm_col_name="category",
         num_scorer_trials=1,
         assistant_response_data_type_col_name=None,
-        dataset_name=harm_category_map[harm_category]["dataset_name"],
+        dataset_name=harm_category_map["dataset_name"],
     )
 
     print("Evaluation for harm category:", harm_category)
@@ -159,15 +132,15 @@ refusal_scorer = SelfAskRefusalScorer(chat_target=target)
 
 # factory method that creates an ObjectiveScorerEvaluator in this case because the refusal scorer is a true/false scorer.
 evaluator = ScorerEvaluator.from_scorer(scorer=refusal_scorer)
-csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/mini_refusal.csv"
+csv_path = f"{str(SCORER_EVALS_TRUE_FALSE_PATH)}/mini_refusal.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
-# csv_path = f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/mixed_objective_refusal.csv"
+# csv_path = f"{str(SCORER_EVALS_TRUE_FALSE_PATH)}/mixed_objective_refusal.csv"
 
 # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
 metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
     csv_path=csv_path,
     assistant_response_col_name="assistant_response",
-    human_label_col_names=["human_score"],
+    human_label_col_names=["normalized_score"],
     objective_or_harm_col_name="objective",
     assistant_response_data_type_col_name="data_type",
     num_scorer_trials=1,
@@ -182,68 +155,25 @@ refusal_scorer.get_scorer_metrics(dataset_name="mini_refusal")
 # In this case we use a `true_false_scorer` which determines whether the responses are harmful or not according to their harm category.
 
 # %%
-# Map harm categories to their respective dataset file paths and evaluation rubric file paths
-# This allows for easy extension to new harm categories by or editing entries in this map.
-# This also allows for easy editing of dataset file paths and evaluation rubric file paths without changing code logic.
-harm_category_map = {
-    "exploit": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/exploit.csv",
-        "dataset_name": "exploit_eval_dataset",
-        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "exploits.yaml")),
-    },
-    "hate_speech": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/hate_speech.csv",
-        "dataset_name": "hate_speech_eval_dataset",
-        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "hate_speech.yaml")),
-    },
-    "information_integrity": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/info_integrity.csv",
-        "dataset_name": "information_integrity_eval_dataset",
-        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "information_integrity.yaml")),
-    },
-    "privacy": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/privacy.csv",
-        "dataset_name": "privacy_eval_dataset",
-        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "privacy.yaml")),
-    },
-    "self-harm": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/self_harm.csv",
-        "dataset_name": "self_harm_eval_dataset",
-        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "self-harm.yaml")),
-    },
-    "sexual_content": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/sexual.csv",
-        "dataset_name": "sexual_content_eval_dataset",
-        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "sexual_content.yaml")),
-    },
-    "violence": {
-        "dataset_file_path": f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/violence.csv",
-        "dataset_name": "violence_eval_dataset",
-        "evaluation_rubric_file_path": str(Path(TRUE_FALSE_QUESTIONS_PATH, "violence.yaml")),
-    },
-}
+from pyrit.score.scorer_evaluation.config_eval_datasets import get_harm_eval_datasets
 
 # set this list to the categories you want to evaluate
 harm_categories_to_evaluate = ["information_integrity"]
 
 for harm_category in harm_categories_to_evaluate:
-    if harm_category not in harm_category_map:
-        raise ValueError(
-            f"Harm category '{harm_category}' not found in harm_category_map. Please add it to the map with the appropriate dataset and rubric file paths."
-        )
-    eval_rubric_path = harm_category_map[harm_category]["evaluation_rubric_file_path"]
-    csv_path = str(Path(harm_category_map[harm_category]["dataset_file_path"]))
-    dataset_name = harm_category_map[harm_category]["dataset_name"]
+    harm_category_map = get_harm_eval_datasets(category=harm_category, score_type="objective")
+    eval_rubric_path = harm_category_map["evaluation_rubric_file_path"]
+    csv_path = str(Path(harm_category_map["dataset_file_path"]))
+    dataset_name = harm_category_map["dataset_name"]
 
     true_false_scorer = SelfAskTrueFalseScorer(true_false_question_path=Path(eval_rubric_path), chat_target=target)
 
     evaluator: ObjectiveScorerEvaluator = ScorerEvaluator.from_scorer(scorer=true_false_scorer)  # type: ignore
 
-    # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
     metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
         csv_path=csv_path,
         assistant_response_col_name="assistant_response",
-        human_label_col_names=["human_score"],
+        human_label_col_names=["normalized_score"],
         objective_or_harm_col_name="objective",
         assistant_response_data_type_col_name="data_type",
         num_scorer_trials=1,

@@ -30,8 +30,9 @@ LIKERT_SCALES_PATH = pathlib.Path(SCORER_CONFIG_PATH, "likert_scales").resolve()
 SCALES_PATH = pathlib.Path(SCORER_CONFIG_PATH, "scales").resolve()
 SCORER_EVALS_PATH = pathlib.Path(SCORER_CONFIG_PATH, "scorer_evals").resolve()
 
-SCORER_EVALS_HARM_PATH = pathlib.Path(SCORER_EVALS_PATH, "harm").resolve()
+SCORER_EVALS_HARM_PATH = pathlib.Path(SCORER_EVALS_PATH, "likert").resolve()
 SCORER_EVALS_OBJECTIVE_PATH = pathlib.Path(SCORER_EVALS_PATH, "objective").resolve()
+SCORER_EVALS_TRUE_FALSE_PATH = pathlib.Path(SCORER_EVALS_PATH, "true_false").resolve()
 
 RED_TEAM_EXECUTOR_PATH = pathlib.Path(DATASETS_PATH, "executors", "red_teaming").resolve()
 
