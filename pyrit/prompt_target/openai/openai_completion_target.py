@@ -109,8 +109,7 @@ class OpenAICompletionTarget(OpenAITarget):
         # Use unified error handler - automatically detects Completion and validates
         return await self._handle_openai_request(
             api_call=lambda: self._async_client.completions.create(**request_params),  # type: ignore[call-overload]
-            request=message_piece,
-            construct_response_fn=self._construct_message_from_response,
+            request=message,
         )
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:

@@ -85,14 +85,14 @@ class OpenAITTSTarget(OpenAITarget):
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> Message:
         self._validate_request(message=message)
-        request = message.message_pieces[0]
+        message_piece = message.message_pieces[0]
 
-        logger.info(f"Sending the following prompt to the prompt target: {request}")
+        logger.info(f"Sending the following prompt to the prompt target: {message_piece}")
 
         # Construct request parameters for SDK
         body_parameters: dict[str, object] = {
             "model": self._model_name,
-            "input": request.converted_value,
+            "input": message_piece.converted_value,
             "voice": self._voice,
             "response_format": self._response_format,
         }
@@ -110,8 +110,7 @@ class OpenAITTSTarget(OpenAITarget):
                 response_format=body_parameters.get("response_format"),  # type: ignore[arg-type]
                 speed=body_parameters.get("speed"),  # type: ignore[arg-type]
             ),
-            request=request,
-            construct_response_fn=self._construct_message_from_response,
+            request=message,
         )
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:

@@ -190,8 +190,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         # Use unified error handling - automatically detects ChatCompletion and validates
         return await self._handle_openai_request(
             api_call=lambda: self._async_client.chat.completions.create(**body),
-            request=message_piece,
-            construct_response_fn=self._construct_message_from_response,
+            request=message,
         )
 
     def _check_content_filter(self, response: Any) -> bool:

@@ -362,8 +362,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         # Use unified error handling - automatically detects Response and validates
         result = await self._handle_openai_request(
             api_call=lambda: self._async_client.responses.create(**body),
-            request=message_piece,
-            construct_response_fn=self._construct_message_from_response,
+            request=message,
         )
 
         # Append the result to memory conversation

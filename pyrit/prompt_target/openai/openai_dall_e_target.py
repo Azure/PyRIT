@@ -114,14 +114,14 @@ class OpenAIDALLETarget(OpenAITarget):
             Message: The response from the DALL-E target.
         """
         self._validate_request(message=message)
-        request = message.message_pieces[0]
+        message_piece = message.message_pieces[0]
 
-        logger.info(f"Sending the following prompt to the prompt target: {request}")
+        logger.info(f"Sending the following prompt to the prompt target: {message_piece}")
 
         # Construct request parameters
         image_generation_args: Dict[str, Any] = {
             "model": self._model_name,
-            "prompt": request.converted_value,
+            "prompt": message_piece.converted_value,
             "n": self.num_images,
             "size": self.image_size,
             "response_format": "b64_json",
@@ -133,8 +133,7 @@ class OpenAIDALLETarget(OpenAITarget):
         # Use unified error handler for consistent error handling
         return await self._handle_openai_request(
             api_call=lambda: self._async_client.images.generate(**image_generation_args),
-            request=request,
-            construct_response_fn=self._construct_message_from_response,
+            request=message,
         )
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:

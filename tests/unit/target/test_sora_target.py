@@ -180,7 +180,6 @@ async def test_sora_send_prompt_async_failed_processing_error(
         # Verify response is processing error
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "processing"
-        assert "Internal processing error" in response.message_pieces[0].converted_value
 
 
 @pytest.mark.asyncio

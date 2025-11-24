@@ -301,8 +301,7 @@ class OpenAITarget(PromptChatTarget):
         self,
         *,
         api_call: Callable,
-        request: MessagePiece,
-        construct_response_fn: Callable,
+        request: Message,
     ) -> Message:
         """
         Unified error handling wrapper for all OpenAI SDK requests.
@@ -320,8 +319,7 @@ class OpenAITarget(PromptChatTarget):
 
         Args:
             api_call: Async callable that invokes the OpenAI SDK method.
-            request: The MessagePiece representing the user's request (for error responses).
-            construct_response_fn: Async callable that constructs Message from validated response.
+            request: The Message representing the user's request (for error responses).
 
         Returns:
             Message: The constructed message response (success or error).
@@ -334,17 +332,20 @@ class OpenAITarget(PromptChatTarget):
             # Execute the API call
             response = await api_call()
 
+            # Extract MessagePiece for validation and construction (most targets use single piece)
+            request_piece = request.message_pieces[0] if request.message_pieces else None
+
             # Check for content filter via subclass implementation
             if self._check_content_filter(response):
-                return self._handle_content_filter_response(response, request)
+                return self._handle_content_filter_response(response, request_piece)
 
             # Validate response via subclass implementation
-            error_message = self._validate_response(response, request)
+            error_message = self._validate_response(response, request_piece)
             if error_message:
                 return error_message
 
             # Construct and return Message from validated response
-            return await construct_response_fn(response, request)
+            return await self._construct_message_from_response(response, request_piece)
 
         except ContentFilterFinishReasonError as e:
             # Content filter error raised by SDK during parse/structured output flows
@@ -358,7 +359,8 @@ class OpenAITarget(PromptChatTarget):
                 def model_dump_json(self):
                     return error_str
 
-            return self._handle_content_filter_response(_ErrorResponse(), request)
+            request_piece = request.message_pieces[0] if request.message_pieces else None
+            return self._handle_content_filter_response(_ErrorResponse(), request_piece)
         except BadRequestError as e:
             # Handle 400 errors - includes input policy filters and some Azure output-filter 400s
             payload, is_content_filter = _extract_error_payload(e)
@@ -376,9 +378,10 @@ class OpenAITarget(PromptChatTarget):
                 f"payload={payload_str}"
             )
 
+            request_piece = request.message_pieces[0] if request.message_pieces else None
             return handle_bad_request_exception(
                 response_text=str(payload),
-                request=request,
+                request=request_piece,
                 error_code=400,
                 is_content_filter=is_content_filter,
             )
@@ -409,7 +412,6 @@ class OpenAITarget(PromptChatTarget):
             # Authentication errors - non-retryable, surface quickly
             request_id = _extract_request_id_from_exception(e)
             logger.error(f"Authentication error request_id={request_id} error={e}")
-            raise
             raise
 
     @abstractmethod

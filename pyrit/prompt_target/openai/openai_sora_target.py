@@ -128,8 +128,8 @@ class OpenAISoraTarget(OpenAITarget):
             ValueError: If the request is invalid.
         """
         self._validate_request(message=message)
-        request = message.message_pieces[0]
-        prompt = request.converted_value
+        message_piece = message.message_pieces[0]
+        prompt = message_piece.converted_value
 
         logger.info(f"Sending video generation prompt: {prompt}")
 
@@ -141,8 +141,7 @@ class OpenAISoraTarget(OpenAITarget):
                 size=self._size,  # type: ignore[arg-type]
                 seconds=str(self._n_seconds),  # type: ignore[arg-type]
             ),
-            request=request,
-            construct_response_fn=self._construct_message_from_response,
+            request=message,
         )
 
     def _check_content_filter(self, response: Any) -> bool:
