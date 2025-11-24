@@ -3,17 +3,14 @@
 
 import os
 import uuid
-from pathlib import Path
 from typing import MutableSequence
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from openai import RateLimitError
+from openai import BadRequestError, RateLimitError
 from unit.mocks import get_image_message_piece, get_sample_conversations
 
-from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
-from pyrit.memory import MemoryInterface
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAITTSTarget
 from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
@@ -102,14 +99,12 @@ async def test_tts_send_prompt_file_save_async(
     message_piece = sample_conversations[0]
     message_piece.conversation_id = str(uuid.uuid4())
     request = Message(message_pieces=[message_piece])
-    
+
     # Mock SDK response
     mock_audio_response = MagicMock()
     mock_audio_response.content = b"audio data"
-    
-    with patch.object(
-        tts_target._async_client.audio.speech, "create", new_callable=AsyncMock
-    ) as mock_create:
+
+    with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_audio_response
         response = await tts_target.send_prompt_async(message=request)
 
@@ -134,8 +129,6 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
     error_text: str,
     exception_class: type[BaseException],
 ):
-    from openai import BadRequestError, RateLimitError
-    
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_message_to_memory = AsyncMock()
@@ -149,16 +142,14 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
     # Create appropriate SDK exception
     mock_response = MagicMock()
     mock_response.text = error_text
-    
+
+    sdk_exception: Exception
     if status_code == 400:
         sdk_exception = BadRequestError(error_text, response=mock_response, body={})
-        sdk_exception.status_code = status_code
     else:  # 429
         sdk_exception = RateLimitError(error_text, response=mock_response, body={})
 
-    with patch.object(
-        tts_target._async_client.audio.speech, "create", new_callable=AsyncMock
-    ) as mock_create:
+    with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
         mock_create.side_effect = sdk_exception
 
         with pytest.raises((exception_class)):
@@ -169,17 +160,13 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
 async def test_tts_send_prompt_async_rate_limit_exception_retries(
     tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
-    from openai import RateLimitError as SDKRateLimitError
-    
     mock_response = MagicMock()
     mock_response.text = "Rate Limit Reached"
-    sdk_exception = SDKRateLimitError("Rate Limit Reached", response=mock_response, body={})
+    sdk_exception = RateLimitError("Rate Limit Reached", response=mock_response, body={})
 
-    with patch.object(
-        tts_target._async_client.audio.speech, "create", new_callable=AsyncMock
-    ) as mock_create:
+    with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
         mock_create.side_effect = sdk_exception
-        
+
         message_piece = sample_conversations[0]
         request = Message(message_pieces=[message_piece])
 
@@ -201,14 +188,12 @@ async def test_tts_send_prompt_with_speed_parameter(
     message_piece = sample_conversations[0]
     message_piece.conversation_id = str(uuid.uuid4())
     request = Message(message_pieces=[message_piece])
-    
+
     # Mock SDK response
     mock_audio_response = MagicMock()
     mock_audio_response.content = b"audio data"
-    
-    with patch.object(
-        tts_target._async_client.audio.speech, "create", new_callable=AsyncMock
-    ) as mock_create:
+
+    with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_audio_response
         response = await tts_target.send_prompt_async(message=request)
 
@@ -216,7 +201,7 @@ async def test_tts_send_prompt_with_speed_parameter(
         mock_create.assert_called_once()
         call_kwargs = mock_create.call_args.kwargs
         assert call_kwargs["speed"] == 1.5
-        
+
         # Verify audio was saved
         file_path = response.get_value()
         assert file_path

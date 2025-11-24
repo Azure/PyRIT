@@ -1,14 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-
 from pyrit.prompt_target.openai.openai_error_handling import (
     _is_content_filter_error,
 )
 
-
 # Tests for _is_content_filter_error helper
+
 
 def test_is_content_filter_error_with_dict():
     """Test detection with dict input"""

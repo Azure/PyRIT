@@ -5,10 +5,9 @@ import logging
 from typing import Any, Optional
 
 from pyrit.exceptions.exception_classes import (
-    EmptyResponseException,
     pyrit_target_retry,
 )
-from pyrit.models import Message, MessagePiece, construct_response_from_request
+from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -62,7 +61,13 @@ class OpenAICompletionTarget(OpenAITarget):
         super().__init__(*args, **kwargs)
 
         # Accept base URLs (/v1), specific API paths (/completions), Azure formats
-        completion_url_patterns = [r"/v1$", r"/completions", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
+        completion_url_patterns = [
+            r"/v1$",
+            r"/completions",
+            r"/deployments/[^/]+/",
+            r"openai/v1",
+            r"\.models\.ai\.azure\.com",
+        ]
         self._warn_if_irregular_endpoint(completion_url_patterns)
 
         self._max_tokens = max_tokens
@@ -103,7 +108,7 @@ class OpenAICompletionTarget(OpenAITarget):
 
         # Use unified error handler - automatically detects Completion and validates
         return await self._handle_openai_request(
-            api_call=lambda: self._async_client.completions.create(**request_params),
+            api_call=lambda: self._async_client.completions.create(**request_params),  # type: ignore[call-overload]
             request=message_piece,
             construct_response_fn=self._construct_message_from_response,
         )
@@ -111,15 +116,15 @@ class OpenAICompletionTarget(OpenAITarget):
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """
         Construct a Message from a Completion response.
-        
+
         Args:
             response: The Completion response from OpenAI SDK.
             request: The original request MessagePiece.
-            
+
         Returns:
             Message: Constructed message with extracted text.
         """
-        logger.info(f'Received response from the prompt target with {len(response.choices)} choices')
+        logger.info(f"Received response from the prompt target with {len(response.choices)} choices")
 
         # Extract response text from validated choices
         extracted_response = [choice.text for choice in response.choices]

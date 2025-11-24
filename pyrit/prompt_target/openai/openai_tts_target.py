@@ -9,7 +9,6 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     Message,
-    MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -63,7 +62,13 @@ class OpenAITTSTarget(OpenAITarget):
             self._model_name = "tts-1"
 
         # Accept base URLs (/v1), specific API paths (/audio/speech), Azure formats
-        tts_url_patterns = [r"/v1$", r"/audio/speech", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
+        tts_url_patterns = [
+            r"/v1$",
+            r"/audio/speech",
+            r"/deployments/[^/]+/",
+            r"openai/v1",
+            r"\.models\.ai\.azure\.com",
+        ]
         self._warn_if_irregular_endpoint(tts_url_patterns)
 
         self._voice = voice
@@ -91,14 +96,20 @@ class OpenAITTSTarget(OpenAITarget):
             "voice": self._voice,
             "response_format": self._response_format,
         }
-        
+
         # Add optional parameters
         if self._speed is not None:
             body_parameters["speed"] = self._speed
 
         # Use unified error handler for consistent error handling
         return await self._handle_openai_request(
-            api_call=lambda: self._async_client.audio.speech.create(**body_parameters),
+            api_call=lambda: self._async_client.audio.speech.create(
+                model=body_parameters["model"],  # type: ignore[arg-type]
+                voice=body_parameters["voice"],  # type: ignore[arg-type]
+                input=body_parameters["input"],  # type: ignore[arg-type]
+                response_format=body_parameters.get("response_format"),  # type: ignore[arg-type]
+                speed=body_parameters.get("speed"),  # type: ignore[arg-type]
+            ),
             request=request,
             construct_response_fn=self._construct_message_from_response,
         )
@@ -106,11 +117,11 @@ class OpenAITTSTarget(OpenAITarget):
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """
         Construct a Message from a TTS audio response.
-        
+
         Args:
             response: The audio response from OpenAI SDK.
             request: The original request MessagePiece.
-            
+
         Returns:
             Message: Constructed message with audio file path.
         """

@@ -1,15 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import base64
-import json
 import os
 import uuid
-from pathlib import Path
 from typing import MutableSequence
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 from unit.mocks import get_image_message_piece, get_sample_conversations
 
@@ -17,7 +13,6 @@ from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
     RateLimitException,
 )
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIDALLETarget
 
@@ -79,9 +74,7 @@ async def test_send_prompt_async(
     mock_image.b64_json = "aGVsbG8="  # Base64 encoded "hello"
     mock_response.data = [mock_image]
 
-    with patch.object(
-        dalle_target._async_client.images, "generate", new_callable=AsyncMock
-    ) as mock_generate:
+    with patch.object(dalle_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.return_value = mock_response
 
         resp = await dalle_target.send_prompt_async(message=Message([request]))
@@ -111,9 +104,7 @@ async def test_send_prompt_async_empty_response(
     mock_image.b64_json = ""  # Empty response
     mock_response.data = [mock_image]
 
-    with patch.object(
-        dalle_target._async_client.images, "generate", new_callable=AsyncMock
-    ) as mock_generate:
+    with patch.object(dalle_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.return_value = mock_response
 
         with pytest.raises(EmptyResponseException):
@@ -130,12 +121,8 @@ async def test_send_prompt_async_rate_limit_exception(
     # Import SDK exception
     from openai import RateLimitError
 
-    with patch.object(
-        dalle_target._async_client.images, "generate", new_callable=AsyncMock
-    ) as mock_generate:
-        mock_generate.side_effect = RateLimitError(
-            "Rate Limit Reached", response=MagicMock(), body={}
-        )
+    with patch.object(dalle_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
+        mock_generate.side_effect = RateLimitError("Rate Limit Reached", response=MagicMock(), body={})
 
         with pytest.raises(RateLimitException):
             await dalle_target.send_prompt_async(message=Message([request]))
@@ -160,9 +147,7 @@ async def test_send_prompt_async_bad_request_error(
     )
     bad_request_error.status_code = 400
 
-    with patch.object(
-        dalle_target._async_client.images, "generate", new_callable=AsyncMock
-    ) as mock_generate:
+    with patch.object(dalle_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.side_effect = bad_request_error
 
         # Non-content-filter BadRequestError should be re-raised (same as chat target behavior)
@@ -209,9 +194,7 @@ async def test_send_prompt_async_empty_response_adds_memory(
     mock_image.b64_json = ""  # Empty response
     mock_response.data = [mock_image]
 
-    with patch.object(
-        dalle_target._async_client.images, "generate", new_callable=AsyncMock
-    ) as mock_generate:
+    with patch.object(dalle_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.return_value = mock_response
         dalle_target._memory = mock_memory
 
@@ -234,12 +217,8 @@ async def test_send_prompt_async_rate_limit_adds_memory(
     # Import SDK exception
     from openai import RateLimitError
 
-    with patch.object(
-        dalle_target._async_client.images, "generate", new_callable=AsyncMock
-    ) as mock_generate:
-        mock_generate.side_effect = RateLimitError(
-            "Rate Limit Reached", response=MagicMock(), body={}
-        )
+    with patch.object(dalle_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
+        mock_generate.side_effect = RateLimitError("Rate Limit Reached", response=MagicMock(), body={})
         dalle_target._memory = mock_memory
 
         with pytest.raises(RateLimitException):
@@ -265,13 +244,11 @@ async def test_send_prompt_async_bad_request_content_filter(
     bad_request_error = BadRequestError(
         "Bad Request Error",
         response=mock_response,
-        body={"error": {"code": "content_filter", "message": "Content filtered"}}
+        body={"error": {"code": "content_filter", "message": "Content filtered"}},
     )
     bad_request_error.status_code = 400
 
-    with patch.object(
-        dalle_target._async_client.images, "generate", new_callable=AsyncMock
-    ) as mock_generate:
+    with patch.object(dalle_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.side_effect = bad_request_error
         result = await dalle_target.send_prompt_async(message=Message([request]))
         assert result.message_pieces[0].converted_value_data_type == "error"
@@ -297,13 +274,11 @@ async def test_send_prompt_async_bad_request_content_policy_violation(
     bad_request_error = BadRequestError(
         "Content blocked by policy",
         response=mock_response,
-        body={"error": {"code": "content_policy_violation", "message": "Content blocked by policy"}}
+        body={"error": {"code": "content_policy_violation", "message": "Content blocked by policy"}},
     )
     bad_request_error.status_code = 400
 
-    with patch.object(
-        dalle_target._async_client.images, "generate", new_callable=AsyncMock
-    ) as mock_generate:
+    with patch.object(dalle_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.side_effect = bad_request_error
         result = await dalle_target.send_prompt_async(message=Message([request]))
         assert result.message_pieces[0].response_error == "blocked"

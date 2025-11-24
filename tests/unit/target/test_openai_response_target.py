@@ -7,7 +7,6 @@ from tempfile import NamedTemporaryFile
 from typing import Any, MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 from openai import BadRequestError, RateLimitError
 from unit.mocks import (
@@ -30,25 +29,26 @@ from pyrit.prompt_target import OpenAIResponseTarget, PromptChatTarget
 def create_mock_response(response_dict: dict = None) -> MagicMock:
     """
     Helper function to create a mock OpenAI SDK response object.
-    
+
     Args:
-        response_dict: Optional dictionary to use as response data. 
+        response_dict: Optional dictionary to use as response data.
                       If None, uses default from openai_response_json_dict().
-    
+
     Returns:
         A mock object that simulates the OpenAI SDK response with Pydantic-style attribute access.
     """
     from openai.types.responses import Response
+
     if response_dict is None:
         response_dict = openai_response_json_dict()
-    
+
     mock_response = MagicMock(spec=Response)
     mock_response.model_dump_json.return_value = json.dumps(response_dict)
-    
+
     # Set attributes based on response_dict to match OpenAI SDK Response type
     mock_response.error = response_dict.get("error")  # Should be None for successful responses
     mock_response.status = response_dict.get("status")  # Should be "completed" for successful responses
-    
+
     # Mock the output sections with Pydantic-style attribute access
     if "output" in response_dict:
         output_mocks = []
@@ -56,7 +56,7 @@ def create_mock_response(response_dict: dict = None) -> MagicMock:
             section_mock = MagicMock()
             # Set attributes directly for Pydantic-style access
             section_mock.type = section.get("type")
-            
+
             # Handle different section types
             if section.get("type") == "message":
                 # Mock content array with text attribute
@@ -66,14 +66,14 @@ def create_mock_response(response_dict: dict = None) -> MagicMock:
                     content_mock.text = content_item.get("text", "")
                     content_mocks.append(content_mock)
                 section_mock.content = content_mocks
-            
+
             # Add model_dump for JSON serialization
             section_mock.model_dump.return_value = section
             output_mocks.append(section_mock)
         mock_response.output = output_mocks
     else:
         mock_response.output = None
-    
+
     return mock_response
 
 
@@ -323,7 +323,7 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        target._async_client.responses.create = AsyncMock(return_value=mock_response)
+        target._async_client.responses.create = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
         target._memory = MagicMock(MemoryInterface)
 
         with pytest.raises(EmptyResponseException):
@@ -345,11 +345,9 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
     # Mock the SDK to raise RateLimitError
-    target._async_client.responses.create = AsyncMock(side_effect=RateLimitError(
-        "Rate limit exceeded",
-        response=MagicMock(status_code=429),
-        body=None
-    ))
+    target._async_client.responses.create = AsyncMock(  # type: ignore[method-assign]
+        side_effect=RateLimitError("Rate limit exceeded", response=MagicMock(status_code=429), body=None)
+    )
 
     with pytest.raises(RateLimitException):
         await target.send_prompt_async(message=message)
@@ -368,11 +366,11 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
     # Mock the SDK to raise BadRequestError (non-content-filter)
-    target._async_client.responses.create = AsyncMock(side_effect=BadRequestError(
-        "Bad request",
-        response=MagicMock(status_code=400),
-        body={"error": {"message": "Invalid request"}}
-    ))
+    target._async_client.responses.create = AsyncMock(  # type: ignore[method-assign]
+        side_effect=BadRequestError(
+            "Bad request", response=MagicMock(status_code=400), body={"error": {"message": "Invalid request"}}
+        )
+    )
 
     with pytest.raises(BadRequestError):
         await target.send_prompt_async(message=message)
@@ -412,12 +410,12 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
         ]
     )
     mock_response = create_mock_response(openai_response_json)
-    
+
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        target._async_client.responses.create = AsyncMock(return_value=mock_response)
+        target._async_client.responses.create = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
         response: Message = await target.send_prompt_async(message=message)
         assert len(response.message_pieces) == 1
         assert response.get_value() == "hi"
@@ -458,12 +456,12 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
     # Make assistant response empty
     openai_response_json["output"][0]["content"][0]["text"] = ""
     mock_response = create_mock_response(openai_response_json)
-    
+
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        target._async_client.responses.create = AsyncMock(return_value=mock_response)
+        target._async_client.responses.create = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
         target._memory = MagicMock(MemoryInterface)
 
         with pytest.raises(EmptyResponseException):
@@ -478,11 +476,11 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResp
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     # Mock SDK to raise RateLimitError
-    target._async_client.responses.create = AsyncMock(side_effect=RateLimitError(
-        "Rate limit exceeded", 
-        response=MagicMock(status_code=429), 
-        body="Rate limit reached"
-    ))
+    target._async_client.responses.create = AsyncMock(  # type: ignore[method-assign]
+        side_effect=RateLimitError(
+            "Rate limit exceeded", response=MagicMock(status_code=429), body="Rate limit reached"
+        )
+    )
 
     # Our code converts RateLimitError to RateLimitException, which has retry logic
     with pytest.raises(RateLimitException):
@@ -497,11 +495,9 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIResponseTarget)
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")])
 
     # Mock SDK to raise BadRequestError
-    target._async_client.responses.create = AsyncMock(side_effect=BadRequestError(
-        "Bad request", 
-        response=MagicMock(status_code=400), 
-        body="Bad request"
-    ))
+    target._async_client.responses.create = AsyncMock(  # type: ignore[method-assign]
+        side_effect=BadRequestError("Bad request", response=MagicMock(status_code=400), body="Bad request")
+    )
 
     with pytest.raises(BadRequestError):
         await target.send_prompt_async(message=message)
@@ -541,7 +537,7 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
     mock_error.message = "Content filtered"
     mock_response.error = mock_error
     mock_response.model_dump_json.return_value = json.dumps(content_filter_response)
-    target._async_client.responses.create = AsyncMock(return_value=mock_response)
+    target._async_client.responses.create = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
 
     response = await target.send_prompt_async(message=message)
     assert len(response.message_pieces) == 1
@@ -960,7 +956,7 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
 
     with patch.object(target._async_client.responses, "create", new_callable=AsyncMock) as mock_create:
         mock_create.side_effect = mock_sdk_create
-        
+
         final = await target.send_prompt_async(message=user_req)
 
         # Should get the final (non-tool-call) assistant message
@@ -969,18 +965,17 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         assert final.message_pieces[0].original_value == "Done: 14"
 
 
-
 def test_invalid_temperature_raises(patch_central_database):
     """Test that invalid temperature values raise PyritException."""
     from pyrit.prompt_target import OpenAIResponseTarget
-    
+
     with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
         OpenAIResponseTarget(
             endpoint="https://test.com",
             api_key="test",
             temperature=-0.1,
         )
-    
+
     with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
         OpenAIResponseTarget(
             endpoint="https://test.com",
@@ -992,14 +987,14 @@ def test_invalid_temperature_raises(patch_central_database):
 def test_invalid_top_p_raises(patch_central_database):
     """Test that invalid top_p values raise PyritException."""
     from pyrit.prompt_target import OpenAIResponseTarget
-    
+
     with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
         OpenAIResponseTarget(
             endpoint="https://test.com",
             api_key="test",
             top_p=-0.1,
         )
-    
+
     with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
         OpenAIResponseTarget(
             endpoint="https://test.com",
@@ -1010,64 +1005,67 @@ def test_invalid_top_p_raises(patch_central_database):
 
 # Unit tests for override methods
 
+
 def test_check_content_filter_detects_filtered_response(target: OpenAIResponseTarget):
     """Test _check_content_filter detects content_filter error code."""
     from unittest.mock import MagicMock
-    
+
     mock_response = MagicMock()
     mock_error = MagicMock()
     mock_error.code = "content_filter"
     mock_response.error = mock_error
-    
+
     assert target._check_content_filter(mock_response) is True
 
 
 def test_check_content_filter_no_error(target: OpenAIResponseTarget):
     """Test _check_content_filter returns False when no error."""
     from unittest.mock import MagicMock
-    
+
     mock_response = MagicMock()
     mock_response.error = None
-    
+
     assert target._check_content_filter(mock_response) is False
 
 
 def test_check_content_filter_different_error(target: OpenAIResponseTarget):
     """Test _check_content_filter returns False for non-content-filter errors."""
     from unittest.mock import MagicMock
-    
+
     mock_response = MagicMock()
     mock_error = MagicMock()
     mock_error.code = "rate_limit"
     mock_response.error = mock_error
-    
+
     assert target._check_content_filter(mock_response) is False
 
 
 def test_validate_response_success(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
     """Test _validate_response passes for valid completed response."""
     from unittest.mock import MagicMock
-    
+
     mock_response = MagicMock()
     mock_response.error = None
     mock_response.status = "completed"
     mock_response.output = [{"type": "message", "content": [{"text": "Hello"}]}]
-    
+
     result = target._validate_response(mock_response, dummy_text_message_piece)
     assert result is None
 
 
-def test_validate_response_non_content_filter_error(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+def test_validate_response_non_content_filter_error(
+    target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
+):
     """Test _validate_response raises for non-content-filter errors."""
     from unittest.mock import MagicMock
-    
+
     mock_response = MagicMock()
     mock_error = MagicMock()
     mock_error.code = "invalid_request"
     mock_error.message = "Invalid request parameters"
     mock_response.error = mock_error
     mock_response.status = "completed"
-    
+
     with pytest.raises(PyritException, match="Response error: invalid_request"):
         target._validate_response(mock_response, dummy_text_message_piece)
 
@@ -1075,12 +1073,12 @@ def test_validate_response_non_content_filter_error(target: OpenAIResponseTarget
 def test_validate_response_invalid_status(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
     """Test _validate_response raises for non-completed status."""
     from unittest.mock import MagicMock
-    
+
     mock_response = MagicMock()
     mock_response.error = None
     mock_response.status = "failed"
     mock_response.output = []
-    
+
     with pytest.raises(PyritException, match="Unexpected status: failed"):
         target._validate_response(mock_response, dummy_text_message_piece)
 
@@ -1088,12 +1086,12 @@ def test_validate_response_invalid_status(target: OpenAIResponseTarget, dummy_te
 def test_validate_response_empty_output(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
     """Test _validate_response raises for empty output."""
     from unittest.mock import MagicMock
-    
+
     mock_response = MagicMock()
     mock_response.error = None
     mock_response.status = "completed"
     mock_response.output = []
-    
+
     with pytest.raises(EmptyResponseException, match="empty response"):
         target._validate_response(mock_response, dummy_text_message_piece)
 
@@ -1102,14 +1100,12 @@ def test_validate_response_empty_output(target: OpenAIResponseTarget, dummy_text
 async def test_construct_message_from_response(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
     """Test _construct_message_from_response parses output sections."""
     from unittest.mock import MagicMock
-    
+
     mock_response = MagicMock()
-    mock_response.output = [
-        {"type": "message", "content": [{"type": "text", "text": "Hello from Response API"}]}
-    ]
-    
+    mock_response.output = [{"type": "message", "content": [{"type": "text", "text": "Hello from Response API"}]}]
+
     # Mock the _parse_response_output_section method
-    with patch.object(target, '_parse_response_output_section') as mock_parse:
+    with patch.object(target, "_parse_response_output_section") as mock_parse:
         mock_piece = MessagePiece(
             role="assistant",
             original_value="Hello from Response API",
@@ -1117,9 +1113,9 @@ async def test_construct_message_from_response(target: OpenAIResponseTarget, dum
             conversation_id=dummy_text_message_piece.conversation_id,
         )
         mock_parse.return_value = mock_piece
-        
+
         result = await target._construct_message_from_response(mock_response, dummy_text_message_piece)
-        
+
         assert isinstance(result, Message)
         assert len(result.message_pieces) == 1
         mock_parse.assert_called_once()

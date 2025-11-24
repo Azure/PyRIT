@@ -54,18 +54,19 @@ def test_sora_initialization_invalid_duration(patch_central_database):
 def test_sora_validate_request_length(sora_target: OpenAISoraTarget):
     with pytest.raises(ValueError, match="single message piece"):
         conversation_id = str(uuid.uuid4())
-        msg1 = MessagePiece(role="user", original_value="test1", converted_value="test1", conversation_id=conversation_id)
-        msg2 = MessagePiece(role="user", original_value="test2", converted_value="test2", conversation_id=conversation_id)
+        msg1 = MessagePiece(
+            role="user", original_value="test1", converted_value="test1", conversation_id=conversation_id
+        )
+        msg2 = MessagePiece(
+            role="user", original_value="test2", converted_value="test2", conversation_id=conversation_id
+        )
         sora_target._validate_request(message=Message([msg1, msg2]))
 
 
 def test_sora_validate_prompt_type(sora_target: OpenAISoraTarget):
     with pytest.raises(ValueError, match="text prompt input"):
         msg = MessagePiece(
-            role="user",
-            original_value="test",
-            converted_value="test",
-            converted_value_data_type="image_path"
+            role="user", original_value="test", converted_value="test", converted_value_data_type="image_path"
         )
         sora_target._validate_request(message=Message([msg]))
 
@@ -81,35 +82,33 @@ async def test_sora_send_prompt_async_success(
 ):
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
-    
+
     # Mock successful video generation
     mock_video = MagicMock()
     mock_video.id = "video_123"
     mock_video.status = "completed"
     mock_video.error = None
-    
+
     # Mock video content as HttpxBinaryResponseContent
     mock_video_response = MagicMock()
     mock_video_response.content = b"video data content"
-    
+
     # Mock data serializer
     mock_serializer = MagicMock()
     mock_serializer.value = "/path/to/video.mp4"
     mock_serializer.save_data = AsyncMock()
-    
-    with patch.object(
-        sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
-    ) as mock_create, \
-    patch.object(
-        sora_target._async_client.videos, "download_content", new_callable=AsyncMock
-    ) as mock_download, \
-    patch("pyrit.prompt_target.openai.openai_sora_target.data_serializer_factory") as mock_factory:
+
+    with (
+        patch.object(sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create,
+        patch.object(sora_target._async_client.videos, "download_content", new_callable=AsyncMock) as mock_download,
+        patch("pyrit.prompt_target.openai.openai_sora_target.data_serializer_factory") as mock_factory,
+    ):
         mock_create.return_value = mock_video
         mock_download.return_value = mock_video_response
         mock_factory.return_value = mock_serializer
-        
+
         response = await sora_target.send_prompt_async(message=Message([request]))
-        
+
         # Verify SDK methods were called correctly
         mock_create.assert_called_once_with(
             model="sora-2",
@@ -119,7 +118,7 @@ async def test_sora_send_prompt_async_success(
         )
         mock_download.assert_called_once_with("video_123")
         mock_serializer.save_data.assert_called_once_with(data=b"video data content")
-        
+
         # Verify response
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].converted_value == "/path/to/video.mp4"
@@ -132,28 +131,30 @@ async def test_sora_send_prompt_async_failed_content_filter(
 ):
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
-    
+
     # Mock failed video generation with output-side content filter
     mock_video = MagicMock()
     mock_video.id = "video_456"
     mock_video.status = "failed"
     mock_error = MagicMock()
     mock_error.code = "content_filter"
-    mock_error.__str__ = lambda self: "Video generation blocked due to policy violation."
     mock_video.error = mock_error
-    mock_video.model_dump_json.return_value = '{"id": "video_456", "status": "failed", "error": {"code": "content_filter"}}'
-    
-    with patch.object(
-        sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
-    ) as mock_create:
+    mock_video.model_dump_json.return_value = (
+        '{"id": "video_456", "status": "failed", "error": {"code": "content_filter"}}'
+    )
+
+    with patch.object(sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_video
-        
+
         response = await sora_target.send_prompt_async(message=Message([request]))
-        
+
         # Verify response is error with blocked status
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "blocked"
-        assert "content_filter" in response.message_pieces[0].converted_value.lower() or "blocked" in response.message_pieces[0].converted_value.lower()
+        assert (
+            "content_filter" in response.message_pieces[0].converted_value.lower()
+            or "blocked" in response.message_pieces[0].converted_value.lower()
+        )
 
 
 @pytest.mark.asyncio
@@ -162,23 +163,20 @@ async def test_sora_send_prompt_async_failed_processing_error(
 ):
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
-    
+
     # Mock failed video generation with processing error
     mock_video = MagicMock()
     mock_video.id = "video_789"
     mock_video.status = "failed"
     mock_error = MagicMock()
     mock_error.code = "internal_error"
-    mock_error.__str__ = lambda self: "Internal processing error"
     mock_video.error = mock_error
-    
-    with patch.object(
-        sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
-    ) as mock_create:
+
+    with patch.object(sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_video
-        
+
         response = await sora_target.send_prompt_async(message=Message([request]))
-        
+
         # Verify response is processing error
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "processing"
@@ -190,28 +188,26 @@ async def test_sora_send_prompt_async_bad_request_exception(
     sora_target: OpenAISoraTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
     from openai import BadRequestError
-    
+
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
-    
+
     # Mock BadRequestError with content filter
     mock_response = MagicMock()
     mock_response.text = '{"error": {"code": "content_policy_violation", "message": "Content blocked"}}'
-    
+
     bad_request_error = BadRequestError(
-        "Content blocked", 
-        response=mock_response, 
-        body={"error": {"code": "content_policy_violation", "message": "Content blocked"}}
+        "Content blocked",
+        response=mock_response,
+        body={"error": {"code": "content_policy_violation", "message": "Content blocked"}},
     )
     bad_request_error.status_code = 400
-    
-    with patch.object(
-        sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
-    ) as mock_create:
+
+    with patch.object(sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create:
         mock_create.side_effect = bad_request_error
-        
+
         response = await sora_target.send_prompt_async(message=Message([request]))
-        
+
         # Verify response is error with blocked status (content filter)
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "blocked"
@@ -222,21 +218,19 @@ async def test_sora_send_prompt_async_rate_limit_exception(
     sora_target: OpenAISoraTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
     from openai import RateLimitError
-    
+
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
-    
+
     # Mock RateLimitError
     mock_response = MagicMock()
     mock_response.text = "Rate limit exceeded"
-    
+
     rate_limit_error = RateLimitError("Rate limit exceeded", response=mock_response, body={})
-    
-    with patch.object(
-        sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
-    ) as mock_create:
+
+    with patch.object(sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create:
         mock_create.side_effect = rate_limit_error
-        
+
         with pytest.raises(RateLimitException):
             await sora_target.send_prompt_async(message=Message([request]))
 
@@ -246,22 +240,20 @@ async def test_sora_send_prompt_async_api_error(
     sora_target: OpenAISoraTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
     from openai import APIStatusError
-    
+
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
-    
+
     # Mock APIStatusError
     mock_response = MagicMock()
     mock_response.status_code = 500
     mock_response.text = "Internal server error"
-    
+
     api_error = APIStatusError("Internal server error", response=mock_response, body={})
-    
-    with patch.object(
-        sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
-    ) as mock_create:
+
+    with patch.object(sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create:
         mock_create.side_effect = api_error
-        
+
         with pytest.raises(APIStatusError):
             await sora_target.send_prompt_async(message=Message([request]))
 
@@ -272,20 +264,18 @@ async def test_sora_send_prompt_async_unexpected_status(
 ):
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
-    
+
     # Mock video with unexpected status
     mock_video = MagicMock()
     mock_video.id = "video_unexpected"
     mock_video.status = "pending"  # Unexpected status
     mock_video.error = None
-    
-    with patch.object(
-        sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
-    ) as mock_create:
+
+    with patch.object(sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_video
-        
+
         response = await sora_target.send_prompt_async(message=Message([request]))
-        
+
         # Verify response is error with unknown status
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "unknown"
@@ -294,6 +284,7 @@ async def test_sora_send_prompt_async_unexpected_status(
 
 # Unit tests for override methods
 
+
 def test_check_content_filter_detects_output_content_filter(sora_target: OpenAISoraTarget):
     """Test _check_content_filter detects output-side content_filter error."""
     mock_video = MagicMock()
@@ -301,7 +292,18 @@ def test_check_content_filter_detects_output_content_filter(sora_target: OpenAIS
     mock_error = MagicMock()
     mock_error.code = "content_filter"
     mock_video.error = mock_error
-    
+
+    assert sora_target._check_content_filter(mock_video) is True
+
+
+def test_check_content_filter_detects_moderation_blocked(sora_target: OpenAISoraTarget):
+    """Test _check_content_filter detects moderation_blocked error."""
+    mock_video = MagicMock()
+    mock_video.status = "failed"
+    mock_error = MagicMock()
+    mock_error.code = "moderation_blocked"
+    mock_video.error = mock_error
+
     assert sora_target._check_content_filter(mock_video) is True
 
 
@@ -310,7 +312,7 @@ def test_check_content_filter_completed_status(sora_target: OpenAISoraTarget):
     mock_video = MagicMock()
     mock_video.status = "completed"
     mock_video.error = None
-    
+
     assert sora_target._check_content_filter(mock_video) is False
 
 
@@ -321,7 +323,7 @@ def test_check_content_filter_different_error(sora_target: OpenAISoraTarget):
     mock_error = MagicMock()
     mock_error.code = "processing_error"
     mock_video.error = mock_error
-    
+
     assert sora_target._check_content_filter(mock_video) is False
 
 
@@ -330,6 +332,5 @@ def test_check_content_filter_no_error_object(sora_target: OpenAISoraTarget):
     mock_video = MagicMock()
     mock_video.status = "failed"
     mock_video.error = None
-    
-    assert sora_target._check_content_filter(mock_video) is False
 
+    assert sora_target._check_content_filter(mock_video) is False

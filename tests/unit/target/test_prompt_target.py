@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import uuid
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch

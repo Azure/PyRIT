@@ -13,11 +13,13 @@ from pyrit.models import (
     MessagePiece,
     construct_response_from_request,
 )
-from pyrit.prompt_target import OpenAITarget, PromptChatTarget, limit_requests_per_minute
+from pyrit.prompt_target import (
+    OpenAITarget,
+    PromptChatTarget,
+    limit_requests_per_minute,
+)
 
 logger = logging.getLogger(__name__)
-
-
 
 
 class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
@@ -135,7 +137,13 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
         # Accept base URLs (/v1), specific API paths (/chat/completions), Azure formats
-        chat_url_patterns = [r"/v1$", r"/chat/completions", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
+        chat_url_patterns = [
+            r"/v1$",
+            r"/chat/completions",
+            r"/deployments/[^/]+/",
+            r"openai/v1",
+            r"\.models\.ai\.azure\.com",
+        ]
         self._warn_if_irregular_endpoint(chat_url_patterns)
 
         self._temperature = temperature
@@ -189,10 +197,10 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     def _check_content_filter(self, response: Any) -> bool:
         """
         Check if a Chat Completions API response has finish_reason=content_filter.
-        
+
         Args:
             response: A ChatCompletion object from the OpenAI SDK.
-            
+
         Returns:
             True if content was filtered, False otherwise.
         """
@@ -206,32 +214,32 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     def _validate_response(self, response: Any, request: MessagePiece) -> Optional[Message]:
         """
         Validate a Chat Completions API response for errors.
-        
+
         Checks for:
         - Missing choices
         - Invalid finish_reason
         - Empty content
-        
+
         Args:
             response: The ChatCompletion response from OpenAI SDK.
             request: The original request MessagePiece.
-            
+
         Returns:
             None if valid, does not return Message for content filter (handled by _check_content_filter).
-            
+
         Raises:
             PyritException: For unexpected response structures or finish reasons.
             EmptyResponseException: When the API returns an empty response.
         """
         from pyrit.exceptions import EmptyResponseException, PyritException
-        
+
         # Check for missing choices
         if not response.choices:
             raise PyritException(message="No choices returned in the completion response.")
-            
+
         choice = response.choices[0]
         finish_reason = choice.finish_reason
-        
+
         # Check finish_reason (content_filter is handled by _check_content_filter)
         if finish_reason not in ["stop", "length", "content_filter"]:
             # finish_reason="stop" means API returned complete message
@@ -239,23 +247,23 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             raise PyritException(
                 message=f"Unknown finish_reason {finish_reason} from response: {response.model_dump_json()}"
             )
-        
+
         # Check for empty content
         content = choice.message.content or ""
         if not content:
             logger.error("The chat returned an empty response.")
             raise EmptyResponseException(message="The chat returned an empty response.")
-        
+
         return None
 
     async def _construct_message_from_response(self, response: Any, request: MessagePiece) -> Message:
         """
         Construct a Message from a ChatCompletion response.
-        
+
         Args:
             response: The ChatCompletion response from OpenAI SDK.
             request: The original request MessagePiece.
-            
+
         Returns:
             Message: Constructed message with extracted content.
         """

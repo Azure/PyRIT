@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 def _extract_request_id_from_exception(exc: Exception) -> Optional[str]:
     """
     Extract the x-request-id from an OpenAI SDK exception for logging/telemetry.
-    
+
     Args:
         exc: An exception from the OpenAI SDK (e.g., BadRequestError, RateLimitError).
-        
+
     Returns:
         The request ID string if found, otherwise None.
     """
@@ -38,10 +38,10 @@ def _extract_request_id_from_exception(exc: Exception) -> Optional[str]:
 def _extract_retry_after_from_exception(exc: Exception) -> Optional[float]:
     """
     Extract the Retry-After header from a rate-limit exception for intelligent backoff.
-    
+
     Args:
         exc: A rate-limit exception from the OpenAI SDK.
-        
+
     Returns:
         The retry-after value in seconds as a float, or None if not present.
     """
@@ -63,10 +63,10 @@ def _extract_retry_after_from_exception(exc: Exception) -> Optional[float]:
 def _is_content_filter_error(data: Union[dict, str]) -> bool:
     """
     Check if error data indicates content filtering.
-    
+
     Args:
         data: Either a dict (parsed JSON) or string (error text).
-        
+
     Returns:
         True if content filtering is detected, False otherwise.
     """
@@ -86,19 +86,19 @@ def _is_content_filter_error(data: Union[dict, str]) -> bool:
 def _extract_error_payload(exc: Exception) -> Tuple[Union[dict, str], bool]:
     """
     Extract error payload and detect content filter from an OpenAI SDK exception.
-    
+
     This function tries multiple strategies to parse error information:
     1. Try response.json() if response object exists
     2. Fall back to e.body attribute
     3. Fall back to str(e)
-    
+
     It also attempts to detect whether the error is due to content filtering by:
     - Checking for error.code == "content_filter"
     - Searching for "content_filter" or "policy" keywords in the payload
-    
+
     Args:
         exc: An exception from the OpenAI SDK (typically BadRequestError).
-        
+
     Returns:
         A tuple of (payload, is_content_filter) where:
         - payload is either a dict (if JSON) or a string

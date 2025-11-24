@@ -2,11 +2,8 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
-from pyrit.exceptions import (
-    pyrit_target_retry,
-)
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -139,10 +136,10 @@ class OpenAISoraTarget(OpenAITarget):
         # Use unified error handler - automatically detects Video and validates
         return await self._handle_openai_request(
             api_call=lambda: self._async_client.videos.create_and_poll(
-                model=self._model_name,
+                model=self._model_name,  # type: ignore[arg-type]
                 prompt=prompt,
-                size=self._size,
-                seconds=str(self._n_seconds),
+                size=self._size,  # type: ignore[arg-type]
+                seconds=str(self._n_seconds),  # type: ignore[arg-type]
             ),
             request=request,
             construct_response_fn=self._construct_message_from_response,
@@ -151,26 +148,26 @@ class OpenAISoraTarget(OpenAITarget):
     def _check_content_filter(self, response: Any) -> bool:
         """
         Check if a Sora video generation response was content filtered.
-        
+
         Sora indicates content filtering through:
         - Status is "failed"
         - Error code is "content_filter" (output-side filtering)
         - Error code is "moderation_blocked" (input moderation)
-        
+
         Note: Input-side filtering (content_policy_violation via BadRequestError) is also caught
         by the base class before reaching this method.
-        
+
         Args:
             response: A Video object from the OpenAI SDK.
-            
+
         Returns:
             True if content was filtered, False otherwise.
         """
         try:
             if response.status == "failed":
                 # Check if it's a content filter or moderation error
-                if response.error and hasattr(response.error, 'code'):
-                    if response.error.code in ['content_filter', 'moderation_blocked']:
+                if response.error and hasattr(response.error, "code"):
+                    if response.error.code in ["content_filter", "moderation_blocked"]:
                         return True
         except (AttributeError, TypeError):
             pass
@@ -179,33 +176,33 @@ class OpenAISoraTarget(OpenAITarget):
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """
         Construct a Message from a Sora video response.
-        
+
         Args:
             response: The Video response from OpenAI SDK.
             request: The original request MessagePiece.
-            
+
         Returns:
             Message: Constructed message with video file path.
         """
         video = response
-        
+
         # Check if video generation was successful
         if video.status == "completed":
             logger.info(f"Video generation completed successfully: {video.id}")
-            
+
             # Download video content using SDK
             video_response = await self._async_client.videos.download_content(video.id)
             # Extract bytes from HttpxBinaryResponseContent
             video_content = video_response.content
-            
+
             # Save the video to storage
             return await self._save_video_response(request=request, video_data=video_content)
-        
+
         elif video.status == "failed":
             # Handle failed video generation (non-content-filter)
             error_message = str(video.error) if video.error else "Video generation failed"
             logger.error(f"Video generation failed: {error_message}")
-            
+
             # Non-content-filter errors are returned as processing errors
             return construct_response_from_request(
                 request=request,

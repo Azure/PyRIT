@@ -6,7 +6,12 @@ import os
 import pytest
 
 from pyrit.executor.attack import PromptSendingAttack
-from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget, OpenAIResponseTarget, OpenAISoraTarget
+from pyrit.prompt_target import (
+    OpenAIChatTarget,
+    OpenAIDALLETarget,
+    OpenAIResponseTarget,
+    OpenAISoraTarget,
+)
 
 
 @pytest.mark.asyncio
@@ -47,14 +52,18 @@ async def test_azure_content_filters(sqlite_instance, endpoint, api_key, model_n
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("AZURE_OPENAI_O4MINI_STRICT_FILTER_RESPONSES_ENDPOINT", "AZURE_OPENAI_O4MINI_STRICT_FILTER_RESPONSES_KEY", "AZURE_OPENAI_O4MINI_STRICT_FILTER_RESPONSES_MODEL"),
+        (
+            "AZURE_OPENAI_O4MINI_STRICT_FILTER_RESPONSES_ENDPOINT",
+            "AZURE_OPENAI_O4MINI_STRICT_FILTER_RESPONSES_KEY",
+            "AZURE_OPENAI_O4MINI_STRICT_FILTER_RESPONSES_MODEL",
+        ),
     ],
 )
 async def test_azure_content_filters_response_api(sqlite_instance, endpoint, api_key, model_name):
     endpoint_val = os.getenv(endpoint)
     api_key_val = os.getenv(api_key)
     model_name_val = os.getenv(model_name)
-    
+
     args = {
         "endpoint": endpoint_val,
         "api_key": api_key_val,

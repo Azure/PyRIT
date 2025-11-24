@@ -14,13 +14,10 @@ from typing import (
     Optional,
 )
 
-from openai.types.responses import Response
-
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
-    handle_bad_request_exception,
     pyrit_target_retry,
 )
 from pyrit.models import (
@@ -29,7 +26,11 @@ from pyrit.models import (
     PromptDataType,
     PromptResponseError,
 )
-from pyrit.prompt_target import OpenAITarget, PromptChatTarget, limit_requests_per_minute
+from pyrit.prompt_target import (
+    OpenAITarget,
+    PromptChatTarget,
+    limit_requests_per_minute,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,13 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         # Accept both old Azure format (/responses) and new format (/openai/v1)
         # Accept base URLs (/v1), specific API paths (/responses), Azure formats
-        response_url_patterns = [r"/v1$", r"/responses", r"/deployments/[^/]+/", r"openai/v1", r"\.models\.ai\.azure\.com"]
+        response_url_patterns = [
+            r"/v1$",
+            r"/responses",
+            r"/deployments/[^/]+/",
+            r"openai/v1",
+            r"\.models\.ai\.azure\.com",
+        ]
         self._warn_if_irregular_endpoint(response_url_patterns)
 
         # Reasoning parameters are not yet supported by PyRIT.
@@ -335,8 +342,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         *,
         message: Message,
     ) -> tuple[Message, Optional[dict[str, Any]]]:
-        """Send the prompt and return the assistant message and any pending tool call.
-        
+        """
+        Send the prompt and return the assistant message and any pending tool call.
+
         Returns:
             Tuple of (assistant_message, tool_call_dict_or_none)
         """
@@ -344,23 +352,23 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
         message_piece: MessagePiece = message.message_pieces[0]
         is_json_response = self.is_response_format_json(message_piece)
-        
+
         conv = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
         conv.append(message)
         logger.info(f"Sending the following prompt to the prompt target: {message}")
-        
+
         body = await self._construct_request_body(conversation=conv, is_json_response=is_json_response)
-        
+
         # Use unified error handling - automatically detects Response and validates
         result = await self._handle_openai_request(
             api_call=lambda: self._async_client.responses.create(**body),
             request=message_piece,
             construct_response_fn=self._construct_message_from_response,
         )
-        
+
         # Append the result to memory conversation
         conv.append(result)
-        
+
         # Extract tool call if present
         tool_call = self._find_last_pending_tool_call(result)
         return result, tool_call
@@ -368,16 +376,16 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     def _check_content_filter(self, response: Any) -> bool:
         """
         Check if a Response API response has a content filter error.
-        
+
         Args:
             response: A Response object from the OpenAI SDK.
-            
+
         Returns:
             True if content was filtered, False otherwise.
         """
         try:
-            if hasattr(response, 'error') and response.error is not None:
-                return response.error.code == 'content_filter'
+            if hasattr(response, "error") and response.error is not None:
+                return response.error.code == "content_filter"
         except (AttributeError, TypeError):
             pass
         return False
@@ -385,31 +393,29 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     def _validate_response(self, response: Any, request: MessagePiece) -> Optional[Message]:
         """
         Validate a Response API response for errors.
-        
+
         Checks for:
         - Error responses (excluding content filtering which is checked separately)
         - Invalid status
         - Empty output
-        
+
         Args:
             response: The Response object from the OpenAI SDK.
             request: The original request MessagePiece.
-            
+
         Returns:
             None if valid, does not return Message for content filter (handled by _check_content_filter).
-            
+
         Raises:
             PyritException: For unexpected response structures or errors.
             EmptyResponseException: When the API returns no valid output.
         """
         from pyrit.exceptions import EmptyResponseException, PyritException
-        
+
         # Check for error response - error is a ResponseError object or None
         # (content_filter is handled by _check_content_filter)
         if response.error is not None and response.error.code != "content_filter":
-            raise PyritException(
-                message=f"Response error: {response.error.code} - {response.error.message}"
-            )
+            raise PyritException(message=f"Response error: {response.error.code} - {response.error.message}")
 
         # Check status - should be "completed" for successful responses
         if response.status != "completed":
@@ -419,17 +425,17 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         if not response.output:
             logger.error("The response returned no valid output.")
             raise EmptyResponseException(message="The response returned an empty response.")
-        
+
         return None
 
     async def _construct_message_from_response(self, response: Any, request: MessagePiece) -> Message:
         """
         Construct a Message from a Response API response.
-        
+
         Args:
             response: The Response object from OpenAI SDK.
             request: The original request MessagePiece.
-            
+
         Returns:
             Message: Constructed message with extracted content from output sections.
         """
@@ -444,7 +450,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             if piece is None:
                 continue
             extracted_response_pieces.append(piece)
-        
+
         return Message(message_pieces=extracted_response_pieces)
 
     @limit_requests_per_minute
@@ -461,7 +467,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             The final Message with the assistant's answer.
         """
         assistant_message, tool_call_section = await self._send_prompt_and_find_tool_call_async(message=message)
-        
+
         while tool_call_section:
             # Execute the tool/function
             tool_output = await self._execute_call_section(tool_call_section)
@@ -473,12 +479,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             tool_message = self._make_tool_message(
                 tool_output, tool_call_section["call_id"], reference_piece=reference_piece
             )
-            
+
             # Build combined message with all conversation history for next request
             # Get full conversation from memory
             conv = self._memory.get_conversation(conversation_id=reference_piece.conversation_id)
             conv.append(tool_message)
-            
+
             merged: List[MessagePiece] = []
             for msg in conv:
                 merged.extend(msg.message_pieces)
