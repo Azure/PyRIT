@@ -16,12 +16,6 @@ from typing import (
 
 from openai.types.responses import Response
 
-from pyrit.prompt_target.openai.openai_error_handling import (
-    _check_response_api_content_filter,
-    construct_response_message,
-    handle_openai_completion_with_errors,
-)
-
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
@@ -357,24 +351,101 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         
         body = await self._construct_request_body(conversation=conv, is_json_response=is_json_response)
         
-        # Use unified error handling with Response API content filter check
-        result = await handle_openai_completion_with_errors(
-            make_request_fn=lambda: self._async_client.responses.create(**body),
-            message_piece=message_piece,
-            check_content_filter_fn=_check_response_api_content_filter,
-            construct_message_fn=lambda completion_response, message_piece: construct_response_message(
-                completion_response=completion_response,
-                message_piece=message_piece,
-                parse_section_fn=self._parse_response_output_section,
-            ),
+        # Use unified error handling - automatically detects Response and validates
+        result = await self._handle_openai_request(
+            api_call=lambda: self._async_client.responses.create(**body),
+            request=message_piece,
+            construct_response_fn=self._construct_message_from_response,
         )
         
-        # Append the result (success or error) to memory conversation
+        # Append the result to memory conversation
         conv.append(result)
         
-        # Extract tool call if present (will be None for errors)
+        # Extract tool call if present
         tool_call = self._find_last_pending_tool_call(result)
         return result, tool_call
+
+    def _check_content_filter(self, response: Any) -> bool:
+        """
+        Check if a Response API response has a content filter error.
+        
+        Args:
+            response: A Response object from the OpenAI SDK.
+            
+        Returns:
+            True if content was filtered, False otherwise.
+        """
+        try:
+            if hasattr(response, 'error') and response.error is not None:
+                return response.error.code == 'content_filter'
+        except (AttributeError, TypeError):
+            pass
+        return False
+
+    def _validate_response(self, response: Any, request: MessagePiece) -> Optional[Message]:
+        """
+        Validate a Response API response for errors.
+        
+        Checks for:
+        - Error responses (excluding content filtering which is checked separately)
+        - Invalid status
+        - Empty output
+        
+        Args:
+            response: The Response object from the OpenAI SDK.
+            request: The original request MessagePiece.
+            
+        Returns:
+            None if valid, does not return Message for content filter (handled by _check_content_filter).
+            
+        Raises:
+            PyritException: For unexpected response structures or errors.
+            EmptyResponseException: When the API returns no valid output.
+        """
+        from pyrit.exceptions import EmptyResponseException, PyritException
+        
+        # Check for error response - error is a ResponseError object or None
+        # (content_filter is handled by _check_content_filter)
+        if response.error is not None and response.error.code != "content_filter":
+            raise PyritException(
+                message=f"Response error: {response.error.code} - {response.error.message}"
+            )
+
+        # Check status - should be "completed" for successful responses
+        if response.status != "completed":
+            raise PyritException(message=f"Unexpected status: {response.status}")
+
+        # Check for empty output
+        if not response.output:
+            logger.error("The response returned no valid output.")
+            raise EmptyResponseException(message="The response returned an empty response.")
+        
+        return None
+
+    async def _construct_message_from_response(self, response: Any, request: MessagePiece) -> Message:
+        """
+        Construct a Message from a Response API response.
+        
+        Args:
+            response: The Response object from OpenAI SDK.
+            request: The original request MessagePiece.
+            
+        Returns:
+            Message: Constructed message with extracted content from output sections.
+        """
+        # Extract and parse message pieces from validated output sections
+        extracted_response_pieces: List[MessagePiece] = []
+        for section in response.output:
+            piece = self._parse_response_output_section(
+                section=section,
+                message_piece=request,
+                error=None,  # error is already handled in validation
+            )
+            if piece is None:
+                continue
+            extracted_response_pieces.append(piece)
+        
+        return Message(message_pieces=extracted_response_pieces)
 
     @limit_requests_per_minute
     @limit_requests_per_minute

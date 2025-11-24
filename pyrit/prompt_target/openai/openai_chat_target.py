@@ -11,13 +11,9 @@ from pyrit.models import (
     ChatMessageListDictContent,
     Message,
     MessagePiece,
+    construct_response_from_request,
 )
 from pyrit.prompt_target import OpenAITarget, PromptChatTarget, limit_requests_per_minute
-from pyrit.prompt_target.openai.openai_error_handling import (
-    _check_chat_completion_content_filter,
-    construct_chat_completion_message,
-    handle_openai_completion_with_errors,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -183,13 +179,88 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
-        # Use unified error handling with shared message construction
-        return await handle_openai_completion_with_errors(
-            make_request_fn=lambda: self._async_client.chat.completions.create(**body),
-            message_piece=message_piece,
-            check_content_filter_fn=_check_chat_completion_content_filter,
-            construct_message_fn=construct_chat_completion_message,
+        # Use unified error handling - automatically detects ChatCompletion and validates
+        return await self._handle_openai_request(
+            api_call=lambda: self._async_client.chat.completions.create(**body),
+            request=message_piece,
+            construct_response_fn=self._construct_message_from_response,
         )
+
+    def _check_content_filter(self, response: Any) -> bool:
+        """
+        Check if a Chat Completions API response has finish_reason=content_filter.
+        
+        Args:
+            response: A ChatCompletion object from the OpenAI SDK.
+            
+        Returns:
+            True if content was filtered, False otherwise.
+        """
+        try:
+            if response.choices and response.choices[0].finish_reason == "content_filter":
+                return True
+        except (AttributeError, IndexError):
+            pass
+        return False
+
+    def _validate_response(self, response: Any, request: MessagePiece) -> Optional[Message]:
+        """
+        Validate a Chat Completions API response for errors.
+        
+        Checks for:
+        - Missing choices
+        - Invalid finish_reason
+        - Empty content
+        
+        Args:
+            response: The ChatCompletion response from OpenAI SDK.
+            request: The original request MessagePiece.
+            
+        Returns:
+            None if valid, does not return Message for content filter (handled by _check_content_filter).
+            
+        Raises:
+            PyritException: For unexpected response structures or finish reasons.
+            EmptyResponseException: When the API returns an empty response.
+        """
+        from pyrit.exceptions import EmptyResponseException, PyritException
+        
+        # Check for missing choices
+        if not response.choices:
+            raise PyritException(message="No choices returned in the completion response.")
+            
+        choice = response.choices[0]
+        finish_reason = choice.finish_reason
+        
+        # Check finish_reason (content_filter is handled by _check_content_filter)
+        if finish_reason not in ["stop", "length", "content_filter"]:
+            # finish_reason="stop" means API returned complete message
+            # "length" means API returned incomplete message due to max_tokens limit
+            raise PyritException(
+                message=f"Unknown finish_reason {finish_reason} from response: {response.model_dump_json()}"
+            )
+        
+        # Check for empty content
+        content = choice.message.content or ""
+        if not content:
+            logger.error("The chat returned an empty response.")
+            raise EmptyResponseException(message="The chat returned an empty response.")
+        
+        return None
+
+    async def _construct_message_from_response(self, response: Any, request: MessagePiece) -> Message:
+        """
+        Construct a Message from a ChatCompletion response.
+        
+        Args:
+            response: The ChatCompletion response from OpenAI SDK.
+            request: The original request MessagePiece.
+            
+        Returns:
+            Message: Constructed message with extracted content.
+        """
+        extracted_response = response.choices[0].message.content or ""
+        return construct_response_from_request(request=request, response_text_pieces=[extracted_response])
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""

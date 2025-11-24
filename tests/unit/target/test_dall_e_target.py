@@ -1,11 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import base64
 import json
 import os
 import uuid
+from pathlib import Path
 from typing import MutableSequence
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import httpx
 import pytest
@@ -276,6 +278,38 @@ async def test_send_prompt_async_bad_request_content_filter(
         assert "content_filter" in result.message_pieces[0].converted_value
 
 
+@pytest.mark.asyncio
+async def test_send_prompt_async_bad_request_content_policy_violation(
+    dalle_target: OpenAIDALLETarget,
+    sample_conversations: MutableSequence[MessagePiece],
+) -> None:
+
+    request = sample_conversations[0]
+    request.conversation_id = str(uuid.uuid4())
+
+    # Import SDK exception
+    from openai import BadRequestError
+
+    mock_response = MagicMock()
+    mock_response.text = '{"error": {"code": "content_policy_violation", "message": "Content blocked by policy"}}'
+
+    # Create exception with proper status_code and inner_error structure
+    bad_request_error = BadRequestError(
+        "Content blocked by policy",
+        response=mock_response,
+        body={"error": {"code": "content_policy_violation", "message": "Content blocked by policy"}}
+    )
+    bad_request_error.status_code = 400
+
+    with patch.object(
+        dalle_target._async_client.images, "generate", new_callable=AsyncMock
+    ) as mock_generate:
+        mock_generate.side_effect = bad_request_error
+        result = await dalle_target.send_prompt_async(message=Message([request]))
+        assert result.message_pieces[0].response_error == "blocked"
+        assert result.message_pieces[0].converted_value_data_type == "error"
+
+
 def test_is_json_response_supported(patch_central_database):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
@@ -283,5 +317,3 @@ def test_is_json_response_supported(patch_central_database):
 
     mock_dalle_target = OpenAIDALLETarget(model_name="test", endpoint="test", api_key="test")
     assert mock_dalle_target.is_json_response_supported() is False
-
-

@@ -7,7 +7,7 @@ import json
 import logging
 import wave
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Tuple
+from typing import Any, List, Literal, Optional, Tuple
 from urllib.parse import urlencode
 
 import websockets
@@ -515,6 +515,13 @@ class RealtimeTarget(OpenAITarget):
 
         output_audio_path = await self.save_audio(result.audio_bytes, num_channels, sample_width, frame_rate)
         return output_audio_path, result
+
+    async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
+        """
+        Not used in RealtimeTarget - message construction handled by receive_events.
+        This implementation exists to satisfy the abstract base class requirement.
+        """
+        raise NotImplementedError("RealtimeTarget uses receive_events for message construction")
 
     def _validate_request(self, *, message: Message) -> None:
         """

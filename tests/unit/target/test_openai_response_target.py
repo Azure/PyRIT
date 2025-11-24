@@ -38,10 +38,11 @@ def create_mock_response(response_dict: dict = None) -> MagicMock:
     Returns:
         A mock object that simulates the OpenAI SDK response with Pydantic-style attribute access.
     """
+    from openai.types.responses import Response
     if response_dict is None:
         response_dict = openai_response_json_dict()
     
-    mock_response = MagicMock()
+    mock_response = MagicMock(spec=Response)
     mock_response.model_dump_json.return_value = json.dumps(response_dict)
     
     # Set attributes based on response_dict to match OpenAI SDK Response type
@@ -909,7 +910,7 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
     # Create a shared conversation ID and reference piece for consistency
     shared_conversation_id = "test-conversation-123"
 
-    # 5) Create the user prompt first to get the conversation ID
+    # 2) Create the user prompt
     user_req = Message(
         message_pieces=[
             MessagePiece(
@@ -923,60 +924,50 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         ]
     )
 
-    # 2) First "assistant" reply: a function_call section (with matching conversation ID)
-    func_call_section = {
+    # 3) Create mock SDK responses
+    # First response: function_call
+    first_sdk_response = MagicMock()
+    first_sdk_response.status = "completed"
+    first_sdk_response.error = None
+    first_func_section = MagicMock()
+    first_func_section.type = "function_call"
+    first_func_section.call_id = "call-99"
+    first_func_section.name = "times2"
+    first_func_section.arguments = json.dumps({"x": 7})
+    first_func_section.model_dump.return_value = {
         "type": "function_call",
         "call_id": "call-99",
         "name": "times2",
         "arguments": json.dumps({"x": 7}),
     }
-    first_reply = Message(
-        message_pieces=[
-            MessagePiece(
-                role="assistant",
-                original_value=json.dumps(func_call_section, separators=(",", ":")),
-                original_value_data_type="function_call",
-                conversation_id=shared_conversation_id,
-            )
-        ]
-    )
+    first_sdk_response.output = [first_func_section]
 
-    # 3) Second "assistant" reply: final message content (no tool call)
-    final_output_text = "Done: 14"
-    second_reply = Message(
-        message_pieces=[
-            MessagePiece(
-                role="assistant",
-                original_value=final_output_text,
-                converted_value=final_output_text,
-                original_value_data_type="text",
-                converted_value_data_type="text",
-                conversation_id=shared_conversation_id,
-            )
-        ]
-    )
+    # Second response: final message
+    second_sdk_response = MagicMock()
+    second_sdk_response.status = "completed"
+    second_sdk_response.error = None
+    second_msg_section = MagicMock()
+    second_msg_section.type = "message"
+    second_msg_section.content = [MagicMock(text="Done: 14")]
+    second_sdk_response.output = [second_msg_section]
 
     call_counter = {"n": 0}
 
-    # 4) Mock the internal parts to return first the function_call reply, then the final reply
-    def fake_construct_message(*, completion_response, message_piece: MessagePiece, **kwargs) -> Message:
-        # Return first reply on first call, second on subsequent calls (ignore other kwargs like parse_section_fn)
+    # 4) Mock the SDK's create method to return first function_call, then final message
+    async def mock_sdk_create(**kwargs):
         call_counter["n"] += 1
-        return first_reply if call_counter["n"] == 1 else second_reply
+        return first_sdk_response if call_counter["n"] == 1 else second_sdk_response
 
-    # Patch construct_response_message where it's imported in the response_target module
-    with patch("pyrit.prompt_target.openai.openai_response_target.construct_response_message",
-               side_effect=fake_construct_message):
-        # Mock the SDK's create method - doesn't need proper structure since construct_response_message is patched
-        with patch.object(target._async_client.responses, "create", new_callable=AsyncMock) as mock_create:
-            mock_create.return_value = MagicMock()  # Dummy object, won't be used
-            
-            final = await target.send_prompt_async(message=user_req)
+    with patch.object(target._async_client.responses, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = mock_sdk_create
+        
+        final = await target.send_prompt_async(message=user_req)
 
-            # Should get the final (non-tool-call) assistant message
-            assert len(final.message_pieces) == 1
-            assert final.message_pieces[0].original_value_data_type == "text"
-            assert final.message_pieces[0].original_value == "Done: 14"
+        # Should get the final (non-tool-call) assistant message
+        assert len(final.message_pieces) == 1
+        assert final.message_pieces[0].original_value_data_type == "text"
+        assert final.message_pieces[0].original_value == "Done: 14"
+
 
 
 def test_invalid_temperature_raises(patch_central_database):
@@ -1015,3 +1006,120 @@ def test_invalid_top_p_raises(patch_central_database):
             api_key="test",
             top_p=1.1,
         )
+
+
+# Unit tests for override methods
+
+def test_check_content_filter_detects_filtered_response(target: OpenAIResponseTarget):
+    """Test _check_content_filter detects content_filter error code."""
+    from unittest.mock import MagicMock
+    
+    mock_response = MagicMock()
+    mock_error = MagicMock()
+    mock_error.code = "content_filter"
+    mock_response.error = mock_error
+    
+    assert target._check_content_filter(mock_response) is True
+
+
+def test_check_content_filter_no_error(target: OpenAIResponseTarget):
+    """Test _check_content_filter returns False when no error."""
+    from unittest.mock import MagicMock
+    
+    mock_response = MagicMock()
+    mock_response.error = None
+    
+    assert target._check_content_filter(mock_response) is False
+
+
+def test_check_content_filter_different_error(target: OpenAIResponseTarget):
+    """Test _check_content_filter returns False for non-content-filter errors."""
+    from unittest.mock import MagicMock
+    
+    mock_response = MagicMock()
+    mock_error = MagicMock()
+    mock_error.code = "rate_limit"
+    mock_response.error = mock_error
+    
+    assert target._check_content_filter(mock_response) is False
+
+
+def test_validate_response_success(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response passes for valid completed response."""
+    from unittest.mock import MagicMock
+    
+    mock_response = MagicMock()
+    mock_response.error = None
+    mock_response.status = "completed"
+    mock_response.output = [{"type": "message", "content": [{"text": "Hello"}]}]
+    
+    result = target._validate_response(mock_response, dummy_text_message_piece)
+    assert result is None
+
+
+def test_validate_response_non_content_filter_error(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for non-content-filter errors."""
+    from unittest.mock import MagicMock
+    
+    mock_response = MagicMock()
+    mock_error = MagicMock()
+    mock_error.code = "invalid_request"
+    mock_error.message = "Invalid request parameters"
+    mock_response.error = mock_error
+    mock_response.status = "completed"
+    
+    with pytest.raises(PyritException, match="Response error: invalid_request"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+def test_validate_response_invalid_status(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for non-completed status."""
+    from unittest.mock import MagicMock
+    
+    mock_response = MagicMock()
+    mock_response.error = None
+    mock_response.status = "failed"
+    mock_response.output = []
+    
+    with pytest.raises(PyritException, match="Unexpected status: failed"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+def test_validate_response_empty_output(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for empty output."""
+    from unittest.mock import MagicMock
+    
+    mock_response = MagicMock()
+    mock_response.error = None
+    mock_response.status = "completed"
+    mock_response.output = []
+    
+    with pytest.raises(EmptyResponseException, match="empty response"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+@pytest.mark.asyncio
+async def test_construct_message_from_response(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    """Test _construct_message_from_response parses output sections."""
+    from unittest.mock import MagicMock
+    
+    mock_response = MagicMock()
+    mock_response.output = [
+        {"type": "message", "content": [{"type": "text", "text": "Hello from Response API"}]}
+    ]
+    
+    # Mock the _parse_response_output_section method
+    with patch.object(target, '_parse_response_output_section') as mock_parse:
+        mock_piece = MessagePiece(
+            role="assistant",
+            original_value="Hello from Response API",
+            converted_value="Hello from Response API",
+            conversation_id=dummy_text_message_piece.conversation_id,
+        )
+        mock_parse.return_value = mock_piece
+        
+        result = await target._construct_message_from_response(mock_response, dummy_text_message_piece)
+        
+        assert isinstance(result, Message)
+        assert len(result.message_pieces) == 1
+        mock_parse.assert_called_once()

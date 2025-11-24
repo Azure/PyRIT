@@ -3,8 +3,9 @@
 
 import os
 import uuid
+from pathlib import Path
 from typing import MutableSequence
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 from openai import RateLimitError

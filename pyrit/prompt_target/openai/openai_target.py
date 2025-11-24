@@ -6,15 +6,23 @@ import logging
 import os
 import re
 from abc import abstractmethod
-from typing import Optional, Union
+from typing import Any, Callable, Optional, Union
 from urllib.parse import parse_qs, urlparse
 
-from openai import AsyncOpenAI, AsyncAzureOpenAI
+from openai import AsyncOpenAI, AsyncAzureOpenAI, BadRequestError, ContentFilterFinishReasonError, RateLimitError
+from openai._exceptions import APIConnectionError, APIStatusError, APITimeoutError, AuthenticationError
 
 from pyrit.auth import AzureAuth
 from pyrit.auth.azure_auth import get_async_token_provider_from_default_azure_credential, get_default_scope
 from pyrit.common import default_values
+from pyrit.exceptions.exception_classes import RateLimitException, handle_bad_request_exception
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.openai.openai_error_handling import (
+    _extract_request_id_from_exception,
+    _extract_retry_after_from_exception,
+    _extract_error_payload,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -270,6 +278,188 @@ class OpenAITarget(PromptChatTarget):
                 api_key=api_key_value,
                 **httpx_kwargs,
             )
+
+    async def _handle_openai_request(
+        self,
+        *,
+        api_call: Callable,
+        request: MessagePiece,
+        construct_response_fn: Callable,
+    ) -> Message:
+        """
+        Unified error handling wrapper for all OpenAI SDK requests.
+        
+        This method wraps any OpenAI SDK call and handles all common error scenarios:
+        - Content filtering (both proactive checks and SDK exceptions)
+        - Bad request errors (400s with content filter detection)
+        - Rate limiting (429s with retry-after extraction)
+        - API status errors (other HTTP errors)
+        - Transient errors (timeouts, connection issues)
+        - Authentication errors
+        
+        Automatically detects the response type and applies appropriate validation and content
+        filter checks via abstract methods. On success, constructs and returns a Message object.
+        
+        Args:
+            api_call: Async callable that invokes the OpenAI SDK method.
+            request: The MessagePiece representing the user's request (for error responses).
+            construct_response_fn: Async callable that constructs Message from validated response.
+            
+        Returns:
+            Message: The constructed message response (success or error).
+            
+        Raises:
+            RateLimitException: For 429 rate limit errors.
+            Various OpenAI SDK exceptions: For non-recoverable errors.
+        """
+        try:
+            # Execute the API call
+            response = await api_call()
+            
+            # Check for content filter via subclass implementation
+            if self._check_content_filter(response):
+                return self._handle_content_filter_response(response, request)
+            
+            # Validate response via subclass implementation
+            error_message = self._validate_response(response, request)
+            if error_message:
+                return error_message
+            
+            # Construct and return Message from validated response
+            return await construct_response_fn(response, request)
+            
+        except ContentFilterFinishReasonError as e:
+            # Content filter error raised by SDK during parse/structured output flows
+            request_id = _extract_request_id_from_exception(e)
+            logger.error(f"Content filter error (SDK raised). request_id={request_id} error={e}")
+            # Convert exception to response-like object for consistent handling
+            class _ErrorResponse:
+                def model_dump_json(self):
+                    return str(e)
+            return self._handle_content_filter_response(_ErrorResponse(), request)
+        except BadRequestError as e:
+            # Handle 400 errors - includes input policy filters and some Azure output-filter 400s
+            payload, is_content_filter = _extract_error_payload(e)
+            request_id = _extract_request_id_from_exception(e)
+            
+            # Safely serialize payload for logging
+            try:
+                payload_str = payload if isinstance(payload, str) else json.dumps(payload)[:200]
+            except (TypeError, ValueError):
+                # If JSON serialization fails (e.g., contains non-serializable objects), use str()
+                payload_str = str(payload)[:200]
+            
+            logger.warning(
+                f"BadRequestError request_id={request_id} is_content_filter={is_content_filter} "
+                f"payload={payload_str}"
+            )
+
+            return handle_bad_request_exception(
+                response_text=str(payload),
+                request=request,
+                error_code=400,
+                is_content_filter=is_content_filter,
+            )
+        except RateLimitError as e:
+            # SDK's RateLimitError (429)
+            request_id = _extract_request_id_from_exception(e)
+            retry_after = _extract_retry_after_from_exception(e)
+            logger.warning(f"RateLimitError request_id={request_id} retry_after={retry_after} error={e}")
+            raise RateLimitException()
+        except APIStatusError as e:
+            # Other API status errors - check for 429 here as well
+            request_id = _extract_request_id_from_exception(e)
+            if getattr(e, "status_code", None) == 429:
+                retry_after = _extract_retry_after_from_exception(e)
+                logger.warning(f"429 via APIStatusError request_id={request_id} retry_after={retry_after}")
+                raise RateLimitException()
+            else:
+                logger.exception(
+                    f"APIStatusError request_id={request_id} status={getattr(e, 'status_code', None)} error={e}"
+                )
+                raise
+        except (APITimeoutError, APIConnectionError) as e:
+            # Transient infrastructure errors - these are retryable
+            request_id = _extract_request_id_from_exception(e)
+            logger.warning(f"Transient API error ({e.__class__.__name__}) request_id={request_id} error={e}")
+            raise
+        except AuthenticationError as e:
+            # Authentication errors - non-retryable, surface quickly
+            request_id = _extract_request_id_from_exception(e)
+            logger.error(f"Authentication error request_id={request_id} error={e}")
+            raise
+            raise
+
+    @abstractmethod
+    async def _construct_message_from_response(self, response: Any, request: MessagePiece) -> Message:
+        """
+        Construct a Message from the OpenAI SDK response.
+        
+        This method extracts the relevant data from the SDK response object and
+        constructs a Message with appropriate message pieces. It may include
+        async operations like saving files for image/audio/video responses.
+        
+        Args:
+            response: The response object from OpenAI SDK (e.g., ChatCompletion, Response, etc.).
+            request: The original request MessagePiece.
+            
+        Returns:
+            Message: Constructed message with extracted content.
+        """
+        pass
+
+    def _check_content_filter(self, response: Any) -> bool:
+        """
+        Check if the response indicates content filtering.
+        
+        Override this method in subclasses that need content filter detection.
+        Default implementation returns False (no content filter).
+        
+        Args:
+            response: The response object from OpenAI SDK.
+            
+        Returns:
+            bool: True if content filter detected, False otherwise.
+        """
+        return False
+
+    def _handle_content_filter_response(self, response: Any, request: MessagePiece) -> Message:
+        """
+        Handle content filter errors by creating a proper error Message.
+        
+        Args:
+            response: The response object from OpenAI SDK.
+            request: The original request message piece.
+            
+        Returns:
+            Message object with error type indicating content was filtered.
+        """
+        logger.warning("Output content filtered by content policy.")
+        return handle_bad_request_exception(
+            response_text=response.model_dump_json(),
+            request=request,
+            error_code=200,
+            is_content_filter=True,
+        )
+
+    def _validate_response(self, response: Any, request: MessagePiece) -> Optional[Message]:
+        """
+        Validate the response and return error Message if needed.
+        
+        Override this method in subclasses that need custom response validation.
+        Default implementation returns None (no validation errors).
+        
+        Args:
+            response: The response object from OpenAI SDK.
+            request: The original request MessagePiece.
+            
+        Returns:
+            Optional[Message]: Error Message if validation fails, None otherwise.
+            
+        Raises:
+            Various exceptions for validation failures.
+        """
+        return None
 
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:

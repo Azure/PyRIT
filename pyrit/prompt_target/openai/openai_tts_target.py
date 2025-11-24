@@ -2,13 +2,9 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal, Optional
-
-from openai import BadRequestError, RateLimitError, APIStatusError
+from typing import Any, Literal, Optional
 
 from pyrit.exceptions import (
-    RateLimitException,
-    handle_bad_request_exception,
     pyrit_target_retry,
 )
 from pyrit.models import (
@@ -100,21 +96,25 @@ class OpenAITTSTarget(OpenAITarget):
         if self._speed is not None:
             body_parameters["speed"] = self._speed
 
-        try:
-            # SDK returns audio content directly
-            audio_content = await self._async_client.audio.speech.create(**body_parameters)
-            audio_bytes = audio_content.content
-        except BadRequestError as bre:
-            # Handle bad request (including content filter)
-            return handle_bad_request_exception(
-                response_text=bre.response.text if bre.response else str(bre),
-                request=request,
-                error_code=bre.status_code if hasattr(bre, 'status_code') else 400,
-            )
-        except RateLimitError:
-            raise RateLimitException()
-        except APIStatusError:
-            raise
+        # Use unified error handler for consistent error handling
+        return await self._handle_openai_request(
+            api_call=lambda: self._async_client.audio.speech.create(**body_parameters),
+            request=request,
+            construct_response_fn=self._construct_message_from_response,
+        )
+
+    async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
+        """
+        Construct a Message from a TTS audio response.
+        
+        Args:
+            response: The audio response from OpenAI SDK.
+            request: The original request MessagePiece.
+            
+        Returns:
+            Message: Constructed message with audio file path.
+        """
+        audio_bytes = response.content
 
         logger.info("Received valid response from the prompt target")
 
@@ -124,11 +124,9 @@ class OpenAITTSTarget(OpenAITarget):
 
         await audio_response.save_data(data=audio_bytes)
 
-        response_entry = construct_response_from_request(
+        return construct_response_from_request(
             request=request, response_text_pieces=[str(audio_response.value)], response_type="audio_path"
         )
-
-        return response_entry
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

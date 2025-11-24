@@ -33,7 +33,8 @@ def fake_construct_response_from_request(request, response_text_pieces):
 
 def create_mock_completion(content: str = "hi", finish_reason: str = "stop"):
     """Helper to create a mock OpenAI completion response"""
-    mock_completion = MagicMock()
+    from openai.types.chat import ChatCompletion
+    mock_completion = MagicMock(spec=ChatCompletion)
     mock_completion.choices = [MagicMock()]
     mock_completion.choices[0].finish_reason = finish_reason
     mock_completion.choices[0].message.content = content
@@ -960,3 +961,84 @@ async def test_api_status_error_non_429(target: OpenAIChatTarget, sample_convers
         
         with pytest.raises(APIStatusError):
             await target.send_prompt_async(message=request)
+
+
+# Unit tests for override methods
+
+def test_check_content_filter_detects_filtered_response(target: OpenAIChatTarget):
+    """Test _check_content_filter detects content_filter finish_reason."""
+    mock_response = create_mock_completion(content="", finish_reason="content_filter")
+    assert target._check_content_filter(mock_response) is True
+
+
+def test_check_content_filter_no_filter(target: OpenAIChatTarget):
+    """Test _check_content_filter returns False for normal responses."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="stop")
+    assert target._check_content_filter(mock_response) is False
+
+
+def test_check_content_filter_length_finish(target: OpenAIChatTarget):
+    """Test _check_content_filter returns False for length finish_reason."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="length")
+    assert target._check_content_filter(mock_response) is False
+
+
+def test_validate_response_success_stop(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response passes for valid stop response."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="stop")
+    result = target._validate_response(mock_response, dummy_text_message_piece)
+    assert result is None
+
+
+def test_validate_response_success_length(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response passes for valid length response."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="length")
+    result = target._validate_response(mock_response, dummy_text_message_piece)
+    assert result is None
+
+
+def test_validate_response_no_choices(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for missing choices."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="stop")
+    mock_response.choices = []
+    
+    with pytest.raises(PyritException, match="No choices returned"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+def test_validate_response_unknown_finish_reason(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for unknown finish_reason."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="unexpected")
+    
+    with pytest.raises(PyritException, match="Unknown finish_reason"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+def test_validate_response_empty_content(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for empty content."""
+    mock_response = create_mock_completion(content="", finish_reason="stop")
+    
+    with pytest.raises(EmptyResponseException, match="empty response"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+def test_validate_response_none_content(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for None content."""
+    mock_response = create_mock_completion(content=None, finish_reason="stop")
+    mock_response.choices[0].message.content = None
+    
+    with pytest.raises(EmptyResponseException, match="empty response"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+@pytest.mark.asyncio
+async def test_construct_message_from_response(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _construct_message_from_response extracts content correctly."""
+    mock_response = create_mock_completion(content="Hello from AI", finish_reason="stop")
+    
+    result = await target._construct_message_from_response(mock_response, dummy_text_message_piece)
+    
+    assert isinstance(result, Message)
+    assert len(result.message_pieces) == 1
+    assert result.message_pieces[0].converted_value == "Hello from AI"
+

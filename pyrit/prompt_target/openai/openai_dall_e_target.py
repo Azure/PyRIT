@@ -3,14 +3,10 @@
 import logging
 from typing import Any, Dict, Literal
 
-from openai import BadRequestError, RateLimitError, APIStatusError
-
 from pyrit.exceptions import (
     EmptyResponseException,
-    handle_bad_request_exception,
     pyrit_target_retry,
 )
-from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
     Message,
     PromptDataType,
@@ -128,32 +124,26 @@ class OpenAIDALLETarget(OpenAITarget):
             image_generation_args["quality"] = self.quality
             image_generation_args["style"] = self.style
 
-        try:
-            image_response = await self._async_client.images.generate(**image_generation_args)
-        except BadRequestError as bre:
-            # The SDK wraps content policy violations in BadRequestError
-            # Check if it's a content filter by examining the error response
-            is_content_filter = False
-            try:
-                if hasattr(bre, 'body') and bre.body:
-                    error_code = bre.body.get('error', {}).get('code', '')
-                    is_content_filter = error_code in ['content_policy_violation', 'content_filter']
-            except (AttributeError, TypeError):
-                pass
-            
-            return handle_bad_request_exception(
-                response_text=bre.response.text if bre.response else str(bre),
-                request=request,
-                error_code=bre.status_code if hasattr(bre, 'status_code') else 400,
-                is_content_filter=is_content_filter,
-            )
-        except RateLimitError:
-            raise RateLimitException()
-        except APIStatusError:
-            raise
+        # Use unified error handler for consistent error handling
+        return await self._handle_openai_request(
+            api_call=lambda: self._async_client.images.generate(**image_generation_args),
+            request=request,
+            construct_response_fn=self._construct_message_from_response,
+        )
 
+    async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
+        """
+        Construct a Message from an ImagesResponse.
+        
+        Args:
+            response: The ImagesResponse from OpenAI SDK.
+            request: The original request MessagePiece.
+            
+        Returns:
+            Message: Constructed message with image path.
+        """
         # Extract base64 image data from response
-        b64_data = image_response.data[0].b64_json
+        b64_data = response.data[0].b64_json
 
         # Handle empty response using retry
         if not b64_data:
@@ -165,11 +155,9 @@ class OpenAIDALLETarget(OpenAITarget):
         resp_text = data.value
         response_type: PromptDataType = "image_path"
 
-        response_entry = construct_response_from_request(
+        return construct_response_from_request(
             request=request, response_text_pieces=[resp_text], response_type=response_type
         )
-
-        return response_entry
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

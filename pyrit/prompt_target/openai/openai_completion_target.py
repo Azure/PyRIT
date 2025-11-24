@@ -2,14 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
-
-from openai import BadRequestError, RateLimitError, APIStatusError
+from typing import Any, Optional
 
 from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
-    RateLimitException,
-    handle_bad_request_exception,
     pyrit_target_retry,
 )
 from pyrit.models import Message, MessagePiece, construct_response_from_request
@@ -105,28 +101,30 @@ class OpenAICompletionTarget(OpenAITarget):
         # Filter out None values
         request_params = {k: v for k, v in body_parameters.items() if v is not None}
 
-        try:
-            completion_response = await self._async_client.completions.create(**request_params)
-        except BadRequestError as bre:
-            # Handle bad request (including content filter)
-            return handle_bad_request_exception(response_text=bre.response.text, request=message_piece)
-        except RateLimitError:
-            raise RateLimitException()
-        except APIStatusError:
-            raise
+        # Use unified error handler - automatically detects Completion and validates
+        return await self._handle_openai_request(
+            api_call=lambda: self._async_client.completions.create(**request_params),
+            request=message_piece,
+            construct_response_fn=self._construct_message_from_response,
+        )
 
-        logger.info(f'Received response from the prompt target with {len(completion_response.choices)} choices')
+    async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
+        """
+        Construct a Message from a Completion response.
+        
+        Args:
+            response: The Completion response from OpenAI SDK.
+            request: The original request MessagePiece.
+            
+        Returns:
+            Message: Constructed message with extracted text.
+        """
+        logger.info(f'Received response from the prompt target with {len(response.choices)} choices')
 
-        # Extract response text from choices
-        extracted_response = []
-        for choice in completion_response.choices:
-            extracted_response.append(choice.text)
+        # Extract response text from validated choices
+        extracted_response = [choice.text for choice in response.choices]
 
-        if not extracted_response:
-            logger.log(logging.ERROR, "The completion returned an empty response.")
-            raise EmptyResponseException(message="The completion returned an empty response.")
-
-        return construct_response_from_request(request=message_piece, response_text_pieces=extracted_response)
+        return construct_response_from_request(request=request, response_text_pieces=extracted_response)
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

@@ -2,13 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
-
-from openai import APIStatusError, BadRequestError, RateLimitError
+from typing import Any, Optional
 
 from pyrit.exceptions import (
-    RateLimitException,
-    handle_bad_request_exception,
+    pyrit_target_retry,
 )
 from pyrit.models import (
     Message,
@@ -139,95 +136,93 @@ class OpenAISoraTarget(OpenAITarget):
 
         logger.info(f"Sending video generation prompt: {prompt}")
 
-        try:
-            # Use SDK to create video and poll until completion
-            video = await self._async_client.videos.create_and_poll(
+        # Use unified error handler - automatically detects Video and validates
+        return await self._handle_openai_request(
+            api_call=lambda: self._async_client.videos.create_and_poll(
                 model=self._model_name,
                 prompt=prompt,
                 size=self._size,
                 seconds=str(self._n_seconds),
-            )
+            ),
+            request=request,
+            construct_response_fn=self._construct_message_from_response,
+        )
 
-            # Check if video generation was successful
-            if video.status == "completed":
-                logger.info(f"Video generation completed successfully: {video.id}")
-                
-                # Download video content using SDK
-                video_response = await self._async_client.videos.download_content(video.id)
-                # Extract bytes from HttpxBinaryResponseContent
-                video_content = video_response.content
-                
-                # Save the video to storage
-                return await self._save_video_response(request=request, video_data=video_content)
+    def _check_content_filter(self, response: Any) -> bool:
+        """
+        Check if a Sora video generation response was content filtered.
+        
+        Sora indicates content filtering through:
+        - Status is "failed"
+        - Error code is "content_filter" (output-side filtering)
+        - Error code is "moderation_blocked" (input moderation)
+        
+        Note: Input-side filtering (content_policy_violation via BadRequestError) is also caught
+        by the base class before reaching this method.
+        
+        Args:
+            response: A Video object from the OpenAI SDK.
             
-            elif video.status == "failed":
-                # Handle failed video generation
-                error_message = str(video.error) if video.error else "Video generation failed"
-                logger.error(f"Video generation failed: {error_message}")
-                
-                # Check if it's a content filter error
-                is_content_filter = video.error and hasattr(video.error, 'code') and video.error.code in [
-                    'content_policy_violation', 
-                    'input_moderation',
-                    'output_moderation'
-                ]
-                
-                if is_content_filter:
-                    return handle_bad_request_exception(
-                        response_text=error_message,
-                        request=request,
-                        is_content_filter=True,
-                    )
-                else:
-                    # Non-content-filter errors are returned as processing errors
-                    return construct_response_from_request(
-                        request=request,
-                        response_text_pieces=[error_message],
-                        response_type="error",
-                        error="processing",
-                    )
-            else:
-                # Unexpected status
-                error_message = f"Video generation ended with unexpected status: {video.status}"
-                logger.error(error_message)
-                return construct_response_from_request(
-                    request=request,
-                    response_text_pieces=[error_message],
-                    response_type="error",
-                    error="unknown",
-                )
+        Returns:
+            True if content was filtered, False otherwise.
+        """
+        try:
+            if response.status == "failed":
+                # Check if it's a content filter or moderation error
+                if response.error and hasattr(response.error, 'code'):
+                    if response.error.code in ['content_filter', 'moderation_blocked']:
+                        return True
+        except (AttributeError, TypeError):
+            pass
+        return False
 
-        except BadRequestError as bre:
-            # Handle bad request errors (including content filter)
-            error_message = bre.response.text if bre.response else str(bre)
-            logger.error(f"Bad request error: {error_message}")
+    async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
+        """
+        Construct a Message from a Sora video response.
+        
+        Args:
+            response: The Video response from OpenAI SDK.
+            request: The original request MessagePiece.
             
-            # Check if it's a content filter error
-            is_content_filter = False
-            try:
-                if hasattr(bre, 'body') and bre.body:
-                    error_code = bre.body.get('error', {}).get('code', '')
-                    is_content_filter = error_code in [
-                        'content_policy_violation',
-                        'input_moderation',
-                        'output_moderation',
-                        'content_filter'
-                    ]
-            except (AttributeError, TypeError):
-                pass
+        Returns:
+            Message: Constructed message with video file path.
+        """
+        video = response
+        
+        # Check if video generation was successful
+        if video.status == "completed":
+            logger.info(f"Video generation completed successfully: {video.id}")
             
-            return handle_bad_request_exception(
-                response_text=error_message,
+            # Download video content using SDK
+            video_response = await self._async_client.videos.download_content(video.id)
+            # Extract bytes from HttpxBinaryResponseContent
+            video_content = video_response.content
+            
+            # Save the video to storage
+            return await self._save_video_response(request=request, video_data=video_content)
+        
+        elif video.status == "failed":
+            # Handle failed video generation (non-content-filter)
+            error_message = str(video.error) if video.error else "Video generation failed"
+            logger.error(f"Video generation failed: {error_message}")
+            
+            # Non-content-filter errors are returned as processing errors
+            return construct_response_from_request(
                 request=request,
-                error_code=bre.status_code if hasattr(bre, 'status_code') else 400,
-                is_content_filter=is_content_filter,
+                response_text_pieces=[error_message],
+                response_type="error",
+                error="processing",
             )
-        except RateLimitError:
-            logger.error("Rate limit exceeded")
-            raise RateLimitException()
-        except APIStatusError as e:
-            logger.error(f"API error: {e}")
-            raise
+        else:
+            # Unexpected status
+            error_message = f"Video generation ended with unexpected status: {video.status}"
+            logger.error(error_message)
+            return construct_response_from_request(
+                request=request,
+                response_text_pieces=[error_message],
+                response_type="error",
+                error="unknown",
+            )
 
     async def _save_video_response(self, *, request: MessagePiece, video_data: bytes) -> Message:
         """

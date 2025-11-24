@@ -133,14 +133,15 @@ async def test_sora_send_prompt_async_failed_content_filter(
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
     
-    # Mock failed video generation with content filter
+    # Mock failed video generation with output-side content filter
     mock_video = MagicMock()
     mock_video.id = "video_456"
     mock_video.status = "failed"
     mock_error = MagicMock()
-    mock_error.code = "input_moderation"
-    mock_error.__str__ = lambda self: "Content policy violation"
+    mock_error.code = "content_filter"
+    mock_error.__str__ = lambda self: "Video generation blocked due to policy violation."
     mock_video.error = mock_error
+    mock_video.model_dump_json.return_value = '{"id": "video_456", "status": "failed", "error": {"code": "content_filter"}}'
     
     with patch.object(
         sora_target._async_client.videos, "create_and_poll", new_callable=AsyncMock
@@ -152,7 +153,7 @@ async def test_sora_send_prompt_async_failed_content_filter(
         # Verify response is error with blocked status
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "blocked"
-        assert "Content policy violation" in response.message_pieces[0].converted_value
+        assert "content_filter" in response.message_pieces[0].converted_value.lower() or "blocked" in response.message_pieces[0].converted_value.lower()
 
 
 @pytest.mark.asyncio
@@ -289,3 +290,46 @@ async def test_sora_send_prompt_async_unexpected_status(
         assert len(response.message_pieces) == 1
         assert response.message_pieces[0].response_error == "unknown"
         assert "unexpected status: pending" in response.message_pieces[0].converted_value
+
+
+# Unit tests for override methods
+
+def test_check_content_filter_detects_output_content_filter(sora_target: OpenAISoraTarget):
+    """Test _check_content_filter detects output-side content_filter error."""
+    mock_video = MagicMock()
+    mock_video.status = "failed"
+    mock_error = MagicMock()
+    mock_error.code = "content_filter"
+    mock_video.error = mock_error
+    
+    assert sora_target._check_content_filter(mock_video) is True
+
+
+def test_check_content_filter_completed_status(sora_target: OpenAISoraTarget):
+    """Test _check_content_filter returns False for completed videos."""
+    mock_video = MagicMock()
+    mock_video.status = "completed"
+    mock_video.error = None
+    
+    assert sora_target._check_content_filter(mock_video) is False
+
+
+def test_check_content_filter_different_error(sora_target: OpenAISoraTarget):
+    """Test _check_content_filter returns False for non-content-filter errors."""
+    mock_video = MagicMock()
+    mock_video.status = "failed"
+    mock_error = MagicMock()
+    mock_error.code = "processing_error"
+    mock_video.error = mock_error
+    
+    assert sora_target._check_content_filter(mock_video) is False
+
+
+def test_check_content_filter_no_error_object(sora_target: OpenAISoraTarget):
+    """Test _check_content_filter returns False when no error object."""
+    mock_video = MagicMock()
+    mock_video.status = "failed"
+    mock_video.error = None
+    
+    assert sora_target._check_content_filter(mock_video) is False
+
