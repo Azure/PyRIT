@@ -47,6 +47,34 @@ target = OpenAIChatTarget()
 # The following cell demonstrates how to run a custom harm scoring evaluation on a `Scorer` using a dataset of LLM assistant responses and human labels stored as a CSV file. In the following example, we use a small sample `hate_speech` dataset of assistant responses and human scores and run a harm evaluation using `SelfAskLikertScorer` with a Likert scale for hate speech. Sample datasets and saved metrics can be found in the `datasets/score/scorer_evals` directory.
 
 # %% [markdown]
+# #### Understanding Harm Scorer Metrics
+
+# %% [markdown]
+# When evaluating harm scorers, several metrics are computed to assess how well the model scores align with human evaluations:
+#
+# **Error Metrics:**
+# - **`mean_absolute_error` (MAE)**: The average absolute difference between model scores and the mean of human scores (gold label). Lower values indicate better alignment. For example, an MAE of 0.15 means the model's scores differ from human scores by 0.15 on average (on a 0-1 scale).
+# - **`mae_standard_error`**: The standard error of the MAE, used to calculate confidence intervals. Indicates the precision of the MAE estimate.
+#
+# **Statistical Significance:**
+# - **`t_statistic`**: From a one-sample t-test comparing model scores to human scores. A high positive value suggests the model systematically scores higher than humans; a high negative value suggests it scores lower.
+# - **`p_value`**: The probability of observing the difference between model and human scores by chance. Values < 0.05 typically indicate statistically significant differences.
+#
+# **Inter-Rater Reliability (Krippendorff's Alpha):**
+#
+# Krippendorff's alpha measures agreement between raters, ranging from -1.0 to 1.0:
+# - **1.0**: Perfect agreement
+# - **0.8-1.0**: Strong agreement
+# - **0.6-0.8**: Moderate agreement
+# - **0.0**: Agreement equivalent to chance
+# - **< 0.0**: Systematic disagreement
+#
+# Three alpha values are reported:
+# - **`krippendorff_alpha_humans`**: Agreement among human raters only. Measures consistency of the human-labeled "ground truth." Only computed when multiple human raters exist.
+# - **`krippendorff_alpha_model`**: Agreement among multiple model scoring trials. Measures model consistency/reliability. Only computed when `num_scorer_trials > 1`.
+# - **`krippendorff_alpha_combined`**: Agreement across all raters (humans + model trials combined). Measures how well the model aligns with the pool of human evaluators.
+
+# %% [markdown]
 # ### Multiple Evaluators:
 #
 # With multiple evaluators, we can measure inter-reliability alignment between evaluators shown below:
@@ -126,6 +154,25 @@ likert_scorer.get_scorer_metrics(dataset_name="mini_hate_speech", metrics_type=M
 # %% [markdown]
 # ## Running Objective Scorer Evaluation
 # The following cell demonstrates how to run a custom objective evaluation on a `Scorer` using a dataset of LLM assistant responses and human labels stored as a CSV file. This is much like the previous example except we use the `SelfAskRefusalScorer` that simply determines whether the model response was or was not a refusal.
+
+# %% [markdown]
+# #### Understanding Objective Scorer Metrics
+
+# %% [markdown]
+# When evaluating objective (true/false) scorers, the following metrics are computed based on the normalized score from humans as the gold label:
+#
+# - **`accuracy`**: The proportion of responses where the model's overall score matches the human overall score. Ranges from 0.0 to 1.0, where 1.0 means perfect agreement.
+# - **`accuracy_standard_error`**: The standard error of the accuracy estimate, useful for constructing confidence intervals.
+# - **`precision`**: Of all responses the model labeled as positive (True), what proportion were actually positive according to humans? High precision means few false positives.
+# - **`recall`**: Of all responses that were actually positive according to humans, what proportion did the model correctly identify? High recall means few false negatives.
+# - **`f1_score`**: The harmonic mean of precision and recall, providing a balanced measure of the model's performance. Ranges from 0.0 to 1.0
+#
+# **Example Interpretation:**
+# If a refusal scorer has accuracy=0.92, precision=0.95, recall=0.88, and f1_score=0.91, this means:
+# - The model agrees with human normalized score 92% of the time
+# - When the model says "this is a refusal," it's correct 95% of the time
+# - The model catches 88% of actual refusals (missing 12%)
+# - Overall performance is strong (F1=0.91)
 
 # %%
 refusal_scorer = SelfAskRefusalScorer(chat_target=target)
