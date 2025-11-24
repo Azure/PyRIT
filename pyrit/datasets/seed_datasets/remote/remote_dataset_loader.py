@@ -2,14 +2,14 @@
 # Licensed under the MIT license.
 
 from abc import ABC
+import asyncio
 import hashlib
 import io
 import logging
 import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, TextIO
-from datasets import load_dataset, disable_progress_bars
-
+from datasets import load_dataset, disable_progress_bars, DownloadMode
 
 import requests
 
@@ -220,6 +220,9 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         This is a helper method for datasets that are hosted on HuggingFace.
         The returned dataset object is the raw HuggingFace dataset, which
         subclasses should process into a SeedDataset.
+        
+        This method runs the synchronous load_dataset() in a thread pool to avoid
+        blocking the event loop and enable true parallel execution.
 
         Args:
             dataset_name: HuggingFace dataset identifier (e.g., "JailbreakBench/JBB-Behaviors").
@@ -246,19 +249,25 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         """
         disable_progress_bars()
 
-
-        try:
-            logger.info(f"Loading HuggingFace dataset: {dataset_name}")
+        def _load_dataset_sync():
+            """Synchronous function to run in thread pool."""
             cache_dir = str(DB_DATA_PATH / "huggingface") if cache else None
             
+            # Explicitly set download_mode to reuse cached data and never re-download
             dataset = load_dataset(
                 dataset_name,
                 config,
                 split=split,
                 cache_dir=cache_dir,
+                download_mode=DownloadMode.REUSE_DATASET_IF_EXISTS,
                 token=token,
                 **kwargs,
             )
+            return dataset
+
+        try:
+            # Run the synchronous load_dataset in a thread pool to avoid blocking the event loop
+            dataset = await asyncio.to_thread(_load_dataset_sync)
             return dataset
         except Exception as e:
             logger.error(f"Failed to load HuggingFace dataset {dataset_name}: {e}")

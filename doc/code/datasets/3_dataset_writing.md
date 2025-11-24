@@ -3,7 +3,6 @@
 If you do AI red teaming, you will often have to wrtie your own datasets. These could potentially be included in PyRIT, or uploaded to your database. Here are some tips where we've had good results
 
 
-
 ## SeedObjectives
 
 The more specific, the better. PyRIT uses objectives in various places, including adversarial chats (e.g. the adversarial LLM trying to convince the objective target to do something) and scorers (e.g. a scorer LLM tries to determine if an objective was achieved).

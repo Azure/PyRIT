@@ -7,6 +7,8 @@ import inspect
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Type
 
+from tqdm import tqdm
+
 from pyrit.models.seed_dataset import SeedDataset
 
 logger = logging.getLogger(__name__)
@@ -105,48 +107,34 @@ class SeedDatasetProvider(ABC):
         *,
         dataset_names: Optional[List[str]] = None,
         cache: bool = True,
-        raise_on_error: bool = False,
-        max_concurrency: int = 10,
-    ) -> List[SeedDataset]:
+        max_concurrency: int = 5,
+    ) -> list[SeedDataset]:
         """
         Fetch all registered datasets with optional filtering and caching.
         
-        Datasets are fetched concurrently for improved performance. The default
-        concurrency of 10 allows for significant speedup while avoiding overwhelming
-        remote servers or network resources.
+        Datasets are fetched concurrently for improved performance.
 
         Args:
             dataset_names: Optional list of dataset names to fetch. If None, fetches all.
                           Names should match the dataset_name property of providers.
             cache: Whether to cache the fetched datasets. Defaults to True.
                    This uses DB_DATA_PATH for caching remote datasets.
-            raise_on_error: Whether to raise exceptions when a dataset fails to load.
-                           If False (default), errors are logged and dataset is skipped.
-                           If True, the first error will stop execution and be raised.
-            max_concurrency: Maximum number of datasets to fetch concurrently. Defaults to 10.
-                            Set to 1 for sequential execution. Higher values (e.g., 20) may
-                            speed up initial downloads but could overwhelm network resources.
+            max_concurrency: Maximum number of datasets to fetch concurrently. Defaults to 5.
+                            Set to 1 for fully sequential execution.
 
         Returns:
             List[SeedDataset]: List of all fetched datasets.
 
         Raises:
-            Exception: If raise_on_error=True and any dataset fails to load.
+            Exception: If any dataset fails to load.
 
         Example:
-            >>> # Fetch all datasets with default concurrency (10)
+            >>> # Fetch all datasets
             >>> all_datasets = await SeedDatasetProvider.fetch_all_datasets()
             >>> 
-            >>> # Fetch specific datasets without caching, higher concurrency
+            >>> # Fetch specific datasets
             >>> specific = await SeedDatasetProvider.fetch_all_datasets(
-            ...     dataset_names=["harmbench", "DarkBench"],
-            ...     cache=False,
-            ...     max_concurrency=20
-            ... )
-            >>> 
-            >>> # Sequential execution
-            >>> datasets = await SeedDatasetProvider.fetch_all_datasets(
-            ...     max_concurrency=1
+            ...     dataset_names=["harmbench", "DarkBench"]
             ... )
         """
         
@@ -154,47 +142,41 @@ class SeedDatasetProvider(ABC):
             provider_name: str, provider_class: Type["SeedDatasetProvider"]
         ) -> Optional[Tuple[str, SeedDataset]]:
             """Helper to fetch a single dataset with error handling."""
-            try:
-                provider = provider_class()
-                
-                # Apply dataset name filter if specified
-                if dataset_names is not None:
-                    if provider.dataset_name not in dataset_names:
-                        logger.debug(f"Skipping {provider_name} - not in filter list")
-                        return None
-                
-                logger.info(f"Fetching dataset: {provider_name}")
-                dataset = await provider.fetch_dataset(cache=cache)
-                return (provider.dataset_name, dataset)
-                
-            except Exception as e:
-                if raise_on_error:
-                    raise
-                logger.error(f"Failed to fetch dataset {provider_name}: {e}")
-                return None
+            provider = provider_class()
+            
+            # Apply dataset name filter if specified
+            if dataset_names is not None:
+                if provider.dataset_name not in dataset_names:
+                    logger.debug(f"Skipping {provider_name} - not in filter list")
+                    return None
+            
+            dataset = await provider.fetch_dataset(cache=cache)
+            return (provider.dataset_name, dataset)
         
         # Create semaphore to limit concurrency
         semaphore = asyncio.Semaphore(max_concurrency)
         
+        # Progress tracking
+        total_count = len(cls._registry)
+        pbar = tqdm(total=total_count, desc="Loading datasets - this can take a few minutes", unit="dataset")
+        
         async def fetch_with_semaphore(
             provider_name: str, provider_class: Type["SeedDatasetProvider"]
         ) -> Optional[Tuple[str, SeedDataset]]:
-            """Wrapper to enforce concurrency limit."""
+            """Wrapper to enforce concurrency limit and update progress."""
             async with semaphore:
-                return await fetch_single_dataset(provider_name, provider_class)
+                result = await fetch_single_dataset(provider_name, provider_class)
+                pbar.update(1)
+                return result
         
-        # Fetch all datasets with controlled concurrency
+        # Fetch all datasets with controlled concurrency and progress bar
         tasks = [
             fetch_with_semaphore(provider_name, provider_class)
             for provider_name, provider_class in cls._registry.items()
         ]
         
-        # When raise_on_error=False, gather returns exceptions in the results list
-        # When raise_on_error=True, gather will raise immediately on first exception
-        if raise_on_error:
-            results = await asyncio.gather(*tasks)
-        else:
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+        results = await asyncio.gather(*tasks)
+        pbar.close()
         
         # Merge datasets with the same name
         datasets: Dict[str, SeedDataset] = {}
@@ -203,14 +185,6 @@ class SeedDatasetProvider(ABC):
             if result is None:
                 continue
             
-            # Handle exceptions
-            if isinstance(result, (Exception, BaseException)):
-                if raise_on_error:
-                    raise result
-                # Error already logged in fetch_single_dataset
-                continue
-            
-            # At this point, result must be a tuple
             dataset_name, dataset = result
             
             if dataset_name in datasets:
