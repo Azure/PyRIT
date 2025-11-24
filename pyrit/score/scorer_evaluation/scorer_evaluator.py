@@ -15,7 +15,7 @@ from scipy.stats import ttest_1samp
 
 from pyrit.common.path import (
     SCORER_EVALS_HARM_PATH,
-    SCORER_EVALS_OBJECTIVE_PATH,
+    SCORER_EVALS_TRUE_FALSE_PATH,
 )
 from pyrit.models import Message
 from pyrit.score import Scorer
@@ -519,11 +519,11 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         # Look for results folders in common locations
         search_paths = [
             Path.cwd() / "results" / metrics_filename,  # Current directory results
-            Path(SCORER_EVALS_OBJECTIVE_PATH).parent / "results" / metrics_filename,  # Next to scorer_evals
+            Path(SCORER_EVALS_TRUE_FALSE_PATH).parent / "results" / metrics_filename,  # Next to scorer_evals
         ]
 
         # Also search in any subdirectories that might contain results folders
-        for base_path in [Path.cwd(), Path(SCORER_EVALS_OBJECTIVE_PATH).parent]:
+        for base_path in [Path.cwd(), Path(SCORER_EVALS_TRUE_FALSE_PATH).parent]:
             for results_dir in base_path.rglob("results"):
                 if results_dir.is_dir():
                     potential_path = results_dir / metrics_filename
@@ -691,7 +691,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             results_dir.mkdir(exist_ok=True)
             return Path(results_dir, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
         else:
-            return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
+            return Path(SCORER_EVALS_TRUE_FALSE_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
 
     def _get_csv_results_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
         """
@@ -712,4 +712,4 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             results_dir.mkdir(exist_ok=True)
             return Path(results_dir, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
         else:
-            return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
+            return Path(SCORER_EVALS_TRUE_FALSE_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
