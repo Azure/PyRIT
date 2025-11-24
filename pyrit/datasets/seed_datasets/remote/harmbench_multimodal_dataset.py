@@ -48,8 +48,6 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
             "harmbench_behaviors_multimodal_all.csv"
         ),
         source_type: Literal["public_url", "file"] = "public_url",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
         categories: Optional[List[SemanticCategory]] = None,
     ):
         """
@@ -58,8 +56,6 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
         Args:
             source: URL or file path to the HarmBench CSV file. Defaults to official repository.
             source_type: The type of source ('public_url' or 'file').
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
             categories: List of semantic categories to filter examples.
                 If None, all categories are included (default).
 
@@ -68,8 +64,6 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
         """
         self.source = source
         self.source_type: Literal["public_url", "file"] = source_type
-        self.cache = cache
-        self.data_home = data_home
         self.categories = categories
 
         # Validate categories if provided
@@ -85,12 +79,15 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
     def dataset_name(self) -> str:
         return "harmbench_multimodal"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch HarmBench multimodal examples and return as SeedDataset.
 
         The dataset contains both image and text prompts linked by prompt_group_id.
         You can extract the grouped prompts using the group_seed_prompts_by_prompt_group_id method.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the multimodal examples.
@@ -104,8 +101,7 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
         examples = self._fetch_from_url(
             source=self.source,
             source_type=self.source_type,
-            cache=self.cache,
-            data_home=self.data_home,
+            cache=cache,
         )
 
         prompts = []

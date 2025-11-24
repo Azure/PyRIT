@@ -52,8 +52,6 @@ class PKUSafeRLHFDataset(RemoteDatasetLoader):
                 ]
             ]
         ] = None,
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the PKU-SafeRLHF dataset loader.
@@ -63,22 +61,21 @@ class PKUSafeRLHFDataset(RemoteDatasetLoader):
             include_safe_prompts: All prompts returned if True; only unsafe subset if False.
             filter_harm_categories: List of harm categories to filter. Defaults to None (all categories).
                 Only prompts with at least one matching category are included.
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.source = source
         self.include_safe_prompts = include_safe_prompts
         self.filter_harm_categories = filter_harm_categories
-        self.cache = cache
-        self.data_home = data_home
 
     @property
     def dataset_name(self) -> str:
         return "pku_safe_rlhf"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch PKU-SafeRLHF dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the PKU-SafeRLHF prompts.
@@ -88,6 +85,7 @@ class PKUSafeRLHFDataset(RemoteDatasetLoader):
         data = await self._fetch_from_huggingface(
             dataset_name=self.source,
             config="default",
+            cache=cache,
             split="train",
         )
 

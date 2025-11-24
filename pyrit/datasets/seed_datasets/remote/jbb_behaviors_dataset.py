@@ -29,8 +29,6 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
         *,
         source: str = "JailbreakBench/JBB-Behaviors",
         split: str = "behaviors",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the JBB-Behaviors dataset loader.
@@ -38,21 +36,20 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
         Args:
             source: HuggingFace dataset identifier. Defaults to "JailbreakBench/JBB-Behaviors".
             split: Dataset split to load. Defaults to "behaviors".
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.source = source
         self.split = split
-        self.cache = cache
-        self.data_home = data_home
 
     @property
     def dataset_name(self) -> str:
         return "jbb_behaviors"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch JBB-Behaviors dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the JBB behaviors with harm_categories set.
@@ -70,6 +67,7 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
                 dataset_name=self.source,
                 config=self.split,
                 split="harmful",
+                cache=cache,
             )
 
             # Define common metadata

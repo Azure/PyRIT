@@ -26,8 +26,6 @@ class HarmBenchDataset(RemoteDatasetLoader):
             "harmbench_behaviors_text_all.csv"
         ),
         source_type: Literal["public_url", "file"] = "public_url",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the HarmBench dataset loader.
@@ -35,21 +33,20 @@ class HarmBenchDataset(RemoteDatasetLoader):
         Args:
             source: URL to the HarmBench CSV file. Defaults to the official repository.
             source_type: The type of source ('public_url' or 'file').
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.source = source
         self.source_type: Literal["public_url", "file"] = source_type
-        self.cache = cache
-        self.data_home = data_home
 
     @property
     def dataset_name(self) -> str:
         return "harmbench"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch HarmBench dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the HarmBench examples.
@@ -64,8 +61,7 @@ class HarmBenchDataset(RemoteDatasetLoader):
         examples = self._fetch_from_url(
             source=self.source,
             source_type=self.source_type,
-            cache=self.cache,
-            data_home=self.data_home,
+            cache=cache,
         )
 
         # Validate and process examples

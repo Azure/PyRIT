@@ -26,28 +26,25 @@ class TDC23RedteamingDataset(RemoteDatasetLoader):
         self,
         *,
         source: str = "walledai/TDC23-RedTeaming",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the TDC23-RedTeaming dataset loader.
 
         Args:
             source: HuggingFace dataset identifier. Defaults to "walledai/TDC23-RedTeaming".
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.source = source
-        self.cache = cache
-        self.data_home = data_home
 
     @property
     def dataset_name(self) -> str:
         return "tdc23_redteaming"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch TDC23-RedTeaming dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the red-teaming prompts.
@@ -58,6 +55,7 @@ class TDC23RedteamingDataset(RemoteDatasetLoader):
             dataset_name=self.source,
             config="default",
             split="train",
+            cache=cache,
         )
 
         seed_prompts = [

@@ -50,9 +50,13 @@ class SeedDatasetProvider(ABC):
         pass
 
     @abstractmethod
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch the dataset and return as a SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
+                   Remote datasets will use DB_DATA_PATH for caching.
 
         Returns:
             SeedDataset: The fetched dataset with prompts.
@@ -99,13 +103,16 @@ class SeedDatasetProvider(ABC):
         cls,
         *,
         dataset_names: Optional[List[str]] = None,
+        cache: bool = True,
     ) -> List[SeedDataset]:
         """
-        Fetch all registered datasets with optional filtering.
+        Fetch all registered datasets with optional filtering and caching.
 
         Args:
             dataset_names: Optional list of dataset names to fetch. If None, fetches all.
                           Names should match the dataset_name property of providers.
+            cache: Whether to cache the fetched datasets. Defaults to True.
+                   This uses DB_DATA_PATH for caching remote datasets.
 
         Returns:
             List[SeedDataset]: List of all fetched datasets.
@@ -114,16 +121,17 @@ class SeedDatasetProvider(ABC):
             >>> # Fetch all datasets (local and remote)
             >>> all_datasets = await SeedDatasetProvider.fetch_all_datasets()
             >>> 
-            >>> # Fetch specific datasets
+            >>> # Fetch specific datasets without caching
             >>> specific = await SeedDatasetProvider.fetch_all_datasets(
-            ...     dataset_names=["harmbench", "DarkBench"]
+            ...     dataset_names=["harmbench", "DarkBench"],
+            ...     cache=False
             ... )
         """
         datasets = {}
 
         for provider_name, provider_class in cls._registry.items():
             try:
-                # Instantiate to check dataset name for filtering
+                # Instantiate the provider
                 provider = provider_class()
 
                 # Apply dataset name filter if specified
@@ -133,7 +141,7 @@ class SeedDatasetProvider(ABC):
                         continue
 
                 logger.info(f"Fetching dataset: {provider_name}")
-                dataset = await provider.fetch_dataset()
+                dataset = await provider.fetch_dataset(cache=cache)
                 
                 if provider.dataset_name in datasets:
                     # Merge with existing dataset

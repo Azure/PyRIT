@@ -32,14 +32,8 @@ class TestSeedDatasetProviderIntegration:
         logger.info(f"Testing provider: {name}")
         
         try:
-            # Check if the provider accepts 'cache' argument to disable caching for tests
-            init_signature = inspect.signature(provider_cls.__init__)
-            if "cache" in init_signature.parameters:
-                provider = provider_cls(cache=False)  # type: ignore
-            else:
-                provider = provider_cls()
-
-            dataset = await provider.fetch_dataset()
+            provider = provider_cls()
+            dataset = await provider.fetch_dataset(cache=False)
             
             assert isinstance(dataset, SeedDataset), f"{name} did not return a SeedDataset"
             assert len(dataset.seeds) > 0, f"{name} returned an empty dataset"

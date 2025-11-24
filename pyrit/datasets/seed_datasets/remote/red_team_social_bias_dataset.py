@@ -28,31 +28,28 @@ class RedTeamSocialBiasDataset(RemoteDatasetLoader):
         self,
         *,
         source: str = "svannie678/red_team_repo_social_bias_prompts",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the Red Team Social Bias dataset loader.
 
         Args:
             source: HuggingFace dataset identifier. Defaults to "svannie678/red_team_repo_social_bias_prompts".
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.source = source
-        self.cache = cache
-        self.data_home = data_home
 
     @property
     def dataset_name(self) -> str:
         return "red_team_social_bias"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch Red Team Social Bias dataset and return as SeedDataset.
 
         This dataset contains 3 prompt types: "Single Prompt", "Multi Turn" and
         "Multi Turn, Single Prompt". Multi-turn prompts are linked by prompt_group_id.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the red team social bias prompts.
@@ -63,6 +60,7 @@ class RedTeamSocialBiasDataset(RemoteDatasetLoader):
             dataset_name=self.source,
             config="default",
             split="train",
+            cache=cache,
         )
 
         common_metadata = {

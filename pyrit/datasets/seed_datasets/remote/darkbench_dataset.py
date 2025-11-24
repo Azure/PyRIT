@@ -29,7 +29,6 @@ class DarkBenchDataset(RemoteDatasetLoader):
         dataset_name: str = "apart/darkbench",
         config: str = "default",
         split: str = "train",
-        cache_dir: Optional[str] = None,
     ):
         """
         Initialize the DarkBench dataset loader.
@@ -38,20 +37,21 @@ class DarkBenchDataset(RemoteDatasetLoader):
             dataset_name: HuggingFace dataset identifier. Defaults to "apart/darkbench".
             config: Dataset configuration. Defaults to "default".
             split: Dataset split to load. Defaults to "train".
-            cache_dir: Optional directory to cache the dataset.
         """
         self.hf_dataset_name = dataset_name
         self.config = config
         self.split = split
-        self.cache_dir = cache_dir
 
     @property
     def dataset_name(self) -> str:
         return "dark_bench"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch DarkBench dataset from HuggingFace and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the DarkBench examples.
@@ -65,7 +65,7 @@ class DarkBenchDataset(RemoteDatasetLoader):
             dataset_name=self.hf_dataset_name,
             config=self.config,
             split=self.split,
-            cache_dir=self.cache_dir,
+            cache=cache,
             data_files="darkbench.tsv",
         )
 

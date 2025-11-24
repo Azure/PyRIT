@@ -42,9 +42,12 @@ class LocalDatasetLoader(SeedDatasetProvider):
     def dataset_name(self) -> str:
         return self._dataset_name
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Load the dataset from the local YAML file.
+
+        Args:
+            cache: Ignored for local datasets (included for interface consistency).
 
         Returns:
             SeedDataset: The loaded dataset.

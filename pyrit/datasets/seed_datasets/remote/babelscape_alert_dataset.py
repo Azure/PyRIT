@@ -27,8 +27,6 @@ class BabelscapeAlertDataset(RemoteDatasetLoader):
         *,
         source: str = "Babelscape/ALERT",
         category: Optional[Literal["alert", "alert_adversarial"]] = "alert_adversarial",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the Babelscape ALERT dataset loader.
@@ -37,16 +35,12 @@ class BabelscapeAlertDataset(RemoteDatasetLoader):
             source: HuggingFace dataset identifier. Defaults to "Babelscape/ALERT".
             category: The dataset category. "alert", "alert_adversarial", or None for both.
                 Defaults to "alert_adversarial".
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
 
         Raises:
             ValueError: If an invalid category is provided.
         """
         self.source = source
         self.category = category
-        self.cache = cache
-        self.data_home = data_home
 
         if category is not None and category not in ["alert_adversarial", "alert"]:
             raise ValueError(f"Invalid Parameter: {category}. Expected 'alert_adversarial', 'alert', or None")
@@ -55,9 +49,12 @@ class BabelscapeAlertDataset(RemoteDatasetLoader):
     def dataset_name(self) -> str:
         return "babelscape_alert"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch Babelscape ALERT dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the ALERT prompts.
@@ -76,6 +73,7 @@ class BabelscapeAlertDataset(RemoteDatasetLoader):
                 dataset_name=self.source,
                 config=category_name,
                 split="test",
+                cache=cache,
             )
             prompts.extend(item["prompt"] for item in data)
 

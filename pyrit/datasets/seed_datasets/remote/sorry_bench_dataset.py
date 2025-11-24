@@ -97,7 +97,6 @@ class SorryBenchDataset(RemoteDatasetLoader):
         self,
         *,
         source: str = "sorry-bench/sorry-bench-202503",
-        cache_dir: Optional[str] = None,
         categories: Optional[List[str]] = None,
         prompt_style: Optional[str] = None,
         token: Optional[str] = None,
@@ -107,7 +106,6 @@ class SorryBenchDataset(RemoteDatasetLoader):
 
         Args:
             source: HuggingFace dataset identifier. Defaults to "sorry-bench/sorry-bench-202503".
-            cache_dir: Optional cache directory for Hugging Face datasets.
             categories: Optional list of categories to filter. Defaults to None (all categories).
             prompt_style: Optional prompt style to filter. Defaults to "base".
                 Available: "base", "ascii", "caesar", "slang", "authority_endorsement", etc.
@@ -117,7 +115,6 @@ class SorryBenchDataset(RemoteDatasetLoader):
             ValueError: If invalid categories or prompt_style are provided.
         """
         self.source = source
-        self.cache_dir = cache_dir
         self.categories = categories
         self.prompt_style = prompt_style if prompt_style is not None else "base"
         self.token = token if token is not None else os.environ.get("HUGGINGFACE_TOKEN")
@@ -141,9 +138,12 @@ class SorryBenchDataset(RemoteDatasetLoader):
     def dataset_name(self) -> str:
         return "sorry_bench"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch Sorry-Bench dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing Sorry-Bench prompts with harm categories.
@@ -157,7 +157,7 @@ class SorryBenchDataset(RemoteDatasetLoader):
             data = await self._fetch_from_huggingface(
                 dataset_name=self.source,
                 split="train",
-                cache_dir=self.cache_dir,
+                cache=cache,
                 token=self.token,
             )
 

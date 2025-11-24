@@ -26,23 +26,17 @@ class MedSafetyBenchDataset(RemoteDatasetLoader):
         self,
         *,
         subset_name: Literal["train", "test", "generated", "all"] = "all",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the MedSafetyBench dataset loader.
 
         Args:
             subset_name: Choose from "train", "test", "generated", or "all". Defaults to "all".
-            cache: Whether to cache the data locally. Defaults to True.
-            data_home: Optional path to override default cache location. Defaults to None.
 
         Raises:
             ValueError: If an invalid subset_name is provided.
         """
         self.subset_name = subset_name
-        self.cache = cache
-        self.data_home = data_home
 
         base_url = "https://raw.githubusercontent.com/AI4LIFE-GROUP/med-safety-bench/main/datasets"
 

@@ -30,8 +30,6 @@ class ForbiddenQuestionsDataset(RemoteDatasetLoader):
         *,
         source: str = "TrustAIRLab/forbidden_question_set",
         split: str = "default",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the Forbidden Questions dataset loader.
@@ -39,21 +37,20 @@ class ForbiddenQuestionsDataset(RemoteDatasetLoader):
         Args:
             source: HuggingFace dataset identifier. Defaults to "TrustAIRLab/forbidden_question_set".
             split: Dataset split to load. Defaults to "default".
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.source = source
         self.split = split
-        self.cache = cache
-        self.data_home = data_home
 
     @property
     def dataset_name(self) -> str:
         return "forbidden_questions"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch Forbidden Questions dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing forbidden questions with harm categories.
@@ -65,6 +62,7 @@ class ForbiddenQuestionsDataset(RemoteDatasetLoader):
             dataset_name=self.source,
             config=self.split,
             split="train",
+            cache=cache,
         )
 
         authors = ["Xinyue Shen", "Zeyuan Chen", "Michael Backes", "Yun Shen", "Yang Zhang"]

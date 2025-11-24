@@ -26,28 +26,25 @@ class SOSBenchDataset(RemoteDatasetLoader):
         self,
         *,
         source: str = "SOSBench/SOSBench",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the SOSBench dataset loader.
 
         Args:
             source: HuggingFace dataset identifier. Defaults to "SOSBench/SOSBench".
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.source = source
-        self.cache = cache
-        self.data_home = data_home
 
     @property
     def dataset_name(self) -> str:
         return "sosbench"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch SOSBench dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the SOSBench prompts.
@@ -58,6 +55,7 @@ class SOSBenchDataset(RemoteDatasetLoader):
             dataset_name=self.source,
             config="default",
             split="train",
+            cache=cache,
         )
 
         seed_prompts = [

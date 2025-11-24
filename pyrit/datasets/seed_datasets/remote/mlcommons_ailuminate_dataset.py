@@ -48,8 +48,6 @@ class MLCommonsAILuminateDataset(RemoteDatasetLoader):
             "airr_official_1.0_demo_en_us_prompt_set_release.csv"
         ),
         source_type: Literal["public_url", "file"] = "public_url",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the AILuminate dataset loader.
@@ -57,32 +55,30 @@ class MLCommonsAILuminateDataset(RemoteDatasetLoader):
         Args:
             source: URL to the AILuminate CSV file. Defaults to official repository.
             source_type: The type of source ('public_url' or 'file').
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.source = source
         self.source_type: Literal["public_url", "file"] = source_type
-        self.cache = cache
-        self.data_home = data_home
 
     @property
     def dataset_name(self) -> str:
         return "mlcommons_ailuminate"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch AILuminate dataset and return as SeedDataset.
 
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
+
         Returns:
             SeedDataset: A SeedDataset containing the AILuminate prompts.
-        """
-        logger.info(f"Loading MLCommons AILuminate dataset from {self.source}")
+        \"\"\"
+        logger.info(f\"Loading MLCommons AILuminate dataset from {self.source}\")
 
         examples = self._fetch_from_url(
             source=self.source,
             source_type=self.source_type,
-            cache=self.cache,
-            data_home=self.data_home,
+            cache=cache,
         )
 
         seed_prompts = [

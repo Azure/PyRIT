@@ -58,8 +58,6 @@ class AyaRedteamingDataset(RemoteDatasetLoader):
             ]
         ] = None,
         harm_scope: Optional[Literal["global", "local"]] = None,
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the Aya Red-teaming dataset loader.
@@ -70,14 +68,10 @@ class AyaRedteamingDataset(RemoteDatasetLoader):
                 Only prompts with at least one matching category are included.
             harm_scope: Whether to fetch globally or locally harmful prompts.
                 Defaults to None (all examples included).
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
         """
         self.language = language
         self.harm_categories_filter = harm_categories
         self.harm_scope = harm_scope
-        self.cache = cache
-        self.data_home = data_home
 
         lang_code = self.LANGUAGE_CODES[language]
         self.source = f"https://huggingface.co/datasets/CohereForAI/aya_redteaming/raw/main/aya_{lang_code}.jsonl"
@@ -86,9 +80,12 @@ class AyaRedteamingDataset(RemoteDatasetLoader):
     def dataset_name(self) -> str:
         return "aya_redteaming"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch Aya Red-teaming dataset with optional filtering and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the filtered red-teaming prompts.
@@ -99,8 +96,7 @@ class AyaRedteamingDataset(RemoteDatasetLoader):
         examples = self._fetch_from_url(
             source=self.source,
             source_type="public_url",
-            cache=self.cache,
-            data_home=self.data_home,
+            cache=cache,
         )
 
         seed_prompts = []

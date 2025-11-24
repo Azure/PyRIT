@@ -69,8 +69,6 @@ class EquityMedQADataset(RemoteDatasetLoader):
         *,
         source: str = "katielink/EquityMedQA",
         subset_name: Literal["all"] | str | Sequence[str] = "all",
-        cache: bool = True,
-        data_home: Optional[Path] = None,
     ):
         """
         Initialize the EquityMedQA dataset loader.
@@ -78,15 +76,11 @@ class EquityMedQADataset(RemoteDatasetLoader):
         Args:
             source: HuggingFace dataset identifier. Defaults to "katielink/EquityMedQA".
             subset_name: The name(s) of the subset to fetch. Defaults to "all" which returns all subsets.
-            cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
 
         Raises:
             ValueError: If any of the specified subset names are invalid.
         """
         self.source = source
-        self.cache = cache
-        self.data_home = data_home
 
         # Determine which subsets to load
         if subset_name == "all":

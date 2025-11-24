@@ -147,11 +147,10 @@ class TestHarmBenchDataset:
         loader = HarmBenchDataset(
             source="https://custom.example.com/data.csv",
             source_type="public_url",
-            cache=False,
         )
 
         with patch.object(loader, "_fetch_from_url", return_value=mock_harmbench_data) as mock_fetch:
-            dataset = await loader.fetch_dataset()
+            dataset = await loader.fetch_dataset(cache=False)
 
             assert len(dataset.prompts) == 2
             mock_fetch.assert_called_once()

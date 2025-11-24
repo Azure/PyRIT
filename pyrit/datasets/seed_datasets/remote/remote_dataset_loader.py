@@ -159,7 +159,6 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         source: str,
         source_type: Literal["public_url", "file"] = "public_url",
         cache: bool = True,
-        data_home: Optional[Path] = None,
     ) -> List[Dict[str, str]]:
         """
         Fetch examples from a specified source with caching support.
@@ -168,7 +167,6 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
             source: The source from which to fetch examples.
             source_type: The type of source ('public_url' or 'file').
             cache: Whether to cache the fetched examples. Defaults to True.
-            data_home: Directory to store cached data. Defaults to None.
 
         Returns:
             List[Dict[str, str]]: A list of examples.
@@ -187,11 +185,7 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
             valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
             raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
-        if not data_home:
-            data_home = DB_DATA_PATH / "seed-prompt-entries"
-        else:
-            data_home = Path(data_home)
-
+        data_home = DB_DATA_PATH / "seed-prompt-entries"
         cache_file = data_home / self._get_cache_file_name(source=source, file_type=file_type)
 
         if cache and cache_file.exists():
@@ -216,7 +210,7 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         dataset_name: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
-        cache_dir: Optional[str] = None,
+        cache: bool = True,
         token: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
@@ -231,7 +225,7 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
             dataset_name: HuggingFace dataset identifier (e.g., "JailbreakBench/JBB-Behaviors").
             config: Optional dataset configuration/subset name.
             split: Optional split to load (e.g., "train", "test"). If None, loads all splits.
-            cache_dir: Optional directory to cache the dataset.
+            cache: Whether to cache the dataset. Defaults to True.
             token: Optional HuggingFace authentication token for gated datasets.
             **kwargs: Additional arguments to pass to load_dataset().
 
@@ -246,12 +240,14 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
             >>> data = await self._fetch_from_huggingface(
             ...     dataset_name="JailbreakBench/JBB-Behaviors",
             ...     config="behaviors",
-            ...     split="train"
+            ...     split="train",
+            ...     cache=True
             ... )
         """
 
         try:
             logger.info(f"Loading HuggingFace dataset: {dataset_name}")
+            cache_dir = str(DB_DATA_PATH / "huggingface") if cache else None
             dataset = load_dataset(
                 dataset_name,
                 config,
