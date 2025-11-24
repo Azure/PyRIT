@@ -194,7 +194,6 @@ class TestDarkBenchDataset:
             dataset_name="custom/darkbench",
             config="custom_config",
             split="test",
-            cache_dir="/custom/cache",
         )
 
         with patch.object(loader, "_fetch_from_huggingface", return_value=mock_darkbench_data) as mock_fetch:
@@ -206,7 +205,6 @@ class TestDarkBenchDataset:
             assert call_kwargs["dataset_name"] == "custom/darkbench"
             assert call_kwargs["config"] == "custom_config"
             assert call_kwargs["split"] == "test"
-            assert call_kwargs["cache_dir"] == "/custom/cache"
 
 
 
