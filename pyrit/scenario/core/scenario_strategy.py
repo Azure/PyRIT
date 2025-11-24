@@ -565,9 +565,19 @@ class ScenarioCompositeStrategy:
         return normalized_compositions
 
     def __repr__(self) -> str:
-        """Get string representation of the composite strategy."""
+        """
+        Get string representation of the composite strategy.
+
+        Returns:
+            str: Representation as string.
+        """
         return f"ScenarioCompositeStrategy(name='{self._name}', strategies={self._strategies})"
 
     def __str__(self) -> str:
-        """Get human-readable string representation."""
+        """
+        Get human-readable string representation.
+
+        Returns:
+            str: Name as string literal.
+        """
         return self._name
