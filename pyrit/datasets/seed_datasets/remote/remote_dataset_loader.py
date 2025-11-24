@@ -8,7 +8,7 @@ import logging
 import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, TextIO
-from datasets import load_dataset
+from datasets import load_dataset, disable_progress_bars
 
 
 import requests
@@ -244,10 +244,13 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
             ...     cache=True
             ... )
         """
+        disable_progress_bars()
+
 
         try:
             logger.info(f"Loading HuggingFace dataset: {dataset_name}")
             cache_dir = str(DB_DATA_PATH / "huggingface") if cache else None
+            
             dataset = load_dataset(
                 dataset_name,
                 config,

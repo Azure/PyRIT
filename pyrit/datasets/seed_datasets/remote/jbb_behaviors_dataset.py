@@ -91,7 +91,7 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
                 category = item.get("Category", "")
 
                 if not behavior:
-                    logger.warning("Skipping item with empty behavior")
+                    logger.warning(f"[JBB-Behaviors] Skipping item with empty behavior field")
                     continue
 
                 # Map JBB categories to PyRIT harm categories
@@ -218,6 +218,6 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
         elif any(term in jbb_category_lower for term in ["harm", "hurt", "damage"]):
             return ["violence", "harm"]
 
-        # Default fallback
-        logger.warning(f"Unknown JBB category '{jbb_category}', using default harm category")
-        return ["unknown"]
+        # Default: use the original JBB category
+        logger.info(f"[JBB-Behaviors] Using JBB category '{jbb_category}' as harm category")
+        return [jbb_category_lower]

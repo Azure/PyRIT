@@ -179,13 +179,13 @@ class SorryBenchDataset(RemoteDatasetLoader):
                 question_id = item.get("question_id")
 
                 if not turns:
-                    logger.warning(f"Skipping item {question_id} with empty turns")
+                    logger.warning(f"[SorryBench] Skipping item {question_id} - empty turns field")
                     continue
 
                 prompt_text = turns[0].strip()
 
                 if not prompt_text:
-                    logger.warning(f"Skipping item {question_id} with empty prompt text")
+                    logger.warning(f"[SorryBench] Skipping item {question_id} - empty prompt text")
                     continue
 
                 if self.categories and category not in self.categories:

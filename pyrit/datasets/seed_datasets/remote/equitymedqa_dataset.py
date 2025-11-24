@@ -99,9 +99,12 @@ class EquityMedQADataset(RemoteDatasetLoader):
     def dataset_name(self) -> str:
         return "equitymedqa"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch EquityMedQA dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing the unique prompts from the dataset.
@@ -111,7 +114,7 @@ class EquityMedQADataset(RemoteDatasetLoader):
         prompts: list[str] = []
 
         for subset in self.targets:
-            prompts.extend(await self._get_sub_dataset(subset))
+            prompts.extend(await self._get_sub_dataset(subset, cache=cache))
 
         # Remove duplicates across all subsets
         unique_prompts = list(set(prompts))
@@ -133,12 +136,13 @@ class EquityMedQADataset(RemoteDatasetLoader):
 
         return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)
 
-    async def _get_sub_dataset(self, subset_name: str) -> list[str]:
+    async def _get_sub_dataset(self, subset_name: str, *, cache: bool = True) -> list[str]:
         """
         Fetch a specific subset of the EquityMedQA dataset.
 
         Args:
             subset_name: The name of the subset to fetch.
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             List of unique prompts from the specified subset.
@@ -147,6 +151,7 @@ class EquityMedQADataset(RemoteDatasetLoader):
             dataset_name=self.source,
             config=subset_name,
             split="train",
+            cache=cache,
         )
 
         prompts_list = []

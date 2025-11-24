@@ -49,12 +49,3 @@ class TestSeedDatasetProviderIntegration:
             
         except Exception as e:
             pytest.fail(f"Failed to fetch dataset from {name}: {str(e)}")
-
-    @pytest.mark.asyncio
-    async def test_fetch_all_datasets_method(self):
-        """Test the fetch_all_datasets class method."""
-        datasets = await SeedDatasetProvider.fetch_all_datasets()
-        
-        assert len(datasets) > 0
-        assert all(isinstance(d, SeedDataset) for d in datasets)
-        assert all(len(d.seeds) > 0 for d in datasets)

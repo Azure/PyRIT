@@ -162,7 +162,10 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
                 prompts.append(image_prompt)
             except Exception as e:
                 failed_image_count += 1
-                logger.warning(f"Failed to fetch image for behavior {behavior_id}: {e}. Skipping this example.")
+                logger.warning(
+                    f"[HarmBench-Multimodal] Failed to fetch image for behavior {behavior_id}: {e}. "
+                    f"Skipping this example."
+                )
             else:
                 text_prompt = SeedPrompt(
                     value=behavior_text,
@@ -202,7 +205,9 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
                 prompts.append(text_prompt)
 
         if failed_image_count > 0:
-            logger.warning(f"Total skipped examples: {failed_image_count} (image fetch failures)")
+            logger.warning(
+                f"[HarmBench-Multimodal] Skipped {failed_image_count} example(s) due to image fetch failures"
+            )
 
         logger.info(f"Successfully loaded {len(prompts)} prompts from HarmBench multimodal dataset")
 
@@ -228,7 +233,9 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
             if await serializer._memory.results_storage_io.path_exists(serializer.value):
                 return serializer.value
         except Exception as e:
-            logger.warning(f"Failed to check whether image for {behavior_id} already exists: {e}")
+            logger.warning(
+                f"[HarmBench-Multimodal] Failed to check if image for {behavior_id} exists in cache: {e}"
+            )
 
         response = await make_request_and_raise_if_error_async(endpoint_uri=image_url, method="GET")
         await serializer.save_data(data=response.content, output_filename=filename.replace(".png", ""))

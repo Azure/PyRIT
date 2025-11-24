@@ -72,8 +72,8 @@ class MLCommonsAILuminateDataset(RemoteDatasetLoader):
 
         Returns:
             SeedDataset: A SeedDataset containing the AILuminate prompts.
-        \"\"\"
-        logger.info(f\"Loading MLCommons AILuminate dataset from {self.source}\")
+        """
+        logger.info(f"Loading MLCommons AILuminate dataset from {self.source}")
 
         examples = self._fetch_from_url(
             source=self.source,

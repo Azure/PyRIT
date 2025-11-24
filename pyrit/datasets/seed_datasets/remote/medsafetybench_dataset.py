@@ -71,9 +71,12 @@ class MedSafetyBenchDataset(RemoteDatasetLoader):
     def dataset_name(self) -> str:
         return "medsafetybench"
 
-    async def fetch_dataset(self) -> SeedDataset:
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch MedSafetyBench dataset and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
 
         Returns:
             SeedDataset: A SeedDataset containing MedSafetyBench prompts.
@@ -89,8 +92,7 @@ class MedSafetyBenchDataset(RemoteDatasetLoader):
             examples = self._fetch_from_url(
                 source=source,
                 source_type="public_url",
-                cache=self.cache,
-                data_home=self.data_home,
+                cache=cache,
             )
 
             for ex in examples:
