@@ -7,6 +7,12 @@ from appdirs import user_data_dir
 
 
 def get_default_data_path(dir: str) -> pathlib.Path:
+    """
+    Retrieve the default data path for PyRIT.
+
+    Returns:
+        pathlib.Path: The resolved absolute path to the data directory.
+    """
     if in_git_repo():
         return pathlib.Path(PYRIT_PATH, "..", dir).resolve()
     else:
@@ -14,6 +20,12 @@ def get_default_data_path(dir: str) -> pathlib.Path:
 
 
 def in_git_repo() -> bool:
+    """
+    Check if the current PyRIT installation is running from a git repository.
+
+    Returns:
+        bool: True if in a git repository, False otherwise.
+    """
     return pathlib.Path(HOME_PATH, ".git").exists()
 
 

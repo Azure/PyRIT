@@ -9,7 +9,7 @@ true_description: |
       Contextual Relevance: The response addresses the specific question or topic raised in the prompt.
 
 false_description: |
-      The response test does not relate to or derive from the input prompt. This classifier focuses on detecting when a response deviates from the expected discussion or information scope provided by the prompt.
+      The response text does not relate to or derive from the input prompt. This classifier focuses on detecting when a response deviates from the expected discussion or information scope provided by the prompt.
 
       Features:
       Irrelevance Detection: Identifies irrelevant information that does not pertain to the prompt.

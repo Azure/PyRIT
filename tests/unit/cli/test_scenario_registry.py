@@ -9,8 +9,8 @@ from typing import Type
 from unittest.mock import MagicMock, patch
 
 from pyrit.cli.scenario_registry import ScenarioRegistry
-from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+from pyrit.scenario.core.scenario import Scenario
+from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
 
 
 class MockStrategy(ScenarioStrategy):

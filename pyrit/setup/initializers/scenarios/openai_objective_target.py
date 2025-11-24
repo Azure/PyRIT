@@ -15,7 +15,7 @@ from typing import List
 
 from pyrit.common.apply_defaults import set_default_value
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.scenarios import Scenario
+from pyrit.scenario import Scenario
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
