@@ -1,11 +1,24 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 """
 Scenario registry for discovering and instantiating PyRIT scenarios.
 
 This module provides functionality to discover all available Scenario subclasses
-from the pyrit.scenarios.scenarios module and from user-defined initialization scripts.
+from the pyrit.scenario.scenarios module and from user-defined initialization scripts.
+
+PERFORMANCE OPTIMIZATION:
+This module uses lazy imports to minimize overhead during CLI operations:
+
+1. Lazy Imports via TYPE_CHECKING: Heavy dependencies (like Scenario base class) are only
+   imported for type checking, not at runtime. Runtime imports happen inside methods only
+   when actually needed.
+
+2. Direct Path Computation: Computes PYRIT_PATH directly using __file__ instead of importing
+   from pyrit.common.path, which would trigger loading the entire pyrit package (including
+   heavy dependencies like transformers).
 """
 
 import importlib
@@ -13,9 +26,16 @@ import inspect
 import logging
 import pkgutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
-from pyrit.scenarios.scenario import Scenario
+# Compute PYRIT_PATH directly to avoid importing pyrit package
+# (which triggers heavy imports from __init__.py)
+PYRIT_PATH = Path(__file__).parent.parent.resolve()
+
+# Lazy import to avoid loading heavy scenario modules when just listing scenarios
+if TYPE_CHECKING:
+    from pyrit.cli.frontend_core import ScenarioInfo
+    from pyrit.scenario.core import Scenario
 
 logger = logging.getLogger(__name__)
 
@@ -25,26 +45,35 @@ class ScenarioRegistry:
     Registry for discovering and managing available scenarios.
 
     This class discovers all Scenario subclasses from:
-    1. Built-in scenarios in pyrit.scenarios.scenarios module
+    1. Built-in scenarios in pyrit.scenario.scenarios module
     2. User-defined scenarios from initialization scripts (set via globals)
 
     Scenarios are identified by their simple name (e.g., "encoding_scenario", "foundry_scenario").
     """
 
     def __init__(self) -> None:
-        """Initialize the scenario registry."""
+        """Initialize the scenario registry with lazy discovery."""
         self._scenarios: Dict[str, Type[Scenario]] = {}
-        self._discover_builtin_scenarios()
+        self._scenario_metadata: Optional[List[ScenarioInfo]] = None
+        self._discovered = False
+
+    def _ensure_discovered(self) -> None:
+        """Ensure scenarios have been discovered. Discovers on first call only."""
+        if not self._discovered:
+            self._discover_builtin_scenarios()
+            self._discovered = True
 
     def _discover_builtin_scenarios(self) -> None:
         """
-        Discover all built-in scenarios from pyrit.scenarios.scenarios module.
+        Discover all built-in scenarios from pyrit.scenario.scenarios module.
 
         This method dynamically imports all modules in the scenarios package
         and registers any Scenario subclasses found.
         """
+        from pyrit.scenario.core import Scenario
+
         try:
-            import pyrit.scenarios.scenarios as scenarios_package
+            import pyrit.scenario.scenarios as scenarios_package
 
             # Get the path to the scenarios package
             package_file = scenarios_package.__file__
@@ -65,7 +94,7 @@ class ScenarioRegistry:
 
                 try:
                     # Import the module
-                    full_module_name = f"pyrit.scenarios.scenarios.{module_name}"
+                    full_module_name = f"pyrit.scenario.scenarios.{module_name}"
                     module = importlib.import_module(full_module_name)
 
                     # Find all Scenario subclasses in the module
@@ -92,6 +121,8 @@ class ScenarioRegistry:
 
         User scenarios will override built-in scenarios with the same name.
         """
+        from pyrit.scenario.core import Scenario
+
         try:
             # Check the global namespace for Scenario subclasses
             import sys
@@ -111,8 +142,8 @@ class ScenarioRegistry:
                 # Look for Scenario subclasses in the module
                 for name, obj in inspect.getmembers(module, inspect.isclass):
                     if issubclass(obj, Scenario) and obj is not Scenario:
-                        # Check if this is a user-defined class (not from pyrit.scenarios.scenarios)
-                        if not obj.__module__.startswith("pyrit.scenarios.scenarios"):
+                        # Check if this is a user-defined class (not from pyrit.scenario.scenarios)
+                        if not obj.__module__.startswith("pyrit.scenario.scenarios"):
                             # Convert class name to snake_case for scenario name
                             scenario_name = self._class_name_to_scenario_name(obj.__name__)
                             self._scenarios[scenario_name] = obj
@@ -155,20 +186,29 @@ class ScenarioRegistry:
         Returns:
             Optional[Type[Scenario]]: The scenario class, or None if not found.
         """
+        self._ensure_discovered()
         return self._scenarios.get(name)
 
-    def list_scenarios(self) -> list[dict[str, Sequence[Any]]]:
+    def list_scenarios(self) -> List[ScenarioInfo]:
         """
         List all available scenarios with their metadata.
 
         Returns:
-            List[Dict[str, str]]: List of scenario information dictionaries containing:
+            List[ScenarioInfo]: List of scenario information dictionaries containing:
                 - name: Scenario identifier
                 - class_name: Class name
                 - description: Full class docstring
                 - default_strategy: The default strategy used when none specified
+                - all_strategies: All available strategy values
+                - aggregate_strategies: Aggregate strategy values
         """
-        scenarios_info = []
+        # If we already have metadata, return it
+        if self._scenario_metadata is not None:
+            return self._scenario_metadata
+
+        # Discover scenarios and build metadata
+        self._ensure_discovered()
+        scenarios_info: List[ScenarioInfo] = []
 
         for name, scenario_class in sorted(self._scenarios.items()):
             # Extract full docstring as description, clean up whitespace
@@ -193,6 +233,9 @@ class ScenarioRegistry:
                 }
             )
 
+        # Cache metadata for subsequent calls
+        self._scenario_metadata = scenarios_info
+
         return scenarios_info
 
     def get_scenario_names(self) -> List[str]:
@@ -202,4 +245,5 @@ class ScenarioRegistry:
         Returns:
             List[str]: Sorted list of scenario identifiers.
         """
+        self._ensure_discovered()
         return sorted(self._scenarios.keys())

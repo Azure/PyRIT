@@ -10,12 +10,8 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.scenario import (
-    ScenarioIdentifier,
-    ScenarioResult,
-    ScenarioStrategy,
-)
+from pyrit.scenario import ScenarioIdentifier, ScenarioResult
+from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
 
 
 def save_attack_results_to_memory(attack_results):
@@ -94,10 +90,10 @@ class ConcreteScenario(Scenario):
         # Default include_default_baseline=False for tests unless explicitly specified
         kwargs.setdefault("include_default_baseline", False)
 
-        # Add required strategy_class and default_aggregate if not provided
+        # Add required strategy_class if not provided
 
         class TestStrategy(ScenarioStrategy):
-            TEST = ("test", set())
+            TEST = ("test", {"concrete"})  # Tagged as concrete, not aggregate
             ALL = ("all", {"all"})
 
             @classmethod
@@ -105,7 +101,6 @@ class ConcreteScenario(Scenario):
                 return {"all"}
 
         kwargs.setdefault("strategy_class", TestStrategy)
-        kwargs.setdefault("default_aggregate", TestStrategy.ALL)
 
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
@@ -114,11 +109,11 @@ class ConcreteScenario(Scenario):
     def get_strategy_class(cls):
         """Return a mock strategy class for testing."""
 
-        from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+        from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
 
         # Return a simple mock strategy class for testing
         class TestStrategy(ScenarioStrategy):
-            TEST = ("test", set())
+            TEST = ("test", {"concrete"})  # Tagged as concrete, not aggregate
             ALL = ("all", {"all"})
 
             @classmethod
@@ -130,7 +125,7 @@ class ConcreteScenario(Scenario):
     @classmethod
     def get_default_strategy(cls):
         """Return the default strategy for testing."""
-        return cls.get_strategy_class().TEST
+        return cls.get_strategy_class().ALL
 
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return
