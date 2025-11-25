@@ -203,7 +203,7 @@ from pyrit.score.scorer_evaluation.config_eval_datasets import get_harm_eval_dat
 harm_categories_to_evaluate = ["information_integrity"]
 
 for harm_category in harm_categories_to_evaluate:
-    harm_category_map = get_harm_eval_datasets(category=harm_category, score_type="objective")
+    harm_category_map = get_harm_eval_datasets(category=harm_category, metrics_type="objective")
     eval_rubric_path = harm_category_map["evaluation_rubric_file_path"]
     csv_path = str(Path(harm_category_map["dataset_file_path"]))
     dataset_name = harm_category_map["dataset_name"]
