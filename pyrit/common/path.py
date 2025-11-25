@@ -38,7 +38,7 @@ DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
 
 SCORER_CONFIG_PATH = pathlib.Path(PYRIT_PATH, "score", "config").resolve()
 CONTENT_CLASSIFIERS_PATH = pathlib.Path(SCORER_CONFIG_PATH, "content_classifiers").resolve()
-LIKERT_SCALES_PATH = pathlib.Path(SCORER_CONFIG_PATH, "likert_scales").resolve()
+SCORER_EVALS_LIKERT_PATH = pathlib.Path(SCORER_CONFIG_PATH, "likert_scales").resolve()
 SCALES_PATH = pathlib.Path(SCORER_CONFIG_PATH, "scales").resolve()
 SCORER_EVALS_PATH = pathlib.Path(SCORER_CONFIG_PATH, "scorer_evals").resolve()
 
@@ -66,7 +66,7 @@ PATHS_DICT = {
     "db_data_path": DB_DATA_PATH,
     "docs_code_path": DOCS_CODE_PATH,
     "docs_path": DOCS_PATH,
-    "likert_scales_path": LIKERT_SCALES_PATH,
+    "likert_scales_path": SCORER_EVALS_LIKERT_PATH,
     "log_path": LOG_PATH,
     "pyrit_home_path": HOME_PATH,
     "pyrit_path": PYRIT_PATH,

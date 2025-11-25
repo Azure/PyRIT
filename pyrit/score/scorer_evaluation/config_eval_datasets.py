@@ -5,8 +5,8 @@
 from pathlib import Path
 
 from pyrit.common.path import (
-    LIKERT_SCALES_PATH,
     SCORER_EVALS_HARM_PATH,
+    SCORER_EVALS_LIKERT_PATH,
     SCORER_EVALS_TRUE_FALSE_PATH,
 )
 from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
@@ -26,7 +26,7 @@ def get_harm_eval_datasets(category: str, score_type: str):
     directory = ""
     if score_type == "harm":
         directory = str(SCORER_EVALS_HARM_PATH)
-        eval_directory = LIKERT_SCALES_PATH
+        eval_directory = SCORER_EVALS_LIKERT_PATH
     elif score_type == "objective":
         directory = str(SCORER_EVALS_TRUE_FALSE_PATH)
         eval_directory = TRUE_FALSE_QUESTIONS_PATH

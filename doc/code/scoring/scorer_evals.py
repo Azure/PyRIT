@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -137,7 +133,6 @@ for harm_category in harm_categories_to_evaluate:
 
     print("Evaluation for harm category:", harm_category)
     print(asdict(metrics))
-
 
 # %% [markdown]
 # ## Retrieving Metrics
