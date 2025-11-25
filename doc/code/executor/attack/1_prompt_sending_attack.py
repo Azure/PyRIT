@@ -150,7 +150,7 @@ image_path = str(pathlib.Path(".") / ".." / ".." / ".." / ".." / "assets" / "pyr
 # For Azure SQL Memory
 # image_path = "https://airtstorageaccountdev.blob.core.windows.net/dbdata/prompt-memory-entries/images/1735941681066137.png"
 
-seed_group = SeedGroup(prompts=[SeedPrompt(value=image_path, data_type="image_path")])
+seed_group = SeedGroup(seeds=[SeedPrompt(value=image_path, data_type="image_path")])
 attack_context = SingleTurnAttackContext(
     objective="Sending an image successfully",
     seed_group=seed_group,

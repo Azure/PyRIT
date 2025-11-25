@@ -27,7 +27,7 @@ class SeedDataset(YamlLoadable):
     """
     SeedDataset manages seed prompts plus optional top-level defaults.
     Prompts are stored as a Sequence[Seed], so references to prompt properties
-    are straightforward (e.g. ds.prompts[0].value).
+    are straightforward (e.g. ds.seeds[0].value).
     """
 
     data_type: Optional[str]
@@ -42,12 +42,12 @@ class SeedDataset(YamlLoadable):
     added_by: Optional[str]
 
     # Now the actual prompts
-    prompts: Sequence["SeedPrompt"]
-    objectives: Sequence["SeedObjective"]
+    seeds: Sequence["Seed"]
 
     def __init__(
         self,
         *,
+        seeds: Optional[Union[Sequence[Dict[str, Any]], Sequence[Seed]]] = None,
         prompts: Optional[Union[Sequence[Dict[str, Any]], Sequence[Seed]]] = None,
         data_type: Optional[PromptDataType] = "text",
         name: Optional[str] = None,
@@ -59,6 +59,7 @@ class SeedDataset(YamlLoadable):
         source: Optional[str] = None,
         date_added: Optional[datetime] = None,
         added_by: Optional[str] = None,
+        is_objective: bool = False,
     ):
         """
         Initialize the dataset.
@@ -67,9 +68,15 @@ class SeedDataset(YamlLoadable):
         either a list of SeedPrompt objects or prompt dictionaries (which then get
         converted to SeedPrompt objects).
         """
-        if prompts is None:
-            prompts = []
-        if not prompts:
+        if seeds is None and prompts is None:
+            seeds = []
+
+        if seeds is not None and prompts is not None:
+            raise ValueError("Cannot specify both seeds and prompts.")
+
+        input_seeds = seeds or prompts
+
+        if not input_seeds:
             raise ValueError("SeedDataset cannot be empty.")
 
         # Store top-level fields
@@ -85,38 +92,42 @@ class SeedDataset(YamlLoadable):
         self.date_added = date_added or datetime.now()
         self.added_by = added_by
 
-        # Convert any dictionaries in `prompts` to SeedPrompt and/or SeedObjective objects
-        self.prompts = []
-        self.objectives = []
-        for p in prompts:
+        # Convert any dictionaries in `seeds` to SeedPrompt and/or SeedObjective objects
+        self.seeds = []
+        for p in input_seeds:
             if isinstance(p, dict):
-                if "is_objective" in p:
-                    if p["is_objective"]:
-                        self.objectives.append(
-                            SeedObjective(
-                                value=p["value"],
-                                data_type="text",
-                                value_sha256=p.get("value_sha256"),
-                                id=uuid.uuid4(),
-                                name=p.get("name"),
-                                dataset_name=p.get("dataset_name"),
-                                harm_categories=p.get("harm_categories", []),
-                                description=p.get("description"),
-                                authors=p.get("authors", []),
-                                groups=p.get("groups", []),
-                                source=p.get("source"),
-                                date_added=p.get("date_added"),
-                                added_by=p.get("added_by"),
-                                metadata=p.get("metadata", {}),
-                                prompt_group_id=p.get("prompt_group_id"),
-                            )
+                # Use top-level is_objective if not present in p
+                p_is_objective = p.get("is_objective", is_objective)
+
+                if p_is_objective:
+                    self.seeds.append(
+                        SeedObjective(
+                            value=p["value"],
+                            data_type="text",
+                            value_sha256=p.get("value_sha256"),
+                            id=uuid.uuid4(),
+                            name=p.get("name") or self.name,
+                            dataset_name=p.get("dataset_name") or self.dataset_name or self.name,
+                            harm_categories=p.get("harm_categories", []),
+                            description=p.get("description") or self.description,
+                            authors=p.get("authors", []),
+                            groups=p.get("groups", []),
+                            source=p.get("source") or self.source,
+                            date_added=p.get("date_added"),
+                            added_by=p.get("added_by"),
+                            metadata=p.get("metadata", {}),
+                            prompt_group_id=p.get("prompt_group_id"),
                         )
-                    del p["is_objective"]
-                self.prompts.append(SeedPrompt(**p))
+                    )
+                else:
+                    if "is_objective" in p:
+                        del p["is_objective"]
+
+                    self.seeds.append(SeedPrompt(**p))
             elif isinstance(p, SeedPrompt):
-                self.prompts.append(p)
+                self.seeds.append(p)
             elif isinstance(p, SeedObjective):
-                self.objectives.append(p)
+                self.seeds.append(p)
             else:
                 raise ValueError(
                     "Prompts should be either dicts, SeedPrompt objects, or SeedObjective objects. Got something else."
@@ -142,15 +153,15 @@ class SeedDataset(YamlLoadable):
             Sequence[str]: A list of prompt values.
         """
         # Filter by harm categories if specified
-        prompts = self.prompts
+        seeds = self.seeds
         if harm_categories:
-            prompts = [
-                prompt
-                for prompt in prompts
-                if prompt.harm_categories and any(cat in prompt.harm_categories for cat in harm_categories)
+            seeds = [
+                seed
+                for seed in seeds
+                if seed.harm_categories and any(cat in seed.harm_categories for cat in harm_categories)
             ]
 
-        values = [prompt.value for prompt in prompts]
+        values = [seed.value for seed in seeds]
 
         if first is None and last is None:
             return values
@@ -182,14 +193,17 @@ class SeedDataset(YamlLoadable):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> SeedDataset:
         """
-        Builds a SeedDataset by merging top-level defaults into each item in 'prompts'.
+        Builds a SeedDataset by merging top-level defaults into each item in 'seeds'.
         """
-        # Pop out the prompts section
-        prompts_data = data.pop("prompts", [])
+        # Pop out the seeds section
+        seeds_data = data.pop("seeds", [])
+        if not seeds_data:
+            seeds_data = data.pop("prompts", [])
+
         dataset_defaults = data  # everything else is top-level
 
-        merged_prompts = []
-        for p in prompts_data:
+        merged_seeds = []
+        for p in seeds_data:
             # Merge dataset-level fields with the prompt-level fields
             merged = utils.combine_dict(dataset_defaults, p)
 
@@ -211,16 +225,16 @@ class SeedDataset(YamlLoadable):
             if "data_type" not in merged:
                 merged["data_type"] = dataset_defaults.get("data_type", "text")
 
-            merged_prompts.append(merged)
+            merged_seeds.append(merged)
 
-        for prompt in merged_prompts:
-            if "prompt_group_id" in prompt:
-                raise ValueError("prompt_group_id should not be set in prompt data")
+        for seed in merged_seeds:
+            if "prompt_group_id" in seed:
+                raise ValueError("prompt_group_id should not be set in seed data")
 
-        SeedDataset._set_seed_group_id_by_alias(seed_prompts=merged_prompts)
+        SeedDataset._set_seed_group_id_by_alias(seed_prompts=merged_seeds)
 
         # Now create the dataset with the newly merged prompt dicts
-        return cls(prompts=merged_prompts, **dataset_defaults)
+        return cls(seeds=merged_seeds, **dataset_defaults)
 
     def render_template_value(self, **kwargs):
         """
@@ -235,8 +249,8 @@ class SeedDataset(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-        for prompt in self.prompts:
-            prompt.value = prompt.render_template_value(**kwargs)
+        for seed in self.seeds:
+            seed.value = seed.render_template_value(**kwargs)
 
     @staticmethod
     def _set_seed_group_id_by_alias(seed_prompts: Sequence[dict]):
@@ -284,10 +298,28 @@ class SeedDataset(YamlLoadable):
             if len(group_prompts) > 1:
                 group_prompts.sort(key=lambda prompt: prompt.sequence if hasattr(prompt, "sequence") else 0)
 
-            seed_group = SeedGroup(prompts=group_prompts)
+            seed_group = SeedGroup(seeds=group_prompts)
             seed_groups.append(seed_group)
 
         return seed_groups
 
+    @property
+    def prompts(self) -> Sequence[SeedPrompt]:
+        return [s for s in self.seeds if isinstance(s, SeedPrompt)]
+
+    @property
+    def objectives(self) -> Sequence[SeedObjective]:
+        return [s for s in self.seeds if isinstance(s, SeedObjective)]
+
+    @property
+    def seed_groups(self) -> Sequence[SeedGroup]:
+        """
+        Returns the seeds grouped by their prompt_group_id.
+
+        Returns:
+            Sequence[SeedGroup]: A list of SeedGroup objects, with seeds grouped by prompt_group_id.
+        """
+        return self.group_seed_prompts_by_prompt_group_id(self.seeds)
+
     def __repr__(self):
-        return f"<SeedDataset(prompts={len(self.prompts)} prompts)>"
+        return f"<SeedDataset(seeds={len(self.seeds)} seeds)>"

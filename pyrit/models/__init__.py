@@ -38,7 +38,7 @@ from pyrit.models.seed import Seed
 from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.models.seed_dataset import SeedDataset
-from pyrit.models.seed_group import SeedGroup
+from pyrit.models.seed_group import DecomposedSeedGroup, SeedGroup
 from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
@@ -58,6 +58,7 @@ __all__ = [
     "construct_response_from_request",
     "DataTypeSerializer",
     "data_serializer_factory",
+    "DecomposedSeedGroup",
     "DiskStorageIO",
     "EmbeddingData",
     "EmbeddingResponse",

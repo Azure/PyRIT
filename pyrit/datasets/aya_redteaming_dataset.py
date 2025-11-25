@@ -91,5 +91,5 @@ def fetch_aya_redteaming_dataset(
                     )
                 )
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset

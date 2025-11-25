@@ -89,7 +89,8 @@ def mock_seed_dataset():
     prompt3.render_template_value.return_value = "Mock objective as question"
 
     dataset = MagicMock(spec=SeedDataset)
-    dataset.prompts = [prompt1, prompt2, prompt3]
+    dataset.seeds = [prompt1, prompt2, prompt3]
+    dataset.prompts = [prompt1, prompt2, prompt3]  # Mock the prompts property
     return dataset
 
 
@@ -250,7 +251,8 @@ class TestContextComplianceAttackInitialization:
     def test_init_raises_error_for_insufficient_prompts(self, mock_objective_target, mock_attack_adversarial_config):
         """Test error handling for insufficient prompts in context description file"""
         insufficient_dataset = MagicMock(spec=SeedDataset)
-        insufficient_dataset.prompts = [MagicMock(), MagicMock()]  # Only 2 prompts instead of 3
+        insufficient_dataset.seeds = [MagicMock(), MagicMock()]  # Only 2 prompts instead of 3
+        insufficient_dataset.prompts = insufficient_dataset.seeds  # Mock the prompts property
 
         with patch(
             "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
