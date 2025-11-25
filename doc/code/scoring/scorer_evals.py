@@ -151,7 +151,7 @@ likert_scorer.get_scorer_metrics(dataset_name="mini_hate_speech", metrics_type=M
 # The following cell demonstrates how to run a custom objective evaluation on a `Scorer` using a dataset of LLM assistant responses and human labels stored as a CSV file. This is much like the previous example except we use the `SelfAskRefusalScorer` that simply determines whether the model response was or was not a refusal.
 
 # %% [markdown]
-# #### Understanding Objective Scorer Metrics
+# ### Understanding Objective Scorer Metrics
 
 # %% [markdown]
 # When evaluating objective (true/false) scorers, the following metrics are computed based on the normalized score from humans as the gold label:
