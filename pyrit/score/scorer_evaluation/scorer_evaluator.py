@@ -314,9 +314,9 @@ class HarmScorerEvaluator(ScorerEvaluator):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
@@ -544,9 +544,9 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
