@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 def get_required_value(*, env_var_name: str, passed_value: str) -> str:
     """
-    Gets a required value from an environment variable or a passed value,
-    preferring the passed value
+    Get a required value from an environment variable or a passed value,
+    preferring the passed value.
 
     If no value is found, raises a KeyError
 
@@ -37,7 +37,7 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
 
 def get_non_required_value(*, env_var_name: str, passed_value: Optional[str] = None) -> str:
     """
-    Gets a non-required value from an environment variable or a passed value,
+    Get a non-required value from an environment variable or a passed value,
     preferring the passed value.
 
     Args:

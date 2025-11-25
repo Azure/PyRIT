@@ -13,14 +13,14 @@ class TrueFalseInverterScorer(TrueFalseScorer):
     """A scorer that inverts a true false score."""
 
     def __init__(self, *, scorer: TrueFalseScorer, validator: Optional[ScorerPromptValidator] = None) -> None:
-        """Initialize the TrueFalseInverterScorer.
+        """
+        Initialize the TrueFalseInverterScorer.
 
         Args:
             scorer (TrueFalseScorer): The underlying true/false scorer whose results will be inverted.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
                 Note: This parameter is present for signature compatibility but is not used.
         """
-
         super().__init__(validator=ScorerPromptValidator())
 
         if not isinstance(scorer, TrueFalseScorer):
@@ -34,7 +34,8 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
     ) -> list[Score]:
-        """Scores the piece using the underlying true-false scorer and returns the inverted score.
+        """
+        Scores the piece using the underlying true-false scorer and returns the inverted score.
 
         Args:
             message (Message): The message to score.
@@ -69,7 +70,8 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         return [inv_score]
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """True False Inverter scorers do not support piecewise scoring.
+        """
+        True False Inverter scorers do not support piecewise scoring.
 
         Args:
             message_piece (MessagePiece): Unused.

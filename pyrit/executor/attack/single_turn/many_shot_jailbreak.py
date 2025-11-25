@@ -5,7 +5,7 @@ import logging
 import pathlib
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class ManyShotJailbreakAttack(PromptSendingAttack):
     """
     This attack implements implements the Many Shot Jailbreak method as discussed in research found here:
-    https://www.anthropic.com/research/many-shot-jailbreaking
+    https://www.anthropic.com/research/many-shot-jailbreaking.
 
     Prepends the seed prompt with a faux dialogue between a human and an AI, using examples from a dataset
     to demonstrate successful jailbreaking attempts. This method leverages the model's ability to learn from
@@ -31,7 +31,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     @apply_defaults
     def __init__(
         self,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -74,8 +74,10 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
         Validate the context before executing the attack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing parameters and objective.
+
         Raises:
             ValueError: If the context is invalid.
         """
@@ -86,8 +88,10 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
         Perform the ManyShotJailbreakAttack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
+
         Returns:
             AttackResult: The result of the attack.
         """

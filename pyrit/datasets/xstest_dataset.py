@@ -26,11 +26,13 @@ def fetch_xstest_dataset(
     Returns:
         SeedDataset: A SeedDataset containing the examples.
 
+    Raises:
+        ValueError: If the file_type extracted from the source URL is not supported.
+
     Note:
         For more information and access to the original dataset and related materials, visit:
         https://github.com/paul-rottger/exaggerated-safety
     """
-
     # Determine the file type from the source URL
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:

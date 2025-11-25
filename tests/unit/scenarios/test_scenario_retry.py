@@ -10,8 +10,8 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.scenario import ScenarioResult
+from pyrit.scenario import ScenarioResult
+from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
 
 # Test constants
 TEST_ATTACK_TYPE = "TestAttack"
@@ -119,29 +119,32 @@ class ConcreteScenario(Scenario):
     def __init__(self, atomic_attacks_to_return=None, **kwargs):
         # Default include_default_baseline=False for tests unless explicitly specified
         kwargs.setdefault("include_default_baseline", False)
-        super().__init__(**kwargs)
+
+        # Get strategy_class from kwargs or use default
+        strategy_class = kwargs.pop("strategy_class", None) or self.get_strategy_class()
+
+        super().__init__(strategy_class=strategy_class, **kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
     @classmethod
     def get_strategy_class(cls):
         """Return a mock strategy class for testing."""
 
-        from pyrit.scenarios.scenario_strategy import ScenarioStrategy
-
         # Return a simple mock strategy class for testing
         class TestStrategy(ScenarioStrategy):
-            TEST = ("test", set())
+            CONCRETE = ("concrete", {"concrete"})
+            ALL = ("all", {"all"})
 
             @classmethod
             def get_aggregate_tags(cls) -> set[str]:
-                return set()
+                return {"all"}
 
         return TestStrategy
 
     @classmethod
     def get_default_strategy(cls):
         """Return the default strategy for testing."""
-        return cls.get_strategy_class().TEST
+        return cls.get_strategy_class().ALL
 
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return
@@ -184,11 +187,12 @@ class TestScenarioRetry:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=3,  # Set retries but shouldn't use them on success
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=3,  # Set retries but shouldn't use them on success
+        )
 
         result = await scenario.run_async()
 
@@ -221,11 +225,12 @@ class TestScenarioRetry:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=2,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=2,
+        )
 
         result = await scenario.run_async()
 
@@ -243,11 +248,12 @@ class TestScenarioRetry:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=2,  # Allow 2 retries (3 total attempts)
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=2,  # Allow 2 retries (3 total attempts)
+        )
 
         # Verify that scenario raises exception after exhausting retries
         with pytest.raises(Exception, match="Persistent failure"):
@@ -265,11 +271,12 @@ class TestScenarioRetry:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=0,  # No retries
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=0,  # No retries
+        )
 
         # Verify that scenario raises exception immediately without retry
         with pytest.raises(Exception, match="Test failure"):
@@ -300,11 +307,12 @@ class TestScenarioRetry:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=3,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=3,
+        )
 
         result = await scenario.run_async()
 
@@ -334,11 +342,12 @@ class TestScenarioRetry:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=1,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=1,
+        )
 
         with caplog.at_level("ERROR"):
             result = await scenario.run_async()
@@ -386,11 +395,12 @@ class TestScenarioResumption:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=1,
             atomic_attacks_to_return=[atomic_attack],
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=1,
+        )
 
         result = await scenario.run_async()
 
@@ -444,11 +454,12 @@ class TestScenarioResumption:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=1,
             atomic_attacks_to_return=[attack1, attack2, attack3],
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=1,
+        )
 
         result = await scenario.run_async()
 
@@ -511,11 +522,12 @@ class TestScenarioResumption:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=1,
             atomic_attacks_to_return=attacks,
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=1,
+        )
 
         result = await scenario.run_async()
 

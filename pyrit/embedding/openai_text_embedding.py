@@ -7,11 +7,15 @@ from pyrit.embedding._text_embedding import _TextEmbedding
 
 
 class OpenAiTextEmbedding(_TextEmbedding):
+    """
+    Provides text embedding functionality using OpenAI services.
+    """
+
     def __init__(self, *, model: str, api_key: str) -> None:
-        """Generate embedding using OpenAI API
+        """
+        Generate embedding using OpenAI API.
 
         Args:
-            api_version: The API version to use
             model: The model to use
             api_key: The API key to use
         """

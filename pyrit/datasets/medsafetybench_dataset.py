@@ -26,6 +26,10 @@ def fetch_medsafetybench_dataset(
     Returns:
         SeedDataset: A dataset of prompts from MedSafetyBench.
 
+    Raises:
+        KeyError: If expected keys are not found in the dataset examples.
+        ValueError: If an invalid subset_name is provided.
+
     Note:
         For more information and access to the original dataset and related materials, visit:
         https://github.com/AI4LIFE-GROUP/med-safety-bench.
@@ -33,7 +37,6 @@ def fetch_medsafetybench_dataset(
         https://proceedings.neurips.cc/paper_files/paper/2024/hash/3ac952d0264ef7a505393868a70a46b6-Abstract-Datasets_and_Benchmarks_Track.html
         Authors: Tessa Han, Aounon Kumar, Chirag Agarwal, Himabindu Lakkaraju.
     """
-
     base_url = "https://raw.githubusercontent.com/AI4LIFE-GROUP/" "med-safety-bench/main/datasets"
 
     sources = []

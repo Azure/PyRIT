@@ -130,7 +130,10 @@ chapters:
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
     - file: code/scenarios/scenarios
-    - file: code/front_end/0_cli
+    - file: code/front_end/0_front_end
+      sections:
+      - file: code/front_end/1_pyrit_scan
+      - file: code/front_end/2_pyrit_shell
   - file: deployment/README
     sections:
     - file: deployment/deploy_hf_model_aml

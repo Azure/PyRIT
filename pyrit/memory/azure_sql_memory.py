@@ -132,7 +132,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             self._create_auth_token()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
-        """Creates the SQLAlchemy engine for Azure SQL Server.
+        """
+        Creates the SQLAlchemy engine for Azure SQL Server.
 
         Creates an engine bound to the specified server and database. The `has_echo` parameter
         controls the verbosity of SQL execution logging.
@@ -140,7 +141,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Args:
             has_echo (bool): Flag to enable detailed SQL execution logging.
         """
-
         try:
             # Create the SQLAlchemy engine.
             # Use pool_pre_ping (health check) to gracefully handle server-closed connections
@@ -197,7 +197,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
-        Inserts embedding data into memory storage
+        Inserts embedding data into memory storage.
         """
         self._insert_entries(entries=embedding_data)
 
@@ -548,7 +548,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 return False
 
     def reset_database(self):
-        """Drop and recreate existing tables"""
+        """Drop and recreate existing tables."""
         # Drop all existing tables
         Base.metadata.drop_all(self.engine)
         # Recreate the tables

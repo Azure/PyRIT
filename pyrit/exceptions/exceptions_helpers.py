@@ -34,7 +34,6 @@ def remove_start_md_json(response_msg: str) -> str:
     Returns:
         str: The response message without the start marker (if one was present).
     """
-
     start_pattern = re.compile(r"^(```json\n|`json\n|```\n|`\n|```json|`json|```|`|json|json\n)")
     match = start_pattern.match(response_msg)
     if match:
@@ -53,7 +52,6 @@ def remove_end_md_json(response_msg: str) -> str:
     Returns:
         str: The response message without the end marker (if one was present).
     """
-
     end_pattern = re.compile(r"(\n```|\n`|```|`)$")
     match = end_pattern.search(response_msg)
     if match:
@@ -90,7 +88,6 @@ def remove_markdown_json(response_msg: str) -> str:
     Returns:
         str: The response message without Markdown formatting if present.
     """
-
     response_msg = remove_start_md_json(response_msg)
     response_msg = remove_end_md_json(response_msg)
 

@@ -4,9 +4,8 @@
 import json
 import logging
 import uuid
-from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -34,7 +33,12 @@ class FuzzerConverter(PromptConverter):
     """
 
     @apply_defaults
-    def __init__(self, *, converter_target: Optional[PromptChatTarget] = None, prompt_template: SeedPrompt):
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
+        prompt_template: SeedPrompt,
+    ):
         """
         Initializes the converter with the specified chat target and prompt template.
 
@@ -47,13 +51,6 @@ class FuzzerConverter(PromptConverter):
         Raises:
             ValueError: If converter_target is not provided and no default has been configured.
         """
-        if converter_target is None:
-            raise ValueError(
-                "converter_target is required for LLM-based converters. "
-                "Either pass it explicitly or configure a default via PyRIT initialization "
-                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
-            )
-
         self.converter_target = converter_target
         self.system_prompt = prompt_template.value
         self.template_label = "TEMPLATE"

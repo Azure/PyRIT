@@ -5,7 +5,7 @@ import logging
 import pathlib
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
@@ -25,7 +25,7 @@ class DenylistConverter(LLMGenericTextConverter):
     def __init__(
         self,
         *,
-        converter_target: Optional[PromptChatTarget] = None,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         system_prompt_template: Optional[SeedPrompt] = None,
         denylist: list[str] = [],
     ):
@@ -64,7 +64,6 @@ class DenylistConverter(LLMGenericTextConverter):
         Returns:
             ConverterResult: The result containing the modified prompt.
         """
-
         # check if the prompt contains any words from the  denylist and if so,
         # update the prompt replacing the denied words with synonyms
         denylist = self._prompt_kwargs.get("denylist", [])
