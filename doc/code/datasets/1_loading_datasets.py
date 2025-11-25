@@ -28,7 +28,7 @@ SeedDatasetProvider.get_all_dataset_names()
 # You can retrieve all built-in datasets using `SeedDatasetProvider.fetch_datasets_async()`, or fetch specific ones by providing dataset names. This returns a list of `SeedDataset` objects containing the seeds.
 
 # %%
-datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_illegal", "airt_malware"])
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_illegal", "airt_malware"])  # type: ignore
 
 for dataset in datasets:
     for seed in dataset.seeds:
@@ -51,8 +51,8 @@ from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-memory = CentralMemory().get_memory_instance() 
-await memory.add_seed_datasets_to_memory_async(datasets=datasets, added_by="pyrit")
+memory = CentralMemory().get_memory_instance()
+await memory.add_seed_datasets_to_memory_async(datasets=datasets, added_by="pyrit")  # type: ignore
 
 # Memory has flexible querying capabilities
 memory.get_seeds(harm_categories=["illegal"], is_objective=True)

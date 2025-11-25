@@ -30,11 +30,11 @@
 # ### Common Locations for YAML Files
 #
 # **Jailbreak Templates:**
-# - Location: [`pyrit/datasets/jailbreak/templates/`](https://github.com/Azure/PyRIT/tree/main/pyrit/datasets/jailbreak/templates/)
+# - Location: [`pyrit/datasets/jailbreak/templates/`](../../../pyrit/datasets/jailbreak/templates/)
 # - Usage: Automatically included via `TextJailBreak` classes and used in converters like `TextJailBreakConverter`
 #
 # **Harm Datasets:**
-# - Location: [`pyrit/datasets/seed_datasets/local/`](https://github.com/Azure/PyRIT/tree/main/pyrit/datasets/seed_datasets/local/)
+# - Location: [`pyrit/datasets/seed_datasets/local/`](../../../pyrit/datasets/seed_datasets/local/)
 # - Usage: Automatically loaded with `SeedDatasetProvider` for use in various attack scenarios
 #
 # For details on YAML format, see [Seed Programming](./2_seed_programming.ipynb).
@@ -50,7 +50,7 @@
 #
 # ### Example: DarkBench Remote Loader
 #
-# Below is a simplified version of the [`DarkBenchDataset`](https://github.com/Azure/PyRIT/blob/main/pyrit/datasets/seed_datasets/remote/darkbench_dataset.py) loader.
+# Below is a simplified version of the [`DarkBenchDataset`](../../../pyrit/datasets/seed_datasets/remote/darkbench_dataset.py) loader.
 
 # %%
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (

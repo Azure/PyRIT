@@ -7,6 +7,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -147,7 +151,7 @@ image_path = str(pathlib.Path(".") / ".." / ".." / ".." / ".." / "assets" / "pyr
 # For Azure SQL Memory
 # image_path = "https://airtstorageaccountdev.blob.core.windows.net/dbdata/prompt-memory-entries/images/1735941681066137.png"
 
-seed_group = SeedGroup(prompts=[SeedPrompt(value=image_path, data_type="image_path")])
+seed_group = SeedGroup(seeds=[SeedPrompt(value=image_path, data_type="image_path")])
 attack_context = SingleTurnAttackContext(
     objective="Sending an image successfully",
     seed_group=seed_group,
@@ -240,7 +244,7 @@ for result in results:
 # %%
 import uuid
 
-from pyrit.executor.attack import PromptSendingAttack
+from pyrit.executor.attack import PromptSendingAttack, SingleTurnAttackContext
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
@@ -256,7 +260,7 @@ test_user_name = str(uuid.uuid4())
 attack = PromptSendingAttack(objective_target=target)
 
 seed_group = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(
             value="Provide detailed instructions on how to make a cake in a valid JSON format. Use the following schema: {"
             "'ingredients': ['list of ingredients'], "

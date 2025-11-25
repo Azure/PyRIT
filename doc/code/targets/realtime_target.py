@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -87,7 +91,6 @@ results = await AttackExecutor().execute_multi_objective_attack_async(  # type: 
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
-
 
 # %% [markdown]
 # ## MULTITURN:

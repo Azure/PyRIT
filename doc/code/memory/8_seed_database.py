@@ -7,6 +7,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -40,7 +44,7 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Seed Prompts can be created directly, loaded from yaml files, or fetched from built-in datasets
-datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["pyrit_example_dataset"])
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["pyrit_example_dataset"])  # type: ignore
 
 
 print(datasets[0].seeds[0].value)
@@ -88,32 +92,32 @@ print("All dataset names in memory:", all_dataset_names)
 
 # %%
 def print_group(seed_group):
-    for seed in seed_group:
+    for seed in seed_group.seeds:
         print(seed)
     print("\n")
 
 
 # Get all seeds in the dataset we just uploaded
-seeds = memory.get_seed_groups(dataset_name="pyrit_example_dataset")
+seed_groups = memory.get_seed_groups(dataset_name="pyrit_example_dataset")
 print("First seed from pyrit_example_dataset:")
 print("----------")
-print_group(seeds[0].seeds)
+print_group(seed_groups[0])
 
 # Filter by SeedObjectives
-seeds = memory.get_seed_groups(dataset_name="pyrit_example_dataset", is_objective=True, group_length=[1])
+seed_groups = memory.get_seed_groups(dataset_name="pyrit_example_dataset", is_objective=True, group_length=[1])
 print("First SeedObjective from pyrit_example_dataset without a seedprompt:")
 print("----------")
-print_group(seeds[0].seeds)
+print_group(seed_groups[0])
 
 
 # Filter by metadata to get seed prompts in .wav format and samplerate 24000 kBits/s
 print("First WAV seed in the database")
-seeds = memory.get_seed_groups(metadata={"format": "wav", "samplerate": 24000})
+seed_groups = memory.get_seed_groups(metadata={"format": "wav", "samplerate": 24000})
 print("----------")
-print_group(seeds[0].seeds)
+print_group(seed_groups[0])
 
 # Filter by image seeds
 print("First image seed in the dataset")
-seeds = memory.get_seed_groups(data_types=["image_path"], dataset_name="pyrit_example_dataset")
+seed_groups = memory.get_seed_groups(data_types=["image_path"], dataset_name="pyrit_example_dataset")
 print("----------")
-print_group(seeds[0].seeds)
+print_group(seed_groups[0])

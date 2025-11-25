@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -96,6 +96,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This example demonstrates how to use the Sora target to create a video from a text-based prompt.
 
+# %%
 from pyrit.executor.attack import (
     AttackExecutor,
     AttackScoringConfig,

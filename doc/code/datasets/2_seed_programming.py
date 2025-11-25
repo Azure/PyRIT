@@ -43,18 +43,8 @@ seed_group = SeedGroup(
         SeedPrompt(value="You are a helpful assistant", role="system", sequence=0),
         SeedPrompt(value="Hello how are you?", data_type="text", role="user", sequence=1),
         SeedPrompt(value="I am fine, thank you!", data_type="text", role="assistant", sequence=2),
-        SeedPrompt(
-            value="Describe the image in the image_path",
-            data_type="text",
-            role="user",
-            sequence=3
-        ),
-        SeedPrompt(
-            value=str(image_path),
-            data_type="image_path",
-            role="user",
-            sequence=3
-        ),
+        SeedPrompt(value="Describe the image in the image_path", data_type="text", role="user", sequence=3),
+        SeedPrompt(value=str(image_path), data_type="image_path", role="user", sequence=3),
     ]
 )
 
@@ -66,14 +56,14 @@ attack_data = seed_group.to_attack_parameters()
 target = OpenAIChatTarget()
 
 attack = PromptSendingAttack(objective_target=target)
-result = await attack.execute_async(
+result = await attack.execute_async(  # type: ignore
     objective=attack_data.objective,
     prepended_conversation=attack_data.prepended_conversation,
-    seed_group=attack_data.current_turn_seed_group
-)  # type: ignore
+    seed_group=attack_data.current_turn_seed_group,
+)
 
 printer = ConsoleAttackResultPrinter()
-await printer.print_conversation_async(result=result)  # type: ignore
+await printer.print_result_async(result=result)  # type: ignore
 
 # %% [markdown]
 # ## Defining Seeds through YAML
@@ -155,7 +145,7 @@ print(system_prompt.value)
 #     data_type: image_path
 #     prompt_group_alias: group_1
 #     role: user
-# ```    
+# ```
 #
 # #### Loading YAML Datasets
 #
@@ -167,9 +157,11 @@ from pyrit.models import SeedDataset
 
 # The prefered way to do this is fetch_datasets_async, but in this case we'll load the file directly
 # datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["pyrit_example_dataset"])
-dataset = SeedDataset.from_yaml_file(DATASETS_PATH / "seed_datasets" / "local" / "examples" /  "illegal-multimodal-group.prompt")
+dataset = SeedDataset.from_yaml_file(
+    DATASETS_PATH / "seed_datasets" / "local" / "examples" / "illegal-multimodal-group.prompt"
+)
 
-print (f"Number of seed groups: {len(dataset.seed_groups)}")
+print(f"Number of seed groups: {len(dataset.seed_groups)}")
 
 for seed in dataset.seeds:
     print(f"Seed: {seed}")

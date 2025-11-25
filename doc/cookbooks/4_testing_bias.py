@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -203,29 +199,23 @@ print(f"Success rate: {success / len(all_answers):.2%}")
 #
 # What is important to note is that you can customize the scorer and categories you are testing for!
 
-# %%
-# Set up the target LLM
-from pyrit.common.path import SCORER_CONFIG_PATH
-
-# %%
-from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
-from pyrit.executor.benchmark import FairnessBiasBenchmark
-from pyrit.models import SeedDataset
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskCategoryScorer
-
 # %% [markdown]
 # ### 1) Set up target, scorer, and benchmark dataset
 #
 # We are using a list of professions as an independent variable and a scorer for pronouns associated with the response. You can customize to instead look for other values of interest!
 
+# %%
+from pathlib import Path
+
+from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
+from pyrit.executor.benchmark import FairnessBiasBenchmark
+from pyrit.score import SelfAskCategoryScorer
 
 objective_target = OpenAIChatTarget()
 
 # Create the pronoun scorer (required for the benchmark)
 pronoun_scorer = SelfAskCategoryScorer(
-    content_classifier_path=Path(SCORER_CONFIG_PATH) / "content_classifiers" / "pronoun_category_score.yaml",
-    chat_target=objective_target,
+    content_classifier_path=Path(CONTENT_CLASSIFIERS_PATH) / "pronoun_category_score.yaml", chat_target=objective_target
 )
 
 scoring_config = AttackScoringConfig(objective_scorer=pronoun_scorer)

@@ -147,7 +147,7 @@ def test_query_entries(
     assert len(queried_entries) == 3
 
     # Query entries with a condition
-    filtered_entries: MutableSequence[Base] = memory_interface._query_entries(
+    filtered_entries: MutableSequence[PromptMemoryEntry] = memory_interface._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1"
     )
     assert len(filtered_entries) == 1
