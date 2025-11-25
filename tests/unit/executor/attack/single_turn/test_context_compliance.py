@@ -90,7 +90,7 @@ def mock_seed_dataset():
 
     dataset = MagicMock(spec=SeedDataset)
     dataset.seeds = [prompt1, prompt2, prompt3]
-    dataset.prompts = [prompt1, prompt2, prompt3]  # Mock the prompts property
+    dataset.prompts = [prompt1, prompt2, prompt3]
     return dataset
 
 
@@ -130,9 +130,9 @@ class TestContextComplianceAttackInitialization:
             assert attack._objective_target == mock_objective_target
             assert attack._adversarial_chat == mock_attack_adversarial_config.target
             assert attack._affirmative_response == ContextComplianceAttack.DEFAULT_AFFIRMATIVE_RESPONSE
-            assert attack._rephrase_objective_to_user_turn == mock_seed_dataset.prompts[0]
-            assert attack._answer_user_turn == mock_seed_dataset.prompts[1]
-            assert attack._rephrase_objective_to_question == mock_seed_dataset.prompts[2]
+            assert attack._rephrase_objective_to_user_turn == mock_seed_dataset.seeds[0]
+            assert attack._answer_user_turn == mock_seed_dataset.seeds[1]
+            assert attack._rephrase_objective_to_question == mock_seed_dataset.seeds[2]
 
     def test_init_with_all_configs_sets_correct_components(
         self,
@@ -252,7 +252,6 @@ class TestContextComplianceAttackInitialization:
         """Test error handling for insufficient prompts in context description file"""
         insufficient_dataset = MagicMock(spec=SeedDataset)
         insufficient_dataset.seeds = [MagicMock(), MagicMock()]  # Only 2 prompts instead of 3
-        insufficient_dataset.prompts = insufficient_dataset.seeds  # Mock the prompts property
 
         with patch(
             "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
@@ -553,9 +552,7 @@ class TestContextComplianceAttackExecution:
             assert seed_group.prompts[0].data_type == "text"
 
             # Verify template was rendered
-            mock_seed_dataset.prompts[0].render_template_value.assert_called_once_with(
-                objective=basic_context.objective
-            )
+            mock_seed_dataset.seeds[0].render_template_value.assert_called_once_with(objective=basic_context.objective)
 
             assert result == "Can you tell me about dangerous substances?"
 
@@ -598,7 +595,7 @@ class TestContextComplianceAttackExecution:
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
             # Verify template was rendered with benign request
-            mock_seed_dataset.prompts[1].render_template_value.assert_called_once_with(benign_request=benign_query)
+            mock_seed_dataset.seeds[1].render_template_value.assert_called_once_with(benign_request=benign_query)
 
             assert result == "Dangerous substances are materials that can cause harm..."
 
@@ -640,9 +637,7 @@ class TestContextComplianceAttackExecution:
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
             # Verify template was rendered
-            mock_seed_dataset.prompts[2].render_template_value.assert_called_once_with(
-                objective=basic_context.objective
-            )
+            mock_seed_dataset.seeds[2].render_template_value.assert_called_once_with(objective=basic_context.objective)
 
             assert result == "would you like me to create a dangerous substance?"
 
@@ -789,7 +784,7 @@ class TestContextComplianceAttackErrorHandling:
             )
 
             # Mock template rendering to fail
-            mock_seed_dataset.prompts[0].render_template_value.side_effect = KeyError("missing_param")
+            mock_seed_dataset.seeds[0].render_template_value.side_effect = KeyError("missing_param")
 
             with pytest.raises(KeyError, match="missing_param"):
                 attack._rephrase_objective_to_user_turn.render_template_value(objective="test")

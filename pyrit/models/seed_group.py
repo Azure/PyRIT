@@ -272,14 +272,14 @@ class SeedGroup(YamlLoadable):
                     role=prompt.role or "user",
                     original_value=prompt.value,
                     converted_value_data_type=prompt.data_type or "text",
-                    prompt_target_identifier={"id": "seed_group_conversion"},
+                    prompt_target_identifier=None,
                     conversation_id=str(prompt.prompt_group_id),
-                    sequence=prompt.sequence or 0,
+                    sequence=sequence,
                 )
                 message_pieces.append(piece)
 
             # Create Message from pieces
-            messages.append(Message(message_pieces=message_pieces, skip_validation=True))
+            messages.append(Message(message_pieces=message_pieces))
 
         return messages
 

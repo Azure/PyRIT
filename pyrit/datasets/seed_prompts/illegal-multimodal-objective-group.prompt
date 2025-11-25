@@ -1,5 +1,5 @@
 # This is used to show how an objective can be set in a multi modality (text, image) group.
-prompts:
+seeds:
   - dataset_name: TestObjectiveMultiModal
     harm_categories:
       - illegal

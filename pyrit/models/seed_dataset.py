@@ -48,7 +48,6 @@ class SeedDataset(YamlLoadable):
         self,
         *,
         seeds: Optional[Union[Sequence[Dict[str, Any]], Sequence[Seed]]] = None,
-        prompts: Optional[Union[Sequence[Dict[str, Any]], Sequence[Seed]]] = None,
         data_type: Optional[PromptDataType] = "text",
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
@@ -64,20 +63,14 @@ class SeedDataset(YamlLoadable):
         """
         Initialize the dataset.
         Typically, you'll call from_dict or from_yaml_file so that top-level defaults
-        are merged into each prompt. If you're passing prompts directly, they can be
-        either a list of SeedPrompt objects or prompt dictionaries (which then get
-        converted to SeedPrompt objects).
+        are merged into each seed. If you're passing seeds directly, they can be
+        either a list of Seed objects or seed dictionaries (which then get
+        converted to Seed objects).
         """
-        if seeds is None and prompts is None:
-            seeds = []
-
-        if seeds is not None and prompts is not None:
-            raise ValueError("Cannot specify both seeds and prompts.")
-
-        input_seeds = seeds or prompts
-
-        if not input_seeds:
+        if not seeds:
             raise ValueError("SeedDataset cannot be empty.")
+
+        input_seeds = seeds
 
         # Store top-level fields
         self.data_type = data_type
@@ -124,9 +117,7 @@ class SeedDataset(YamlLoadable):
                         del p["is_objective"]
 
                     self.seeds.append(SeedPrompt(**p))
-            elif isinstance(p, SeedPrompt):
-                self.seeds.append(p)
-            elif isinstance(p, SeedObjective):
+            elif isinstance(p, (SeedPrompt, SeedObjective)):
                 self.seeds.append(p)
             else:
                 raise ValueError(
@@ -197,8 +188,6 @@ class SeedDataset(YamlLoadable):
         """
         # Pop out the seeds section
         seeds_data = data.pop("seeds", [])
-        if not seeds_data:
-            seeds_data = data.pop("prompts", [])
 
         dataset_defaults = data  # everything else is top-level
 
