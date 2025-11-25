@@ -9,27 +9,25 @@ from pyrit.executor.attack import (
     AttackScoringConfig,
     AttackStrategy,
     PromptSendingAttack,
-)
-from pyrit.executor.attack.multi_turn.multi_prompt_sending import (
     MultiPromptSendingAttack,
-)
-from pyrit.executor.attack.single_turn.many_shot_jailbreak import (
     ManyShotJailbreakAttack,
+    RolePlayAttack,
+    RolePlayPaths
 )
-from pyrit.executor.attack.single_turn.role_play import RolePlayAttack, RolePlayPaths
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models.seed_group import SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
-from pyrit.scenarios import (
-    AtomicAttack,
-    Scenario,
+
+from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.scenario import Scenario
+from pyrit.scenario.core.scenario_strategy import (
     ScenarioStrategy,
 )
 from pyrit.score import (
     SelfAskRefusalScorer,
     TrueFalseInverterScorer,
+    TrueFalseScorer
 )
-from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
