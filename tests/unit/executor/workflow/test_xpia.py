@@ -45,7 +45,7 @@ def mock_prompt_normalizer() -> MagicMock:
 @pytest.fixture
 def valid_seed_group() -> SeedGroup:
     """Create a valid seed group for testing."""
-    return SeedGroup(prompts=[SeedPrompt(value="Test attack content", data_type="text", name="test_prompt")])
+    return SeedGroup(seeds=[SeedPrompt(value="Test attack content", data_type="text", name="test_prompt")])
 
 
 @pytest.fixture
@@ -108,7 +108,7 @@ class TestXPIAWorkflowValidation:
     ) -> None:
         """Test that validation fails when seed group has multiple prompts."""
         multiple_prompts_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(value="First prompt", data_type="text", name="prompt1"),
                 SeedPrompt(value="Second prompt", data_type="text", name="prompt2"),
             ]
@@ -122,7 +122,7 @@ class TestXPIAWorkflowValidation:
         self, workflow: XPIAWorkflow, mock_processing_callback: AsyncMock
     ) -> None:
         """Test that validation fails when prompt is not text type."""
-        non_text_group = SeedGroup(prompts=[SeedPrompt(value="image.jpg", data_type="image_path", name="image_prompt")])
+        non_text_group = SeedGroup(seeds=[SeedPrompt(value="image.jpg", data_type="image_path", name="image_prompt")])
         context = XPIAContext(attack_content=non_text_group, processing_callback=mock_processing_callback)
 
         with pytest.raises(ValueError, match="attack_content: Prompt must be of type 'text'"):

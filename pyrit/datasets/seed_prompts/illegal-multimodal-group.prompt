@@ -1,5 +1,5 @@
 # This is used to show a multi modality (text, image, audio) group can be formatted.
-prompts:
+seeds:
   - dataset_name: TestMultimodalTextImageAudioVideo
     harm_categories:
       - illegal

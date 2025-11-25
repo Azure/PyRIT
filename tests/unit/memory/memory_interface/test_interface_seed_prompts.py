@@ -455,8 +455,8 @@ async def test_get_seed_dataset_names_multiple(sqlite_instance: MemoryInterface)
 
 @pytest.mark.asyncio
 async def test_add_seed_groups_to_memory_empty_list(sqlite_instance: MemoryInterface):
-    prompt_group = SeedGroup(prompts=[SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)])
-    prompt_group.prompts = []
+    prompt_group = SeedGroup(seeds=[SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)])
+    prompt_group.seeds = []
     with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
         await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group])
 
@@ -464,7 +464,7 @@ async def test_add_seed_groups_to_memory_empty_list(sqlite_instance: MemoryInter
 @pytest.mark.asyncio
 async def test_add_seed_groups_to_memory_single_element(sqlite_instance: MemoryInterface):
     prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)
-    prompt_group = SeedGroup(prompts=[prompt])
+    prompt_group = SeedGroup(seeds=[prompt])
     await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
     assert len(sqlite_instance.get_seeds()) == 1
 
@@ -473,7 +473,7 @@ async def test_add_seed_groups_to_memory_single_element(sqlite_instance: MemoryI
 async def test_add_seed_groups_to_memory_multiple_elements(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0, role="user")
     prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1, role="user")
-    prompt_group = SeedGroup(prompts=[prompt1, prompt2])
+    prompt_group = SeedGroup(seeds=[prompt1, prompt2])
     await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
     assert len(sqlite_instance.get_seeds()) == 2
     assert len(sqlite_instance.get_seed_groups()) == 1
@@ -482,14 +482,14 @@ async def test_add_seed_groups_to_memory_multiple_elements(sqlite_instance: Memo
 @pytest.mark.asyncio
 async def test_add_seed_groups_to_memory_no_elements(sqlite_instance: MemoryInterface):
     with pytest.raises(ValueError, match="SeedGroup cannot be empty."):
-        prompt_group = SeedGroup(prompts=[])
+        prompt_group = SeedGroup(seeds=[])
         await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group])
 
 
 @pytest.mark.asyncio
 async def test_add_seed_groups_to_memory_single_element_no_added_by(sqlite_instance: MemoryInterface):
     prompt = SeedPrompt(value="Test prompt", data_type="text", sequence=0)
-    prompt_group = SeedGroup(prompts=[prompt])
+    prompt_group = SeedGroup(seeds=[prompt])
     with pytest.raises(ValueError, match="The 'added_by' attribute must be set for each prompt."):
         await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group])
 
@@ -498,7 +498,7 @@ async def test_add_seed_groups_to_memory_single_element_no_added_by(sqlite_insta
 async def test_add_seed_groups_to_memory_multiple_elements_no_added_by(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", data_type="text", sequence=0, role="user")
     prompt2 = SeedPrompt(value="Test prompt 2", data_type="text", sequence=1, role="user")
-    prompt_group = SeedGroup(prompts=[prompt1, prompt2])
+    prompt_group = SeedGroup(seeds=[prompt1, prompt2])
     with pytest.raises(ValueError, match="The 'added_by' attribute must be set for each prompt."):
         await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group])
 
@@ -506,9 +506,9 @@ async def test_add_seed_groups_to_memory_multiple_elements_no_added_by(sqlite_in
 @pytest.mark.asyncio
 async def test_add_seed_groups_to_memory_inconsistent_group_ids(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0, role="user")
-    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1, role="user")
+    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=0)
 
-    prompt_group = SeedGroup(prompts=[prompt1, prompt2])
+    prompt_group = SeedGroup(seeds=[prompt1, prompt2])
     prompt_group.prompts[0].prompt_group_id = uuid4()
 
     with pytest.raises(ValueError):
@@ -518,7 +518,7 @@ async def test_add_seed_groups_to_memory_inconsistent_group_ids(sqlite_instance:
 @pytest.mark.asyncio
 async def test_add_seed_groups_to_memory_single_element_with_added_by(sqlite_instance: MemoryInterface):
     prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)
-    prompt_group = SeedGroup(prompts=[prompt])
+    prompt_group = SeedGroup(seeds=[prompt])
     await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group])
     assert len(sqlite_instance.get_seeds()) == 1
 
@@ -527,7 +527,7 @@ async def test_add_seed_groups_to_memory_single_element_with_added_by(sqlite_ins
 async def test_add_seed_groups_to_memory_multiple_elements_with_added_by(sqlite_instance: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0, role="user")
     prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1, role="user")
-    prompt_group = SeedGroup(prompts=[prompt1, prompt2])
+    prompt_group = SeedGroup(seeds=[prompt1, prompt2])
     await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group])
     assert len(sqlite_instance.get_seeds()) == 2
 
@@ -539,8 +539,8 @@ async def test_add_seed_groups_to_memory_multiple_groups_with_added_by(sqlite_in
     prompt3 = SeedPrompt(value="Test prompt 3", added_by="tester", data_type="text", sequence=0, role="user")
     prompt4 = SeedPrompt(value="Test prompt 4", added_by="tester", data_type="text", sequence=1, role="user")
 
-    prompt_group1 = SeedGroup(prompts=[prompt1, prompt2])
-    prompt_group2 = SeedGroup(prompts=[prompt3, prompt4])
+    prompt_group1 = SeedGroup(seeds=[prompt1, prompt2])
+    prompt_group2 = SeedGroup(seeds=[prompt3, prompt4])
 
     await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[prompt_group1, prompt_group2])
     assert len(sqlite_instance.get_seeds()) == 4
@@ -591,7 +591,7 @@ async def test_add_seed_groups_to_memory_with_all_modalities(sqlite_instance: Me
         )
 
         # Create SeedGroup
-        seed_group1 = SeedGroup(prompts=[prompt1, prompt2, prompt3, prompt4])
+        seed_group1 = SeedGroup(seeds=[prompt1, prompt2, prompt3, prompt4])
 
         # Add prompt groups to memory
         await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[seed_group1])
@@ -649,7 +649,7 @@ async def test_add_seed_groups_to_memory_with_textimage_modalities(sqlite_instan
         )
 
         # Create SeedGroup
-        seed_group1 = SeedGroup(prompts=[prompt1, prompt2])
+        seed_group1 = SeedGroup(seeds=[prompt1, prompt2])
 
         # Add prompt groups to memory
         await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[seed_group1])
@@ -715,7 +715,7 @@ def test_get_seed_groups_empty(sqlite_instance: MemoryInterface):
 async def test_get_seed_groups_with_dataset_name(sqlite_instance: MemoryInterface):
     dataset_name = "test_dataset"
     prompt_group = SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(value="Test prompt", dataset_name=dataset_name, added_by="tester", data_type="text", sequence=0)
         ]
     )
@@ -733,7 +733,7 @@ async def test_get_seed_groups_with_multiple_filters(sqlite_instance: MemoryInte
     harm_categories = ["category1"]
     added_by = "tester"
     group = SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(
                 value="Test prompt",
                 dataset_name=dataset_name,
@@ -761,10 +761,10 @@ async def test_get_seed_groups_with_multiple_filters(sqlite_instance: MemoryInte
 @pytest.mark.asyncio
 async def test_get_seed_groups_multiple_groups(sqlite_instance: MemoryInterface):
     group1 = SeedGroup(
-        prompts=[SeedPrompt(value="Prompt 1", dataset_name="dataset_1", added_by="user1", sequence=0, data_type="text")]
+        seeds=[SeedPrompt(value="Prompt 1", dataset_name="dataset_1", added_by="user1", sequence=0, data_type="text")]
     )
     group2 = SeedGroup(
-        prompts=[SeedPrompt(value="Prompt 2", dataset_name="dataset_2", added_by="user2", sequence=0, data_type="text")]
+        seeds=[SeedPrompt(value="Prompt 2", dataset_name="dataset_2", added_by="user2", sequence=0, data_type="text")]
     )
     await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[group1, group2])
 
@@ -775,10 +775,10 @@ async def test_get_seed_groups_multiple_groups(sqlite_instance: MemoryInterface)
 @pytest.mark.asyncio
 async def test_get_seed_groups_multiple_groups_with_unique_ids(sqlite_instance: MemoryInterface):
     group1 = SeedGroup(
-        prompts=[SeedPrompt(value="Prompt 1", dataset_name="dataset_1", added_by="user1", sequence=0, data_type="text")]
+        seeds=[SeedPrompt(value="Prompt 1", dataset_name="dataset_1", added_by="user1", sequence=0, data_type="text")]
     )
     group2 = SeedGroup(
-        prompts=[SeedPrompt(value="Prompt 2", dataset_name="dataset_2", added_by="user2", sequence=0, data_type="text")]
+        seeds=[SeedPrompt(value="Prompt 2", dataset_name="dataset_2", added_by="user2", sequence=0, data_type="text")]
     )
     await sqlite_instance.add_seed_groups_to_memory(prompt_groups=[group1, group2])
 
@@ -831,7 +831,7 @@ async def test_add_seed_groups_with_objective_added_to_all_prompts(sqlite_instan
     objective = SeedObjective(value="Test objective")
 
     # Create a prompt group with both prompts and objective
-    prompt_group = SeedGroup(prompts=[prompt1, prompt2, objective])
+    prompt_group = SeedGroup(seeds=[prompt1, prompt2, objective])
 
     # Mock the add_seeds_to_memory_async method to capture what gets passed to it
     original_add_method = sqlite_instance.add_seeds_to_memory_async
@@ -867,7 +867,7 @@ async def test_add_seed_groups_without_objective_only_prompts_added(sqlite_insta
     prompt2 = SeedPrompt(value="Test prompt 2", data_type="text", sequence=1, added_by="test_user", role="user")
 
     # Create a prompt group with only prompts (no objective)
-    prompt_group = SeedGroup(prompts=[prompt1, prompt2])
+    prompt_group = SeedGroup(seeds=[prompt1, prompt2])
 
     # Mock the add_seeds_to_memory_async method to capture what gets passed to it
     original_add_method = sqlite_instance.add_seeds_to_memory_async

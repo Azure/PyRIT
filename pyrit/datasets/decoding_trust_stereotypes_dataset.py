@@ -115,5 +115,5 @@ def fetch_decoding_trust_stereotypes_dataset(
         for prompt in prompts
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset
