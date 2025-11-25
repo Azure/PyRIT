@@ -179,9 +179,7 @@ def test_seed_dataset_initialization_with_yaml_objective():
 
 
 def test_seed_dataset_get_values():
-    dataset = SeedDataset.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt"
-    )
+    dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     values = dataset.get_values()
 
     assert len(values) == 5
@@ -204,9 +202,7 @@ def test_seed_dataset_get_values():
 
 
 def test_prompt_dataset_from_yaml_defaults():
-    prompts = SeedDataset.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt"
-    )
+    prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     # Note: This file has prompts (not is_objective: True), so all seeds are SeedPrompt
     assert len(prompts.seeds) == 5
     assert len(prompts.prompts) == 5

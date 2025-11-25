@@ -259,7 +259,7 @@ test_user_name = str(uuid.uuid4())
 attack = PromptSendingAttack(objective_target=target)
 
 seed_group = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(
             value="Provide detailed instructions on how to make a cake in a valid JSON format. Use the following schema: {"
             "'ingredients': ['list of ingredients'], "
