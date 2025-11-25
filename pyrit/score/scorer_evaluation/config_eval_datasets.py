@@ -12,27 +12,27 @@ from pyrit.common.path import (
 from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
 
 
-def get_harm_eval_datasets(category: str, score_type: str):
+def get_harm_eval_datasets(category: str, metrics_type: str):
     """
-    Get the configuration for harm evaluation datasets based on category and score type.
+    Get the configuration for harm evaluation datasets based on category and metrics type.
 
     Args:
         category (str): The harm category (e.g., "exploit", "hate_speech", etc.).
-        score_type (str): The type of score ("harm" or "objective").
+        metrics_type (str): The type of metrics ("harm" or "objective").
 
     Returns:
         dict: A dictionary containing dataset file path, evaluation rubric file path, and dataset name.
     """
     directory = ""
-    if score_type == "harm":
+    if metrics_type == "harm":
         directory = str(SCORER_EVALS_HARM_PATH)
         eval_directory = SCORER_EVALS_LIKERT_PATH
-    elif score_type == "objective":
+    elif metrics_type == "objective":
         directory = str(SCORER_EVALS_TRUE_FALSE_PATH)
         eval_directory = TRUE_FALSE_QUESTIONS_PATH
 
     else:
-        raise ValueError(f"Unknown score type: {score_type}")
+        raise ValueError(f"Unknown metrics type: {metrics_type}")
 
     # Update dataset file paths with custom files/setup if needed and/or additional harm categories
     # Map harm categories to respective dataset file paths and evaluation rubric file paths

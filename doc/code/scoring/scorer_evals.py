@@ -58,7 +58,7 @@ target = OpenAIChatTarget()
 #
 # **Inter-Rater Reliability (Krippendorff's Alpha):**
 #
-# Krippendorff's alpha measures agreement between raters, ranging from -1.0 to 1.0:
+# Krippendorff's alpha measures agreement between evaluators, ranging from -1.0 to 1.0:
 # - **1.0**: Perfect agreement
 # - **0.8-1.0**: Strong agreement
 # - **0.6-0.8**: Moderate agreement
@@ -66,9 +66,9 @@ target = OpenAIChatTarget()
 # - **< 0.0**: Systematic disagreement
 #
 # Three alpha values are reported:
-# - **`krippendorff_alpha_humans`**: Agreement among human raters only. Measures consistency of the human-labeled "ground truth." Only computed when multiple human raters exist.
+# - **`krippendorff_alpha_humans`**: Agreement among human evaluators only. Measures consistency of the human-labeled "ground truth." Only computed when multiple human raters exist.
 # - **`krippendorff_alpha_model`**: Agreement among multiple model scoring trials. Measures model consistency/reliability. Only computed when `num_scorer_trials > 1`.
-# - **`krippendorff_alpha_combined`**: Agreement across all raters (humans + model trials combined). Measures how well the model aligns with the pool of human evaluators.
+# - **`krippendorff_alpha_combined`**: Agreement across all evaluators (humans + model trials combined). Measures how well the model aligns with the pool of human evaluators.
 
 # %% [markdown]
 # ### Multiple Evaluators:
@@ -83,9 +83,9 @@ likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=Likert
 evaluator = ScorerEvaluator.from_scorer(scorer=likert_scorer, metrics_type=MetricsType.HARM)
 csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/mini_hate_speech.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
-# csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/hate_speech.csv"
+# csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/hate_speech_multi_score.csv"
 
-# The dataset_name defaults to "SAMPLE_hate_speech" but can be manually set to any string. Each response is graded once by the scorer.
+# The dataset_name defaults to "mini_hate_speech" but can be manually set to any string. Each response is graded once by the scorer.
 metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
     csv_path=csv_path,
     assistant_response_col_name="assistant_response",
@@ -111,7 +111,7 @@ from pyrit.score.scorer_evaluation.config_eval_datasets import get_harm_eval_dat
 harm_categories_to_evaluate = ["sexual_content"]
 
 for harm_category in harm_categories_to_evaluate:
-    harm_category_map = get_harm_eval_datasets(category=harm_category, score_type="harm")
+    harm_category_map = get_harm_eval_datasets(category=harm_category, metrics_type="harm")
 
     eval_rubric_path = harm_category_map["evaluation_rubric_file_path"]
     csv_path = str(Path(harm_category_map["dataset_file_path"]))
@@ -136,7 +136,7 @@ for harm_category in harm_categories_to_evaluate:
 
 # %% [markdown]
 # ## Retrieving Metrics
-# You can retrieve the metrics from the above evaluation by calling the `get_scorer_metrics` from the `ScorerEvaluator` class or directly from the `Scorer` class and passing in the `dataset_name` (which in this case is `SAMPLE_hate_speech`). This will throw an error if evaluation has not yet been run on that dataset.
+# You can retrieve the metrics from the above evaluation by calling the `get_scorer_metrics` from the `ScorerEvaluator` class or directly from the `Scorer` class and passing in the `dataset_name` (which in this case is `mini_hate_speech`). This will throw an error if evaluation has not yet been run on that dataset.
 
 # %%
 # Either work for fetching the hate_speech metrics
@@ -176,7 +176,7 @@ refusal_scorer = SelfAskRefusalScorer(chat_target=target)
 evaluator = ScorerEvaluator.from_scorer(scorer=refusal_scorer)
 csv_path = f"{str(SCORER_EVALS_TRUE_FALSE_PATH)}/mini_refusal.csv"
 # Uncomment the line below to use the full dataset of approx 200 entries
-# csv_path = f"{str(SCORER_EVALS_TRUE_FALSE_PATH)}/mixed_objective_refusal.csv"
+# csv_path = f"{str(SCORER_EVALS_TRUE_FALSE_PATH)}/refusal.csv"
 
 # assistant_response_data_type_col_name is optional and can be used to specify the type of data for each response in the assistant response column.
 metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
@@ -191,7 +191,7 @@ metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
 refusal_scorer.get_scorer_metrics(dataset_name="mini_refusal")
 
 # Retrieve metrics for the full refusal scorer dataset that have already been computed and saved by the PyRIT team.
-# full_metrics = likert_scorer.get_scorer_metrics(dataset_name="mixed_objective_refusal")
+# full_metrics = likert_scorer.get_scorer_metrics(dataset_name="refusal")
 
 # %% [markdown]
 # In this case we use a `true_false_scorer` which determines whether the responses are harmful or not according to their harm category.
