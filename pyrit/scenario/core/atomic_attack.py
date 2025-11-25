@@ -41,7 +41,7 @@ class AtomicAttack:
     seed_groups. For multi-turn attacks, you can provide custom_prompts.
 
     Example:
-        >>> from pyrit.scenarios import AtomicAttack
+        >>> from pyrit.scenario import AtomicAttack
         >>> from pyrit.attacks import PromptAttack
         >>> from pyrit.prompt_target import OpenAIChatTarget
         >>>

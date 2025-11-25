@@ -506,10 +506,10 @@ API Reference
     TrueFalseScoreAggregator
     TrueFalseScorer
 
-:py:mod:`pyrit.scenarios`
+:py:mod:`pyrit.scenario`
 =========================
 
-.. automodule:: pyrit.scenarios
+.. automodule:: pyrit.scenario
     :no-members:
     :no-inherited-members:
 
