@@ -180,8 +180,14 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         is_json_response = self.is_response_format_json(message_piece)
 
+        # Get conversation from memory (normalizer persists input message BEFORE calling this)
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
-        conversation.append(message)
+
+        # If conversation is empty, this was called directly (not through normalizer)
+        # Persist the message to memory so conversation history is maintained
+        if not conversation:
+            self._memory.add_message_to_memory(request=message)
+            conversation = [message]
 
         logger.info(f"Sending the following prompt to the prompt target: {message}")
 

@@ -261,6 +261,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             for piece in pieces:
                 dtype = piece.converted_value_data_type
 
+                # Skip reasoning - it's stored in memory but not sent back to API
+                if dtype == "reasoning":
+                    continue
+
                 # Inline, role-batched content
                 if dtype in {"text", "image_path"}:
                     if role is None:
@@ -276,12 +280,42 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 self._flush_message(role, content, input_items)
                 role = None
 
-                if dtype not in {"reasoning", "function_call", "function_call_output", "tool_call"}:
+                if dtype not in {"function_call", "function_call_output", "tool_call"}:
                     raise ValueError(f"Unsupported data type '{dtype}' in message index {msg_idx}")
 
-                if dtype in {"reasoning", "function_call", "tool_call"}:
-                    # Already in API shape in original_value
-                    input_items.append(json.loads(piece.original_value))
+                if dtype in {"function_call", "tool_call"}:
+                    # Parse the stored JSON and filter to only API-expected fields
+                    stored = json.loads(piece.original_value)
+                    if dtype == "function_call":
+                        # Only include fields the API expects for function_call
+                        input_items.append({
+                            "type": stored["type"],
+                            "call_id": stored["call_id"],
+                            "name": stored["name"],
+                            "arguments": stored["arguments"],
+                        })
+                    elif dtype == "tool_call":
+                        # Filter tool_call fields based on type
+                        tool_type = stored.get("type")
+                        if tool_type == "web_search_call":
+                            # Web search call structure
+                            input_items.append({
+                                "type": stored["type"],
+                                "call_id": stored.get("call_id"),
+                                "query": stored.get("query"),
+                            })
+                        else:
+                            # For unknown tool types, try to include only known fields
+                            filtered = {"type": stored["type"]}
+                            if "call_id" in stored:
+                                filtered["call_id"] = stored["call_id"]
+                            if "query" in stored:
+                                filtered["query"] = stored["query"]
+                            if "name" in stored:
+                                filtered["name"] = stored["name"]
+                            if "arguments" in stored:
+                                filtered["arguments"] = stored["arguments"]
+                            input_items.append(filtered)
 
                 if dtype == "function_call_output":
                     payload = json.loads(piece.original_value)
@@ -336,41 +370,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
-
-    async def _send_prompt_and_find_tool_call_async(
-        self,
-        *,
-        message: Message,
-    ) -> tuple[Message, Optional[dict[str, Any]]]:
-        """
-        Send the prompt and return the assistant message and any pending tool call.
-
-        Returns:
-            Tuple of (assistant_message, tool_call_dict_or_none)
-        """
-        # Core send logic with error handling
-        self._validate_request(message=message)
-        message_piece: MessagePiece = message.message_pieces[0]
-        is_json_response = self.is_response_format_json(message_piece)
-
-        conv = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
-        conv.append(message)
-        logger.info(f"Sending the following prompt to the prompt target: {message}")
-
-        body = await self._construct_request_body(conversation=conv, is_json_response=is_json_response)
-
-        # Use unified error handling - automatically detects Response and validates
-        result = await self._handle_openai_request(
-            api_call=lambda: self._async_client.responses.create(**body),
-            request=message,
-        )
-
-        # Append the result to memory conversation
-        conv.append(result)
-
-        # Extract tool call if present
-        tool_call = self._find_last_pending_tool_call(result)
-        return result, tool_call
 
     def _check_content_filter(self, response: Any) -> bool:
         """
@@ -453,49 +452,84 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         return Message(message_pieces=extracted_response_pieces)
 
     @limit_requests_per_minute
-    @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> Message:
         """
-        Send prompt, handle agentic tool calls (function_call), return assistant output.
+        Send prompt, handle agentic tool calls (function_call), return assistant's responses.
+
+        The user's request is handled by the normalizer for memory persistence.
+        This method returns only the assistant's final response.
+        Intermediate messages (function_call, tool_output) are persisted to memory by this method.
 
         Args:
             message: The initial prompt from the user.
 
         Returns:
-            The final Message with the assistant's answer.
+            Message with the final assistant response.
         """
-        assistant_message, tool_call_section = await self._send_prompt_and_find_tool_call_async(message=message)
+        self._validate_request(message=message)
 
-        while tool_call_section:
+        message_piece: MessagePiece = message.message_pieces[0]
+        is_json_response = self.is_response_format_json(message_piece)
+
+        # Get full conversation history from memory (may include many prior turns)
+        # The normalizer persists the input message BEFORE calling this method
+        conversation: MutableSequence[Message] = self._memory.get_conversation(
+            conversation_id=message_piece.conversation_id
+        )
+
+        # If conversation is empty, this was called directly (not through normalizer)
+        # In that case, persist the message to memory and add to conversation
+        if not conversation:
+            self._memory.add_message_to_memory(request=message)
+            conversation = [message]
+
+        # Main agentic loop - each back-and-forth creates a new message
+        tool_call_section: Optional[dict[str, Any]] = None
+        final_response: Optional[Message] = None
+
+        while True:
+            logger.info(f"Sending conversation with {len(conversation)} messages to the prompt target")
+
+            body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+
+            # Use unified error handling - automatically detects Response and validates
+            result = await self._handle_openai_request(
+                api_call=lambda: self._async_client.responses.create(**body),
+                request=message,
+            )
+
+            # Add result to conversation
+            conversation.append(result)
+
+            # Extract tool call if present
+            tool_call_section = self._find_last_pending_tool_call(result)
+
+            # If no tool call, this is the final response
+            if not tool_call_section:
+                final_response = result
+                break
+
+            # Persist this intermediate message to memory (normalizer won't see these)
+            self._memory.add_message_to_memory(request=result)
+
             # Execute the tool/function
             tool_output = await self._execute_call_section(tool_call_section)
 
-            # Add the tool result as a tool message to the conversation
-            # NOTE: Responses API expects a top-level {type:function_call_output, call_id, output}
-            # Use the first piece from the original message as reference for conversation context
-            reference_piece = message.message_pieces[0]
-            tool_message = self._make_tool_message(
-                tool_output, tool_call_section["call_id"], reference_piece=reference_piece
-            )
+            # Create a new message with the tool output
+            tool_piece = self._make_tool_piece(tool_output, tool_call_section["call_id"], reference_piece=message_piece)
+            tool_message = Message(message_pieces=[tool_piece], skip_validation=True)
 
-            # Build combined message with all conversation history for next request
-            # Get full conversation from memory
-            conv = self._memory.get_conversation(conversation_id=reference_piece.conversation_id)
-            conv.append(tool_message)
+            # Add tool output message to conversation
+            conversation.append(tool_message)
 
-            merged: List[MessagePiece] = []
-            for msg in conv:
-                merged.extend(msg.message_pieces)
+            # Persist the tool output message to memory
+            self._memory.add_message_to_memory(request=tool_message)
 
-            # TODO: There is likely a bug here; there are different roles in a single response??
-            message = Message(message_pieces=merged, skip_validation=True)
+            # Continue loop to send tool result and get next response
 
-            # Send again and check for another tool call
-            assistant_message, tool_call_section = await self._send_prompt_and_find_tool_call_async(message=message)
-
-        # No other tool call found, return the final assistant message
-        return assistant_message
+        # Return the final assistant response (normalizer will persist this separately)
+        return final_response
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
@@ -526,18 +560,41 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             piece_value = section_content[0].text
 
         elif section_type == MessagePieceType.REASONING:
-            # Keep the full reasoning JSON as a piece (internal use / debugging)
-            piece_value = json.dumps(section.model_dump(), separators=(",", ":"))
+            # Store reasoning in memory for debugging/logging, but won't be sent back to API
+            piece_value = json.dumps({
+                "id": section.id,
+                "type": section.type,
+                "summary": section.summary,
+                "content": section.content,
+                "encrypted_content": section.encrypted_content,
+            }, separators=(",", ":"))
             piece_type = "reasoning"
 
         elif section_type == MessagePieceType.FUNCTION_CALL:
-            # Forward the tool call verbatim so the agentic loop can execute it
-            piece_value = json.dumps(section.model_dump(), separators=(",", ":"))
+            # Only store fields the API expects for function_call (exclude status, etc.)
+            piece_value = json.dumps({
+                "type": "function_call",
+                "call_id": section.call_id,
+                "name": section.name,
+                "arguments": section.arguments,
+            }, separators=(",", ":"))
             piece_type = "function_call"
 
         elif section_type == MessagePieceType.WEB_SEARCH_CALL:
-            # Forward web_search_call verbatim as a tool_call
-            piece_value = json.dumps(section.model_dump(), separators=(",", ":"))
+            # Forward web_search_call with only API-expected fields
+            # Note: web search may have different field structure than function calls
+            web_search_data = {
+                "type": "web_search_call",
+            }
+            # Add optional fields if they exist
+            if hasattr(section, "call_id") and section.call_id:
+                web_search_data["call_id"] = section.call_id
+            if hasattr(section, "query") and section.query:
+                web_search_data["query"] = section.query
+            if hasattr(section, "id") and section.id:
+                web_search_data["id"] = section.id
+            
+            piece_value = json.dumps(web_search_data, separators=(",", ":"))
             piece_type = "tool_call"
 
         elif section_type == "custom_tool_call":
@@ -657,9 +714,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         return await fn(args)
 
-    def _make_tool_message(self, output: dict[str, Any], call_id: str, *, reference_piece: MessagePiece) -> Message:
+    def _make_tool_piece(self, output: dict[str, Any], call_id: str, *, reference_piece: MessagePiece) -> MessagePiece:
         """
-        Wrap tool output as a top-level function_call_output artifact.
+        Create a function_call_output MessagePiece.
 
         Args:
             output: The tool output to wrap.
@@ -667,10 +724,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             reference_piece: A reference piece to copy conversation context from.
 
         Returns:
-            A Message containing the function call output.
+            A MessagePiece containing the function call output.
         """
         output_str = output if isinstance(output, str) else json.dumps(output, separators=(",", ":"))
-        piece = MessagePiece(
+        return MessagePiece(
             role="assistant",
             original_value=json.dumps(
                 {"type": "function_call_output", "call_id": call_id, "output": output_str},
@@ -682,5 +739,3 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             prompt_target_identifier=reference_piece.prompt_target_identifier,
             attack_identifier=reference_piece.attack_identifier,
         )
-
-        return Message(message_pieces=[piece])

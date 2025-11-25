@@ -417,8 +417,10 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
     ):
         target._async_client.responses.create = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
         response: Message = await target.send_prompt_async(message=message)
+        # Response contains only assistant's response, not user's input
         assert len(response.message_pieces) == 1
-        assert response.get_value() == "hi"
+        assert response.message_pieces[0].role == "assistant"
+        assert response.message_pieces[0].converted_value == "hi"
     os.remove(tmp_file_name)
 
 
@@ -540,10 +542,11 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
     target._async_client.responses.create = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
 
     response = await target.send_prompt_async(message=message)
+    # Response contains only assistant pieces (error response), not user input
     assert len(response.message_pieces) == 1
     assert response.message_pieces[0].response_error == "blocked"
     assert response.message_pieces[0].converted_value_data_type == "error"
-    assert "content_filter_result" in response.get_value()
+    assert "content_filter_result" in response.message_pieces[0].converted_value
 
 
 def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
@@ -739,30 +742,25 @@ async def test_build_input_for_multi_modal_async_filters_reasoning(target: OpenA
     with patch("pyrit.common.data_url_converter.convert_local_image_to_data_url", new_callable=AsyncMock):
         result = await target._build_input_for_multi_modal_async(conversation)
 
-    # We now have 4 items:
+    # Reasoning is now filtered out (not sent to API), so we have 3 items:
     # 0: user role-batched message
-    # 1: top-level reasoning section (forwarded as-is)
-    # 2: assistant role-batched message (text)
-    # 3: user role-batched message
-    assert len(result) == 4
+    # 1: assistant role-batched message (text only, reasoning skipped)
+    # 2: user role-batched message
+    assert len(result) == 3
 
     # 0: user input_text
     assert result[0]["role"] == "user"
     assert result[0]["content"][0]["type"] == "input_text"
 
-    # 1: reasoning section forwarded (no role, has "type": "reasoning")
-    assert result[1]["type"] == "reasoning"
-    assert result[1]["summary"][0]["text"] == "Reasoning summary."
+    # 1: assistant output_text (reasoning was filtered out)
+    assert result[1]["role"] == "assistant"
+    assert result[1]["content"][0]["type"] == "output_text"
+    assert result[1]["content"][0]["text"] == "hello there"
 
-    # 2: assistant output_text
-    assert result[2]["role"] == "assistant"
-    assert result[2]["content"][0]["type"] == "output_text"
-    assert result[2]["content"][0]["text"] == "hello there"
-
-    # 3: user input_text
-    assert result[3]["role"] == "user"
-    assert result[3]["content"][0]["type"] == "input_text"
-    assert result[3]["content"][0]["text"] == "Hello indeed"
+    # 2: user input_text
+    assert result[2]["role"] == "user"
+    assert result[2]["content"][0]["type"] == "input_text"
+    assert result[2]["content"][0]["text"] == "Hello indeed"
 
 
 # New pytests
@@ -829,7 +827,7 @@ async def test_build_input_for_multi_modal_async_function_call_output_stringifie
     assert json.loads(items[0]["output"]) == {"ok": True, "value": 5}
 
 
-def test_make_tool_message_serializes_output_and_sets_call_id(target: OpenAIResponseTarget):
+def test_make_tool_piece_serializes_output_and_sets_call_id(target: OpenAIResponseTarget):
     out = {"answer": 42}
     reference_piece = MessagePiece(
         role="user",
@@ -837,13 +835,11 @@ def test_make_tool_message_serializes_output_and_sets_call_id(target: OpenAIResp
         conversation_id="test-conv-123",
         labels={"existing": "label"},
     )
-    msg = target._make_tool_message(out, call_id="tool-1", reference_piece=reference_piece)
-    assert len(msg.message_pieces) == 1
-    p = msg.message_pieces[0]
-    assert p.original_value_data_type == "function_call_output"
-    assert p.conversation_id == "test-conv-123"
-    assert p.labels["call_id"] == "tool-1"
-    payload = json.loads(p.original_value)
+    piece = target._make_tool_piece(out, call_id="tool-1", reference_piece=reference_piece)
+    assert piece.original_value_data_type == "function_call_output"
+    assert piece.conversation_id == "test-conv-123"
+    assert piece.labels["call_id"] == "tool-1"
+    payload = json.loads(piece.original_value)
     assert payload["type"] == "function_call_output"
     assert payload["call_id"] == "tool-1"
     assert isinstance(payload["output"], str)
@@ -959,10 +955,29 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
 
         final = await target.send_prompt_async(message=user_req)
 
-        # Should get the final (non-tool-call) assistant message
+        # Response contains only the final assistant message (not the tool call and output)
+        # The intermediate messages are persisted separately to memory
         assert len(final.message_pieces) == 1
         assert final.message_pieces[0].original_value_data_type == "text"
         assert final.message_pieces[0].original_value == "Done: 14"
+
+        # Verify intermediate messages were persisted to memory
+        # Should have: user request (added by fallback), assistant with function_call, tool output
+        # (final response is handled by normalizer, not by target)
+        all_messages = target._memory.get_conversation(conversation_id=shared_conversation_id)
+        assert len(all_messages) == 3, f"Expected 3 messages in memory, got {len(all_messages)}"
+
+        # Check the user message (added by fallback when called directly)
+        assert len(all_messages[0].message_pieces) == 1
+        assert all_messages[0].message_pieces[0].original_value_data_type == "text"
+
+        # Check the function_call message
+        assert len(all_messages[1].message_pieces) == 1
+        assert all_messages[1].message_pieces[0].original_value_data_type == "function_call"
+
+        # Check the tool output message
+        assert len(all_messages[2].message_pieces) == 1
+        assert all_messages[2].message_pieces[0].original_value_data_type == "function_call_output"
 
 
 def test_invalid_temperature_raises(patch_central_database):

@@ -90,15 +90,15 @@ class PromptNormalizer:
         if self._should_skip_based_on_skip_criteria(request):
             return None
 
+        # Add request to memory BEFORE sending so targets can access conversation history
+        self._memory.add_message_to_memory(request=request)
+
         response = None
 
         try:
             response = await target.send_prompt_async(message=request)
-            self._memory.add_message_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
-            self._memory.add_message_to_memory(request=request)
-
             response = construct_response_from_request(
                 request=request.message_pieces[0],
                 response_text_pieces=[""],
@@ -107,9 +107,7 @@ class PromptNormalizer:
             )
 
         except Exception as ex:
-            # Ensure request to memory before processing exception
-            self._memory.add_message_to_memory(request=request)
-
+            # Construct error response
             error_response = construct_response_from_request(
                 request=request.message_pieces[0],
                 response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],

@@ -162,9 +162,14 @@ class AzureMLChatTarget(PromptChatTarget):
         self._validate_request(message=message)
         request = message.message_pieces[0]
 
+        # Get chat messages from memory (normalizer persists input message BEFORE calling this)
         messages = list(self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id))
 
-        messages.append(request.to_chat_message())
+        # If messages is empty, this was called directly (not through normalizer)
+        # Persist the message to memory so conversation history is maintained
+        if not messages:
+            self._memory.add_message_to_memory(request=message)
+            messages = [message.to_chat_message()]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
