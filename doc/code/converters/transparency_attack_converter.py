@@ -149,10 +149,3 @@ except Exception as e:
 # ## Analyzing the Results
 #
 # If the model responds to the attack content (bomb-making) rather than the benign content (cake baking), the transparency attack was successful. This vulnerability underscores potential security risks: attackers could bypass content filters, poison training datasets, or mislead AI systems by disguising harmful material as benign.
-
-# %%
-# Close connection
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

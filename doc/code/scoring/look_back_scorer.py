@@ -33,7 +33,7 @@ from pyrit.executor.attack import (
 )
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, SeedPrompt
-from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import LookBackScorer, SubStringScorer
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
@@ -66,7 +66,7 @@ prepended_conversation = [
 ]
 
 # Set target LLM endpoint
-objective_target = AzureMLChatTarget()
+objective_target = OpenAIChatTarget()
 
 # Set adversarial LLM endpoint
 adversarial_chat = OpenAIChatTarget()
@@ -117,4 +117,4 @@ message = Message(message_pieces=[message_piece])
 # Returns a score using entire conversation as context
 score = (await score_conversation.score_async(message))[0]  # type: ignore
 
-print(f"{score} {score.score_rationale}")
+print (f"{score} {score.score_rationale}")

@@ -36,7 +36,7 @@ DOCS_PATH = pathlib.Path(PYRIT_PATH, "..", "doc").resolve()
 DOCS_CODE_PATH = pathlib.Path(PYRIT_PATH, "..", "doc", "code").resolve()
 DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
 
-EXECUTOR_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "executor").resolve()
+EXECUTOR_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "executors").resolve()
 
 CONVERTER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "prompt_converter").resolve()
 

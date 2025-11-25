@@ -172,7 +172,6 @@ async def test_send_prompt_async_invalid_request(target):
     assert "This target only supports text and audio_path prompt input. Received: image_path." == str(excinfo.value)
 
 
-@pytest.mark.asyncio
 def test_add_auth_param_to_query_params_with_api_key(target_with_entra):
     query_params = {}
     target_with_entra._add_auth_param_to_query_params(query_params)
