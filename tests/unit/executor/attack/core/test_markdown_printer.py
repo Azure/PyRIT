@@ -3,26 +3,15 @@
 
 import os
 import uuid
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from pyrit.executor.attack.printer.markdown_printer import MarkdownAttackResultPrinter
-from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult, Message, MessagePiece, Score
 
 
 @pytest.fixture
-def mock_memory():
-    memory = MagicMock(spec=CentralMemory)
-    with patch("pyrit.executor.attack.printer.markdown_printer.CentralMemory") as mock_central_memory:
-        mock_central_memory.get_memory_instance.return_value = memory
-        mock_central_memory.get_conversation.return_value = []
-        yield memory
-
-
-@pytest.fixture
-def markdown_printer():
+def markdown_printer(patch_central_database):
     return MarkdownAttackResultPrinter(display_inline=False)
 
 
@@ -89,11 +78,11 @@ def sample_message(sample_message_piece):
     return Message(message_pieces=[sample_message_piece])
 
 
-def test_init(mock_memory):
+def test_init(patch_central_database):
     """Test MarkdownAttackResultPrinter initialization."""
     printer = MarkdownAttackResultPrinter(display_inline=True)
     assert printer._display_inline is True
-    assert printer._memory is mock_memory
+    assert printer._memory is patch_central_database.return_value
 
 
 def test_format_score_bool(markdown_printer, sample_boolean_score):
@@ -199,7 +188,7 @@ async def test_format_piece_content_error(markdown_printer, sample_message_piece
 
 
 @pytest.mark.asyncio
-async def test_print_result_async(markdown_printer, sample_attack_result, mock_memory, capsys):
+async def test_print_result_async(markdown_printer, sample_attack_result, capsys):
     """Test full attack result printing."""
 
     await markdown_printer.print_result_async(sample_attack_result)
@@ -216,7 +205,7 @@ async def test_print_result_async(markdown_printer, sample_attack_result, mock_m
 
 
 @pytest.mark.asyncio
-async def test_print_conversation_async(markdown_printer, sample_attack_result, mock_memory, capsys):
+async def test_print_conversation_async(markdown_printer, sample_attack_result, capsys):
     """Test conversation history printing."""
     await markdown_printer.print_conversation_async(sample_attack_result)
     captured = capsys.readouterr()

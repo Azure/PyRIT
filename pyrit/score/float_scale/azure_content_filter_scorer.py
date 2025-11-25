@@ -100,8 +100,6 @@ class AzureContentFilterScorer(FloatScaleScorer):
                 In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
                 but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
                 of type JPEG, PNG, GIF, BMP, TIFF, or WEBP.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
 
         Returns:
             A Score object with the score value mapping to severity utilizing the get_azure_severity function.

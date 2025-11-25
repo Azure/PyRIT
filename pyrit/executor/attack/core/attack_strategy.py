@@ -122,7 +122,7 @@ class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyCont
         Handle post-execution logic after the attack strategy has run.
 
         Args:
-            result (AttackResult): The result of the attack strategy execution.
+            event_data: The event data containing the attack result.
         """
         if not event_data.result:
             raise ValueError("Attack result is None. Cannot log or record the outcome.")

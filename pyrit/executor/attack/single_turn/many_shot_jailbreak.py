@@ -5,9 +5,10 @@ import logging
 import pathlib
 from typing import Optional
 
+import requests
+
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
-from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn import SingleTurnAttackContext
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -16,6 +17,19 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
+
+
+def fetch_many_shot_jailbreaking_dataset() -> list[dict[str, str]]:
+    """
+    Fetch many-shot jailbreaking dataset from a specified source.
+
+    Returns:
+        list[dict[str, str]]: A list of many-shot jailbreaking examples.
+    """
+    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json"
+    response = requests.get(source)
+    response.raise_for_status()
+    return response.json()
 
 
 class ManyShotJailbreakAttack(PromptSendingAttack):
@@ -60,7 +74,9 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
         )
 
         # Template for the faux dialogue to be prepended
-        template_path = pathlib.Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "many_shot_template.yaml"
+        template_path = (
+            pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "multi_parameter" / "many_shot_template.yaml"
+        )
         self._template = SeedPrompt.from_yaml_file(template_path)
         # Fetch the Many Shot Jailbreaking example dataset
         self._examples = (
@@ -96,7 +112,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         many_shot_prompt = self._template.render_template_value(prompt=context.objective, examples=self._examples)
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=many_shot_prompt, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=many_shot_prompt, data_type="text")])
 
         context.seed_group = seed_group
 

@@ -7,6 +7,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -26,9 +30,8 @@
 # >
 # > It is required to manually set the memory instance using `initialize_pyrit`. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 #
+
 # %%
-
-
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
@@ -75,16 +78,13 @@ await MarkdownAttackResultPrinter().print_result_async(result=result)  # type: i
 # Note: If you are using the same configuration across multiple attacks, you can use the `AttackExecutor`'s `execute_single_turn_attacks_async` method to run multiple objectives instead.
 
 # %%
-import pathlib
-
-from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import SeedDatasetProvider
 from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.models import SeedDataset
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
@@ -95,7 +95,8 @@ target = OpenAIChatTarget()
 prompt_converters = PromptConverterConfiguration.from_converters(converters=[Base64Converter()])
 attack_converter_config = AttackConverterConfig(request_converters=prompt_converters)
 
-seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_illegal"])  # type: ignore
+seed_dataset = datasets[0]
 
 objectives = list(seed_dataset.get_values())
 for objective in objectives:
@@ -150,7 +151,7 @@ image_path = str(pathlib.Path(".") / ".." / ".." / ".." / ".." / "assets" / "pyr
 # For Azure SQL Memory
 # image_path = "https://airtstorageaccountdev.blob.core.windows.net/dbdata/prompt-memory-entries/images/1735941681066137.png"
 
-seed_group = SeedGroup(prompts=[SeedPrompt(value=image_path, data_type="image_path")])
+seed_group = SeedGroup(seeds=[SeedPrompt(value=image_path, data_type="image_path")])
 attack_context = SingleTurnAttackContext(
     objective="Sending an image successfully",
     seed_group=seed_group,
@@ -243,7 +244,7 @@ for result in results:
 # %%
 import uuid
 
-from pyrit.executor.attack import PromptSendingAttack
+from pyrit.executor.attack import PromptSendingAttack, SingleTurnAttackContext
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
@@ -259,7 +260,7 @@ test_user_name = str(uuid.uuid4())
 attack = PromptSendingAttack(objective_target=target)
 
 seed_group = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(
             value="Provide detailed instructions on how to make a cake in a valid JSON format. Use the following schema: {"
             "'ingredients': ['list of ingredients'], "

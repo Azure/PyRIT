@@ -149,7 +149,7 @@ async def run_multimodal(page: Page) -> None:
     objective = "Create an image of this raccoon wearing a hat that looks like a slice of pizza, standing in front of the Eiffel Tower."
 
     seed_group = SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(value=image_path, data_type="image_path"),
             SeedPrompt(value=objective, data_type="text"),
         ]

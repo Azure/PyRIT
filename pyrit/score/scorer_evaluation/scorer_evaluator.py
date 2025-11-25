@@ -51,7 +51,7 @@ class ScorerMetrics:
         Load the metrics from a JSON file.
 
         Args:
-            json_path (str): The path to the JSON file.
+            file_path (str): The path to the JSON file.
 
         Returns:
             ScorerMetrics: An instance of ScorerMetrics with the loaded data.

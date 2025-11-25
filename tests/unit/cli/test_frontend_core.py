@@ -434,7 +434,7 @@ class TestFormatFunctions:
         assert "strategy2" in captured.out
         assert "Default Strategy" in captured.out
 
-    def test_format_initializer_info_basic(self, capsys):
+    def test_format_initializer_info_basic(self, capsys) -> None:
         """Test format_initializer_info with basic info."""
         from pyrit.cli.initializer_registry import InitializerInfo
 
@@ -454,7 +454,7 @@ class TestFormatFunctions:
         assert "TestInit" in captured.out
         assert "100" in captured.out
 
-    def test_format_initializer_info_with_env_vars(self, capsys):
+    def test_format_initializer_info_with_env_vars(self, capsys) -> None:
         """Test format_initializer_info with environment variables."""
         from pyrit.cli.initializer_registry import InitializerInfo
 
@@ -473,7 +473,7 @@ class TestFormatFunctions:
         assert "VAR1" in captured.out
         assert "VAR2" in captured.out
 
-    def test_format_initializer_info_with_description(self, capsys):
+    def test_format_initializer_info_with_description(self, capsys) -> None:
         """Test format_initializer_info with description."""
         from pyrit.cli.initializer_registry import InitializerInfo
 

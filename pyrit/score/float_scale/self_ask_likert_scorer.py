@@ -110,8 +110,6 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         Args:
             message_piece (MessagePiece): The message piece containing the text to be scored.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
 
         Returns:
             list[Score]: The message_piece scored.

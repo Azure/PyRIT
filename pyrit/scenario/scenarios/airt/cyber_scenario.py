@@ -6,7 +6,7 @@ import pathlib
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH, SCORER_CONFIG_PATH
+from pyrit.common.path import DATASETS_PATH, SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -141,7 +141,7 @@ class CyberScenario(Scenario):
         """
         presence_of_malware = SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(),
-            true_false_question_path=SCORER_CONFIG_PATH / "true_false_question" / "malware.yaml",
+            true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "malware.yaml",
         )
 
         backstop = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=OpenAIChatTarget()))
@@ -173,7 +173,7 @@ class CyberScenario(Scenario):
             list[str]: List of seed prompt strings to be encoded and tested.
         """
         seed_prompts: List[str] = []
-        malware_path = pathlib.Path(DATASETS_PATH) / "seed_prompts"
+        malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
         seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
         return seed_prompts
 

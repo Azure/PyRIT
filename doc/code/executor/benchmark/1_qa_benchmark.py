@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-312
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -18,7 +14,7 @@
 # The `QuestionAnsweringBenchmark` can process Q&A datasets and evaluate how good a target is at answering the questions.
 
 # %%
-from pyrit.datasets import fetch_wmdp_dataset
+from pyrit.datasets.question_answer.wmdp_dataset import fetch_wmdp_dataset
 from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
 from pyrit.executor.benchmark import QuestionAnsweringBenchmark
 from pyrit.models import (

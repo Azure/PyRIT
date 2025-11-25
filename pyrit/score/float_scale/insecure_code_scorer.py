@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional, Union
 
-from pyrit.common.path import SCORER_CONFIG_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import MessagePiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
@@ -30,7 +30,7 @@ class InsecureCodeScorer(FloatScaleScorer):
         super().__init__(validator=validator or self._default_validator)
 
         if not system_prompt_path:
-            system_prompt_path = SCORER_CONFIG_PATH / "insecure_code" / "system_prompt.yaml"
+            system_prompt_path = SCORER_SEED_PROMPT_PATH / "insecure_code" / "system_prompt.yaml"
 
         self._system_prompt_path: Path = self._verify_and_resolve_path(system_prompt_path)
         self._prompt_target = chat_target

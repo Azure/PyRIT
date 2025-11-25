@@ -83,7 +83,8 @@ class Scorer(abc.ABC):
 
         Args:
             message (Message): The request response to be scored.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
+            objective (str): The objective based on which the text should be scored.
+            role_filter (str, optional): Filter to only score messages with a specific role.
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -221,7 +222,7 @@ class Scorer(abc.ABC):
         Scores the given image using the chat target.
 
         Args:
-            text (str): The image to be scored.
+            image_path (str): The path to the image to be scored.
             objective (str): The objective based on which the text should be scored
 
         Returns:

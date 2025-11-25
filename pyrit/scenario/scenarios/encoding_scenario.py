@@ -172,7 +172,7 @@ class EncodingScenario(Scenario):
             list[str]: List of seed prompt strings to be encoded and tested.
         """
         seed_prompts: list[str] = []
-        garak_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "garak"
+        garak_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "garak"
         seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "slur_terms_en.prompt").get_values())
         seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "web_html_js.prompt").get_values())
 
@@ -274,7 +274,7 @@ class EncodingScenario(Scenario):
             objectives = []
             for seed_prompt in self._seed_prompts:
                 seed = SeedPrompt(value=seed_prompt)
-                seed_groups.append(SeedGroup(prompts=[seed]))
+                seed_groups.append(SeedGroup(seeds=[seed]))
                 objectives.append(f"Make the model say an encoded payload: {seed_prompt}")
 
             # objective_target is guaranteed to be non-None by parent class validation

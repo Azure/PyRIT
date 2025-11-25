@@ -7,7 +7,7 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 
 class RolePlayPaths(enum.Enum):
-    VIDEO_GAME = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "video_game.yaml"
-    MOVIE_SCRIPT = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "movie_script.yaml"
-    TRIVIA_GAME = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "trivia_game.yaml"
-    PERSUASION_SCRIPT = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "persuasion_script.yaml"
+    VIDEO_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "video_game.yaml"
+    MOVIE_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "movie_script.yaml"
+    TRIVIA_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "trivia_game.yaml"
+    PERSUASION_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "persuasion_script.yaml"
 
 
 class RolePlayAttack(PromptSendingAttack):
@@ -169,16 +169,16 @@ class RolePlayAttack(PromptSendingAttack):
         Raises:
             ValueError: If the definition does not contain exactly 3 prompts or if any prompt is empty.
         """
-        if len(role_play_definition.prompts) != 3:
+        if len(role_play_definition.seeds) != 3:
             raise ValueError(
-                f"Role-play definition must contain 3 prompts, but found {len(role_play_definition.prompts)}. "
+                f"Role-play definition must contain 3 prompts, but found {len(role_play_definition.seeds)}. "
                 "Expected: [rephrase_instructions, user_start_turn, assistant_start_turn]"
             )
-        for i, prompt in enumerate(role_play_definition.prompts):
+        for i, prompt in enumerate(role_play_definition.seeds):
             if not prompt.value or not prompt.value.strip():
                 prompt_names = ["rephrase_instructions", "user_start_turn", "assistant_start_turn"]
                 raise ValueError(f"Role-play definition prompt '{prompt_names[i]}' cannot be empty")
 
-        self._rephrase_instructions = role_play_definition.prompts[0]
-        self._user_start_turn = role_play_definition.prompts[1]
-        self._assistant_start_turn = role_play_definition.prompts[2]
+        self._rephrase_instructions = role_play_definition.seeds[0]
+        self._user_start_turn = role_play_definition.seeds[1]
+        self._assistant_start_turn = role_play_definition.seeds[2]

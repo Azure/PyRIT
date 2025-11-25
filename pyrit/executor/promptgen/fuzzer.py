@@ -977,7 +977,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         for prompt in prompts:
             request = NormalizerRequest(
-                seed_group=SeedGroup(prompts=[SeedPrompt(value=prompt, data_type="text")]),
+                seed_group=SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")]),
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
             )

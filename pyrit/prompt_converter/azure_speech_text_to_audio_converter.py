@@ -58,7 +58,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             synthesis_voice_name (str): Synthesis voice name, see URL.
                 For more details see the following link for synthesis language and synthesis voice:
                 https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
-            filename (str): File name to be generated. Please include either .wav or .mp3.
             output_format (str): Either wav or mp3. Must match the file prefix.
 
         Raises:

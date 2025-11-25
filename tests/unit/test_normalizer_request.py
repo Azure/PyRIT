@@ -14,7 +14,7 @@ def test_normalizer_request_validates_sequence():
     group_id = str(uuid.uuid4())
 
     seed_group = SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(value="Hello", data_type="text", prompt_group_id=group_id, sequence=0, role="user"),
             SeedPrompt(value="World", data_type="text", prompt_group_id=group_id, sequence=1, role="user"),
         ]

@@ -370,7 +370,6 @@ class RealtimeTarget(OpenAITarget):
 
         Args:
             event: The event data
-            conversation_messages: List to add the transcript to
 
         Raises:
             ValueError: If event structure doesn't match expectations

@@ -148,7 +148,7 @@ class InsertPunctuationConverter(PromptConverter):
         Insert punctuation at any indices in the prompt, can insert into a word.
 
         Args:
-            promp str: The prompt string
+            prompt (str): The prompt string.
             num_insertions (int): Number of punctuations to insert.
             punctuation_list (List[str]): punctuations for insertion.
 

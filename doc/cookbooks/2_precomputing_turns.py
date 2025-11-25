@@ -127,7 +127,7 @@ for objective in conversation_objectives:
 from typing import List
 
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackResult
+from pyrit.models.attack_result import AttackResult
 
 memory = CentralMemory.get_memory_instance()
 
@@ -185,7 +185,3 @@ for attack_result in attack_results:
 for objective, conversation in conversation_starters.items():
     new_result = await new_attack.execute_async(objective=objective, prepended_conversation=conversation, memory_labels=memory_labels)  # type: ignore
     await ConsoleAttackResultPrinter().print_result_async(result=new_result)  # type: ignore
-
-
-# %% [markdown]
-# There are some notes in this cookbook with areas we want to improve, and we'll keep it updated. Cookbooks are meant to show how we can tackle a problem using best practices. Right now there are some gaps, but this is what is available today. And already, it's pretty cool that you can rerun these earlier multi-turn tests on new models!
