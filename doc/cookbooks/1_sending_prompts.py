@@ -27,8 +27,8 @@
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import SeedDataset
 from pyrit.setup import initialize_pyrit
 
 # Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
@@ -36,7 +36,8 @@ initialize_pyrit(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()
 
-seed_prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_datasets" / "airt" / "illegal.prompt")
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_illegal"])  # type: ignore
+seed_prompts = datasets[0]
 await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="rlundeen")  # type: ignore
 
 groups = memory.get_seed_groups()

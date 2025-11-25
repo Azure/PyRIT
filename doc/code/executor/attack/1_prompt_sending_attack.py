@@ -78,6 +78,7 @@ await MarkdownAttackResultPrinter().print_result_async(result=result)  # type: i
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import SeedDatasetProvider
 from pyrit.executor.attack import (
     AttackConverterConfig,
     AttackScoringConfig,
@@ -95,7 +96,8 @@ target = OpenAIChatTarget()
 prompt_converters = PromptConverterConfiguration.from_converters(converters=[Base64Converter()])
 attack_converter_config = AttackConverterConfig(request_converters=prompt_converters)
 
-seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_datasets" / "airt" / "illegal.prompt")
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_illegal"])  # type: ignore
+seed_dataset = datasets[0]
 
 objectives = list(seed_dataset.get_values())
 for objective in objectives:

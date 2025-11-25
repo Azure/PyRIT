@@ -22,15 +22,16 @@
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import SeedDataset
 from pyrit.setup.initialization import initialize_pyrit
 
 initialize_pyrit(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()
 
-seed_prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_datasets" / "airt" / "illegal.prompt")
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_illegal"])  # type: ignore
+seed_prompts = datasets[0]
 
 print(f"Dataset name: {seed_prompts.dataset_name}")
 print(f"Number of prompts in dataset: {len(seed_prompts.prompts)}")

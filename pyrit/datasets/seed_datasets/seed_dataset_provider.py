@@ -102,7 +102,7 @@ class SeedDatasetProvider(ABC):
         return sorted(list(dataset_names))
 
     @classmethod
-    async def fetch_all_datasets(
+    async def fetch_datasets_async(
         cls,
         *,
         dataset_names: Optional[List[str]] = None,
@@ -126,17 +126,28 @@ class SeedDatasetProvider(ABC):
             List[SeedDataset]: List of all fetched datasets.
 
         Raises:
+            ValueError: If any requested dataset_name does not exist.
             Exception: If any dataset fails to load.
 
         Example:
             >>> # Fetch all datasets
-            >>> all_datasets = await SeedDatasetProvider.fetch_all_datasets()
+            >>> all_datasets = await SeedDatasetProvider.fetch_datasets_async()
             >>> 
             >>> # Fetch specific datasets
-            >>> specific = await SeedDatasetProvider.fetch_all_datasets(
+            >>> specific = await SeedDatasetProvider.fetch_datasets_async(
             ...     dataset_names=["harmbench", "DarkBench"]
             ... )
         """
+        
+        # Validate dataset names if specified
+        if dataset_names is not None:
+            available_names = cls.get_all_dataset_names()
+            invalid_names = [name for name in dataset_names if name not in available_names]
+            if invalid_names:
+                raise ValueError(
+                    f"Dataset(s) not found: {invalid_names}. "
+                    f"Available datasets: {available_names}"
+                )
         
         async def fetch_single_dataset(
             provider_name: str, provider_class: Type["SeedDatasetProvider"]

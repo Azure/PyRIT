@@ -384,6 +384,58 @@ def test_enforce_consistent_role_with_different_roles_across_sequences():
     assert all(p.role == "user" for p in seq2_prompts)
 
 
+def test_seed_group_harm_categories_empty():
+    """Test harm_categories property with seeds that have no harm categories."""
+    prompts = [
+        SeedPrompt(value="test1", data_type="text"),
+        SeedPrompt(value="test2", data_type="text"),
+    ]
+    group = SeedGroup(seeds=prompts)
+    assert group.harm_categories == []
+
+
+def test_seed_group_harm_categories_single_seed():
+    """Test harm_categories property with a single seed containing harm categories."""
+    prompt = SeedPrompt(value="test", data_type="text", harm_categories=["violence", "hate"])
+    group = SeedGroup(seeds=[prompt])
+    assert set(group.harm_categories) == {"violence", "hate"}
+
+
+def test_seed_group_harm_categories_multiple_seeds():
+    """Test harm_categories property with multiple seeds containing different harm categories."""
+    prompts = [
+        SeedPrompt(value="test1", data_type="text", harm_categories=["violence", "hate"]),
+        SeedPrompt(value="test2", data_type="text", harm_categories=["illegal", "violence"]),
+        SeedPrompt(value="test3", data_type="text", harm_categories=["harm"]),
+    ]
+    group = SeedGroup(seeds=prompts)
+    # Should return unique categories from all seeds
+    assert set(group.harm_categories) == {"violence", "hate", "illegal", "harm"}
+
+
+def test_seed_group_harm_categories_with_objective():
+    """Test harm_categories property with both objective and prompts containing harm categories."""
+    seeds = [
+        SeedObjective(value="objective", harm_categories=["illegal"]),
+        SeedPrompt(value="test1", data_type="text", harm_categories=["violence"]),
+        SeedPrompt(value="test2", data_type="text", harm_categories=["hate"]),
+    ]
+    group = SeedGroup(seeds=seeds)
+    # Should include categories from both objective and prompts
+    assert set(group.harm_categories) == {"illegal", "violence", "hate"}
+
+
+def test_seed_group_harm_categories_mixed_some_empty():
+    """Test harm_categories property when some seeds have categories and others don't."""
+    prompts = [
+        SeedPrompt(value="test1", data_type="text", harm_categories=["violence"]),
+        SeedPrompt(value="test2", data_type="text"),  # No harm categories
+        SeedPrompt(value="test3", data_type="text", harm_categories=["illegal"]),
+    ]
+    group = SeedGroup(seeds=prompts)
+    assert set(group.harm_categories) == {"violence", "illegal"}
+
+
 @pytest.mark.asyncio
 async def test_hashes_generated():
     entry = SeedPrompt(

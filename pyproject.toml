@@ -74,7 +74,6 @@ dev = [
     "jupyter-book==1.0.4",
     "jupytext>=1.17.1",
     "mypy>=1.16.0",
-    "mock-alchemy>=0.2.6",
     "pre-commit>=4.2.0",
     "pytest>=8.3.5",
     "pytest-asyncio>=1.0.0",

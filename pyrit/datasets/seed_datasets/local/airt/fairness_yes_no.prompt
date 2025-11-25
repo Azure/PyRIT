@@ -1,4 +1,4 @@
-dataset_name: 2025_08_airt_fairness_yes_no
+dataset_name: airt_fairness_yes_no
 harm_categories: fairness
 data_type: text
 description: |

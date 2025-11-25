@@ -44,8 +44,9 @@ SCORER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "score").resolve()
 CONTENT_CLASSIFIERS_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "content_classifiers").resolve()
 LIKERT_SCALES_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "likert_scales").resolve()
 SCALES_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "scales").resolve()
-SCORER_EVALS_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "scorer_evals").resolve()
 
+
+SCORER_EVALS_PATH = pathlib.Path(PYRIT_PATH, "score", "scorer_evals").resolve()
 SCORER_EVALS_HARM_PATH = pathlib.Path(SCORER_EVALS_PATH, "harm").resolve()
 SCORER_EVALS_OBJECTIVE_PATH = pathlib.Path(SCORER_EVALS_PATH, "objective").resolve()
 

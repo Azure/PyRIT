@@ -38,7 +38,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import SeedDatasetProvider
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, Message, SeedDataset
@@ -61,7 +61,8 @@ yes_no_scoring_config = AttackScoringConfig(objective_scorer=yes_no_scorer)
 attack = PromptSendingAttack(objective_target=objective_target, attack_scoring_config=yes_no_scoring_config)
 
 # Import seed prompts
-seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "seed_datasets" / "fairness" / "yes_no_questions.yaml")
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["2025_08_airt_fairness_yes_no"])  # type: ignore
+seed_prompts = datasets[0]
 await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 questions = []

@@ -95,6 +95,20 @@ class SeedGroup(YamlLoadable):
     def prompts(self) -> Sequence[SeedPrompt]:
         return [seed for seed in self.seeds if isinstance(seed, SeedPrompt)]
 
+    @property
+    def harm_categories(self) -> List[str]:
+        """
+        Returns a flattened list of all harm categories from all seeds in the group.
+        
+        Returns:
+            List[str]: A list of harm categories from all seeds, with duplicates removed.
+        """
+        categories = []
+        for seed in self.seeds:
+            if seed.harm_categories:
+                categories.extend(seed.harm_categories)
+        return list(set(categories))
+
     def render_template_value(self, **kwargs):
         """
         Renders self.value as a template, applying provided parameters in kwargs.
@@ -186,7 +200,7 @@ class SeedGroup(YamlLoadable):
     def is_single_part_single_text_request(self) -> bool:
         return len(self.prompts) == 1 and self.prompts[0].data_type == "text"
 
-    def to_attack_parameters(self) -> DecomposedSeedGroup:
+    def to_attack_parameters(self, raise_on_missing_objective: bool = False) -> DecomposedSeedGroup:
         """
         Decomposes this SeedGroup into parts commonly used by attack strategies.
         
@@ -195,11 +209,16 @@ class SeedGroup(YamlLoadable):
         - prepended_conversation: Messages from all sequences except the last turn
         - current_turn_seed_group: A new SeedGroup containing only the last turn's prompts
         
+        Args:
+            raise_on_missing_objective: If True, raises ValueError when no objective is present.
+                                       If False (default), allows None objective.
+        
         Returns:
             DecomposedSeedGroup: Object containing the decomposed parts.
         
         Raises:
-            ValueError: If conversion to Messages fails.
+            ValueError: If conversion to Messages fails or if raise_on_missing_objective is True
+                       and no objective is present.
         """
         
         result = DecomposedSeedGroup()
@@ -207,6 +226,8 @@ class SeedGroup(YamlLoadable):
         # Extract objective if present
         if self.objective:
             result.objective = self.objective.value
+        elif raise_on_missing_objective:
+            raise ValueError("SeedGroup must have an objective to decompose for attack parameters.")
         
         # Get unique sequences and determine if we have multiple turns
         unique_sequences = sorted({prompt.sequence for prompt in self.prompts if prompt.sequence is not None})
@@ -224,7 +245,7 @@ class SeedGroup(YamlLoadable):
             current_turn_prompts = [p for p in self.prompts if p.sequence == last_sequence]
             if current_turn_prompts:
                 result.current_turn_seed_group = SeedGroup(seeds=current_turn_prompts)
-        else:
+        elif len(unique_sequences) == 1:
             # Single turn - everything goes to current_turn_seed_group
             result.current_turn_seed_group = SeedGroup(seeds=list(self.prompts))
         

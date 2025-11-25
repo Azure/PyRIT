@@ -3,6 +3,8 @@
 
 import os
 import tempfile
+import shutil
+
 import uuid
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, MutableSequence, Optional, Sequence
@@ -105,9 +107,10 @@ class MockPromptTarget(PromptChatTarget):
 
 
 def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
-    # Create a test Azure SQL Server DB
+    # Create a test Azure SQL Server DB using in-memory SQLite
+    # This allows testing actual SQL queries (including JOINs and metadata filtering)
+    # without requiring a real Azure SQL instance
     with (
-        patch("pyrit.memory.AzureSQLMemory.get_session") as get_session_mock,
         patch("pyrit.memory.AzureSQLMemory._create_auth_token") as create_auth_token_mock,
         patch("pyrit.memory.AzureSQLMemory._enable_azure_authorization") as enable_azure_authorization_mock,
     ):
@@ -116,24 +119,30 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
         )
         os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN] = "valid_sas_token"
 
+        # Use in-memory SQLite instead of mock to allow real SQL queries
         azure_sql_memory = AzureSQLMemory(
-            connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server",
+            connection_string="sqlite:///:memory:",
             results_container_url=os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL],
             results_sas_token=os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN],
         )
 
-        session_mock = UnifiedAlchemyMagicMock()
-        session_mock.__enter__.return_value = session_mock
-        session_mock.is_modified.return_value = True
-        get_session_mock.return_value = session_mock
-
         create_auth_token_mock.return_value = "token"
         enable_azure_authorization_mock.return_value = None
 
+        # Create a temporary directory for results
+        temp_dir = tempfile.mkdtemp()
+        azure_sql_memory.results_path = temp_dir
+
         azure_sql_memory.disable_embedding()
+        
+        # Initialize the database schema
+        azure_sql_memory.reset_database()
+        
         CentralMemory.set_memory_instance(azure_sql_memory)
         yield azure_sql_memory
 
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
     azure_sql_memory.dispose_engine()
 
 

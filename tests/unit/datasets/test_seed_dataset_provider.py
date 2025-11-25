@@ -71,7 +71,7 @@ class TestSeedDatasetProvider:
             assert names == ["test_dataset"]
 
     @pytest.mark.asyncio
-    async def test_fetch_all_datasets(self):
+    async def test_fetch_datasets_async(self):
         """Test fetching all datasets."""
         # Mock providers
         mock_provider1 = MagicMock()
@@ -83,11 +83,11 @@ class TestSeedDatasetProvider:
         mock_provider2.return_value.fetch_dataset = AsyncMock(return_value=SeedDataset(prompts=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2"))
 
         with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
-            datasets = await SeedDatasetProvider.fetch_all_datasets()
+            datasets = await SeedDatasetProvider.fetch_datasets_async()
             assert len(datasets) == 2
             
     @pytest.mark.asyncio
-    async def test_fetch_all_datasets_with_filter(self):
+    async def test_fetch_datasets_async_with_filter(self):
         """Test fetching datasets with filter."""
         mock_provider1 = MagicMock()
         mock_provider1.return_value.dataset_name = "d1"
@@ -98,9 +98,29 @@ class TestSeedDatasetProvider:
         mock_provider2.return_value.fetch_dataset = AsyncMock(side_effect=Exception("Should not be called"))
 
         with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
-            datasets = await SeedDatasetProvider.fetch_all_datasets(dataset_names=["d1"])
+            datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["d1"])
             assert len(datasets) == 1
             assert datasets[0].dataset_name == "d1"
+
+    @pytest.mark.asyncio
+    async def test_fetch_datasets_async_invalid_dataset_name(self):
+        """Test that fetch_datasets_async raises ValueError for invalid dataset names."""
+        mock_provider1 = MagicMock()
+        mock_provider1.return_value.dataset_name = "d1"
+        mock_provider1.return_value.fetch_dataset = AsyncMock(return_value=SeedDataset(prompts=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1"))
+        
+        mock_provider2 = MagicMock()
+        mock_provider2.return_value.dataset_name = "d2"
+        mock_provider2.return_value.fetch_dataset = AsyncMock(return_value=SeedDataset(prompts=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2"))
+
+        with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
+            # Test with single invalid name
+            with pytest.raises(ValueError, match=r"Dataset\(s\) not found: \['nonexistent'\]"):
+                await SeedDatasetProvider.fetch_datasets_async(dataset_names=["nonexistent"])
+            
+            # Test with mix of valid and invalid names
+            with pytest.raises(ValueError, match=r"Dataset\(s\) not found: \['invalid1', 'invalid2'\]"):
+                await SeedDatasetProvider.fetch_datasets_async(dataset_names=["d1", "invalid1", "invalid2"])
 
 
 class TestHarmBenchDataset:
