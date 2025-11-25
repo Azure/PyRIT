@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -19,9 +23,6 @@
 # First we import a dataset which has individual prompts with different harm categories as an example.
 
 # %%
-import pathlib
-
-from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.setup.initialization import initialize_pyrit
@@ -34,11 +35,11 @@ datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_i
 seed_prompts = datasets[0]
 
 print(f"Dataset name: {seed_prompts.dataset_name}")
-print(f"Number of prompts in dataset: {len(seed_prompts.prompts)}")
+print(f"Number of seeds in dataset: {len(seed_prompts.seeds)}")
 print()
 
-await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="bolor")  # type: ignore
-for i, prompt in enumerate(seed_prompts.prompts):
+await memory.add_seeds_to_memory_async(prompts=seed_prompts.seeds, added_by="bolor")  # type: ignore
+for i, prompt in enumerate(seed_prompts.seeds):
     print(f"Prompt {i+1}: {prompt.value}, Harm Categories: {prompt.harm_categories}")
 
 # %% [markdown]
@@ -57,14 +58,17 @@ target = OpenAIChatTarget()
 attack = PromptSendingAttack(objective_target=target)
 
 # Configure this to load the prompts loaded in the previous step.
-# In the last section, they were in the illegal.prompt file (which has a configured name of "2025_06_pyrit_illegal_example")
-prompt_groups = memory.get_seed_groups(dataset_name="2025_06_pyrit_illegal_example")
+# There is a bug where harm_categories are only set if there is a SeedPrompt
+prompt_groups = memory.get_seed_groups(dataset_name="pyrit_illegal", group_length=[2, 3, 4, 5, 6])
 print(f"Found {len(prompt_groups)} prompt groups for dataset")
 
 for i, group in enumerate(prompt_groups):
-    prompt_text = group.prompts[0].value
+    attack_param = group.to_attack_parameters()
 
-    results = await attack.execute_async(objective=prompt_text, seed_group=group)  # type: ignore
+    results = await attack.execute_async(  # type: ignore
+        objective=attack_param.objective,
+        seed_group=attack_param.current_turn_seed_group,
+    )
 
     print(f"Attack completed - Conversation ID: {results.conversation_id}")
     await ConsoleAttackResultPrinter().print_conversation_async(result=results)  # type: ignore

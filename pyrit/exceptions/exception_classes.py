@@ -115,7 +115,6 @@ def pyrit_custom_result_retry(retry_function: Callable, retry_max_num_attempts: 
             on the result of the decorated function.
         retry_max_num_attempts (Optional, int): The maximum number of retry attempts. Defaults to
             environment variable CUSTOM_RESULT_RETRY_MAX_NUM_ATTEMPTS or 10.
-        func (Callable): The function to be decorated.
 
     Returns:
         Callable: The decorated function with retry logic applied.

@@ -24,8 +24,6 @@
 # - Replicated: https://github.com/KutalVolkan/many-shot-jailbreaking-dataset
 
 # %%
-
-
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,

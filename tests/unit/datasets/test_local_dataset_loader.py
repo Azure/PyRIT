@@ -2,11 +2,12 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from pyrit.datasets.seed_datasets.local.local_dataset_loader import LocalDatasetLoader
 from pyrit.models import SeedDataset
+
 
 class TestLocalDatasetLoader:
     @pytest.fixture
@@ -23,7 +24,7 @@ seeds:
     def test_init(self, tmp_path, valid_yaml_content):
         file_path = tmp_path / "test.yaml"
         file_path.write_text(valid_yaml_content, encoding="utf-8")
-        
+
         loader = LocalDatasetLoader(file_path=file_path)
         assert loader.dataset_name == "test_dataset"
         assert loader.file_path == file_path
@@ -31,7 +32,7 @@ seeds:
     def test_init_invalid_yaml(self, tmp_path):
         file_path = tmp_path / "test.yaml"
         file_path.write_text("invalid: yaml: content: :", encoding="utf-8")
-        
+
         loader = LocalDatasetLoader(file_path=file_path)
         # Should fallback to filename stem
         assert loader.dataset_name == "test"
@@ -40,10 +41,10 @@ seeds:
     async def test_fetch_dataset(self, tmp_path, valid_yaml_content):
         file_path = tmp_path / "test.yaml"
         file_path.write_text(valid_yaml_content, encoding="utf-8")
-        
+
         loader = LocalDatasetLoader(file_path=file_path)
         dataset = await loader.fetch_dataset()
-        
+
         assert isinstance(dataset, SeedDataset)
         assert dataset.dataset_name == "test_dataset"
         assert len(dataset.prompts) == 1

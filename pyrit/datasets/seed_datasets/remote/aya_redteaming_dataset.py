@@ -3,10 +3,11 @@
 
 import ast
 import logging
-from pathlib import Path
 from typing import List, Literal, Optional
 
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,9 @@ class AyaRedteamingDataset(RemoteDatasetLoader):
     def __init__(
         self,
         *,
-        language: Literal["English", "Hindi", "French", "Spanish", "Arabic", "Russian", "Serbian", "Tagalog"] = "English",
+        language: Literal[
+            "English", "Hindi", "French", "Spanish", "Arabic", "Russian", "Serbian", "Tagalog"
+        ] = "English",
         harm_categories: Optional[
             List[
                 Literal[
@@ -78,6 +81,7 @@ class AyaRedteamingDataset(RemoteDatasetLoader):
 
     @property
     def dataset_name(self) -> str:
+        """Return the dataset name."""
         return "aya_redteaming"
 
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
@@ -103,12 +107,12 @@ class AyaRedteamingDataset(RemoteDatasetLoader):
 
         for example in examples:
             categories = ast.literal_eval(example["harm_category"])
-            
+
             # Apply filters
             if self.harm_categories_filter is not None:
                 if not any(cat in categories for cat in self.harm_categories_filter):
                     continue
-            
+
             if self.harm_scope is not None:
                 if example["global_or_local"] != self.harm_scope:
                     continue

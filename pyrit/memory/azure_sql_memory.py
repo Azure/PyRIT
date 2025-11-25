@@ -487,7 +487,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Fetches data from the specified table model with optional conditions.
 
         Args:
-            model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (defaults to False).
             join_scores: Flag to join the scores table with entries (defaults to False).

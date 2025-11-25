@@ -3,8 +3,9 @@
 
 import logging
 import pathlib
-import requests
 from typing import Optional
+
+import requests
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import DATASETS_PATH
@@ -73,7 +74,9 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
         )
 
         # Template for the faux dialogue to be prepended
-        template_path = pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "multi_parameter" / "many_shot_template.yaml"
+        template_path = (
+            pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "multi_parameter" / "many_shot_template.yaml"
+        )
         self._template = SeedPrompt.from_yaml_file(template_path)
         # Fetch the Many Shot Jailbreaking example dataset
         self._examples = (

@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from abc import ABC, abstractmethod
 import asyncio
 import inspect
 import logging
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Type
 
 from tqdm import tqdm
@@ -87,6 +87,9 @@ class SeedDatasetProvider(ABC):
         Returns:
             List[str]: List of dataset names from all registered providers.
 
+        Raises:
+            ValueError: If no providers are registered or if providers cannot be instantiated.
+
         Example:
             >>> names = SeedDatasetProvider.get_all_dataset_names()
             >>> print(f"Available datasets: {', '.join(names)}")
@@ -111,7 +114,7 @@ class SeedDatasetProvider(ABC):
     ) -> list[SeedDataset]:
         """
         Fetch all registered datasets with optional filtering and caching.
-        
+
         Datasets are fetched concurrently for improved performance.
 
         Args:
@@ -132,72 +135,78 @@ class SeedDatasetProvider(ABC):
         Example:
             >>> # Fetch all datasets
             >>> all_datasets = await SeedDatasetProvider.fetch_datasets_async()
-            >>> 
+            >>>
             >>> # Fetch specific datasets
             >>> specific = await SeedDatasetProvider.fetch_datasets_async(
             ...     dataset_names=["harmbench", "DarkBench"]
             ... )
         """
-        
         # Validate dataset names if specified
         if dataset_names is not None:
             available_names = cls.get_all_dataset_names()
             invalid_names = [name for name in dataset_names if name not in available_names]
             if invalid_names:
-                raise ValueError(
-                    f"Dataset(s) not found: {invalid_names}. "
-                    f"Available datasets: {available_names}"
-                )
-        
+                raise ValueError(f"Dataset(s) not found: {invalid_names}. " f"Available datasets: {available_names}")
+
         async def fetch_single_dataset(
             provider_name: str, provider_class: Type["SeedDatasetProvider"]
         ) -> Optional[Tuple[str, SeedDataset]]:
-            """Helper to fetch a single dataset with error handling."""
+            """
+            Fetch a single dataset with error handling.
+
+            Returns:
+                Optional[Tuple[str, SeedDataset]]: Tuple of provider name and dataset, or None if filtered.
+            """
             provider = provider_class()
-            
+
             # Apply dataset name filter if specified
             if dataset_names is not None:
                 if provider.dataset_name not in dataset_names:
                     logger.debug(f"Skipping {provider_name} - not in filter list")
                     return None
-            
+
             dataset = await provider.fetch_dataset(cache=cache)
             return (provider.dataset_name, dataset)
-        
+
         # Create semaphore to limit concurrency
         semaphore = asyncio.Semaphore(max_concurrency)
-        
+
         # Progress tracking
         total_count = len(cls._registry)
         pbar = tqdm(total=total_count, desc="Loading datasets - this can take a few minutes", unit="dataset")
-        
+
         async def fetch_with_semaphore(
             provider_name: str, provider_class: Type["SeedDatasetProvider"]
         ) -> Optional[Tuple[str, SeedDataset]]:
-            """Wrapper to enforce concurrency limit and update progress."""
+            """
+            Enforce concurrency limit and update progress during dataset fetch.
+
+            Returns:
+                Optional[Tuple[str, SeedDataset]]: Tuple of provider name and dataset, or None if filtered.
+            """
             async with semaphore:
                 result = await fetch_single_dataset(provider_name, provider_class)
                 pbar.update(1)
                 return result
-        
+
         # Fetch all datasets with controlled concurrency and progress bar
         tasks = [
             fetch_with_semaphore(provider_name, provider_class)
             for provider_name, provider_class in cls._registry.items()
         ]
-        
+
         results = await asyncio.gather(*tasks)
         pbar.close()
-        
+
         # Merge datasets with the same name
         datasets: Dict[str, SeedDataset] = {}
         for result in results:
             # Skip None results (filtered datasets)
             if result is None:
                 continue
-            
+
             dataset_name, dataset = result
-            
+
             if dataset_name in datasets:
                 # Merge with existing dataset by creating new list with combined seeds
                 existing_dataset = datasets[dataset_name]

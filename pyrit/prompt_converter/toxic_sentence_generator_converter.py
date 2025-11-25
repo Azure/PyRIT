@@ -49,9 +49,7 @@ class ToxicSentenceGeneratorConverter(LLMGenericTextConverter):
         prompt_template = (
             prompt_template
             if prompt_template
-            else SeedPrompt.from_yaml_file(
-                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "toxic_sentence_generator.yaml"
-            )
+            else SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "toxic_sentence_generator.yaml")
         )
 
         super().__init__(converter_target=converter_target, system_prompt_template=prompt_template)

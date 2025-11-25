@@ -3,10 +3,11 @@
 
 import logging
 import os
-from pathlib import Path
 from typing import List, Optional
 
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
@@ -136,6 +137,7 @@ class SorryBenchDataset(RemoteDatasetLoader):
 
     @property
     def dataset_name(self) -> str:
+        """Return the dataset name."""
         return "sorry_bench"
 
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
@@ -153,7 +155,7 @@ class SorryBenchDataset(RemoteDatasetLoader):
         """
         try:
             logger.info(f"Loading Sorry-Bench dataset from {self.source}")
-            
+
             data = await self._fetch_from_huggingface(
                 dataset_name=self.source,
                 split="train",

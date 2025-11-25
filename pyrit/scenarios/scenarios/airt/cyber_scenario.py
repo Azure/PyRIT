@@ -7,7 +7,6 @@ from typing import List, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH, SCORER_SEED_PROMPT_PATH
-from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -168,9 +167,8 @@ class CyberScenario(Scenario):
         Returns:
             list[str]: List of seed prompt strings to be encoded and tested.
         """
-    
         seed_prompts: List[str] = []
-        malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local"/ "airt"
+        malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
         seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
         return seed_prompts
 

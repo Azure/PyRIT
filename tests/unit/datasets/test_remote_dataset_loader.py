@@ -1,23 +1,29 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-from unittest.mock import patch, MagicMock, mock_open
-from pathlib import Path
 import json
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader
+from pathlib import Path
+from unittest.mock import mock_open, patch
+
+import pytest
+
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset
+
 
 class ConcreteRemoteLoader(RemoteDatasetLoader):
     @property
     def dataset_name(self):
         return "test_remote"
-    
+
     async def fetch_dataset(self):
         return SeedDataset(prompts=[])
 
+
 class TestRemoteDatasetLoader:
-    
+
     def test_get_cache_file_name(self):
         loader = ConcreteRemoteLoader()
         name = loader._get_cache_file_name(source="http://example.com", file_type="json")
@@ -52,9 +58,9 @@ class TestRemoteDatasetLoader:
         loader = ConcreteRemoteLoader()
         cache_file = tmp_path / "test.json"
         data = [{"key": "value"}]
-        
+
         loader._write_cache(cache_file=cache_file, examples=data, file_type="json")
-        
+
         assert cache_file.exists()
         with open(cache_file, "r", encoding="utf-8") as f:
             loaded = json.load(f)
@@ -64,7 +70,7 @@ class TestRemoteDatasetLoader:
         loader = ConcreteRemoteLoader()
         cache_file = tmp_path / "subdir" / "test.json"
         data = [{"key": "value"}]
-        
+
         loader._write_cache(cache_file=cache_file, examples=data, file_type="json")
-        
+
         assert cache_file.exists()

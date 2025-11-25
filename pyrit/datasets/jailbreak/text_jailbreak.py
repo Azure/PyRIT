@@ -63,10 +63,13 @@ class TextJailBreak:
                 matching_files = [f for f in yaml_files if f.name == template_file_name]
                 if not matching_files:
                     raise ValueError(
-                        f"Template file '{template_file_name}' not found in jailbreak/templates directory or its subdirectories"
+                        f"Template file '{template_file_name}' not found in jailbreak/templates directory "
+                        "or its subdirectories"
                     )
                 if len(matching_files) > 1:
-                    raise ValueError(f"Multiple files named '{template_file_name}' found in jailbreak/templates directory")
+                    raise ValueError(
+                        f"Multiple files named '{template_file_name}' found in jailbreak/templates directory"
+                    )
                 self.template = SeedPrompt.from_yaml_file(matching_files[0])
             else:
                 while True:

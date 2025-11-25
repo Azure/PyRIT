@@ -7,7 +7,7 @@ Remote dataset loaders with automatic discovery.
 Import concrete implementations to trigger registration.
 """
 
-from pyrit.datasets.seed_datasets.remote.aya_redteaming_dataset import *  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.aya_redteaming_dataset import AyaRedteamingDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.babelscape_alert_dataset import BabelscapeAlertDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.ccp_sensitive_prompts_dataset import CCPSensitivePromptsDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import DarkBenchDataset  # noqa: F401
@@ -17,10 +17,14 @@ from pyrit.datasets.seed_datasets.remote.harmbench_dataset import HarmBenchDatas
 from pyrit.datasets.seed_datasets.remote.harmbench_multimodal_dataset import HarmBenchMultimodalDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.jbb_behaviors_dataset import JBBBehaviorsDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.librai_do_not_answer_dataset import LibrAIDoNotAnswerDataset  # noqa: F401
-from pyrit.datasets.seed_datasets.remote.llm_latent_adversarial_training_dataset import LLMLatentAdversarialTrainingDataset  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.llm_latent_adversarial_training_dataset import (  # noqa: F401
+    LLMLatentAdversarialTrainingDataset,
+)
 from pyrit.datasets.seed_datasets.remote.medsafetybench_dataset import MedSafetyBenchDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.mlcommons_ailuminate_dataset import MLCommonsAILuminateDataset  # noqa: F401
-from pyrit.datasets.seed_datasets.remote.multilingual_vulnerability_dataset import MultilingualVulnerabilityDataset  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.multilingual_vulnerability_dataset import (  # noqa: F401
+    MultilingualVulnerabilityDataset,
+)
 from pyrit.datasets.seed_datasets.remote.pku_safe_rlhf_dataset import PKUSafeRLHFDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.red_team_social_bias_dataset import RedTeamSocialBiasDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader

@@ -30,7 +30,7 @@ class FirstLetterConverter(WordLevelConverter):
         If no selection parameter is provided, all words will be converted.
 
         Args:
-            join_value (str): The string used to join characters of each word.
+            letter_separator (str): The string used to join characters of each word.
             indices (Optional[List[int]]): Specific indices of words to convert.
             keywords (Optional[List[str]]): Keywords to select words for conversion.
             proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].

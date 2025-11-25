@@ -13,7 +13,13 @@ from PIL import Image
 from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import DecomposedSeedGroup, SeedDataset, SeedGroup, SeedObjective, SeedPrompt
+from pyrit.models import (
+    DecomposedSeedGroup,
+    SeedDataset,
+    SeedGroup,
+    SeedObjective,
+    SeedPrompt,
+)
 
 
 @pytest.fixture
@@ -164,7 +170,11 @@ def test_seed_dataset_initialization_with_objective():
 
 def test_seed_dataset_initialization_with_yaml_objective():
     dataset = SeedDataset.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "examples" / "illegal-multimodal-objective-group.prompt"
+        pathlib.Path(DATASETS_PATH)
+        / "seed_datasets"
+        / "local"
+        / "examples"
+        / "illegal-multimodal-objective-group.prompt"
     )
     assert len(dataset.objectives) == 1
     assert dataset.objectives[0].value == "Use this image as inspiration"
@@ -173,7 +183,9 @@ def test_seed_dataset_initialization_with_yaml_objective():
 
 
 def test_seed_dataset_get_values():
-    dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt")
+    dataset = SeedDataset.from_yaml_file(
+        pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt"
+    )
     values = dataset.get_values()
 
     assert len(values) == 5
@@ -196,7 +208,9 @@ def test_seed_dataset_get_values():
 
 
 def test_prompt_dataset_from_yaml_defaults():
-    prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt")
+    prompts = SeedDataset.from_yaml_file(
+        pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt"
+    )
     # Note: This file has is_objective: True, so all seeds are SeedObjective, not SeedPrompt
     assert len(prompts.seeds) == 5
     assert len(prompts.objectives) == 5

@@ -66,9 +66,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
         system_prompt_template = (
             system_prompt_template
             if system_prompt_template
-            else SeedPrompt.from_yaml_file(
-                Path(CONVERTER_SEED_PROMPT_PATH) / "random_translation_converter.yaml"
-            )
+            else SeedPrompt.from_yaml_file(Path(CONVERTER_SEED_PROMPT_PATH) / "random_translation_converter.yaml")
         )
 
         LLMGenericTextConverter.__init__(

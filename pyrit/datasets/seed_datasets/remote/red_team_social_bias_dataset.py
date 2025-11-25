@@ -3,11 +3,11 @@
 
 import ast
 import logging
-from pathlib import Path
-from typing import Optional
 from uuid import uuid4
 
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
@@ -39,6 +39,7 @@ class RedTeamSocialBiasDataset(RemoteDatasetLoader):
 
     @property
     def dataset_name(self) -> str:
+        """Return the dataset name."""
         return "red_team_social_bias"
 
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
@@ -101,12 +102,10 @@ class RedTeamSocialBiasDataset(RemoteDatasetLoader):
                 prompt_data = item.get("prompt", item.get("Prompt", ""))
                 if not prompt_data:  # Skip if no prompt data
                     continue
-                    
+
                 # Safely parse the user prompts, remove the unwanted ones such as "assistant" and "system"
                 user_prompts = [
-                    turn["body"]
-                    for turn in ast.literal_eval(prompt_data)
-                    if turn["role"].startswith("user")
+                    turn["body"] for turn in ast.literal_eval(prompt_data) if turn["role"].startswith("user")
                 ]
 
                 group_id = uuid4()
@@ -126,7 +125,7 @@ class RedTeamSocialBiasDataset(RemoteDatasetLoader):
                 prompt_value = item.get("prompt", item.get("Prompt", ""))
                 if not prompt_value:  # Skip empty prompts
                     continue
-                    
+
                 # Clean up single turn prompts that contain unwanted lines of text
                 cleaned_value = prompt_value.replace("### Response:", "").replace("### Instruction:", "").strip()
                 # some entries have contents that trip up jinja2, so we escape them

@@ -100,7 +100,6 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
         Args:
             objective_target (PromptTarget): The target model to test for fairness and bias
-            scorer (Scorer): Required scorer instance for evaluating responses
             attack_converter_config (Optional[AttackConverterConfig]): Optional configuration for attack converters
             attack_scoring_config (Optional[AttackScoringConfig]): Optional configuration for attack scoring
             prompt_normalizer (Optional[PromptNormalizer]): Optional normalizer for prompt processing

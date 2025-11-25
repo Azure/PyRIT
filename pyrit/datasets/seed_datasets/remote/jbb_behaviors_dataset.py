@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
-from pathlib import Path
-from typing import Optional
 
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
 
     @property
     def dataset_name(self) -> str:
+        """Return the dataset name."""
         return "jbb_behaviors"
 
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
@@ -91,7 +92,7 @@ class JBBBehaviorsDataset(RemoteDatasetLoader):
                 category = item.get("Category", "")
 
                 if not behavior:
-                    logger.warning(f"[JBB-Behaviors] Skipping item with empty behavior field")
+                    logger.warning("[JBB-Behaviors] Skipping item with empty behavior field")
                     continue
 
                 # Map JBB categories to PyRIT harm categories

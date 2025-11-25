@@ -262,7 +262,7 @@ class FoundryScenario(Scenario):
         """
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
-        
+
         if objectives:
             self._objectives = objectives
         else:

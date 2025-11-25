@@ -43,16 +43,26 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def simple_prompts(self) -> list[str]:
         """Sample prompts for testing."""
-        prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt")
+        prompts = SeedDataset.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt"
+        )
         return [p.value for p in prompts.seeds]
 
     @pytest.fixture
     def simple_prompt_templates(self) -> list[str]:
         """Sample prompt templates for testing."""
-        prompt_template1 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "aim.yaml")
-        prompt_template2 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "aim.yaml")
-        prompt_template3 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "aligned.yaml")
-        prompt_template4 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "axies.yaml")
+        prompt_template1 = SeedPrompt.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "aim.yaml"
+        )
+        prompt_template2 = SeedPrompt.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "aim.yaml"
+        )
+        prompt_template3 = SeedPrompt.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "aligned.yaml"
+        )
+        prompt_template4 = SeedPrompt.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates" / "axies.yaml"
+        )
 
         return [
             prompt_template1.value,

@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
-from pathlib import Path
-from typing import Optional
 
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,7 @@ class LLMLatentAdversarialTrainingDataset(RemoteDatasetLoader):
 
     @property
     def dataset_name(self) -> str:
+        """Return the dataset name."""
         return "llm_lat_harmful"
 
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:

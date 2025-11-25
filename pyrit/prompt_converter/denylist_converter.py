@@ -43,9 +43,7 @@ class DenylistConverter(LLMGenericTextConverter):
         system_prompt_template = (
             system_prompt_template
             if system_prompt_template
-            else SeedPrompt.from_yaml_file(
-                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "denylist_converter.yaml"
-            )
+            else SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "denylist_converter.yaml")
         )
 
         super().__init__(

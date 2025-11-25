@@ -10,7 +10,7 @@ import time
 import pytest
 import requests
 
-from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH, DATASETS_PATH, HOME_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH, HOME_PATH
 from pyrit.exceptions import PyritException
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.executor.workflow import XPIATestWorkflow

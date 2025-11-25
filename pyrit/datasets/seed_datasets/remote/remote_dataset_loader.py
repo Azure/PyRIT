@@ -1,17 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from abc import ABC
 import asyncio
 import hashlib
 import io
 import logging
 import tempfile
+from abc import ABC
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, TextIO
-from datasets import load_dataset, disable_progress_bars, DownloadMode
 
 import requests
+from datasets import DownloadMode, disable_progress_bars, load_dataset
 
 from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, read_jsonl, write_json, write_jsonl
@@ -123,9 +123,7 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
                 if file_type == "json":
                     return FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text))
                 else:
-                    return FILE_TYPE_HANDLERS[file_type]["read"](
-                        io.StringIO("\n".join(response.text.splitlines()))
-                    )
+                    return FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines())))
             else:
                 valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
                 raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
@@ -199,7 +197,9 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         if cache:
             self._write_cache(cache_file=cache_file, examples=examples, file_type=file_type)
         else:
-            with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=f".{file_type}", encoding="utf-8") as temp_file:
+            with tempfile.NamedTemporaryFile(
+                delete=False, mode="w", suffix=f".{file_type}", encoding="utf-8"
+            ) as temp_file:
                 FILE_TYPE_HANDLERS[file_type]["write"](temp_file, examples)
 
         return examples
@@ -220,7 +220,7 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         This is a helper method for datasets that are hosted on HuggingFace.
         The returned dataset object is the raw HuggingFace dataset, which
         subclasses should process into a SeedDataset.
-        
+
         This method runs the synchronous load_dataset() in a thread pool to avoid
         blocking the event loop and enable true parallel execution.
 
@@ -250,9 +250,14 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         disable_progress_bars()
 
         def _load_dataset_sync():
-            """Synchronous function to run in thread pool."""
+            """
+            Run dataset loading synchronously in thread pool.
+
+            Returns:
+                Dataset: The loaded dataset from Hugging Face.
+            """
             cache_dir = str(DB_DATA_PATH / "huggingface") if cache else None
-            
+
             # Explicitly set download_mode to reuse cached data and never re-download
             dataset = load_dataset(
                 dataset_name,

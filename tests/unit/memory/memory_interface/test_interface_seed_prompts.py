@@ -918,18 +918,10 @@ async def test_get_seed_groups_deduplication_and_filtering(sqlite_instance: Memo
 
         # Create prompts
         prompt_text = SeedPrompt(
-            value="Test text prompt",
-            added_by="test_dedupe",
-            data_type="text",
-            sequence=0,
-            role="user"
+            value="Test text prompt", added_by="test_dedupe", data_type="text", sequence=0, role="user"
         )
         prompt_audio = SeedPrompt(
-            value=audio_file.name,
-            added_by="test_dedupe",
-            data_type="audio_path",
-            sequence=1,
-            role="user"
+            value=audio_file.name, added_by="test_dedupe", data_type="audio_path", sequence=1, role="user"
         )
 
         # Create SeedGroup with both prompts
@@ -942,7 +934,7 @@ async def test_get_seed_groups_deduplication_and_filtering(sqlite_instance: Memo
         groups_audio = sqlite_instance.get_seed_groups(data_types=["audio_path"])
         assert len(groups_audio) == 1
         assert len(groups_audio[0].prompts) == 2
-        
+
         # Verify both modalities are present
         data_types = {p.data_type for p in groups_audio[0].prompts}
         assert "text" in data_types

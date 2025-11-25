@@ -4,11 +4,12 @@
 import logging
 import uuid
 from enum import Enum
-from pathlib import Path
 from typing import List, Literal, Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import RemoteDatasetLoader
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset, SeedPrompt, data_serializer_factory
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,7 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
 
     @property
     def dataset_name(self) -> str:
+        """Return the dataset name."""
         return "harmbench_multimodal"
 
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
@@ -233,9 +235,7 @@ class HarmBenchMultimodalDataset(RemoteDatasetLoader):
             if await serializer._memory.results_storage_io.path_exists(serializer.value):
                 return serializer.value
         except Exception as e:
-            logger.warning(
-                f"[HarmBench-Multimodal] Failed to check if image for {behavior_id} exists in cache: {e}"
-            )
+            logger.warning(f"[HarmBench-Multimodal] Failed to check if image for {behavior_id} exists in cache: {e}")
 
         response = await make_request_and_raise_if_error_async(endpoint_uri=image_url, method="GET")
         await serializer.save_data(data=response.content, output_filename=filename.replace(".png", ""))

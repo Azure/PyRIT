@@ -489,7 +489,7 @@ async def test_filename_extension_existing_pdf(sqlite_instance):
 
     # Use the local fake_CV.pdf file instead of downloading from GitHub
     source_pdf_path = CONVERTER_SEED_PROMPT_PATH / "pdf_converters" / "fake_CV.pdf"
-    
+
     # Create a temporary copy to work with
     with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as tmp_file:
         with open(source_pdf_path, "rb") as source_file:

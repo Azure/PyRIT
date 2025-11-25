@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -121,6 +125,7 @@ import os
 
 from pyrit.datasets import TextJailBreak
 from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target import OpenAIChatTarget
 
 jailbreak = TextJailBreak(template_file_name="dan_1.yaml")
 
@@ -149,30 +154,6 @@ red_teaming_attack = RedTeamingAttack(
     max_turns=3,
 )
 
-# [Other conversations you may want to prepend instead of system prompt]
-# To prepend previous conversation history from memory:
-"""
-from pyrit.memory import CentralMemory
-
-num_turns_to_remove = 2
-memory = CentralMemory.get_memory_instance()
-conversation_history = memory.get_conversation(conversation_id=result.conversation_id)[:-num_turns_to_remove*2]
-prepended_conversation = conversation_history
-"""
-
-# To customize the last user message sent to the objective target:
-"""
-prepended_conversation.append(
-    Message(
-        message_pieces=[
-            MessagePiece(
-                role="user",
-                original_value="Custom message to continue the conversation with the objective target",
-            )
-        ]
-    )
-)
-"""
 
 # Set the prepended conversation to prepare the conversation with this context list
 result = await red_teaming_attack.execute_async(  # type: ignore

@@ -3,7 +3,7 @@
 
 """Tests for the FoundryScenario class."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -105,9 +105,7 @@ class TestFoundryScenarioInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_init_with_custom_objectives(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objectives."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
@@ -142,9 +140,7 @@ class TestFoundryScenarioInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_init_with_custom_scorer(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objective scorer."""
         scenario = FoundryScenario(
             objective_scorer=mock_objective_scorer,
@@ -162,9 +158,7 @@ class TestFoundryScenarioInitialization:
     )
     @pytest.mark.asyncio
     @pytest.mark.asyncio
-    async def test_init_with_memory_labels(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    async def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with memory labels."""
         memory_labels = {"test": "foundry", "category": "attack"}
 
@@ -219,9 +213,7 @@ class TestFoundryScenarioStrategyNormalization:
         },
     )
     @pytest.mark.asyncio
-    async def test_normalize_easy_strategies(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    async def test_normalize_easy_strategies(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that EASY strategy expands to easy attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
@@ -243,9 +235,7 @@ class TestFoundryScenarioStrategyNormalization:
         },
     )
     @pytest.mark.asyncio
-    async def test_normalize_moderate_strategies(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    async def test_normalize_moderate_strategies(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that MODERATE strategy expands to moderate attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
@@ -604,9 +594,7 @@ class TestFoundryScenarioProperties:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_scenario_version_is_set(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that scenario version is properly set."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
@@ -644,4 +632,3 @@ class TestFoundryScenarioProperties:
         )
         # Should have at least as many runs as specific strategies provided
         assert scenario.atomic_attack_count >= len(strategies)
-

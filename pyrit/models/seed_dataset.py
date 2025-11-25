@@ -70,12 +70,12 @@ class SeedDataset(YamlLoadable):
         """
         if seeds is None and prompts is None:
             seeds = []
-        
+
         if seeds is not None and prompts is not None:
             raise ValueError("Cannot specify both seeds and prompts.")
-            
+
         input_seeds = seeds or prompts
-        
+
         if not input_seeds:
             raise ValueError("SeedDataset cannot be empty.")
 
@@ -98,7 +98,7 @@ class SeedDataset(YamlLoadable):
             if isinstance(p, dict):
                 # Use top-level is_objective if not present in p
                 p_is_objective = p.get("is_objective", is_objective)
-                
+
                 if p_is_objective:
                     self.seeds.append(
                         SeedObjective(
@@ -122,7 +122,7 @@ class SeedDataset(YamlLoadable):
                 else:
                     if "is_objective" in p:
                         del p["is_objective"]
-                    
+
                     self.seeds.append(SeedPrompt(**p))
             elif isinstance(p, SeedPrompt):
                 self.seeds.append(p)

@@ -40,9 +40,7 @@ class MathPromptConverter(LLMGenericTextConverter):
         prompt_template = (
             prompt_template
             if prompt_template
-            else SeedPrompt.from_yaml_file(
-                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "math_prompt_converter.yaml"
-            )
+            else SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "math_prompt_converter.yaml")
         )
 
         super().__init__(converter_target=converter_target, system_prompt_template=prompt_template)

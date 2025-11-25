@@ -28,18 +28,21 @@ class LocalDatasetLoader(SeedDatasetProvider):
             file_path: Path to the YAML dataset file.
         """
         self.file_path = file_path
-        
+
         # Pre-load to get dataset name
         try:
             dataset = SeedDataset.from_yaml_file(file_path)
             # Use the dataset_name from the YAML if available, otherwise use filename
-            self._dataset_name = getattr(dataset, "dataset_name", None) or getattr(dataset, "name", None) or file_path.stem
+            self._dataset_name = (
+                getattr(dataset, "dataset_name", None) or getattr(dataset, "name", None) or file_path.stem
+            )
         except Exception as e:
             logger.warning(f"Could not pre-load dataset from {file_path}: {e}")
             self._dataset_name = file_path.stem
 
     @property
     def dataset_name(self) -> str:
+        """Return the dataset name."""
         return self._dataset_name
 
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
@@ -89,16 +92,13 @@ def _register_local_datasets():
                     def make_init(path):
                         def __init__(self):
                             super(self.__class__, self).__init__(file_path=path)
+
                         return __init__
 
                     type(
                         class_name,
                         (LocalDatasetLoader,),
-                        {
-                            "__init__": make_init(yaml_file),
-                            "should_register": True,
-                            "__module__": __name__
-                        }
+                        {"__init__": make_init(yaml_file), "should_register": True, "__module__": __name__},
                     )
 
                     logger.debug(f"Registered local dataset loader: {class_name} for {yaml_file.name}")

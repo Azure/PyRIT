@@ -2,15 +2,12 @@
 # Licensed under the MIT license.
 
 import os
-import tempfile
 import shutil
-
+import tempfile
 import uuid
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, MutableSequence, Optional, Sequence
 from unittest.mock import MagicMock, patch
-
-from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import Message, MessagePiece
@@ -134,10 +131,10 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
         azure_sql_memory.results_path = temp_dir
 
         azure_sql_memory.disable_embedding()
-        
+
         # Initialize the database schema
         azure_sql_memory.reset_database()
-        
+
         CentralMemory.set_memory_instance(azure_sql_memory)
         yield azure_sql_memory
 

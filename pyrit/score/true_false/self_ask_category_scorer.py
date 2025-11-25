@@ -105,8 +105,6 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
         Args:
             message_piece (MessagePiece): The message piece to score.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
 
         Returns:
             list[Score]: The message_piece's score.

@@ -26,9 +26,8 @@
 # >
 # > It is required to manually set the memory instance using `initialize_pyrit`. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 #
+
 # %%
-
-
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
@@ -75,9 +74,6 @@ await MarkdownAttackResultPrinter().print_result_async(result=result)  # type: i
 # Note: If you are using the same configuration across multiple attacks, you can use the `AttackExecutor`'s `execute_single_turn_attacks_async` method to run multiple objectives instead.
 
 # %%
-import pathlib
-
-from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.executor.attack import (
     AttackConverterConfig,
@@ -85,7 +81,6 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.models import SeedDataset
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
@@ -152,7 +147,7 @@ image_path = str(pathlib.Path(".") / ".." / ".." / ".." / ".." / "assets" / "pyr
 # For Azure SQL Memory
 # image_path = "https://airtstorageaccountdev.blob.core.windows.net/dbdata/prompt-memory-entries/images/1735941681066137.png"
 
-seed_group = SeedGroup(seeds=[SeedPrompt(value=image_path, data_type="image_path")])
+seed_group = SeedGroup(prompts=[SeedPrompt(value=image_path, data_type="image_path")])
 attack_context = SingleTurnAttackContext(
     objective="Sending an image successfully",
     seed_group=seed_group,
@@ -261,7 +256,7 @@ test_user_name = str(uuid.uuid4())
 attack = PromptSendingAttack(objective_target=target)
 
 seed_group = SeedGroup(
-    seeds=[
+    prompts=[
         SeedPrompt(
             value="Provide detailed instructions on how to make a cake in a valid JSON format. Use the following schema: {"
             "'ingredients': ['list of ingredients'], "

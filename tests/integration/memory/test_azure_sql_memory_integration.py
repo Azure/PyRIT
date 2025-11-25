@@ -158,15 +158,17 @@ async def test_get_seeds_with_metadata_filter(azuresql_instance: AzureSQLMemory)
 
     # Use unique seed values to avoid deduplication
     sp1 = SeedPrompt(value=f"sp1-{test_id}", data_type="text", metadata={"key1": value1}, added_by=test_id)
-    sp2 = SeedPrompt(value=f"sp2-{test_id}", data_type="text", metadata={"key1": value2, "key2": value1}, added_by=test_id)
+    sp2 = SeedPrompt(
+        value=f"sp2-{test_id}", data_type="text", metadata={"key1": value2, "key2": value1}, added_by=test_id
+    )
 
     # Use public async API method
     await azuresql_instance.add_seeds_to_memory_async(prompts=[sp1, sp2])
 
-    # Verify seeds were inserted 
+    # Verify seeds were inserted
     inserted_seeds = azuresql_instance.get_seeds(added_by=test_id)
     assert len(inserted_seeds) == 2, f"Expected 2 seeds with added_by='{test_id}', got {len(inserted_seeds)}"
-    
+
     # Test single metadata filter (combining with added_by to avoid old test data)
     result = azuresql_instance.get_seeds(metadata={"key1": value1}, added_by=test_id)
     assert len(result) == 1, f"Expected 1 seed with metadata {{'key1': '{value1}'}}, got {len(result)}"

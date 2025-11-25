@@ -596,7 +596,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         Args:
             context (CrescendoAttackContext): The attack context containing the response to check.
-            task (str): The task/prompt that was sent.
+            objective (str): The objective against which to score the response.
 
         Returns:
             Score: The refusal score.

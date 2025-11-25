@@ -430,7 +430,7 @@ class MemoryInterface(abc.ABC):
         Retrieves the request that produced the given response.
 
         Args:
-            request (Message): The message object to match.
+            response (Message): The response message object to match.
 
         Returns:
             Message: The corresponding message object.
@@ -709,7 +709,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID of the entries to be updated.
-            metadata (dict[str, str | int]): New metadata.
+            prompt_metadata (dict[str, str | int]): New metadata.
 
         Returns:
             bool: True if the update was successful, False otherwise.
@@ -906,8 +906,7 @@ class MemoryInterface(abc.ABC):
 
         self._insert_entries(entries=entries)
 
-    async def add_seed_datasets_to_memory_async(
-        self, *, datasets: Sequence[SeedDataset], added_by: str) -> None:
+    async def add_seed_datasets_to_memory_async(self, *, datasets: Sequence[SeedDataset], added_by: str) -> None:
         """
         Inserts a list of seed datasets into the memory storage.
 
@@ -1013,7 +1012,8 @@ class MemoryInterface(abc.ABC):
             source (Optional[str], Optional): The source from which the seed prompts originated.
             is_objective (Optional[bool], Optional): Whether to filter by prompts that are used as objectives.
             parameters (Optional[Sequence[str]], Optional): List of parameters to filter by.
-            metadata (Optional[dict[str, Union[str, int]]], Optional): A free-form dictionary for tagging prompts with custom metadata.
+            metadata (Optional[dict[str, Union[str, int]]], Optional): A free-form dictionary for tagging
+                prompts with custom metadata.
             prompt_group_ids (Optional[Sequence[uuid.UUID]], Optional): List of prompt group IDs to filter by.
             group_length (Optional[Sequence[int]], Optional): The number of seeds in the group to filter by.
 
@@ -1333,7 +1333,7 @@ class MemoryInterface(abc.ABC):
             pyrit_version (Optional[str], optional): The PyRIT version to filter by. Defaults to None.
             added_after (Optional[datetime], optional): Filter for scenarios completed after this datetime.
                 Defaults to None.
-            before_time (Optional[datetime], optional): Filter for scenarios completed before this datetime.
+            added_before (Optional[datetime], optional): Filter for scenarios completed before this datetime.
                 Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter by.
                 Defaults to None.

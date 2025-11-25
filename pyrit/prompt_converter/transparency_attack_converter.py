@@ -36,8 +36,8 @@ class _AdamOptimizer:
 
         Args:
             learning_rate (float): The step size for each update/iteration. Default is 0.001
-            beta1 (float): The exponential decay rate for the first moment estimates. Default is 0.9
-            beta2 (float): The exponential decay rate for the second moment estimates. Default is 0.999
+            beta_1 (float): The exponential decay rate for the first moment estimates. Default is 0.9
+            beta_2 (float): The exponential decay rate for the second moment estimates. Default is 0.999
             epsilon (float): A small constant for numerical stability (to prevent division by zero).
         """
         self.learning_rate = learning_rate

@@ -40,7 +40,9 @@ class LookBackScorer(FloatScaleScorer):
 
         self.exclude_instruction_prompts = exclude_instruction_prompts
 
-        behavior_change_prompt_path = Path(SCORER_SEED_PROMPT_PATH, "scales", "behavior_change_system_prompt.yaml").resolve()
+        behavior_change_prompt_path = Path(
+            SCORER_SEED_PROMPT_PATH, "scales", "behavior_change_system_prompt.yaml"
+        ).resolve()
         behavior_change_scale_path = Path(SCORER_SEED_PROMPT_PATH, "likert_scales", "behavior_change.yaml").resolve()
         behavior_change_scale = yaml.safe_load(behavior_change_scale_path.read_text(encoding="utf-8"))
 

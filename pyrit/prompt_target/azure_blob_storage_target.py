@@ -142,9 +142,7 @@ class AzureBlobStorageTarget(PromptTarget):
         to the provided storage container.
 
         Args:
-            normalized_prompt (str): A normalized prompt to be sent to the prompt target.
-            conversation_id (str): The ID of the conversation.
-            normalizer_id (str): ID provided by the prompt normalizer.
+            message (Message): The message to be sent to the prompt target.
 
         Returns:
             blob_url (str): The Blob URL of the created blob within the provided storage container.

@@ -35,7 +35,7 @@ class TenseConverter(LLMGenericTextConverter):
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
                 Can be omitted if a default has been configured via PyRIT initialization.
-            tone (str): The tense the converter should convert the prompt to. E.g. past, present, future.
+            tense (str): The tense the converter should convert the prompt to. E.g. past, present, future.
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
         """
         # set to default strategy if not provided

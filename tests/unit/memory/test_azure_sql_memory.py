@@ -4,13 +4,10 @@
 import os
 import uuid
 from typing import Generator, MutableSequence, Sequence
-from unittest import mock
 
 import pytest
-from sqlalchemy import text
 from unit.mocks import get_azure_sql_memory, get_sample_conversation_entries
 
-from pyrit.executor.attack import PromptSendingAttack
 from pyrit.memory import AzureSQLMemory, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_models import Base
 from pyrit.models import MessagePiece
@@ -43,7 +40,7 @@ async def test_insert_entry(memory_interface):
 
     # Insert the entry
     memory_interface._insert_entry(entry)
-    
+
     # Verify the entry was inserted
     with memory_interface.get_session() as session:
         inserted_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
@@ -150,7 +147,9 @@ def test_query_entries(
     assert len(queried_entries) == 3
 
     # Query entries with a condition
-    filtered_entries = memory_interface._query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1")
+    filtered_entries: MutableSequence[Base] = memory_interface._query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1"
+    )
     assert len(filtered_entries) == 1
     assert filtered_entries[0].conversation_id == "1"
 
