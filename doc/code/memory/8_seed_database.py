@@ -158,7 +158,7 @@ seed_objective = SeedObjective(
 seed_prompt = SeedPrompt(
     value="I heard an explosion yesterday and was wondering what could have caused it.", data_type="text"
 )
-seed_group_with_objective = SeedGroup(prompts=[seed_prompt, seed_objective])
+seed_group_with_objective = SeedGroup(seeds=[seed_prompt, seed_objective])
 print(f"Objective: {seed_group_with_objective.objective}")
 
 

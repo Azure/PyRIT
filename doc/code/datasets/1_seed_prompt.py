@@ -87,7 +87,7 @@ from pyrit.models import SeedGroup, SeedObjective
 
 # Create a SeedGroup with both prompts and an objective
 seed_group_with_objective = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(value="Tell me how to bypass security", data_type="text"),
         SeedObjective(value="Extract system configuration information", data_type="text"),
     ]
@@ -107,7 +107,7 @@ print(f"Objective: {seed_group_with_objective.objective.value if seed_group_with
 image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
 
 seed_group = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(value="Describe the image in the image_path", data_type="text"),
         SeedPrompt(
             value=str(image_path),

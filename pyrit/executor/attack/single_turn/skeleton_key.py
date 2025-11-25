@@ -164,7 +164,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
         self._logger.debug("Sending skeleton key prompt to target")
 
         # Create seed group for skeleton key
-        skeleton_key_prompt_group = SeedGroup(prompts=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")])
+        skeleton_key_prompt_group = SeedGroup(seeds=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")])
 
         # Send skeleton key prompt
         skeleton_response = await self._send_prompt_to_objective_target_async(

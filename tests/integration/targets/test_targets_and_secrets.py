@@ -190,7 +190,7 @@ async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_
     ("endpoint", "api_key"),
     [
         ("AZURE_ML_MANAGED_ENDPOINT", "AZURE_ML_KEY"),
-        ("AZURE_ML_MIXTRAL_ENDPOINT", "AZURE_ML_MIXTRAL_KEY"),
+        ("AZURE_ML_PHI_ENDPOINT", "AZURE_ML_PHI_KEY"),
     ],
 )
 async def test_connect_required_aml_text_targets(sqlite_instance, endpoint, api_key):
