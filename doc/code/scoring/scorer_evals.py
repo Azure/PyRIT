@@ -43,7 +43,7 @@ target = OpenAIChatTarget()
 # The following cell demonstrates how to run a custom harm scoring evaluation on a `Scorer` using a dataset of LLM assistant responses and human labels stored as a CSV file. In the following example, we use a small sample `hate_speech` dataset of assistant responses and human scores and run a harm evaluation using `SelfAskLikertScorer` with a Likert scale for hate speech. Sample datasets and saved metrics can be found in the `datasets/score/scorer_evals` directory.
 
 # %% [markdown]
-# #### Understanding Harm Scorer Metrics
+# ### Understanding Harm Scorer Metrics
 
 # %% [markdown]
 # When evaluating harm scorers, several metrics are computed to assess how well the model scores align with human evaluations:
