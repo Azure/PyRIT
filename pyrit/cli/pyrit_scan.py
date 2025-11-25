@@ -15,7 +15,12 @@ from pyrit.cli import frontend_core
 
 
 def parse_args(args=None) -> Namespace:
-    """Parse command-line arguments for the PyRIT scanner."""
+    """
+    Parse command-line arguments for the PyRIT scanner.
+
+    Returns:
+        Namespace: Parsed command-line arguments.
+    """
     parser = ArgumentParser(
         prog="pyrit_scan",
         description="""PyRIT Scanner - Run security scenarios against AI systems
@@ -120,7 +125,12 @@ Examples:
 
 
 def main(args=None) -> int:
-    """Main entry point for the PyRIT scanner CLI."""
+    """
+    Start the PyRIT scanner CLI.
+
+    Returns:
+        int: Exit code (0 for success, 1 for error).
+    """
     print("Starting PyRIT...")
     sys.stdout.flush()
 
