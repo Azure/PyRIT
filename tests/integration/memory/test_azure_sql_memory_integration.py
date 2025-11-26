@@ -163,7 +163,7 @@ async def test_get_seeds_with_metadata_filter(azuresql_instance: AzureSQLMemory)
     )
 
     # Use public async API method
-    await azuresql_instance.add_seeds_to_memory_async(prompts=[sp1, sp2])
+    await azuresql_instance.add_seeds_to_memory_async(seeds=[sp1, sp2])
 
     # Verify seeds were inserted
     inserted_seeds = azuresql_instance.get_seeds(added_by=test_id)

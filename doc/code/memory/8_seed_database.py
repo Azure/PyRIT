@@ -45,7 +45,7 @@ seed_dataset = SeedDataset.from_yaml_file(
 print(seed_dataset.prompts[0])
 
 memory = CentralMemory.get_memory_instance()
-await memory.add_seeds_to_memory_async(prompts=seed_dataset.prompts, added_by="test")  # type: ignore
+await memory.add_seeds_to_memory_async(seeds=seed_dataset.prompts, added_by="test")  # type: ignore
 
 # %% [markdown]
 # ## Retrieving prompts from the database
