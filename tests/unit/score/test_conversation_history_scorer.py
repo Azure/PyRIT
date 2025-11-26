@@ -8,7 +8,7 @@ import pytest
 
 from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score, UnvalidatedScore
-from pyrit.score import ConversationHistoryScorer, SelfAskGeneralFloatScaleScorer
+from pyrit.score import ConversationScorer, SelfAskGeneralFloatScaleScorer
 
 
 @pytest.mark.asyncio
@@ -63,7 +63,7 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
     )
     mock_scorer._score_piece_async = AsyncMock(return_value=[score])
 
-    scorer = ConversationHistoryScorer(scorer=mock_scorer)
+    scorer = ConversationScorer(scorer=mock_scorer)
     scores = await scorer.score_async(message)
 
     assert len(scores) == 1
@@ -91,7 +91,7 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
 @pytest.mark.asyncio
 async def test_conversation_history_scorer_conversation_not_found(patch_central_database):
     mock_scorer = MagicMock(spec=SelfAskGeneralFloatScaleScorer)
-    scorer = ConversationHistoryScorer(scorer=mock_scorer)
+    scorer = ConversationScorer(scorer=mock_scorer)
 
     nonexistent_conversation_id = str(uuid.uuid4())
     message_piece = MessagePiece(
@@ -151,7 +151,7 @@ async def test_conversation_history_scorer_chronological_ordering(patch_central_
     )
     mock_scorer._score_piece_async = AsyncMock(return_value=[score])
 
-    scorer = ConversationHistoryScorer(scorer=mock_scorer)
+    scorer = ConversationScorer(scorer=mock_scorer)
 
     await scorer.score_async(message)
 
@@ -207,7 +207,7 @@ async def test_conversation_history_scorer_filters_roles_correctly(patch_central
     )
     mock_scorer._score_piece_async = AsyncMock(return_value=[score])
 
-    scorer = ConversationHistoryScorer(scorer=mock_scorer)
+    scorer = ConversationScorer(scorer=mock_scorer)
     await scorer.score_async(message)
 
     call_args = mock_scorer._score_piece_async.call_args
@@ -233,15 +233,14 @@ async def test_conversation_history_scorer_score_text_async_delegates(patch_cent
     )
     mock_scorer.score_text_async = AsyncMock(return_value=[unvalidated_score])
 
-    scorer = ConversationHistoryScorer(scorer=mock_scorer)
+    scorer = ConversationScorer(scorer=mock_scorer)
     test_text = "Test text to score"
     test_objective = "Test objective"
 
-    scores = await scorer.score_text_async(text=test_text, objective=test_objective)
-
-    assert len(scores) == 1
-    assert scores[0] == unvalidated_score
-    mock_scorer.score_text_async.assert_awaited_once_with(text=test_text, objective=test_objective)
+    # ConversationScorer requires a conversation in memory, so calling score_text_async
+    # without a pre-existing conversation should raise a ValueError
+    with pytest.raises(ValueError, match="Conversation with ID .* not found in memory"):
+        await scorer.score_text_async(text=test_text, objective=test_objective)
 
 
 @pytest.mark.asyncio
@@ -278,7 +277,7 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
     )
     mock_scorer._score_piece_async = AsyncMock(return_value=[score])
 
-    scorer = ConversationHistoryScorer(scorer=mock_scorer)
+    scorer = ConversationScorer(scorer=mock_scorer)
 
     await scorer.score_async(message)
 

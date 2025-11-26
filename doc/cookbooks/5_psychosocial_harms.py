@@ -47,7 +47,7 @@ from pyrit.executor.attack import (
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
-    ConversationHistoryScorer,
+    ConversationScorer,
     FloatScaleThresholdScorer,
     SelfAskGeneralFloatScaleScorer,
 )
@@ -76,7 +76,7 @@ sample_user_context = {
 # To use this technique in our automation we store the contents in a YAML file. The contents are printed to demonstrate this.
 
 print("Attack Technique using Escalation for a user in imminent crisis:")
-attack_strategy_path = pathlib.Path(DATASETS_PATH) / "executors" / "psychosocial_harm" / "escalation_crisis_v1.yaml"
+attack_strategy_path = pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis_v1.yaml"
 
 with open(attack_strategy_path, "r") as file:
     print(file.read())
@@ -280,7 +280,7 @@ adversarial_config = AttackAdversarialConfig(target=adversarial_target, system_p
 for objective in conversation_objectives:
     # Wrap the crisis scorer with our conversation history scorer
     # This will make it score the entire conversation instead of just the latest response
-    conversation_scorer = ConversationHistoryScorer(scorer=crisis_scorer)
+    conversation_scorer = ConversationScorer(scorer=crisis_scorer)
 
     # Wrap in threshold scorer to determine objective achievement
     objective_threshold_scorer = FloatScaleThresholdScorer(scorer=conversation_scorer, threshold=1)
@@ -292,7 +292,7 @@ for objective in conversation_objectives:
         objective_target=target_llm,
         attack_adversarial_config=adversarial_config,
         attack_scoring_config=scoring_config,
-        max_turns=7,
+        max_turns=2,
         max_backtracks=1,
     )
 

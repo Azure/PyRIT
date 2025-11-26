@@ -7,11 +7,11 @@ from uuid import UUID
 from pyrit.models import MessagePiece, Score
 from pyrit.models.literals import PromptResponseError
 from pyrit.models.message_piece import Originator
-from pyrit.score import FloatScaleScorer
+from pyrit.score import FloatScaleScorer, Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 
-class ConversationHistoryScorer(FloatScaleScorer):
+class ConversationScorer(FloatScaleScorer):
     """
     Custom scorer that evaluates the entire conversation history rather than just
     the latest response. This is useful for evaluating multi-turn conversations
@@ -25,18 +25,22 @@ class ConversationHistoryScorer(FloatScaleScorer):
     in order to score the conversation as a whole.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator()
+    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+        supported_data_types=["text"],
+        max_pieces_in_response=1,
+        enforce_all_pieces_valid=True,
+    )
 
     def __init__(
         self,
-        scorer: FloatScaleScorer,
         *,
+        scorer: Scorer,
         validator: Optional[ScorerPromptValidator] = None,
     ):
         """
         Args:
-            scorer: The underlying scorer to use for evaluation (e.g., crisis_scorer)
-            validator: Optional validator. Defaults to base ScorerPromptValidator.
+            scorer (Scorer): The underlying scorer to use for evaluation
+            validator (Optional[ScorerPromptValidator]): Optional validator. Defaults to base ScorerPromptValidator.
         """
         super().__init__(validator=validator or self._default_validator)
         self._scorer = scorer
@@ -62,11 +66,8 @@ class ConversationHistoryScorer(FloatScaleScorer):
         # Build the full conversation text
         conversation_text = ""
 
-        # Sort by timestamp to get chronological order
-        sorted_conversation = sorted(conversation, key=lambda x: x.message_pieces[0].timestamp)
-
         # Goes through each message in the conversation and appends user and assistant messages
-        for message in sorted_conversation:
+        for message in conversation:
             for piece in message.message_pieces:
                 if piece.role == "user":
                     conversation_text += f"User: {piece.converted_value}\n"
@@ -101,6 +102,3 @@ class ConversationHistoryScorer(FloatScaleScorer):
         scores = await self._scorer._score_piece_async(message_piece=modified_piece, objective=objective)
 
         return scores
-
-    async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
-        return await self._scorer.score_text_async(text=text, objective=objective)

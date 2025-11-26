@@ -7,6 +7,10 @@ from pyrit.models import ChatMessageRole, Message, MessagePiece, PromptDataType
 
 
 class ScorerPromptValidator:
+    """
+    Validates that message pieces meet the requirements for scoring.
+    """
+
     def __init__(
         self,
         *,
@@ -17,6 +21,20 @@ class ScorerPromptValidator:
         enforce_all_pieces_valid: Optional[bool] = False,
         is_objective_required=False,
     ):
+        """
+        Initializes a ScorerPromptValidator with specified validation rules.
+
+        Args:
+            supported_data_types: List of supported PromptDataType values.
+            required_metadata: List of required metadata keys that must be present
+                in the message piece's prompt_metadata.
+            supported_roles: List of supported ChatMessageRole values.
+            max_pieces_in_response: Optional maximum number of message pieces allowed
+                in the response.
+            enforce_all_pieces_valid: If True, raises an error if any message piece
+                is not supported. If False, only counts supported pieces towards validation.
+            is_objective_required: If True, an objective must be provided for validation.
+        """
         if supported_data_types:
             self._supported_data_types = supported_data_types
         else:
