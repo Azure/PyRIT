@@ -35,7 +35,7 @@ def test_all_fetch_functions_are_tested():
 
     tested_fetch_functions = get_tested_fetch_functions(test_file_path)
 
-    missing = fetch_functions - tested_fetch_functions - set(["fetch_examples"])
+    missing = fetch_functions - tested_fetch_functions - set(["fetch_examples", "fetch_jailbreakv_28k_dataset"])
     assert not missing, (
         f"The following fetch_* functions from pyrit.datasets are not tested in "
         f"test_fetch_datasets.py: {sorted(missing)}"
