@@ -11,12 +11,11 @@
 # %% [markdown]
 # # Foundry Scenario Example
 #
-# This notebook demonstrates how to use a composite scenario — the `FoundryScenario` — to test a target with multiple attack strategies.
-# A "composite scenario" orchestrates a campaign composed of multiple atomic attacks and
-# strategies. Instead of running single, isolated attack techniques, a composite scenario
-# combines converters, multi-turn attacks, and other techniques into organized compositions
-#  This enables testing complex, realistic workflows where multiple transformations
-# or attack steps are applied together and results are aggregated into a single ScenarioResult.
+# This notebook demonstrates how to use a composite strategies — the `FoundryStrategy` — to test a target with multiple
+# attack strategies.
+# A "composite strategy"  This class encapsulates a collection of ScenarioStrategy instances along with
+# an auto-generated descriptive name, making it easy to represent both single strategies
+# and composed multi-strategy attacks.
 #
 # The `FoundryScenario` provides a comprehensive testing approach that includes:
 # - **Converter-based attacks**: Apply various encoding/obfuscation techniques (Base64, Caesar cipher, etc.)
@@ -30,8 +29,8 @@
 
 # %%
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.scenarios import FoundryScenario, FoundryStrategy, ScenarioCompositeStrategy
-from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
+from pyrit.scenario import FoundryScenario, FoundryStrategy, ScenarioCompositeStrategy
+from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(

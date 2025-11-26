@@ -16,10 +16,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     RolePlayPaths,
 )
-from pyrit.models.seed_dataset import SeedDataset
-from pyrit.models.seed_group import SeedGroup
-from pyrit.models.seed_objective import SeedObjective
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedDataset, SeedGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -117,6 +114,7 @@ class ContentHarmsScenario(Scenario):
         """
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
+
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
 
         super().__init__(

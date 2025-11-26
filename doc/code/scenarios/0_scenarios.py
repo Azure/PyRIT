@@ -62,11 +62,17 @@
 # 3. **Constructor**: Use `@apply_defaults` decorator and call `super().__init__()` with scenario metadata:
 #    - `name`: Descriptive name for your scenario
 #    - `version`: Integer version number
-#    - `objective_target`: The target system being tested
-#    - `objective_scorer_identifier`: Identifier for the scoring mechanism
-#    - `memory_labels`: Optional labels for tracking
-#    - `max_concurrency`: Number of concurrent operations (default: 10)
+#    - `strategy_class`: The strategy enum class for this scenario
+#    - `objective_scorer_identifier`: Identifier dict for the scoring mechanism (optional)
+#    - `include_default_baseline`: Whether to include a baseline attack (default: True)
+#    - `scenario_result_id`: Optional ID to resume an existing scenario (optional)
+
+# 4. **Initialization**: Call `await scenario.initialize_async()` to populate atomic attacks:
+#    - `objective_target`: The target system being tested (required)
+#    - `scenario_strategies`: List of strategies to execute (optional, defaults to ALL)
+#    - `max_concurrency`: Number of concurrent operations (default: 1)
 #    - `max_retries`: Number of retry attempts on failure (default: 0)
+#    - `memory_labels`: Optional labels for tracking (optional)
 
 ### Example Structure
 # %%
@@ -75,6 +81,7 @@ from typing import List, Optional, Type
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.scenario import AtomicAttack, Scenario, ScenarioStrategy
+from pyrit.scenario.core.scenario_strategy import ScenarioCompositeStrategy
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -100,22 +107,38 @@ class MyScenario(Scenario):
         self,
         *,
         objective_scorer: Optional[TrueFalseScorer] = None,
+        scenario_result_id: Optional[str] = None,
     ):
-
+        self._objective_scorer = objective_scorer
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
-        # Call parent constructor
+        # Call parent constructor - note: objective_target is NOT passed here
         super().__init__(
             name="My Custom Scenario",
             version=self.version,
             strategy_class=MyStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_scorer_identifier=objective_scorer.get_identifier() if objective_scorer else None,
+            scenario_result_id=scenario_result_id,
         )
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+        """
+        Build atomic attacks based on selected strategies.
+
+        This method is called by initialize_async() after strategies are prepared.
+        Use self._scenario_composites to access the selected strategies.
+        """
         atomic_attacks = []
+
+        # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None
-        for strategy in self._strategy_compositions:  # type: ignore
+
+        # Extract individual strategy values from the composites
+        selected_strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
+            self._scenario_composites, strategy_type=MyStrategy
+        )
+
+        for strategy in selected_strategies:
             # Create attack instances based on strategy
             attack = PromptSendingAttack(
                 objective_target=self._objective_target,
@@ -123,7 +146,7 @@ class MyScenario(Scenario):
             )
             atomic_attacks.append(
                 AtomicAttack(
-                    atomic_attack_name=strategy.name,
+                    atomic_attack_name=strategy,
                     attack=attack,
                     objectives=["objective1", "objective2"],
                     memory_labels=self._memory_labels,
