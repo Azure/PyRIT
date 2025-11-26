@@ -23,9 +23,6 @@ logger = logging.getLogger(__name__)
 class SeedPrompt(Seed):
     """Represents a seed prompt with various attributes and metadata."""
 
-    # Alias for the prompt group
-    prompt_group_alias: Optional[str] = None
-
     # Role of the prompt in a conversation (e.g., "user", "assistant")
     role: Optional[ChatMessageRole] = None
 
