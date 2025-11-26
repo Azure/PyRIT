@@ -2,47 +2,45 @@
 # Licensed under the MIT license.
 
 import os
+import pathlib
 from typing import Dict, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
+from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (
     AttackScoringConfig,
     AttackStrategy,
-    PromptSendingAttack,
-    MultiPromptSendingAttack,
     ManyShotJailbreakAttack,
+    MultiPromptSendingAttack,
+    PromptSendingAttack,
     RolePlayAttack,
-    RolePlayPaths
+    RolePlayPaths,
 )
-from pyrit.memory.central_memory import CentralMemory
+from pyrit.models.seed_dataset import SeedDataset
 from pyrit.models.seed_group import SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
-
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
+    ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
-from pyrit.score import (
-    SelfAskRefusalScorer,
-    TrueFalseInverterScorer,
-    TrueFalseScorer
-)
+from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer, TrueFalseScorer
 
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
 
 
-class ContentHarmStrategy(ScenarioStrategy):
+class ContentHarmsStrategy(ScenarioStrategy):
     """
-    ContentHarmStrategy defines a set of strategies for testing model behavior
+    ContentHarmsStrategy defines a set of strategies for testing model behavior
     across several different harm categories. The scenario is designed to provide quick
     feedback on model performance with respect to common harm types with the idea being that
     users will dive deeper into specific harm categories based on initial results.
 
     Each tag represents a different harm category that the model can be tested for.
     Specifying the all tag will include a comprehensive test suite covering all harm categories.
-    Users should define objective datasets in CentralMemory corresponding to each harm category
-    they wish to test which can then be reused across multiple runs of the scenario.
+    Users can defined objectives for each harm category via seed datasets or use the default datasets
+    provided with PyRIT.
     For each harm category, the scenario will run a RolePlayAttack, ManyShotJailbreakAttack,
     PromptSendingAttack, and RedTeamingAttack for each objective in the dataset.
     to evaluate model behavior.
@@ -59,10 +57,10 @@ class ContentHarmStrategy(ScenarioStrategy):
     Leakage = ("leakage", set[str]())
 
 
-class ContentHarmScenario(Scenario):
+class ContentHarmsScenario(Scenario):
     """
 
-    Content Harm Scenario implementation for PyRIT.
+    Content Harms Scenario implementation for PyRIT.
 
     This scenario contains various harm-based checks that you can run to get a quick idea about model behavior
     with respect to certain harm categories.
@@ -76,9 +74,9 @@ class ContentHarmScenario(Scenario):
         Get the strategy enum class for this scenario.
 
         Returns:
-            Type[ScenarioStrategy]: The ContentHarmStrategy enum class.
+            Type[ScenarioStrategy]: The ContentHarmsStrategy enum class.
         """
-        return ContentHarmStrategy
+        return ContentHarmsStrategy
 
     @classmethod
     def get_default_strategy(cls) -> ScenarioStrategy:
@@ -86,21 +84,21 @@ class ContentHarmScenario(Scenario):
         Get the default strategy used when no strategies are specified.
 
         Returns:
-            ScenarioStrategy: ContentHarmStrategy.ALL
+            ScenarioStrategy: ContentHarmsStrategy.ALL
         """
-        return ContentHarmStrategy.ALL
+        return ContentHarmsStrategy.ALL
 
     @apply_defaults
     def __init__(
         self,
         *,
-        objective_scorer: Optional[TrueFalseScorer] = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
-        seed_dataset_prefix: Optional[str] = None,
+        objective_scorer: Optional[TrueFalseScorer] = None,
         scenario_result_id: Optional[str] = None,
+        objectives_by_harm: Optional[Dict[str, Sequence[SeedGroup]]] = None,
     ):
         """
-        Initialize the Content Harm Scenario.
+        Initialize the Content Harms Scenario.
 
         Args:
             adversarial_chat (Optional[PromptChatTarget]): Additionally used for scoring defaults.
@@ -111,71 +109,55 @@ class ContentHarmScenario(Scenario):
                 seed_dataset_prefix (Optional[str]): Prefix of the dataset to use to retrieve the objectives.
                 This will be used to retrieve the appropriate seed groups from CentralMemory. If not provided,
                 defaults to "content_harm".
-            max_concurrency (int): Maximum number of concurrent operations. Defaults to 10.
-            max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
-                Set to 0 (default) for no automatic retries. If set to a positive number,
-                the scenario will automatically retry up to this many times after an exception.
-                For example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).
+            scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
+            objectives_by_harm (Optional[Dict[str, Sequence[SeedGroup]]]): A dictionary mapping harm strategies
+                to their corresponding SeedGroups. If not provided, default seed groups will be loaded from datasets.
         """
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
-        self._seed_dataset_prefix = seed_dataset_prefix
 
         super().__init__(
-            name="Content Harm Scenario",
+            name="Content Harms Scenario",
             version=self.version,
             objective_scorer_identifier=self._objective_scorer.get_identifier(),
-            strategy_class=ContentHarmStrategy,
+            strategy_class=ContentHarmsStrategy,
             scenario_result_id=scenario_result_id,
         )
+        self._objectives_by_harm = objectives_by_harm
 
-    def _get_strategy_seeds_groups(self, seed_dataset_prefix: Optional[str] = None) -> Dict[str, Sequence[SeedGroup]]:
+    def _get_objectives_by_harm(
+        self, objectives_by_harm: Optional[Dict[str, Sequence[SeedGroup]]] = None
+    ) -> Dict[str, Sequence[SeedGroup]]:
         """
-        Get the objectives from the provided seed dataset name from central memory.
-
-        If a seed dataset prefix is provided, it is used directly with the harm strategy name
-         appended to the end to retrieve the objectives for each harm strategy.
-         For example, if the seed_dataset_prefix is "scenario_harm" and the harm strategy is
-         "hate", the dataset name used to retrieve objectives will be "scenario_harm_hate". If no
-         seed dataset name is provided, the default "content_harm" is used.
-
-        Args:
-            seed_dataset_prefix (Optional[str]): The provided seed dataset name.
+        Retrieve SeedGroups for each harm strategy. If objectives_by_harm is provided for a given harm strategy,
+        use that directly.
+        Otherwise, load the default seed groups from datasets.
 
         Returns:
-            Dict[str, List[str]]: A dictionary which maps harms to the seed groups retrieved from
-            the seed dataset in CentralMemory.
-
-        Raises:
-            ValueError: If no objectives are found in the specified dataset or the dataset cannot
-            be found.
+            Dict[str, Sequence[SeedGroup]]: A dictionary mapping harm strategies to their corresponding SeedGroups.
         """
-        memory = CentralMemory.get_memory_instance()
-        if not seed_dataset_prefix:
-            seed_dataset_prefix = "content_harm"
         seeds_by_strategy = {}
-        selected_harms = {comp.strategies[0].value for comp in self._scenario_composites if comp.strategies}
+
+        selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
+            self._scenario_composites, strategy_type=ContentHarmsStrategy
+        )
         for harm_strategy in selected_harms:
-            harm_dataset_name = seed_dataset_prefix + "_" + harm_strategy
-            strategy_seed_groups = memory.get_seed_groups(dataset_name=harm_dataset_name)
-            strategy_objectives: list[str] = [
-                obj.objective.value for obj in strategy_seed_groups if obj.objective is not None
-            ]
-            if len(strategy_objectives) == 0:
-                raise ValueError(
-                    f"No objectives found for {harm_strategy} in the dataset {harm_dataset_name}.\n"
-                    f"Ensure that the dataset is properly loaded into CentralMemory and follows the naming "
-                    f"schema seed_dataset_prefix + _ + {harm_strategy}."
+            if objectives_by_harm and harm_strategy in objectives_by_harm:
+                seeds_by_strategy[harm_strategy] = objectives_by_harm[harm_strategy]
+            else:
+                harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "harms"
+                strategy_seed_dataset = SeedDataset.from_yaml_file(harm_dataset_path / f"{harm_strategy}.prompt")
+                seeds_by_strategy[harm_strategy] = SeedDataset.group_seed_prompts_by_prompt_group_id(
+                    [*strategy_seed_dataset.prompts, *strategy_seed_dataset.objectives]
                 )
-            seeds_by_strategy[harm_strategy] = strategy_seed_groups
         return seeds_by_strategy
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-            temperature=1.0,
+            temperature=1.2,
         )
 
     def _get_default_scorer(self) -> TrueFalseInverterScorer:
@@ -196,10 +178,14 @@ class ContentHarmScenario(Scenario):
             List[AtomicAttack]: The list of AtomicAttack instances for harm strategies.
         """
         atomic_attacks: List[AtomicAttack] = []
-        selected_harms = {comp.strategies[0].value for comp in self._scenario_composites if comp.strategies}
-        seeds = self._get_strategy_seeds_groups()
+        selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
+            self._scenario_composites, strategy_type=ContentHarmsStrategy
+        )
+        merged_objectives_by_harm = self._get_objectives_by_harm(self._objectives_by_harm)
         for strategy in selected_harms:
-            atomic_attacks.extend(self._get_strategy_attacks(strategy=strategy, seed_groups=seeds[strategy]))
+            atomic_attacks.extend(
+                self._get_strategy_attacks(strategy=strategy, seed_groups=merged_objectives_by_harm[strategy])
+            )
         return atomic_attacks
 
     def _get_strategy_attacks(
@@ -251,7 +237,6 @@ class ContentHarmScenario(Scenario):
             objective = seed_group.objective.value if seed_group.objective is not None else None
             if objective:
                 strategy_seed_objectives.append(objective)
-                # strategy_prompt_sequence.append(objective)
 
             # create new SeedGroup without the objective for PromptSendingAttack
             strategy_seed_group_prompt_only.append(SeedGroup(prompts=seed_group.prompts))

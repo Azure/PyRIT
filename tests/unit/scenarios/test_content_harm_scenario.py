@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Tests for the ContentHarmScenario class."""
+"""Tests for the ContentHarmsScenario class."""
 
 from unittest.mock import MagicMock, patch
 
@@ -13,8 +13,8 @@ from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.scenarios.scenarios.harms import (
-    ContentHarmScenario,
-    ContentHarmStrategy,
+    ContentHarmsScenario,
+    ContentHarmsStrategy,
 )
 from pyrit.score import TrueFalseScorer
 
@@ -73,94 +73,94 @@ def mock_seed_groups():
     return create_seed_groups_for_strategy
 
 
-class TestContentHarmStrategy:
-    """Tests for the ContentHarmStrategy enum."""
+class TestContentHarmsStrategy:
+    """Tests for the ContentHarmsStrategy enum."""
 
     def test_all_harm_categories_exist(self):
         """Test that all expected harm categories exist as strategies."""
         expected_categories = ["hate", "fairness", "violence", "sexual", "harassment", "misinformation", "leakage"]
-        strategy_values = [s.value for s in ContentHarmStrategy if s != ContentHarmStrategy.ALL]
+        strategy_values = [s.value for s in ContentHarmsStrategy if s != ContentHarmsStrategy.ALL]
 
         for category in expected_categories:
             assert category in strategy_values, f"Expected harm category '{category}' not found in strategies"
 
     def test_strategy_tags_are_sets(self):
         """Test that all strategy tags are set objects."""
-        for strategy in ContentHarmStrategy:
+        for strategy in ContentHarmsStrategy:
             assert isinstance(strategy.tags, set), f"Tags for {strategy.name} are not a set"
 
     def test_enum_members_count(self):
         """Test that we have the expected number of strategy members."""
         # ALL + 7 harm categories = 8 total
-        assert len(list(ContentHarmStrategy)) == 8
+        assert len(list(ContentHarmsStrategy)) == 8
 
     def test_all_strategies_can_be_accessed_by_name(self):
         """Test that all strategies can be accessed by their name."""
-        assert ContentHarmStrategy.ALL == ContentHarmStrategy["ALL"]
-        assert ContentHarmStrategy.Hate == ContentHarmStrategy["Hate"]
-        assert ContentHarmStrategy.Fairness == ContentHarmStrategy["Fairness"]
-        assert ContentHarmStrategy.Violence == ContentHarmStrategy["Violence"]
-        assert ContentHarmStrategy.Sexual == ContentHarmStrategy["Sexual"]
-        assert ContentHarmStrategy.Harassment == ContentHarmStrategy["Harassment"]
-        assert ContentHarmStrategy.Misinformation == ContentHarmStrategy["Misinformation"]
-        assert ContentHarmStrategy.Leakage == ContentHarmStrategy["Leakage"]
+        assert ContentHarmsStrategy.ALL == ContentHarmsStrategy["ALL"]
+        assert ContentHarmsStrategy.Hate == ContentHarmsStrategy["Hate"]
+        assert ContentHarmsStrategy.Fairness == ContentHarmsStrategy["Fairness"]
+        assert ContentHarmsStrategy.Violence == ContentHarmsStrategy["Violence"]
+        assert ContentHarmsStrategy.Sexual == ContentHarmsStrategy["Sexual"]
+        assert ContentHarmsStrategy.Harassment == ContentHarmsStrategy["Harassment"]
+        assert ContentHarmsStrategy.Misinformation == ContentHarmsStrategy["Misinformation"]
+        assert ContentHarmsStrategy.Leakage == ContentHarmsStrategy["Leakage"]
 
     def test_all_strategies_can_be_accessed_by_value(self):
         """Test that all strategies can be accessed by their value."""
-        assert ContentHarmStrategy("all") == ContentHarmStrategy.ALL
-        assert ContentHarmStrategy("hate") == ContentHarmStrategy.Hate
-        assert ContentHarmStrategy("fairness") == ContentHarmStrategy.Fairness
-        assert ContentHarmStrategy("violence") == ContentHarmStrategy.Violence
-        assert ContentHarmStrategy("sexual") == ContentHarmStrategy.Sexual
-        assert ContentHarmStrategy("harassment") == ContentHarmStrategy.Harassment
-        assert ContentHarmStrategy("misinformation") == ContentHarmStrategy.Misinformation
-        assert ContentHarmStrategy("leakage") == ContentHarmStrategy.Leakage
+        assert ContentHarmsStrategy("all") == ContentHarmsStrategy.ALL
+        assert ContentHarmsStrategy("hate") == ContentHarmsStrategy.Hate
+        assert ContentHarmsStrategy("fairness") == ContentHarmsStrategy.Fairness
+        assert ContentHarmsStrategy("violence") == ContentHarmsStrategy.Violence
+        assert ContentHarmsStrategy("sexual") == ContentHarmsStrategy.Sexual
+        assert ContentHarmsStrategy("harassment") == ContentHarmsStrategy.Harassment
+        assert ContentHarmsStrategy("misinformation") == ContentHarmsStrategy.Misinformation
+        assert ContentHarmsStrategy("leakage") == ContentHarmsStrategy.Leakage
 
     def test_strategies_are_unique(self):
         """Test that all strategy values are unique."""
-        values = [s.value for s in ContentHarmStrategy]
+        values = [s.value for s in ContentHarmsStrategy]
         assert len(values) == len(set(values)), "Strategy values are not unique"
 
     def test_strategy_iteration(self):
         """Test that we can iterate over all strategies."""
-        strategies = list(ContentHarmStrategy)
+        strategies = list(ContentHarmsStrategy)
         assert len(strategies) == 8
-        assert ContentHarmStrategy.ALL in strategies
-        assert ContentHarmStrategy.Hate in strategies
+        assert ContentHarmsStrategy.ALL in strategies
+        assert ContentHarmsStrategy.Hate in strategies
 
     def test_strategy_comparison(self):
         """Test that strategy comparison works correctly."""
-        assert ContentHarmStrategy.Hate == ContentHarmStrategy.Hate
-        assert ContentHarmStrategy.Hate != ContentHarmStrategy.Violence
-        assert ContentHarmStrategy.ALL != ContentHarmStrategy.Hate
+        assert ContentHarmsStrategy.Hate == ContentHarmsStrategy.Hate
+        assert ContentHarmsStrategy.Hate != ContentHarmsStrategy.Violence
+        assert ContentHarmsStrategy.ALL != ContentHarmsStrategy.Hate
 
     def test_strategy_hash(self):
         """Test that strategies can be hashed and used in sets/dicts."""
-        strategy_set = {ContentHarmStrategy.Hate, ContentHarmStrategy.Violence}
+        strategy_set = {ContentHarmsStrategy.Hate, ContentHarmsStrategy.Violence}
         assert len(strategy_set) == 2
-        assert ContentHarmStrategy.Hate in strategy_set
+        assert ContentHarmsStrategy.Hate in strategy_set
 
-        strategy_dict = {ContentHarmStrategy.Hate: "hate_value"}
-        assert strategy_dict[ContentHarmStrategy.Hate] == "hate_value"
+        strategy_dict = {ContentHarmsStrategy.Hate: "hate_value"}
+        assert strategy_dict[ContentHarmsStrategy.Hate] == "hate_value"
 
     def test_strategy_string_representation(self):
         """Test string representation of strategies."""
-        assert "Hate" in str(ContentHarmStrategy.Hate)
-        assert "ALL" in str(ContentHarmStrategy.ALL)
+        assert "Hate" in str(ContentHarmsStrategy.Hate)
+        assert "ALL" in str(ContentHarmsStrategy.ALL)
 
     def test_invalid_strategy_value_raises_error(self):
         """Test that accessing invalid strategy value raises ValueError."""
         with pytest.raises(ValueError):
-            ContentHarmStrategy("invalid_strategy")
+            ContentHarmsStrategy("invalid_strategy")
 
     def test_invalid_strategy_name_raises_error(self):
         """Test that accessing invalid strategy name raises KeyError."""
         with pytest.raises(KeyError):
-            ContentHarmStrategy["InvalidStrategy"]
+            ContentHarmsStrategy["InvalidStrategy"]
 
     def test_get_aggregate_tags_includes_harm_categories(self):
         """Test that get_aggregate_tags includes 'all' tag."""
-        aggregate_tags = ContentHarmStrategy.get_aggregate_tags()
+        aggregate_tags = ContentHarmsStrategy.get_aggregate_tags()
 
         # The simple implementation only returns the 'all' tag
         assert "all" in aggregate_tags
@@ -168,21 +168,21 @@ class TestContentHarmStrategy:
 
     def test_get_aggregate_tags_returns_set(self):
         """Test that get_aggregate_tags returns a set."""
-        aggregate_tags = ContentHarmStrategy.get_aggregate_tags()
+        aggregate_tags = ContentHarmsStrategy.get_aggregate_tags()
         assert isinstance(aggregate_tags, set)
 
     def test_supports_composition_returns_false(self):
-        """Test that ContentHarmStrategy does not support composition."""
+        """Test that ContentHarmsStrategy does not support composition."""
         # Based on the simple implementation, it likely doesn't support composition
         # Update this if composition is implemented
-        assert ContentHarmStrategy.supports_composition() is False
+        assert ContentHarmsStrategy.supports_composition() is False
 
     def test_validate_composition_with_empty_list(self):
         """Test that validate_composition handles empty list."""
         # This test depends on whether validate_composition is implemented
         # If not implemented, it should use the default from ScenarioStrategy
         try:
-            ContentHarmStrategy.validate_composition([])
+            ContentHarmsStrategy.validate_composition([])
             # If no exception, the default implementation accepts empty lists
         except (ValueError, NotImplementedError) as e:
             # Some implementations may raise errors for empty lists
@@ -190,10 +190,10 @@ class TestContentHarmStrategy:
 
     def test_validate_composition_with_single_strategy(self):
         """Test that validate_composition accepts single strategy."""
-        strategies = [ContentHarmStrategy.Hate]
+        strategies = [ContentHarmsStrategy.Hate]
         # Should not raise an exception
         try:
-            ContentHarmStrategy.validate_composition(strategies)
+            ContentHarmsStrategy.validate_composition(strategies)
         except NotImplementedError:
             # If composition is not implemented, that's expected
             pass
@@ -201,34 +201,34 @@ class TestContentHarmStrategy:
     def test_validate_composition_with_multiple_strategies(self):
         """Test that validate_composition handles multiple strategies."""
         strategies = [
-            ContentHarmStrategy.Hate,
-            ContentHarmStrategy.Violence,
+            ContentHarmsStrategy.Hate,
+            ContentHarmsStrategy.Violence,
         ]
         # Behavior depends on implementation
         try:
-            ContentHarmStrategy.validate_composition(strategies)
+            ContentHarmsStrategy.validate_composition(strategies)
         except (ValueError, NotImplementedError):
             # Either composition is not allowed or not implemented
             pass
 
     def test_prepare_scenario_strategies_with_none(self):
         """Test that prepare_scenario_strategies handles None input."""
-        result = ContentHarmStrategy.prepare_scenario_strategies(None, default_aggregate=ContentHarmStrategy.ALL)
+        result = ContentHarmsStrategy.prepare_scenario_strategies(None, default_aggregate=ContentHarmsStrategy.ALL)
         assert isinstance(result, list)
         assert len(result) > 0
 
     def test_prepare_scenario_strategies_with_single_strategy(self):
         """Test that prepare_scenario_strategies handles single strategy."""
-        result = ContentHarmStrategy.prepare_scenario_strategies(
-            [ContentHarmStrategy.Hate], default_aggregate=ContentHarmStrategy.ALL
+        result = ContentHarmsStrategy.prepare_scenario_strategies(
+            [ContentHarmsStrategy.Hate], default_aggregate=ContentHarmsStrategy.ALL
         )
         assert isinstance(result, list)
         assert len(result) >= 1
 
     def test_prepare_scenario_strategies_with_all(self):
         """Test that prepare_scenario_strategies expands ALL to all strategies."""
-        result = ContentHarmStrategy.prepare_scenario_strategies(
-            [ContentHarmStrategy.ALL], default_aggregate=ContentHarmStrategy.ALL
+        result = ContentHarmsStrategy.prepare_scenario_strategies(
+            [ContentHarmsStrategy.ALL], default_aggregate=ContentHarmsStrategy.ALL
         )
         assert isinstance(result, list)
         # ALL should expand to multiple strategies
@@ -237,33 +237,35 @@ class TestContentHarmStrategy:
     def test_prepare_scenario_strategies_with_multiple_strategies(self):
         """Test that prepare_scenario_strategies handles multiple strategies."""
         strategies = [
-            ContentHarmStrategy.Hate,
-            ContentHarmStrategy.Violence,
-            ContentHarmStrategy.Sexual,
+            ContentHarmsStrategy.Hate,
+            ContentHarmsStrategy.Violence,
+            ContentHarmsStrategy.Sexual,
         ]
-        result = ContentHarmStrategy.prepare_scenario_strategies(strategies, default_aggregate=ContentHarmStrategy.ALL)
+        result = ContentHarmsStrategy.prepare_scenario_strategies(
+            strategies, default_aggregate=ContentHarmsStrategy.ALL
+        )
         assert isinstance(result, list)
         assert len(result) >= 3
 
     def test_validate_composition_accepts_single_harm(self):
         """Test that composition validation accepts single harm strategy."""
-        strategies = [ContentHarmStrategy.Hate]
+        strategies = [ContentHarmsStrategy.Hate]
 
         # Should not raise an exception if composition is implemented
         try:
-            ContentHarmStrategy.validate_composition(strategies)
+            ContentHarmsStrategy.validate_composition(strategies)
         except NotImplementedError:
             # If composition is not implemented, that's expected
             pass
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestContentHarmScenarioBasic:
-    """Basic tests for ContentHarmScenario initialization and properties."""
+class TestContentHarmsScenarioBasic:
+    """Basic tests for ContentHarmsScenario initialization and properties."""
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     async def test_initialization_with_minimal_parameters(
         self,
         mock_get_seeds,
@@ -286,11 +288,11 @@ class TestContentHarmScenarioBasic:
             "leakage": mock_seed_groups("leakage"),
         }
 
-        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
         # Constructor should set adversarial chat and basic metadata
         assert scenario._adversarial_chat == mock_adversarial_target
-        assert scenario.name == "Content Harm Scenario"
+        assert scenario.name == "Content Harms Scenario"
         assert scenario.version == 1
 
         # Initialization populates objective target and scenario composites
@@ -299,8 +301,8 @@ class TestContentHarmScenarioBasic:
         assert scenario._objective_target == mock_objective_target
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     async def test_initialization_with_custom_strategies(
         self,
         mock_get_seeds,
@@ -317,23 +319,23 @@ class TestContentHarmScenarioBasic:
             "fairness": mock_seed_groups("fairness"),
         }
 
-        strategies = [ContentHarmStrategy.Hate, ContentHarmStrategy.Fairness]
+        strategies = [ContentHarmsStrategy.Hate, ContentHarmsStrategy.Fairness]
 
-        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=strategies)
 
         # Prepared composites should match provided strategies
         assert len(scenario._scenario_composites) == 2
 
-    @patch("pyrit.scenarios.scenarios.harms.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenarios.scenarios.harms.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     def test_initialization_with_custom_scorer(
         self, mock_get_seeds, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
         """Test initialization with custom objective scorer."""
         mock_get_seeds.return_value = {}
 
-        scenario = ContentHarmScenario(
+        scenario = ContentHarmsScenario(
             adversarial_chat=mock_adversarial_target,
             objective_scorer=mock_objective_scorer,
         )
@@ -342,8 +344,8 @@ class TestContentHarmScenarioBasic:
         assert scenario._scorer_config.objective_scorer == mock_objective_scorer
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     async def test_initialization_with_custom_max_concurrency(
         self,
         mock_get_seeds,
@@ -365,15 +367,15 @@ class TestContentHarmScenarioBasic:
             "leakage": mock_seed_groups("leakage"),
         }
 
-        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=10)
 
         assert scenario._max_concurrency == 10
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     async def test_initialization_with_custom_dataset_path(
         self,
         mock_get_seeds,
@@ -395,22 +397,18 @@ class TestContentHarmScenarioBasic:
             "leakage": mock_seed_groups("leakage"),
         }
 
-        custom_prefix = "custom_dataset"
-
-        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target, seed_dataset_prefix=custom_prefix)
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         # Just verify it initializes without error
         assert scenario is not None
-        # Verify the seed_dataset_prefix is stored
-        assert scenario._seed_dataset_prefix == custom_prefix
         # Verify the method was called (without arguments, as per current implementation)
         mock_get_seeds.assert_called_once_with()
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     async def test_initialization_defaults_to_all_strategy(
         self,
         mock_get_seeds,
@@ -432,7 +430,7 @@ class TestContentHarmScenarioBasic:
             "leakage": mock_seed_groups("leakage"),
         }
 
-        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target)
 
@@ -441,9 +439,9 @@ class TestContentHarmScenarioBasic:
 
     def test_get_default_strategy_returns_all(self):
         """Test that get_default_strategy returns ALL strategy."""
-        assert ContentHarmScenario.get_default_strategy() == ContentHarmStrategy.ALL
+        assert ContentHarmsScenario.get_default_strategy() == ContentHarmsStrategy.ALL
 
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     @patch.dict(
         "os.environ",
         {
@@ -454,11 +452,11 @@ class TestContentHarmScenarioBasic:
     def test_get_default_adversarial_target(self, mock_get_seeds, mock_objective_target):
         """Test default adversarial target creation."""
         mock_get_seeds.return_value = {}
-        scenario = ContentHarmScenario()
+        scenario = ContentHarmsScenario()
 
         assert scenario._adversarial_chat is not None
 
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     @patch.dict(
         "os.environ",
         {
@@ -469,17 +467,17 @@ class TestContentHarmScenarioBasic:
     def test_get_default_scorer(self, mock_get_seeds, mock_objective_target):
         """Test default scorer creation."""
         mock_get_seeds.return_value = {}
-        scenario = ContentHarmScenario()
+        scenario = ContentHarmsScenario()
 
         assert scenario._objective_scorer is not None
 
     def test_scenario_version(self):
         """Test that scenario has correct version."""
-        assert ContentHarmScenario.version == 1
+        assert ContentHarmsScenario.version == 1
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     async def test_initialization_with_max_retries(
         self,
         mock_get_seeds,
@@ -501,15 +499,15 @@ class TestContentHarmScenarioBasic:
             "leakage": mock_seed_groups("leakage"),
         }
 
-        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target, max_retries=3)
 
         assert scenario._max_retries == 3
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     async def test_memory_labels_are_stored(
         self,
         mock_get_seeds,
@@ -533,14 +531,14 @@ class TestContentHarmScenarioBasic:
 
         memory_labels = {"test_run": "123", "category": "harm"}
 
-        scenario = ContentHarmScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target, memory_labels=memory_labels)
 
         assert scenario._memory_labels == memory_labels
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmScenario._get_strategy_seeds_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harm_scenario.ContentHarmsScenario._get_strategy_seeds_groups")
     async def test_initialization_with_all_parameters(
         self, mock_get_seeds, mock_objective_target, mock_adversarial_target, mock_objective_scorer, mock_seed_groups
     ):
@@ -551,12 +549,11 @@ class TestContentHarmScenarioBasic:
         }
 
         memory_labels = {"test": "value"}
-        strategies = [ContentHarmStrategy.Hate, ContentHarmStrategy.Violence]
+        strategies = [ContentHarmsStrategy.Hate, ContentHarmsStrategy.Violence]
 
-        scenario = ContentHarmScenario(
+        scenario = ContentHarmsScenario(
             adversarial_chat=mock_adversarial_target,
             objective_scorer=mock_objective_scorer,
-            seed_dataset_prefix="test_prefix",
         )
 
         await scenario.initialize_async(

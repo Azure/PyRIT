@@ -5,13 +5,13 @@
 
 from pyrit.scenario.scenarios.airt.cyber_scenario import CyberScenario, CyberStrategy
 from pyrit.scenario.scenarios.airt.content_harm_scenario import (
-    ContentHarmScenario,
-    ContentHarmStrategy,
+    ContentHarmsScenario,
+    ContentHarmsStrategy,
 )
 
 __all__ = [
     "CyberScenario",
     "CyberStrategy",
-    "ContentHarmScenario",
-    "ContentHarmStrategy",
+    "ContentHarmsScenario",
+    "ContentHarmsStrategy",
 ]

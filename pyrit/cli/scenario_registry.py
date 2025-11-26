@@ -93,7 +93,7 @@ class ScenarioRegistry:
                 for _, module_name, is_pkg in pkgutil.iter_modules([str(base_path)]):
                     if module_name.startswith("_"):
                         continue
-                    
+
                     full_module_name = f"pyrit.scenario.scenarios.{base_module}.{module_name}"
                     try:
                         # Import the module

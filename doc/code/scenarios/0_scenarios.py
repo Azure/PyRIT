@@ -74,7 +74,7 @@ from typing import List, Optional, Type
 
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
-from pyrit.scenarios import AtomicAttack, Scenario, ScenarioStrategy
+from pyrit.scenario import AtomicAttack, Scenario, ScenarioStrategy
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
