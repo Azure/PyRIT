@@ -26,7 +26,6 @@ seeds:
     value: Use this image as inspiration
     data_type: text
     sequence: 2
-    is_objective: true
     prompt_group_alias: group_1
     role: user
   - dataset_name: TestMultimodalTextImageAudioVideo

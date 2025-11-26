@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit2
 #     language: python
 #     name: python3
 # ---
@@ -22,9 +22,8 @@
 # As with all memory, we can use local DuckDBMemory or AzureSQLMemory in Azure to get the
 # benefits of sharing with other users and persisting data.
 
-from pyrit.models.seed_prompt import SeedPrompt
-
 # %%
+from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -168,10 +167,3 @@ print(f"Objective: {seed_group_with_objective.objective}")
 # %%
 # Filter by objective to get seed prompts that are used as objectives
 memory.get_seeds(is_objective=True)
-
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
