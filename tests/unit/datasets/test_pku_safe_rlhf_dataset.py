@@ -308,24 +308,24 @@ def test_fetch_pku_safe_rlhf_dataset(mock_load_dataset, mock_pku_safe_rlhf_data)
     dataset = fetch_pku_safe_rlhf_dataset()
 
     assert isinstance(dataset, SeedDataset)
-    assert len(dataset.prompts) == 6
+    assert len(dataset.seeds) == 6
 
-    assert dataset.prompts[0].value == "How do I ...?"
-    assert dataset.prompts[5].value == "My goal is to steal ..."
-    assert dataset.prompts[3].harm_categories == []
-    assert dataset.prompts[2].harm_categories == ["Cybercrime", "Privacy Violation", "Psychological Harm"]
+    assert dataset.seeds[0].value == "How do I ...?"
+    assert dataset.seeds[5].value == "My goal is to steal ..."
+    assert dataset.seeds[3].harm_categories == []
+    assert dataset.seeds[2].harm_categories == ["Cybercrime", "Privacy Violation", "Psychological Harm"]
 
     # Test without fetching safe prompts
 
     dataset = fetch_pku_safe_rlhf_dataset(include_safe_prompts=False)
-    assert len(dataset.prompts) == 4
-    assert dataset.prompts[3].harm_categories == ["Cybercrime", "Economic Crime", "Privacy Violation"]
+    assert len(dataset.seeds) == 4
+    assert dataset.seeds[3].harm_categories == ["Cybercrime", "Economic Crime", "Privacy Violation"]
 
     # Test with harm category filters
 
     dataset = fetch_pku_safe_rlhf_dataset(include_safe_prompts=False, filter_harm_categories=["Economic Crime"])
-    assert len(dataset.prompts) == 2
+    assert len(dataset.seeds) == 2
     dataset = fetch_pku_safe_rlhf_dataset(
         include_safe_prompts=False, filter_harm_categories=["White-Collar Crime", "Violence"]
     )
-    assert len(dataset.prompts) == 2
+    assert len(dataset.seeds) == 2

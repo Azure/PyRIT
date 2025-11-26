@@ -15,7 +15,7 @@ from scipy.stats import ttest_1samp
 
 from pyrit.common.path import (
     SCORER_EVALS_HARM_PATH,
-    SCORER_EVALS_OBJECTIVE_PATH,
+    SCORER_EVALS_TRUE_FALSE_PATH,
 )
 from pyrit.models import Message
 from pyrit.score import Scorer
@@ -173,9 +173,9 @@ class ScorerEvaluator(abc.ABC):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
@@ -188,7 +188,7 @@ class ScorerEvaluator(abc.ABC):
             csv_path (str): The path to the CSV file, which will be used to construct the HumanLabeledDataset
                 object.
             assistant_response_col_name (str): The name of the column in the CSV file that contains the assistant
-                responses.
+                responses. Defaults to "assistant_response".
             human_label_col_names (List[str]): The names of the columns in the CSV file that contain the human labels.
             objective_or_harm_col_name (str): The name of the column in the CSV file that contains the objective or harm
                 category associated with each response.
@@ -314,9 +314,9 @@ class HarmScorerEvaluator(ScorerEvaluator):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
@@ -519,11 +519,11 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         # Look for results folders in common locations
         search_paths = [
             Path.cwd() / "results" / metrics_filename,  # Current directory results
-            Path(SCORER_EVALS_OBJECTIVE_PATH).parent / "results" / metrics_filename,  # Next to scorer_evals
+            Path(SCORER_EVALS_TRUE_FALSE_PATH).parent / "results" / metrics_filename,  # Next to scorer_evals
         ]
 
         # Also search in any subdirectories that might contain results folders
-        for base_path in [Path.cwd(), Path(SCORER_EVALS_OBJECTIVE_PATH).parent]:
+        for base_path in [Path.cwd(), Path(SCORER_EVALS_TRUE_FALSE_PATH).parent]:
             for results_dir in base_path.rglob("results"):
                 if results_dir.is_dir():
                     potential_path = results_dir / metrics_filename
@@ -544,9 +544,9 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     async def run_evaluation_from_csv_async(
         self,
         csv_path: Union[str, Path],
-        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         num_scorer_trials: int = 1,
         save_results: bool = True,
@@ -691,7 +691,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             results_dir.mkdir(exist_ok=True)
             return Path(results_dir, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
         else:
-            return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
+            return Path(SCORER_EVALS_TRUE_FALSE_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
 
     def _get_csv_results_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
         """
@@ -712,4 +712,4 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             results_dir.mkdir(exist_ok=True)
             return Path(results_dir, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
         else:
-            return Path(SCORER_EVALS_OBJECTIVE_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
+            return Path(SCORER_EVALS_TRUE_FALSE_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()

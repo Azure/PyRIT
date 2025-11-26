@@ -262,7 +262,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         """
         # Create seed group containing the formatted examples
         prompt_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=formatted_examples,
                     data_type="text",
@@ -354,7 +354,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
 
         # Create seed group for the processing model
         kg_prompt_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=formatted_examples,
                     data_type="text",

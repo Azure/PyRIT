@@ -272,7 +272,7 @@ class TestFilteringFunctions:
                 dataset_name="test",
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedDataset(seeds=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test filtering
@@ -294,7 +294,7 @@ class TestFilteringFunctions:
                 dataset_name="test",
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedDataset(seeds=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test case insensitive matching
@@ -325,7 +325,7 @@ class TestFilteringFunctions:
                 metadata={"jbb_category": "hate"},
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedDataset(seeds=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         # Test filtering by JBB category
@@ -356,7 +356,7 @@ class TestFilteringFunctions:
                 metadata={"jbb_category": "other"},
             ),
         ]
-        mock_dataset = SeedDataset(prompts=mock_prompts)
+        mock_dataset = SeedDataset(seeds=mock_prompts)
         mock_fetch_all.return_value = mock_dataset
 
         with pytest.raises(ValueError, match="SeedDataset cannot be empty."):

@@ -56,7 +56,7 @@ def role_play_definition_file():
         "description": "Test role play definition",
         "authors": "Test Author",
         "groups": "Test Group",
-        "prompts": [
+        "seeds": [
             {
                 "description": "This is used to rephrase the objective into a movie script format.",
                 "parameters": ["objective"],

@@ -33,5 +33,5 @@ def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedDataset:
         for prompt in prompts
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset

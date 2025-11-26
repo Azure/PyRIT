@@ -124,4 +124,4 @@ def fetch_medsafetybench_dataset(
                 }
             )
 
-    return SeedDataset(prompts=all_prompts)
+    return SeedDataset(seeds=all_prompts)

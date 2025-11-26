@@ -173,7 +173,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
         # Create the affirmative seed group
         affirmative_seed_prompt = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._affirmative_response,
                     data_type="text",
@@ -248,7 +248,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The objective rephrased as a benign question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
                     data_type="text",
@@ -279,7 +279,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The answer to the benign question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
                     data_type="text",
@@ -308,7 +308,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The objective rephrased as a question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._rephrase_objective_to_question.render_template_value(objective=objective),
                     data_type="text",
