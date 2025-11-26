@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
 # ---
 
 # %% [markdown]
@@ -102,8 +102,8 @@ for objective in conversation_objectives:
         attack_adversarial_config=adversarial_config,
         attack_converter_config=converter_config,
         attack_scoring_config=scoring_config,
-        max_turns=10,
-        max_backtracks=5,
+        max_turns=5,
+        max_backtracks=3,
     )
 
     result = await attack.execute_async(  # type: ignore
@@ -127,7 +127,7 @@ for objective in conversation_objectives:
 from typing import List
 
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackResult
+from pyrit.models.attack_result import AttackResult
 
 memory = CentralMemory.get_memory_instance()
 
@@ -156,7 +156,7 @@ new_attack = CrescendoAttack(
     attack_adversarial_config=adversarial_config,
     attack_scoring_config=scoring_config,
     attack_converter_config=converter_config,
-    max_turns=10,
+    max_turns=5,
     max_backtracks=2,
 )
 
@@ -167,9 +167,7 @@ memory = CentralMemory.get_memory_instance()
 pieces = memory.get_message_pieces(labels=memory_labels)
 conversation_ids = set(piece.conversation_id for piece in pieces)
 
-attack_results: List[AttackResult] = [
-    result for cid in conversation_ids for result in memory.get_attack_results(conversation_id=cid)
-]
+attack_results: List[AttackResult] = [result for cid in conversation_ids for result in memory.get_attack_results(conversation_id=cid)]
 
 conversation_starters = {}
 
