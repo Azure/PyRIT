@@ -18,6 +18,8 @@ from pyrit.executor.attack import (
 )
 from pyrit.models.seed_dataset import SeedDataset
 from pyrit.models.seed_group import SeedGroup
+from pyrit.models.seed_objective import SeedObjective
+from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -149,7 +151,7 @@ class ContentHarmsScenario(Scenario):
                 harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "harms"
                 strategy_seed_dataset = SeedDataset.from_yaml_file(harm_dataset_path / f"{harm_strategy}.prompt")
                 seeds_by_strategy[harm_strategy] = SeedDataset.group_seed_prompts_by_prompt_group_id(
-                    [*strategy_seed_dataset.prompts, *strategy_seed_dataset.objectives]
+                    strategy_seed_dataset.seeds
                 )
         return seeds_by_strategy
 
@@ -234,14 +236,16 @@ class ContentHarmsScenario(Scenario):
         # prompt sequence for multi prompt attack, includes objective followed by seed prompts
         strategy_prompt_sequence = []
         for seed_group in seed_groups:
-            objective = seed_group.objective.value if seed_group.objective is not None else None
-            if objective:
-                strategy_seed_objectives.append(objective)
+            objectives = [seed.value for seed in seed_group.seeds if isinstance(seed, SeedObjective)]
+            if objectives:
+                strategy_seed_objectives.extend(objectives)
 
             # create new SeedGroup without the objective for PromptSendingAttack
-            strategy_seed_group_prompt_only.append(SeedGroup(prompts=seed_group.prompts))
-            for prompt in seed_group.prompts:
+            seed_prompts = []
+            for prompt in seed_group.seeds:
+                seed_prompts.append(SeedPrompt(prompt.value))
                 strategy_prompt_sequence.append(prompt.value)
+            strategy_seed_group_prompt_only.append(SeedGroup(seeds=seed_prompts))
 
         attacks = [
             AtomicAttack(
