@@ -5,9 +5,9 @@
 from pathlib import Path
 
 from pyrit.common.path import (
-    SCORER_EVALS_HARM_PATH,
     SCORER_EVALS_LIKERT_PATH,
     SCORER_EVALS_TRUE_FALSE_PATH,
+    SCORER_LIKERT_PATH,
 )
 from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
 
@@ -25,8 +25,8 @@ def get_harm_eval_datasets(category: str, metrics_type: str):
     """
     directory = ""
     if metrics_type == "harm":
-        directory = str(SCORER_EVALS_HARM_PATH)
-        eval_directory = SCORER_EVALS_LIKERT_PATH
+        directory = str(SCORER_EVALS_LIKERT_PATH)
+        eval_directory = SCORER_LIKERT_PATH
     elif metrics_type == "objective":
         directory = str(SCORER_EVALS_TRUE_FALSE_PATH)
         eval_directory = TRUE_FALSE_QUESTIONS_PATH
@@ -46,7 +46,7 @@ def get_harm_eval_datasets(category: str, metrics_type: str):
             "dataset_name": "exploit_dataset",
         },
         "hate_speech": {
-            "dataset_file_path": f"{directory}/hate_speech_single_score.csv",
+            "dataset_file_path": f"{directory}/hate_speech.csv",
             "evaluation_rubric_file_path": str(Path(eval_directory, "hate_speech.yaml")),
             "dataset_name": "hate_speech_dataset",
         },
@@ -71,7 +71,7 @@ def get_harm_eval_datasets(category: str, metrics_type: str):
             "dataset_name": "sexual_content_dataset",
         },
         "violence": {
-            "dataset_file_path": f"{directory}/violence_single_score.csv",
+            "dataset_file_path": f"{directory}/violence.csv",
             "evaluation_rubric_file_path": str(Path(eval_directory, "violence.yaml")),
             "dataset_name": "violence_dataset",
         },

@@ -167,7 +167,9 @@ memory = CentralMemory.get_memory_instance()
 pieces = memory.get_message_pieces(labels=memory_labels)
 conversation_ids = set(piece.conversation_id for piece in pieces)
 
-attack_results: List[AttackResult] = [result for cid in conversation_ids for result in memory.get_attack_results(conversation_id=cid)]
+attack_results: List[AttackResult] = [
+    result for cid in conversation_ids for result in memory.get_attack_results(conversation_id=cid)
+]
 
 conversation_starters = {}
 
