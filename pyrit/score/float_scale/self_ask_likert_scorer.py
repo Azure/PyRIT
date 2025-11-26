@@ -8,7 +8,7 @@ from typing import Dict, Optional, Union
 
 import yaml
 
-from pyrit.common.path import LIKERT_SCALES_PATH
+from pyrit.common.path import SCORER_EVALS_LIKERT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -18,16 +18,17 @@ logger = logging.getLogger(__name__)
 
 
 class LikertScalePaths(enum.Enum):
-    CYBER_SCALE = Path(LIKERT_SCALES_PATH, "cyber.yaml").resolve()
-    FAIRNESS_BIAS_SCALE = Path(LIKERT_SCALES_PATH, "fairness_bias.yaml").resolve()
-    HARM_SCALE = Path(LIKERT_SCALES_PATH, "harm.yaml").resolve()
-    HATE_SPEECH_SCALE = Path(LIKERT_SCALES_PATH, "hate_speech.yaml").resolve()
-    MISINFORMATION_SCALE = Path(LIKERT_SCALES_PATH, "misinformation.yaml").resolve()
-    PERSUASION_SCALE = Path(LIKERT_SCALES_PATH, "persuasion.yaml").resolve()
-    PHISHING_SCALE = Path(LIKERT_SCALES_PATH, "phishing.yaml").resolve()
-    SEXUAL_SCALE = Path(LIKERT_SCALES_PATH, "sexual.yaml").resolve()
-    VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
-    DECEPTION_SCALE = Path(LIKERT_SCALES_PATH, "deception.yaml").resolve()
+    CYBER_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "cyber.yaml").resolve()
+    FAIRNESS_BIAS_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "fairness_bias.yaml").resolve()
+    HARM_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "harm.yaml").resolve()
+    HATE_SPEECH_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "hate_speech.yaml").resolve()
+    MISINFORMATION_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "misinformation.yaml").resolve()
+    PERSUASION_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "persuasion.yaml").resolve()
+    PHISHING_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "phishing.yaml").resolve()
+    SEXUAL_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "sexual.yaml").resolve()
+    VIOLENCE_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "violence.yaml").resolve()
+    DECEPTION_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "deception.yaml").resolve()
+    EXPLOITS_SCALE = Path(SCORER_EVALS_LIKERT_PATH, "exploits.yaml").resolve()
 
 
 class SelfAskLikertScorer(FloatScaleScorer):
@@ -69,7 +70,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
         self._scoring_instructions_template = SeedPrompt.from_yaml_file(
-            LIKERT_SCALES_PATH / "likert_system_prompt.yaml"
+            SCORER_EVALS_LIKERT_PATH / "likert_system_prompt.yaml"
         )
 
         self._system_prompt = self._scoring_instructions_template.render_template_value(

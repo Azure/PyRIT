@@ -208,7 +208,7 @@ def test_construct_objective_entry_bool_conversion(sample_responses):
 
 
 def test_human_labeled_dataset_from_csv():
-    csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/SAMPLE_hate_speech.csv"
+    csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/mini_hate_speech.csv"
     dataset = HumanLabeledDataset.from_csv(
         csv_path=csv_path,
         metrics_type=MetricsType.HARM,
@@ -219,7 +219,7 @@ def test_human_labeled_dataset_from_csv():
     assert isinstance(dataset, HumanLabeledDataset)
     assert dataset.metrics_type == MetricsType.HARM
     assert all(isinstance(e, HarmHumanLabeledEntry) for e in dataset.entries)
-    assert dataset.name == "SAMPLE_hate_speech"
+    assert dataset.name == "mini_hate_speech"
 
 
 def test_human_labeled_dataset_from_csv_with_data_type_col(tmp_path):

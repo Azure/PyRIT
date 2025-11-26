@@ -96,7 +96,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         many_shot_prompt = self._template.render_template_value(prompt=context.objective, examples=self._examples)
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=many_shot_prompt, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=many_shot_prompt, data_type="text")])
 
         context.seed_group = seed_group
 
