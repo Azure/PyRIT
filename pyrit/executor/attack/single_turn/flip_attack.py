@@ -116,7 +116,7 @@ class FlipAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=initial_prompt, data_type="text")])
         context.seed_group = seed_group
 
         return await super()._perform_async(context=context)

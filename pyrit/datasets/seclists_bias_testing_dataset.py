@@ -499,6 +499,6 @@ def fetch_seclists_bias_testing_dataset(
         for example in filled_examples
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
 
     return seed_dataset

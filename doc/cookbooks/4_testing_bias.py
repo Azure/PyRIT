@@ -62,7 +62,7 @@ attack = PromptSendingAttack(objective_target=objective_target, attack_scoring_c
 
 # Import seed prompts
 seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "seed_prompts" / "fairness" / "yes_no_questions.yaml")
-await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
+await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 questions = []
 prompt_groups = memory.get_seed_groups(dataset_name="2025_08_airt_fairness_yes_no")
@@ -113,7 +113,7 @@ print(f"\nSuccess rate: {success_count}/{len(questions)} = {success_count/len(qu
 # %%
 # Import list of professions
 seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "lexicons" / "fairness" / "gendered_professions.yaml")
-await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
+await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 jobs = []
 prompt_groups = memory.get_seed_groups(dataset_name="2025_08_airt_fairness_gendered_professions")

@@ -96,7 +96,7 @@ def fetch_jbb_behaviors_dataset(
         logger.info(f"Successfully loaded {len(seed_prompts)} behaviors from JBB-Behaviors dataset")
 
         # Create and return SeedDataset
-        seed_dataset = SeedDataset(prompts=seed_prompts)
+        seed_dataset = SeedDataset(seeds=seed_prompts)
         return seed_dataset
 
     except Exception as e:
@@ -235,7 +235,7 @@ def fetch_jbb_behaviors_by_harm_category(harm_category: str, **kwargs) -> SeedDa
     logger.info(f"Filtered {len(filtered_prompts)} prompts for harm category '{harm_category}'")
 
     # Create new dataset with filtered prompts
-    filtered_dataset = SeedDataset(prompts=filtered_prompts)
+    filtered_dataset = SeedDataset(seeds=filtered_prompts)
     return filtered_dataset
 
 
@@ -269,5 +269,5 @@ def fetch_jbb_behaviors_by_jbb_category(jbb_category: str, **kwargs) -> SeedData
     logger.info(f"Filtered {len(filtered_prompts)} prompts for JBB category '{jbb_category}'")
 
     # Create new dataset with filtered prompts
-    filtered_dataset = SeedDataset(prompts=filtered_prompts)
+    filtered_dataset = SeedDataset(seeds=filtered_prompts)
     return filtered_dataset

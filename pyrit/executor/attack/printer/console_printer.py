@@ -113,41 +113,46 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
         turn_number = 0
         for message in messages:
+            # Increment turn number once per message with role="user"
+            if message.role == "user":
+                turn_number += 1
+                # User message header
+                print()
+                self._print_colored("─" * self._width, Fore.BLUE)
+                self._print_colored(f"🔹 Turn {turn_number} - USER", Style.BRIGHT, Fore.BLUE)
+                self._print_colored("─" * self._width, Fore.BLUE)
+            elif message.role == "system":
+                # System message header (not counted as a turn)
+                print()
+                self._print_colored("─" * self._width, Fore.MAGENTA)
+                self._print_colored("🔧 SYSTEM", Style.BRIGHT, Fore.MAGENTA)
+                self._print_colored("─" * self._width, Fore.MAGENTA)
+            else:
+                # Assistant or other role message header
+                print()
+                self._print_colored("─" * self._width, Fore.YELLOW)
+                self._print_colored(f"🔸 {message.role.upper()}", Style.BRIGHT, Fore.YELLOW)
+                self._print_colored("─" * self._width, Fore.YELLOW)
+
+            # Now print all pieces in this message
             for piece in message.message_pieces:
-                if piece.role == "user":
-                    turn_number += 1
-                    # User message header
-                    print()
-                    self._print_colored("─" * self._width, Fore.BLUE)
-                    self._print_colored(f"🔹 Turn {turn_number} - USER", Style.BRIGHT, Fore.BLUE)
-                    self._print_colored("─" * self._width, Fore.BLUE)
+                # Skip reasoning traces unless explicitly requested
+                if piece.original_value_data_type == "reasoning" and not include_reasoning_trace:
+                    continue
 
-                    # Handle converted values
-                    if piece.converted_value != piece.original_value:
-                        self._print_colored(f"{self._indent} Original:", Fore.CYAN)
-                        self._print_wrapped_text(piece.original_value, Fore.WHITE)
-                        print()
-                        self._print_colored(f"{self._indent} Converted:", Fore.CYAN)
-                        self._print_wrapped_text(piece.converted_value, Fore.WHITE)
-                    else:
-                        self._print_wrapped_text(piece.converted_value, Fore.BLUE)
+                # Handle converted values for user messages
+                if piece.role == "user" and piece.converted_value != piece.original_value:
+                    self._print_colored(f"{self._indent} Original:", Fore.CYAN)
+                    self._print_wrapped_text(piece.original_value, Fore.WHITE)
+                    print()
+                    self._print_colored(f"{self._indent} Converted:", Fore.CYAN)
+                    self._print_wrapped_text(piece.converted_value, Fore.WHITE)
+                elif piece.role == "user":
+                    self._print_wrapped_text(piece.converted_value, Fore.BLUE)
                 elif piece.role == "system":
-                    # System message header (not counted as a turn)
-                    print()
-                    self._print_colored("─" * self._width, Fore.MAGENTA)
-                    self._print_colored("🔧 SYSTEM", Style.BRIGHT, Fore.MAGENTA)
-                    self._print_colored("─" * self._width, Fore.MAGENTA)
-
                     self._print_wrapped_text(piece.converted_value, Fore.MAGENTA)
                 else:
-                    if piece.original_value_data_type != "reasoning" or include_reasoning_trace:
-                        # Assistant message header
-                        print()
-                        self._print_colored("─" * self._width, Fore.YELLOW)
-                        self._print_colored(f"🔸 {piece.role.upper()}", Style.BRIGHT, Fore.YELLOW)
-                        self._print_colored("─" * self._width, Fore.YELLOW)
-
-                        self._print_wrapped_text(piece.converted_value, Fore.YELLOW)
+                    self._print_wrapped_text(piece.converted_value, Fore.YELLOW)
 
                 # Display images if present
                 await display_image_response(piece)
