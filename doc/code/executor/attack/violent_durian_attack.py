@@ -19,7 +19,6 @@
 import logging
 import os
 import random
-from pathlib import Path
 
 from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
 from pyrit.executor.attack import (

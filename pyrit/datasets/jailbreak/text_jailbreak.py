@@ -110,5 +110,3 @@ class TextJailBreak:
             str: The rendered jailbreak template with the prompt parameter filled in.
         """
         return self.template.render_template_value(prompt=prompt)
-    
-
