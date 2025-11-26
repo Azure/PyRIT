@@ -169,7 +169,7 @@ class AzureMLChatTarget(PromptChatTarget):
         # Persist the message to memory so conversation history is maintained
         if not messages:
             self._memory.add_message_to_memory(request=message)
-            messages = [message.to_chat_message()]
+            messages = [request.to_chat_message()]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
