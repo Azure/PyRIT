@@ -15,9 +15,9 @@ from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 logger = logging.getLogger(__name__)
 
 
-class OpenAISoraTarget(OpenAITarget):
+class OpenAIVideoTarget(OpenAITarget):
     """
-    OpenAI Sora Target using the OpenAI SDK for video generation.
+    OpenAI Video Target using the OpenAI SDK for video generation.
 
     Supports Sora-2 and Sora-2-Pro models via the OpenAI videos API.
 
@@ -41,14 +41,14 @@ class OpenAISoraTarget(OpenAITarget):
         **kwargs,
     ):
         """
-        Initialize the OpenAI Sora Target.
+        Initialize the OpenAI Video Target.
 
         Args:
             model_name (str, Optional): The video model to use (e.g., "sora-2", "sora-2-pro").
                 Defaults to "sora-2".
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the service.
-                Uses OPENAI_SORA_KEY environment variable by default.
+                Uses OPENAI_VIDEO_KEY environment variable by default.
             headers (str, Optional): Extra headers of the endpoint (JSON).
             use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key.
@@ -65,9 +65,9 @@ class OpenAISoraTarget(OpenAITarget):
         super().__init__(**kwargs)
 
         # Accept base URLs (/v1), specific API paths (/videos, /v1/videos), Azure formats
-        # Note: Only Sora v2 API is supported (uses SDK's videos.create_and_poll)
-        sora_url_patterns = [r"/v1$", r"/videos", r"/v1/videos", r"openai/v1", r"\.models\.ai\.azure\.com"]
-        self._warn_if_irregular_endpoint(sora_url_patterns)
+        # Note: Only video v2 API is supported (uses SDK's videos.create_and_poll)
+        video_url_patterns = [r"/v1$", r"/videos", r"/v1/videos", r"openai/v1", r"\.models\.ai\.azure\.com"]
+        self._warn_if_irregular_endpoint(video_url_patterns)
 
         self._n_seconds = n_seconds
         self._validate_duration()
@@ -75,9 +75,9 @@ class OpenAISoraTarget(OpenAITarget):
 
     def _set_openai_env_configuration_vars(self) -> None:
         """Set environment variable names."""
-        self.model_name_environment_variable = "OPENAI_SORA_MODEL"
-        self.endpoint_environment_variable = "OPENAI_SORA_ENDPOINT"
-        self.api_key_environment_variable = "OPENAI_SORA_KEY"
+        self.model_name_environment_variable = "OPENAI_VIDEO_MODEL"
+        self.endpoint_environment_variable = "OPENAI_VIDEO_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_VIDEO_KEY"
 
     def _validate_resolution(self, *, resolution_dimensions: str) -> str:
         """
@@ -146,9 +146,9 @@ class OpenAISoraTarget(OpenAITarget):
 
     def _check_content_filter(self, response: Any) -> bool:
         """
-        Check if a Sora video generation response was content filtered.
+        Check if a video generation response was content filtered.
 
-        Sora indicates content filtering through:
+        Response indicates content filtering through:
         - Status is "failed"
         - Error code is "content_filter" (output-side filtering)
         - Error code is "moderation_blocked" (input moderation)
@@ -174,7 +174,7 @@ class OpenAISoraTarget(OpenAITarget):
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """
-        Construct a Message from a Sora video response.
+        Construct a Message from a video response.
 
         Args:
             response: The Video response from OpenAI SDK.

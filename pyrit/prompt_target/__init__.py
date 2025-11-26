@@ -21,10 +21,10 @@ from pyrit.prompt_target.http_target.http_target_callback_functions import (
 from pyrit.prompt_target.hugging_face.hugging_face_chat_target import HuggingFaceChatTarget
 from pyrit.prompt_target.hugging_face.hugging_face_endpoint_target import HuggingFaceEndpointTarget
 from pyrit.prompt_target.openai.openai_completion_target import OpenAICompletionTarget
-from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIDALLETarget
+from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIImageTarget
 from pyrit.prompt_target.openai.openai_realtime_target import RealtimeTarget
 from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
-from pyrit.prompt_target.openai.openai_sora_target import OpenAISoraTarget
+from pyrit.prompt_target.openai.openai_video_target import OpenAIVideoTarget
 from pyrit.prompt_target.openai.openai_tts_target import OpenAITTSTarget
 from pyrit.prompt_target.playwright_target import PlaywrightTarget
 from pyrit.prompt_target.playwright_copilot_target import CopilotType, PlaywrightCopilotTarget
@@ -46,10 +46,10 @@ __all__ = [
     "HuggingFaceEndpointTarget",
     "limit_requests_per_minute",
     "OpenAICompletionTarget",
-    "OpenAIDALLETarget",
+    "OpenAIImageTarget",
     "OpenAIChatTarget",
     "OpenAIResponseTarget",
-    "OpenAISoraTarget",
+    "OpenAIVideoTarget",
     "OpenAITTSTarget",
     "OpenAITarget",
     "PlaywrightTarget",

@@ -18,27 +18,27 @@ from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 logger = logging.getLogger(__name__)
 
 
-class OpenAIDALLETarget(OpenAITarget):
-    """A target for image generation using OpenAI's DALL-E models."""
+class OpenAIImageTarget(OpenAITarget):
+    """A target for image generation using OpenAI's image models."""
 
     def __init__(
         self,
         image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024",
         num_images: int = 1,
-        dalle_version: Literal["dall-e-2", "dall-e-3"] = "dall-e-2",
+        image_version: Literal["dall-e-2", "dall-e-3"] = "dall-e-2",
         quality: Literal["standard", "hd"] = "standard",
         style: Literal["natural", "vivid"] = "natural",
         *args,
         **kwargs,
     ):
         """
-        Initialize the DALL-E target with specified parameters.
+        Initialize the image target with specified parameters.
 
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the `OPENAI_DALLE_API_KEY` environment variable.
+                Defaults to the `OPENAI_IMAGE_API_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -51,7 +51,7 @@ class OpenAIDALLETarget(OpenAITarget):
                 Defaults to "1024x1024".
             num_images (int, Optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be
                 between 1 and 10. For DALL-E-3, this must be 1.
-            dalle_version (Literal["dall-e-2", "dall-e-3"], Optional): The version of DALL-E to use. Defaults to
+            image_version (Literal["dall-e-2", "dall-e-3"], Optional): The version of DALL-E to use. Defaults to
                 "dall-e-2".
             quality (Literal["standard", "hd"], Optional): The quality of the generated images. Only applicable for
                 DALL-E-3. Defaults to "standard".
@@ -67,13 +67,13 @@ class OpenAIDALLETarget(OpenAITarget):
             ValueError: If `num_images` is not 1 for DALL-E-3.
             ValueError: If `num_images` is less than 1 or greater than 10 for DALL-E-2.
         """
-        self.dalle_version = dalle_version
-        if dalle_version == "dall-e-3":
+        self.image_version = image_version
+        if image_version == "dall-e-3":
             if num_images != 1:
                 raise ValueError("DALL-E-3 can only generate 1 image at a time.")
             self.quality = quality
             self.style = style
-        elif dalle_version == "dall-e-2":
+        elif image_version == "dall-e-2":
             if num_images < 1 or num_images > 10:
                 raise ValueError("DALL-E-2 can generate only up to 10 images at a time.")
 
@@ -83,19 +83,19 @@ class OpenAIDALLETarget(OpenAITarget):
         super().__init__(*args, **kwargs)
 
         # Accept base URLs (/v1), specific API paths (/images/generations), Azure formats
-        dalle_url_patterns = [
+        image_url_patterns = [
             r"/v1$",
             r"/images/generations",
             r"/deployments/[^/]+/",
             r"openai/v1",
             r"\.models\.ai\.azure\.com",
         ]
-        self._warn_if_irregular_endpoint(dalle_url_patterns)
+        self._warn_if_irregular_endpoint(image_url_patterns)
 
     def _set_openai_env_configuration_vars(self):
-        self.model_name_environment_variable = "OPENAI_DALLE_MODEL"
-        self.endpoint_environment_variable = "OPENAI_DALLE_ENDPOINT"
-        self.api_key_environment_variable = "OPENAI_DALLE_API_KEY"
+        self.model_name_environment_variable = "OPENAI_IMAGE_MODEL"
+        self.endpoint_environment_variable = "OPENAI_IMAGE_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_IMAGE_API_KEY"
 
     @limit_requests_per_minute
     @pyrit_target_retry
@@ -111,7 +111,7 @@ class OpenAIDALLETarget(OpenAITarget):
             message (Message): The message to send.
 
         Returns:
-            Message: The response from the DALL-E target.
+            Message: The response from the image target.
         """
         self._validate_request(message=message)
         message_piece = message.message_pieces[0]
@@ -126,7 +126,7 @@ class OpenAIDALLETarget(OpenAITarget):
             "size": self.image_size,
             "response_format": "b64_json",
         }
-        if self.dalle_version == "dall-e-3" and self.quality and self.style:
+        if self.image_version == "dall-e-3" and self.quality and self.style:
             image_generation_args["quality"] = self.quality
             image_generation_args["style"] = self.style
 

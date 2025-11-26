@@ -11,9 +11,9 @@ from pyrit.prompt_target import (
     AzureMLChatTarget,
     OpenAIChatTarget,
     OpenAICompletionTarget,
-    OpenAIDALLETarget,
+    OpenAIImageTarget,
     OpenAIResponseTarget,
-    OpenAISoraTarget,
+    OpenAIVideoTarget,
     OpenAITTSTarget,
     RealtimeTarget,
 )
@@ -190,7 +190,7 @@ async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_
     ("endpoint", "api_key"),
     [
         ("AZURE_ML_MANAGED_ENDPOINT", "AZURE_ML_KEY"),
-        ("AZURE_ML_PHI_ENDPOINT", "AZURE_ML_PHI_KEY"),
+        ("AZURE_ML_MIXTRAL_ENDPOINT", "AZURE_ML_MIXTRAL_KEY"),
     ],
 )
 async def test_connect_required_aml_text_targets(sqlite_instance, endpoint, api_key):
@@ -224,15 +224,15 @@ async def test_connect_openai_completion(sqlite_instance):
 @pytest.mark.parametrize(
     ("endpoint", "api_key"),
     [
-        ("OPENAI_DALLE_ENDPOINT1", "OPENAI_DALLE_API_KEY1"),
-        ("OPENAI_DALLE_ENDPOINT2", "OPENAI_DALLE_API_KEY2"),
+        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_API_KEY1"),
+        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_API_KEY2"),
     ],
 )
-async def test_connect_dall_e(sqlite_instance, endpoint, api_key):
+async def test_connect_image(sqlite_instance, endpoint, api_key):
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
 
-    target = OpenAIDALLETarget(
+    target = OpenAIImageTarget(
         endpoint=endpoint_value,
         api_key=api_key_value,
     )
@@ -264,18 +264,18 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key):
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL"),
-        # OpenAI Platform Sora returns HTTP 401 "Missing scopes: api.videos.write" for all requests
-        # ("PLATFORM_OPENAI_SORA_ENDPOINT", "PLATFORM_OPENAI_SORA_KEY", "PLATFORM_OPENAI_SORA_MODEL"),
+        ("OPENAI_VIDEO2_ENDPOINT", "OPENAI_VIDEO2_KEY", "OPENAI_VIDEO2_MODEL"),
+        # OpenAI Platform endpoint returns HTTP 401 "Missing scopes: api.videos.write" for all requests
+        # ("PLATFORM_OPENAI_VIDEO_ENDPOINT", "PLATFORM_OPENAI_VIDEO_KEY", "PLATFORM_OPENAI_VIDEO_MODEL"),
     ],
 )
-async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
-    """Test OpenAISoraTarget with Sora-2 API."""
+async def test_connect_video(sqlite_instance, endpoint, api_key, model_name):
+    """Test OpenAIVideoTarget with video API."""
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
     model_name_value = _get_required_env_var(model_name)
 
-    target = OpenAISoraTarget(
+    target = OpenAIVideoTarget(
         endpoint=endpoint_value,
         api_key=api_key_value,
         model_name=model_name_value,
@@ -287,19 +287,19 @@ async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
 
 
 @pytest.mark.asyncio
-async def test_sora_multiple_prompts_create_separate_files(sqlite_instance):
+async def test_video_multiple_prompts_create_separate_files(sqlite_instance):
     """
-    Test that sending multiple prompts to Sora-2 using PromptSendingAttack
+    Test that sending multiple prompts to video API using PromptSendingAttack
     creates separate video files and doesn't override previous files.
 
     This verifies that each video generation creates a unique file based on
     the video ID mechanism.
     """
-    endpoint_value = _get_required_env_var("OPENAI_SORA2_ENDPOINT")
-    api_key_value = _get_required_env_var("OPENAI_SORA2_KEY")
-    model_name_value = _get_required_env_var("OPENAI_SORA2_MODEL")
+    endpoint_value = _get_required_env_var("OPENAI_VIDEO2_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_VIDEO2_KEY")
+    model_name_value = _get_required_env_var("OPENAI_VIDEO2_MODEL")
 
-    target = OpenAISoraTarget(
+    target = OpenAIVideoTarget(
         endpoint=endpoint_value,
         api_key=api_key_value,
         model_name=model_name_value,

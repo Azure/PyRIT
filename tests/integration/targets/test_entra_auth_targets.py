@@ -8,9 +8,9 @@ import pytest
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_target import (
     OpenAIChatTarget,
-    OpenAIDALLETarget,
+    OpenAIImageTarget,
     OpenAIResponseTarget,
-    OpenAISoraTarget,
+    OpenAIVideoTarget,
     OpenAITTSTarget,
     PromptShieldTarget,
     RealtimeTarget,
@@ -63,17 +63,17 @@ async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_na
 @pytest.mark.parametrize(
     "endpoint",
     [
-        "OPENAI_DALLE_ENDPOINT1",
-        "OPENAI_DALLE_ENDPOINT2",
+        "OPENAI_IMAGE_ENDPOINT1",
+        "OPENAI_IMAGE_ENDPOINT2",
     ],
 )
-async def test_openai_dalle_target_entra_auth(sqlite_instance, endpoint):
+async def test_OPENAI_IMAGE_target_entra_auth(sqlite_instance, endpoint):
     args = {
         "endpoint": os.getenv(endpoint),
         "use_entra_auth": True,
     }
 
-    target = OpenAIDALLETarget(**args)
+    target = OpenAIImageTarget(**args)
 
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="A cute baby sea otter")
@@ -141,12 +141,12 @@ async def test_openai_realtime_target_entra_auth(sqlite_instance, endpoint, mode
 
 
 @pytest.mark.asyncio
-async def test_sora_target_entra_auth(sqlite_instance):
+async def test_video_target_entra_auth(sqlite_instance):
     # Takes a long time and sometimes encounters retry errors.
-    # Note: OPENAI_SORA_ENDPOINT should be configured for Sora v2 API
-    target = OpenAISoraTarget(
-        endpoint=os.getenv("OPENAI_SORA2_ENDPOINT"),
-        model_name=os.getenv("OPENAI_SORA2_MODEL"),
+    # Note: OPENAI_VIDEO_ENDPOINT should be configured for Sora v2 API
+    target = OpenAIVideoTarget(
+        endpoint=os.getenv("OPENAI_VIDEO2_ENDPOINT"),
+        model_name=os.getenv("OPENAI_VIDEO2_MODEL"),
         use_entra_auth=True)
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="test")

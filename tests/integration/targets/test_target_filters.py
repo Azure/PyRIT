@@ -8,9 +8,9 @@ import pytest
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_target import (
     OpenAIChatTarget,
-    OpenAIDALLETarget,
+    OpenAIImageTarget,
     OpenAIResponseTarget,
-    OpenAISoraTarget,
+    OpenAIVideoTarget,
 )
 
 
@@ -92,10 +92,10 @@ async def test_azure_content_filters_response_api(sqlite_instance, endpoint, api
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("endpoint", "api_key"),
-    [("AZURE_OPENAI_DALLE_ENDPOINT", "AZURE_OPENAI_DALLE_API_KEY")],
+    [("AZURE_OPENAI_IMAGE_ENDPOINT", "AZURE_OPENAI_IMAGE_API_KEY")],
 )
-async def test_dalle_input_filters(sqlite_instance, endpoint, api_key):
-    target = OpenAIDALLETarget(
+async def test_image_input_filters(sqlite_instance, endpoint, api_key):
+    target = OpenAIImageTarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
     )
@@ -119,10 +119,10 @@ async def test_dalle_input_filters(sqlite_instance, endpoint, api_key):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
-    [("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL")],
+    [("OPENAI_VIDEO2_ENDPOINT", "OPENAI_VIDEO2_KEY", "OPENAI_VIDEO2_MODEL")],
 )
-async def test_sora_input_filters(sqlite_instance, endpoint, api_key, model_name):
-    target = OpenAISoraTarget(
+async def test_video_input_filters(sqlite_instance, endpoint, api_key, model_name):
+    target = OpenAIVideoTarget(
         endpoint=os.getenv(endpoint),
         api_key=os.getenv(api_key),
         model_name=os.getenv(model_name),

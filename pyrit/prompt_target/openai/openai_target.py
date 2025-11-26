@@ -133,7 +133,7 @@ class OpenAITarget(PromptChatTarget):
             scope = get_default_scope(self._endpoint)
             self._azure_auth = AzureAuth(token_scope=scope)
             # For SDK-based targets: auth is handled via azure_ad_token_provider parameter
-            # For non-SDK targets (DALL-E, TTS, etc): keep manual header for backward compatibility
+            # For non-SDK targets (image, TTS, etc): keep manual header for backward compatibility
             self._headers["Authorization"] = f"Bearer {self._azure_auth.get_token()}"
             self._api_key = None
         else:
@@ -141,7 +141,7 @@ class OpenAITarget(PromptChatTarget):
                 env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
             )
             # For SDK-based targets: api_key is passed to AsyncOpenAI/AsyncAzureOpenAI constructors
-            # For non-SDK targets (DALL-E, TTS, etc): keep manual headers for backward compatibility
+            # For non-SDK targets (image, TTS, etc): keep manual headers for backward compatibility
             self._headers["Api-Key"] = self._api_key
             self._headers["Authorization"] = f"Bearer {self._api_key}"
 
@@ -271,7 +271,7 @@ class OpenAITarget(PromptChatTarget):
             elif base_url.endswith("/audio/speech"):
                 base_url = base_url[: -len("/audio/speech")]
             elif base_url.endswith("/v1/videos") or base_url.endswith("/videos"):
-                # Strip videos path for Sora API
+                # Strip videos path for video API
                 if base_url.endswith("/v1/videos"):
                     base_url = base_url[: -len("/videos")]  # Keep /v1
                 else:
