@@ -131,8 +131,6 @@ chapters:
     - file: code/scenarios/0_scenarios
       sections:
       - file: code/scenarios/1_composite_scenario
-      - file: code/scenarios/2_end_to_end_scenario_datasets
-      - file: code/scenarios/2_end_to_end_scenario
     - file: code/front_end/0_front_end
       sections:
       - file: code/front_end/1_pyrit_scan
