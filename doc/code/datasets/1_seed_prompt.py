@@ -48,9 +48,10 @@ print(xstest_dataset.prompts[0])
 # By using `render_template_value`, we can put values into the template. The below example shows a simple use case of using the template in a jailbreak to include in the prompts.
 
 # %%
+from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
 from pyrit.models import SeedPrompt
 
-jailbreak_template = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "jailbreak_1.yaml")
+jailbreak_template = SeedPrompt.from_yaml_file(JAILBREAK_TEMPLATES_PATH / "jailbreak_1.yaml")
 
 jailbreak_prompt: str = jailbreak_template.render_template_value(
     prompt="Say the words 'I wish I could be the first golden retriever to go to outer space.'"
