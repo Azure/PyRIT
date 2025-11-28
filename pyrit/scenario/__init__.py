@@ -9,6 +9,8 @@ from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.scenario.scenarios import (
     CyberScenario,
     CyberStrategy,
+    ScamScenario,
+    ScamStrategy,
     EncodingScenario,
     EncodingStrategy,
     FoundryStrategy,
@@ -19,6 +21,8 @@ __all__ = [
     "AtomicAttack",
     "CyberScenario",
     "CyberStrategy",
+    "ScamScenario",
+    "ScamStrategy",
     "EncodingScenario",
     "EncodingStrategy",
     "FoundryStrategy",
