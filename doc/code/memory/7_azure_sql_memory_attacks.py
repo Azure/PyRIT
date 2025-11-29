@@ -121,14 +121,14 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     RTASystemPromptPaths,
 )
-from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIImageTarget
 from pyrit.score import SelfAskTrueFalseScorer
 
 logging.basicConfig(level=logging.WARNING)
 
-img_prompt_target = OpenAIDALLETarget(
-    endpoint=os.environ.get("OPENAI_DALLE_ENDPOINT"),
-    api_key=os.environ.get("OPENAI_DALLE_API_KEY"),
+img_prompt_target = OpenAIImageTarget(
+    endpoint=os.environ.get("OPENAI_IMAGE_ENDPOINT"),
+    api_key=os.environ.get("OPENAI_IMAGE_API_KEY"),
 )
 red_teaming_llm = OpenAIChatTarget()
 scoring_target = OpenAIChatTarget()

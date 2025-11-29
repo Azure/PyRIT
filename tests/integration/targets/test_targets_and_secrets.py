@@ -11,9 +11,9 @@ from pyrit.prompt_target import (
     AzureMLChatTarget,
     OpenAIChatTarget,
     OpenAICompletionTarget,
-    OpenAIDALLETarget,
+    OpenAIImageTarget,
     OpenAIResponseTarget,
-    OpenAISoraTarget,
+    OpenAIVideoTarget,
     OpenAITTSTarget,
     RealtimeTarget,
 )
@@ -97,6 +97,7 @@ async def _assert_can_send_video_prompt(target):
         ("OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL", True),
         ("PLATFORM_OPENAI_CHAT_ENDPOINT", "PLATFORM_OPENAI_CHAT_KEY", "PLATFORM_OPENAI_CHAT_MODEL", True),
         ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "", True),
+        ("AZURE_OPENAI_GPT4O_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "AZURE_OPENAI_GPT4O_MODEL", True),
         ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_KEY", "", True),
         ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", "", True),
         ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", "", True),
@@ -140,6 +141,11 @@ async def test_connect_required_openai_text_targets(sqlite_instance, endpoint, a
             "PLATFORM_OPENAI_RESPONSES_MODEL",
         ),
         ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL"),
+        (
+            "AZURE_OPENAI_RESPONSES_NEW_FORMAT_ENDPOINT",
+            "AZURE_OPENAI_RESPONSES_KEY",
+            "AZURE_OPENAI_RESPONSES_MODEL",
+        ),
     ],
 )
 async def test_connect_required_openai_response_targets(sqlite_instance, endpoint, api_key, model_name):
@@ -184,7 +190,7 @@ async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_
     ("endpoint", "api_key"),
     [
         ("AZURE_ML_MANAGED_ENDPOINT", "AZURE_ML_KEY"),
-        ("AZURE_ML_PHI_ENDPOINT", "AZURE_ML_PHI_KEY"),
+        ("AZURE_ML_MIXTRAL_ENDPOINT", "AZURE_ML_MIXTRAL_KEY"),
     ],
 )
 async def test_connect_required_aml_text_targets(sqlite_instance, endpoint, api_key):
@@ -218,15 +224,15 @@ async def test_connect_openai_completion(sqlite_instance):
 @pytest.mark.parametrize(
     ("endpoint", "api_key"),
     [
-        ("OPENAI_DALLE_ENDPOINT1", "OPENAI_DALLE_API_KEY1"),
-        ("OPENAI_DALLE_ENDPOINT2", "OPENAI_DALLE_API_KEY2"),
+        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_API_KEY1"),
+        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_API_KEY2"),
     ],
 )
-async def test_connect_dall_e(sqlite_instance, endpoint, api_key):
+async def test_connect_image(sqlite_instance, endpoint, api_key):
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
 
-    target = OpenAIDALLETarget(
+    target = OpenAIImageTarget(
         endpoint=endpoint_value,
         api_key=api_key_value,
     )
@@ -258,19 +264,18 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key):
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_SORA1_ENDPOINT", "OPENAI_SORA1_KEY", "OPENAI_SORA1_MODEL"),
-        ("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL"),
-        # OpenAI Platform Sora returns HTTP 401 "Missing scopes: api.videos.write" for all requests
-        # ("PLATFORM_OPENAI_SORA_ENDPOINT", "PLATFORM_OPENAI_SORA_KEY", "PLATFORM_OPENAI_SORA_MODEL"),
+        ("OPENAI_VIDEO2_ENDPOINT", "OPENAI_VIDEO2_KEY", "OPENAI_VIDEO2_MODEL"),
+        # OpenAI Platform endpoint returns HTTP 401 "Missing scopes: api.videos.write" for all requests
+        # ("PLATFORM_OPENAI_VIDEO_ENDPOINT", "PLATFORM_OPENAI_VIDEO_KEY", "PLATFORM_OPENAI_VIDEO_MODEL"),
     ],
 )
-async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
-    """Test OpenAISoraTarget with both Sora-1 and Sora-2 APIs (auto-detected via endpoint)."""
+async def test_connect_video(sqlite_instance, endpoint, api_key, model_name):
+    """Test OpenAIVideoTarget with video API."""
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
     model_name_value = _get_required_env_var(model_name)
 
-    target = OpenAISoraTarget(
+    target = OpenAIVideoTarget(
         endpoint=endpoint_value,
         api_key=api_key_value,
         model_name=model_name_value,
@@ -282,81 +287,19 @@ async def test_connect_sora(sqlite_instance, endpoint, api_key, model_name):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("endpoint_var", "api_key_var", "model_var", "resolution"),
-    [
-        # Sora-1 - test unsupported resolution (should return processing error)
-        ("OPENAI_SORA1_ENDPOINT", "OPENAI_SORA1_KEY", "OPENAI_SORA1_MODEL", "640x360"),
-        # Azure OpenAI Sora-2 - test unsupported resolution (should return processing error)
-        ("OPENAI_SORA2_ENDPOINT", "OPENAI_SORA2_KEY", "OPENAI_SORA2_MODEL", "640x360"),
-        # OpenAI Platform Sora - 1024x1792 returns HTTP 401 "Missing scopes: api.videos.write"
-        # ("PLATFORM_OPENAI_SORA_ENDPOINT", "PLATFORM_OPENAI_SORA_KEY", "PLATFORM_OPENAI_SORA_MODEL", "1024x1792"),
-    ],
-)
-async def test_connect_sora_unsupported_resolution_returns_processing_error(
-    sqlite_instance, endpoint_var, api_key_var, model_var, resolution
-):
+async def test_video_multiple_prompts_create_separate_files(sqlite_instance):
     """
-    Test that unsupported resolutions return proper processing errors.
-
-    Sora-1: Tests with 640x360 which is not in the supported resolution list.
-    Sora-2: The API spec claims support for 1024x1792 and 1792x1024, but these are
-            not supported on Azure OpenAI Sora-2 (only on Sora-2-Pro).
-
-    This test verifies that such errors are properly categorized as error="processing"
-    rather than crashing or returning unknown error types.
-    """
-    endpoint_value = _get_required_env_var(endpoint_var)
-    api_key_value = _get_required_env_var(api_key_var)
-    model_value = _get_required_env_var(model_var)
-
-    target = OpenAISoraTarget(
-        endpoint=endpoint_value,
-        api_key=api_key_value,
-        model_name=model_value,
-        resolution_dimensions=resolution,
-        n_seconds=4,  # Supported by v2 (4, 8, or 12s)
-    )
-
-    video_prompt = "A raccoon sailing a pirate ship"
-    attack = PromptSendingAttack(objective_target=target)
-    result = await attack.execute_async(objective=video_prompt)
-
-    # Verify we got a response
-    assert result.last_response is not None
-    assert result.last_response.converted_value is not None
-
-    # This resolution should return a processing error (not supported on this account)
-    assert (
-        result.last_response.response_error == "processing"
-    ), f"Expected error type 'processing' for unsupported resolution, got: {result.last_response.response_error}"
-    assert (
-        result.last_response.original_value_data_type == "error"
-    ), f"Expected response type 'error', got: {result.last_response.original_value_data_type}"
-
-    # Verify the error message contains expected information about invalid resolution
-    error_message = result.last_response.converted_value
-    # Both v1 and v2 APIs return errors mentioning the problem
-    assert any(
-        keyword in error_message.lower()
-        for keyword in ["user error", "video_generation_user_error", "invalid", "unsupported", "not supported"]
-    ), f"Expected error message about invalid/unsupported resolution, got: {error_message}"
-
-
-@pytest.mark.asyncio
-async def test_sora_multiple_prompts_create_separate_files(sqlite_instance):
-    """
-    Test that sending multiple prompts to Sora-1 using PromptSendingAttack
+    Test that sending multiple prompts to video API using PromptSendingAttack
     creates separate video files and doesn't override previous files.
 
     This verifies that each video generation creates a unique file based on
-    the task_id/generation_id mechanism.
+    the video ID mechanism.
     """
-    endpoint_value = _get_required_env_var("OPENAI_SORA1_ENDPOINT")
-    api_key_value = _get_required_env_var("OPENAI_SORA1_KEY")
-    model_name_value = _get_required_env_var("OPENAI_SORA1_MODEL")
+    endpoint_value = _get_required_env_var("OPENAI_VIDEO2_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_VIDEO2_KEY")
+    model_name_value = _get_required_env_var("OPENAI_VIDEO2_MODEL")
 
-    target = OpenAISoraTarget(
+    target = OpenAIVideoTarget(
         endpoint=endpoint_value,
         api_key=api_key_value,
         model_name=model_name_value,
