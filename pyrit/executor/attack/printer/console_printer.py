@@ -75,7 +75,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
         # Print conversation
         self._print_section_header("Conversation History")
-        await self.print_conversation_async(result, include_auxiliary_scores=include_auxiliary_scores)
+        await self.print_conversation_async(result, include_scores=include_auxiliary_scores)
 
         # Print metadata if available
         if result.metadata:
@@ -85,7 +85,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
         self._print_footer()
 
     async def print_conversation_async(
-        self, result: AttackResult, *, include_auxiliary_scores: bool = False, include_reasoning_trace: bool = False
+        self, result: AttackResult, *, include_scores: bool = False, include_reasoning_trace: bool = False
     ) -> None:
         """
         Print the conversation history to console with enhanced formatting.
@@ -100,7 +100,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
         Args:
             result (AttackResult): The attack result containing the conversation_id.
                 Must have a valid conversation_id attribute.
-            include_auxiliary_scores (bool): Whether to include auxiliary scores in the output.
+            include_scores (bool): Whether to include scores in the output.
                 Defaults to False.
             include_reasoning_trace (bool): Whether to include model reasoning trace in the output
                 for applicable models. Defaults to False.
@@ -157,8 +157,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                 # Display images if present
                 await display_image_response(piece)
 
-                # Print scores with better formatting (only if auxiliary scores are requested)
-                if include_auxiliary_scores:
+                # Print scores with better formatting (only if scores are requested)
+                if include_scores:
                     scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
                     if scores:
                         print()
