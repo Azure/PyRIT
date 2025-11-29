@@ -42,7 +42,7 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     ContextComplianceAttack,
 )
-from pyrit.prompt_converter.translation_converter import TranslationConverter
+from pyrit.prompt_converter import TranslationConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer, FloatScaleThresholdScorer
