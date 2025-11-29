@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 import yaml
 
-from pyrit.common.path import SCALES_PATH
+from pyrit.common.path import SCORER_SCALES_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -20,14 +20,14 @@ class SelfAskScaleScorer(FloatScaleScorer):
     """
 
     class ScalePaths(enum.Enum):
-        TREE_OF_ATTACKS_SCALE = Path(SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
-        TASK_ACHIEVED_SCALE = Path(SCALES_PATH, "task_achieved_scale.yaml").resolve()
-        CRITERIA_SCALE = Path(SCALES_PATH, "criteria_example_scale.yaml").resolve()
+        TREE_OF_ATTACKS_SCALE = Path(SCORER_SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
+        TASK_ACHIEVED_SCALE = Path(SCORER_SCALES_PATH, "task_achieved_scale.yaml").resolve()
+        CRITERIA_SCALE = Path(SCORER_SCALES_PATH, "criteria_example_scale.yaml").resolve()
 
     class SystemPaths(enum.Enum):
-        GENERAL_SYSTEM_PROMPT = Path(SCALES_PATH, "general_system_prompt.yaml").resolve()
-        RED_TEAMER_SYSTEM_PROMPT = Path(SCALES_PATH, "red_teamer_system_prompt.yaml").resolve()
-        CRITERIA_SYSTEM_PROMPT = Path(SCALES_PATH, "criteria_system_prompt.yaml").resolve()
+        GENERAL_SYSTEM_PROMPT = Path(SCORER_SCALES_PATH, "general_system_prompt.yaml").resolve()
+        RED_TEAMER_SYSTEM_PROMPT = Path(SCORER_SCALES_PATH, "red_teamer_system_prompt.yaml").resolve()
+        CRITERIA_SYSTEM_PROMPT = Path(SCORER_SCALES_PATH, "criteria_system_prompt.yaml").resolve()
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],

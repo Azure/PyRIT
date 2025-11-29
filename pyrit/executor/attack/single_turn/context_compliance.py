@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -44,7 +44,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
     # Default path for context description instructions
     DEFAULT_CONTEXT_DESCRIPTION_PATH: Path = (
-        Path(DATASETS_PATH) / "executors" / "context_compliance" / "context_description.yaml"
+        Path(EXECUTOR_SEED_PROMPT_PATH) / "context_compliance" / "context_description.yaml"
     )
 
     # Default affirmative response used in conversation

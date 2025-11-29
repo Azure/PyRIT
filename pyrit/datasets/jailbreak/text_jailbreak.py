@@ -1,10 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pathlib
 import random
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
 from pyrit.models import SeedPrompt
 
 
@@ -51,7 +50,7 @@ class TextJailBreak:
             self.template = SeedPrompt(value=string_template)
         else:
             # Get all yaml files in the jailbreak directory and its subdirectories
-            jailbreak_dir = pathlib.Path(DATASETS_PATH) / "jailbreak"
+            jailbreak_dir = JAILBREAK_TEMPLATES_PATH
             # Get all yaml files but exclude those in multi_parameter subdirectory
             yaml_files = [f for f in jailbreak_dir.rglob("*.yaml") if "multi_parameter" not in f.parts]
             if not yaml_files:
