@@ -251,7 +251,7 @@ extend-select = [
 # Temporary ignores for pyrit/ subdirectories until issue #1176
 # https://github.com/Azure/PyRIT/issues/1176 is fully resolved
 # TODO: Remove these ignores once the issues are fixed
-"pyrit/{auxiliary_attacks,exceptions,memory,models,prompt_converter,prompt_normalizer,prompt_target,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501"]
+"pyrit/{auxiliary_attacks,exceptions,memory,models,prompt_converter,prompt_target,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501"]
 "pyrit/__init__.py" = ["D104"]
 
 [tool.ruff.lint.pydocstyle]
