@@ -215,50 +215,24 @@ async def test_receive_events_empty_output(target: RealtimeTarget):
 
 
 @pytest.mark.asyncio
-async def test_receive_events_missing_content(target):
-    """Test handling of response.done event with output but missing content."""
+async def test_receive_events_response_done_no_transcript_validation(target):
+    """Test that response.done no longer validates transcript structure (collected from deltas instead)."""
     mock_connection = AsyncMock()
-    conversation_id = "test_missing_content"
+    conversation_id = "test_response_done"
     target._existing_conversation[conversation_id] = mock_connection
 
-    # Mock event with missing content
+    # Mock response.done event - no longer extracts or validates transcript
     mock_event = MagicMock()
     mock_event.type = "response.done"
     mock_event.response.status = "success"
-    mock_output_item = MagicMock()
-    mock_output_item.content = None  # Missing content
-    mock_event.response.output = [mock_output_item]
 
     # Mock connection to yield test event
     mock_connection.__aiter__.return_value = [mock_event]
     
-    with pytest.raises(ValueError, match="Missing or invalid 'content'"):
-        await target.receive_events(conversation_id)
-
-
-@pytest.mark.asyncio
-async def test_receive_events_missing_transcript(target):
-    """Test handling of response.done event with content but missing transcript."""
-    mock_connection = AsyncMock()
-    conversation_id = "test_missing_transcript"
-    target._existing_conversation[conversation_id] = mock_connection
-
-    # Mock event with content but missing transcript
-    mock_event = MagicMock()
-    mock_event.type = "response.done"
-    mock_event.response.status = "success"
-    mock_content_item = MagicMock()
-    mock_content_item.transcript = None  # Missing transcript
-    mock_content_item.type = "text"
-    mock_output_item = MagicMock()
-    mock_output_item.content = [mock_content_item]
-    mock_event.response.output = [mock_output_item]
-
-    # Mock connection to yield test event
-    mock_connection.__aiter__.return_value = [mock_event]
-    
-    with pytest.raises(ValueError, match="Missing 'transcript'"):
-        await target.receive_events(conversation_id)
+    # Should complete successfully without raising - transcripts come from delta events
+    result = await target.receive_events(conversation_id)
+    assert result is not None
+    assert len(result.transcripts) == 0  # No deltas, so no transcripts
 
 
 @pytest.mark.asyncio
@@ -339,22 +313,33 @@ async def test_receive_events_with_audio_and_transcript(target):
     mock_audio_done_event = MagicMock()
     mock_audio_done_event.type = "response.audio.done"
 
-    # Create transcript event
-    mock_transcript_event = MagicMock()
-    mock_transcript_event.type = "response.done"
-    mock_transcript_event.response.status = "success"
-    mock_content_item = MagicMock()
-    mock_content_item.transcript = "Hello, this is a test transcript."
-    mock_output_item = MagicMock()
-    mock_output_item.content = [mock_content_item]
-    mock_transcript_event.response.output = [mock_output_item]
+    # Create transcript delta events (transcripts now come from deltas, not response.done)
+    mock_transcript_delta1 = MagicMock()
+    mock_transcript_delta1.type = "response.audio_transcript.delta"
+    mock_transcript_delta1.delta = "Hello, "
+    
+    mock_transcript_delta2 = MagicMock()
+    mock_transcript_delta2.type = "response.audio_transcript.delta"
+    mock_transcript_delta2.delta = "this is a test transcript."
+
+    # Create response.done event (no longer extracts transcript)
+    mock_done_event = MagicMock()
+    mock_done_event.type = "response.done"
+    mock_done_event.response.status = "success"
 
     # Mock connection to yield all events
-    mock_connection.__aiter__.return_value = [mock_audio_event, mock_audio_done_event, mock_transcript_event]
+    mock_connection.__aiter__.return_value = [
+        mock_audio_event, 
+        mock_transcript_delta1, 
+        mock_transcript_delta2,
+        mock_audio_done_event, 
+        mock_done_event
+    ]
 
     result = await target.receive_events(conversation_id)
 
-    # Result should have both audio buffer and transcript
-    assert len(result.transcripts) == 1
+    # Result should have both audio buffer and transcript from deltas
+    assert len(result.transcripts) == 2
     assert result.audio_bytes == b"dummyaudio"
-    assert result.transcripts[0] == "Hello, this is a test transcript."
+    assert result.transcripts[0] == "Hello, "
+    assert result.transcripts[1] == "this is a test transcript."

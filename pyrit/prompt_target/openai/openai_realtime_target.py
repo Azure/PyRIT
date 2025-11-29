@@ -486,7 +486,7 @@ class RealtimeTarget(OpenAITarget):
     @staticmethod
     def _handle_response_done_event(*, event: Any, result: RealtimeTargetResult) -> None:
         """
-        Process a response.done event from OpenAI client and extract the transcript.
+        Process a response.done event from OpenAI client.
 
         Args:
             event: The event object from OpenAI client
@@ -495,6 +495,11 @@ class RealtimeTarget(OpenAITarget):
         Raises:
             ValueError: If event structure doesn't match expectations
             ServerErrorException: If response status is failed
+            
+        Note:
+            We no longer extract transcripts here since we capture them from
+            transcript.delta events. This avoids duplicates and supports soft-finish
+            when response.done never arrives.
         """
         logger.debug(f"Processing 'response.done' event")
 
@@ -506,20 +511,9 @@ class RealtimeTarget(OpenAITarget):
             error_details = RealtimeTarget._extract_error_details(response=response)
             raise ServerErrorException(message=error_details)
 
-        if not response.output or not isinstance(response.output, list):
-            raise ValueError(f"Empty or invalid 'output' array in response: {response.output}")
-
-        output = response.output[0]
-        if not output.content or not isinstance(output.content, list) or len(output.content) == 0:
-            raise ValueError(f"Missing or invalid 'content' in: {output}")
-
-        content = output.content[0]
-        if not hasattr(content, 'transcript') or content.transcript is None:
-            raise ValueError(f"Missing 'transcript' in: {content}")
-
-        transcript = content.transcript
-        result.transcripts.append(transcript)
-        logger.debug(f"Added transcript to conversation messages: {transcript[:50]}...")
+        # We used to extract transcript here, but now we collect it from delta events
+        # to support soft-finish when response.done doesn't arrive
+        logger.debug(f"Response completed successfully with {len(result.transcripts)} transcript fragments")
 
     @staticmethod
     def _extract_error_details(*, response: Any) -> str:
