@@ -132,18 +132,11 @@ class OpenAITarget(PromptChatTarget):
             logger.info("Authenticating with AzureAuth")
             scope = get_default_scope(self._endpoint)
             self._azure_auth = AzureAuth(token_scope=scope)
-            # For SDK-based targets: auth is handled via azure_ad_token_provider parameter
-            # For non-SDK targets (image, TTS, etc): keep manual header for backward compatibility
-            self._headers["Authorization"] = f"Bearer {self._azure_auth.get_token()}"
             self._api_key = None
         else:
             self._api_key = default_values.get_non_required_value(
                 env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
             )
-            # For SDK-based targets: api_key is passed to AsyncOpenAI/AsyncAzureOpenAI constructors
-            # For non-SDK targets (image, TTS, etc): keep manual headers for backward compatibility
-            self._headers["Api-Key"] = self._api_key
-            self._headers["Authorization"] = f"Bearer {self._api_key}"
 
     def _extract_deployment_from_azure_url(self, url: str) -> str:
         """
@@ -172,9 +165,14 @@ class OpenAITarget(PromptChatTarget):
         """
         Refresh the authentication headers. This is particularly useful for Entra authentication
         where tokens need to be refreshed periodically.
+        
+        Note: For SDK-based targets, token refresh is handled automatically by the SDK's
+        token provider mechanism. This method is kept for backward compatibility.
         """
         if self._azure_auth:
-            self._headers["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
+            # Token refresh is now handled automatically by the SDK's token provider
+            # This explicit refresh is kept for any edge cases or manual refresh needs
+            self._azure_auth.refresh_token()
 
     def _initialize_azure_openai_old_format(self, *, httpx_kwargs: dict) -> None:
         """
