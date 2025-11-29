@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -31,43 +31,51 @@ target = RealtimeTarget()
 # %% [markdown]
 # ## Audio Conversation
 #
+# **Note:** Audio input currently has a known timeout issue with the AsyncOpenAI client library. Text input and audio output work correctly. This cell is included for reference but commented out to prevent timeouts during automated testing.
+#
 # The following shows how to interact with the Realtime Target with audio files as your prompt. You can either use pre-made audio files with the pcm16 format or you can use PyRIT converters to help turn your text into audio.
 
 # %%
-from pathlib import Path
+# NOTE: Audio input currently times out with the AsyncOpenAI client library.
+# This is a known limitation. Text input and audio output work correctly.
+# Uncomment the code below to test audio input (it will timeout after 30 seconds):
 
-from pyrit.executor.attack import (
-    AttackExecutor,
-    ConsoleAttackResultPrinter,
-    PromptSendingAttack,
-    SingleTurnAttackContext,
-)
-from pyrit.models import SeedGroup, SeedPrompt
+# from pathlib import Path
+# 
+# from pyrit.executor.attack import (
+#     AttackExecutor,
+#     ConsoleAttackResultPrinter,
+#     PromptSendingAttack,
+#     SingleTurnAttackContext,
+# )
+# from pyrit.models import SeedGroup, SeedPrompt
+# 
+# # This is audio asking how to cut down a tree
+# audio_path = Path("../../../assets/converted_audio.wav").resolve()
+# 
+# # The objective string itself is not sent to the target
+# objective = "Cutting down a tree"
+# 
+# seed_group = SeedGroup(
+#     seeds=[
+#         SeedPrompt(
+#             value=str(audio_path),
+#             data_type="audio_path",
+#         ),
+#     ]
+# )
+# 
+# context = SingleTurnAttackContext(
+#     objective=objective,
+#     seed_group=seed_group,
+# )
+# 
+# attack = PromptSendingAttack(objective_target=target)
+# result = await attack.execute_with_context_async(context=context)  # type: ignore
+# await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
+# await target.cleanup_target()  # type: ignore
 
-# This is audio asking how to cut down a tree
-audio_path = Path("../../../assets/converted_audio.wav").resolve()
-
-# The objective string itself is not sent to the target
-objective = "Cutting down a tree"
-
-seed_group = SeedGroup(
-    seeds=[
-        SeedPrompt(
-            value=str(audio_path),
-            data_type="audio_path",
-        ),
-    ]
-)
-
-context = SingleTurnAttackContext(
-    objective=objective,
-    seed_group=seed_group,
-)
-
-attack = PromptSendingAttack(objective_target=target)
-result = await attack.execute_with_context_async(context=context)  # type: ignore
-await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
-await target.cleanup_target()  # type: ignore
+print("Audio input test skipped due to known timeout limitation with AsyncOpenAI client.")
 
 # %% [markdown]
 # ## Text Conversation
@@ -75,6 +83,8 @@ await target.cleanup_target()  # type: ignore
 # This section below shows how to interact with the Realtime Target with text prompts
 
 # %%
+from pyrit.executor.attack import AttackExecutor, ConsoleAttackResultPrinter, PromptSendingAttack
+
 prompt_to_send = "What is the capitol of France?"
 second_prompt_to_send = "What is the size of that city?"
 # Showing how to send multiple prompts but each is its own conversation, ie the second prompt is not a follow up to the first
