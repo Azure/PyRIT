@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -24,7 +28,7 @@
 # %%
 from pathlib import Path
 
-from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
+from pyrit.common.path import RED_TEAM_EXECUTOR_PATH, SCORER_CONFIG_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -34,7 +38,9 @@ from pyrit.executor.attack import (
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
-from pyrit.score import LookBackScorer, SubStringScorer
+from pyrit.score import SubStringScorer
+from pyrit.score.float_scale.conversation_scorer import ConversationScorer
+from pyrit.score.float_scale.self_ask_likert_scorer import SelfAskLikertScorer
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -58,7 +64,7 @@ prepended_conversation = [
     Message(
         message_pieces=[
             MessagePiece(
-                role="user",
+                role="system",
                 original_value=user_prompt_str,
             )
         ]
@@ -101,12 +107,18 @@ result = await red_teaming_attack.execute_async(  # type: ignore
 
 await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
 
-# Retrieve the completed conversation and hand to LookBackScorer
+# Retrieve the completed conversation and hand to ConversationScorer
 memory = CentralMemory.get_memory_instance()
 conversation_history = memory.get_conversation(conversation_id=result.conversation_id)
 
-# Exclude the instruction prompts from the scoring process by setting exclude_instruction_prompts to True
-score_conversation = LookBackScorer(chat_target=adversarial_chat, exclude_instruction_prompts=True)
+# Load the behavior change scale configuration
+behavior_change_scale_path = Path(SCORER_CONFIG_PATH, "likert_scales", "behavior_change.yaml").resolve()
+
+# Create a FloatScaleScorer (SelfAskLikertScorer) to evaluate behavior changes
+behavior_scale_scorer = SelfAskLikertScorer(chat_target=adversarial_chat, likert_scale_path=behavior_change_scale_path)
+
+# Wrap the FloatScaleScorer with ConversationScorer to score the entire conversation
+conversation_scorer = ConversationScorer(scorer=behavior_scale_scorer)
 
 # Score requires a Message object with a single MessagePiece
 # The scorer will use the conversation_id to get the full conversation history from memory
@@ -115,6 +127,6 @@ message_piece = conversation_message_pieces[0]
 message = Message(message_pieces=[message_piece])
 
 # Returns a score using entire conversation as context
-score = (await score_conversation.score_async(message))[0]  # type: ignore
+score = (await conversation_scorer.score_async(message))[0]  # type: ignore
 
 print(f"{score} {score.score_rationale}")
