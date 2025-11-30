@@ -23,7 +23,7 @@ from pyrit.exceptions.exception_classes import (
     RateLimitException,
 )
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import Message, MessagePiece
+from pyrit.models import JsonResponseConfig, Message, MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 
 
@@ -126,7 +126,6 @@ def test_init_is_json_supported_can_be_set_to_true(patch_central_database):
 
 @pytest.mark.asyncio()
 async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
-
     image_request = get_image_message_piece()
     entries = [
         Message(
@@ -178,23 +177,31 @@ async def test_construct_request_body_includes_extra_body_params(
 
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["key"] == "value"
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("is_json", [True, False])
-async def test_construct_request_body_includes_json(
-    is_json, target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
-):
-
+async def test_construct_request_body_json_object(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
     request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata={"response_format": "json"})
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
-    if is_json:
-        assert body["response_format"] == {"type": "json_object"}
-    else:
-        assert "response_format" not in body
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["response_format"] == {"type": "json_object"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_json_schema(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    schema_obj = {"type": "object", "properties": {"name": {"type": "string"}}}
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata={"response_format": "json", "json_schema": schema_obj})
+
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "CustomSchema", "schema": schema_obj, "strict": True},
+    }
 
 
 @pytest.mark.asyncio
@@ -203,13 +210,15 @@ async def test_construct_request_body_removes_empty_values(
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert "max_completion_tokens" not in body
     assert "max_tokens" not in body
     assert "temperature" not in body
     assert "top_p" not in body
     assert "frequency_penalty" not in body
     assert "presence_penalty" not in body
+    assert "response_format" not in body
 
 
 @pytest.mark.asyncio
@@ -217,8 +226,9 @@ async def test_construct_request_body_serializes_text_message(
     target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert (
         body["messages"][0]["content"] == "dummy text"
     ), "Text messages are serialized in a simple way that's more broadly supported"
@@ -231,8 +241,9 @@ async def test_construct_request_body_serializes_complex_message(
     image_piece = get_image_message_piece()
     image_piece.conversation_id = dummy_text_message_piece.conversation_id  # Match conversation IDs
     request = Message(message_pieces=[dummy_text_message_piece, image_piece])
+    jrc = JsonResponseConfig.from_metadata(metadata=None)
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     messages = body["messages"][0]["content"]
     assert len(messages) == 2, "Complex messages are serialized as a list"
     assert messages[0]["type"] == "text", "Text messages are serialized properly when multi-modal"
@@ -314,7 +325,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
     side_effect = httpx.HTTPStatusError("Rate Limit Reached", response=response, request=MagicMock())
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-
         message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
         with pytest.raises(RateLimitException) as rle:
@@ -437,7 +447,6 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
         with patch(
             "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
         ) as mock_create:
-
             openai_mock_return = MagicMock()
             openai_mock_return.text = json.dumps(openai_response_json)
             mock_create.return_value = openai_mock_return
@@ -451,7 +460,6 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChatTarget):
-
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     response = MagicMock()
@@ -462,7 +470,6 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChat
     with patch(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
     ) as mock_request:
-
         with pytest.raises(RateLimitError):
             await target.send_prompt_async(message=message)
             assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
@@ -470,7 +477,6 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChat
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
-
     response = MagicMock()
     response.status_code = 400
 
@@ -486,7 +492,6 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
-
     response_body = json.dumps(
         {
             "choices": [
@@ -522,7 +527,6 @@ async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
 
 
 def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
-
     image_piece = get_image_message_piece()
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
     message = Message(
@@ -567,7 +571,6 @@ def test_inheritance_from_prompt_chat_target_base():
 
 
 def test_is_response_format_json_supported(target: OpenAIChatTarget):
-
     message_piece = MessagePiece(
         role="user",
         original_value="original prompt text",
@@ -578,8 +581,26 @@ def test_is_response_format_json_supported(target: OpenAIChatTarget):
     )
 
     result = target.is_response_format_json(message_piece)
-
+    assert isinstance(result, bool)
     assert result is True
+
+
+def test_is_response_format_json_schema_supported(target: OpenAIChatTarget):
+    schema = {"type": "object", "properties": {"name": {"type": "string"}}}
+    message_piece = MessagePiece(
+        role="user",
+        original_value="original prompt text",
+        converted_value="Hello, how are you?",
+        conversation_id="conversation_1",
+        sequence=0,
+        prompt_metadata={
+            "response_format": "json",
+            "json_schema": json.dumps(schema),
+        },
+    )
+
+    result = target.is_response_format_json(message_piece)
+    assert result
 
 
 def test_is_response_format_json_no_metadata(target: OpenAIChatTarget):
@@ -649,7 +670,6 @@ async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTa
         patch.object(target, "_validate_request"),
         patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
     ):
-
         mock_construct.return_value = {}
 
         with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
@@ -684,7 +704,6 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
         patch.object(target, "_validate_request"),
         patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
     ):
-
         mock_construct.return_value = {}
 
         error_json = {"error": {"code": "content_filter"}}
@@ -751,7 +770,6 @@ def test_set_auth_headers_with_entra_auth(patch_central_database):
         patch("pyrit.prompt_target.openai.openai_target.get_default_scope") as mock_scope,
         patch("pyrit.prompt_target.openai.openai_target.AzureAuth") as mock_auth_class,
     ):
-
         mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
         mock_auth_instance = MagicMock()
         mock_auth_instance.get_token.return_value = "test_token_123"

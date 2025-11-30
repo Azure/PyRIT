@@ -15,6 +15,7 @@ from pyrit.exceptions import (
 )
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.models import (
+    JsonResponseConfig,
     Message,
     MessagePiece,
 )
@@ -84,9 +85,9 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
         super().__init__(**kwargs)
 
         if temperature is not None and (temperature < 0 or temperature > 2):
-            raise PyritException("temperature must be between 0 and 2 (inclusive).")
+            raise PyritException(message="temperature must be between 0 and 2 (inclusive).")
         if top_p is not None and (top_p < 0 or top_p > 1):
-            raise PyritException("top_p must be between 0 and 1 (inclusive).")
+            raise PyritException(message="top_p must be between 0 and 1 (inclusive).")
 
         self._temperature = temperature
         self._top_p = top_p
@@ -110,14 +111,14 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
         message_piece: MessagePiece = message.message_pieces[0]
 
-        is_json_response = self.is_response_format_json(message_piece)
+        json_response_config = self.get_json_response_config(message_piece=message_piece)
 
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
         conversation.append(message)
 
         logger.info(f"Sending the following prompt to the prompt target: {message}")
 
-        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+        body = await self._construct_request_body(conversation=conversation, json_config=json_response_config)
 
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
@@ -159,7 +160,9 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
 
         return response
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
+    ) -> dict:
         raise NotImplementedError
 
     def _construct_message_from_openai_json(

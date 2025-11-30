@@ -21,6 +21,7 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
 )
 from pyrit.models import (
+    JsonResponseConfig,
     Message,
     MessagePiece,
     PromptDataType,
@@ -291,7 +292,9 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
                 request["role"] = "developer"
         return
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
+    ) -> dict:
         """
         Construct the request body to send to the Responses API.
 
@@ -299,6 +302,8 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
         not `text.format` from the old Chat Completions style.
         """
         input_items = await self._build_input_for_multi_modal_async(conversation)
+
+        text_format = self._build_text_format(json_config=json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -308,7 +313,7 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
             "stream": False,
             "input": input_items,
             # Correct JSON response format per Responses API
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "text": text_format,
         }
 
         if self._extra_body_parameters:
@@ -316,6 +321,23 @@ class OpenAIResponseTarget(OpenAIChatTargetBase):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
+
+    def _build_text_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+
+        if json_config.schema:
+            return {
+                "format": {
+                    "type": "json_schema",
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
+                }
+            }
+
+        logger.info("Using json_object format without schema - consider providing a schema for better results")
+        return {"format": {"type": "json_object"}}
 
     def _construct_message_from_openai_json(
         self,
