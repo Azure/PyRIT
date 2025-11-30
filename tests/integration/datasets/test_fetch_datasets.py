@@ -5,6 +5,7 @@ import pytest
 
 from pyrit.datasets import (
     fetch_adv_bench_dataset,
+    fetch_anthropic_evals_dataset,
     fetch_aya_redteaming_dataset,
     fetch_babelscape_alert_dataset,
     fetch_ccp_sensitive_prompts_dataset,
@@ -40,6 +41,7 @@ from pyrit.models import SeedDataset
     "fetch_function, is_seed_dataset",
     [
         (fetch_adv_bench_dataset, True),
+        (fetch_anthropic_evals_dataset, True),
         (fetch_aya_redteaming_dataset, True),
         (fetch_babelscape_alert_dataset, True),
         (fetch_ccp_sensitive_prompts_dataset, True),
