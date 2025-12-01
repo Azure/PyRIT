@@ -128,7 +128,9 @@ chapters:
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
-    - file: code/scenarios/scenarios
+    - file: code/scenarios/0_scenarios
+      sections:
+      - file: code/scenarios/1_composite_scenario
     - file: code/front_end/0_front_end
       sections:
       - file: code/front_end/1_pyrit_scan
