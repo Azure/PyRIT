@@ -12,7 +12,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedDataset, SeedGroup
+from pyrit.models import SeedGroup
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_converter import (
     AsciiSmugglerConverter,
@@ -39,6 +39,7 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
+from pyrit.scenario.dataset import ScenarioDatasetUtils
 from pyrit.score import TrueFalseScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
 
@@ -171,12 +172,13 @@ class EncodingScenario(Scenario):
         Returns:
             list[str]: List of seed prompt strings to be encoded and tested.
         """
-        seed_prompts: list[str] = []
-        garak_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "garak"
-        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "slur_terms_en.prompt").get_values())
-        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "web_html_js.prompt").get_values())
-
-        return seed_prompts
+        garak_slurs = ScenarioDatasetUtils.seed_dataset_to_list_str(
+            pathlib.Path(DATASETS_PATH) / "seed_prompts" / "garak" / "slur_terms_en.prompt"
+        )
+        garak_html = ScenarioDatasetUtils.seed_dataset_to_list_str(
+            pathlib.Path(DATASETS_PATH) / "seed_prompts" / "garak" / "web_html_js.prompt"
+        )
+        return garak_slurs + garak_html
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
