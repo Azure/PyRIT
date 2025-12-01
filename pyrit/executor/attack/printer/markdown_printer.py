@@ -127,7 +127,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         # Conversation history
         markdown_lines.append("\n## Conversation History\n")
         conversation_lines = await self._get_conversation_markdown_async(
-            result=result, include_auxiliary_scores=include_auxiliary_scores
+            result=result, include_scores=include_auxiliary_scores
         )
         markdown_lines.extend(conversation_lines)
 
@@ -150,7 +150,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         self._render_markdown(markdown_lines)
 
-    async def print_conversation_async(self, result: AttackResult, *, include_auxiliary_scores: bool = False) -> None:
+    async def print_conversation_async(self, result: AttackResult, *, include_scores: bool = False) -> None:
         """
         Print only the conversation history as formatted markdown.
 
@@ -161,12 +161,10 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         Args:
             result (AttackResult): The attack result containing the conversation
                 to display.
-            include_auxiliary_scores (bool): Whether to include auxiliary scores
+            include_scores (bool): Whether to include scores
                 for each message. Defaults to False.
         """
-        markdown_lines = await self._get_conversation_markdown_async(
-            result=result, include_auxiliary_scores=include_auxiliary_scores
-        )
+        markdown_lines = await self._get_conversation_markdown_async(result=result, include_scores=include_scores)
         self._render_markdown(markdown_lines)
 
     async def print_summary_async(self, result: AttackResult) -> None:
@@ -184,7 +182,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         self._render_markdown(markdown_lines)
 
     async def _get_conversation_markdown_async(
-        self, *, result: AttackResult, include_auxiliary_scores: bool = False
+        self, *, result: AttackResult, include_scores: bool = False
     ) -> List[str]:
         """
         Generate markdown lines for the conversation history.
@@ -195,7 +193,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         Args:
             result (AttackResult): The attack result containing the conversation ID.
-            include_auxiliary_scores (bool): Whether to include auxiliary scores
+            include_scores (bool): Whether to include scores
                 for each message. Defaults to False.
 
         Returns:
@@ -226,7 +224,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
                 markdown_lines.extend(await self._format_assistant_message_async(message=message))
 
             # Add scores if requested
-            if include_auxiliary_scores:
+            if include_scores:
                 markdown_lines.extend(self._format_message_scores(message))
 
         return markdown_lines
