@@ -109,8 +109,9 @@ message = Message(message_pieces=[message_piece])
 
 response = await target.send_prompt_async(message=message)  # type: ignore
 
-for idx, piece in enumerate(response.message_pieces):
-    print(f"{idx} | {piece.role}: {piece.original_value}")
+for response_msg in response:
+    for idx, piece in enumerate(response_msg.message_pieces):
+        print(f"{idx} | {piece.role}: {piece.original_value}")
 
 # %% [markdown]
 # ## Using the Built-in Web Search Tool
@@ -154,8 +155,8 @@ message = Message(message_pieces=[message_piece])
 
 response = await target.send_prompt_async(message=message)  # type: ignore
 
-for idx, piece in enumerate(response.message_pieces):
-    if piece.original_value_data_type != "reasoning":
+for response_msg in response:
+    for idx, piece in enumerate(response_msg.message_pieces):
         print(f"{idx} | {piece.role}: {piece.original_value}")
 
 # %% [markdown]
@@ -217,13 +218,13 @@ unconstrained_result = await unconstrained_target.send_prompt_async(message=mess
 result = await target.send_prompt_async(message=message)  # type: ignore
 
 print("Unconstrained Response:")
-for idx, piece in enumerate(unconstrained_result.message_pieces):
-    if piece.original_value_data_type != "reasoning":
+for response_msg in unconstrained_result:
+    for idx, piece in enumerate(response_msg.message_pieces):
         print(f"{idx} | {piece.role}: {piece.original_value}")
 
 print()
 
 print("Constrained Response:")
-for idx, piece in enumerate(result.message_pieces):
-    if piece.original_value_data_type != "reasoning":
+for response_msg in result:
+    for idx, piece in enumerate(response_msg.message_pieces):
         print(f"{idx} | {piece.role}: {piece.original_value}")
