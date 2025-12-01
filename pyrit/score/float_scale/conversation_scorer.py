@@ -4,20 +4,20 @@
 from typing import Optional, cast
 from uuid import UUID
 
-from pyrit.models import MessagePiece, Score
+from pyrit.models import Message, MessagePiece, Score
 from pyrit.models.literals import PromptResponseError
 from pyrit.models.message_piece import Originator
-from pyrit.score import FloatScaleScorer, Scorer
+from pyrit.score import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 
-class ConversationScorer(FloatScaleScorer):
+class ConversationScorer(Scorer):
     """
     Custom scorer that evaluates the entire conversation history rather than just
     the latest response. This is useful for evaluating multi-turn conversations
     where context matters (e.g., psychosocial harms that emerge over time).
 
-    This scorer wraps another scorer (like SelfAskGeneralFloatScaleScorer) and
+    This scorer wraps another scorer (like SelfAskLikertScorer or SelfAskGeneralFloatScaleScorer) and
     feeds it the full conversation history before scoring.
 
     Similar to LookBackScorer, but does not specifically look for behavior changes.
@@ -45,60 +45,85 @@ class ConversationScorer(FloatScaleScorer):
         super().__init__(validator=validator or self._default_validator)
         self._scorer = scorer
 
-    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
+    async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Required abstract method - scores the entire conversation history.
+        Scores the entire conversation history by concatenating all messages and passing to the wrapped scorer.
 
         Args:
-            message_piece: A piece from the conversation to be scored.
-                The conversation ID is used to retrieve the full conversation from memory.
-            objective: Optional objective to evaluate against.
+            message (Message): A message from the conversation to be scored.
+                The conversation ID from the first message piece is used to retrieve the full conversation from memory.
+            objective (Optional[str]): Optional objective to evaluate against.
 
         Returns:
-            List of Score objects from the underlying scorer
+            list[Score]: List of Score objects from the underlying scorer
         """
+        if not message.message_pieces:
+            return []
+
+        # Get conversation ID from the first message piece
+        conversation_id = message.message_pieces[0].conversation_id
+
         # Retrieve the full conversation from memory using the conversation_id
-        conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
+        conversation = self._memory.get_conversation(conversation_id=conversation_id)
 
         if not conversation:
-            raise ValueError(f"Conversation with ID {message_piece.conversation_id} not found in memory.")
+            raise ValueError(f"Conversation with ID {conversation_id} not found in memory.")
 
         # Build the full conversation text
         conversation_text = ""
 
         # Goes through each message in the conversation and appends user and assistant messages
-        for message in conversation:
-            for piece in message.message_pieces:
+        for conv_message in conversation:
+            for piece in conv_message.message_pieces:
                 if piece.role == "user":
                     conversation_text += f"User: {piece.converted_value}\n"
                 elif piece.role == "assistant":
                     conversation_text += f"Assistant: {piece.converted_value}\n"
 
-        # Create a modified copy of the message piece with the full conversation text
-        # This preserves the original message piece metadata while replacing the content
-        modified_piece = MessagePiece(
-            role=message_piece.role,
-            original_value=conversation_text,
-            converted_value=conversation_text,
-            id=message_piece.id,  # Preserve the original ID so memory lookups work
-            conversation_id=message_piece.conversation_id,
-            labels=message_piece.labels,
-            prompt_target_identifier=message_piece.prompt_target_identifier,
-            attack_identifier=message_piece.attack_identifier,
-            original_value_data_type=message_piece.original_value_data_type,
-            converted_value_data_type=message_piece.converted_value_data_type,
-            # Use the original message piece's attributes for proper database tracking
-            response_error=cast(PromptResponseError, message_piece.response_error),
-            originator=cast(Originator, message_piece.originator),
-            original_prompt_id=(
-                cast(UUID, message_piece.original_prompt_id)
-                if isinstance(message_piece.original_prompt_id, str)
-                else message_piece.original_prompt_id
-            ),
-            timestamp=message_piece.timestamp,
+        # Create a new message with the concatenated conversation text
+        # Preserve the original message piece metadata
+        original_piece = message.message_pieces[0]
+        conversation_message = Message(
+            message_pieces=[
+                MessagePiece(
+                    role=original_piece.role,
+                    original_value=conversation_text,
+                    converted_value=conversation_text,
+                    id=original_piece.id,
+                    conversation_id=original_piece.conversation_id,
+                    labels=original_piece.labels,
+                    prompt_target_identifier=original_piece.prompt_target_identifier,
+                    attack_identifier=original_piece.attack_identifier,
+                    original_value_data_type=original_piece.original_value_data_type,
+                    converted_value_data_type=original_piece.converted_value_data_type,
+                    response_error=cast(PromptResponseError, original_piece.response_error),
+                    originator=cast(Originator, original_piece.originator),
+                    original_prompt_id=(
+                        cast(UUID, original_piece.original_prompt_id)
+                        if isinstance(original_piece.original_prompt_id, str)
+                        else original_piece.original_prompt_id
+                    ),
+                    timestamp=original_piece.timestamp,
+                )
+            ]
         )
 
-        # Score using the underlying scorer with the modified piece
-        scores = await self._scorer._score_piece_async(message_piece=modified_piece, objective=objective)
+        # Score using the underlying scorer's _score_async method (not score_async)
+        # This prevents double-insertion into the database since the parent's score_async
+        # will handle adding scores to memory
+        scores = await self._scorer._score_async(message=conversation_message, objective=objective)
 
         return scores
+
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
+        """
+        Required abstract method - not used for ConversationScorer as we override _score_async.
+        """
+        raise NotImplementedError("ConversationScorer uses _score_async, not _score_piece_async")
+
+    def validate_return_scores(self, scores: list[Score]):
+        """
+        Validates the scores returned by the wrapped scorer.
+        Delegates to the underlying scorer's validation.
+        """
+        self._scorer.validate_return_scores(scores=scores)

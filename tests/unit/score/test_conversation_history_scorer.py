@@ -61,7 +61,7 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
         objective="test_objective",
         score_type="float_scale",
     )
-    mock_scorer._score_piece_async = AsyncMock(return_value=[score])
+    mock_scorer._score_async = AsyncMock(return_value=[score])
 
     scorer = ConversationScorer(scorer=mock_scorer)
     scores = await scorer.score_async(message)
@@ -73,9 +73,10 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
     assert result_score.score_rationale == "Valid rationale"
 
     # Verify the underlying scorer was called with conversation history
-    mock_scorer._score_piece_async.assert_awaited_once()
-    call_args = mock_scorer._score_piece_async.call_args
-    called_piece = call_args[1]["message_piece"]
+    mock_scorer._score_async.assert_awaited_once()
+    call_args = mock_scorer._score_async.call_args
+    called_message = call_args[1]["message"]
+    called_piece = called_message.message_pieces[0]
 
     # Verify the conversation text was built correctly
     expected_conversation = (
@@ -149,14 +150,15 @@ async def test_conversation_history_scorer_chronological_ordering(patch_central_
         objective="test",
         score_type="float_scale",
     )
-    mock_scorer._score_piece_async = AsyncMock(return_value=[score])
+    mock_scorer._score_async = AsyncMock(return_value=[score])
 
     scorer = ConversationScorer(scorer=mock_scorer)
 
     await scorer.score_async(message)
 
-    call_args = mock_scorer._score_piece_async.call_args
-    called_piece = call_args[1]["message_piece"]
+    call_args = mock_scorer._score_async.call_args
+    called_message = call_args[1]["message"]
+    called_piece = called_message.message_pieces[0]
 
     expected_conversation = "User: First message\n" "User: Second message\n" "Assistant: Third message\n"
     assert called_piece.original_value == expected_conversation
@@ -205,13 +207,14 @@ async def test_conversation_history_scorer_filters_roles_correctly(patch_central
         objective="test",
         score_type="float_scale",
     )
-    mock_scorer._score_piece_async = AsyncMock(return_value=[score])
+    mock_scorer._score_async = AsyncMock(return_value=[score])
 
     scorer = ConversationScorer(scorer=mock_scorer)
     await scorer.score_async(message)
 
-    call_args = mock_scorer._score_piece_async.call_args
-    called_piece = call_args[1]["message_piece"]
+    call_args = mock_scorer._score_async.call_args
+    called_message = call_args[1]["message"]
+    called_piece = called_message.message_pieces[0]
 
     expected_conversation = "User: User message\n" "Assistant: Assistant message\n"
     assert called_piece.original_value == expected_conversation
@@ -275,14 +278,15 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
         objective="test",
         score_type="float_scale",
     )
-    mock_scorer._score_piece_async = AsyncMock(return_value=[score])
+    mock_scorer._score_async = AsyncMock(return_value=[score])
 
     scorer = ConversationScorer(scorer=mock_scorer)
 
     await scorer.score_async(message)
 
-    call_args = mock_scorer._score_piece_async.call_args
-    called_piece = call_args[1]["message_piece"]
+    call_args = mock_scorer._score_async.call_args
+    called_message = call_args[1]["message"]
+    called_piece = called_message.message_pieces[0]
 
     assert called_piece.id == message_piece.id
     assert called_piece.conversation_id == message_piece.conversation_id
