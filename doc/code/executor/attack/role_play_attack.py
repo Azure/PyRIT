@@ -71,4 +71,4 @@ results = await AttackExecutor().execute_single_turn_attacks_async(  # type: ign
 )
 
 for result in results:
-    await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
+    await ConsoleAttackResultPrinter().print_conversation_async(result=result, include_scores=True)  # type: ignore
