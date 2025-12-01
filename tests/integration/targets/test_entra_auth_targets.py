@@ -67,7 +67,7 @@ async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_na
         "OPENAI_IMAGE_ENDPOINT2",
     ],
 )
-async def test_OPENAI_IMAGE_target_entra_auth(sqlite_instance, endpoint):
+async def test_openai_image_target_entra_auth(sqlite_instance, endpoint):
     args = {
         "endpoint": os.getenv(endpoint),
         "use_entra_auth": True,
