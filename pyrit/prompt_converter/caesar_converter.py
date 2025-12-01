@@ -4,7 +4,7 @@
 import pathlib
 import string
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -49,7 +49,7 @@ class CaesarConverter(PromptConverter):
 
         if self.append_description:
             prompt_template = SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "caesar_description.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "caesar_description.yaml"
             )
             output_text = prompt_template.render_template_value(
                 prompt=self._caesar(prompt), example=self._caesar(self.example), offset=str(self.caesar_offset)

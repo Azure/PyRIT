@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit2
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -22,7 +26,7 @@
 from dataclasses import asdict
 from pathlib import Path
 
-from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_TRUE_FALSE_PATH
+from pyrit.common.path import SCORER_EVALS_HARM_PATH
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     LikertScalePaths,
@@ -170,6 +174,8 @@ likert_scorer.get_scorer_metrics(dataset_name="mini_hate_speech", metrics_type=M
 # - Overall performance is strong (F1=0.91)
 
 # %%
+from pyrit.common.path import SCORER_EVALS_TRUE_FALSE_PATH
+
 refusal_scorer = SelfAskRefusalScorer(chat_target=target)
 
 # factory method that creates an ObjectiveScorerEvaluator in this case because the refusal scorer is a true/false scorer.

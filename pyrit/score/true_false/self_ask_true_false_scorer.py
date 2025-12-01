@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 import yaml
 
-from pyrit.common.path import SCORER_CONFIG_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -17,7 +17,7 @@ from pyrit.score.true_false.true_false_score_aggregator import (
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
-TRUE_FALSE_QUESTIONS_PATH = Path(SCORER_CONFIG_PATH, "true_false_question").resolve()
+TRUE_FALSE_QUESTIONS_PATH = Path(SCORER_SEED_PROMPT_PATH, "true_false_question").resolve()
 
 
 class TrueFalseQuestionPaths(enum.Enum):
