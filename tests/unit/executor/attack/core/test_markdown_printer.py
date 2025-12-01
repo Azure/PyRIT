@@ -22,7 +22,7 @@ def mock_memory():
 
 
 @pytest.fixture
-def markdown_printer():
+def markdown_printer(patch_central_database):
     return MarkdownAttackResultPrinter(display_inline=False)
 
 
