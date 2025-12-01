@@ -52,7 +52,7 @@ EXECUTOR_RED_TEAM_PATH = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH, "red_teaming").
 CONVERTER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "prompt_converters").resolve()
 SCORER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "score").resolve()
 SCORER_CONTENT_CLASSIFIERS_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "content_classifiers").resolve()
-SCORER_LIKERT_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "likert_scales").resolve()
+SCORER_LIKERT_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "likert").resolve()
 SCORER_SCALES_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "scales").resolve()
 
 JAILBREAK_TEMPLATES_PATH = pathlib.Path(DATASETS_PATH, "jailbreak", "templates").resolve()
@@ -72,7 +72,7 @@ PATHS_DICT = {
     "docs_code_path": DOCS_CODE_PATH,
     "docs_path": DOCS_PATH,
     "jailbreak_templates_path": JAILBREAK_TEMPLATES_PATH,
-    "likert_scales_path": SCORER_LIKERT_PATH,
+    "likert_path": SCORER_LIKERT_PATH,
     "log_path": LOG_PATH,
     "pyrit_home_path": HOME_PATH,
     "pyrit_path": PYRIT_PATH,

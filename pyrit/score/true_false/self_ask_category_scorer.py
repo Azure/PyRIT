@@ -19,7 +19,7 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class ContentClassifierPaths(enum.Enum):
-    HARMFUL_CONTENT_CLASSIFIER = Path(SCORER_CONTENT_CLASSIFIERS_PATH, "harmful_content.yaml").resolve()
+    HARMFUL_CONTENT_CLASSIFIER = Path(SCORER_CONTENT_CLASSIFIERS_PATH, "harm.yaml").resolve()
     SENTIMENT_CLASSIFIER = Path(SCORER_CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
 
 
