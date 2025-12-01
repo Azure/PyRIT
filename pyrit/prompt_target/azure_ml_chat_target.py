@@ -157,19 +157,14 @@ class AzureMLChatTarget(PromptChatTarget):
         self._extra_parameters = param_kwargs
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
 
         self._validate_request(message=message)
         request = message.message_pieces[0]
 
-        # Get chat messages from memory (normalizer persists input message BEFORE calling this)
+        # Get chat messages from memory and append the current message
         messages = list(self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id))
-
-        # If messages is empty, this was called directly (not through normalizer)
-        # Persist the message to memory so conversation history is maintained
-        if not messages:
-            self._memory.add_message_to_memory(request=message)
-            messages = [request.to_chat_message()]
+        messages.append(request.to_chat_message())
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -192,7 +187,7 @@ class AzureMLChatTarget(PromptChatTarget):
                 raise hse
 
         logger.info("Received the following response from the prompt target" + f"{response_entry.get_value()}")
-        return response_entry
+        return [response_entry]
 
     @pyrit_target_retry
     async def _complete_chat_async(

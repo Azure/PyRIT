@@ -453,40 +453,37 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
-        Send prompt, handle agentic tool calls (function_call), return assistant's responses.
+        Send prompt, handle agentic tool calls (function_call), return all messages.
 
-        The user's request is handled by the normalizer for memory persistence.
-        This method returns only the assistant's final response.
-        Intermediate messages (function_call, tool_output) are persisted to memory by this method.
+        The Responses API supports structured outputs and tool execution. This method handles both:
+        - Simple text/reasoning responses
+        - Agentic tool-calling loops that may require multiple back-and-forth exchanges
 
         Args:
             message: The initial prompt from the user.
 
         Returns:
-            Message with the final assistant response.
+            List of messages generated during the interaction (assistant responses and tool messages).
+            The normalizer will persist all of these to memory.
         """
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
         is_json_response = self.is_response_format_json(message_piece)
 
-        # Get full conversation history from memory (may include many prior turns)
-        # The normalizer persists the input message BEFORE calling this method
+        # Get full conversation history from memory and append the current message
         conversation: MutableSequence[Message] = self._memory.get_conversation(
             conversation_id=message_piece.conversation_id
         )
+        conversation.append(message)
 
-        # If conversation is empty, this was called directly (not through normalizer)
-        # In that case, persist the message to memory and add to conversation
-        if not conversation:
-            self._memory.add_message_to_memory(request=message)
-            conversation = [message]
+        # Track all responses generated during this interaction
+        responses_to_return: list[Message] = []
 
         # Main agentic loop - each back-and-forth creates a new message
         tool_call_section: Optional[dict[str, Any]] = None
-        final_response: Optional[Message] = None
 
         while True:
             logger.info(f"Sending conversation with {len(conversation)} messages to the prompt target")
@@ -499,19 +496,16 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 request=message,
             )
 
-            # Add result to conversation
+            # Add result to conversation and responses list
             conversation.append(result)
+            responses_to_return.append(result)
 
             # Extract tool call if present
             tool_call_section = self._find_last_pending_tool_call(result)
 
-            # If no tool call, this is the final response
+            # If no tool call, we're done
             if not tool_call_section:
-                final_response = result
                 break
-
-            # Persist this intermediate message to memory (normalizer won't see these)
-            self._memory.add_message_to_memory(request=result)
 
             # Execute the tool/function
             tool_output = await self._execute_call_section(tool_call_section)
@@ -520,16 +514,14 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             tool_piece = self._make_tool_piece(tool_output, tool_call_section["call_id"], reference_piece=message_piece)
             tool_message = Message(message_pieces=[tool_piece], skip_validation=True)
 
-            # Add tool output message to conversation
+            # Add tool output message to conversation and responses list
             conversation.append(tool_message)
-
-            # Persist the tool output message to memory
-            self._memory.add_message_to_memory(request=tool_message)
+            responses_to_return.append(tool_message)
 
             # Continue loop to send tool result and get next response
 
-        # Return the final assistant response (normalizer will persist this separately)
-        return final_response
+        # Return all responses (normalizer will persist all of them to memory)
+        return responses_to_return
 
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
@@ -728,7 +720,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         """
         output_str = output if isinstance(output, str) else json.dumps(output, separators=(",", ":"))
         return MessagePiece(
-            role="assistant",
+            role="tool",
             original_value=json.dumps(
                 {"type": "function_call_output", "call_id": call_id, "output": output_str},
                 separators=(",", ":"),

@@ -214,7 +214,7 @@ class RealtimeTarget(OpenAITarget):
         return "You are a helpful AI assistant"
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
 
         conversation_id = message.message_pieces[0].conversation_id
         if conversation_id not in self._existing_conversation:
@@ -253,7 +253,7 @@ class RealtimeTarget(OpenAITarget):
         ).message_pieces[0]
 
         response_entry = Message(message_pieces=[text_response_piece, audio_response_piece])
-        return response_entry
+        return [response_entry]
 
     async def save_audio(
         self,

@@ -84,7 +84,7 @@ class OpenAICompletionTarget(OpenAITarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
 
         self._validate_request(message=message)
         message_piece = message.message_pieces[0]
@@ -107,10 +107,11 @@ class OpenAICompletionTarget(OpenAITarget):
         request_params = {k: v for k, v in body_parameters.items() if v is not None}
 
         # Use unified error handler - automatically detects Completion and validates
-        return await self._handle_openai_request(
+        response = await self._handle_openai_request(
             api_call=lambda: self._async_client.completions.create(**request_params),  # type: ignore[call-overload]
             request=message,
         )
+        return [response]
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """

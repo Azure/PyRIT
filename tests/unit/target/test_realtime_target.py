@@ -52,14 +52,15 @@ async def test_send_prompt_async(target):
     # Call the send_prompt_async method
     response = await target.send_prompt_async(message=message)
 
+    assert len(response) == 1
     assert response
 
     target.send_text_async.assert_called_once_with(
         text="Hello",
         conversation_id="test_conversation_id",
     )
-    assert response.get_value() == "hello"
-    assert response.get_value(1) == "output.wav"
+    assert response[0].get_value() == "hello"
+    assert response[0].get_value(1) == "output.wav"
 
     # Clean up the WebSocket connections
     await target.cleanup_target()

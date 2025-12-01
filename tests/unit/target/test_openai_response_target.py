@@ -416,11 +416,12 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
         return_value="data:image/jpeg;base64,encoded_string",
     ):
         target._async_client.responses.create = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
-        response: Message = await target.send_prompt_async(message=message)
+        response: list[Message] = await target.send_prompt_async(message=message)
         # Response contains only assistant's response, not user's input
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].role == "assistant"
-        assert response.message_pieces[0].converted_value == "hi"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].converted_value == "hi"
     os.remove(tmp_file_name)
 
 
@@ -543,10 +544,11 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
 
     response = await target.send_prompt_async(message=message)
     # Response contains only assistant pieces (error response), not user input
-    assert len(response.message_pieces) == 1
-    assert response.message_pieces[0].response_error == "blocked"
-    assert response.message_pieces[0].converted_value_data_type == "error"
-    assert "content_filter_result" in response.message_pieces[0].converted_value
+    assert len(response) == 1
+    assert len(response[0].message_pieces) == 1
+    assert response[0].message_pieces[0].response_error == "blocked"
+    assert response[0].message_pieces[0].converted_value_data_type == "error"
+    assert "content_filter_result" in response[0].message_pieces[0].converted_value
 
 
 def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
@@ -955,29 +957,26 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
 
         final = await target.send_prompt_async(message=user_req)
 
-        # Response contains only the final assistant message (not the tool call and output)
-        # The intermediate messages are persisted separately to memory
-        assert len(final.message_pieces) == 1
-        assert final.message_pieces[0].original_value_data_type == "text"
-        assert final.message_pieces[0].original_value == "Done: 14"
+        # Response contains all messages from the agentic loop: assistant with tool call, tool output, final assistant response
+        assert len(final) == 3
+        # First message: assistant with function_call
+        assert len(final[0].message_pieces) == 1
+        assert final[0].message_pieces[0].role == "assistant"
+        assert final[0].message_pieces[0].original_value_data_type == "function_call"
+        # Second message: tool with function_call_output
+        assert len(final[1].message_pieces) == 1
+        assert final[1].message_pieces[0].role == "tool"
+        assert final[1].message_pieces[0].original_value_data_type == "function_call_output"
+        # Third message: final assistant response with text
+        assert len(final[2].message_pieces) == 1
+        assert final[2].message_pieces[0].role == "assistant"
+        assert final[2].message_pieces[0].original_value_data_type == "text"
+        assert final[2].message_pieces[0].original_value == "Done: 14"
 
-        # Verify intermediate messages were persisted to memory
-        # Should have: user request (added by fallback), assistant with function_call, tool output
-        # (final response is handled by normalizer, not by target)
+        # Verify intermediate messages were NOT persisted to memory by the target
+        # (The normalizer will handle persistence when messages are returned)
         all_messages = target._memory.get_conversation(conversation_id=shared_conversation_id)
-        assert len(all_messages) == 3, f"Expected 3 messages in memory, got {len(all_messages)}"
-
-        # Check the user message (added by fallback when called directly)
-        assert len(all_messages[0].message_pieces) == 1
-        assert all_messages[0].message_pieces[0].original_value_data_type == "text"
-
-        # Check the function_call message
-        assert len(all_messages[1].message_pieces) == 1
-        assert all_messages[1].message_pieces[0].original_value_data_type == "function_call"
-
-        # Check the tool output message
-        assert len(all_messages[2].message_pieces) == 1
-        assert all_messages[2].message_pieces[0].original_value_data_type == "function_call_output"
+        assert len(all_messages) == 0, f"Expected 0 messages in memory (target doesn't persist), got {len(all_messages)}"
 
 
 def test_invalid_temperature_raises(patch_central_database):

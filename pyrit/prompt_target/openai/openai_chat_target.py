@@ -164,7 +164,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Asynchronously sends a message and handles the response within a managed conversation context.
 
@@ -172,7 +172,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             message (Message): The message object.
 
         Returns:
-            Message: The updated conversation entry with the response from the prompt target.
+            list[Message]: A list containing the response from the prompt target.
         """
         self._validate_request(message=message)
 
@@ -180,24 +180,20 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         is_json_response = self.is_response_format_json(message_piece)
 
-        # Get conversation from memory (normalizer persists input message BEFORE calling this)
+        # Get conversation from memory and append the current message
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
-
-        # If conversation is empty, this was called directly (not through normalizer)
-        # Persist the message to memory so conversation history is maintained
-        if not conversation:
-            self._memory.add_message_to_memory(request=message)
-            conversation = [message]
+        conversation.append(message)
 
         logger.info(f"Sending the following prompt to the prompt target: {message}")
 
         body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
 
         # Use unified error handling - automatically detects ChatCompletion and validates
-        return await self._handle_openai_request(
+        response = await self._handle_openai_request(
             api_call=lambda: self._async_client.chat.completions.create(**body),
             request=message,
         )
+        return [response]
 
     def _check_content_filter(self, response: Any) -> bool:
         """

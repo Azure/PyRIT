@@ -83,7 +83,7 @@ class OpenAITTSTarget(OpenAITarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         self._validate_request(message=message)
         message_piece = message.message_pieces[0]
 
@@ -102,7 +102,7 @@ class OpenAITTSTarget(OpenAITarget):
             body_parameters["speed"] = self._speed
 
         # Use unified error handler for consistent error handling
-        return await self._handle_openai_request(
+        response = await self._handle_openai_request(
             api_call=lambda: self._async_client.audio.speech.create(
                 model=body_parameters["model"],  # type: ignore[arg-type]
                 voice=body_parameters["voice"],  # type: ignore[arg-type]
@@ -112,6 +112,7 @@ class OpenAITTSTarget(OpenAITarget):
             ),
             request=message,
         )
+        return [response]
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """

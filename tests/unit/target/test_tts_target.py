@@ -107,8 +107,9 @@ async def test_tts_send_prompt_file_save_async(
     with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_audio_response
         response = await tts_target.send_prompt_async(message=request)
+        assert len(response) == 1
 
-        file_path = response.get_value()
+        file_path = response[0].get_value()
         assert file_path
         assert file_path.endswith(f".{response_format}")
         assert os.path.exists(file_path)
@@ -203,7 +204,8 @@ async def test_tts_send_prompt_with_speed_parameter(
         assert call_kwargs["speed"] == 1.5
 
         # Verify audio was saved
-        file_path = response.get_value()
+        assert len(response) == 1
+        file_path = response[0].get_value()
         assert file_path
         assert os.path.exists(file_path)
         os.remove(file_path)

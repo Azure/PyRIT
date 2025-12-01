@@ -120,9 +120,10 @@ async def test_video_send_prompt_async_success(
         mock_serializer.save_data.assert_called_once_with(data=b"video data content")
 
         # Verify response
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].converted_value == "/path/to/video.mp4"
-        assert response.message_pieces[0].converted_value_data_type == "video_path"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].converted_value == "/path/to/video.mp4"
+        assert response[0].message_pieces[0].converted_value_data_type == "video_path"
 
 
 @pytest.mark.asyncio
@@ -149,11 +150,12 @@ async def test_video_send_prompt_async_failed_content_filter(
         response = await video_target.send_prompt_async(message=Message([request]))
 
         # Verify response is error with blocked status
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "blocked"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "blocked"
         assert (
-            "content_filter" in response.message_pieces[0].converted_value.lower()
-            or "blocked" in response.message_pieces[0].converted_value.lower()
+            "content_filter" in response[0].message_pieces[0].converted_value.lower()
+            or "blocked" in response[0].message_pieces[0].converted_value.lower()
         )
 
 
@@ -178,8 +180,9 @@ async def test_video_send_prompt_async_failed_processing_error(
         response = await video_target.send_prompt_async(message=Message([request]))
 
         # Verify response is processing error
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "processing"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "processing"
 
 
 @pytest.mark.asyncio
@@ -208,8 +211,9 @@ async def test_video_send_prompt_async_bad_request_exception(
         response = await video_target.send_prompt_async(message=Message([request]))
 
         # Verify response is error with blocked status (content filter)
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "blocked"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "blocked"
 
 
 @pytest.mark.asyncio
@@ -276,9 +280,10 @@ async def test_video_send_prompt_async_unexpected_status(
         response = await video_target.send_prompt_async(message=Message([request]))
 
         # Verify response is error with unknown status
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "unknown"
-        assert "unexpected status: pending" in response.message_pieces[0].converted_value
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "unknown"
+        assert "unexpected status: pending" in response[0].message_pieces[0].converted_value
 
 
 # Unit tests for override methods

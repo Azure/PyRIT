@@ -90,24 +90,26 @@ class PromptNormalizer:
         if self._should_skip_based_on_skip_criteria(request):
             return None
 
-        # Add request to memory BEFORE sending so targets can access conversation history
-        self._memory.add_message_to_memory(request=request)
-
-        response = None
+        responses = None
 
         try:
-            response = await target.send_prompt_async(message=request)
+            responses = await target.send_prompt_async(message=request)
+            self._memory.add_message_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
-            response = construct_response_from_request(
+            self._memory.add_message_to_memory(request=request)
+
+            responses = [construct_response_from_request(
                 request=request.message_pieces[0],
                 response_text_pieces=[""],
                 response_type="text",
                 error="empty",
-            )
+            )]
 
         except Exception as ex:
-            # Construct error response
+            # Ensure request to memory before processing exception
+            self._memory.add_message_to_memory(request=request)
+
             error_response = construct_response_from_request(
                 request=request.message_pieces[0],
                 response_text_pieces=[f"{ex}\n{repr(ex)}\n{traceback.format_exc()}"],
@@ -120,14 +122,25 @@ class PromptNormalizer:
             cid = request.message_pieces[0].conversation_id if request and request.message_pieces else None
             raise Exception(f"Error sending prompt with conversation ID: {cid}") from ex
 
-        if response is None:
+        if responses is None:
             return None
 
-        await self.convert_values(converter_configurations=response_converter_configurations, message=response)
+        # Handle empty response lists (e.g., from TextTarget which just prints)
+        if not responses:
+            return None
 
-        await self._calc_hash(request=response)
-        self._memory.add_message_to_memory(request=response)
-        return response
+        # Process all response messages (targets return list[Message])
+        # Only apply response converters to the last message (final response)
+        # Intermediate messages are tool calls/outputs that don't need conversion
+        for i, resp in enumerate(responses):
+            is_last = i == len(responses) - 1
+            if is_last:
+                await self.convert_values(converter_configurations=response_converter_configurations, message=resp)
+            await self._calc_hash(request=resp)
+            self._memory.add_message_to_memory(request=resp)
+
+        # Return the last response for backward compatibility
+        return responses[-1]
 
     async def send_prompt_batch_to_target_async(
         self,

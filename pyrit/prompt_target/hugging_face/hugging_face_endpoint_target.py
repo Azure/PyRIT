@@ -54,7 +54,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self.top_p = top_p
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Sends a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
 
@@ -63,9 +63,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
             such as conversation ID and role.
 
         Returns:
-            Message: A response object containing generated text pieces as a list of `MessagePiece`
-                objects. Each `MessagePiece` includes the generated text and relevant information such as
-                conversation ID, role, and any additional response attributes.
+            list[Message]: A list containing the response object with generated text pieces.
 
         Raises:
             ValueError: If the response from the Hugging Face API is not successful.
@@ -109,7 +107,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
                 response_text_pieces=[response_message],
                 prompt_metadata={"model_id": self.model_id},
             )
-            return message
+            return [message]
 
         except Exception as e:
             logger.error(f"Error occurred during HTTP request to the Hugging Face endpoint: {e}")

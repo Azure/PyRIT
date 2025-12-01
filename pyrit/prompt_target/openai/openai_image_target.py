@@ -103,7 +103,7 @@ class OpenAIImageTarget(OpenAITarget):
         self,
         *,
         message: Message,
-    ) -> Message:
+    ) -> list[Message]:
         """
         Send a prompt to the DALL-E target and return the response.
 
@@ -111,7 +111,7 @@ class OpenAIImageTarget(OpenAITarget):
             message (Message): The message to send.
 
         Returns:
-            Message: The response from the image target.
+            list[Message]: A list containing the response from the image target.
         """
         self._validate_request(message=message)
         message_piece = message.message_pieces[0]
@@ -131,10 +131,11 @@ class OpenAIImageTarget(OpenAITarget):
             image_generation_args["style"] = self.style
 
         # Use unified error handler for consistent error handling
-        return await self._handle_openai_request(
+        response = await self._handle_openai_request(
             api_call=lambda: self._async_client.images.generate(**image_generation_args),
             request=message,
         )
+        return [response]
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """

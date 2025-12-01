@@ -104,8 +104,10 @@ async def test_single_function_call_preserves_history(response_target, patch_cen
 
         result = await response_target.send_prompt_async(message=user_message)
 
-        # Verify we got the final message
-        assert result.message_pieces[0].original_value == "It's 72 and sunny!"
+        # Verify we got the final message (plus intermediate ones)
+        assert len(result) >= 1
+        # The last message should be the final text response
+        assert result[-1].message_pieces[0].original_value == "It's 72 and sunny!"
 
         # Verify call history structure
         assert len(call_history) == 2
@@ -176,8 +178,10 @@ async def test_chained_function_calls_preserve_all_history(response_target, patc
 
         result = await response_target.send_prompt_async(message=user_message)
 
-        # Verify final message
-        assert "68 and cloudy" in result.message_pieces[0].original_value
+        # Verify the final message contains weather results
+        assert len(result) >= 1
+        # The last message should contain the result
+        assert "68 and cloudy" in result[-1].message_pieces[0].original_value
 
         # Verify we made 3 API calls
         assert len(call_history) == 3
@@ -243,35 +247,13 @@ async def test_function_call_memory_persistence(response_target, patch_central_d
 
         await response_target.send_prompt_async(message=user_message)
 
-        # Verify memory contains intermediate messages
+        # Verify memory does NOT contain intermediate messages
+        # (targets no longer persist intermediate messages - normalizer handles that)
         memory = CentralMemory.get_memory_instance()
         conversation = memory.get_conversation(conversation_id=conversation_id)
-
-        # Should have: user request (added by fallback), assistant (function_call), tool (function_call_output)
-        # Final response is persisted by normalizer, not by target
-        assert len(conversation) == 3
-
-        # Find the function_call message
-        function_call_messages = [
-            msg
-            for msg in conversation
-            if any(p.converted_value_data_type == "function_call" for p in msg.message_pieces)
-        ]
-        assert len(function_call_messages) == 1
-
-        # Find the function_call_output message
-        function_output_messages = [
-            msg
-            for msg in conversation
-            if any(p.converted_value_data_type == "function_call_output" for p in msg.message_pieces)
-        ]
-        assert len(function_output_messages) == 1
-
-        # Verify the output references the correct call_id
-        output_piece = function_output_messages[0].message_pieces[0]
-        output_data = json.loads(output_piece.original_value)
-        assert output_data["call_id"] == "call_x"
-        assert "result" in output_data["output"]
+        
+        # Target doesn't persist messages anymore - all returned messages will be persisted by normalizer
+        assert len(conversation) == 0
 
 
 @pytest.mark.asyncio

@@ -394,9 +394,10 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatT
             return_value=mock_completion
         )
 
-        response: Message = await target.send_prompt_async(message=message)
-        assert len(response.message_pieces) == 1
-        assert response.get_value() == "hi"
+        response: list[Message] = await target.send_prompt_async(message=message)
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].get_value() == "hi"
     os.remove(tmp_file_name)
 
 
@@ -504,9 +505,10 @@ async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
     )
 
     response = await target.send_prompt_async(message=message)
-    assert len(response.message_pieces) == 1
-    assert response.message_pieces[0].response_error == "blocked"
-    assert response.message_pieces[0].converted_value_data_type == "error"
+    assert len(response) == 1
+    assert len(response[0].message_pieces) == 1
+    assert response[0].message_pieces[0].response_error == "blocked"
+    assert response[0].message_pieces[0].converted_value_data_type == "error"
 
 
 def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
@@ -623,8 +625,9 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
         )
 
         result = await target.send_prompt_async(message=message)
-        assert result.message_pieces[0].converted_value_data_type == "error"
-        assert result.message_pieces[0].response_error == "blocked"
+        assert len(result) == 1
+        assert result[0].message_pieces[0].converted_value_data_type == "error"
+        assert result[0].message_pieces[0].response_error == "blocked"
 
 
 @pytest.mark.asyncio
@@ -661,8 +664,8 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
         await target.send_prompt_async(message=message)
 
 
-def test_set_auth_headers_with_entra_auth(patch_central_database):
-    """Test that _set_auth_headers properly configures Entra authentication."""
+def test_set_auth_with_entra_auth(patch_central_database):
+    """Test that Entra authentication is properly configured."""
     with (
         patch("pyrit.prompt_target.openai.openai_target.get_default_scope") as mock_scope,
         patch("pyrit.prompt_target.openai.openai_target.AzureAuth") as mock_auth_class,
@@ -670,7 +673,6 @@ def test_set_auth_headers_with_entra_auth(patch_central_database):
 
         mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
         mock_auth_instance = MagicMock()
-        mock_auth_instance.get_token.return_value = "test_token_123"
         mock_auth_class.return_value = mock_auth_instance
 
         target = OpenAIChatTarget(
@@ -682,17 +684,14 @@ def test_set_auth_headers_with_entra_auth(patch_central_database):
         # Verify Entra auth was configured correctly
         mock_scope.assert_called_once_with("https://test.openai.azure.com")
         mock_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
-        mock_auth_instance.get_token.assert_called_once()
-
-        # Verify headers are set correctly
+        
+        # Verify authentication objects are set correctly (SDK handles actual headers)
         assert target._azure_auth == mock_auth_instance
-        assert target._headers["Authorization"] == "Bearer test_token_123"
-        assert "Api-Key" not in target._headers
         assert target._api_key is None
 
 
-def test_set_auth_headers_with_api_key(patch_central_database):
-    """Test that _set_auth_headers properly configures API key authentication."""
+def test_set_auth_with_api_key(patch_central_database):
+    """Test that API key authentication is properly configured."""
     target = OpenAIChatTarget(
         model_name="gpt-4",
         endpoint="https://test.openai.azure.com",
@@ -700,11 +699,9 @@ def test_set_auth_headers_with_api_key(patch_central_database):
         use_entra_auth=False,
     )
 
-    # Verify API key auth was configured correctly
+    # Verify API key auth was configured correctly (SDK handles actual headers)
     assert target._azure_auth is None
     assert target._api_key == "test_api_key_456"
-    assert target._headers["Api-Key"] == "test_api_key_456"
-    assert target._headers["Authorization"] == "Bearer test_api_key_456"
 
 
 def test_url_validation_warning_for_incorrect_endpoint(caplog, patch_central_database):
@@ -861,9 +858,10 @@ async def test_content_filter_finish_reason_error(
 
         response = await target.send_prompt_async(message=request)
 
-        # Should return a blocked response
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "blocked"
+        # Should return a blocked response (wrapped in list)
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "blocked"
 
 
 @pytest.mark.asyncio
@@ -890,8 +888,9 @@ async def test_bad_request_with_dict_body_content_filter(
         response = await target.send_prompt_async(message=request)
 
         # Should detect content filter from dict body
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "blocked"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "blocked"
 
 
 @pytest.mark.asyncio
@@ -918,8 +917,9 @@ async def test_bad_request_with_string_content_filter(
         response = await target.send_prompt_async(message=request)
 
         # Should detect content filter from string matching
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "blocked"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "blocked"
 
 
 @pytest.mark.asyncio

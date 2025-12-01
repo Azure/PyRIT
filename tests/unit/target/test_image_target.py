@@ -78,8 +78,9 @@ async def test_send_prompt_async(
         mock_generate.return_value = mock_response
 
         resp = await image_target.send_prompt_async(message=Message([request]))
+        assert len(resp) == 1
         assert resp
-        path = resp.message_pieces[0].original_value
+        path = resp[0].message_pieces[0].original_value
         assert os.path.isfile(path)
 
         with open(path, "r") as file:
@@ -251,8 +252,9 @@ async def test_send_prompt_async_bad_request_content_filter(
     with patch.object(image_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.side_effect = bad_request_error
         result = await image_target.send_prompt_async(message=Message([request]))
-        assert result.message_pieces[0].converted_value_data_type == "error"
-        assert "content_filter" in result.message_pieces[0].converted_value
+        assert len(result) == 1
+        assert result[0].message_pieces[0].converted_value_data_type == "error"
+        assert "content_filter" in result[0].message_pieces[0].converted_value
 
 
 @pytest.mark.asyncio
@@ -281,8 +283,9 @@ async def test_send_prompt_async_bad_request_content_policy_violation(
     with patch.object(image_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.side_effect = bad_request_error
         result = await image_target.send_prompt_async(message=Message([request]))
-        assert result.message_pieces[0].response_error == "blocked"
-        assert result.message_pieces[0].converted_value_data_type == "error"
+        assert len(result) == 1
+        assert result[0].message_pieces[0].response_error == "blocked"
+        assert result[0].message_pieces[0].converted_value_data_type == "error"
 
 
 def test_is_json_response_supported(patch_central_database):

@@ -113,7 +113,7 @@ class OpenAIVideoTarget(OpenAITarget):
             )
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Asynchronously sends a message and generates a video using the OpenAI SDK.
 
@@ -121,7 +121,7 @@ class OpenAIVideoTarget(OpenAITarget):
             message (Message): The message object containing the prompt.
 
         Returns:
-            Message: The response with the generated video path.
+            list[Message]: A list containing the response with the generated video path.
 
         Raises:
             RateLimitException: If the rate limit is exceeded.
@@ -134,7 +134,7 @@ class OpenAIVideoTarget(OpenAITarget):
         logger.info(f"Sending video generation prompt: {prompt}")
 
         # Use unified error handler - automatically detects Video and validates
-        return await self._handle_openai_request(
+        response = await self._handle_openai_request(
             api_call=lambda: self._async_client.videos.create_and_poll(
                 model=self._model_name,  # type: ignore[arg-type]
                 prompt=prompt,
@@ -143,6 +143,7 @@ class OpenAIVideoTarget(OpenAITarget):
             ),
             request=message,
         )
+        return [response]
 
     def _check_content_filter(self, response: Any) -> bool:
         """

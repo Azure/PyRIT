@@ -83,9 +83,10 @@ async def test_azure_complete_async_return(
         azure_completion_target._async_client.completions, "create", new_callable=AsyncMock
     ) as mock_create:
         mock_create.return_value = mock_response
-        response: Message = await azure_completion_target.send_prompt_async(message=request)
-        assert len(response.message_pieces) == 1
-        assert response.get_value() == "hi"
+        response: list[Message] = await azure_completion_target.send_prompt_async(message=request)
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].get_value() == "hi"
 
 
 def test_azure_initialization_with_no_deployment_raises():
