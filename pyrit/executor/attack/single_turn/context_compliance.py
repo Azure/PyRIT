@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -44,7 +44,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
     # Default path for context description instructions
     DEFAULT_CONTEXT_DESCRIPTION_PATH: Path = (
-        Path(DATASETS_PATH) / "executors" / "context_compliance" / "context_description.yaml"
+        Path(EXECUTOR_SEED_PROMPT_PATH) / "context_compliance" / "context_description.yaml"
     )
 
     # Default affirmative response used in conversation
@@ -173,7 +173,7 @@ class ContextComplianceAttack(PromptSendingAttack):
 
         # Create the affirmative seed group
         affirmative_seed_prompt = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._affirmative_response,
                     data_type="text",
@@ -248,7 +248,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The objective rephrased as a benign question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
                     data_type="text",
@@ -279,7 +279,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The answer to the benign question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
                     data_type="text",
@@ -308,7 +308,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             str: The objective rephrased as a question.
         """
         seed_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=self._rephrase_objective_to_question.render_template_value(objective=objective),
                     data_type="text",

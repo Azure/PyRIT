@@ -82,7 +82,7 @@ def fetch_harmbench_dataset(
         for item in prompt_data
     ]
     seed_dataset = SeedDataset(
-        prompts=seed_prompts,
+        seeds=seed_prompts,
         harm_categories=list(all_semantic_categories),
     )
     return seed_dataset

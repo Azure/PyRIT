@@ -58,6 +58,6 @@ def fetch_xstest_dataset(
         for example in prompts
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
 
     return seed_dataset

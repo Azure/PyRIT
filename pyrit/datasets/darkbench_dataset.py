@@ -48,5 +48,5 @@ def fetch_darkbench_dataset() -> SeedDataset:
         for item in data
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset

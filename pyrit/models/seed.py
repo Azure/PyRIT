@@ -87,6 +87,9 @@ class Seed(YamlLoadable):
     # Unique identifier for the prompt group
     prompt_group_id: Optional[uuid.UUID] = None
 
+    # Alias for the prompt group
+    prompt_group_alias: Optional[str] = None
+
     def render_template_value(self, **kwargs) -> str:
         """
         Renders self.value as a template, applying provided parameters in kwargs.

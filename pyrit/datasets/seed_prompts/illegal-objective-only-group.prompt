@@ -1,5 +1,5 @@
 # This is used to show how a single objective can be sent.
-prompts:
+seeds:
   - dataset_name: TestObjective
     harm_categories:
       - illegal
