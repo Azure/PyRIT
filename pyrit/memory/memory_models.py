@@ -108,6 +108,7 @@ class PromptMemoryEntry(Base):
         idx_conversation_id (Index): The index for the conversation ID.
         original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
         scores (list[ScoreEntry]): The list of scores associated with the prompt.
+
     Methods:
         __str__(): Returns a string representation of the memory entry.
     """
@@ -209,7 +210,7 @@ class PromptMemoryEntry(Base):
 class EmbeddingDataEntry(Base):  # type: ignore
     """
     Represents the embedding data associated with conversation entries in the database.
-    Each embedding is linked to a specific conversation entry via an id
+    Each embedding is linked to a specific conversation entry via an id.
 
     Parameters:
         id (Uuid): The primary key, which is a foreign key referencing the UUID in the PromptMemoryEntries table.
@@ -231,7 +232,7 @@ class EmbeddingDataEntry(Base):  # type: ignore
 
 class ScoreEntry(Base):  # type: ignore
     """
-    Represents the Score Memory Entry
+    Represents the Score Memory Entry.
 
     """
 
@@ -508,6 +509,7 @@ class AttackResultEntry(Base):
         timestamp (DateTime): The timestamp of the attack result entry.
         last_response (PromptMemoryEntry): Relationship to the last response prompt memory entry.
         last_score (ScoreEntry): Relationship to the last score entry.
+
     Methods:
         __str__(): Returns a string representation of the attack result entry.
     """

@@ -188,7 +188,7 @@ data = [
 # This is a single request with two parts, one image and one text
 
 seed_group = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(
             value="Describe this picture:",
             data_type="text",

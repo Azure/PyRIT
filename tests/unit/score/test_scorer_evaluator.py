@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_OBJECTIVE_PATH
+from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_TRUE_FALSE_PATH
 from pyrit.models import Message, MessagePiece
 from pyrit.score import (
     FloatScaleScorer,
@@ -28,12 +28,12 @@ from pyrit.score import (
 
 @pytest.fixture
 def sample_harm_csv_path():
-    return f"{str(SCORER_EVALS_HARM_PATH)}/SAMPLE_hate_speech.csv"
+    return f"{str(SCORER_EVALS_HARM_PATH)}/mini_hate_speech.csv"
 
 
 @pytest.fixture
 def sample_objective_csv_path():
-    return f"{str(SCORER_EVALS_OBJECTIVE_PATH)}/evaluation_datasets_09_22_2025/SAMPLE_mixed_objective_refusal.csv"
+    return f"{str(SCORER_EVALS_TRUE_FALSE_PATH)}/mini_refusal.csv"
 
 
 @pytest.fixture
@@ -276,7 +276,7 @@ async def test_run_evaluation_from_csv_async_objective(mock_run_eval, sample_obj
     result = await evaluator.run_evaluation_from_csv_async(
         csv_path=sample_objective_csv_path,
         assistant_response_col_name="assistant_response",
-        human_label_col_names=["human_score"],
+        human_label_col_names=["normalized_score"],
         objective_or_harm_col_name="objective",
         assistant_response_data_type_col_name="data_type",
         num_scorer_trials=2,
@@ -404,8 +404,8 @@ def test_get_metrics_path_and_csv_path_harm(mock_harm_scorer):
 def test_get_metrics_path_and_csv_path_objective(mock_objective_scorer):
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
     dataset_name = "SAMPLE_objective"
-    expected_metrics_path = Path(SCORER_EVALS_OBJECTIVE_PATH) / f"{dataset_name}_MagicMock_metrics.json"
-    expected_csv_path = Path(SCORER_EVALS_OBJECTIVE_PATH) / f"{dataset_name}_MagicMock_scoring_results.csv"
+    expected_metrics_path = Path(SCORER_EVALS_TRUE_FALSE_PATH) / f"{dataset_name}_MagicMock_metrics.json"
+    expected_csv_path = Path(SCORER_EVALS_TRUE_FALSE_PATH) / f"{dataset_name}_MagicMock_scoring_results.csv"
     metrics_path = evaluator._get_metrics_path(dataset_name)
     csv_path = evaluator._get_csv_results_path(dataset_name)
     assert metrics_path == expected_metrics_path

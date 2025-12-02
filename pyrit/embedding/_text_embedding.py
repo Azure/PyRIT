@@ -16,7 +16,7 @@ from pyrit.models import (
 
 
 class _TextEmbedding(EmbeddingSupport, abc.ABC):
-    """Text embedding base class"""
+    """Text embedding base class."""
 
     _client: Union[OpenAI, AzureOpenAI]
     _model: str
@@ -30,7 +30,8 @@ class _TextEmbedding(EmbeddingSupport, abc.ABC):
 
     @tenacity.retry(wait=tenacity.wait_fixed(0.1), stop=tenacity.stop_after_delay(3))
     def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
-        """Generate text embedding
+        """
+        Generate text embedding.
 
         Args:
             text: The text to generate the embedding for

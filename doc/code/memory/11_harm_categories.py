@@ -36,7 +36,7 @@ print(f"Dataset name: {seed_prompts.dataset_name}")
 print(f"Number of prompts in dataset: {len(seed_prompts.prompts)}")
 print()
 
-await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="bolor")  # type: ignore
+await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="bolor")  # type: ignore
 for i, prompt in enumerate(seed_prompts.prompts):
     print(f"Prompt {i+1}: {prompt.value}, Harm Categories: {prompt.harm_categories}")
 

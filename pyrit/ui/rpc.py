@@ -126,7 +126,6 @@ class AppRPCServer:
         """
         Attempt to start the RPC server. If the server is already running, this method will throw an exception.
         """
-
         # Check if the server is already running by checking if the port is already in use.
         # If the port is already in use, throw an exception.
         if self._is_instance_running():
@@ -177,7 +176,6 @@ class AppRPCServer:
         """
         Request the RPC server to stop. This method is does not block while waiting for the server to stop.
         """
-
         logger.info("RPC server stopping")
         if self._server is not None:
             self._server.close()

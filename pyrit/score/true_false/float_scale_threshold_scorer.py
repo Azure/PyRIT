@@ -24,7 +24,8 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         threshold: float,
         float_scale_aggregator: FloatScaleAggregatorFunc = FloatScaleScoreAggregator.MAX,
     ) -> None:
-        """Initialize the FloatScaleThresholdScorer.
+        """
+        Initialize the FloatScaleThresholdScorer.
 
         Args:
             scorer (FloatScaleScorer): The underlying float scale scorer to use.
@@ -49,7 +50,8 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
     ) -> list[Score]:
-        """Scores the piece using the underlying float-scale scorer and thresholds the resulting score.
+        """
+        Scores the piece using the underlying float-scale scorer and thresholds the resulting score.
 
         Args:
             message (Message): The message to score.
@@ -97,7 +99,8 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         return [score]
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Float Scale scorers do not support piecewise scoring.
+        """
+        Float Scale scorers do not support piecewise scoring.
 
         Args:
             message_piece (MessagePiece): Unused.

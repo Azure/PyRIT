@@ -44,7 +44,8 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         self._rpc_server.start()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Score a message piece using human input through Gradio interface.
+        """
+        Score a message piece using human input through Gradio interface.
 
         Args:
             message_piece (MessagePiece): The message piece to be scored by a human.
@@ -53,7 +54,6 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         Returns:
             list[Score]: A list containing a single Score object based on human evaluation.
         """
-
         try:
             score = await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
             return score
@@ -62,7 +62,8 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
             raise
 
     def retrieve_score(self, request_prompt: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Retrieve a score from the human evaluator through the RPC server.
+        """
+        Retrieve a score from the human evaluator through the RPC server.
 
         Args:
             request_prompt (MessagePiece): The message piece to be scored.

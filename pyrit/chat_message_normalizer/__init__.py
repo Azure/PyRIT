@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 """
-This module contains the functionality to normalize chat messages into compatible formats for targets.
+Functionality to normalize chat messages into compatible formats for targets.
 """
 
 from pyrit.chat_message_normalizer.chat_message_normalizer import ChatMessageNormalizer

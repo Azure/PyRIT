@@ -182,7 +182,6 @@ class PDFConverter(PromptConverter):
         Returns:
             bytes: The generated PDF content in bytes.
         """
-
         pdf_buffer = BytesIO()
 
         # Convert mm to points

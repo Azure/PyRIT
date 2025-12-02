@@ -50,7 +50,7 @@ def response() -> Message:
 @pytest.fixture
 def seed_group() -> SeedGroup:
     return SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(
                 value="Hello",
                 data_type="text",
@@ -222,7 +222,7 @@ async def test_send_prompt_async_different_sequences(mock_memory_instance):
         SeedPrompt(value="test1", sequence=1, role="user"),
         SeedPrompt(value="test2", sequence=2, role="user"),
     ]  # Different sequence
-    group = SeedGroup(prompts=prompts)
+    group = SeedGroup(seeds=prompts)
 
     with pytest.raises(ValueError, match="All SeedPrompts in the SeedGroup must have the same sequence"):
         await normalizer.send_prompt_async(seed_group=group, target=prompt_target)
@@ -238,7 +238,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
         SeedPrompt(value="test1", sequence=1, role="user"),
         SeedPrompt(value="test2", role="user"),
     ]  # No sequence (will default to None)
-    group = SeedGroup(prompts=prompts)
+    group = SeedGroup(seeds=prompts)
 
     with pytest.raises(ValueError, match="All SeedPrompts in the SeedGroup must have the same sequence"):
         await normalizer.send_prompt_async(seed_group=group, target=prompt_target)
@@ -313,7 +313,7 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
 
         prompt_text = "Hello"
 
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text")])
 
         normalizer = PromptNormalizer()
         # Mock the async read_file method
@@ -567,7 +567,7 @@ async def test_build_message_harm_categories(mock_memory_instance):
 
     # Create a seed group with harm categories
     seed_group = SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(
                 value="Test harmful prompt",
                 data_type="text",

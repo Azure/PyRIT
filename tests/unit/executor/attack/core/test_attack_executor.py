@@ -76,9 +76,9 @@ def mock_multi_turn_attack_strategy():
 def sample_seed_groups():
     """Create sample seed groups for testing"""
     return [
-        SeedGroup(prompts=[SeedPrompt(value="First prompt", data_type="text")]),
-        SeedGroup(prompts=[SeedPrompt(value="Second prompt", data_type="text")]),
-        SeedGroup(prompts=[SeedPrompt(value="Third prompt", data_type="text")]),
+        SeedGroup(seeds=[SeedPrompt(value="First prompt", data_type="text")]),
+        SeedGroup(seeds=[SeedPrompt(value="Second prompt", data_type="text")]),
+        SeedGroup(seeds=[SeedPrompt(value="Third prompt", data_type="text")]),
     ]
 
 
@@ -813,7 +813,7 @@ class TestExecuteSingleTurnAttacksAsync:
     async def test_execute_single_turn_validates_seed_groups_length(self, mock_single_turn_attack_strategy):
         executor = AttackExecutor()
         objectives = ["Obj1", "Obj2"]
-        seed_groups = [SeedGroup(prompts=[SeedPrompt(value="prompt", data_type="text")])]
+        seed_groups = [SeedGroup(seeds=[SeedPrompt(value="prompt", data_type="text")])]
 
         with pytest.raises(ValueError, match="Number of seed_groups .* must match number of objectives"):
             await executor.execute_single_turn_attacks_async(
@@ -834,6 +834,28 @@ class TestExecuteSingleTurnAttacksAsync:
                 objectives=objectives,
                 prepended_conversations=prepended_conversations,
             )
+
+    @pytest.mark.asyncio
+    async def test_execute_single_turn_with_attack_execute_params(self, mock_single_turn_attack_strategy):
+        executor = AttackExecutor(max_concurrency=1)
+        objectives = ["Obj1", "Obj2", "Obj3"]
+
+        mock_single_turn_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_single_turn_attacks_async(
+            attack=mock_single_turn_attack_strategy,
+            objectives=objectives,
+            custom_param="test_value",
+            batch_size=10,
+            another_param=42,
+        )
+
+        # Verify all calls included the custom params
+        assert mock_single_turn_attack_strategy.execute_async.call_count == 3
+        for call in mock_single_turn_attack_strategy.execute_async.call_args_list:
+            assert call.kwargs["custom_param"] == "test_value"
+            assert call.kwargs["batch_size"] == 10
+            assert call.kwargs["another_param"] == 42
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1027,6 +1049,28 @@ class TestExecuteMultiTurnAttacksAsync:
             max_concurrent = max(max_concurrent, current_concurrent)
 
         assert max_concurrent <= 2
+
+    @pytest.mark.asyncio
+    async def test_execute_multi_turn_with_attack_execute_params(self, mock_multi_turn_attack_strategy):
+        executor = AttackExecutor(max_concurrency=1)
+        objectives = ["Obj1", "Obj2", "Obj3"]
+
+        mock_multi_turn_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_multi_turn_attacks_async(
+            attack=mock_multi_turn_attack_strategy,
+            objectives=objectives,
+            custom_param="test_value",
+            max_turns=5,
+            temperature=0.7,
+        )
+
+        # Verify all calls included the custom params
+        assert mock_multi_turn_attack_strategy.execute_async.call_count == 3
+        for call in mock_multi_turn_attack_strategy.execute_async.call_args_list:
+            assert call.kwargs["custom_param"] == "test_value"
+            assert call.kwargs["max_turns"] == 5
+            assert call.kwargs["temperature"] == 0.7
 
 
 @pytest.mark.usefixtures("patch_central_database")

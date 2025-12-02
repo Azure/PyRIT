@@ -11,7 +11,8 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class TrueFalseCompositeScorer(TrueFalseScorer):
-    """Composite true/false scorer that aggregates results from other true/false scorers.
+    """
+    Composite true/false scorer that aggregates results from other true/false scorers.
 
     This scorer invokes a collection of constituent ``TrueFalseScorer`` instances and
     reduces their single-score outputs into one final true/false score using the supplied
@@ -25,7 +26,8 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         aggregator: TrueFalseAggregatorFunc,
         scorers: List[TrueFalseScorer],
     ) -> None:
-        """Initialize the composite scorer.
+        """
+        Initialize the composite scorer.
 
         Args:
             aggregator (TrueFalseAggregatorFunc): Aggregation function to combine child scores
@@ -53,7 +55,8 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
     ) -> list[Score]:
-        """Score a request/response by combining results from all constituent scorers.
+        """
+        Score a request/response by combining results from all constituent scorers.
 
         Args:
             message (Message): The request/response to score.
@@ -62,7 +65,6 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         Returns:
             list[Score]: A single-element list with the aggregated true/false score.
         """
-
         tasks = [
             scorer.score_async(message=message, objective=objective, role_filter=role_filter)
             for scorer in self._scorers
@@ -102,7 +104,8 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         return [return_score]
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Composite scorers do not support piecewise scoring.
+        """
+        Composite scorers do not support piecewise scoring.
 
         Args:
             message_piece (MessagePiece): Unused.

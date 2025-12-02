@@ -2,7 +2,9 @@
 # Builds the pyrit environment and runs integration tests
 
 trigger:
-- main
+  branches:
+    include:
+      - main
 
 # There are additional PR triggers for this that are configurable in ADO.
 
@@ -13,6 +15,8 @@ jobs:
   pool:
     vmImage: ubuntu-latest
   steps:
+  - checkout: self
+    fetchDepth: 1
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.12'
@@ -66,9 +70,11 @@ jobs:
 
       echo "Microsoft ODBC Driver 18 installed successfully."
     displayName: 'Install ODBC Driver 18 for SQL Server'
-  - bash: pip install .[dev,all] -v
+  - bash: pip install .[dev,all] -v --no-cache-dir
     name: install_PyRIT
-  # This step ensures that integration tests are run outside of the PyRIT repository to test that .env files are accessed correctly.
+  - bash: df -all -h
+    name: disk_space_check
+# This step ensures that integration tests are run outside of the PyRIT repository to test that .env files are accessed correctly.
   - bash: |
       PyRIT_DIR=$(pwd)
       NEW_DIR="integration_test_directory"
@@ -102,9 +108,12 @@ jobs:
 
         # Run integration tests
         make integration-test
-  - bash: rm -f .env
-    name: clean_up_env_file
+  - bash: |
+      rm -f .env
+    name: clean_up_env_files
+    condition: always()
   - task: PublishTestResults@2
+    condition: always()
     inputs:
       testResultsFormat: 'JUnit'
       testResultsFiles: 'junit/test-results.xml'

@@ -37,7 +37,6 @@ def _validate_rate_limit_parameters(prompt_target: Optional[PromptTarget], batch
     Raises:
         ValueError: When rate limit RPM is specified for the target and batching is not adjusted to 1.
     """
-
     exc_message = "Batch size must be configured to 1 for the target requests per minute value to be respected."
     if prompt_target and prompt_target._max_requests_per_minute and batch_size != 1:
         raise ValueError(exc_message)
@@ -66,7 +65,6 @@ async def batch_task_async(
     Returns:
         responses(list): List of results from the batched function
     """
-
     responses = []
 
     _validate_rate_limit_parameters(prompt_target=prompt_target, batch_size=batch_size)

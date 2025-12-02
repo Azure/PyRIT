@@ -1,4 +1,4 @@
-prompts:
+seeds:
   - dataset_name: gandalf
     description: Prompt that gets the password from Lakera's Gandalf (https://gandalf.lakera.ai/). It bypasses levels 1-2.
     harm_categories:

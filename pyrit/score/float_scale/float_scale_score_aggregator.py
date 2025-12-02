@@ -16,7 +16,8 @@ FloatScaleAggregatorFunc = Callable[[Iterable[Score]], List[ScoreAggregatorResul
 
 
 def _build_rationale(scores: List[Score], *, aggregate_description: str) -> tuple[str, str]:
-    """Build description and rationale for aggregated scores.
+    """
+    Build description and rationale for aggregated scores.
 
     Args:
         scores: List of Score objects to aggregate.
@@ -43,7 +44,8 @@ def _create_aggregator(
     result_func: FloatScaleOp,
     aggregate_description: str,
 ) -> FloatScaleAggregatorFunc:
-    """Create a float-scale aggregator using a result function over float values.
+    """
+    Create a float-scale aggregator using a result function over float values.
 
     Args:
         name (str): Name of the aggregator variant.
@@ -99,7 +101,8 @@ def _create_aggregator(
 
 # Float scale aggregators (return list with single score)
 class FloatScaleScoreAggregator:
-    """Namespace for float scale score aggregators that return a single aggregated score.
+    """
+    Namespace for float scale score aggregators that return a single aggregated score.
 
     All aggregators return a list containing one ScoreAggregatorResult that combines
     all input scores together, preserving all categories.
@@ -131,7 +134,8 @@ def _create_aggregator_by_category(
     aggregate_description: str,
     group_by_category: bool = True,
 ) -> FloatScaleAggregatorFunc:
-    """Create a float-scale aggregator that can optionally group scores by category.
+    """
+    Create a float-scale aggregator that can optionally group scores by category.
 
     When group_by_category=True (default), scores are grouped by their category and each
     category is aggregated separately, returning multiple ScoreAggregatorResult objects.
@@ -248,7 +252,8 @@ def _create_aggregator_by_category(
 
 # Category-aware aggregators (group by category and return multiple scores)
 class FloatScaleScorerByCategory:
-    """Namespace for float scale score aggregators that group by category.
+    """
+    Namespace for float scale score aggregators that group by category.
 
     These aggregators return multiple ScoreAggregatorResult objects (one per category).
     Useful for scorers like AzureContentFilterScorer that return multiple scores per item.
@@ -278,7 +283,8 @@ class FloatScaleScorerByCategory:
 
 # Non-category-aware aggregators (combine all categories into one score)
 class FloatScaleScorerAllCategories:
-    """Namespace for float scale score aggregators that combine all categories.
+    """
+    Namespace for float scale score aggregators that combine all categories.
 
     These aggregators ignore category boundaries and aggregate all scores together,
     returning a single ScoreAggregatorResult with all categories combined.

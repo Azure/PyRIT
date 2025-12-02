@@ -65,7 +65,7 @@ class PromptNormalizer:
             attack_identifier (Optional[dict[str, str]], optional): Identifier for the attack. Defaults to
                 None.
 
-            Raises:
+        Raises:
             Exception: If an error occurs during the request processing.
             ValueError: If the prompts in the SeedGroup are not part of the same sequence.
 
@@ -156,7 +156,6 @@ class PromptNormalizer:
             list[Message]: A list of Message objects representing the responses
                 received for each prompt.
         """
-
         batch_items: List[List[Any]] = [
             [request.seed_group for request in requests],
             [request.request_converter_configurations for request in requests],
@@ -322,7 +321,6 @@ class PromptNormalizer:
         Returns:
             Message: The message object.
         """
-
         entries = []
 
         # All message pieces within Message needs to have same conversation ID.

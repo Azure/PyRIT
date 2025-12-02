@@ -54,9 +54,9 @@ def test_fetch_xstest_dataset(mock_fetch_examples, mock_xstest_data):
 
     # Check the dataset description to match the current static implementation
     assert isinstance(dataset, SeedDataset)
-    assert dataset.prompts[0].name == "XSTest Examples"
+    assert dataset.seeds[0].name == "XSTest Examples"
     assert (
-        dataset.prompts[0].description
+        dataset.seeds[0].description
         == "A dataset of XSTest examples containing various categories such as violence, drugs, etc."
     )
 

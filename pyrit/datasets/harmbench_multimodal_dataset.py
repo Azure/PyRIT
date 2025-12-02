@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class SemanticCategory(Enum):
+    """Semantic categories in the HarmBench multimodal dataset."""
+
     CYBERCRIME_INTRUSION = "cybercrime_intrusion"  # n=54
     ILLEGAL = "illegal"  # 36
     HARMFUL = "harmful"  # 9
@@ -177,7 +179,7 @@ async def fetch_harmbench_multimodal_dataset_async(
     if failed_image_count > 0:
         logger.warning(f"Total skipped examples: {failed_image_count} (image fetch failures)")
 
-    seed_dataset = SeedDataset(prompts=prompts)
+    seed_dataset = SeedDataset(seeds=prompts)
     return seed_dataset
 
 

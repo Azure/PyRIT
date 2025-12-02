@@ -7,7 +7,7 @@ import re
 import textwrap
 from typing import Callable, Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -105,7 +105,7 @@ class CodeChameleonConverter(PromptConverter):
             encoded_prompt = prompt
 
         seed_prompt = SeedPrompt.from_yaml_file(
-            pathlib.Path(DATASETS_PATH) / "prompt_converters" / "codechameleon_converter.yaml"
+            pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "codechameleon_converter.yaml"
         )
 
         formatted_prompt = seed_prompt.render_template_value(

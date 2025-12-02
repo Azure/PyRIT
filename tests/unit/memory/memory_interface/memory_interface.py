@@ -743,17 +743,17 @@ class MemoryInterface(abc.ABC):
             serialized_prompt_value = str(serializer.value)
         return serialized_prompt_value
 
-    async def add_seeds_to_memory_async(self, *, prompts: Sequence[Seed], added_by: Optional[str] = None) -> None:
+    async def add_seeds_to_memory_async(self, *, seeds: Sequence[Seed], added_by: Optional[str] = None) -> None:
         """
-        Inserts a list of prompts into the memory storage.
+        Inserts a list of seeds into the memory storage.
 
         Args:
-            prompts (Sequence[SeedPrompt]): A list of prompts to insert.
-            added_by (str): The user who added the prompts.
+            seeds (Sequence[Seed]): A list of seeds to insert.
+            added_by (str): The user who added the seeds.
         """
         entries: MutableSequence[SeedEntry] = []
         current_time = datetime.now()
-        for prompt in prompts:
+        for prompt in seeds:
             if added_by:
                 prompt.added_by = added_by
             if not prompt.added_by:
@@ -835,7 +835,7 @@ class MemoryInterface(abc.ABC):
                 prompt_group.objective.prompt_group_id = prompt_group_id
                 all_prompts.append(prompt_group.objective)
             all_prompts.extend(prompt_group.prompts)
-        await self.add_seeds_to_memory_async(prompts=all_prompts, added_by=added_by)
+        await self.add_seeds_to_memory_async(seeds=all_prompts, added_by=added_by)
 
     def get_seed_groups(
         self,

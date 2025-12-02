@@ -20,8 +20,10 @@ def fetch_babelscape_alert_dataset(
 
     Returns:
         SeedDataset: A SeedDataset containing the examples.
-    """
 
+    Raises:
+        ValueError: If an invalid category is provided.
+    """
     data_categories = None
     if category is None:  # if category is explicitly None, read both subsets
         data_categories = ["alert_adversarial", "alert"]
@@ -51,5 +53,5 @@ def fetch_babelscape_alert_dataset(
         for prompt in prompts
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset

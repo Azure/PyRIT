@@ -27,7 +27,7 @@ MultiTurnAttackStrategyContextT = TypeVar("MultiTurnAttackStrategyContextT", bou
 
 @dataclass
 class ConversationSession:
-    """Session for conversations"""
+    """Session for conversations."""
 
     # Unique identifier of the main conversation between the attacker and model
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -38,7 +38,7 @@ class ConversationSession:
 
 @dataclass
 class MultiTurnAttackContext(AttackContext):
-    """Context for multi-turn attacks"""
+    """Context for multi-turn attacks."""
 
     # Object holding all conversation-level identifiers for this attack
     session: ConversationSession = field(default_factory=lambda: ConversationSession())
@@ -113,7 +113,6 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         """
         Execute the attack strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         custom_prompt = get_kwarg_param(kwargs=kwargs, param_name="custom_prompt", expected_type=str, required=False)
 

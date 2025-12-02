@@ -195,6 +195,7 @@ class AttackExecutor:
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         return_partial_on_failure: bool = False,
+        **attack_params,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute a batch of single-turn attacks with multiple objectives.
@@ -217,6 +218,7 @@ class AttackExecutor:
             return_partial_on_failure (bool): If True, returns AttackExecutorResult with completed results
                 even when some objectives don't complete execution. If False, raises the first exception encountered.
                 Defaults to False (raise on failure).
+            **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
             AttackExecutorResult[AttackStrategyResultT]: Result container with completed results and
@@ -233,7 +235,6 @@ class AttackExecutor:
             ...     seed_groups=[SeedGroup(...), SeedGroup(...)]
             ... )
         """
-
         # Validate that the attack uses SingleTurnAttackContext
         if hasattr(attack, "_context_type") and not issubclass(attack._context_type, SingleTurnAttackContext):
             raise TypeError(
@@ -262,6 +263,7 @@ class AttackExecutor:
                     prepended_conversation=prepended_conversation,
                     seed_group=seed_group,
                     memory_labels=memory_labels or {},
+                    **attack_params,
                 )
 
         # Create tasks for each objective with its corresponding parameters
@@ -293,6 +295,7 @@ class AttackExecutor:
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         return_partial_on_failure: bool = False,
+        **attack_params,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute a batch of multi-turn attacks with multiple objectives.
@@ -315,6 +318,7 @@ class AttackExecutor:
             return_partial_on_failure (bool): If True, returns AttackExecutorResult with completed results
                 even when some objectives don't complete execution. If False, raises the first exception encountered.
                 Defaults to False (raise on failure).
+            **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
             AttackExecutorResult[AttackStrategyResultT]: Result container with completed results and
@@ -331,7 +335,6 @@ class AttackExecutor:
             ...     custom_prompts=["Tell me about chemistry", "Explain system administration"]
             ... )
         """
-
         # Validate that the attack uses MultiTurnAttackContext
         if hasattr(attack, "_context_type") and not issubclass(attack._context_type, MultiTurnAttackContext):
             raise TypeError(
@@ -358,6 +361,7 @@ class AttackExecutor:
                     prepended_conversation=prepended_conversation,
                     custom_prompt=custom_prompt,
                     memory_labels=memory_labels or {},
+                    **attack_params,
                 )
 
         # Create tasks for each objective with its corresponding parameters

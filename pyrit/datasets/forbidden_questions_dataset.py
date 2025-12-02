@@ -8,9 +8,10 @@ from pyrit.models import SeedDataset, SeedPrompt
 
 def fetch_forbidden_questions_dataset() -> SeedDataset:
     """
-    Fetch Forbidden question dataset and return it as a SeedDataset
+    Fetch Forbidden question dataset and return it as a SeedDataset.
 
-    Returns: SeedDataset
+    Returns:
+        SeedDataset: A dataset of forbidden questions.
 
     Note: For more info
         Paper - https://arxiv.org/abs/2308.03825
@@ -39,5 +40,5 @@ def fetch_forbidden_questions_dataset() -> SeedDataset:
         for item in data["train"]
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset

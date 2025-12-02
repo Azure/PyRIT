@@ -83,7 +83,7 @@ def fetch_transphobia_awareness_dataset() -> SeedDataset:
         seed_prompts.append(prompt)
 
     return SeedDataset(
-        prompts=seed_prompts,
+        seeds=seed_prompts,
         name="Transphobia-Awareness",
         dataset_name="Transphobia-Awareness",
         harm_categories=harm_categories,

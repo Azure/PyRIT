@@ -69,5 +69,5 @@ def fetch_mlcommons_ailuminate_demo_dataset(
         for example in examples
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset

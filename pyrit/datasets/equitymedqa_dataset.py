@@ -56,9 +56,16 @@ def fetch_equitymedqa_dataset_unique_values(
     subset_name: Literal["all"] | str | Sequence[str] = "all",
 ) -> SeedDataset:
     """
-    Fetches the EquityMedQA dataset from Hugging Face and returns a SeedDataset.
+    Fetch the EquityMedQA dataset from Hugging Face and return a SeedDataset.
+
     Args:
         subset_name (str | list): The name(s) of the subset to fetch. Defaults to "all" which returns all values.
+
+    Returns:
+        SeedDataset: A SeedDataset containing the unique prompts from the dataset.
+
+    Raises:
+        ValueError: If any of the specified subset names are invalid.
 
     Notes: For more info
         Paper: https://arxiv.org/abs/2403.12025
@@ -94,15 +101,19 @@ def fetch_equitymedqa_dataset_unique_values(
         for prompt in prompts
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset
 
 
 def get_sub_dataset(subset_name: str) -> list:
     """
-    Fetches a specific subset of the EquityMedQA dataset and returns a list of unique prompts.
+    Fetch a specific subset of the EquityMedQA dataset and return a list of unique prompts.
+
     Args:
         subset_name (str): The name of the subset to fetch.
+
+    Returns:
+        list: A list of unique prompts from the specified subset.
     """
     data = load_dataset("katielink/EquityMedQA", subset_name)
 

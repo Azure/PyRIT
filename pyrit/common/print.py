@@ -15,7 +15,8 @@ def print_chat_messages_with_color(
     left_padding_width: int = 20,
     custom_colors: Optional[dict[str, str]] = None,
 ) -> None:
-    """Print chat messages with color to console.
+    """
+    Print chat messages with color to console.
 
     Args:
         messages: List of chat messages.
@@ -23,9 +24,6 @@ def print_chat_messages_with_color(
         left_padding_width: Maximum character width for the left padding.
         custom_colors: Custom colors for the roles, in the format {"ROLE": "COLOR"}.
             If None, default colors will be used.
-
-    Returns:
-        None
     """
     role_to_color: dict[str, str] = {
         "system": "red",

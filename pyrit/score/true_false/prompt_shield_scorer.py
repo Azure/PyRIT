@@ -36,7 +36,8 @@ class PromptShieldScorer(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
-        """Initialize the PromptShieldScorer.
+        """
+        Initialize the PromptShieldScorer.
 
         Args:
             prompt_shield_target (PromptShieldTarget): The Prompt Shield target to use for scoring.
@@ -96,7 +97,6 @@ class PromptShieldScorer(TrueFalseScorer):
         Remember that you can just access the metadata attribute to get the original Prompt Shield endpoint response,
         and then just call json.loads() on it to interact with it.
         """
-
         response_json: dict = json.loads(response)
 
         user_detections = []

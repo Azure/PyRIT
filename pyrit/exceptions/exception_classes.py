@@ -149,7 +149,6 @@ def pyrit_target_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-
     return retry(
         reraise=True,
         retry=retry_if_exception_type(RateLimitError)
@@ -174,7 +173,6 @@ def pyrit_json_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-
     return retry(
         reraise=True,
         retry=retry_if_exception_type(InvalidJsonException),
@@ -196,7 +194,6 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-
     return retry(
         reraise=True,
         retry=retry_if_exception_type(MissingPromptPlaceholderException),

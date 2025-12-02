@@ -1,5 +1,5 @@
 # This is an example of a multiturn SeedGroup using a single modality (text).
-prompts:
+seeds:
   - dataset_name: TestMultiTurn
     harm_categories:
       - illegal

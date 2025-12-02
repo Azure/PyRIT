@@ -977,7 +977,7 @@ async def test_seed_prompt_hash_stored_and_retrieved(sqlite_instance: MemoryInte
     )
 
     # Add to memory
-    await sqlite_instance.add_seeds_to_memory_async(prompts=[seed_prompt])
+    await sqlite_instance.add_seeds_to_memory_async(seeds=[seed_prompt])
 
     # Retrieve and verify hash
     assert seed_prompt.value_sha256 is not None, "SHA256 should not be None"

@@ -244,7 +244,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             },
         )
 
-        return SeedGroup(prompts=[seed_prompt])
+        return SeedGroup(seeds=[seed_prompt])
 
     async def _teardown_async(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """
@@ -291,7 +291,6 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         """
         Execute the benchmark strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         question_answering_entry = get_kwarg_param(
             kwargs=kwargs,

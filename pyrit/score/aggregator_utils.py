@@ -8,7 +8,8 @@ from pyrit.models import Score
 
 
 def combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Union[str, int]], List[str]]:
-    """Combine metadata and categories from multiple scores with deduplication.
+    """
+    Combine metadata and categories from multiple scores with deduplication.
 
     Args:
         scores: List of Score objects.
@@ -29,7 +30,8 @@ def combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Unio
 
 
 def format_score_for_rationale(score: Score) -> str:
-    """Format a single score for inclusion in an aggregated rationale.
+    """
+    Format a single score for inclusion in an aggregated rationale.
 
     Args:
         score: The Score object to format.

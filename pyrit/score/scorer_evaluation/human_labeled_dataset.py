@@ -105,9 +105,9 @@ class HumanLabeledDataset:
         *,
         csv_path: Union[str, Path],
         metrics_type: MetricsType,
-        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         dataset_name: Optional[str] = None,
     ) -> "HumanLabeledDataset":
@@ -119,6 +119,7 @@ class HumanLabeledDataset:
             metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or
                 OBJECTIVE.
             assistant_response_col_name (str): The name of the column containing the assistant responses.
+                Defaults to "assistant_response".
             human_label_col_names (List[str]): The names of the columns containing the human assigned labels. For
                 harm datasets, the CSV file should contain float scores between 0.0 and 1.0 for each response.
                 For objective datasets, the CSV file should contain a 0 or 1 for each response.
@@ -135,7 +136,12 @@ class HumanLabeledDataset:
         if not os.path.exists(csv_path):
             raise ValueError(f"CSV file does not exist: {csv_path}")
 
-        eval_df = pd.read_csv(csv_path)
+        # Try UTF-8 first, fall back to latin-1 for files with special characters
+        try:
+            eval_df = pd.read_csv(csv_path, encoding="utf-8")
+        except UnicodeDecodeError:
+            eval_df = pd.read_csv(csv_path, encoding="latin-1")
+
         # cls._validate_fields
         cls._validate_columns(
             eval_df=eval_df,

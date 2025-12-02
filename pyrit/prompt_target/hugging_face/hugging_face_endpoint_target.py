@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class HuggingFaceEndpointTarget(PromptTarget):
-    """The HuggingFaceEndpointTarget interacts with HuggingFace models hosted on cloud endpoints.
+    """
+    The HuggingFaceEndpointTarget interacts with HuggingFace models hosted on cloud endpoints.
 
     Inherits from PromptTarget to comply with the current design standards.
     """
@@ -29,7 +30,8 @@ class HuggingFaceEndpointTarget(PromptTarget):
         max_requests_per_minute: Optional[int] = None,
         verbose: bool = False,
     ) -> None:
-        """Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
+        """
+        Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
 
         Args:
             hf_token (str): The Hugging Face token for authenticating with the Hugging Face endpoint.

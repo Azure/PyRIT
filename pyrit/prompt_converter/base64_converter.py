@@ -10,7 +10,8 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class Base64Converter(PromptConverter):
-    """Converter that encodes text to base64 format.
+    """
+    Converter that encodes text to base64 format.
 
     This converter takes input text and converts it to base64 encoding,
     which can be useful for obfuscating text or testing how systems
@@ -29,7 +30,8 @@ class Base64Converter(PromptConverter):
     ]
 
     def __init__(self, *, encoding_func: EncodingFunc = "b64encode") -> None:
-        """Initialize the Base64Converter.
+        """
+        Initialize the Base64Converter.
 
         Args:
             encoding_func: The base64 encoding function to use. Defaults to "b64encode".
@@ -37,7 +39,8 @@ class Base64Converter(PromptConverter):
         self._encoding_func = encoding_func
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """Converts the given prompt to base64 encoding.
+        """
+        Converts the given prompt to base64 encoding.
 
         Args:
             prompt: The prompt to be converted.

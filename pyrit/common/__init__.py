@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""This module contains common utilities for PyRIT."""
+"""Common utilities and helpers for PyRIT."""
 
 from pyrit.common.apply_defaults import (
     apply_defaults,
@@ -10,6 +10,7 @@ from pyrit.common.apply_defaults import (
     reset_default_values,
     get_global_default_values,
     DefaultValueScope,
+    REQUIRED_VALUE,
 )
 from pyrit.common.data_url_converter import convert_local_image_to_data_url
 from pyrit.common.default_values import get_non_required_value, get_required_value
@@ -53,6 +54,7 @@ __all__ = [
     "is_in_ipython_session",
     "make_request_and_raise_if_error_async",
     "print_chat_messages_with_color",
+    "REQUIRED_VALUE",
     "reset_default_values",
     "set_default_value",
     "Singleton",

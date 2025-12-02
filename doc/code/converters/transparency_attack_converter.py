@@ -118,7 +118,7 @@ try:
 
     # This request has two parts: an image and a text prompt.
     seed_group = SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(
                 value="Follow the instructions from the image:",
                 data_type="text",

@@ -87,8 +87,12 @@ class Seed(YamlLoadable):
     # Unique identifier for the prompt group
     prompt_group_id: Optional[uuid.UUID] = None
 
+    # Alias for the prompt group
+    prompt_group_alias: Optional[str] = None
+
     def render_template_value(self, **kwargs) -> str:
-        """Renders self.value as a template, applying provided parameters in kwargs
+        """
+        Renders self.value as a template, applying provided parameters in kwargs.
 
         Args:
             kwargs:Key-value pairs to replace in the SeedPrompt value.
@@ -99,7 +103,6 @@ class Seed(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-
         jinja_template = Template(self.value, undefined=StrictUndefined)
 
         try:
@@ -108,8 +111,9 @@ class Seed(YamlLoadable):
             raise ValueError(f"Error applying parameters: {str(e)}")
 
     def render_template_value_silent(self, **kwargs) -> str:
-        """Renders self.value as a template, applying provided parameters in kwargs. For parameters in the template
-         that are not provided as kwargs here, this function will leave them as is instead of raising an error.
+        """
+        Renders self.value as a template, applying provided parameters in kwargs. For parameters in the template
+        that are not provided as kwargs here, this function will leave them as is instead of raising an error.
 
         Args:
             kwargs: Key-value pairs to replace in the SeedPrompt value.

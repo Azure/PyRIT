@@ -23,9 +23,6 @@ logger = logging.getLogger(__name__)
 class SeedPrompt(Seed):
     """Represents a seed prompt with various attributes and metadata."""
 
-    # Alias for the prompt group
-    prompt_group_alias: Optional[str] = None
-
     # Role of the prompt in a conversation (e.g., "user", "assistant")
     role: Optional[ChatMessageRole] = None
 
@@ -37,7 +34,7 @@ class SeedPrompt(Seed):
     parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
 
     def __post_init__(self) -> None:
-        """Post-initialization to render the template to replace existing values"""
+        """Post-initialization to render the template to replace existing values."""
         self.value = self.render_template_value_silent(**PATHS_DICT)
 
         if not self.data_type:

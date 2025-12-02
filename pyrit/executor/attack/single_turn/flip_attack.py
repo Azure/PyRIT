@@ -6,8 +6,8 @@ import pathlib
 import uuid
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -38,7 +38,7 @@ class FlipAttack(PromptSendingAttack):
     @apply_defaults
     def __init__(
         self,
-        objective_target: PromptChatTarget,
+        objective_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -64,7 +64,7 @@ class FlipAttack(PromptSendingAttack):
         self._request_converters = flip_converter + self._request_converters
 
         # This system prompt is sent to the target to flip the words in the prompt.
-        system_prompt_path = pathlib.Path(DATASETS_PATH) / "executors" / "flip_attack.yaml"
+        system_prompt_path = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "flip_attack.yaml"
         system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
         self._system_prompt = Message.from_system_prompt(system_prompt=system_prompt)
@@ -116,7 +116,7 @@ class FlipAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=initial_prompt, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=initial_prompt, data_type="text")])
         context.seed_group = seed_group
 
         return await super()._perform_async(context=context)

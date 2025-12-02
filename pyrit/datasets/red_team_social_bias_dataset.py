@@ -103,5 +103,5 @@ def fetch_red_team_social_bias_dataset() -> SeedDataset:
                 )
             )
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset

@@ -39,7 +39,7 @@ xpia_prompt = SeedPrompt(
         "file_name": "index.html",  # This is the file name that will be used when uploading to Azure Blob Storage
     },
 )
-xpia_prompt_group = SeedGroup(prompts=[xpia_prompt])
+xpia_prompt_group = SeedGroup(seeds=[xpia_prompt])
 
 # %% [markdown]
 #

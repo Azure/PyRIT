@@ -10,7 +10,7 @@ import pytest
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
-from pyrit.scenarios import EncodingScenario, EncodingStrategy
+from pyrit.scenario import EncodingScenario, EncodingStrategy
 from pyrit.score import DecodingScorer, TrueFalseScorer
 
 
@@ -43,31 +43,26 @@ class TestEncodingScenarioInitialization:
     def test_init_with_custom_seed_prompts(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with custom seed prompts."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
 
         assert scenario._seed_prompts == sample_seeds
-        assert scenario._objective_target == mock_objective_target
         assert scenario.name == "Encoding Scenario"
         assert scenario.version == 1
 
     def test_init_with_default_seed_prompts(self, mock_objective_target, mock_objective_scorer):
         """Test initialization with default seed prompts (Garak dataset)."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             objective_scorer=mock_objective_scorer,
         )
 
         # Should load default datasets from Garak
         assert len(scenario._seed_prompts) > 0
-        assert scenario._objective_target == mock_objective_target
 
     def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with custom objective scorer."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -77,7 +72,6 @@ class TestEncodingScenarioInitialization:
     def test_init_creates_default_scorer_when_not_provided(self, mock_objective_target, sample_seeds):
         """Test that initialization creates default DecodingScorer when not provided."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
         )
 
@@ -87,23 +81,19 @@ class TestEncodingScenarioInitialization:
 
     def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with memory labels."""
-        memory_labels = {"test": "encoding", "category": "scenario"}
-
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
-            memory_labels=memory_labels,
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario._memory_labels == memory_labels
+        # memory_labels are not set until initialize_async is called
+        assert scenario._memory_labels == {}
 
     def test_init_with_custom_encoding_templates(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with custom encoding templates."""
         custom_templates = ["template1", "template2"]
 
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             encoding_templates=custom_templates,
             objective_scorer=mock_objective_scorer,
@@ -114,33 +104,34 @@ class TestEncodingScenarioInitialization:
     def test_init_with_max_concurrency(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with custom max_concurrency."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
-            max_concurrency=20,
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario._max_concurrency == 20
+        # max_concurrency defaults to 1 until initialize_async is called
+        assert scenario._max_concurrency == 1
 
-    def test_init_attack_strategies(self, mock_objective_target, mock_objective_scorer, sample_seeds):
+    @pytest.mark.asyncio
+    async def test_init_attack_strategies(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test that attack strategies are set correctly."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
 
+        await scenario.initialize_async(objective_target=mock_objective_target)
+
         # By default, EncodingStrategy.ALL is used, which expands to all encoding strategies
-        assert len(scenario._encoding_composites) > 0
+        assert len(scenario._scenario_composites) > 0
         # Verify all composites contain EncodingStrategy instances
         assert all(
             isinstance(comp.strategies[0], EncodingStrategy)
-            for comp in scenario._encoding_composites
+            for comp in scenario._scenario_composites
             if comp.strategies
         )
         # Verify none of the strategies are the aggregate "ALL"
         assert all(
-            comp.strategies[0] != EncodingStrategy.ALL for comp in scenario._encoding_composites if comp.strategies
+            comp.strategies[0] != EncodingStrategy.ALL for comp in scenario._scenario_composites if comp.strategies
         )
 
 
@@ -154,12 +145,11 @@ class TestEncodingScenarioAtomicAttacks:
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         # Should return multiple atomic attacks (one for each encoding type)
@@ -172,11 +162,11 @@ class TestEncodingScenarioAtomicAttacks:
     ):
         """Test that _get_converter_attacks returns attacks for multiple encoding types."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
 
+        await scenario.initialize_async(objective_target=mock_objective_target)
         attack_runs = scenario._get_converter_attacks()
 
         # Should have multiple attack runs for different encodings
@@ -190,11 +180,11 @@ class TestEncodingScenarioAtomicAttacks:
     ):
         """Test that _get_prompt_attacks creates attack runs with correct structure."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
 
+        await scenario.initialize_async(objective_target=mock_objective_target)
         attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
 
         # Should create attack runs
@@ -211,11 +201,11 @@ class TestEncodingScenarioAtomicAttacks:
     async def test_attack_runs_include_objectives(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test that attack runs include objectives for each seed prompt."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
 
+        await scenario.initialize_async(objective_target=mock_objective_target)
         attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
 
         # Check that objectives are created for each seed prompt
@@ -234,12 +224,11 @@ class TestEncodingScenarioExecution:
     async def test_scenario_initialization(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test that scenario can be initialized successfully."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async()
+        await scenario.initialize_async(objective_target=mock_objective_target)
 
         # Verify initialization creates atomic attacks
         assert scenario.atomic_attack_count > 0
@@ -248,7 +237,6 @@ class TestEncodingScenarioExecution:
     async def test_get_default_dataset_loads_garak_data(self, mock_objective_target, mock_objective_scorer):
         """Test that _get_default_dataset loads data from Garak datasets."""
         scenario = EncodingScenario(
-            objective_target=mock_objective_target,
             objective_scorer=mock_objective_scorer,
         )
 

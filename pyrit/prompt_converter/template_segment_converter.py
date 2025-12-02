@@ -6,7 +6,7 @@ import pathlib
 import random
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -42,7 +42,7 @@ class TemplateSegmentConverter(PromptConverter):
             prompt_template
             if prompt_template
             else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "template_segment_converter" / "tom_and_jerry.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "template_segment_converter" / "tom_and_jerry.yaml"
             )
         )
 

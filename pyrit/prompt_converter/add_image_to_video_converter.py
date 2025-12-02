@@ -50,7 +50,6 @@ class AddImageVideoConverter(PromptConverter):
         Raises:
             ValueError: If ``video_path`` is empty or invalid.
         """
-
         if not video_path:
             raise ValueError("Please provide valid video path")
 
@@ -70,7 +69,6 @@ class AddImageVideoConverter(PromptConverter):
         Returns:
             str: The output video path.
         """
-
         try:
             import cv2  # noqa: F401
         except ModuleNotFoundError as e:

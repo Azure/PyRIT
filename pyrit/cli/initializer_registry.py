@@ -1,20 +1,35 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 """
 Initializer registry for discovering and cataloging PyRIT initializers.
 
-This module provides functionality to discover all available PyRITInitializer subclasses
+This module provides functionality to discover all available PyRITInitializer subclasses.
+
+PERFORMANCE OPTIMIZATION:
+This module uses lazy imports and direct path computation to minimize import overhead:
+
+1. Lazy Imports via TYPE_CHECKING: PyRITInitializer is only imported for type checking,
+   not at runtime. Runtime imports happen inside methods when actually needed.
+
+2. Direct Path Computation: Computes PYRIT_PATH directly using __file__ instead of importing
+   from pyrit.common.path, avoiding loading of the pyrit package.
 """
 
 import importlib.util
 import inspect
 import logging
 from pathlib import Path
-from typing import Dict, List, TypedDict
+from typing import TYPE_CHECKING, Dict, List, Optional, TypedDict
 
-from pyrit.common.path import PYRIT_PATH
-from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
+# Compute PYRIT_PATH directly to avoid importing pyrit package
+# (which triggers heavy imports from __init__.py)
+PYRIT_PATH = Path(__file__).parent.parent.resolve()
+
+if TYPE_CHECKING:
+    from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +67,13 @@ class InitializerRegistry:
         """
         self._initializers: Dict[str, InitializerInfo] = {}
         self._initializer_paths: Dict[str, Path] = {}  # Track file paths for collision detection
+        self._initializer_metadata: Optional[List[InitializerInfo]] = None
 
         if discovery_path is None:
             discovery_path = Path(PYRIT_PATH) / "setup" / "initializers"
 
         self._discovery_path = discovery_path
+
         self._discover_initializers()
 
     def _discover_initializers(self) -> None:
@@ -98,6 +115,9 @@ class InitializerRegistry:
         Args:
             file_path (Path): Path to the Python file to process.
         """
+        # Runtime import to avoid loading heavy modules at module level
+        from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
+
         # Use filename as the short name (e.g., "objective_target" instead of "scenarios.objective_target")
         short_name = file_path.stem
 
@@ -183,8 +203,17 @@ class InitializerRegistry:
             List[InitializerInfo]: List of initializer information dictionaries, sorted by
                 execution order and then by name.
         """
+        # Return cached metadata if available
+        if self._initializer_metadata is not None:
+            return self._initializer_metadata
+
+        # Build from discovered initializers
         initializers_list = list(self._initializers.values())
         initializers_list.sort(key=lambda x: (x["execution_order"], x["name"]))
+
+        # Cache for subsequent calls
+        self._initializer_metadata = initializers_list
+
         return initializers_list
 
     def get_initializer_names(self) -> List[str]:
@@ -229,6 +258,46 @@ class InitializerRegistry:
             resolved_paths.append(initializer_file)
 
         return resolved_paths
+
+    def get_initializer_class(self, *, name: str) -> type["PyRITInitializer"]:
+        """
+        Get the initializer class by name.
+
+        Args:
+            name: The initializer name.
+
+        Returns:
+            The initializer class.
+
+        Raises:
+            ValueError: If initializer not found.
+        """
+        import importlib.util
+
+        initializer_info = self.get_initializer(name)
+        if initializer_info is None:
+            available = ", ".join(sorted(self.get_initializer_names()))
+            raise ValueError(
+                f"Initializer '{name}' not found.\n"
+                f"Available initializers: {available}\n"
+                f"Use 'pyrit_scan --list-initializers' to see detailed information."
+            )
+
+        initializer_file = self._initializer_paths.get(name)
+        if initializer_file is None:
+            raise ValueError(f"Could not locate file for initializer '{name}'.")
+
+        # Load the module
+        spec = importlib.util.spec_from_file_location("initializer_module", initializer_file)
+        if spec is None or spec.loader is None:
+            raise ValueError(f"Failed to load initializer from {initializer_file}")
+
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        # Get the initializer class
+        initializer_class = getattr(module, initializer_info["class_name"])
+        return initializer_class
 
     @staticmethod
     def resolve_script_paths(*, script_paths: list[str]) -> list[Path]:

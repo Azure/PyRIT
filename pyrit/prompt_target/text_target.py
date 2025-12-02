@@ -14,7 +14,7 @@ from pyrit.prompt_target import PromptTarget
 class TextTarget(PromptTarget):
     """
     The TextTarget takes prompts, adds them to memory and writes them to io
-    which is sys.stdout by default
+    which is sys.stdout by default.
 
     This can be useful in various situations, for example, if operators want to generate prompts
     but enter them manually.

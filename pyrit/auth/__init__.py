@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 """
-This module contains authentication functionality for a variety of services.
+Authentication functionality for a variety of services.
 """
 
 from pyrit.auth.authenticator import Authenticator

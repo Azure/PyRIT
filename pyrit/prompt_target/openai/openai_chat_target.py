@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class OpenAIChatTarget(OpenAIChatTargetBase):
     """
-    This class facilitates multimodal (image and text) input and text output generation
+    This class facilitates multimodal (image and text) input and text output generation.
 
     This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
 
@@ -34,7 +34,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         endpoint (str): The endpoint for the OpenAI API
         model_name (str): The model name for the OpenAI API
         deployment_name (str): For Azure, the deployment name
-        api_version (str): The api version for the OpenAI API
         temperature (float): The temperature for the completion
         max_completion_tokens (int): The maximum number of tokens to be returned by the model.
             The total length of input tokens and generated tokens is limited by
@@ -83,8 +82,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-10-21".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -134,8 +131,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
-        # Validate endpoint URL
-        self._warn_if_irregular_endpoint(self.CHAT_URL_REGEX)
+        chat_url_patterns = [r"/chat/completions"]
+        self._warn_if_irregular_endpoint(chat_url_patterns)
 
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
@@ -151,7 +148,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
-        """Builds chat messages based on message entries.
+        """
+        Builds chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -165,7 +163,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             return await self._build_chat_messages_for_multi_modal_async(conversation)
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
-        """Checks if the message piece is in text message format.
+        """
+        Checks if the message piece is in text message format.
 
         Args:
             conversation list[Message]: The conversation
@@ -183,7 +182,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
     def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
         Builds chat messages based on message entries. This is needed because many
-        openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted)
+        openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted).
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -306,7 +305,8 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
     def _validate_request(self, *, message: Message) -> None:
-        """Validates the structure and content of a message for compatibility of this target.
+        """
+        Validates the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.
@@ -314,7 +314,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         Raises:
             ValueError: If any of the message pieces have a data type other than 'text' or 'image_path'.
         """
-
         converted_prompt_data_types = [
             message_piece.converted_value_data_type for message_piece in message.message_pieces
         ]

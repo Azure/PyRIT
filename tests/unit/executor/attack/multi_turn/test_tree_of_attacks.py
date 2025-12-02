@@ -275,7 +275,7 @@ class TestHelpers:
         """Mock the prompt loading process."""
         mock_seed_prompts = [MagicMock(spec=SeedPrompt) for _ in range(3)]
         mock_dataset = MagicMock()
-        mock_dataset.prompts = mock_seed_prompts
+        mock_dataset.seeds = mock_seed_prompts
 
         with patch("pyrit.models.seed_dataset.SeedDataset.from_yaml_file", return_value=mock_dataset):
             attack._load_adversarial_prompts()

@@ -8,6 +8,7 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import TextJailBreak
 from pyrit.executor.promptgen.fuzzer import (
     FuzzerContext,
     FuzzerGenerator,
@@ -49,16 +50,16 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def simple_prompt_templates(self) -> list[str]:
         """Sample prompt templates for testing."""
-        prompt_template1 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "jailbreak_1.yaml")
-        prompt_template2 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "aim.yaml")
-        prompt_template3 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "aligned.yaml")
-        prompt_template4 = SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "jailbreak" / "axies.yaml")
+        prompt_template1 = TextJailBreak(template_file_name="jailbreak_1.yaml")
+        prompt_template2 = TextJailBreak(template_file_name="aim.yaml")
+        prompt_template3 = TextJailBreak(template_file_name="aligned.yaml")
+        prompt_template4 = TextJailBreak(template_file_name="axies.yaml")
 
         return [
-            prompt_template1.value,
-            prompt_template2.value,
-            prompt_template3.value,
-            prompt_template4.value,
+            prompt_template1.template.value,
+            prompt_template2.template.value,
+            prompt_template3.template.value,
+            prompt_template4.template.value,
         ]
 
     @pytest.fixture

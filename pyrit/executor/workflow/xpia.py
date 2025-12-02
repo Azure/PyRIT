@@ -257,7 +257,6 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
             XPIAResult: The result of the workflow execution containing the processing
                 response, optional score, and attack setup response.
         """
-
         # Step 1: Setup and send attack prompt
         setup_response_text = await self._setup_attack_async(context=context)
 

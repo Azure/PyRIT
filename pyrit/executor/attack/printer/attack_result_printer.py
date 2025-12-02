@@ -27,13 +27,13 @@ class AttackResultPrinter(ABC):
         pass
 
     @abstractmethod
-    async def print_conversation_async(self, result: AttackResult, *, include_auxiliary_scores: bool = False) -> None:
+    async def print_conversation_async(self, result: AttackResult, *, include_scores: bool = False) -> None:
         """
         Print only the conversation history.
 
         Args:
             result (AttackResult): The attack result containing the conversation to print
-            include_auxiliary_scores (bool): Whether to include auxiliary scores in the output.
+            include_scores (bool): Whether to include scores in the output.
                 Defaults to False.
         """
         pass

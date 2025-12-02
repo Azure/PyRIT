@@ -1,6 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""
+Dataset fetching and loading utilities for various red teaming and safety evaluation datasets.
+"""
+
 from pyrit.datasets.adv_bench_dataset import fetch_adv_bench_dataset
 from pyrit.datasets.aya_redteaming_dataset import fetch_aya_redteaming_dataset
 from pyrit.datasets.babelscape_alert_dataset import fetch_babelscape_alert_dataset
@@ -31,7 +35,10 @@ from pyrit.datasets.red_team_social_bias_dataset import fetch_red_team_social_bi
 from pyrit.datasets.seclists_bias_testing_dataset import fetch_seclists_bias_testing_dataset
 from pyrit.datasets.sosbench_dataset import fetch_sosbench_dataset
 from pyrit.datasets.tdc23_redteaming_dataset import fetch_tdc23_redteaming_dataset
-from pyrit.datasets.text_jailbreak import TextJailBreak
+from pyrit.datasets.wmdp_dataset import fetch_wmdp_dataset
+from pyrit.datasets.xstest_dataset import fetch_xstest_dataset
+from pyrit.datasets.equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
+from pyrit.datasets.jailbreak.text_jailbreak import TextJailBreak
 from pyrit.datasets.transphobia_awareness_dataset import fetch_transphobia_awareness_dataset
 from pyrit.datasets.wmdp_dataset import fetch_wmdp_dataset
 from pyrit.datasets.xstest_dataset import fetch_xstest_dataset

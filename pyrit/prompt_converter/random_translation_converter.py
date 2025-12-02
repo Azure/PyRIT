@@ -7,8 +7,8 @@ import re
 from pathlib import Path
 from typing import List, Optional, Union
 
-from pyrit.common.apply_defaults import apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH, DATASETS_PATH
 from pyrit.models import PromptDataType, SeedDataset, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
@@ -31,7 +31,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
     def __init__(
         self,
         *,
-        converter_target: Optional[PromptChatTarget] = None,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         system_prompt_template: Optional[SeedPrompt] = None,
         languages: Optional[List[str]] = None,
         indices: Optional[List[int]] = None,
@@ -66,9 +66,7 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
         system_prompt_template = (
             system_prompt_template
             if system_prompt_template
-            else SeedPrompt.from_yaml_file(
-                Path(DATASETS_PATH) / "prompt_converters" / "random_translation_converter.yaml"
-            )
+            else SeedPrompt.from_yaml_file(Path(CONVERTER_SEED_PROMPT_PATH) / "random_translation_converter.yaml")
         )
 
         LLMGenericTextConverter.__init__(

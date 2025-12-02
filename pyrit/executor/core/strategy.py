@@ -23,7 +23,7 @@ StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
 
 @dataclass
 class StrategyContext(ABC):
-    """Base class for all strategy contexts"""
+    """Base class for all strategy contexts."""
 
     def duplicate(self: StrategyContextT) -> StrategyContextT:
         """
@@ -152,7 +152,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
                 event handler for strategy events.
             logger (logging.Logger): The logger to use for this strategy.
         """
-
         self._id = uuid.uuid4()
         self._context_type = context_type
         self._event_handlers: Dict[str, StrategyEventHandler[StrategyContextT, StrategyResultT]] = {}
@@ -286,7 +285,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Yields:
             None: Control is yielded back to the caller after setup is complete.
         """
-
         try:
             # Notify pre-setup event
             await self._handle_event(event=StrategyEvent.ON_PRE_SETUP, context=context)

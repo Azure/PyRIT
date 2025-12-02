@@ -59,7 +59,6 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
         Returns:
             List containing a single aggregated score for the video.
         """
-
         # Get scores for all frames
         frame_scores = await self._score_frames_async(message_piece=message_piece, objective=objective)
 

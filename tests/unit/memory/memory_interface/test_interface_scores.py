@@ -207,7 +207,7 @@ async def test_get_seeds_no_filters(sqlite_instance: MemoryInterface):
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    await sqlite_instance.add_seeds_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seeds_to_memory_async(seeds=seed_prompts, added_by="test")
 
     result = sqlite_instance.get_seeds()
     assert len(result) == 2

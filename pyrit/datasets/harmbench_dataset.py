@@ -29,11 +29,13 @@ def fetch_harmbench_dataset(
     Returns:
         SeedDataset: A SeedDataset containing the examples.
 
+    Raises:
+        ValueError: If any example is missing required keys or if the file type is invalid.
+
     Note:
         For more information and access to the original dataset and related materials, visit:
         https://github.com/centerforaisafety/HarmBench
     """
-
     # Determine the file type from the source URL
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
@@ -80,7 +82,7 @@ def fetch_harmbench_dataset(
         for item in prompt_data
     ]
     seed_dataset = SeedDataset(
-        prompts=seed_prompts,
+        seeds=seed_prompts,
         harm_categories=list(all_semantic_categories),
     )
     return seed_dataset

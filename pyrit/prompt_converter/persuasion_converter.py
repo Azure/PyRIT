@@ -5,10 +5,9 @@ import json
 import logging
 import pathlib
 import uuid
-from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -46,7 +45,12 @@ class PersuasionConverter(PromptConverter):
     """
 
     @apply_defaults
-    def __init__(self, *, converter_target: Optional[PromptChatTarget] = None, persuasion_technique: str):
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
+        persuasion_technique: str,
+    ):
         """
         Initializes the converter with the specified target and prompt template.
 
@@ -61,18 +65,11 @@ class PersuasionConverter(PromptConverter):
             ValueError: If converter_target is not provided and no default has been configured.
             ValueError: If the persuasion technique is not supported or does not exist.
         """
-        if converter_target is None:
-            raise ValueError(
-                "converter_target is required for LLM-based converters. "
-                "Either pass it explicitly or configure a default via PyRIT initialization "
-                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
-            )
-
         self.converter_target = converter_target
 
         try:
             prompt_template = SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "persuasion" / f"{persuasion_technique}.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "persuasion" / f"{persuasion_technique}.yaml"
             )
         except FileNotFoundError:
             raise ValueError(f"Persuasion technique '{persuasion_technique}' does not exist or is not supported.")

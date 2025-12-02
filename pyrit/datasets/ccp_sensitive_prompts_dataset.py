@@ -25,7 +25,7 @@ def fetch_ccp_sensitive_prompts_dataset() -> SeedDataset:
     )
 
     return SeedDataset(
-        prompts=[
+        seeds=[
             SeedPrompt(
                 value=row["prompt"],
                 data_type="text",

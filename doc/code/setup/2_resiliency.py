@@ -93,31 +93,30 @@
 # - Working with targets that return structured data
 # - LLMs occasionally generate malformed JSON
 # - You need automatic recovery from parsing errors
-
-# %% [markdown]
+#
+#
 # ## 3. Scenario-Level Retries: High-Level Workflow Resiliency
 #
-# "### What is Scenario-Level Retry?\n",
-#     "\n",
-#     "Scenario-level retry is the **highest-level** retry mechanism in PyRIT. When enabled via the `max_retries` parameter, it allows an entire scenario execution to automatically retry if an exception occurs during the workflow. \n",
+# ### What is Scenario-Level Retry?
+#
+# Scenario-level retry is the **highest-level** retry mechanism in PyRIT. When enabled via the `max_retries` parameter, it allows an entire scenario execution to automatically retry if an exception occurs during the workflow.
 #
 # But also note, if you rerun the same scenario manually, that follows the same logic and is always an option.
 #
 # ### Key Features
 #
-# "\n",
-#     "- **Picks up where it left off**: On retry, the scenario skips already-completed objectives and continues from the point of exception\n",
-#     "- **Broad exception handling**: Catches any exception during scenario execution (network issues, target failures, scoring errors, etc.)\n",
-#     "- **Configurable attempts**: Set `max_retries` to control how many additional attempts are allowed\n",
+# - **Picks up where it left off**: On retry, the scenario skips already-completed objectives and continues from the point of exception
+# - **Broad exception handling**: Catches any exception during scenario execution (network issues, target failures, scoring errors, etc.)
+# - **Configurable attempts**: Set `max_retries` to control how many additional attempts are allowed
 # - **Progress tracking**: The `number_tries` field in `ScenarioResult` tracks total attempts
 #
 # ### How It Works
 #
 # When you call `scenario.run_async()`, PyRIT:
 #
-# "1. **Initial Attempt**: Executes all atomic attacks in sequence\n",
-#     "2. **On Exception**: If an exception occurs, checks if retries remain\n",
-#     "3. **Retry with Resume**: On retry, queries memory to identify completed objectives and skips them\n",
+# 1. **Initial Attempt**: Executes all atomic attacks in sequence
+# 2. **On Exception**: If an exception occurs, checks if retries remain
+# 3. **Retry with Resume**: On retry, queries memory to identify completed objectives and skips them
 # 4. **Continue from Exception Point**: Executes only the remaining objectives
 # 5. **Repeat**: Continues retrying until success or `max_retries` exhausted
 #
@@ -125,7 +124,7 @@
 
 # %%
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.scenarios import FoundryScenario, FoundryStrategy
+from pyrit.scenario import FoundryScenario, FoundryStrategy
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
@@ -133,14 +132,14 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 objective_target = OpenAIChatTarget(model_name="gpt-4o")
 
 # Create a scenario with retry configuration
-scenario = FoundryScenario(
+scenario = FoundryScenario()
+
+await scenario.initialize_async(  # type: ignore
     objective_target=objective_target,
     max_concurrency=5,
-    max_retries=3,  # Allow up to 3 retries (4 total attempts)
+    max_retries=3,
     scenario_strategies=[FoundryStrategy.Base64],
 )
-
-await scenario.initialize_async()  # type: ignore
 
 # Execute with automatic retry after exceptions
 result = await scenario.run_async()  # type: ignore
@@ -164,8 +163,8 @@ print(f"Total results: {len(result.attack_results)}")
 #
 # Use scenario-level retries when:
 #
-# "- ✅ Running long-duration test campaigns that might encounter transient exceptions\n",
-#     "- ✅ Testing against unreliable targets or networks\n",
+# - ✅ Running long-duration test campaigns that might encounter transient exceptions
+# - ✅ Testing against unreliable targets or networks
 # - ✅ You want to ensure comprehensive test coverage despite intermittent issues
 # - ✅ You need workflow-level resilience (e.g., partial completion + retry)
 #
@@ -240,29 +239,29 @@ print(f"Total results: {len(result.attack_results)}")
 # ### Core Retry Mechanisms
 #
 # ```
-# "┌─────────────────────────────────────────────────────────────┐\n",
-#     "│ Scenario-Level Retry (max_retries)                         │\n",
-#     "│ • Handles ANY exception in the entire workflow              │\n",
-#     "│ • Resumes from point of exception                           │\n",
+# ┌─────────────────────────────────────────────────────────────┐
+# │ Scenario-Level Retry (max_retries)                          │
+# │ • Handles ANY exception in the entire workflow              │
+# │ • Resumes from point of exception                           │
 # │ • Configurable per scenario                                 │
 # │                                                             │
-# │  ┌───────────────────────────────────────────────────────┐ │
-# │  │ AtomicAttack Execution                                │ │
-# │  │                                                       │ │
-# │  │  ┌─────────────────────────────────────────────────┐ │ │
-# │  │  │ JSON-Level Retry (pyrit_json_retry)            │ │ │
-# │  │  │ • Handles invalid JSON responses               │ │ │
-# │  │  │ • No exponential backoff (immediate retry)     │ │ │
-# │  │  │ • Uses target call, so includes target retry   │ │ │
-# │  │  │                                                 │ │ │
-# │  │  │  ┌──────────────────────────────────────────┐  │ │ │
-# │  │  │  │ Target-Level Retry (pyrit_target_retry) │  │ │ │
-# │  │  │  │ • Handles rate limits, empty responses  │  │ │ │
-# │  │  │  │ • Exponential backoff                   │  │ │ │
-# │  │  │  │ • Configured via environment variables  │  │ │ │
-# │  │  │  └──────────────────────────────────────────┘  │ │ │
-# │  │  └─────────────────────────────────────────────────┘ │ │
-# │  └───────────────────────────────────────────────────────┘ │
+# │  ┌───────────────────────────────────────────────────────┐  │
+# │  │ AtomicAttack Execution                                │  │
+# │  │                                                       │  │
+# │  │  ┌─────────────────────────────────────────────────┐  │  │
+# │  │  │ JSON-Level Retry (pyrit_json_retry)             │  │  │
+# │  │  │ • Handles invalid JSON responses                │  │  │
+# │  │  │ • No exponential backoff (immediate retry)      │  │  │
+# │  │  │ • Uses target call, so includes target retry    │  │  │
+# │  │  │                                                 │  │  │
+# │  │  │  ┌──────────────────────────────────────────┐   │  │  │
+# │  │  │  │ Target-Level Retry (pyrit_target_retry)  │   │  │  │
+# │  │  │  │ • Handles rate limits, empty responses   │   │  │  │
+# │  │  │  │ • Exponential backoff                    │   │  │  │
+# │  │  │  │ • Configured via environment variables   │   │  │  │
+# │  │  │  └──────────────────────────────────────────┘   │  │  │
+# │  │  └─────────────────────────────────────────────────┘  │  │
+# │  └───────────────────────────────────────────────────────┘  │
 # └─────────────────────────────────────────────────────────────┘
 # ```
 #

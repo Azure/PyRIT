@@ -34,6 +34,8 @@ class OpenAICompletionTarget(OpenAITarget):
         **kwargs,
     ):
         """
+        Initialize the OpenAICompletionTarget with the given parameters.
+
         Args:
             model_name (str, Optional): The name of the model.
             endpoint (str, Optional): The target URL for the OpenAI service.
@@ -44,8 +46,6 @@ class OpenAICompletionTarget(OpenAITarget):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-06-01".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -65,7 +65,6 @@ class OpenAICompletionTarget(OpenAITarget):
                 `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-
         super().__init__(*args, **kwargs)
 
         self._max_tokens = max_tokens
@@ -93,17 +92,12 @@ class OpenAICompletionTarget(OpenAITarget):
 
         body = await self._construct_request_body(request=message_piece)
 
-        params = {}
-        if self._api_version is not None:
-            params["api-version"] = self._api_version
-
         try:
             str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
                 endpoint_uri=self._endpoint,
                 method="POST",
                 headers=self._headers,
                 request_body=body,
-                params=params,
                 **self._httpx_client_kwargs,
             )
         except httpx.HTTPStatusError as StatusError:

@@ -55,7 +55,6 @@ def target(patch_central_database) -> OpenAIResponseTarget:
         model_name="gpt-o",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
     )
 
 
@@ -77,16 +76,13 @@ def test_init_with_no_endpoint_uri_var_raises():
                 model_name="gpt-4",
                 endpoint="",
                 api_key="xxxxx",
-                api_version="some_version",
             )
 
 
 def test_init_with_no_additional_request_headers_var_raises():
     with patch.dict(os.environ, {}, clear=True):
         with pytest.raises(ValueError):
-            OpenAIResponseTarget(
-                model_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
-            )
+            OpenAIResponseTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
 
 
 @pytest.mark.asyncio()
@@ -164,7 +160,6 @@ async def test_construct_request_body_includes_extra_body_params(
     target = OpenAIResponseTarget(
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
-        api_version="some_version",
         extra_body_parameters={"key": "value"},
     )
 
@@ -610,46 +605,6 @@ def test_construct_message_empty_response(
 
 
 @pytest.mark.asyncio
-async def test_openai_response_target_no_api_version(
-    sample_conversations: MutableSequence[MessagePiece], openai_response_json: dict
-):
-    target = OpenAIResponseTarget(
-        api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo", api_version=None
-    )
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        mock_request.return_value = MagicMock()
-        mock_request.return_value.status_code = 200
-        mock_request.return_value.text = json.dumps(openai_response_json)
-
-        await target.send_prompt_async(message=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" not in called_params
-
-
-@pytest.mark.asyncio
-async def test_openai_response_target_default_api_version(
-    sample_conversations: MutableSequence[MessagePiece], openai_response_json: dict
-):
-    target = OpenAIResponseTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="gpt-35-turbo")
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        mock_request.return_value = MagicMock()
-        mock_request.return_value.status_code = 200
-        mock_request.return_value.text = json.dumps(openai_response_json)
-
-        await target.send_prompt_async(message=request)
-
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" in called_params
-        assert called_params["api-version"] == "2025-03-01-preview"
-
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIResponseTarget, openai_response_json: dict):
     mock_memory = MagicMock(spec=MemoryInterface)

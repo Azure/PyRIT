@@ -53,7 +53,6 @@ class RealtimeTarget(OpenAITarget):
     def __init__(
         self,
         *,
-        api_version: str = "2025-04-01-preview",
         system_prompt: Optional[str] = None,
         voice: Optional[RealTimeVoice] = None,
         existing_convo: Optional[dict] = None,
@@ -75,12 +74,9 @@ class RealtimeTarget(OpenAITarget):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
-                "2024-06-01".
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to "2024-10-01-preview".
             system_prompt (str, Optional): The system prompt to use. Defaults to "You are a helpful AI assistant".
             voice (literal str, Optional): The voice to use. Defaults to None.
                 the only supported voices by the AzureOpenAI Realtime API are "alloy", "echo", and "shimmer".
@@ -89,8 +85,7 @@ class RealtimeTarget(OpenAITarget):
                 httpx.AsyncClient() constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
-
-        super().__init__(api_version=api_version, **kwargs)
+        super().__init__(**kwargs)
 
         self.system_prompt = system_prompt or "You are a helpful AI assistant"
         self.voice = voice
@@ -106,7 +101,6 @@ class RealtimeTarget(OpenAITarget):
         Connects to Realtime API Target using websockets.
         Returns the WebSocket connection.
         """
-
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
         query_params = {
@@ -116,10 +110,9 @@ class RealtimeTarget(OpenAITarget):
 
         self._add_auth_param_to_query_params(query_params)
 
-        if self._api_version is not None:
-            query_params["api-version"] = self._api_version
-
-        url = f"{self._endpoint}?{urlencode(query_params)}"
+        # Check if endpoint already has query parameters
+        separator = "&" if "?" in self._endpoint else "?"
+        url = f"{self._endpoint}{separator}{urlencode(query_params)}"
         websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
         return websocket
@@ -172,7 +165,6 @@ class RealtimeTarget(OpenAITarget):
         Args:
             conversation_id (str): Conversation ID
         """
-
         config_variables = self._set_system_prompt_and_config_vars()
 
         await self.send_event(
@@ -271,7 +263,7 @@ class RealtimeTarget(OpenAITarget):
 
     async def cleanup_conversation(self, conversation_id: str):
         """
-        Disconnects from the WebSocket server for a specific conversation
+        Disconnects from the WebSocket server for a specific conversation.
 
         Args:
             conversation_id (str): The conversation ID to disconnect from.
@@ -454,6 +446,7 @@ class RealtimeTarget(OpenAITarget):
     async def send_text_async(self, text: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
         """
         Sends text prompt to the WebSocket server.
+
         Args:
             text: prompt to send.
             conversation_id: conversation ID
@@ -522,7 +515,8 @@ class RealtimeTarget(OpenAITarget):
         return output_audio_path, result
 
     def _validate_request(self, *, message: Message) -> None:
-        """Validates the structure and content of a message for compatibility of this target.
+        """
+        Validates the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.
@@ -531,7 +525,6 @@ class RealtimeTarget(OpenAITarget):
             ValueError: If more than two message pieces are provided.
             ValueError: If any of the message pieces have a data type other than 'text' or 'audio_path'.
         """
-
         # Check the number of message pieces
         n_pieces = len(message.message_pieces)
         if n_pieces != 1:

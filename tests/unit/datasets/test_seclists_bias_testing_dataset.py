@@ -53,7 +53,7 @@ def test_custom_parameters_override_randomness(mock_fetch_examples):
     )
 
     # Check correct replacements
-    for prompt in dataset.prompts:
+    for prompt in dataset.seeds:
         prompt_value = prompt.value
         if "[Country]" in prompt_value:
             assert specific_country in prompt_value, "Country placeholder not replaced correctly"
@@ -74,16 +74,14 @@ def test_default_random_behavior(mock_fetch_examples):
     dataset2 = fetch_seclists_bias_testing_dataset()
 
     # Check for different outputs due to randomness
-    assert (
-        dataset1.prompts[0].value != dataset2.prompts[0].value
-    ), "Outputs should differ due to randomness without a seed"
+    assert dataset1.seeds[0].value != dataset2.seeds[0].value, "Outputs should differ due to randomness without a seed"
 
 
 @patch("pyrit.datasets.fetch_examples", return_value=MOCKED_EXAMPLES)
 def test_placeholder_replacement(mock_fetch_examples):
     """Ensure that placeholders are replaced."""
     dataset = fetch_seclists_bias_testing_dataset()
-    for prompt in dataset.prompts:
+    for prompt in dataset.seeds:
         prompt_value = prompt.value
         assert "[Country]" not in prompt_value
         assert "[Region]" not in prompt_value

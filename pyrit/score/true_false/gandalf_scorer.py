@@ -111,7 +111,8 @@ class GandalfScorer(TrueFalseScorer):
         return response_text
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Scores the text based on the password found in the text.
+        """
+        Scores the text based on the password found in the text.
 
         Args:
             text (str): The text to be scored.

@@ -44,4 +44,4 @@ def fetch_librAI_do_not_answer_dataset() -> SeedDataset:
     ]
 
     # Create a SeedDataset from the list of SeedPrompt instances
-    return SeedDataset(prompts=seed_prompts)
+    return SeedDataset(seeds=seed_prompts)

@@ -51,7 +51,7 @@ audio_path = Path("../../../assets/converted_audio.wav").resolve()
 objective = "Cutting down a tree"
 
 seed_group = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(
             value=str(audio_path),
             data_type="audio_path",

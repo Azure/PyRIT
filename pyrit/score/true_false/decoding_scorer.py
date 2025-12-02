@@ -35,7 +35,8 @@ class DecodingScorer(TrueFalseScorer):
         aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
-        """Initialize the DecodingScorer.
+        """
+        Initialize the DecodingScorer.
 
         Args:
             text_matcher (Optional[TextMatching]): The text matching strategy to use.
@@ -50,7 +51,8 @@ class DecodingScorer(TrueFalseScorer):
         self._score_categories = categories if categories else []
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Score the given request piece based on text matching strategy.
+        """
+        Score the given request piece based on text matching strategy.
 
         Args:
             message_piece (MessagePiece): The message piece to score.
@@ -61,7 +63,6 @@ class DecodingScorer(TrueFalseScorer):
             list[Score]: A list containing a single Score object with a boolean value indicating
                 whether any of the user piece values match the response.
         """
-
         memory = CentralMemory.get_memory_instance()
         user_request = memory.get_request_from_response(response=message_piece.to_message())
 
