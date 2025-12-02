@@ -957,7 +957,8 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
 
         final = await target.send_prompt_async(message=user_req)
 
-        # Response contains all messages from the agentic loop: assistant with tool call, tool output, final assistant response
+        # Response contains all messages from the agentic loop:
+        # assistant with tool call, tool output, final assistant response
         assert len(final) == 3
         # First message: assistant with function_call
         assert len(final[0].message_pieces) == 1
@@ -976,7 +977,9 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         # Verify intermediate messages were NOT persisted to memory by the target
         # (The normalizer will handle persistence when messages are returned)
         all_messages = target._memory.get_conversation(conversation_id=shared_conversation_id)
-        assert len(all_messages) == 0, f"Expected 0 messages in memory (target doesn't persist), got {len(all_messages)}"
+        assert (
+            len(all_messages) == 0
+        ), f"Expected 0 messages in memory (target doesn't persist), got {len(all_messages)}"
 
 
 def test_invalid_temperature_raises(patch_central_database):

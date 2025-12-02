@@ -165,7 +165,7 @@ class OpenAITarget(PromptChatTarget):
         """
         Refresh the authentication headers. This is particularly useful for Entra authentication
         where tokens need to be refreshed periodically.
-        
+
         Note: For SDK-based targets, token refresh is handled automatically by the SDK's
         token provider mechanism. This method is kept for backward compatibility.
         """

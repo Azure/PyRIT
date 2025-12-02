@@ -773,8 +773,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         # Check for content filter error (response_error is on the message piece)
         is_content_filter_error = (
-            context.last_response.is_error() 
-            and context.last_response.message_pieces[0].response_error == "blocked"
+            context.last_response.is_error() and context.last_response.message_pieces[0].response_error == "blocked"
         )
 
         # Check for refusal

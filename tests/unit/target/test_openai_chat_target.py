@@ -684,7 +684,7 @@ def test_set_auth_with_entra_auth(patch_central_database):
         # Verify Entra auth was configured correctly
         mock_scope.assert_called_once_with("https://test.openai.azure.com")
         mock_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
-        
+
         # Verify authentication objects are set correctly (SDK handles actual headers)
         assert target._azure_auth == mock_auth_instance
         assert target._api_key is None

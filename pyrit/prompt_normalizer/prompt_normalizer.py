@@ -99,12 +99,14 @@ class PromptNormalizer:
             # Empty responses are retried, but we don't want them to stop execution
             self._memory.add_message_to_memory(request=request)
 
-            responses = [construct_response_from_request(
-                request=request.message_pieces[0],
-                response_text_pieces=[""],
-                response_type="text",
-                error="empty",
-            )]
+            responses = [
+                construct_response_from_request(
+                    request=request.message_pieces[0],
+                    response_text_pieces=[""],
+                    response_type="text",
+                    error="empty",
+                )
+            ]
 
         except Exception as ex:
             # Ensure request to memory before processing exception

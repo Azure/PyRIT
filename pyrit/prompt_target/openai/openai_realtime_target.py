@@ -104,15 +104,16 @@ class RealtimeTarget(OpenAITarget):
             # Convert https endpoint to wss for websockets
             # Azure endpoint format: https://resource.openai.azure.com -> wss://resource.openai.azure.com/openai/v1
             websocket_base_url = self._endpoint.replace("https://", "wss://")
-            
+
             # Strip any paths after the domain for websocket connection
             # Keep only scheme://netloc and add /openai/v1
             from urllib.parse import urlparse
+
             parsed = urlparse(websocket_base_url)
             websocket_base_url = f"{parsed.scheme}://{parsed.netloc}/openai/v1"
-            
+
             logger.info(f"Creating realtime client with websocket_base_url: {websocket_base_url}")
-            
+
             # Get authentication token
             if self._azure_auth:
                 # Use Entra ID authentication
@@ -123,12 +124,12 @@ class RealtimeTarget(OpenAITarget):
             else:
                 # Use API key authentication
                 api_key_value = self._api_key
-            
+
             self._realtime_client = AsyncOpenAI(
                 websocket_base_url=websocket_base_url,
                 api_key=api_key_value,
             )
-            
+
         return self._realtime_client
 
     async def connect(self, conversation_id: str):
@@ -140,7 +141,7 @@ class RealtimeTarget(OpenAITarget):
 
         client = self._get_openai_client()
         connection = await client.realtime.connect(model=self._model_name).__aenter__()
-        
+
         logger.info("Successfully connected to AzureOpenAI Realtime API")
         return connection
 
@@ -168,8 +169,8 @@ class RealtimeTarget(OpenAITarget):
                         "type": "audio/pcm",
                         "rate": 24000,
                     }
-                }
-            }
+                },
+            },
         }
 
         if self.voice:
@@ -220,7 +221,7 @@ class RealtimeTarget(OpenAITarget):
         if conversation_id not in self._existing_conversation:
             connection = await self.connect(conversation_id=conversation_id)
             self._existing_conversation[conversation_id] = connection
-            
+
             # Only send config when creating a new connection
             await self.send_config(conversation_id=conversation_id)
             # Give the server a moment to process the session update
@@ -300,7 +301,7 @@ class RealtimeTarget(OpenAITarget):
                 except Exception as e:
                     logger.warning(f"Error closing connection for {conversation_id}: {e}")
         self._existing_conversation = {}
-        
+
         if self._realtime_client:
             try:
                 await self._realtime_client.close()
@@ -338,7 +339,7 @@ class RealtimeTarget(OpenAITarget):
     async def receive_events(self, conversation_id: str) -> RealtimeTargetResult:
         """
         Continuously receive events from the OpenAI Realtime API connection.
-        
+
         Uses a robust "soft-finish" strategy to handle cases where response.done
         may not arrive. After receiving audio.done, waits for a grace period
         before soft-finishing if no response.done arrives.
@@ -362,12 +363,12 @@ class RealtimeTarget(OpenAITarget):
         try:
             # Create event iterator
             event_iter = connection.__aiter__()
-            
+
             while True:
                 # If we've seen audio.done, wait with a short timeout for response.done
                 # Otherwise, wait indefinitely for events
                 timeout = GRACE_PERIOD_SEC if audio_done_received else None
-                
+
                 try:
                     event = await asyncio.wait_for(event_iter.__anext__(), timeout=timeout)
                 except asyncio.TimeoutError:
@@ -394,7 +395,7 @@ class RealtimeTarget(OpenAITarget):
                         break
                     # Re-raise if not a connection close or no audio received
                     raise
-                
+
                 event_type = event.type
                 logger.debug(f"Processing event type: {event_type}")
 
@@ -404,8 +405,8 @@ class RealtimeTarget(OpenAITarget):
                     break
 
                 elif event_type == "error":
-                    error_message = event.error.message if hasattr(event.error, 'message') else str(event.error)
-                    error_type = event.error.type if hasattr(event.error, 'type') else "unknown"
+                    error_message = event.error.message if hasattr(event.error, "message") else str(event.error)
+                    error_type = event.error.type if hasattr(event.error, "type") else "unknown"
                     logger.error(f"Received 'error' event: [{error_type}] {error_message}")
                     raise RuntimeError(f"Server error: [{error_type}] {error_message}")
 
@@ -420,7 +421,7 @@ class RealtimeTarget(OpenAITarget):
 
                 elif event_type in ["response.audio_transcript.delta", "response.output_audio_transcript.delta"]:
                     # Capture transcript deltas as they arrive (needed when response.done never comes)
-                    if hasattr(event, 'delta') and event.delta:
+                    if hasattr(event, "delta") and event.delta:
                         result.transcripts.append(event.delta)
                         logger.debug(f"Captured transcript delta: {event.delta[:50]}...")
 
@@ -495,7 +496,7 @@ class RealtimeTarget(OpenAITarget):
         Raises:
             ValueError: If event structure doesn't match expectations
             ServerErrorException: If response status is failed
-            
+
         Note:
             We no longer extract transcripts here since we capture them from
             transcript.delta events. This avoids duplicates and supports soft-finish
@@ -526,12 +527,12 @@ class RealtimeTarget(OpenAITarget):
         Returns:
             A formatted error message
         """
-        if hasattr(response, 'status_details') and response.status_details:
+        if hasattr(response, "status_details") and response.status_details:
             status_details = response.status_details
-            if hasattr(status_details, 'error') and status_details.error:
+            if hasattr(status_details, "error") and status_details.error:
                 error = status_details.error
-                error_type = error.type if hasattr(error, 'type') else "unknown"
-                error_message = error.message if hasattr(error, 'message') else "No error message provided"
+                error_type = error.type if hasattr(error, "type") else "unknown"
+                error_message = error.message if hasattr(error, "message") else "No error message provided"
                 return f"[{error_type}] {error_message}"
         return "Unknown error occurred"
 
@@ -544,12 +545,12 @@ class RealtimeTarget(OpenAITarget):
             conversation_id: conversation ID
         """
         connection = self._get_connection(conversation_id=conversation_id)
-        
+
         # Start listening for responses
         receive_tasks = asyncio.create_task(self.receive_events(conversation_id=conversation_id))
 
         logger.info(f"Sending text message: {text}")
-        
+
         # Send conversation item
         await connection.conversation.item.create(
             item={
@@ -573,7 +574,7 @@ class RealtimeTarget(OpenAITarget):
         await self.cleanup_conversation(conversation_id=conversation_id)
         new_connection = await self.connect(conversation_id=conversation_id)
         self._existing_conversation[conversation_id] = new_connection
-        
+
         # Send session configuration to new connection
         system_prompt = self._get_system_prompt_from_conversation(conversation_id=conversation_id)
         session_config = self._set_system_prompt_and_config_vars(system_prompt=system_prompt)
@@ -592,7 +593,7 @@ class RealtimeTarget(OpenAITarget):
             conversation_id (str): Conversation ID
         """
         connection = self._get_connection(conversation_id=conversation_id)
-        
+
         with wave.open(filename, "rb") as wav_file:
             # Read WAV parameters
             num_channels = wav_file.getnchannels()
@@ -620,7 +621,7 @@ class RealtimeTarget(OpenAITarget):
         except Exception as e:
             logger.error(f"Error sending audio: {e}")
             raise
-        
+
         logger.debug("Sending response.create")
         await self.send_response_create(conversation_id=conversation_id)
 
@@ -635,7 +636,7 @@ class RealtimeTarget(OpenAITarget):
         await self.cleanup_conversation(conversation_id=conversation_id)
         new_connection = await self.connect(conversation_id=conversation_id)
         self._existing_conversation[conversation_id] = new_connection
-        
+
         # Send session configuration to new connection
         system_prompt = self._get_system_prompt_from_conversation(conversation_id=conversation_id)
         session_config = self._set_system_prompt_and_config_vars(system_prompt=system_prompt)

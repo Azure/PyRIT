@@ -288,22 +288,26 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     stored = json.loads(piece.original_value)
                     if dtype == "function_call":
                         # Only include fields the API expects for function_call
-                        input_items.append({
-                            "type": stored["type"],
-                            "call_id": stored["call_id"],
-                            "name": stored["name"],
-                            "arguments": stored["arguments"],
-                        })
+                        input_items.append(
+                            {
+                                "type": stored["type"],
+                                "call_id": stored["call_id"],
+                                "name": stored["name"],
+                                "arguments": stored["arguments"],
+                            }
+                        )
                     elif dtype == "tool_call":
                         # Filter tool_call fields based on type
                         tool_type = stored.get("type")
                         if tool_type == "web_search_call":
                             # Web search call structure
-                            input_items.append({
-                                "type": stored["type"],
-                                "call_id": stored.get("call_id"),
-                                "query": stored.get("query"),
-                            })
+                            input_items.append(
+                                {
+                                    "type": stored["type"],
+                                    "call_id": stored.get("call_id"),
+                                    "query": stored.get("query"),
+                                }
+                            )
                         else:
                             # For unknown tool types, try to include only known fields
                             filtered = {"type": stored["type"]}
@@ -553,23 +557,29 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         elif section_type == MessagePieceType.REASONING:
             # Store reasoning in memory for debugging/logging, but won't be sent back to API
-            piece_value = json.dumps({
-                "id": section.id,
-                "type": section.type,
-                "summary": section.summary,
-                "content": section.content,
-                "encrypted_content": section.encrypted_content,
-            }, separators=(",", ":"))
+            piece_value = json.dumps(
+                {
+                    "id": section.id,
+                    "type": section.type,
+                    "summary": section.summary,
+                    "content": section.content,
+                    "encrypted_content": section.encrypted_content,
+                },
+                separators=(",", ":"),
+            )
             piece_type = "reasoning"
 
         elif section_type == MessagePieceType.FUNCTION_CALL:
             # Only store fields the API expects for function_call (exclude status, etc.)
-            piece_value = json.dumps({
-                "type": "function_call",
-                "call_id": section.call_id,
-                "name": section.name,
-                "arguments": section.arguments,
-            }, separators=(",", ":"))
+            piece_value = json.dumps(
+                {
+                    "type": "function_call",
+                    "call_id": section.call_id,
+                    "name": section.name,
+                    "arguments": section.arguments,
+                },
+                separators=(",", ":"),
+            )
             piece_type = "function_call"
 
         elif section_type == MessagePieceType.WEB_SEARCH_CALL:
@@ -585,7 +595,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 web_search_data["query"] = section.query
             if hasattr(section, "id") and section.id:
                 web_search_data["id"] = section.id
-            
+
             piece_value = json.dumps(web_search_data, separators=(",", ":"))
             piece_type = "tool_call"
 

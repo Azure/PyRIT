@@ -9,7 +9,6 @@ multiple function calls, which is critical for the Responses API.
 
 import json
 import uuid
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -250,7 +249,7 @@ async def test_function_call_memory_persistence(response_target, patch_central_d
         # (targets no longer persist intermediate messages - normalizer handles that)
         memory = CentralMemory.get_memory_instance()
         conversation = memory.get_conversation(conversation_id=conversation_id)
-        
+
         # Target doesn't persist messages anymore - all returned messages will be persisted by normalizer
         assert len(conversation) == 0
 

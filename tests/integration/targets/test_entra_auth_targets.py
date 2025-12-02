@@ -10,8 +10,8 @@ from pyrit.prompt_target import (
     OpenAIChatTarget,
     OpenAIImageTarget,
     OpenAIResponseTarget,
-    OpenAIVideoTarget,
     OpenAITTSTarget,
+    OpenAIVideoTarget,
     PromptShieldTarget,
     RealtimeTarget,
 )
@@ -145,9 +145,8 @@ async def test_video_target_entra_auth(sqlite_instance):
     # Takes a long time and sometimes encounters retry errors.
     # Note: OPENAI_VIDEO_ENDPOINT should be configured for Sora v2 API
     target = OpenAIVideoTarget(
-        endpoint=os.getenv("OPENAI_VIDEO2_ENDPOINT"),
-        model_name=os.getenv("OPENAI_VIDEO2_MODEL"),
-        use_entra_auth=True)
+        endpoint=os.getenv("OPENAI_VIDEO2_ENDPOINT"), model_name=os.getenv("OPENAI_VIDEO2_MODEL"), use_entra_auth=True
+    )
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="test")
     assert result is not None

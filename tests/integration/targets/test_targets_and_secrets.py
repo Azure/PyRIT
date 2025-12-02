@@ -13,8 +13,8 @@ from pyrit.prompt_target import (
     OpenAICompletionTarget,
     OpenAIImageTarget,
     OpenAIResponseTarget,
-    OpenAIVideoTarget,
     OpenAITTSTarget,
+    OpenAIVideoTarget,
     RealtimeTarget,
 )
 
@@ -206,23 +206,22 @@ async def test_realtime_target_multi_objective(sqlite_instance, endpoint, api_ke
 
     prompt_to_send = "What is the capitol of France?"
     second_prompt_to_send = "What is the size of that city?"
-    
+
     attack = PromptSendingAttack(objective_target=target)
     results = await AttackExecutor().execute_multi_objective_attack_async(
         attack=attack,
         objectives=[prompt_to_send, second_prompt_to_send],
     )
-    
+
     # Verify we got results for both objectives
     assert results is not None
     assert len(results.completed_results) == 2
-    
+
     # Verify both responses have content
     for result in results.completed_results:
         assert result.last_response is not None
         assert result.last_response.converted_value
         assert len(result.last_response.converted_value) > 0
-
 
 
 @pytest.mark.asyncio

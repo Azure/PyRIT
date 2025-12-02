@@ -73,7 +73,10 @@ ATTACK_TEST_PARAMS = [
     (
         PromptSendingAttack,
         {},  # No extra kwargs needed
-        lambda: {"objective": "test objective", "seed_group": SeedGroup(prompts=[SeedPrompt(value="test", data_type="text")])},
+        lambda: {
+            "objective": "test objective",
+            "seed_group": SeedGroup(prompts=[SeedPrompt(value="test", data_type="text")]),
+        },
         "pyrit.executor.attack.single_turn.prompt_sending.Scorer.score_response_async",
     ),
     (
@@ -85,19 +88,31 @@ ATTACK_TEST_PARAMS = [
     (
         RedTeamingAttack,
         {},
-        lambda: {"objective": "test objective", "seed_prompt": SeedPrompt(value="test", data_type="text"), "max_turns": 1},
+        lambda: {
+            "objective": "test objective",
+            "seed_prompt": SeedPrompt(value="test", data_type="text"),
+            "max_turns": 1,
+        },
         "pyrit.executor.attack.multi_turn.red_teaming.Scorer.score_response_async",
     ),
     (
         CrescendoAttack,
         {},
-        lambda: {"objective": "test objective", "seed_prompt": SeedPrompt(value="test", data_type="text"), "max_turns": 1},
+        lambda: {
+            "objective": "test objective",
+            "seed_prompt": SeedPrompt(value="test", data_type="text"),
+            "max_turns": 1,
+        },
         "pyrit.executor.attack.multi_turn.crescendo.Scorer.score_response_async",
     ),
     (
         TreeOfAttacksWithPruningAttack,
         {"tree_width": 2},
-        lambda: {"objective": "test objective", "seed_prompt": SeedPrompt(value="test", data_type="text"), "max_iterations": 1},
+        lambda: {
+            "objective": "test objective",
+            "seed_prompt": SeedPrompt(value="test", data_type="text"),
+            "max_iterations": 1,
+        },
         "pyrit.executor.attack.multi_turn.tree_of_attacks.Scorer.score_response_async",
     ),
 ]
@@ -122,7 +137,7 @@ async def test_attack_executor_skips_scoring_on_error(
 ):
     """
     Test that all attack executors skip scoring when target returns an error response.
-    
+
     This parametrized test verifies that each executor:
     1. Calls Scorer.score_response_async with skip_on_error_result=True
     2. Handles error responses appropriately without attempting to score them
@@ -135,7 +150,7 @@ async def test_attack_executor_skips_scoring_on_error(
         objective_scorer=mock_scorer,
         use_score_as_feedback=False,
     )
-    
+
     # Setup additional configs for multi-turn attacks that need adversarial config
     if attack_class in [RedTeamingAttack, CrescendoAttack, TreeOfAttacksWithPruningAttack]:
         # TreeOfAttacks requires PromptChatTarget, others can use PromptTarget
@@ -143,15 +158,15 @@ async def test_attack_executor_skips_scoring_on_error(
             adversarial_target = MagicMock(spec=PromptChatTarget)
         else:
             adversarial_target = MagicMock(spec=PromptTarget)
-        
+
         adversarial_target.send_prompt_async = AsyncMock()
         adversarial_target.get_identifier.return_value = {"id": "adversarial_target_id"}
-        
+
         attack_adversarial_config = AttackAdversarialConfig(
             target=adversarial_target,
         )
         attack_extra_kwargs["attack_adversarial_config"] = attack_adversarial_config
-    
+
     # Setup refusal scorer for Crescendo
     if attack_class == CrescendoAttack:
         refusal_scorer = MagicMock(spec=TrueFalseScorer)
@@ -161,9 +176,7 @@ async def test_attack_executor_skips_scoring_on_error(
 
     # Create attack with proper configuration
     attack = attack_class(
-        objective_target=mock_target,
-        attack_scoring_config=attack_scoring_config,
-        **attack_extra_kwargs
+        objective_target=mock_target, attack_scoring_config=attack_scoring_config, **attack_extra_kwargs
     )
 
     # Create error response
@@ -201,7 +214,9 @@ async def test_attack_executor_skips_scoring_on_error(
             # Verify scoring was called with skip_on_error_result=True if it was called
             if mock_score.called:
                 call_kwargs = mock_score.call_args.kwargs
-                assert "skip_on_error_result" in call_kwargs, \
-                    f"{attack_class.__name__} did not pass skip_on_error_result parameter"
-                assert call_kwargs["skip_on_error_result"] is True, \
-                    f"{attack_class.__name__} did not set skip_on_error_result=True"
+                assert (
+                    "skip_on_error_result" in call_kwargs
+                ), f"{attack_class.__name__} did not pass skip_on_error_result parameter"
+                assert (
+                    call_kwargs["skip_on_error_result"] is True
+                ), f"{attack_class.__name__} did not set skip_on_error_result=True"

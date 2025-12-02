@@ -22,7 +22,7 @@ async def test_connect_success(target):
     mock_client = MagicMock()
     mock_client.realtime.connect = MagicMock()
     mock_client.realtime.connect.return_value.__aenter__ = AsyncMock(return_value=mock_connection)
-    
+
     with patch.object(target, "_get_openai_client", return_value=mock_client):
         connection = await target.connect(conversation_id="test_conv")
         assert connection == mock_connection
@@ -70,7 +70,7 @@ async def test_send_prompt_async(target):
 async def test_get_system_prompt_from_conversation_with_system_message(target):
     """Test that system prompt is extracted from conversation history when present."""
     conversation_id = "test_conversation_with_system"
-    
+
     # Add a system message to memory
     system_message = Message(
         message_pieces=[
@@ -83,10 +83,10 @@ async def test_get_system_prompt_from_conversation_with_system_message(target):
         ]
     )
     target._memory.add_message_to_memory(request=system_message)
-    
+
     # Get the system prompt
     system_prompt = target._get_system_prompt_from_conversation(conversation_id=conversation_id)
-    
+
     assert system_prompt == "You are a helpful assistant specialized in security."
 
 
@@ -94,7 +94,7 @@ async def test_get_system_prompt_from_conversation_with_system_message(target):
 async def test_get_system_prompt_from_conversation_default(target):
     """Test that default system prompt is returned when no system message in conversation."""
     conversation_id = "test_conversation_no_system"
-    
+
     # Add a user message (no system message)
     user_message = Message(
         message_pieces=[
@@ -107,10 +107,10 @@ async def test_get_system_prompt_from_conversation_default(target):
         ]
     )
     target._memory.add_message_to_memory(request=user_message)
-    
+
     # Get the system prompt
     system_prompt = target._get_system_prompt_from_conversation(conversation_id=conversation_id)
-    
+
     assert system_prompt == "You are a helpful AI assistant"
 
 
@@ -118,10 +118,10 @@ async def test_get_system_prompt_from_conversation_default(target):
 async def test_get_system_prompt_empty_conversation(target):
     """Test that default system prompt is returned for empty conversation."""
     conversation_id = "test_empty_conversation"
-    
+
     # Get the system prompt without adding any messages
     system_prompt = target._get_system_prompt_from_conversation(conversation_id=conversation_id)
-    
+
     assert system_prompt == "You are a helpful AI assistant"
 
 
@@ -196,21 +196,21 @@ async def test_receive_events_empty_output(target: RealtimeTarget):
     mock_event = MagicMock()
     mock_event.type = "response.done"
     mock_event.response.status = "failed"
-    
+
     # Create nested error structure matching the actual API response
     mock_error = MagicMock()
     mock_error.type = "server_error"
     mock_error.message = "The server had an error processing your request"
-    
+
     mock_status_details = MagicMock()
     mock_status_details.error = mock_error
-    
+
     mock_event.response.status_details = mock_status_details
     mock_event.response.output = []
 
     # Mock connection to yield our test event
     mock_connection.__aiter__.return_value = [mock_event]
-    
+
     with pytest.raises(ServerErrorException, match=r"\[server_error\] The server had an error processing your request"):
         await target.receive_events(conversation_id)
 
@@ -229,7 +229,7 @@ async def test_receive_events_response_done_no_transcript_validation(target):
 
     # Mock connection to yield test event
     mock_connection.__aiter__.return_value = [mock_event]
-    
+
     # Should complete successfully without raising - transcripts come from delta events
     result = await target.receive_events(conversation_id)
     assert result is not None
@@ -292,7 +292,7 @@ async def test_receive_events_connection_closed(target):
 
     # Mock connection that returns empty list (simulates closed connection)
     mock_connection.__aiter__.return_value = []
-    
+
     result = await target.receive_events(conversation_id)
     assert len(result.transcripts) == 0
     assert result.audio_bytes == b""
@@ -318,7 +318,7 @@ async def test_receive_events_with_audio_and_transcript(target):
     mock_transcript_delta1 = MagicMock()
     mock_transcript_delta1.type = "response.audio_transcript.delta"
     mock_transcript_delta1.delta = "Hello, "
-    
+
     mock_transcript_delta2 = MagicMock()
     mock_transcript_delta2.type = "response.audio_transcript.delta"
     mock_transcript_delta2.delta = "this is a test transcript."
@@ -330,11 +330,11 @@ async def test_receive_events_with_audio_and_transcript(target):
 
     # Mock connection to yield all events
     mock_connection.__aiter__.return_value = [
-        mock_audio_event, 
-        mock_transcript_delta1, 
+        mock_audio_event,
+        mock_transcript_delta1,
         mock_transcript_delta2,
-        mock_audio_done_event, 
-        mock_done_event
+        mock_audio_done_event,
+        mock_done_event,
     ]
 
     result = await target.receive_events(conversation_id)
