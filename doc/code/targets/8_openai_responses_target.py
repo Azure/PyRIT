@@ -131,16 +131,16 @@ import os
 
 from pyrit.common.tool_configs import web_search_tool
 from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target.openai.openai_response_target import OpenAIResponseTarget
+from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-# Note: web search is not yet supported by Azure OpenAI endpoints so we'll use OpenAI from here on.
+# Note: web search is only supported on a limited set of models.
 target = OpenAIResponseTarget(
-    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
-    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
-    model_name=os.getenv("PLATFORM_OPENAI_RESPONSES_MODEL"),
+    endpoint=os.getenv("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT"),
+    api_key=os.getenv("AZURE_OPENAI_GPT41_RESPONSES_KEY"),
+    model_name=os.getenv("AZURE_OPENAI_GPT41_RESPONSES_MODEL"),
     extra_body_parameters={
         "tools": [web_search_tool()],
         "tool_choice": "auto",
@@ -173,7 +173,6 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-
 message_piece = MessagePiece(
     role="user",
     original_value="What is the capital of Italy?",
@@ -199,17 +198,17 @@ grammar_tool = {
 }
 
 target = OpenAIResponseTarget(
-    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
-    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
-    model_name="gpt-5",
+    endpoint=os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
+    api_key=os.getenv("AZURE_OPENAI_GPT5_KEY"),
+    model_name=os.getenv("AZURE_OPENAI_GPT5_MODEL"),
     extra_body_parameters={"tools": [grammar_tool], "tool_choice": "required"},
     temperature=1.0,
 )
 
 unconstrained_target = OpenAIResponseTarget(
-    endpoint=os.getenv("PLATFORM_OPENAI_RESPONSES_ENDPOINT"),
-    api_key=os.getenv("PLATFORM_OPENAI_RESPONSES_KEY"),
-    model_name="gpt-5",
+    endpoint=os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
+    api_key=os.getenv("AZURE_OPENAI_GPT5_KEY"),
+    model_name=os.getenv("AZURE_OPENAI_GPT5_MODEL"),
     temperature=1.0,
 )
 

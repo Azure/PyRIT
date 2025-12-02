@@ -80,7 +80,7 @@ def _is_content_filter_error(data: Union[dict, str]) -> bool:
     else:
         # String-based heuristic search
         lower = str(data).lower()
-        return "content_filter" in lower or "policy" in lower
+        return "content_filter" in lower or "policy_violation" in lower
 
 
 def _extract_error_payload(exc: Exception) -> Tuple[Union[dict, str], bool]:
@@ -94,7 +94,7 @@ def _extract_error_payload(exc: Exception) -> Tuple[Union[dict, str], bool]:
 
     It also attempts to detect whether the error is due to content filtering by:
     - Checking for error.code == "content_filter"
-    - Searching for "content_filter" or "policy" keywords in the payload
+    - Searching for "content_filter" or "policy_violation" keywords in the payload
 
     Args:
         exc: An exception from the OpenAI SDK (typically BadRequestError).

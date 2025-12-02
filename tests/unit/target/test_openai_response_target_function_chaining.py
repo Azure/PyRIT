@@ -16,13 +16,12 @@ import pytest
 
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target import OpenAIResponseTarget
 
 
 @pytest.fixture
 def response_target(patch_central_database):
     """Create a test OpenAIResponseTarget."""
-    from pyrit.prompt_target import OpenAIResponseTarget
-
     target = OpenAIResponseTarget(
         endpoint="https://mock.azure.com",
         api_key="mock-key",

@@ -981,8 +981,6 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
 
 def test_invalid_temperature_raises(patch_central_database):
     """Test that invalid temperature values raise PyritException."""
-    from pyrit.prompt_target import OpenAIResponseTarget
-
     with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
         OpenAIResponseTarget(
             endpoint="https://test.com",
@@ -1000,8 +998,6 @@ def test_invalid_temperature_raises(patch_central_database):
 
 def test_invalid_top_p_raises(patch_central_database):
     """Test that invalid top_p values raise PyritException."""
-    from pyrit.prompt_target import OpenAIResponseTarget
-
     with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
         OpenAIResponseTarget(
             endpoint="https://test.com",
@@ -1022,8 +1018,6 @@ def test_invalid_top_p_raises(patch_central_database):
 
 def test_check_content_filter_detects_filtered_response(target: OpenAIResponseTarget):
     """Test _check_content_filter detects content_filter error code."""
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_error = MagicMock()
     mock_error.code = "content_filter"
@@ -1034,8 +1028,6 @@ def test_check_content_filter_detects_filtered_response(target: OpenAIResponseTa
 
 def test_check_content_filter_no_error(target: OpenAIResponseTarget):
     """Test _check_content_filter returns False when no error."""
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_response.error = None
 
@@ -1044,8 +1036,6 @@ def test_check_content_filter_no_error(target: OpenAIResponseTarget):
 
 def test_check_content_filter_different_error(target: OpenAIResponseTarget):
     """Test _check_content_filter returns False for non-content-filter errors."""
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_error = MagicMock()
     mock_error.code = "rate_limit"
@@ -1056,8 +1046,6 @@ def test_check_content_filter_different_error(target: OpenAIResponseTarget):
 
 def test_validate_response_success(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
     """Test _validate_response passes for valid completed response."""
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_response.error = None
     mock_response.status = "completed"
@@ -1071,8 +1059,6 @@ def test_validate_response_non_content_filter_error(
     target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
 ):
     """Test _validate_response raises for non-content-filter errors."""
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_error = MagicMock()
     mock_error.code = "invalid_request"
@@ -1086,8 +1072,6 @@ def test_validate_response_non_content_filter_error(
 
 def test_validate_response_invalid_status(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
     """Test _validate_response raises for non-completed status."""
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_response.error = None
     mock_response.status = "failed"
@@ -1099,8 +1083,6 @@ def test_validate_response_invalid_status(target: OpenAIResponseTarget, dummy_te
 
 def test_validate_response_empty_output(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
     """Test _validate_response raises for empty output."""
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_response.error = None
     mock_response.status = "completed"
@@ -1113,8 +1095,6 @@ def test_validate_response_empty_output(target: OpenAIResponseTarget, dummy_text
 @pytest.mark.asyncio
 async def test_construct_message_from_response(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
     """Test _construct_message_from_response parses output sections."""
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_response.output = [{"type": "message", "content": [{"type": "text", "text": "Hello from Response API"}]}]
 

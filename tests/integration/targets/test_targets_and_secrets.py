@@ -194,8 +194,6 @@ async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_
 )
 async def test_realtime_target_multi_objective(sqlite_instance, endpoint, api_key, model_name):
     """Test RealtimeTarget with multiple objectives like the notebook does."""
-    from pyrit.executor.attack import AttackExecutor
-    
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
     model_name_value = _get_required_env_var(model_name)
@@ -232,7 +230,7 @@ async def test_realtime_target_multi_objective(sqlite_instance, endpoint, api_ke
     ("endpoint", "api_key"),
     [
         ("AZURE_ML_MANAGED_ENDPOINT", "AZURE_ML_KEY"),
-        ("AZURE_ML_MIXTRAL_ENDPOINT", "AZURE_ML_MIXTRAL_KEY"),
+        ("AZURE_ML_PHI_ENDPOINT", "AZURE_ML_PHI_KEY"),
     ],
 )
 async def test_connect_required_aml_text_targets(sqlite_instance, endpoint, api_key):

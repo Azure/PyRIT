@@ -368,6 +368,7 @@ class TestResponseEvaluation:
                 objective_scorer=mock_true_false_scorer,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
     @pytest.mark.asyncio
@@ -390,6 +391,7 @@ class TestResponseEvaluation:
                 objective_scorer=None,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
     @pytest.mark.asyncio
@@ -432,6 +434,7 @@ class TestResponseEvaluation:
                 objective_scorer=mock_true_false_scorer,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
 
