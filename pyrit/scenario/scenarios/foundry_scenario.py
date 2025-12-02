@@ -14,8 +14,9 @@ from inspect import signature
 from typing import List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
-from pyrit.datasets.harmbench_dataset import fetch_harmbench_dataset
-from pyrit.datasets.jailbreak.text_jailbreak import TextJailBreak
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedDataset
+from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -261,15 +262,14 @@ class FoundryScenario(Scenario):
         """
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
-        self._objectives: list[str] = (
-            objectives
-            if objectives
-            else list(
-                fetch_harmbench_dataset().get_random_values(
-                    number=4, harm_categories=["harmful", "harassment_bullying"]
-                )
-            )
-        )
+
+        if objectives:
+            self._objectives = objectives
+        else:
+            # This is a temporary fix to use a local dataset until the database is ready
+            dataset_path = DATASETS_PATH / "seed_datasets" / "local" / "adv_bench.prompt"
+            dataset = SeedDataset.from_yaml_file(dataset_path)
+            self._objectives = list(dataset.get_random_values(number=4))
 
         super().__init__(
             name="Foundry Scenario",
