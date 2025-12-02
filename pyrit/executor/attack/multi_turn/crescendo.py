@@ -792,7 +792,8 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         # Log appropriate message for backtracking reason
         if is_content_filter_error:
             self._logger.info(
-                f"Content filter error detected, backtracking (attempt {context.backtrack_count + 1}/{self._max_backtracks})"
+                f"Content filter error detected, backtracking "
+                f"(attempt {context.backtrack_count + 1}/{self._max_backtracks})"
             )
             piece = context.last_response.message_pieces[0]
             self._logger.debug(

@@ -174,7 +174,7 @@ class RealtimeTarget(OpenAITarget):
         }
 
         if self.voice:
-            session_config["audio"]["output"]["voice"] = self.voice
+            session_config["audio"]["output"]["voice"] = self.voice  # type: ignore[index]
 
         return session_config
 
@@ -426,7 +426,7 @@ class RealtimeTarget(OpenAITarget):
                         logger.debug(f"Captured transcript delta: {event.delta[:50]}...")
 
                 elif event_type in ["response.output_text.done"]:
-                    logger.debug(f"Received text.done")
+                    logger.debug("Received text.done")
 
                 # Handle lifecycle events that we can safely log
                 elif event_type in [
@@ -502,7 +502,7 @@ class RealtimeTarget(OpenAITarget):
             transcript.delta events. This avoids duplicates and supports soft-finish
             when response.done never arrives.
         """
-        logger.debug(f"Processing 'response.done' event")
+        logger.debug("Processing 'response.done' event")
 
         response = event.response
 

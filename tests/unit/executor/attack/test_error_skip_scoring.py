@@ -7,7 +7,6 @@ This ensures consistent error handling across all attack strategies.
 """
 
 import uuid
-from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -75,7 +74,7 @@ ATTACK_TEST_PARAMS = [
         {},  # No extra kwargs needed
         lambda: {
             "objective": "test objective",
-            "seed_group": SeedGroup(prompts=[SeedPrompt(value="test", data_type="text")]),
+            "seed_group": SeedGroup(seeds=[SeedPrompt(value="test", data_type="text")]),
         },
         "pyrit.executor.attack.single_turn.prompt_sending.Scorer.score_response_async",
     ),

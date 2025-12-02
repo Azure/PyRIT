@@ -39,7 +39,7 @@ class TestOldAzureURLConversion:
         # Check that URL was converted
         assert target._endpoint == expected_new_url
         assert target._async_client is not None
-        assert str(target._async_client.base_url).rstrip('/') == expected_new_url
+        assert str(target._async_client.base_url).rstrip("/") == expected_new_url
 
         # Check that warning was logged
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
@@ -160,7 +160,10 @@ class TestOldAzureURLConversion:
 
     def test_old_azure_url_extracts_deployment_as_model_name(self, patch_central_database):
         """Test deployment name is extracted from old URL when model_name not provided."""
-        old_url = "https://test.openai.azure.com/openai/deployments/my-gpt-4-deployment/chat/completions?api-version=2024-02-15"
+        old_url = (
+            "https://test.openai.azure.com/openai/deployments/"
+            "my-gpt-4-deployment/chat/completions?api-version=2024-02-15"
+        )
 
         with patch.dict(os.environ, {}, clear=True):
             target = OpenAIChatTarget(
@@ -205,7 +208,7 @@ class TestOldAzureURLConversion:
 
         # URL should remain unchanged (only path stripped)
         assert target._endpoint == platform_url
-        assert str(target._async_client.base_url).rstrip('/') == "https://api.openai.com/v1"
+        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
 
         # No conversion warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
@@ -280,7 +283,9 @@ class TestOldAzureURLConversion:
 
     def test_warning_message_contains_deployment_name(self, caplog, patch_central_database):
         """Test that warning message includes the extracted deployment name."""
-        old_url = "https://test.openai.azure.com/openai/deployments/my-custom-gpt4/chat/completions?api-version=2024-02-15"
+        old_url = (
+            "https://test.openai.azure.com/openai/deployments/my-custom-gpt4/chat/completions?api-version=2024-02-15"
+        )
 
         with patch.dict(os.environ, {}, clear=True):
             with caplog.at_level(logging.WARNING):
@@ -365,7 +370,7 @@ class TestURLNormalization:
             )
 
         # Base URL should not include /chat/completions
-        assert str(target._async_client.base_url).rstrip('/') == "https://test.openai.azure.com/openai/v1"
+        assert str(target._async_client.base_url).rstrip("/") == "https://test.openai.azure.com/openai/v1"
 
     def test_azure_foundry_v1_appended(self, patch_central_database):
         """Test that /v1 is appended to Azure Foundry URLs if missing."""
@@ -379,7 +384,7 @@ class TestURLNormalization:
             )
 
         # Base URL should end with /v1 (or /v1/)
-        base_url_str = str(target._async_client.base_url).rstrip('/')
+        base_url_str = str(target._async_client.base_url).rstrip("/")
         assert base_url_str.endswith("/v1")
 
     def test_old_url_converted_then_normalized(self, patch_central_database):
@@ -396,4 +401,4 @@ class TestURLNormalization:
         # Should be converted to new format
         assert target._endpoint == "https://test.openai.azure.com/openai/v1"
         # And base URL should match
-        assert str(target._async_client.base_url).rstrip('/') == "https://test.openai.azure.com/openai/v1"
+        assert str(target._async_client.base_url).rstrip("/") == "https://test.openai.azure.com/openai/v1"

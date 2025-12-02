@@ -3,11 +3,10 @@
 
 import json
 import logging
-import os
 import re
 from abc import abstractmethod
-from typing import Any, Callable, Optional, Union
-from urllib.parse import parse_qs, urlparse
+from typing import Any, Callable, Optional
+from urllib.parse import urlparse
 
 from openai import (
     AsyncOpenAI,
@@ -180,7 +179,7 @@ class OpenAITarget(PromptChatTarget):
         - https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=X
         - https://{resource}.openai.azure.com/openai/responses?api-version=X
         - https://{resource}.openai.azure.com/openai/chat/completions?api-version=X
-        
+
         New format: https://{resource}.openai.azure.com/openai/v1
 
         The api-version query parameter is dropped as it's not needed in the new format.
@@ -208,7 +207,8 @@ class OpenAITarget(PromptChatTarget):
                 f"Deployment '{deployment}' extracted as model name. "
                 f"Please update your configuration to use the new format. "
                 f"Old format URLs will be deprecated in a future release. "
-                f"See https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation for more information."
+                f"See https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation "
+                "for more information."
             )
         else:
             log_msg = (
@@ -216,7 +216,8 @@ class OpenAITarget(PromptChatTarget):
                 f"Old URL: {old_url} -> New URL: {new_url}. "
                 f"Please update your configuration to use the new format without api-version parameter. "
                 f"Old format URLs will be deprecated in a future release. "
-                f"See https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation for more information."
+                f"See https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation "
+                "for more information."
             )
 
         logger.warning(log_msg)
@@ -253,7 +254,7 @@ class OpenAITarget(PromptChatTarget):
             # Check if it has api-version query parameter OR /deployments/ in path
             has_api_version = "api-version" in parsed_url.query
             has_deployments = "/deployments/" in parsed_url.path
-            
+
             if has_deployments or has_api_version:
                 self._endpoint = self._convert_old_azure_url_to_new_format(self._endpoint)
 
@@ -264,7 +265,7 @@ class OpenAITarget(PromptChatTarget):
         # If the endpoint includes API-specific paths, we need to strip them because the SDK
         # will automatically append the correct path for each API call
         base_url = self._endpoint
-        
+
         # Strip API-specific paths
         if base_url.endswith("/chat/completions"):
             base_url = base_url[: -len("/chat/completions")]
