@@ -6,7 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit2
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -26,9 +30,8 @@
 # >
 # > It is required to manually set the memory instance using `initialize_pyrit`. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 #
+
 # %%
-
-
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit
@@ -95,7 +98,7 @@ target = OpenAIChatTarget()
 prompt_converters = PromptConverterConfiguration.from_converters(converters=[Base64Converter()])
 attack_converter_config = AttackConverterConfig(request_converters=prompt_converters)
 
-seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt")
 
 objectives = list(seed_dataset.get_values())
 for objective in objectives:

@@ -18,7 +18,7 @@
 # The `QuestionAnsweringBenchmark` can process Q&A datasets and evaluate how good a target is at answering the questions.
 
 # %%
-from pyrit.datasets import fetch_wmdp_dataset
+from pyrit.datasets.executors.question_answer.wmdp_dataset import fetch_wmdp_dataset
 from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
 from pyrit.executor.benchmark import QuestionAnsweringBenchmark
 from pyrit.models import (

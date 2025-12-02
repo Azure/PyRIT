@@ -6,8 +6,8 @@ from typing import Optional
 
 import requests
 
-from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
+from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn import SingleTurnAttackContext
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -29,6 +29,7 @@ def fetch_many_shot_jailbreaking_dataset() -> list[dict[str, str]]:
     response = requests.get(source)
     response.raise_for_status()
     return response.json()
+
 
 class ManyShotJailbreakAttack(PromptSendingAttack):
     """

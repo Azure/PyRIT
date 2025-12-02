@@ -15,7 +15,6 @@ from typing import List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedDataset
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
@@ -26,6 +25,7 @@ from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.models import SeedDataset
 from pyrit.prompt_converter import (
     AnsiAttackConverter,
     AsciiArtConverter,

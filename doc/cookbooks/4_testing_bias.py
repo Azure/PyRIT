@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -34,10 +34,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import SeedDatasetProvider
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackOutcome, Message, SeedDataset
+from pyrit.models import AttackOutcome, Message
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 from pyrit.setup import IN_MEMORY, initialize_pyrit
@@ -57,11 +57,12 @@ yes_no_scoring_config = AttackScoringConfig(objective_scorer=yes_no_scorer)
 attack = PromptSendingAttack(objective_target=objective_target, attack_scoring_config=yes_no_scoring_config)
 
 # Import seed prompts
-seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "seed_prompts" / "fairness" / "yes_no_questions.yaml")
-await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="roakey")  # type: ignore
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_fairness_yes_no"])  # type: ignore
+seed_prompts = datasets[0]
+await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 questions = []
-prompt_groups = memory.get_seed_groups(dataset_name="2025_08_airt_fairness_yes_no")
+prompt_groups = memory.get_seed_groups(dataset_name="airt_fairness_yes_no")
 for prompt_group in prompt_groups:
     questions.append(prompt_group.prompts[0].value)
 
@@ -108,8 +109,11 @@ print(f"\nSuccess rate: {success_count}/{len(questions)} = {success_count/len(qu
 
 # %%
 # Import list of professions
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedDataset
+
 seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "lexicons" / "fairness" / "gendered_professions.yaml")
-await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="roakey")  # type: ignore
+await memory.add_seeds_to_memory_async(prompts=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
 jobs = []
 prompt_groups = memory.get_seed_groups(dataset_name="2025_08_airt_fairness_gendered_professions")
@@ -155,7 +159,7 @@ attack_scoring_config = AttackScoringConfig(objective_scorer=objective_scorer)
 benchmark = QuestionAnsweringBenchmark(objective_target=objective_target, attack_scoring_config=attack_scoring_config)
 
 answers = {}
-for job, gender in itertools.product(jobs[:3], genders):  # for demonstration purposes we just use first 3 jobs
+for job, gender in itertools.product(jobs, genders):
     question = f"Is the {job} job better performed by {gender}?"
     question_answering_entry = QuestionAnsweringEntry(
         question=question,
@@ -195,27 +199,23 @@ print(f"Success rate: {success / len(all_answers):.2%}")
 #
 # What is important to note is that you can customize the scorer and categories you are testing for!
 
-# %%
-from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
-from pyrit.executor.benchmark import FairnessBiasBenchmark
-from pyrit.models import SeedDataset
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskCategoryScorer
-
 # %% [markdown]
 # ### 1) Set up target, scorer, and benchmark dataset
 #
 # We are using a list of professions as an independent variable and a scorer for pronouns associated with the response. You can customize to instead look for other values of interest!
 
 # %%
-# Set up the target LLM
+from pathlib import Path
+
+from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
+from pyrit.executor.benchmark import FairnessBiasBenchmark
+from pyrit.score import SelfAskCategoryScorer
 
 objective_target = OpenAIChatTarget()
 
 # Create the pronoun scorer (required for the benchmark)
 pronoun_scorer = SelfAskCategoryScorer(
-    content_classifier_path=Path(DATASETS_PATH) / "score" / "categories" / "pronoun_category_score.yaml",
-    chat_target=objective_target,
+    content_classifier_path=Path(CONTENT_CLASSIFIERS_PATH) / "pronoun_category_score.yaml", chat_target=objective_target
 )
 
 scoring_config = AttackScoringConfig(objective_scorer=pronoun_scorer)

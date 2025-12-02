@@ -3,7 +3,7 @@
 
 """Tests for the FoundryScenario class."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -50,7 +50,6 @@ def sample_objectives():
 class TestFoundryScenarioInitialization:
     """Tests for FoundryScenario initialization."""
 
-
     @patch.dict(
         "os.environ",
         {
@@ -71,7 +70,6 @@ class TestFoundryScenarioInitialization:
         )
         assert scenario.atomic_attack_count > 0
         assert scenario.name == "Foundry Scenario"
-
 
     @patch.dict(
         "os.environ",
@@ -99,7 +97,6 @@ class TestFoundryScenarioInitialization:
         )
         assert scenario.atomic_attack_count >= len(strategies)
 
-
     @patch.dict(
         "os.environ",
         {
@@ -107,9 +104,7 @@ class TestFoundryScenarioInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_init_with_custom_objectives(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objectives."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
@@ -117,7 +112,6 @@ class TestFoundryScenarioInitialization:
         )
 
         assert scenario._objectives == sample_objectives
-
 
     @patch.dict(
         "os.environ",
@@ -138,7 +132,6 @@ class TestFoundryScenarioInitialization:
 
         assert scenario._adversarial_chat == mock_adversarial_target
 
-
     @patch.dict(
         "os.environ",
         {
@@ -146,9 +139,7 @@ class TestFoundryScenarioInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_init_with_custom_scorer(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objective scorer."""
         scenario = FoundryScenario(
             objective_scorer=mock_objective_scorer,
@@ -156,7 +147,6 @@ class TestFoundryScenarioInitialization:
         )
 
         assert scenario._objective_scorer == mock_objective_scorer
-
 
     @patch.dict(
         "os.environ",
@@ -166,9 +156,7 @@ class TestFoundryScenarioInitialization:
         },
     )
     @pytest.mark.asyncio
-    async def test_init_with_memory_labels(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    async def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with memory labels."""
         memory_labels = {"test": "foundry", "category": "attack"}
 
@@ -185,7 +173,6 @@ class TestFoundryScenarioInitialization:
         )
 
         assert scenario._memory_labels == memory_labels
-
 
     @patch("pyrit.scenario.scenarios.foundry_scenario.TrueFalseCompositeScorer")
     @patch.dict(
@@ -216,7 +203,6 @@ class TestFoundryScenarioInitialization:
 class TestFoundryScenarioStrategyNormalization:
     """Tests for attack strategy normalization."""
 
-
     @patch.dict(
         "os.environ",
         {
@@ -225,9 +211,7 @@ class TestFoundryScenarioStrategyNormalization:
         },
     )
     @pytest.mark.asyncio
-    async def test_normalize_easy_strategies(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    async def test_normalize_easy_strategies(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that EASY strategy expands to easy attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
@@ -241,7 +225,6 @@ class TestFoundryScenarioStrategyNormalization:
         # EASY should expand to multiple attack strategies
         assert scenario.atomic_attack_count > 1
 
-
     @patch.dict(
         "os.environ",
         {
@@ -250,9 +233,7 @@ class TestFoundryScenarioStrategyNormalization:
         },
     )
     @pytest.mark.asyncio
-    async def test_normalize_moderate_strategies(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    async def test_normalize_moderate_strategies(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that MODERATE strategy expands to moderate attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
@@ -265,7 +246,6 @@ class TestFoundryScenarioStrategyNormalization:
         )
         # MODERATE should expand to moderate attack strategies (currently only 1: Tense)
         assert scenario.atomic_attack_count >= 1
-
 
     @patch.dict(
         "os.environ",
@@ -291,7 +271,6 @@ class TestFoundryScenarioStrategyNormalization:
         # DIFFICULT should expand to multiple attack strategies
         assert scenario.atomic_attack_count > 1
 
-
     @patch.dict(
         "os.environ",
         {
@@ -315,7 +294,6 @@ class TestFoundryScenarioStrategyNormalization:
         )
         # Combined difficulty levels should expand to multiple strategies
         assert scenario.atomic_attack_count > 5  # EASY has 20, MODERATE has 1, combined should have more
-
 
     @patch.dict(
         "os.environ",
@@ -349,7 +327,6 @@ class TestFoundryScenarioStrategyNormalization:
 class TestFoundryScenarioAttackCreation:
     """Tests for attack creation from strategies."""
 
-
     @patch.dict(
         "os.environ",
         {
@@ -378,7 +355,6 @@ class TestFoundryScenarioAttackCreation:
 
         assert isinstance(atomic_attack, AtomicAttack)
         assert atomic_attack._objectives == sample_objectives
-
 
     @patch.dict(
         "os.environ",
@@ -415,7 +391,6 @@ class TestFoundryScenarioAttackCreation:
 class TestFoundryScenarioGetAttack:
     """Tests for the _get_attack method."""
 
-
     @patch.dict(
         "os.environ",
         {
@@ -444,7 +419,6 @@ class TestFoundryScenarioGetAttack:
         )
 
         assert isinstance(attack, PromptSendingAttack)
-
 
     @patch.dict(
         "os.environ",
@@ -480,7 +454,6 @@ class TestFoundryScenarioGetAttack:
 @pytest.mark.usefixtures("patch_central_database")
 class TestFoundryScenarioAllStrategies:
     """Tests that all strategies can be instantiated."""
-
 
     @patch.dict(
         "os.environ",
@@ -535,7 +508,6 @@ class TestFoundryScenarioAllStrategies:
         atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
         assert isinstance(atomic_attack, AtomicAttack)
 
-
     @patch.dict(
         "os.environ",
         {
@@ -581,7 +553,6 @@ class TestFoundryScenarioAllStrategies:
 class TestFoundryScenarioProperties:
     """Tests for FoundryScenario properties and attributes."""
 
-
     @patch.dict(
         "os.environ",
         {
@@ -614,7 +585,6 @@ class TestFoundryScenarioProperties:
         assert len(scenario._scenario_composites) == len(strategies)
         assert scenario.atomic_attack_count == len(strategies)
 
-
     @patch.dict(
         "os.environ",
         {
@@ -622,9 +592,7 @@ class TestFoundryScenarioProperties:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
-    def test_scenario_version_is_set(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
-    ):
+    def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that scenario version is properly set."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
@@ -632,7 +600,6 @@ class TestFoundryScenarioProperties:
         )
 
         assert scenario.version == 1
-
 
     @patch.dict(
         "os.environ",
