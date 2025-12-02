@@ -59,6 +59,74 @@ class TestScenarioRegistry:
             assert scenario_class is not None
             assert issubclass(scenario_class, Scenario)
 
+    def test_discover_builtin_scenarios_correct_module_paths(self):
+        """Test that builtin scenario discovery uses correct module paths without duplication.
+
+        This is a regression test for a bug where module paths were incorrectly constructed
+        as 'pyrit.scenario.scenarios.pyrit.scenarios.scenarios.xxx' instead of
+        'pyrit.scenario.scenarios.xxx'.
+        """
+        with patch("pyrit.cli.scenario_registry.importlib.import_module") as mock_import:
+            with patch("pyrit.cli.scenario_registry.pkgutil.iter_modules") as mock_iter:
+                # Mock the scenarios package structure
+                mock_iter.return_value = [
+                    (None, "encoding_scenario", False),  # A file module
+                    (None, "foundry_scenario", False),  # Another file module
+                    (None, "airt", True),  # A package (subdirectory)
+                ]
+
+                # Mock the airt subpackage
+                def iter_modules_side_effect(paths):
+                    path_str = str(paths[0]) if paths else ""
+                    if "airt" in path_str:
+                        return [
+                            (None, "content_harms_scenario", False),
+                            (None, "cyber_scenario", False),
+                        ]
+                    return mock_iter.return_value
+
+                mock_iter.side_effect = iter_modules_side_effect
+
+                # Create mock module with Scenario subclass
+                mock_module = MagicMock()
+                mock_scenario_class = type(
+                    "TestScenario",
+                    (Scenario,),
+                    {
+                        "_get_atomic_attacks_async": lambda self: [],
+                        "get_strategy_class": classmethod(lambda cls: MockStrategy),
+                        "get_default_strategy": classmethod(lambda cls: MockStrategy.ALL),
+                    },
+                )
+                mock_module.__dict__ = {"TestScenario": mock_scenario_class}
+                mock_import.return_value = mock_module
+
+                registry = ScenarioRegistry()
+                registry._discover_builtin_scenarios()
+
+                # Verify the correct module paths were attempted
+                import_calls = [call[0][0] for call in mock_import.call_args_list]
+
+                # Should see correct paths like:
+                # - pyrit.scenario.scenarios.encoding_scenario
+                # - pyrit.scenario.scenarios.foundry_scenario
+                # - pyrit.scenario.scenarios.airt.content_harms_scenario
+                # - pyrit.scenario.scenarios.airt.cyber_scenario
+
+                # Should NOT see duplicated paths like:
+                # - pyrit.scenario.scenarios.pyrit.scenarios.scenarios.xxx
+
+                for call_path in import_calls:
+                    # Verify no path duplication
+                    assert (
+                        "pyrit.scenario.scenarios.pyrit" not in call_path
+                    ), f"Module path has duplication: {call_path}"
+                    assert call_path.count("scenarios") == 1, f"Module path has 'scenarios' duplicated: {call_path}"
+                    # Verify correct base path
+                    assert call_path.startswith(
+                        "pyrit.scenario.scenarios."
+                    ), f"Module path doesn't start with correct base: {call_path}"
+
     def test_get_scenario_existing(self):
         """Test getting an existing scenario."""
         registry = ScenarioRegistry()
