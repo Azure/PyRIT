@@ -109,6 +109,8 @@ async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint):
     [
         ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
         ("AZURE_OPENAI_RESPONSES_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT41_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT5_MODEL"),
     ],
 )
 async def test_openai_responses_target_entra_auth(sqlite_instance, endpoint, model_name):

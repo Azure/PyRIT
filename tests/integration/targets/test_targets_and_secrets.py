@@ -146,6 +146,16 @@ async def test_connect_required_openai_text_targets(sqlite_instance, endpoint, a
             "AZURE_OPENAI_RESPONSES_KEY",
             "AZURE_OPENAI_RESPONSES_MODEL",
         ),
+        (
+            "AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT",
+            "AZURE_OPENAI_GPT41_RESPONSES_KEY",
+            "AZURE_OPENAI_GPT41_RESPONSES_MODEL",
+        ),
+        (
+            "AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT",
+            "AZURE_OPENAI_GPT5_KEY",
+            "AZURE_OPENAI_GPT5_MODEL",
+        ),
     ],
 )
 async def test_connect_required_openai_response_targets(sqlite_instance, endpoint, api_key, model_name):

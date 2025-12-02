@@ -596,7 +596,6 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
     target._memory = mock_memory
 
     with (
-        patch.object(target, "refresh_auth_headers"),
         patch.object(target, "_validate_request"),
         patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
     ):
@@ -650,7 +649,6 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
     message = Message(message_pieces=[message_piece])
     target._memory = MagicMock()
     target._memory.get_conversation.return_value = []
-    target.refresh_auth_headers = MagicMock()
 
     # Create proper mock request and response for APIStatusError
     mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
@@ -682,7 +680,9 @@ def test_set_auth_with_entra_auth(patch_central_database):
         )
 
         # Verify Entra auth was configured correctly
-        mock_scope.assert_called_once_with("https://test.openai.azure.com")
+        # get_default_scope is called twice: once during auth setup, once during client initialization
+        assert mock_scope.call_count >= 1
+        mock_scope.assert_any_call("https://test.openai.azure.com")
         mock_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
 
         # Verify authentication objects are set correctly (SDK handles actual headers)
