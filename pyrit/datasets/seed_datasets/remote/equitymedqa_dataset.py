@@ -129,7 +129,6 @@ class _EquityMedQADataset(_RemoteDatasetLoader):
             SeedPrompt(
                 value=prompt,
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 description="This dataset contains prompts used to assess medical biases in AI systems",
                 harm_categories=["health_bias"],

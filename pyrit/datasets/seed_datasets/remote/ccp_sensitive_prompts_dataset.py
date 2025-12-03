@@ -62,7 +62,6 @@ class _CCPSensitivePromptsDataset(_RemoteDatasetLoader):
             SeedPrompt(
                 value=row["prompt"],
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 harm_categories=[row["subject"]],
                 description="Prompts covering topics sensitive to the CCP.",

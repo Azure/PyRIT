@@ -121,7 +121,6 @@ class _AyaRedteamingDataset(_RemoteDatasetLoader):
                 SeedPrompt(
                     value=example["prompt"],
                     data_type="text",
-                    name=self.dataset_name,
                     dataset_name=self.dataset_name,
                     harm_categories=categories,
                     source="https://huggingface.co/datasets/CohereForAI/aya_redteaming",

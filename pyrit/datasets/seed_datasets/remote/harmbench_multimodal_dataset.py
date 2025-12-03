@@ -143,68 +143,70 @@ class _HarmBenchMultimodalDataset(_RemoteDatasetLoader):
             try:
                 # Only include examples where image fetch is successful
                 local_image_path = await self._fetch_and_save_image_async(image_url, behavior_id)
-
-                image_prompt = SeedPrompt(
-                    value=local_image_path,
-                    data_type="image_path",
-                    name=f"HarmBench Multimodal Image - {behavior_id}",
-                    dataset_name=self.dataset_name,
-                    harm_categories=[semantic_category],
-                    description=f"An image prompt from the HarmBench multimodal dataset, BehaviorID: {behavior_id}",
-                    source=self.source,
-                    prompt_group_id=group_id,
-                    sequence=0,
-                    metadata={
-                        "behavior_id": behavior_id,
-                        "image_description": image_description,
-                        "redacted_image_description": redacted_description,
-                        "original_image_url": image_url,
-                    },
-                )
-                prompts.append(image_prompt)
             except Exception as e:
                 failed_image_count += 1
                 logger.warning(
                     f"[HarmBench-Multimodal] Failed to fetch image for behavior {behavior_id}: {e}. "
                     f"Skipping this example."
                 )
-            else:
-                text_prompt = SeedPrompt(
-                    value=behavior_text,
-                    data_type="text",
-                    name=f"HarmBench Multimodal Text - {behavior_id}",
-                    dataset_name=self.dataset_name,
-                    harm_categories=[semantic_category],
-                    description=f"A text prompt from the HarmBench multimodal dataset, BehaviorID: {behavior_id}",
-                    source=self.source,
-                    prompt_group_id=group_id,
-                    sequence=0,
-                    metadata={
-                        "behavior_id": behavior_id,
-                    },
-                    authors=[
-                        "Mantas Mazeika",
-                        "Long Phan",
-                        "Xuwang Yin",
-                        "Andy Zou",
-                        "Zifan Wang",
-                        "Norman Mu",
-                        "Elham Sakhaee",
-                        "Nathaniel Li",
-                        "Steven Basart",
-                        "Bo Li",
-                        "David Forsyth",
-                        "Dan Hendrycks",
-                    ],
-                    groups=[
-                        "University of Illinois Urbana-Champaign",
-                        "Center for AI Safety",
-                        "Carnegie Mellon University",
-                        "UC Berkeley",
-                        "Microsoft",
-                    ],
-                )
-                prompts.append(text_prompt)
+                continue
+
+            # Image fetch succeeded - add both image and text prompts
+            image_prompt = SeedPrompt(
+                value=local_image_path,
+                data_type="image_path",
+                name=f"HarmBench Multimodal Image - {behavior_id}",
+                dataset_name=self.dataset_name,
+                harm_categories=[semantic_category],
+                description=f"An image prompt from the HarmBench multimodal dataset, BehaviorID: {behavior_id}",
+                source=self.source,
+                prompt_group_id=group_id,
+                sequence=0,
+                metadata={
+                    "behavior_id": behavior_id,
+                    "image_description": image_description,
+                    "redacted_image_description": redacted_description,
+                    "original_image_url": image_url,
+                },
+            )
+            prompts.append(image_prompt)
+
+            text_prompt = SeedPrompt(
+                value=behavior_text,
+                data_type="text",
+                name=f"HarmBench Multimodal Text - {behavior_id}",
+                dataset_name=self.dataset_name,
+                harm_categories=[semantic_category],
+                description=f"A text prompt from the HarmBench multimodal dataset, BehaviorID: {behavior_id}",
+                source=self.source,
+                prompt_group_id=group_id,
+                sequence=0,
+                metadata={
+                    "behavior_id": behavior_id,
+                },
+                authors=[
+                    "Mantas Mazeika",
+                    "Long Phan",
+                    "Xuwang Yin",
+                    "Andy Zou",
+                    "Zifan Wang",
+                    "Norman Mu",
+                    "Elham Sakhaee",
+                    "Nathaniel Li",
+                    "Steven Basart",
+                    "Bo Li",
+                    "David Forsyth",
+                    "Dan Hendrycks",
+                ],
+                groups=[
+                    "University of Illinois Urbana-Champaign",
+                    "Center for AI Safety",
+                    "Carnegie Mellon University",
+                    "UC Berkeley",
+                    "Microsoft",
+                ],
+            )
+            prompts.append(text_prompt)
 
         if failed_image_count > 0:
             logger.warning(

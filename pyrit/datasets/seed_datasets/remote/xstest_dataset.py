@@ -64,7 +64,6 @@ class _XSTestDataset(_RemoteDatasetLoader):
             SeedPrompt(
                 value=example["prompt"],
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 harm_categories=[example["note"]],
                 description="A dataset of XSTest examples containing various categories such as violence, drugs, etc.",

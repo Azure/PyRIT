@@ -83,7 +83,6 @@ class _BabelscapeAlertDataset(_RemoteDatasetLoader):
             SeedPrompt(
                 value=prompt,
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 description=(
                     "ALERT by Babelscape is a dataset that consists of two different categories, "

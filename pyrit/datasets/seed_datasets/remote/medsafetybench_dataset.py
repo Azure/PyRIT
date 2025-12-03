@@ -123,7 +123,6 @@ class _MedSafetyBenchDataset(_RemoteDatasetLoader):
                     SeedPrompt(
                         value=prompt,
                         data_type="text",
-                        name=self.dataset_name,
                         dataset_name=self.dataset_name,
                         harm_categories=["medical safety"],
                         description=(

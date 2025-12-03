@@ -78,7 +78,6 @@ Financial Advice, Health Consultation, and Government Decision."""
             SeedPrompt(
                 value=item["question"],
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 authors=authors,
                 harm_categories=item["content_policy_name"],

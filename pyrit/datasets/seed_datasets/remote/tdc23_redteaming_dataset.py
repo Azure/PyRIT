@@ -63,7 +63,6 @@ class _TDC23RedteamingDataset(_RemoteDatasetLoader):
             SeedPrompt(
                 value=item["prompt"],
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 description=(
                     "TDC23-RedTeaming dataset from HuggingFace, created by Walled AI. "

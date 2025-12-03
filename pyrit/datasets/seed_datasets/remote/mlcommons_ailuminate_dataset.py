@@ -87,7 +87,6 @@ class _MLCommonsAILuminateDataset(_RemoteDatasetLoader):
             SeedPrompt(
                 value=example["prompt_text"],
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 # Saving both the full hazard category name and the abbreviation
                 harm_categories=[self.HAZARD_CATEGORIES_MAP[example["hazard"]], example["hazard"]],

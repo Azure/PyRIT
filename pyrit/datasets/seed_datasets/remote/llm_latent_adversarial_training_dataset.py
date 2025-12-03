@@ -62,7 +62,6 @@ class _LLMLatentAdversarialTrainingDataset(_RemoteDatasetLoader):
             SeedPrompt(
                 value=item["prompt"],
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 description="This dataset contains prompts used to assess and analyze harmful behaviors in llm",
                 source=f"https://huggingface.co/datasets/{self.source}",

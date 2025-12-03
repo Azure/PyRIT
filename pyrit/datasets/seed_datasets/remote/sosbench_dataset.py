@@ -63,7 +63,6 @@ class _SOSBenchDataset(_RemoteDatasetLoader):
             SeedPrompt(
                 value=item["goal"],
                 data_type="text",
-                name=self.dataset_name,
                 dataset_name=self.dataset_name,
                 harm_categories=[item["subject"]],
                 description=(

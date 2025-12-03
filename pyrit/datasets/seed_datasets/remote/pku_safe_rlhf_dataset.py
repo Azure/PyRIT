@@ -118,7 +118,6 @@ class _PKUSafeRLHFDataset(_RemoteDatasetLoader):
                     SeedPrompt(
                         value=item["prompt"],
                         data_type="text",
-                        name=self.dataset_name,
                         dataset_name=self.dataset_name,
                         harm_categories=sorted(list(harm_categories)),
                         description=(
