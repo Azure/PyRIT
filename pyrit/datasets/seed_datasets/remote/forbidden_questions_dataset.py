@@ -4,16 +4,16 @@
 import logging
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class ForbiddenQuestionsDataset(RemoteDatasetLoader):
+class _ForbiddenQuestionsDataset(_RemoteDatasetLoader):
     """
-    Loader for the Forbidden Question Set dataset.
+    Loader for the Forbidden Questions dataset.
 
     This dataset contains 390 questions across 13 scenarios adopted from OpenAI Usage Policy.
     The focus is on scenarios including Illegal Activity, Hate Speech, Malware Generation,

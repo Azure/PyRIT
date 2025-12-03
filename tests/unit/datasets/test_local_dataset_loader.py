@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from pyrit.datasets.seed_datasets.local.local_dataset_loader import LocalDatasetLoader
+from pyrit.datasets.seed_datasets.local.local_dataset_loader import _LocalDatasetLoader
 from pyrit.models import SeedDataset
 
 
@@ -25,7 +25,7 @@ seeds:
         file_path = tmp_path / "test.yaml"
         file_path.write_text(valid_yaml_content, encoding="utf-8")
 
-        loader = LocalDatasetLoader(file_path=file_path)
+        loader = _LocalDatasetLoader(file_path=file_path)
         assert loader.dataset_name == "test_dataset"
         assert loader.file_path == file_path
 
@@ -33,7 +33,7 @@ seeds:
         file_path = tmp_path / "test.yaml"
         file_path.write_text("invalid: yaml: content: :", encoding="utf-8")
 
-        loader = LocalDatasetLoader(file_path=file_path)
+        loader = _LocalDatasetLoader(file_path=file_path)
         # Should fallback to filename stem
         assert loader.dataset_name == "test"
 
@@ -42,7 +42,7 @@ seeds:
         file_path = tmp_path / "test.yaml"
         file_path.write_text(valid_yaml_content, encoding="utf-8")
 
-        loader = LocalDatasetLoader(file_path=file_path)
+        loader = _LocalDatasetLoader(file_path=file_path)
         dataset = await loader.fetch_dataset()
 
         assert isinstance(dataset, SeedDataset)
@@ -52,6 +52,6 @@ seeds:
 
     @pytest.mark.asyncio
     async def test_fetch_dataset_file_not_found(self):
-        loader = LocalDatasetLoader(file_path=Path("non_existent.yaml"))
+        loader = _LocalDatasetLoader(file_path=Path("non_existent.yaml"))
         with pytest.raises(Exception):
             await loader.fetch_dataset()

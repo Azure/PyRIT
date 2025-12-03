@@ -2,12 +2,12 @@
 # Licensed under the MIT license.
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 
-class DarkBenchDataset(RemoteDatasetLoader):
+class _DarkBenchDataset(_RemoteDatasetLoader):
     """
     Loader for the DarkBench dataset from HuggingFace.
 

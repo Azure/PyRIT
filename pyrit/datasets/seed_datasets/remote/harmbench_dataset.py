@@ -4,12 +4,12 @@
 from typing import Literal
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 
-class HarmBenchDataset(RemoteDatasetLoader):
+class _HarmBenchDataset(_RemoteDatasetLoader):
     """
     Loader for the HarmBench dataset.
 

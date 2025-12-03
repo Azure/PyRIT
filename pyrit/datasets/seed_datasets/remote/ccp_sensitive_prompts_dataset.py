@@ -4,16 +4,16 @@
 import logging
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class CCPSensitivePromptsDataset(RemoteDatasetLoader):
+class _CCPSensitivePromptsDataset(_RemoteDatasetLoader):
     """
-    Loader for the CCP-sensitive-prompts dataset.
+    Loader for the CCP Sensitive Prompts dataset.
 
     This dataset contains prompts covering topics sensitive to the Chinese Communist Party (CCP).
     These prompts are likely to be censored by certain models.

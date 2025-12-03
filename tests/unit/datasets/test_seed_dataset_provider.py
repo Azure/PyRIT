@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.datasets import SeedDatasetProvider
-from pyrit.datasets.seed_datasets.remote.darkbench_dataset import DarkBenchDataset
-from pyrit.datasets.seed_datasets.remote.harmbench_dataset import HarmBenchDataset
+from pyrit.datasets.seed_datasets.remote.darkbench_dataset import _DarkBenchDataset
+from pyrit.datasets.seed_datasets.remote.harmbench_dataset import _HarmBenchDataset
 from pyrit.models import SeedDataset, SeedPrompt
 
 
@@ -140,7 +140,7 @@ class TestHarmBenchDataset:
     @pytest.mark.asyncio
     async def test_fetch_dataset(self, mock_harmbench_data):
         """Test fetching HarmBench dataset."""
-        loader = HarmBenchDataset()
+        loader = _HarmBenchDataset()
 
         with patch.object(loader, "_fetch_from_url", return_value=mock_harmbench_data):
             dataset = await loader.fetch_dataset()
@@ -159,13 +159,13 @@ class TestHarmBenchDataset:
 
     def test_dataset_name(self):
         """Test dataset_name property."""
-        loader = HarmBenchDataset()
+        loader = _HarmBenchDataset()
         assert loader.dataset_name == "harmbench"
 
     @pytest.mark.asyncio
     async def test_fetch_dataset_missing_keys(self):
         """Test that missing required keys raise ValueError."""
-        loader = HarmBenchDataset()
+        loader = _HarmBenchDataset()
         invalid_data = [{"Behavior": "Test"}]  # Missing SemanticCategory
 
         with patch.object(loader, "_fetch_from_url", return_value=invalid_data):
@@ -175,7 +175,7 @@ class TestHarmBenchDataset:
     @pytest.mark.asyncio
     async def test_fetch_dataset_with_custom_source(self, mock_harmbench_data):
         """Test fetching with custom source URL."""
-        loader = HarmBenchDataset(
+        loader = _HarmBenchDataset(
             source="https://custom.example.com/data.csv",
             source_type="public_url",
         )
@@ -197,7 +197,7 @@ class TestDarkBenchDataset:
     @pytest.mark.asyncio
     async def test_fetch_dataset(self, mock_darkbench_data):
         """Test fetching DarkBench dataset."""
-        loader = DarkBenchDataset()
+        loader = _DarkBenchDataset()
 
         with patch.object(loader, "_fetch_from_huggingface", return_value=mock_darkbench_data):
             dataset = await loader.fetch_dataset()
@@ -215,13 +215,13 @@ class TestDarkBenchDataset:
 
     def test_dataset_name(self):
         """Test dataset_name property."""
-        loader = DarkBenchDataset()
+        loader = _DarkBenchDataset()
         assert loader.dataset_name == "dark_bench"
 
     @pytest.mark.asyncio
     async def test_fetch_dataset_with_custom_config(self, mock_darkbench_data):
         """Test fetching with custom HuggingFace config."""
-        loader = DarkBenchDataset(
+        loader = _DarkBenchDataset(
             dataset_name="custom/darkbench",
             config="custom_config",
             split="test",

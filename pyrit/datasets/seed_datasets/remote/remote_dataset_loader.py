@@ -33,7 +33,7 @@ FILE_TYPE_HANDLERS: Dict[str, Dict[str, Callable]] = {
 }
 
 
-class RemoteDatasetLoader(SeedDatasetProvider, ABC):
+class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
     """
     Abstract base class for loading remote datasets.
 
@@ -61,13 +61,27 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         hash_source = hashlib.md5(source.encode("utf-8")).hexdigest()
         return f"{hash_source}.{file_type}"
 
+    def _validate_file_type(self, file_type: str) -> None:
+        """
+        Validate that the file type is supported.
+
+        Args:
+            file_type (str): The file extension/type to validate.
+
+        Raises:
+            ValueError: If the file_type is invalid.
+        """
+        if file_type not in FILE_TYPE_HANDLERS:
+            valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+            raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+
     def _read_cache(self, *, cache_file: Path, file_type: str) -> List[Dict[str, str]]:
         """
         Read data from cache.
 
         Args:
-            cache_file: Path to the cache file.
-            file_type: The file extension/type.
+            cache_file (Path): Path to the cache file.
+            file_type (str): The file extension/type.
 
         Returns:
             List[Dict[str, str]]: The cached examples.
@@ -75,32 +89,26 @@ class RemoteDatasetLoader(SeedDatasetProvider, ABC):
         Raises:
             ValueError: If the file_type is invalid.
         """
+        self._validate_file_type(file_type)
         with cache_file.open("r", encoding="utf-8") as file:
-            if file_type in FILE_TYPE_HANDLERS:
-                return FILE_TYPE_HANDLERS[file_type]["read"](file)
-            else:
-                valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
-                raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+            return FILE_TYPE_HANDLERS[file_type]["read"](file)
 
     def _write_cache(self, *, cache_file: Path, examples: List[Dict[str, str]], file_type: str) -> None:
         """
         Write data to cache.
 
         Args:
-            cache_file: Path to the cache file.
-            examples: The examples to cache.
-            file_type: The file extension/type.
+            cache_file (Path): Path to the cache file.
+            examples (List[Dict[str, str]]): The examples to cache.
+            file_type (str): The file extension/type.
 
         Raises:
             ValueError: If the file_type is invalid.
         """
+        self._validate_file_type(file_type)
         cache_file.parent.mkdir(parents=True, exist_ok=True)
         with cache_file.open("w", encoding="utf-8") as file:
-            if file_type in FILE_TYPE_HANDLERS:
-                FILE_TYPE_HANDLERS[file_type]["write"](file, examples)
-            else:
-                valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
-                raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+            FILE_TYPE_HANDLERS[file_type]["write"](file, examples)
 
     def _fetch_from_public_url(self, *, source: str, file_type: str) -> List[Dict[str, str]]:
         """

@@ -6,14 +6,14 @@ import os
 from typing import List, Optional
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class SorryBenchDataset(RemoteDatasetLoader):
+class _SorryBenchDataset(_RemoteDatasetLoader):
     """
     Loader for the Sorry-Bench dataset (updated 2025/03 version).
 

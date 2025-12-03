@@ -8,12 +8,12 @@ from unittest.mock import mock_open, patch
 import pytest
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset
 
 
-class ConcreteRemoteLoader(RemoteDatasetLoader):
+class ConcreteRemoteLoader(_RemoteDatasetLoader):
     @property
     def dataset_name(self):
         return "test_remote"

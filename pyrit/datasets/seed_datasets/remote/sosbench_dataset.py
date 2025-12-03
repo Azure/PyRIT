@@ -4,14 +4,14 @@
 import logging
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class SOSBenchDataset(RemoteDatasetLoader):
+class _SOSBenchDataset(_RemoteDatasetLoader):
     """
     Loader for the SOSBench dataset.
 

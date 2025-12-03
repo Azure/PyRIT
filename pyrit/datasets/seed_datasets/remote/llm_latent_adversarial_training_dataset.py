@@ -4,14 +4,14 @@
 import logging
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class LLMLatentAdversarialTrainingDataset(RemoteDatasetLoader):
+class _LLMLatentAdversarialTrainingDataset(_RemoteDatasetLoader):
     """
     Loader for the LLM-LAT harmful dataset.
 

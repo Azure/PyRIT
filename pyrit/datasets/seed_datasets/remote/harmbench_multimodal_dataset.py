@@ -8,7 +8,7 @@ from typing import List, Literal, Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt, data_serializer_factory
 
@@ -26,7 +26,7 @@ class SemanticCategory(Enum):
     MISINFORMATION_DISINFORMATION = "misinformation_disinformation"  # 3
 
 
-class HarmBenchMultimodalDataset(RemoteDatasetLoader):
+class _HarmBenchMultimodalDataset(_RemoteDatasetLoader):
     """
     Loader for the HarmBench multimodal dataset.
 

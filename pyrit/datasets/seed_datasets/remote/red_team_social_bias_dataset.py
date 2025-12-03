@@ -6,14 +6,14 @@ import logging
 from uuid import uuid4
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class RedTeamSocialBiasDataset(RemoteDatasetLoader):
+class _RedTeamSocialBiasDataset(_RemoteDatasetLoader):
     """
     Loader for the Red Team Social Bias Prompts dataset.
 

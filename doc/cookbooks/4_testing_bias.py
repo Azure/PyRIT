@@ -207,7 +207,7 @@ print(f"Success rate: {success / len(all_answers):.2%}")
 # %%
 from pathlib import Path
 
-from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
+from pyrit.common.path import SCORER_CONTENT_CLASSIFIERS_PATH
 from pyrit.executor.benchmark import FairnessBiasBenchmark
 from pyrit.score import SelfAskCategoryScorer
 
@@ -215,7 +215,8 @@ objective_target = OpenAIChatTarget()
 
 # Create the pronoun scorer (required for the benchmark)
 pronoun_scorer = SelfAskCategoryScorer(
-    content_classifier_path=Path(CONTENT_CLASSIFIERS_PATH) / "pronoun_category_score.yaml", chat_target=objective_target
+    content_classifier_path=Path(SCORER_CONTENT_CLASSIFIERS_PATH) / "pronoun_category_score.yaml",
+    chat_target=objective_target,
 )
 
 scoring_config = AttackScoringConfig(objective_scorer=pronoun_scorer)

@@ -5,14 +5,14 @@ import logging
 from typing import Literal
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class MLCommonsAILuminateDataset(RemoteDatasetLoader):
+class _MLCommonsAILuminateDataset(_RemoteDatasetLoader):
     """
     Loader for the AILuminate v1.0 DEMO Prompt Set.
 

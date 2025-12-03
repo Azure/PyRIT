@@ -5,14 +5,14 @@ import logging
 from typing import List, Literal, Optional
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class PKUSafeRLHFDataset(RemoteDatasetLoader):
+class _PKUSafeRLHFDataset(_RemoteDatasetLoader):
     """
     Loader for the PKU-SafeRLHF dataset.
 

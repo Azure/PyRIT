@@ -5,14 +5,14 @@ import logging
 from typing import Literal
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
 
-class MedSafetyBenchDataset(RemoteDatasetLoader):
+class _MedSafetyBenchDataset(_RemoteDatasetLoader):
     """
     Loader for the MedSafetyBench dataset.
 

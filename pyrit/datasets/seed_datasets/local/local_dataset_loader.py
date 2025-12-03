@@ -10,7 +10,7 @@ from pyrit.models.seed_dataset import SeedDataset
 logger = logging.getLogger(__name__)
 
 
-class LocalDatasetLoader(SeedDatasetProvider):
+class _LocalDatasetLoader(SeedDatasetProvider):
     """
     Loader for local YAML dataset files.
 
@@ -97,7 +97,7 @@ def _register_local_datasets():
 
                     type(
                         class_name,
-                        (LocalDatasetLoader,),
+                        (_LocalDatasetLoader,),
                         {"__init__": make_init(yaml_file), "should_register": True, "__module__": __name__},
                     )
 
