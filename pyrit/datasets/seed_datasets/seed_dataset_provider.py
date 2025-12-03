@@ -208,7 +208,8 @@ class SeedDatasetProvider(ABC):
             dataset_name, dataset = result
 
             if dataset_name in datasets:
-                # Merge with existing dataset by creating new list with combined seeds
+                logger.info(f"Merging multiple sources for {dataset_name}.")
+
                 existing_dataset = datasets[dataset_name]
                 combined_seeds = list(existing_dataset.seeds) + list(dataset.seeds)
                 existing_dataset.seeds = combined_seeds
