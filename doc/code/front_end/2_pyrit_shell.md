@@ -1,4 +1,4 @@
-# PyRIT Shell - Interactive Command Line
+# 2. PyRIT Shell - Interactive Command Line
 
 PyRIT Shell provides an interactive REPL (Read-Eval-Print Loop) for running AI red teaming scenarios with fast execution and session-based result tracking.
 
