@@ -4,9 +4,11 @@
 import asyncio
 import base64
 import logging
+import re
 import wave
 from dataclasses import dataclass, field
 from typing import Any, List, Literal, Optional, Tuple
+from urllib.parse import urlparse, urlunparse
 
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AsyncOpenAI
@@ -95,22 +97,103 @@ class RealtimeTarget(OpenAITarget):
         self.endpoint_environment_variable = "OPENAI_REALTIME_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_REALTIME_API_KEY"
 
+    def _normalize_url_for_target(self, base_url: str) -> str:
+        """
+        Normalize the URL for Realtime API by stripping the /realtime path.
+        The OpenAI SDK will construct the full path itself.
+        Also normalizes https:// to wss:// for websocket connections.
+
+        Args:
+            base_url: The base URL to normalize
+
+        Returns:
+            The normalized URL without the /realtime path
+        """
+        self._warn_if_irregular_endpoint(base_url)
+
+        # Convert https:// to wss:// for websocket connections
+        base_url = base_url.replace("https://", "wss://")
+
+        # Strip /realtime or /v1/realtime path if present
+        # e.g., wss://resource.openai.azure.com/openai/realtime -> wss://resource.openai.azure.com/openai
+        # or wss://api.openai.com/v1/realtime -> wss://api.openai.com/v1
+        if base_url.endswith("/v1/realtime"):
+            base_url = base_url[:-9]  # Remove "/realtime" (keep /v1)
+        elif base_url.endswith("/realtime"):
+            base_url = base_url[:-9]  # Remove "/realtime"
+
+        return base_url
+
+    def _ensure_azure_openai_path_structure(self, base_url: str) -> str:
+        """
+        Ensure Azure OpenAI URLs have the proper path structure while preserving wss:// scheme.
+        
+        Overrides parent to handle websocket URLs properly.
+
+        Args:
+            base_url: The Azure endpoint URL.
+
+        Returns:
+            The URL with proper Azure path structure and wss:// scheme preserved.
+        """
+        # Temporarily convert wss to https for parent class processing
+        was_wss = base_url.startswith("wss://")
+        if was_wss:
+            base_url = base_url.replace("wss://", "https://", 1)
+        
+        # Call parent implementation
+        result = super()._ensure_azure_openai_path_structure(base_url)
+        
+        # Convert back to wss if it was originally wss
+        if was_wss:
+            result = result.replace("https://", "wss://", 1)
+        
+        return result
+
+    def _warn_if_irregular_endpoint(self, endpoint: str) -> None:
+        """
+        Warns if the endpoint URL does not match expected patterns.
+
+        Args:
+            endpoint: The endpoint URL to validate
+        """
+        # Expected patterns for realtime endpoints:
+        # Azure old format: wss://resource.openai.azure.com/openai/realtime?api-version=...
+        # Azure new format: wss://resource.openai.azure.com/openai/v1
+        # Platform OpenAI: wss://api.openai.com/v1
+        # Also accept https:// versions that will be converted to wss://
+
+        # Check for proper scheme (wss:// or https://)
+        if not endpoint.startswith(("wss://", "https://")):
+            logger.warning(
+                f"Realtime endpoint should start with 'wss://' or 'https://', got: {endpoint}. "
+                "This may cause connection issues."
+            )
+            return
+
+        # Pattern for Azure endpoints
+        azure_pattern = re.compile(
+            r"^(wss|https)://[a-zA-Z0-9\-]+\.openai\.azure\.com/"
+            r"(openai/(deployments/[^/]+/)?realtime(\?api-version=[^/]+)?|openai/v1|v1)$"
+        )
+
+        # Pattern for Platform OpenAI
+        platform_pattern = re.compile(r"^(wss|https)://api\.openai\.com/(v1(/realtime)?|realtime)$")
+
+        if not azure_pattern.match(endpoint) and not platform_pattern.match(endpoint):
+            logger.warning(
+                f"Realtime endpoint URL does not match expected Azure or Platform OpenAI patterns: {endpoint}. "
+                "Expected formats: 'wss://resource.openai.azure.com/openai/v1' or 'wss://api.openai.com/v1'"
+            )
+
     def _get_openai_client(self):
         """
         Creates or returns the AsyncOpenAI client configured for Realtime API.
         Uses the Azure GA approach with websocket_base_url.
         """
         if self._realtime_client is None:
-            # Convert https endpoint to wss for websockets
-            # Azure endpoint format: https://resource.openai.azure.com -> wss://resource.openai.azure.com/openai/v1
-            websocket_base_url = self._endpoint.replace("https://", "wss://")
-
-            # Strip any paths after the domain for websocket connection
-            # Keep only scheme://netloc and add /openai/v1
-            from urllib.parse import urlparse
-
-            parsed = urlparse(websocket_base_url)
-            websocket_base_url = f"{parsed.scheme}://{parsed.netloc}/openai/v1"
+            # Use the normalized endpoint from parent class (_endpoint already has Azure path structure and wss:// scheme)
+            websocket_base_url = self._endpoint
 
             logger.info(f"Creating realtime client with websocket_base_url: {websocket_base_url}")
 

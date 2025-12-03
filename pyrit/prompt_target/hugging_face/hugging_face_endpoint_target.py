@@ -7,6 +7,7 @@ from typing import Optional
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,10 @@ class HuggingFaceEndpointTarget(PromptTarget):
         super().__init__(
             max_requests_per_minute=max_requests_per_minute, verbose=verbose, endpoint=endpoint, model_name=model_id
         )
+        
+        validate_temperature(temperature)
+        validate_top_p(top_p)
+        
         self.hf_token = hf_token
         self.endpoint = endpoint
         self.model_id = model_id

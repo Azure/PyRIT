@@ -14,6 +14,7 @@ from pyrit.prompt_target import (
     OpenAIResponseTarget,
     OpenAITTSTarget,
     OpenAIVideoTarget,
+    RealtimeTarget,
 )
 
 
@@ -254,8 +255,8 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # URL should remain unchanged (only path stripped)
-        assert target._endpoint == platform_url
+        # URL should have path stripped
+        assert target._endpoint == "https://api.openai.com/v1"
         assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
 
         # No conversion warning
@@ -275,7 +276,8 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        assert target._endpoint == platform_url
+        # URL should have path stripped
+        assert target._endpoint == "https://api.openai.com/v1"
         assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
 
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
@@ -294,7 +296,8 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        assert target._endpoint == platform_url
+        # URL should have path stripped
+        assert target._endpoint == "https://api.openai.com/v1"
         assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
 
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
@@ -313,7 +316,8 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        assert target._endpoint == platform_url
+        # URL should have path stripped
+        assert target._endpoint == "https://api.openai.com/v1"
         assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
 
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
@@ -332,7 +336,8 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        assert target._endpoint == platform_url
+        # URL should have path stripped
+        assert target._endpoint == "https://api.openai.com/v1"
         assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
 
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
@@ -351,7 +356,8 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        assert target._endpoint == platform_url
+        # URL should have path stripped
+        assert target._endpoint == "https://api.openai.com/v1"
         assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
 
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
@@ -496,6 +502,72 @@ class TestClientTypeUsage:
 
         # Verify we're using AsyncOpenAI
         assert isinstance(target._async_client, AsyncOpenAI)
+
+
+class TestRealtimeURLConversion:
+    """Tests for RealtimeTarget URL conversion."""
+
+    def test_old_azure_realtime_url_converted_with_warning(self, caplog, patch_central_database):
+        """Test old Azure realtime URL is converted to new format and warning is logged."""
+        old_url = "wss://test.openai.azure.com/openai/deployments/gpt-4o-realtime/realtime?api-version=2024-10-01"
+        expected_new_url = "wss://test.openai.azure.com/openai/v1"
+
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                target = RealtimeTarget(
+                    model_name="gpt-4o-realtime",
+                    endpoint=old_url,
+                    api_key="test-key",
+                )
+
+        # Check that URL was converted and remains wss://
+        assert target._endpoint == expected_new_url
+        assert "Old Azure URL format detected and converted" in caplog.text
+        assert old_url in caplog.text
+
+    def test_new_azure_realtime_url_with_v1(self, patch_central_database):
+        """Test new Azure realtime URL with /openai/v1 is accepted."""
+        new_url = "wss://test.openai.azure.com/openai/v1"
+
+        with patch.dict(os.environ, {}, clear=True):
+            target = RealtimeTarget(
+                model_name="gpt-4o-realtime",
+                endpoint=new_url,
+                api_key="test-key",
+            )
+
+        # URL should remain wss://
+        assert target._endpoint == new_url
+
+    def test_https_realtime_url_accepted(self, patch_central_database):
+        """Test https realtime URL is converted to wss in normalization."""
+        url = "https://test.openai.azure.com/openai/v1"
+        expected_url = "wss://test.openai.azure.com/openai/v1"
+
+        with patch.dict(os.environ, {}, clear=True):
+            target = RealtimeTarget(
+                model_name="gpt-4o-realtime",
+                endpoint=url,
+                api_key="test-key",
+            )
+
+        # URL should be converted to wss://
+        assert target._endpoint == expected_url
+
+    def test_platform_openai_realtime_url_not_converted(self, patch_central_database):
+        """Test platform OpenAI realtime URL has /realtime stripped to base URL."""
+        platform_url = "wss://api.openai.com/v1/realtime"
+        expected_url = "wss://api.openai.com/v1"
+
+        with patch.dict(os.environ, {}, clear=True):
+            target = RealtimeTarget(
+                model_name="gpt-4o-realtime-preview",
+                endpoint=platform_url,
+                api_key="test-key",
+            )
+
+        # Platform URL should have /realtime stripped and remain wss://
+        assert target._endpoint == expected_url
 
 
 class TestURLNormalization:

@@ -44,6 +44,7 @@ def create_mock_response(response_dict: dict = None) -> MagicMock:
 
     mock_response = MagicMock(spec=Response)
     mock_response.model_dump_json.return_value = json.dumps(response_dict)
+    mock_response.model_dump.return_value = response_dict  # Add model_dump for _check_content_filter
 
     # Set attributes based on response_dict to match OpenAI SDK Response type
     mock_response.error = response_dict.get("error")  # Should be None for successful responses

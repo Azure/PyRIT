@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import uuid
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -140,9 +141,13 @@ async def test_video_send_prompt_async_failed_content_filter(
     mock_error = MagicMock()
     mock_error.code = "content_filter"
     mock_video.error = mock_error
-    mock_video.model_dump_json.return_value = (
-        '{"id": "video_456", "status": "failed", "error": {"code": "content_filter"}}'
-    )
+    video_response_dict = {
+        "id": "video_456",
+        "status": "failed",
+        "error": {"code": "content_filter"},
+    }
+    mock_video.model_dump.return_value = video_response_dict
+    mock_video.model_dump_json.return_value = json.dumps(video_response_dict)
 
     with patch.object(video_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_video

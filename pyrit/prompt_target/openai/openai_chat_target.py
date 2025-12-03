@@ -19,6 +19,7 @@ from pyrit.prompt_target import (
     PromptChatTarget,
     limit_requests_per_minute,
 )
+from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
 
 logger = logging.getLogger(__name__)
 
@@ -129,23 +130,11 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         super().__init__(**kwargs)
 
         # Validate temperature and top_p
-        if temperature is not None and (temperature < 0 or temperature > 2):
-            raise PyritException("temperature must be between 0 and 2 (inclusive).")
-        if top_p is not None and (top_p < 0 or top_p > 1):
-            raise PyritException("top_p must be between 0 and 1 (inclusive).")
+        validate_temperature(temperature)
+        validate_top_p(top_p)
 
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
-
-        # Accept base URLs (/v1), specific API paths (/chat/completions), Azure formats
-        chat_url_patterns = [
-            r"/v1$",
-            r"/chat/completions",
-            r"/deployments/[^/]+/",
-            r"openai/v1",
-            r"\.models\.ai\.azure\.com",
-        ]
-        self._warn_if_irregular_endpoint(chat_url_patterns)
 
         self._temperature = temperature
         self._top_p = top_p

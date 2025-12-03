@@ -32,6 +32,7 @@ from pyrit.prompt_target import (
     PromptChatTarget,
     limit_requests_per_minute,
 )
+from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
 from pyrit.prompt_target.openai.openai_error_handling import _is_content_filter_error
 
 logger = logging.getLogger(__name__)
@@ -123,10 +124,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         super().__init__(**kwargs)
 
         # Validate temperature and top_p
-        if temperature is not None and (temperature < 0 or temperature > 2):
-            raise PyritException("temperature must be between 0 and 2 (inclusive).")
-        if top_p is not None and (top_p < 0 or top_p > 1):
-            raise PyritException("top_p must be between 0 and 1 (inclusive).")
+        validate_temperature(temperature)
+        validate_top_p(top_p)
 
         self._temperature = temperature
         self._top_p = top_p

@@ -323,6 +323,9 @@ class OpenAITarget(PromptChatTarget):
         if is_azure:
             base_url = self._ensure_azure_openai_path_structure(base_url)
 
+        # Update _endpoint with the fully normalized URL
+        self._endpoint = base_url
+
         # For Azure with Entra auth, pass token provider as api_key
         api_key_value: Any = self._api_key
         if is_azure and self._use_entra_auth and self._azure_auth:

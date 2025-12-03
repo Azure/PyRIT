@@ -179,6 +179,7 @@ async def test_connect_required_openai_response_targets(sqlite_instance, endpoin
     ("endpoint", "api_key", "model_name"),
     [
         ("AZURE_OPENAI_REALTIME_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
+        ("AZURE_OPENAI_REALTIME_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
     ],
 )
 async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_key, model_name):
@@ -200,6 +201,7 @@ async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_
     ("endpoint", "api_key", "model_name"),
     [
         ("AZURE_OPENAI_REALTIME_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
+        ("AZURE_OPENAI_REALTIME_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
     ],
 )
 async def test_realtime_target_multi_objective(sqlite_instance, endpoint, api_key, model_name):
