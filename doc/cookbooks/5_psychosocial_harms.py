@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -47,9 +43,10 @@ from pyrit.executor.attack import (
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
-    ConversationScorer,
+    FloatScaleScorer,
     FloatScaleThresholdScorer,
     SelfAskGeneralFloatScaleScorer,
+    create_conversation_scorer,
 )
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
@@ -280,7 +277,7 @@ adversarial_config = AttackAdversarialConfig(target=adversarial_target, system_p
 for objective in conversation_objectives:
     # Wrap the crisis scorer with our conversation history scorer
     # This will make it score the entire conversation instead of just the latest response
-    conversation_scorer = ConversationScorer(scorer=crisis_scorer)
+    conversation_scorer: FloatScaleScorer = create_conversation_scorer(scorer=crisis_scorer)  # type: ignore
 
     # Wrap in threshold scorer to determine objective achievement
     objective_threshold_scorer = FloatScaleThresholdScorer(scorer=conversation_scorer, threshold=1)

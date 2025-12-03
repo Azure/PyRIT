@@ -8,7 +8,8 @@ import pytest
 
 from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score, UnvalidatedScore
-from pyrit.score import ConversationScorer, SelfAskGeneralFloatScaleScorer
+from pyrit.score import SelfAskGeneralFloatScaleScorer, create_conversation_scorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 
 @pytest.mark.asyncio
@@ -50,6 +51,7 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
 
     # Mock the underlying scorer
     mock_scorer = MagicMock(spec=SelfAskGeneralFloatScaleScorer)
+    mock_scorer._validator = ScorerPromptValidator(supported_data_types=["text"])
     score = Score(
         score_value="0.25",
         score_value_description="Moderate concern",
@@ -63,7 +65,7 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
     )
     mock_scorer._score_async = AsyncMock(return_value=[score])
 
-    scorer = ConversationScorer(scorer=mock_scorer)
+    scorer = create_conversation_scorer(scorer=mock_scorer)
     scores = await scorer.score_async(message)
 
     assert len(scores) == 1
@@ -92,7 +94,8 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
 @pytest.mark.asyncio
 async def test_conversation_history_scorer_conversation_not_found(patch_central_database):
     mock_scorer = MagicMock(spec=SelfAskGeneralFloatScaleScorer)
-    scorer = ConversationScorer(scorer=mock_scorer)
+    mock_scorer._validator = ScorerPromptValidator(supported_data_types=["text"])
+    scorer = create_conversation_scorer(scorer=mock_scorer)
 
     nonexistent_conversation_id = str(uuid.uuid4())
     message_piece = MessagePiece(
@@ -139,8 +142,9 @@ async def test_conversation_history_scorer_chronological_ordering(patch_central_
     message.message_pieces = [message_pieces[0]]
 
     mock_scorer = MagicMock(spec=SelfAskGeneralFloatScaleScorer)
+    mock_scorer._validator = ScorerPromptValidator(supported_data_types=["text"])
     score = Score(
-        score_value="0.8",
+        score_value="0.2",
         score_value_description="Low concern",
         score_rationale="Test rationale",
         score_metadata={},
@@ -152,7 +156,7 @@ async def test_conversation_history_scorer_chronological_ordering(patch_central_
     )
     mock_scorer._score_async = AsyncMock(return_value=[score])
 
-    scorer = ConversationScorer(scorer=mock_scorer)
+    scorer = create_conversation_scorer(scorer=mock_scorer)
 
     await scorer.score_async(message)
 
@@ -196,6 +200,7 @@ async def test_conversation_history_scorer_filters_roles_correctly(patch_central
     message.message_pieces = [message_pieces[0]]
 
     mock_scorer = MagicMock(spec=SelfAskGeneralFloatScaleScorer)
+    mock_scorer._validator = ScorerPromptValidator(supported_data_types=["text"])
     score = Score(
         score_value="0.4",
         score_value_description="Test",
@@ -209,7 +214,7 @@ async def test_conversation_history_scorer_filters_roles_correctly(patch_central
     )
     mock_scorer._score_async = AsyncMock(return_value=[score])
 
-    scorer = ConversationScorer(scorer=mock_scorer)
+    scorer = create_conversation_scorer(scorer=mock_scorer)
     await scorer.score_async(message)
 
     call_args = mock_scorer._score_async.call_args
@@ -224,6 +229,7 @@ async def test_conversation_history_scorer_filters_roles_correctly(patch_central
 @pytest.mark.asyncio
 async def test_conversation_history_scorer_score_text_async_delegates(patch_central_database):
     mock_scorer = MagicMock(spec=SelfAskGeneralFloatScaleScorer)
+    mock_scorer._validator = ScorerPromptValidator(supported_data_types=["text"])
     unvalidated_score = UnvalidatedScore(
         raw_score_value="0.8",
         score_value_description="Test score",
@@ -236,7 +242,7 @@ async def test_conversation_history_scorer_score_text_async_delegates(patch_cent
     )
     mock_scorer.score_text_async = AsyncMock(return_value=[unvalidated_score])
 
-    scorer = ConversationScorer(scorer=mock_scorer)
+    scorer = create_conversation_scorer(scorer=mock_scorer)
     test_text = "Test text to score"
     test_objective = "Test objective"
 
@@ -267,6 +273,7 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
     message.message_pieces = [message_piece]
 
     mock_scorer = MagicMock(spec=SelfAskGeneralFloatScaleScorer)
+    mock_scorer._validator = ScorerPromptValidator(supported_data_types=["text"])
     score = Score(
         score_value="0.2",
         score_value_description="Test",
@@ -280,7 +287,7 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
     )
     mock_scorer._score_async = AsyncMock(return_value=[score])
 
-    scorer = ConversationScorer(scorer=mock_scorer)
+    scorer = create_conversation_scorer(scorer=mock_scorer)
 
     await scorer.score_async(message)
 

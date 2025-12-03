@@ -1,28 +1,28 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional, cast
+from typing import Optional, Type, cast
 from uuid import UUID
 
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.models.literals import PromptResponseError
 from pyrit.models.message_piece import Originator
 from pyrit.score import Scorer
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class ConversationScorer(Scorer):
     """
-    Custom scorer that evaluates the entire conversation history rather than just
-    the latest response. This is useful for evaluating multi-turn conversations
-    where context matters (e.g., psychosocial harms that emerge over time).
+    Scorer that evaluates entire conversation history rather than individual messages.
 
-    This scorer wraps another scorer (like SelfAskLikertScorer or SelfAskGeneralFloatScaleScorer) and
-    feeds it the full conversation history before scoring.
+    This scorer wraps another scorer (FloatScaleScorer or TrueFalseScorer) and evaluates
+    the full conversation context. Useful for multi-turn conversations where context matters
+    (e.g., psychosocial harms that emerge over time).
 
-    Similar to LookBackScorer, but does not specifically look for behavior changes.
-    It combines the entire conversation and makes the text into one string
-    in order to score the conversation as a whole.
+    The ConversationScorer dynamically inherits from the same base class as the wrapped scorer,
+    ensuring proper type compatibility.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
@@ -31,19 +31,21 @@ class ConversationScorer(Scorer):
         enforce_all_pieces_valid=True,
     )
 
-    def __init__(
-        self,
-        *,
-        scorer: Scorer,
-        validator: Optional[ScorerPromptValidator] = None,
-    ):
+    def __init__(self, *, scorer: Scorer, validator: Optional[ScorerPromptValidator] = None):
         """
+        Initialize the ConversationScorer.
+
         Args:
-            scorer (Scorer): The underlying scorer to use for evaluation
-            validator (Optional[ScorerPromptValidator]): Optional validator. Defaults to base ScorerPromptValidator.
+            scorer (Scorer): The scorer to wrap for conversation-level evaluation.
+                Must be an instance of FloatScaleScorer or TrueFalseScorer.
+            validator (Optional[ScorerPromptValidator]): Optional validator override.
         """
-        super().__init__(validator=validator or self._default_validator)
-        self._scorer = scorer
+        super().__init__(validator=validator or scorer._validator or self._default_validator)
+        self._wrapped_scorer = scorer
+
+        # Preserve scorer type from the wrapped scorer if it exists
+        if hasattr(scorer, "scorer_type"):
+            self.scorer_type = scorer.scorer_type
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -111,7 +113,7 @@ class ConversationScorer(Scorer):
         # Score using the underlying scorer's _score_async method (not score_async)
         # This prevents double-insertion into the database since the parent's score_async
         # will handle adding scores to memory
-        scores = await self._scorer._score_async(message=conversation_message, objective=objective)
+        scores = await self._wrapped_scorer._score_async(message=conversation_message, objective=objective)
 
         return scores
 
@@ -126,4 +128,63 @@ class ConversationScorer(Scorer):
         Validates the scores returned by the wrapped scorer.
         Delegates to the underlying scorer's validation.
         """
-        self._scorer.validate_return_scores(scores=scores)
+        self._wrapped_scorer.validate_return_scores(scores=scores)
+
+
+def create_conversation_scorer(
+    *,
+    scorer: Scorer,
+    validator: Optional[ScorerPromptValidator] = None,
+) -> Scorer:
+    """
+    Factory method to create a ConversationScorer that inherits from the same type as the wrapped scorer.
+
+    This factory dynamically creates a ConversationScorer class that inherits from the wrapped scorer's
+    base class (FloatScaleScorer or TrueFalseScorer), ensuring the returned scorer is an instance
+    of both ConversationScorer and the wrapped scorer's type.
+
+    Args:
+        scorer (Scorer): The scorer to wrap for conversation-level evaluation.
+            Must be an instance of FloatScaleScorer or TrueFalseScorer.
+        validator (Optional[ScorerPromptValidator]): Optional validator override.
+            If not provided, uses the wrapped scorer's validator.
+
+    Returns:
+        Scorer: A ConversationScorer instance that is also an instance of the wrapped scorer's type.
+
+    Example:
+        >>> float_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=scale_path)
+        >>> conversation_scorer = create_conversation_scorer(scorer=float_scorer)
+        >>> isinstance(conversation_scorer, FloatScaleScorer)  # True
+        >>> isinstance(conversation_scorer, ConversationScorer)  # True
+    """
+    # Determine the base class of the wrapped scorer
+    scorer_base_class: Optional[Type[Scorer]] = None
+
+    if isinstance(scorer, FloatScaleScorer):
+        scorer_base_class = FloatScaleScorer
+    elif isinstance(scorer, TrueFalseScorer):
+        scorer_base_class = TrueFalseScorer
+    else:
+        raise ValueError(
+            f"Unsupported scorer type: {type(scorer).__name__}. "
+            f"Scorer must be an instance of FloatScaleScorer or TrueFalseScorer."
+        )
+
+    # Dynamically create a class that inherits from both ConversationScorer and the scorer's base class
+    class DynamicConversationScorer(ConversationScorer, scorer_base_class):  # type: ignore
+        """Dynamic ConversationScorer that inherits from both ConversationScorer and the wrapped scorer's base class."""
+
+        def __init__(self):
+            # Initialize ConversationScorer properly
+            ConversationScorer.__init__(self, scorer=scorer, validator=validator)
+
+            # For TrueFalseScorer, we need to handle score_aggregator
+            if isinstance(scorer, TrueFalseScorer):
+                from pyrit.score.true_false.true_false_score_aggregator import (
+                    TrueFalseScoreAggregator,
+                )
+
+                self._score_aggregator = getattr(scorer, "_score_aggregator", TrueFalseScoreAggregator.OR)
+
+    return DynamicConversationScorer()

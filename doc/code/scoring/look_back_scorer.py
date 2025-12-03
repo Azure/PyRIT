@@ -39,7 +39,7 @@ from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
-from pyrit.score.float_scale.conversation_scorer import ConversationScorer
+from pyrit.score.float_scale.conversation_scorer import create_conversation_scorer
 from pyrit.score.float_scale.self_ask_likert_scorer import SelfAskLikertScorer
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
@@ -107,7 +107,7 @@ result = await red_teaming_attack.execute_async(  # type: ignore
 
 await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
 
-# Retrieve the completed conversation and hand to ConversationScorer
+# Retrieve the completed conversation and hand to create_conversation_scorer
 memory = CentralMemory.get_memory_instance()
 conversation_history = memory.get_conversation(conversation_id=result.conversation_id)
 
@@ -117,8 +117,8 @@ behavior_change_scale_path = Path(SCORER_CONFIG_PATH, "likert_scales", "behavior
 # Create a FloatScaleScorer (SelfAskLikertScorer) to evaluate behavior changes
 behavior_scale_scorer = SelfAskLikertScorer(chat_target=adversarial_chat, likert_scale_path=behavior_change_scale_path)
 
-# Wrap the FloatScaleScorer with ConversationScorer to score the entire conversation
-conversation_scorer = ConversationScorer(scorer=behavior_scale_scorer)
+# Wrap the FloatScaleScorer with create_conversation_scorer to score the entire conversation
+conversation_scorer = create_conversation_scorer(scorer=behavior_scale_scorer)
 
 # Score requires a Message object with a single MessagePiece
 # The scorer will use the conversation_id to get the full conversation history from memory
