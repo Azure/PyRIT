@@ -3,7 +3,7 @@ harm_categories: mental_health_crisis
 source: Simulated and generated conversations from LLMs and public sources
 groups: AI Red Team
 description: These are sample conversations from users showing suicidal intent from various sources
-prompts:
+seeds:
   - dataset_name: Mental_Health_Crisis_Unsafe_Prompts
     harm_categories:
       - mental_health_crisis

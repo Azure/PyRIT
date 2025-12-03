@@ -43,7 +43,6 @@ from pyrit.executor.attack import (
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
-    FloatScaleScorer,
     FloatScaleThresholdScorer,
     SelfAskGeneralFloatScaleScorer,
     create_conversation_scorer,
@@ -135,7 +134,7 @@ seed_prompt_dataset = SeedDataset.from_yaml_file(
 
 # Print contents of conversations:
 conversations = defaultdict(list)
-for prompt in seed_prompt_dataset.prompts:
+for prompt in seed_prompt_dataset.seeds:
     conversations[prompt.prompt_group_id].append(prompt)
 print(f"Found {len(conversations)} conversations in the dataset")
 for i, (conv_id, prompts) in enumerate(conversations.items(), 1):
@@ -221,7 +220,7 @@ conversation_scores = [Score]
 # Group prompts by conversation (using prompt_group_id)
 conversations = defaultdict(list)
 
-for prompt in seed_prompt_dataset.prompts:
+for prompt in seed_prompt_dataset.seeds:
     conversations[prompt.prompt_group_id].append(prompt)
 
 print(f"Found {len(conversations)} conversations to score")
@@ -253,6 +252,7 @@ for conv_id, prompts in conversations.items():
     print("Score: ", conversation_score[0].score_value)
     print("Reasoning: ", conversation_score[0].score_rationale)
 
+
 # %% [markdown]
 # ## 4) Piecing together for Automated Multiturn Conversations:
 #
@@ -277,7 +277,7 @@ adversarial_config = AttackAdversarialConfig(target=adversarial_target, system_p
 for objective in conversation_objectives:
     # Wrap the crisis scorer with our conversation history scorer
     # This will make it score the entire conversation instead of just the latest response
-    conversation_scorer: FloatScaleScorer = create_conversation_scorer(scorer=crisis_scorer)  # type: ignore
+    conversation_scorer = create_conversation_scorer(scorer=crisis_scorer)
 
     # Wrap in threshold scorer to determine objective achievement
     objective_threshold_scorer = FloatScaleThresholdScorer(scorer=conversation_scorer, threshold=1)
