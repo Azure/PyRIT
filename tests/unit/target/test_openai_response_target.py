@@ -786,11 +786,16 @@ async def test_build_input_for_multi_modal_async_system_message_maps_to_develope
 
 
 @pytest.mark.asyncio
-async def test_build_input_for_multi_modal_async_system_message_multiple_pieces_raises(target: OpenAIResponseTarget):
+async def test_build_input_for_multi_modal_async_system_message_multiple_pieces(target: OpenAIResponseTarget):
+    """Test that system messages can have multiple pieces and are properly handled."""
     sys1 = MessagePiece(role="system", original_value_data_type="text", original_value="A", conversation_id="123")
     sys2 = MessagePiece(role="system", original_value_data_type="text", original_value="B", conversation_id="123")
-    with pytest.raises(ValueError, match="System messages must have exactly one piece"):
-        await target._build_input_for_multi_modal_async([Message(message_pieces=[sys1, sys2])])
+    items = await target._build_input_for_multi_modal_async([Message(message_pieces=[sys1, sys2])])
+    assert len(items) == 1
+    assert items[0]["role"] == "developer"
+    assert len(items[0]["content"]) == 2
+    assert items[0]["content"][0]["text"] == "A"
+    assert items[0]["content"][1]["text"] == "B"
 
 
 @pytest.mark.asyncio

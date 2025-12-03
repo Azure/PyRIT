@@ -245,16 +245,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     f"Failed to process conversation message at index {msg_idx}: Message contains no message pieces"
                 )
 
-            # System message -> single role message (remapped to developer later)
+            # System message (remapped to developer)
             if pieces[0].role == "system":
-                if len(pieces) != 1:
-                    raise ValueError("System messages must have exactly one piece.")
-                input_items.append(
-                    {
-                        "role": "system",
-                        "content": [{"type": "input_text", "text": pieces[0].converted_value}],
-                    }
-                )
+                system_content = []
+                for piece in pieces:
+                    system_content.append({"type": "input_text", "text": piece.converted_value})
+                input_items.append({"role": "developer", "content": system_content})
                 continue
 
             # All pieces in a Message share the same role
@@ -333,16 +329,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             if content:
                 input_items.append({"role": role, "content": content})
 
-        # Responses API maps system -> developer
-        self._translate_roles(conversation=input_items)
         return input_items
-
-    def _translate_roles(self, conversation: List[Dict[str, Any]]) -> None:
-        # The "system" role is mapped to "developer" in the OpenAI Response API.
-        for request in conversation:
-            if request.get("role") == "system":
-                request["role"] = "developer"
-        return
 
     async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
         """
