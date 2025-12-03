@@ -282,7 +282,7 @@ class TestPromptSending:
             ),
         )
 
-        prompt_group = SeedGroup(prompts=[SeedPrompt(value="test prompt", data_type="text")])
+        prompt_group = SeedGroup(seeds=[SeedPrompt(value="test prompt", data_type="text")])
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
         result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
@@ -296,7 +296,7 @@ class TestPromptSending:
 
         attack = MultiPromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
-        prompt_group = SeedGroup(prompts=[SeedPrompt(value="test prompt", data_type="text")])
+        prompt_group = SeedGroup(seeds=[SeedPrompt(value="test prompt", data_type="text")])
 
         result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
 

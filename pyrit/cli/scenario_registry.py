@@ -87,27 +87,44 @@ class ScenarioRegistry:
             else:
                 package_path = Path(package_file).parent
 
-            # Iterate through all Python files in the scenarios directory
-            for _, module_name, _ in pkgutil.iter_modules([str(package_path)]):
-                if module_name.startswith("_"):
-                    continue
+            # Iterate through all Python files in the scenarios directory and subdirectories
+            def discover_modules(base_path: Path, base_module: str) -> None:
+                """Recursively discover modules in the scenarios package and subdirectories."""
+                for _, module_name, is_pkg in pkgutil.iter_modules([str(base_path)]):
+                    if module_name.startswith("_"):
+                        continue
 
-                try:
-                    # Import the module
-                    full_module_name = f"pyrit.scenario.scenarios.{module_name}"
-                    module = importlib.import_module(full_module_name)
+                    # Build the full module name correctly
+                    if base_module:
+                        full_module_name = f"{base_module}.{module_name}"
+                    else:
+                        full_module_name = f"pyrit.scenario.scenarios.{module_name}"
 
-                    # Find all Scenario subclasses in the module
-                    for name, obj in inspect.getmembers(module, inspect.isclass):
-                        # Check if it's a Scenario subclass (but not Scenario itself)
-                        if issubclass(obj, Scenario) and obj is not Scenario:
-                            # Use the module name as the scenario identifier
-                            scenario_name = module_name
-                            self._scenarios[scenario_name] = obj
-                            logger.debug(f"Registered built-in scenario: {scenario_name} ({obj.__name__})")
+                    try:
+                        # Import the module
+                        module = importlib.import_module(full_module_name)
 
-                except Exception as e:
-                    logger.warning(f"Failed to load scenario module {module_name}: {e}")
+                        # Only register scenarios if this is a file (not a package)
+                        if not is_pkg:
+                            # Find all Scenario subclasses in the module
+                            for name, obj in inspect.getmembers(module, inspect.isclass):
+                                # Check if it's a Scenario subclass (but not Scenario itself)
+                                if issubclass(obj, Scenario) and obj is not Scenario:
+                                    # Use the module name as the scenario identifier
+                                    scenario_name = module_name
+                                    self._scenarios[scenario_name] = obj
+                                    logger.debug(f"Registered built-in scenario: {scenario_name} ({obj.__name__})")
+
+                        # If it's a package, recursively discover its submodules
+                        if is_pkg:
+                            subpackage_path = base_path / module_name
+                            discover_modules(subpackage_path, full_module_name)
+
+                    except Exception as e:
+                        logger.warning(f"Failed to load scenario module {full_module_name}: {e}")
+
+            # Start discovery from the scenarios package root
+            discover_modules(package_path, "")
 
         except Exception as e:
             logger.error(f"Failed to discover built-in scenarios: {e}")

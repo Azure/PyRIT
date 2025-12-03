@@ -281,7 +281,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         if context.seed_group:
             return context.seed_group
 
-        return SeedGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
+        return SeedGroup(seeds=[SeedPrompt(value=context.objective, data_type="text")])
 
     async def _send_prompt_to_objective_target_async(
         self, *, prompt_group: SeedGroup, context: SingleTurnAttackContext

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -110,7 +110,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
     # Default system prompt template path for Crescendo attack
     DEFAULT_ADVERSARIAL_CHAT_SYSTEM_PROMPT_TEMPLATE_PATH: Path = (
-        Path(DATASETS_PATH) / "executors" / "crescendo" / "crescendo_variant_1.yaml"
+        Path(EXECUTOR_SEED_PROMPT_PATH) / "crescendo" / "crescendo_variant_1.yaml"
     )
 
     @apply_defaults
@@ -497,7 +497,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Set JSON format in metadata
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
 
         response = await self._prompt_normalizer.send_prompt_async(
             seed_group=seed_group,
@@ -569,7 +569,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Raises:
             ValueError: If no response is received from the objective target.
         """
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=attack_prompt, data_type="text")])
         objective_target_type = self._objective_target.get_identifier()["__type__"]
 
         # Send the generated prompt to the objective target

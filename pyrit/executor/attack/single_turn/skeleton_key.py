@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
@@ -44,7 +44,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
     """
 
     # Default skeleton key prompt path
-    DEFAULT_SKELETON_KEY_PROMPT_PATH: Path = Path(DATASETS_PATH) / "executors" / "skeleton_key" / "skeleton_key.prompt"
+    DEFAULT_SKELETON_KEY_PROMPT_PATH: Path = Path(EXECUTOR_SEED_PROMPT_PATH) / "skeleton_key" / "skeleton_key.prompt"
 
     @apply_defaults
     def __init__(
@@ -164,7 +164,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
         self._logger.debug("Sending skeleton key prompt to target")
 
         # Create seed group for skeleton key
-        skeleton_key_prompt_group = SeedGroup(prompts=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")])
+        skeleton_key_prompt_group = SeedGroup(seeds=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")])
 
         # Send skeleton key prompt
         skeleton_response = await self._send_prompt_to_objective_target_async(

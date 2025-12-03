@@ -36,5 +36,5 @@ def fetch_tdc23_redteaming_dataset() -> SeedDataset:
         for prompt in prompts
     ]
 
-    seed_dataset = SeedDataset(prompts=seed_prompts)
+    seed_dataset = SeedDataset(seeds=seed_prompts)
     return seed_dataset

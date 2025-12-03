@@ -151,23 +151,31 @@ async def test_get_seeds_with_metadata_filter(azuresql_instance: AzureSQLMemory)
     Verifies that metadata filtering works correctly with both string and integer values,
     and that multiple metadata keys can be combined (AND logic).
     """
+    # Use unique values to avoid deduplication with previous test runs
+    test_id = str(uuid4())
     value1 = str(uuid4())
-    # Integers should work properly as values in the metadata dict
     value2 = np.random.randint(0, 10000)
 
-    sp1 = SeedPrompt(value="sp1", data_type="text", metadata={"key1": value1}, added_by="test")
-    sp2 = SeedPrompt(value="sp2", data_type="text", metadata={"key1": value2, "key2": value1}, added_by="test")
+    # Use unique seed values to avoid deduplication
+    sp1 = SeedPrompt(value=f"sp1-{test_id}", data_type="text", metadata={"key1": value1}, added_by=test_id)
+    sp2 = SeedPrompt(
+        value=f"sp2-{test_id}", data_type="text", metadata={"key1": value2, "key2": value1}, added_by=test_id
+    )
 
     # Use public async API method
-    await azuresql_instance.add_seeds_to_memory_async(prompts=[sp1, sp2])
+    await azuresql_instance.add_seeds_to_memory_async(seeds=[sp1, sp2])
 
-    # Test single metadata filter
-    result = azuresql_instance.get_seeds(metadata={"key1": value1})
-    assert len(result) == 1
+    # Verify seeds were inserted
+    inserted_seeds = azuresql_instance.get_seeds(added_by=test_id)
+    assert len(inserted_seeds) == 2, f"Expected 2 seeds with added_by='{test_id}', got {len(inserted_seeds)}"
+
+    # Test single metadata filter (combining with added_by to avoid old test data)
+    result = azuresql_instance.get_seeds(metadata={"key1": value1}, added_by=test_id)
+    assert len(result) == 1, f"Expected 1 seed with metadata {{'key1': '{value1}'}}, got {len(result)}"
     assert result[0].metadata == {"key1": value1}
 
     # Test multiple metadata filters (ALL must be present)
-    result2 = azuresql_instance.get_seeds(metadata={"key1": value2, "key2": value1})
+    result2 = azuresql_instance.get_seeds(metadata={"key1": value2, "key2": value1}, added_by=test_id)
     assert len(result2) == 1
     assert result2[0].metadata == {"key1": value2, "key2": value1}
 
@@ -183,9 +191,9 @@ async def test_get_seeds_with_metadata_filter(azuresql_instance: AzureSQLMemory)
             session.rollback()
             print(f"Cleanup failed: {e}")
 
-    # Ensure that entries are removed
-    assert azuresql_instance.get_seeds(metadata={"key1": value1}) == []
-    assert azuresql_instance.get_seeds(metadata={"key2": value1}) == []
+    # Ensure that entries are removed (filter by added_by to check only our test data)
+    assert azuresql_instance.get_seeds(metadata={"key1": value1}, added_by=test_id) == []
+    assert azuresql_instance.get_seeds(metadata={"key2": value1}, added_by=test_id) == []
 
 
 @pytest.mark.asyncio

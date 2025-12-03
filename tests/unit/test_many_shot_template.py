@@ -1,18 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pathlib import Path
-
 import pytest
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
 from pyrit.models import SeedPrompt
 
 
 @pytest.fixture(scope="module")
 def many_shot_template():
     # Load the template from the YAML file
-    template_path = Path(DATASETS_PATH) / "jailbreak" / "multi_parameter" / "many_shot_template.yaml"
+    template_path = JAILBREAK_TEMPLATES_PATH / "multi_parameter" / "many_shot_template.yaml"
     return SeedPrompt.from_yaml_file(template_path)
 
 

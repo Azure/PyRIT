@@ -193,7 +193,7 @@ def fetch_sorry_bench_dataset(
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from Sorry-Bench dataset")
 
-        return SeedDataset(prompts=seed_prompts)
+        return SeedDataset(seeds=seed_prompts)
 
     except ValueError:
         raise
