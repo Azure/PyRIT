@@ -20,9 +20,11 @@ from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
 class ScenarioObjectiveTargetInitializer(PyRITInitializer):
+    """Configure a simple objective target for use in PyRIT scenarios."""
 
     @property
     def name(self) -> str:
+        """Return the display name of this initializer."""
         return "Simple Objective Target Configuration for Scenarios"
 
     @property
@@ -32,6 +34,7 @@ class ScenarioObjectiveTargetInitializer(PyRITInitializer):
 
     @property
     def description(self) -> str:
+        """Describe the objective target configuration of this initializer."""
         return (
             "This configuration sets up a simple objective target for scenarios "
             "using OpenAIChatTarget with basic settings. It initializes an openAI chat target "
@@ -47,7 +50,7 @@ class ScenarioObjectiveTargetInitializer(PyRITInitializer):
         ]
 
     def initialize(self) -> None:
-
+        """Set default objective target for scenarios that accept them."""
         objective_target = OpenAIChatTarget(
             endpoint=os.getenv("DEFAULT_OPENAI_FRONTEND_ENDPOINT"),
             api_key=os.getenv("DEFAULT_OPENAI_FRONTEND_KEY"),

@@ -51,7 +51,7 @@
 # %%
 import pathlib
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.executor.workflow import XPIATestWorkflow
 from pyrit.models import SeedGroup, SeedPrompt
@@ -63,7 +63,7 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Define PDF Path
-cv_pdf_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "Jonathon_Sanchez.pdf"
+cv_pdf_path = pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "pdf_converters" / "Jonathon_Sanchez.pdf"
 
 # Expected best candidate name
 expected_best_candidate = f"Best Candidate: {cv_pdf_path.stem}"

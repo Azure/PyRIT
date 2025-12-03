@@ -31,7 +31,7 @@ from pyrit.datasets.tdc23_redteaming_dataset import fetch_tdc23_redteaming_datas
 from pyrit.datasets.wmdp_dataset import fetch_wmdp_dataset
 from pyrit.datasets.xstest_dataset import fetch_xstest_dataset
 from pyrit.datasets.equitymedqa_dataset import fetch_equitymedqa_dataset_unique_values
-from pyrit.datasets.text_jailbreak import TextJailBreak
+from pyrit.datasets.jailbreak.text_jailbreak import TextJailBreak
 from pyrit.datasets.transphobia_awareness_dataset import fetch_transphobia_awareness_dataset
 from pyrit.datasets.ccp_sensitive_prompts_dataset import fetch_ccp_sensitive_prompts_dataset
 from pyrit.datasets.fetch_jbb_behaviors import (

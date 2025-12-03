@@ -120,7 +120,7 @@ class AIRTInitializer(PyRITInitializer):
         self._setup_adversarial_targets(converter_endpoint, converter_api_key)
 
     def _setup_converter_target(self, endpoint: str, api_key: str) -> None:
-        """Setup default converter target configuration."""
+        """Set up the default converter target configuration."""
         default_converter_target = OpenAIChatTarget(
             endpoint=endpoint,
             api_key=api_key,
@@ -135,7 +135,7 @@ class AIRTInitializer(PyRITInitializer):
         )
 
     def _setup_scorers(self, endpoint: str, api_key: str) -> None:
-        """Setup composite harm and objective scorers."""
+        """Set up the composite harm and objective scorers."""
         scorer_target = OpenAIChatTarget(
             endpoint=endpoint,
             api_key=api_key,
@@ -195,7 +195,7 @@ class AIRTInitializer(PyRITInitializer):
             )
 
     def _setup_adversarial_targets(self, endpoint: str, api_key: str) -> None:
-        """Setup adversarial target configurations for attacks."""
+        """Set up the adversarial target configurations for attacks."""
         adversarial_config = AttackAdversarialConfig(
             target=OpenAIChatTarget(
                 endpoint=endpoint,
