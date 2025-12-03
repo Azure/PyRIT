@@ -7,7 +7,14 @@ from unittest.mock import patch
 
 import pytest
 
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.prompt_target import (
+    OpenAIChatTarget,
+    OpenAICompletionTarget,
+    OpenAIImageTarget,
+    OpenAIResponseTarget,
+    OpenAITTSTarget,
+    OpenAIVideoTarget,
+)
 
 
 @pytest.fixture
@@ -50,88 +57,145 @@ class TestOldAzureURLConversion:
         assert expected_new_url in conversion_warnings[0].message
         assert "deprecated in a future release" in conversion_warnings[0].message
 
-    def test_old_azure_completions_url_converted(self, caplog, patch_central_database):
-        """Test old Azure completions URL is converted."""
+    @pytest.mark.parametrize("explicit_model_name", [True, False])
+    def test_old_azure_completions_url_converted(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure completions URL is converted, with or without explicit model_name."""
         old_url = "https://test.openai.azure.com/openai/deployments/text-davinci-003/completions?api-version=2024-02-15"
 
         with patch.dict(os.environ, {}, clear=True):
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAICompletionTarget
 
-                target = OpenAICompletionTarget(
-                    model_name="text-davinci-003",
-                    endpoint=old_url,
-                    api_key="test-key",
-                )
+                kwargs = {
+                    "endpoint": old_url,
+                    "api_key": "test-key",
+                }
+                if explicit_model_name:
+                    kwargs["model_name"] = "text-davinci-003"
+
+                target = OpenAICompletionTarget(**kwargs)
 
         # Check that URL was converted
         assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        
+        # Model name should be text-davinci-003 either way
+        assert target._model_name == "text-davinci-003"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
         assert len(conversion_warnings) == 1
 
-    def test_old_azure_images_url_converted(self, caplog, patch_central_database):
-        """Test old Azure images URL is converted."""
+    @pytest.mark.parametrize("explicit_model_name", [True, False])
+    def test_old_azure_images_url_converted(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure images URL is converted, with or without explicit model_name."""
         old_url = "https://test.openai.azure.com/openai/deployments/dall-e-3/images/generations?api-version=2024-02-15"
 
         with patch.dict(os.environ, {}, clear=True):
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAIImageTarget
 
-                target = OpenAIImageTarget(
-                    model_name="dall-e-3",
-                    endpoint=old_url,
-                    api_key="test-key",
-                )
+                kwargs = {
+                    "endpoint": old_url,
+                    "api_key": "test-key",
+                }
+                if explicit_model_name:
+                    kwargs["model_name"] = "dall-e-3"
+
+                target = OpenAIImageTarget(**kwargs)
 
         # Check that URL was converted
         assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        
+        # Model name should be dall-e-3 either way
+        assert target._model_name == "dall-e-3"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
         assert len(conversion_warnings) == 1
 
-    def test_old_azure_audio_url_converted(self, caplog, patch_central_database):
-        """Test old Azure audio/speech URL is converted."""
-        old_url = "https://test.openai.azure.com/openai/deployments/tts/audio/speech?api-version=2024-02-15"
+    @pytest.mark.parametrize("explicit_model_name", [True, False])
+    def test_old_azure_audio_url_converted(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure audio/speech URL is converted, with or without explicit model_name."""
+        old_url = "https://test.openai.azure.com/openai/deployments/tts-1/audio/speech?api-version=2024-02-15"
 
         with patch.dict(os.environ, {}, clear=True):
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAITTSTarget
 
-                target = OpenAITTSTarget(
-                    model_name="tts-1",
-                    endpoint=old_url,
-                    api_key="test-key",
-                )
+                kwargs = {
+                    "endpoint": old_url,
+                    "api_key": "test-key",
+                }
+                if explicit_model_name:
+                    kwargs["model_name"] = "tts-1"
+
+                target = OpenAITTSTarget(**kwargs)
 
         # Check that URL was converted
         assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        
+        # Model name should be tts-1 either way
+        assert target._model_name == "tts-1"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
         assert len(conversion_warnings) == 1
 
-    def test_old_azure_responses_url_converted(self, caplog, patch_central_database):
-        """Test old Azure responses URL is converted."""
+    @pytest.mark.parametrize("explicit_model_name", [True, False])
+    def test_old_azure_responses_url_converted(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure responses URL is converted, with or without explicit model_name."""
         old_url = "https://test.openai.azure.com/openai/deployments/o1-preview/responses?api-version=2024-09-01"
 
         with patch.dict(os.environ, {}, clear=True):
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAIResponseTarget
 
-                target = OpenAIResponseTarget(
-                    model_name="o1-preview",
-                    endpoint=old_url,
-                    api_key="test-key",
-                )
+                kwargs = {
+                    "endpoint": old_url,
+                    "api_key": "test-key",
+                }
+                if explicit_model_name:
+                    kwargs["model_name"] = "o1-preview"
+
+                target = OpenAIResponseTarget(**kwargs)
 
         # Check that URL was converted
         assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        
+        # Model name should be o1-preview either way
+        assert target._model_name == "o1-preview"
+
+        # Check warning
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
+        assert len(conversion_warnings) == 1
+
+    @pytest.mark.parametrize("explicit_model_name", [True, False])
+    def test_old_azure_videos_url_converted(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure videos URL is converted, with or without explicit model_name."""
+        old_url = "https://test.openai.azure.com/openai/deployments/sora-2/videos?api-version=2024-12-01"
+
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                from pyrit.prompt_target import OpenAIVideoTarget
+
+                kwargs = {
+                    "endpoint": old_url,
+                    "api_key": "test-key",
+                }
+                if explicit_model_name:
+                    kwargs["model_name"] = "sora-2"
+
+                target = OpenAIVideoTarget(**kwargs)
+
+        # Check that URL was converted
+        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        
+        # Model name should be sora-2 either way (explicitly set or extracted from URL)
+        assert target._model_name == "sora-2"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
@@ -158,23 +222,7 @@ class TestOldAzureURLConversion:
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
         assert len(conversion_warnings) == 1
 
-    def test_old_azure_url_extracts_deployment_as_model_name(self, patch_central_database):
-        """Test deployment name is extracted from old URL when model_name not provided."""
-        old_url = (
-            "https://test.openai.azure.com/openai/deployments/"
-            "my-gpt-4-deployment/chat/completions?api-version=2024-02-15"
-        )
-
-        with patch.dict(os.environ, {}, clear=True):
-            target = OpenAIChatTarget(
-                endpoint=old_url,
-                api_key="test-key",
-            )
-
-        # Model name should be extracted from URL
-        assert target._model_name == "my-gpt-4-deployment"
-
-    def test_new_azure_url_not_converted_no_warning(self, caplog, patch_central_database):
+    def test_old_azure_url_without_api_version_converted(self, caplog, patch_central_database):
         """Test new Azure URL format is not converted and no warning is logged."""
         new_url = "https://test.openai.azure.com/openai/v1"
 
@@ -194,8 +242,8 @@ class TestOldAzureURLConversion:
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
         assert len(conversion_warnings) == 0
 
-    def test_platform_openai_url_not_converted(self, caplog, patch_central_database):
-        """Test platform OpenAI URL is not converted."""
+    def test_platform_openai_chat_url_not_converted(self, caplog, patch_central_database):
+        """Test platform OpenAI chat URL is not converted (only path stripped)."""
         platform_url = "https://api.openai.com/v1/chat/completions"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -211,6 +259,101 @@ class TestOldAzureURLConversion:
         assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
 
         # No conversion warning
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
+        assert len(conversion_warnings) == 0
+
+    def test_platform_openai_completion_url_not_converted(self, caplog, patch_central_database):
+        """Test platform OpenAI completion URL is not converted (only path stripped)."""
+        platform_url = "https://api.openai.com/v1/completions"
+
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                target = OpenAICompletionTarget(
+                    model_name="davinci-002",
+                    endpoint=platform_url,
+                    api_key="test-key",
+                )
+
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
+        assert len(conversion_warnings) == 0
+
+    def test_platform_openai_response_url_not_converted(self, caplog, patch_central_database):
+        """Test platform OpenAI response URL is not converted (only path stripped)."""
+        platform_url = "https://api.openai.com/v1/responses"
+
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                target = OpenAIResponseTarget(
+                    model_name="gpt-4.1",
+                    endpoint=platform_url,
+                    api_key="test-key",
+                )
+
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
+        assert len(conversion_warnings) == 0
+
+    def test_platform_openai_image_url_not_converted(self, caplog, patch_central_database):
+        """Test platform OpenAI image URL is not converted (only path stripped)."""
+        platform_url = "https://api.openai.com/v1/images/generations"
+
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                target = OpenAIImageTarget(
+                    model_name="dall-e-3",
+                    endpoint=platform_url,
+                    api_key="test-key",
+                )
+
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
+        assert len(conversion_warnings) == 0
+
+    def test_platform_openai_tts_url_not_converted(self, caplog, patch_central_database):
+        """Test platform OpenAI TTS URL is not converted (only path stripped)."""
+        platform_url = "https://api.openai.com/v1/audio/speech"
+
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                target = OpenAITTSTarget(
+                    model_name="tts-1",
+                    endpoint=platform_url,
+                    api_key="test-key",
+                )
+
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
+        assert len(conversion_warnings) == 0
+
+    def test_platform_openai_video_url_not_converted(self, caplog, patch_central_database):
+        """Test platform OpenAI video URL is not converted (only path stripped)."""
+        platform_url = "https://api.openai.com/v1/videos"
+
+        with patch.dict(os.environ, {}, clear=True):
+            with caplog.at_level(logging.WARNING):
+                target = OpenAIVideoTarget(
+                    model_name="sora-2",
+                    endpoint=platform_url,
+                    api_key="test-key",
+                )
+
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
         assert len(conversion_warnings) == 0

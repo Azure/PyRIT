@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 import logging
 from typing import Any, Dict, Literal
+from urllib.parse import urlparse
 
 from pyrit.exceptions import (
     EmptyResponseException,
@@ -82,7 +83,24 @@ class OpenAIImageTarget(OpenAITarget):
 
         super().__init__(*args, **kwargs)
 
-        # Accept base URLs (/v1), specific API paths (/images/generations), Azure formats
+    def _set_openai_env_configuration_vars(self):
+        self.model_name_environment_variable = "OPENAI_IMAGE_MODEL"
+        self.endpoint_environment_variable = "OPENAI_IMAGE_ENDPOINT"
+        self.api_key_environment_variable = "OPENAI_IMAGE_API_KEY"
+
+    def _normalize_url_for_target(self, base_url: str) -> str:
+        """
+        Normalize and validate the URL for image generation.
+
+        Strips /images/generations if present (for all endpoints, since the SDK constructs the path).
+
+        Args:
+            base_url: The endpoint URL to normalize.
+
+        Returns:
+            The normalized URL.
+        """
+        # Validate URL format first, before any modifications
         image_url_patterns = [
             r"/v1$",
             r"/images/generations",
@@ -92,10 +110,11 @@ class OpenAIImageTarget(OpenAITarget):
         ]
         self._warn_if_irregular_endpoint(image_url_patterns)
 
-    def _set_openai_env_configuration_vars(self):
-        self.model_name_environment_variable = "OPENAI_IMAGE_MODEL"
-        self.endpoint_environment_variable = "OPENAI_IMAGE_ENDPOINT"
-        self.api_key_environment_variable = "OPENAI_IMAGE_API_KEY"
+        # Strip images/generations path if present (SDK will add it back)
+        if base_url.endswith("/images/generations"):
+            base_url = base_url[: -len("/images/generations")]
+
+        return base_url
 
     @limit_requests_per_minute
     @pyrit_target_retry

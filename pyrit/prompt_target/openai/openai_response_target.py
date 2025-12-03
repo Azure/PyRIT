@@ -13,6 +13,7 @@ from typing import (
     MutableSequence,
     Optional,
 )
+from urllib.parse import urlparse
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -31,6 +32,7 @@ from pyrit.prompt_target import (
     PromptChatTarget,
     limit_requests_per_minute,
 )
+from pyrit.prompt_target.openai.openai_error_handling import _is_content_filter_error
 
 logger = logging.getLogger(__name__)
 
@@ -130,17 +132,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self._top_p = top_p
         self._max_output_tokens = max_output_tokens
 
-        # Accept both old Azure format (/responses) and new format (/openai/v1)
-        # Accept base URLs (/v1), specific API paths (/responses), Azure formats
-        response_url_patterns = [
-            r"/v1$",
-            r"/responses",
-            r"/deployments/[^/]+/",
-            r"openai/v1",
-            r"\.models\.ai\.azure\.com",
-        ]
-        self._warn_if_irregular_endpoint(response_url_patterns)
-
         # Reasoning parameters are not yet supported by PyRIT.
         # See https://platform.openai.com/docs/api-reference/responses/create#responses-create-reasoning
         # for more information.
@@ -165,10 +156,38 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     logger.debug("Detected grammar tool: %s", tool_name)
                     self._grammar_name = tool_name
 
-    def _set_openai_env_configuration_vars(self) -> None:
+    def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
         self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_RESPONSES_KEY"
+
+    def _normalize_url_for_target(self, base_url: str) -> str:
+        """
+        Normalize and validate the URL for responses.
+
+        Strips /responses if present (for all endpoints, since the SDK constructs the path).
+
+        Args:
+            base_url: The endpoint URL to normalize.
+
+        Returns:
+            The normalized URL.
+        """
+        # Validate URL format first, before any modifications
+        response_url_patterns = [
+            r"/v1$",
+            r"/responses",
+            r"/deployments/[^/]+/",
+            r"openai/v1",
+            r"\.models\.ai\.azure\.com",
+        ]
+        self._warn_if_irregular_endpoint(response_url_patterns)
+
+        # Strip responses path if present (SDK will add it back)
+        if base_url.endswith("/responses"):
+            base_url = base_url[: -len("/responses")]
+
+        return base_url
         return
 
     # Helpers kept on the class for reuse + testability
@@ -385,11 +404,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         Returns:
             True if content was filtered, False otherwise.
         """
-        try:
-            if hasattr(response, "error") and response.error is not None:
-                return response.error.code == "content_filter"
-        except (AttributeError, TypeError):
-            pass
+        if hasattr(response, "error") and response.error is not None:
+            # Convert response to dict and use common filter detection
+            response_dict = response.model_dump()
+            return _is_content_filter_error(response_dict)
         return False
 
     def _validate_response(self, response: Any, request: MessagePiece) -> Optional[Message]:

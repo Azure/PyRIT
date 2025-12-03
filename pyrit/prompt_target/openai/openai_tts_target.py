@@ -3,6 +3,7 @@
 
 import logging
 from typing import Any, Literal, Optional
+from urllib.parse import urlparse
 
 from pyrit.exceptions import (
     pyrit_target_retry,
@@ -61,16 +62,6 @@ class OpenAITTSTarget(OpenAITarget):
         if not self._model_name:
             self._model_name = "tts-1"
 
-        # Accept base URLs (/v1), specific API paths (/audio/speech), Azure formats
-        tts_url_patterns = [
-            r"/v1$",
-            r"/audio/speech",
-            r"/deployments/[^/]+/",
-            r"openai/v1",
-            r"\.models\.ai\.azure\.com",
-        ]
-        self._warn_if_irregular_endpoint(tts_url_patterns)
-
         self._voice = voice
         self._response_format = response_format
         self._language = language
@@ -80,6 +71,34 @@ class OpenAITTSTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_TTS_MODEL"
         self.endpoint_environment_variable = "OPENAI_TTS_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_TTS_KEY"
+
+    def _normalize_url_for_target(self, base_url: str) -> str:
+        """
+        Normalize and validate the URL for TTS (audio/speech).
+
+        Strips /audio/speech if present (for all endpoints, since the SDK constructs the path).
+
+        Args:
+            base_url: The endpoint URL to normalize.
+
+        Returns:
+            The normalized URL.
+        """
+        # Validate URL format first, before any modifications
+        tts_url_patterns = [
+            r"/v1$",
+            r"/audio/speech",
+            r"/deployments/[^/]+/",
+            r"openai/v1",
+            r"\.models\.ai\.azure\.com",
+        ]
+        self._warn_if_irregular_endpoint(tts_url_patterns)
+
+        # Strip audio/speech path if present (SDK will add it back)
+        if base_url.endswith("/audio/speech"):
+            base_url = base_url[: -len("/audio/speech")]
+
+        return base_url
 
     @limit_requests_per_minute
     @pyrit_target_retry

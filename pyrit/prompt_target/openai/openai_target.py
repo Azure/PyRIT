@@ -224,6 +224,58 @@ class OpenAITarget(PromptChatTarget):
 
         return new_url
 
+    @abstractmethod
+    def _normalize_url_for_target(self, base_url: str) -> str:
+        """
+        Normalize and validate the URL for this specific target.
+
+        Each target implements its own URL normalization logic:
+        - Stripping target-specific API paths (e.g., /chat/completions, /responses)
+        - Validating the URL format and logging warnings if irregular
+
+        Note: Azure path structure (/openai/v1 or /v1) is automatically ensured by the
+        base class after this method returns. Child classes should NOT call
+        _ensure_azure_openai_path_structure() themselves.
+
+        Args:
+            base_url: The endpoint URL to normalize.
+
+        Returns:
+            The normalized URL with API-specific paths stripped.
+        """
+        pass
+
+    def _ensure_azure_openai_path_structure(self, base_url: str) -> str:
+        """
+        Ensure Azure OpenAI URLs have the proper path structure.
+
+        Azure OpenAI endpoints should end with /openai/v1
+        Azure Foundry endpoints should end with /v1
+
+        Args:
+            base_url: The Azure endpoint URL.
+
+        Returns:
+            The URL with proper Azure path structure.
+        """
+        if ".openai.azure.com" in base_url:
+            parsed = urlparse(base_url)
+            if not parsed.path.endswith("/openai/v1") and not parsed.path.startswith("/openai/v1"):
+                if not parsed.path or parsed.path == "/":
+                    base_url = base_url.rstrip("/") + "/openai/v1"
+                elif parsed.path == "/openai":
+                    base_url = base_url.rstrip("/") + "/v1"
+                elif not base_url.endswith("/openai/v1"):
+                    base_url = base_url.rstrip("/")
+                    if not base_url.endswith("/openai"):
+                        base_url += "/openai"
+                    base_url += "/v1"
+        elif ".models.ai.azure.com" in base_url:
+            if not base_url.endswith("/v1"):
+                base_url = base_url.rstrip("/") + "/v1"
+
+        return base_url
+
     def _initialize_openai_client(self) -> None:
         """
         Initialize the OpenAI client using AsyncOpenAI.
@@ -262,52 +314,14 @@ class OpenAITarget(PromptChatTarget):
         # The SDK expects base_url to be the base (e.g., https://api.openai.com/v1)
         # For Azure format: https://{resource}.openai.azure.com/openai/v1
         # For Azure Foundry: https://{resource}.models.ai.azure.com/v1
-        # If the endpoint includes API-specific paths, we need to strip them because the SDK
-        # will automatically append the correct path for each API call
         base_url = self._endpoint
 
-        # Strip API-specific paths
-        if base_url.endswith("/chat/completions"):
-            base_url = base_url[: -len("/chat/completions")]
-        elif base_url.endswith("/completions"):
-            base_url = base_url[: -len("/completions")]
-        elif base_url.endswith("/responses"):
-            base_url = base_url[: -len("/responses")]
-        elif base_url.endswith("/images/generations"):
-            base_url = base_url[: -len("/images/generations")]
-        elif base_url.endswith("/audio/speech"):
-            base_url = base_url[: -len("/audio/speech")]
-        elif base_url.endswith("/v1/videos") or base_url.endswith("/videos"):
-            # Strip videos path for video API
-            if base_url.endswith("/v1/videos"):
-                base_url = base_url[: -len("/videos")]  # Keep /v1
-            else:
-                base_url = base_url[: -len("/videos")]
-
-        # For Azure OpenAI endpoints, ensure they have the proper path structure
-        # Azure endpoints should end with /openai/v1
-        if is_azure and ".openai.azure.com" in base_url:
-            parsed = urlparse(base_url)
-            # If it doesn't have /openai/v1, add it
-            if not parsed.path.endswith("/openai/v1") and not parsed.path.startswith("/openai/v1"):
-                # If it has no path or just /, add /openai/v1
-                if not parsed.path or parsed.path == "/":
-                    base_url = base_url.rstrip("/") + "/openai/v1"
-                # If it has /openai but not /v1, add /v1
-                elif parsed.path == "/openai":
-                    base_url = base_url.rstrip("/") + "/v1"
-                # Otherwise ensure it ends with /openai/v1
-                elif not base_url.endswith("/openai/v1"):
-                    # Strip any trailing slash and ensure proper ending
-                    base_url = base_url.rstrip("/")
-                    if not base_url.endswith("/openai"):
-                        base_url += "/openai"
-                    base_url += "/v1"
-
-        # For Azure Foundry endpoints (*.models.ai.azure.com), ensure they end with /v1
-        parsed = urlparse(base_url)
-        if ".models.ai.azure.com" in parsed.netloc and not base_url.endswith("/v1"):
-            base_url = base_url.rstrip("/") + "/v1"
+        # Let each target normalize URLs (strips API-specific paths)
+        base_url = self._normalize_url_for_target(base_url)
+        
+        # Ensure Azure endpoints have proper path structure
+        if is_azure:
+            base_url = self._ensure_azure_openai_path_structure(base_url)
 
         # For Azure with Entra auth, pass token provider as api_key
         api_key_value: Any = self._api_key

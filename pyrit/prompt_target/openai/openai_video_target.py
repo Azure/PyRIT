@@ -3,7 +3,11 @@
 
 import logging
 from typing import Any
+from urllib.parse import urlparse
 
+from pyrit.exceptions import (
+    pyrit_target_retry,
+)
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -11,6 +15,7 @@ from pyrit.models import (
     data_serializer_factory,
 )
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
+from pyrit.prompt_target.openai.openai_error_handling import _is_content_filter_error
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +69,6 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         super().__init__(**kwargs)
 
-        # Accept base URLs (/v1), specific API paths (/videos, /v1/videos), Azure formats
-        # Note: Only video v2 API is supported (uses SDK's videos.create_and_poll)
-        video_url_patterns = [r"/v1$", r"/videos", r"/v1/videos", r"openai/v1", r"\.models\.ai\.azure\.com"]
-        self._warn_if_irregular_endpoint(video_url_patterns)
-
         self._n_seconds = n_seconds
         self._validate_duration()
         self._size = self._validate_resolution(resolution_dimensions=resolution_dimensions)
@@ -78,6 +78,30 @@ class OpenAIVideoTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_VIDEO_MODEL"
         self.endpoint_environment_variable = "OPENAI_VIDEO_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_VIDEO_KEY"
+
+    def _normalize_url_for_target(self, base_url: str) -> str:
+        """
+        Normalize and validate the URL for video generation.
+
+        Strips /videos or /v1/videos if present (for all endpoints, since the SDK constructs the path).
+
+        Args:
+            base_url: The endpoint URL to normalize.
+
+        Returns:
+            The normalized URL.
+        """
+        # Validate URL format first, before any modifications
+        video_url_patterns = [r"/v1$", r"/videos", r"/v1/videos", r"openai/v1", r"\.models\.ai\.azure\.com"]
+        self._warn_if_irregular_endpoint(video_url_patterns)
+
+        # Strip videos path if present (SDK will add it back)
+        if base_url.endswith("/v1/videos"):
+            base_url = base_url[: -len("/videos")]  # Keep /v1
+        elif base_url.endswith("/videos"):
+            base_url = base_url[: -len("/videos")]
+
+        return base_url
 
     def _validate_resolution(self, *, resolution_dimensions: str) -> str:
         """
@@ -113,6 +137,7 @@ class OpenAIVideoTarget(OpenAITarget):
             )
 
     @limit_requests_per_minute
+    @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Asynchronously sends a message and generates a video using the OpenAI SDK.
@@ -163,14 +188,10 @@ class OpenAIVideoTarget(OpenAITarget):
         Returns:
             True if content was filtered, False otherwise.
         """
-        try:
-            if response.status == "failed":
-                # Check if it's a content filter or moderation error
-                if response.error and hasattr(response.error, "code"):
-                    if response.error.code in ["content_filter", "moderation_blocked"]:
-                        return True
-        except (AttributeError, TypeError):
-            pass
+        if response.status == "failed" and response.error:
+            # Convert response to dict and use common filter detection
+            response_dict = response.model_dump()
+            return _is_content_filter_error(response_dict)
         return False
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:

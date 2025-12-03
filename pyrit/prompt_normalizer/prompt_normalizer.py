@@ -124,11 +124,8 @@ class PromptNormalizer:
             cid = request.message_pieces[0].conversation_id if request and request.message_pieces else None
             raise Exception(f"Error sending prompt with conversation ID: {cid}") from ex
 
-        if responses is None:
-            return None
-
-        # Handle empty response lists (e.g., from TextTarget which just prints)
-        if not responses:
+        # handling empty responses message list and None responses
+        if not responses or not any(responses):
             return None
 
         # Process all response messages (targets return list[Message])

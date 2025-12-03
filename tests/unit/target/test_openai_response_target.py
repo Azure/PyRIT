@@ -1025,6 +1025,7 @@ def test_check_content_filter_detects_filtered_response(target: OpenAIResponseTa
     mock_error = MagicMock()
     mock_error.code = "content_filter"
     mock_response.error = mock_error
+    mock_response.model_dump.return_value = {"error": {"code": "content_filter"}}
 
     assert target._check_content_filter(mock_response) is True
 
@@ -1043,6 +1044,7 @@ def test_check_content_filter_different_error(target: OpenAIResponseTarget):
     mock_error = MagicMock()
     mock_error.code = "rate_limit"
     mock_response.error = mock_error
+    mock_response.model_dump.return_value = {"error": {"code": "rate_limit"}}
 
     assert target._check_content_filter(mock_response) is False
 

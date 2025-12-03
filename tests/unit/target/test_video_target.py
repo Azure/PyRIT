@@ -296,6 +296,7 @@ def test_check_content_filter_detects_output_content_filter(video_target: OpenAI
     mock_error = MagicMock()
     mock_error.code = "content_filter"
     mock_video.error = mock_error
+    mock_video.model_dump.return_value = {"error": {"code": "content_filter"}}
 
     assert video_target._check_content_filter(mock_video) is True
 
@@ -307,6 +308,7 @@ def test_check_content_filter_detects_moderation_blocked(video_target: OpenAIVid
     mock_error = MagicMock()
     mock_error.code = "moderation_blocked"
     mock_video.error = mock_error
+    mock_video.model_dump.return_value = {"error": {"code": "moderation_blocked"}}
 
     assert video_target._check_content_filter(mock_video) is True
 
@@ -327,6 +329,7 @@ def test_check_content_filter_different_error(video_target: OpenAIVideoTarget):
     mock_error = MagicMock()
     mock_error.code = "processing_error"
     mock_video.error = mock_error
+    mock_video.model_dump.return_value = {"error": {"code": "processing_error"}}
 
     assert video_target._check_content_filter(mock_video) is False
 

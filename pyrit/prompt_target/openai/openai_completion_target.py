@@ -3,6 +3,7 @@
 
 import logging
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 from pyrit.exceptions.exception_classes import (
     pyrit_target_retry,
@@ -60,16 +61,6 @@ class OpenAICompletionTarget(OpenAITarget):
         """
         super().__init__(*args, **kwargs)
 
-        # Accept base URLs (/v1), specific API paths (/completions), Azure formats
-        completion_url_patterns = [
-            r"/v1$",
-            r"/completions",
-            r"/deployments/[^/]+/",
-            r"openai/v1",
-            r"\.models\.ai\.azure\.com",
-        ]
-        self._warn_if_irregular_endpoint(completion_url_patterns)
-
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._top_p = top_p
@@ -81,6 +72,34 @@ class OpenAICompletionTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_COMPLETION_MODEL"
         self.endpoint_environment_variable = "OPENAI_COMPLETION_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_COMPLETION_API_KEY"
+
+    def _normalize_url_for_target(self, base_url: str) -> str:
+        """
+        Normalize and validate the URL for completions.
+
+        Strips /completions if present (for all endpoints, since the SDK constructs the path).
+
+        Args:
+            base_url: The endpoint URL to normalize.
+
+        Returns:
+            The normalized URL.
+        """
+        # Validate URL format first, before any modifications
+        completion_url_patterns = [
+            r"/v1$",
+            r"/completions",
+            r"/deployments/[^/]+/",
+            r"openai/v1",
+            r"\.models\.ai\.azure\.com",
+        ]
+        self._warn_if_irregular_endpoint(completion_url_patterns)
+
+        # Strip completions path if present (SDK will add it back)
+        if base_url.endswith("/completions"):
+            base_url = base_url[: -len("/completions")]
+
+        return base_url
 
     @limit_requests_per_minute
     @pyrit_target_retry

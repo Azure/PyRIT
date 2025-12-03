@@ -3,6 +3,7 @@
 
 import logging
 from typing import Any, MutableSequence, Optional
+from urllib.parse import urlparse
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import PyritException, pyrit_target_retry
@@ -157,10 +158,38 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._n = n
         self._extra_body_parameters = extra_body_parameters
 
-    def _set_openai_env_configuration_vars(self) -> None:
+    def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+
+    def _normalize_url_for_target(self, base_url: str) -> str:
+        """
+        Normalize and validate the URL for chat completions.
+
+        Strips /chat/completions if present (for all endpoints, since the SDK constructs the path).
+
+        Args:
+            base_url: The endpoint URL to normalize.
+
+        Returns:
+            The normalized URL.
+        """
+        # Validate URL format first, before any modifications
+        chat_url_patterns = [
+            r"/v1$",
+            r"/chat/completions",
+            r"/deployments/[^/]+/",
+            r"openai/v1",
+            r"\.models\.ai\.azure\.com",
+        ]
+        self._warn_if_irregular_endpoint(chat_url_patterns)
+
+        # Strip chat completions path if present (SDK will add it back)
+        if base_url.endswith("/chat/completions"):
+            base_url = base_url[: -len("/chat/completions")]
+
+        return base_url
 
     @limit_requests_per_minute
     @pyrit_target_retry

@@ -71,16 +71,16 @@ def _is_content_filter_error(data: Union[dict, str]) -> bool:
         True if content filtering is detected, False otherwise.
     """
     if isinstance(data, dict):
-        # Check for explicit content_filter code
+        # Check for explicit content_filter or moderation_blocked codes
         code = (data.get("error") or {}).get("code")
-        if code == "content_filter":
+        if code in ["content_filter", "moderation_blocked"]:
             return True
         # Heuristic: Azure sometimes uses other codes with policy-related content
         return "content_filter" in json.dumps(data).lower()
     else:
         # String-based heuristic search
         lower = str(data).lower()
-        return "content_filter" in lower or "policy_violation" in lower
+        return "content_filter" in lower or "policy_violation" in lower or "moderation_blocked" in lower
 
 
 def _extract_error_payload(exc: Exception) -> Tuple[Union[dict, str], bool]:
