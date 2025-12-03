@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, MutableSequence, Optional
+from typing import Any, Dict, MutableSequence, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -14,6 +14,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     ChatMessage,
     ChatMessageListDictContent,
+    JsonResponseConfig,
     Message,
     MessagePiece,
     construct_response_from_request,
@@ -245,8 +246,11 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
+    ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
+        response_format = self._build_response_format(json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -260,7 +264,7 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             "seed": self._seed,
             "n": self._n,
             "messages": messages,
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "response_format": response_format,
         }
 
         if self._extra_body_parameters:
@@ -276,7 +280,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         open_ai_str_response: str,
         message_piece: MessagePiece,
     ) -> Message:
-
         try:
             response = json.loads(open_ai_str_response)
         except json.JSONDecodeError as e:
@@ -322,3 +325,19 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
+
+    def _build_response_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+
+        if json_config.schema:
+            return {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
+                },
+            }
+
+        return {"type": "json_object"}
