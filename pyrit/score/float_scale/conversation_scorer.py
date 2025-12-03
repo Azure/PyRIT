@@ -19,7 +19,7 @@ class ConversationScorer(Scorer):
 
     This scorer wraps another scorer (FloatScaleScorer or TrueFalseScorer) and evaluates
     the full conversation context. Useful for multi-turn conversations where context matters
-    (e.g., psychosocial harms that emerge over time).
+    (e.g., psychosocial harms that emerge over time or persuasion/deception over many messages).
 
     The ConversationScorer dynamically inherits from the same base class as the wrapped scorer,
     ensuring proper type compatibility.
@@ -27,6 +27,7 @@ class ConversationScorer(Scorer):
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
+        supported_roles=["system", "user", "assistant", "tool", "developer"],
         max_pieces_in_response=1,
         enforce_all_pieces_valid=True,
     )
@@ -74,13 +75,15 @@ class ConversationScorer(Scorer):
         # Build the full conversation text
         conversation_text = ""
 
-        # Goes through each message in the conversation and appends user and assistant messages
+        # Goes through each message in the conversation and appends user/assistant messages only
+        # Explicitly excludes system, tool, developer messages from being scored/included in conversation history
+        # they are allowed in validation but not included in the scored conversation text
         for conv_message in conversation:
             for piece in conv_message.message_pieces:
-                if piece.role == "user":
-                    conversation_text += f"User: {piece.converted_value}\n"
-                elif piece.role == "assistant":
-                    conversation_text += f"Assistant: {piece.converted_value}\n"
+                # Only include user and assistant messages in the conversation text
+                if piece.role in ["user", "assistant"]:
+                    role_display = piece.role.capitalize()
+                    conversation_text += f"{role_display}: {piece.converted_value}\n"
 
         # Create a new message with the concatenated conversation text
         # Preserve the original message piece metadata

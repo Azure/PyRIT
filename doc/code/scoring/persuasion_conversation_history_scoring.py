@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -107,7 +103,7 @@ result = await red_teaming_attack.execute_async(  # type: ignore
 
 await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
 
-# Retrieve the completed conversation and hand to create_conversation_scorer
+# Retrieve the completed conversation and hand to ConversationScorer
 memory = CentralMemory.get_memory_instance()
 conversation_history = memory.get_conversation(conversation_id=result.conversation_id)
 
@@ -117,7 +113,7 @@ behavior_change_scale_path = Path(SCORER_CONFIG_PATH, "likert_scales", "behavior
 # Create a FloatScaleScorer (SelfAskLikertScorer) to evaluate behavior changes
 behavior_scale_scorer = SelfAskLikertScorer(chat_target=adversarial_chat, likert_scale_path=behavior_change_scale_path)
 
-# Wrap the FloatScaleScorer with create_conversation_scorer to score the entire conversation
+# Wrap the FloatScaleScorer with ConversationScorer to score the entire conversation
 conversation_scorer = create_conversation_scorer(scorer=behavior_scale_scorer)
 
 # Score requires a Message object with a single MessagePiece
