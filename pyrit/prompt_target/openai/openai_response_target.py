@@ -189,25 +189,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         return base_url
         return
 
-    # Helpers kept on the class for reuse + testability
-    def _flush_message(self, role: Optional[str], content: List[Dict[str, Any]], output: List[Dict[str, Any]]) -> None:
-        """
-        Append a role message and clear the working buffer.
-
-        Args:
-            role: Role to emit ("user" / "assistant" / "system").
-            content: Accumulated content items for the role.
-            output: Destination list to append the message to. It holds a list of dicts containing
-                key-value pairs representing the role and content.
-
-        Returns:
-            None. Mutates `output` (append) and `content` (clear).
-        """
-        if role and content:
-            output.append({"role": role, "content": list(content)})
-            content.clear()
-        return
-
     async def _construct_input_item_from_piece(self, piece: MessagePiece) -> Dict[str, Any]:
         """
         Convert a single inline piece into a Responses API content item.
@@ -239,6 +220,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         Groups inline content (text/images) into role messages and emits tool artifacts
         (reasoning, function_call, function_call_output, web_search_call, etc.) as top-level
         items — per the Responses API schema.
+
+        Each Message is processed as a complete unit. All MessagePieces within a Message
+        share the same role, so content is accumulated and appended once per Message.
 
         Args:
             conversation: Ordered list of user/assistant/tool artifacts to serialize.
@@ -273,7 +257,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 )
                 continue
 
-            role: Optional[str] = None
+            # All pieces in a Message share the same role
+            role = pieces[0].role
             content: List[Dict[str, Any]] = []
 
             for piece in pieces:
@@ -283,21 +268,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 if dtype == "reasoning":
                     continue
 
-                # Inline, role-batched content
+                # Inline content (text/images) - accumulate in content list
                 if dtype in {"text", "image_path"}:
-                    if role is None:
-                        role = piece.role
-                    elif piece.role != role:
-                        self._flush_message(role, content, input_items)
-                        role = piece.role
-
                     content.append(await self._construct_input_item_from_piece(piece))
                     continue
 
-                # Top-level artifacts (flush any pending role content first)
-                self._flush_message(role, content, input_items)
-                role = None
-
+                # Top-level artifacts - emit as standalone items
                 if dtype not in {"function_call", "function_call_output", "tool_call"}:
                     raise ValueError(f"Unsupported data type '{dtype}' in message index {msg_idx}")
 
@@ -353,8 +329,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                         }
                     )
 
-            # Flush trailing role content for this message
-            self._flush_message(role, content, input_items)
+            # Append accumulated inline content for this message
+            if content:
+                input_items.append({"role": role, "content": content})
 
         # Responses API maps system -> developer
         self._translate_roles(conversation=input_items)
