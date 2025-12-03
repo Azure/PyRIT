@@ -101,7 +101,7 @@ chapters:
       - file: code/scoring/6_refusal_scorer
       - file: code/scoring/7_batch_scorer
       - file: code/scoring/insecure_code_scorer
-      - file: code/scoring/look_back_scorer
+      - file: code/scoring/persuasion_conversation_history_scoring
       - file: code/scoring/prompt_shield_scorer
       - file: code/scoring/generic_scorers
       - file: code/scoring/scorer_evals
