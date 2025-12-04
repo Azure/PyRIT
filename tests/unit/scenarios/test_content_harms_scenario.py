@@ -12,7 +12,7 @@ from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenario.scenarios.airt import (
+from pyrit.scenario import (
     ContentHarmsScenario,
     ContentHarmsStrategy,
 )
