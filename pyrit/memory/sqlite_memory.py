@@ -94,7 +94,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             # Using the 'checkfirst=True' parameter to avoid attempting to recreate existing tables
             Base.metadata.create_all(self.engine, checkfirst=True)
         except Exception as e:
-            logger.error(f"Error during table creation: {e}")
+            logger.exception(f"Error during table creation: {e}")
+            raise
 
     def get_all_embeddings(self) -> Sequence[EmbeddingDataEntry]:
         """
@@ -141,7 +142,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         json_conditions = " AND ".join([f"JSON_EXTRACT(prompt_metadata, '$.{key}') = :{key}" for key in metadata])
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
-        return text(json_conditions).bindparams(**{key: str(value) for key, value in metadata.items()})
+        # Note: We do NOT convert values to string here, to allow integer comparison in JSON
+        return text(json_conditions).bindparams(**{key: value for key, value in metadata.items()})
 
     def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
@@ -197,7 +199,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {Model.__tablename__}: {e}")
-                return []
+                raise
 
     def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
@@ -213,6 +215,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
+                raise
 
     def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
@@ -260,7 +263,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error updating entries: {e}")
-                return False
+                raise
 
     def get_session(self) -> Session:
         """

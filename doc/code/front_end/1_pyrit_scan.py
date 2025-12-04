@@ -15,7 +15,7 @@
 # %% [markdown]
 # # 1. PyRIT Scan
 #
-# `pyrit_scan` allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategies and [configuration](../setup/1_configuration.ipynb).
+# `pyrit_scan` allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/0_scenarios.ipynb) for strategies and [configuration](../setup/1_configuration.ipynb).
 #
 # Note in this doc the ! prefaces all commands in the terminal so we can run in a Jupyter Notebook.
 #
@@ -59,7 +59,7 @@
 #
 # You need a single scenario to run, you need two things:
 #
-# 1. A Scenario. Many are defined in `pyrit.scenarios.scenarios`. But you can also define your own in initialization_scripts.
+# 1. A Scenario. Many are defined in `pyrit.scenario.scenarios`. But you can also define your own in initialization_scripts.
 # 2. Initializers (which can be supplied via `--initializers` or `--initialization-scripts`). Scenarios often don't need many arguments, but they can be configured in different ways. And at the very least, most need an `objective_target` (the thing you're running a scan against).
 # 3. Scenario Strategies (optional). These are supplied by the `--scenario-strategies` flag and tell the scenario what to test, but they are always optional. Also note you can obtain these by running `--list-scenarios`
 #
@@ -124,8 +124,8 @@ from pyrit.common.apply_defaults import apply_defaults
 
 # %%
 # my_custom_scenarios.py
-from pyrit.scenarios import Scenario
-from pyrit.scenarios.scenario_strategy import ScenarioStrategy
+from pyrit.scenario import Scenario
+from pyrit.scenario.scenario_strategy import ScenarioStrategy
 
 
 class MyCustomStrategy(ScenarioStrategy):
@@ -154,7 +154,6 @@ class MyCustomScenario(Scenario):
             name="My Custom Scenario",
             version=1,
             strategy_class=MyCustomStrategy,
-            default_aggregate=MyCustomStrategy.ALL,
             scenario_result_id=scenario_result_id,
         )
         # ... your scenario-specific initialization code

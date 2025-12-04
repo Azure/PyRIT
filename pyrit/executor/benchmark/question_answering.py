@@ -244,7 +244,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             },
         )
 
-        return SeedGroup(prompts=[seed_prompt])
+        return SeedGroup(seeds=[seed_prompt])
 
     async def _teardown_async(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """

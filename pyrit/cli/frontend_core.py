@@ -30,8 +30,11 @@ except ImportError:
 
     # Create a dummy termcolor module for fallback
     class termcolor:  # type: ignore
+        """Dummy termcolor fallback for colored printing if termcolor is not installed."""
+
         @staticmethod
         def cprint(text: str, color: str = None, attrs: list = None) -> None:  # type: ignore
+            """Print text without color."""
             print(text)
 
 
@@ -211,7 +214,7 @@ async def run_scenario_async(
     Note:
         Initializers from PyRITContext will be run before the scenario executes.
     """
-    from pyrit.scenarios.printer.console_printer import ConsoleScenarioResultPrinter
+    from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
     from pyrit.setup import initialize_pyrit
 
     # Ensure context is initialized first (loads registries)
@@ -471,7 +474,7 @@ def validate_integer(value: str, *, name: str = "value", min_value: Optional[int
 
 def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], Any]:
     """
-    Decorator to convert ValueError to argparse.ArgumentTypeError.
+    Adapt a validator to argparse by converting ValueError to ArgumentTypeError.
 
     This decorator adapts our keyword-only validators for use with argparse's type= parameter.
     It handles two challenges:
@@ -498,6 +501,9 @@ def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], A
         - Accepts a single positional argument (for argparse compatibility)
         - Calls validator_func with the correct keyword argument
         - Raises ArgumentTypeError instead of ValueError
+
+    Raises:
+        ValueError: If validator_func has no parameters.
     """
     import inspect
 

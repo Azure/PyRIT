@@ -4,7 +4,7 @@
 import pathlib
 import string
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -43,7 +43,7 @@ class AtbashConverter(PromptConverter):
 
         if self.append_description:
             prompt_template = SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "atbash_description.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "atbash_description.yaml"
             )
             output_text = prompt_template.render_template_value(
                 prompt=self._atbash(prompt), example=self._atbash(self.example)

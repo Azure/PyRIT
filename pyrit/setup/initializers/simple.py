@@ -100,7 +100,7 @@ class SimpleInitializer(PyRITInitializer):
         self._setup_adversarial_targets()
 
     def _setup_converter_target(self) -> None:
-        """Setup default converter target configuration."""
+        """Set up the default converter target configuration."""
         default_converter_target = OpenAIChatTarget(
             temperature=1.2,
         )
@@ -113,7 +113,7 @@ class SimpleInitializer(PyRITInitializer):
         )
 
     def _setup_scorers(self) -> None:
-        """Setup simple objective scorer."""
+        """Set up the simple objective scorer."""
         scorer_target = OpenAIChatTarget(temperature=0.3)
 
         # Configure simple objective scorer
@@ -152,7 +152,7 @@ class SimpleInitializer(PyRITInitializer):
             )
 
     def _setup_adversarial_targets(self) -> None:
-        """Setup adversarial target configurations for attacks."""
+        """Set up the adversarial target configurations for attacks."""
         adversarial_config = AttackAdversarialConfig(
             target=OpenAIChatTarget(
                 temperature=1.3,

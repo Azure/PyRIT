@@ -124,7 +124,7 @@
 
 # %%
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.scenarios import FoundryScenario, FoundryStrategy
+from pyrit.scenario import FoundryScenario, FoundryStrategy
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

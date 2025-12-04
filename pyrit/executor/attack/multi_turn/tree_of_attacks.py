@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, cast, overload
 from treelib.tree import Tree
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -403,7 +403,7 @@ class _TreeOfAttacksNode:
             - Sets self.last_response to the target's response text
         """
         # Create seed group from the generated prompt
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")])
 
         # Send prompt with configured converters
         response = await self._prompt_normalizer.send_prompt_async(
@@ -791,7 +791,7 @@ class _TreeOfAttacksNode:
         """
         # Configure for JSON response
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
 
         # Send and get response
         response = await self._prompt_normalizer.send_prompt_async(
@@ -918,15 +918,15 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
     # Default paths for TAP attack prompts
     DEFAULT_ADVERSARIAL_SYSTEM_PROMPT_PATH: Path = (
-        DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_system_prompt.yaml"
+        EXECUTOR_SEED_PROMPT_PATH / "tree_of_attacks" / "adversarial_system_prompt.yaml"
     )
 
     DEFAULT_ADVERSARIAL_PROMPT_TEMPLATE_PATH: Path = (
-        DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_prompt_template.yaml"
+        EXECUTOR_SEED_PROMPT_PATH / "tree_of_attacks" / "adversarial_prompt_template.yaml"
     )
 
     DEFAULT_ADVERSARIAL_SEED_PROMPT_PATH: Path = (
-        DATASETS_PATH / "executors" / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
+        EXECUTOR_SEED_PROMPT_PATH / "tree_of_attacks" / "adversarial_seed_prompt.yaml"
     )
 
     @apply_defaults
