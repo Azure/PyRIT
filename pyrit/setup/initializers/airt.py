@@ -44,9 +44,9 @@ class AIRTInitializer(PyRITInitializer):
     - Adversarial target configurations for attacks
 
     Required Environment Variables:
-    - AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT: Azure OpenAI endpoint for converters and targets
+    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT: Azure OpenAI endpoint for converters and targets
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY: Azure OpenAI API key for converters and targets
-    - AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT2: Azure OpenAI endpoint for scoring
+    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2: Azure OpenAI endpoint for scoring
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2: Azure OpenAI API key for scoring
 
     This configuration is designed for full AI Red Team operations with:
@@ -80,10 +80,12 @@ class AIRTInitializer(PyRITInitializer):
     def required_env_vars(self) -> List[str]:
         """Get list of required environment variables."""
         return [
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2",
             "AZURE_CONTENT_SAFETY_API_ENDPOINT",
             "AZURE_CONTENT_SAFETY_API_KEY",
         ]
@@ -99,8 +101,8 @@ class AIRTInitializer(PyRITInitializer):
         4. Default values for all attack types
         """
         # Get environment variables (validated by validate() method)
-        converter_endpoint = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT")
-        converter_api_key = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY")
+        converter_endpoint = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
+        converter_key = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY")
         scorer_endpoint = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2")
         scorer_api_key = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2")
 

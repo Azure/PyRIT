@@ -43,7 +43,7 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 
 objective_target = OpenAIChatTarget()
 adversarial_chat = OpenAIChatTarget(
-    endpoint=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"],
+    endpoint=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"],
 )
 

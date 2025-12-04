@@ -76,7 +76,7 @@ class TestURLWarnings:
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
-        
+
         # Model name should be text-davinci-003 either way
         if explicit_model_name:
             assert target._model_name == "text-davinci-003"
@@ -110,7 +110,7 @@ class TestURLWarnings:
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
-        
+
         # Model name should be dall-e-3 either way
         assert target._model_name == "dall-e-3"
 
@@ -140,7 +140,7 @@ class TestURLWarnings:
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
-        
+
         # Model name should be tts-1 either way
         assert target._model_name == "tts-1"
 
@@ -170,7 +170,7 @@ class TestURLWarnings:
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
-        
+
         # Model name should be o1-preview either way
         assert target._model_name == "o1-preview"
 
@@ -200,7 +200,7 @@ class TestURLWarnings:
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
-        
+
         # Model name should be sora-2 either way (explicitly set or extracted from URL)
         assert target._model_name == "sora-2"
 
@@ -628,11 +628,6 @@ class TestURLValidation:
         # URL should remain unchanged
         assert target._endpoint == url
         assert str(target._async_client.base_url).rstrip("/") == url.rstrip("/")
-        # May have warning about API path
-        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        path_warnings = [log for log in warning_logs if "/chat/completions" in log.message]
-        # Azure Foundry may or may not trigger warnings depending on URL structure
-        # Just ensure URL is unchanged
 
     def test_old_url_warns_unchanged(self, caplog, patch_central_database):
         """Test that old URL triggers warning but remains unchanged."""
