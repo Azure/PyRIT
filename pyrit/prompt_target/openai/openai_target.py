@@ -171,123 +171,169 @@ class OpenAITarget(PromptChatTarget):
 
         return ""
 
-    def _convert_old_azure_url_to_new_format(self, old_url: str) -> str:
+    def _warn_old_azure_url_format(self, url: str) -> None:
         """
-        Convert old Azure URL format to new OpenAI-compatible format.
+        Warn users about old Azure URL format without modifying the URL.
 
-        Old formats:
-        - https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=X
-        - https://{resource}.openai.azure.com/openai/responses?api-version=X
-        - https://{resource}.openai.azure.com/openai/chat/completions?api-version=X
+        Old formats that trigger warnings:
+        - Deployment in path: /openai/deployments/{deployment}/...
+        - API version in query: ?api-version=X
 
-        New format: https://{resource}.openai.azure.com/openai/v1
+        These can appear independently or together.
 
-        The api-version query parameter is dropped as it's not needed in the new format.
-        The deployment name is extracted and should be set as model_name.
+        Recommended new format: https://{resource}.openai.azure.com/openai/v1
+        Pass deployment name as model_name parameter.
 
         Args:
-            old_url: The old Azure endpoint URL.
-
-        Returns:
-            The new OpenAI-compatible URL.
+            url: The Azure endpoint URL to validate.
         """
-        parsed = urlparse(old_url)
+        parsed = urlparse(url)
+        suggested_url = f"{parsed.scheme}://{parsed.netloc}/openai/v1"
 
-        # Extract deployment name for logging (if present)
-        deployment = self._extract_deployment_from_azure_url(old_url)
+        # Check for both deployment in path and api-version
+        deployment = self._extract_deployment_from_azure_url(url)
+        has_api_version = "api-version" in parsed.query
 
-        # Build new URL - just base + /openai/v1, drop api-version and specific paths
-        new_url = f"{parsed.scheme}://{parsed.netloc}/openai/v1"
-
-        # Build appropriate log message
-        if deployment:
-            log_msg = (
-                f"Old Azure URL format detected and converted to new format. "
-                f"Old URL: {old_url} -> New URL: {new_url}. "
-                f"Deployment '{deployment}' extracted as model name. "
-                f"Please update your configuration to use the new format. "
-                f"Old format URLs will be deprecated in a future release. "
-                f"See https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation "
-                "for more information."
+        # Build the specific issue description
+        if deployment and has_api_version:
+            issue_desc = "with deployment in path and api-version parameter"
+            recommendation = (
+                f"with deployment '{deployment}' passed as model_name parameter and api-version parameter removed"
             )
+        elif deployment:
+            issue_desc = "with deployment in path"
+            recommendation = f"with deployment '{deployment}' passed as model_name parameter"
+        elif has_api_version:
+            issue_desc = "with api-version parameter"
+            recommendation = "without api-version parameter"
         else:
-            log_msg = (
-                f"Old Azure URL format with api-version detected and converted to new format. "
-                f"Old URL: {old_url} -> New URL: {new_url}. "
-                f"Please update your configuration to use the new format without api-version parameter. "
-                f"Old format URLs will be deprecated in a future release. "
-                f"See https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation "
-                "for more information."
-            )
+            return  # No issues found
 
-        logger.warning(log_msg)
-
-        return new_url
+        logger.warning(
+            f"Old Azure URL format detected {issue_desc}. "
+            f"Current URL: {url}. "
+            f"Recommended format: {suggested_url} {recommendation}. "
+            f"Old format URLs will be deprecated in a future release. "
+            f"See https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation "
+            "for more information."
+        )
 
     @abstractmethod
-    def _normalize_url_for_target(self, base_url: str) -> str:
+    def _get_target_api_paths(self) -> list[str]:
         """
-        Normalize and validate the URL for this specific target.
+        Return list of API paths that should not be in the URL for this target.
 
-        Each target implements its own URL normalization logic:
-        - Stripping target-specific API paths (e.g., /chat/completions, /responses)
-        - Validating the URL format and logging warnings if irregular
-
-        Note: Azure path structure (/openai/v1 or /v1) is automatically ensured by the
-        base class after this method returns. Child classes should NOT call
-        _ensure_azure_openai_path_structure() themselves.
-
-        Args:
-            base_url: The endpoint URL to normalize.
+        The SDK automatically appends these paths, so they shouldn't be in the base URL.
 
         Returns:
-            The normalized URL with API-specific paths stripped.
+            List of API paths (e.g., ["/chat/completions", "/v1/chat/completions"])
         """
         pass
 
-    def _ensure_azure_openai_path_structure(self, base_url: str) -> str:
+    @abstractmethod
+    def _get_provider_examples(self) -> dict[str, str]:
         """
-        Ensure Azure OpenAI URLs have the proper path structure.
+        Return provider-specific example URLs for this target.
 
-        Azure OpenAI endpoints should end with /openai/v1
-        Azure Foundry endpoints should end with /v1
-
-        Args:
-            base_url: The Azure endpoint URL.
+        Used in warnings to show users the correct format.
 
         Returns:
-            The URL with proper Azure path structure.
+            Dict mapping provider patterns to example URLs
+            (e.g., {".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1"})
         """
-        if ".openai.azure.com" in base_url:
-            parsed = urlparse(base_url)
-            if not parsed.path.endswith("/openai/v1") and not parsed.path.startswith("/openai/v1"):
-                if not parsed.path or parsed.path == "/":
-                    base_url = base_url.rstrip("/") + "/openai/v1"
-                elif parsed.path == "/openai":
-                    base_url = base_url.rstrip("/") + "/v1"
-                elif not base_url.endswith("/openai/v1"):
-                    base_url = base_url.rstrip("/")
-                    if not base_url.endswith("/openai"):
-                        base_url += "/openai"
-                    base_url += "/v1"
-        elif ".models.ai.azure.com" in base_url:
-            if not base_url.endswith("/v1"):
-                base_url = base_url.rstrip("/") + "/v1"
+        pass
 
-        return base_url
+    def _validate_url_for_target(self, endpoint_url: str) -> None:
+        """
+        Validate the URL format for this specific target and warn about issues.
+
+        Checks for:
+        - API-specific paths that should not be in the URL
+        - Query parameters like api-version
+
+        This method does NOT modify the URL - it only logs warnings.
+
+        Args:
+            endpoint_url: The endpoint URL to validate.
+        """
+        # Check for API paths that shouldn't be in the URL
+        api_paths = self._get_target_api_paths()
+        provider_examples = self._get_provider_examples()
+
+        for api_path in api_paths:
+            if api_path in endpoint_url:
+                self._warn_url_with_api_path(endpoint_url, api_path, provider_examples)
+                break  # Only warn once
+
+        # Warn if query parameters are present
+        self._warn_url_with_query_params(endpoint_url)
+
+    def _warn_azure_url_path_issues(self, endpoint_url: str) -> None:
+        """
+        Warn about Azure URL path structure issues without modifying the URL.
+
+        Expected formats:
+        - Azure OpenAI: https://{resource}.openai.azure.com/openai/v1
+        - Azure Foundry: https://{resource}.models.ai.azure.com (no /openai/v1 needed)
+
+        Args:
+            endpoint_url: The Azure endpoint URL to validate.
+        """
+        parsed = urlparse(endpoint_url)
+
+        if ".openai.azure.com" in endpoint_url:
+            # Check for various issues with Azure OpenAI URLs
+            path = parsed.path.rstrip("/")
+
+            if not path or path == "":
+                logger.warning(
+                    f"Azure OpenAI URL is missing path structure. "
+                    f"Current: {endpoint_url}. "
+                    f"Recommended: {endpoint_url.rstrip('/')}/openai/v1"
+                )
+            elif path == "/openai":
+                logger.warning(
+                    f"Azure OpenAI URL is missing /v1 suffix. "
+                    f"Current: {endpoint_url}. "
+                    f"Recommended: {endpoint_url.rstrip('/')}/v1"
+                )
+            elif not path.endswith("/openai/v1") and not path.startswith("/openai/v1"):
+                # Check if it has an API extension that should be removed
+                if any(
+                    api_path in path
+                    for api_path in [
+                        "/chat/completions",
+                        "/responses",
+                        "/completions",
+                        "/videos",
+                        "/images/generations",
+                        "/audio/speech",
+                    ]
+                ):
+                    # This is handled by target-specific validation
+                    pass
+                elif "/openai" not in path:
+                    logger.warning(
+                        f"Azure OpenAI URL should include /openai/v1 path. "
+                        f"Current: {endpoint_url}. "
+                        f"Recommended: {parsed.scheme}://{parsed.netloc}/openai/v1"
+                    )
 
     def _initialize_openai_client(self) -> None:
         """
         Initialize the OpenAI client using AsyncOpenAI.
 
-        Automatically converts old Azure URL format to new OpenAI-compatible format:
-        - Old: https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=X
-        - New: https://{resource}.openai.azure.com/openai/v1
+        Validates the URL format and warns about potential issues, but does NOT modify
+        the user-provided URL. This allows flexibility for custom endpoints and non-standard
+        providers while helping users identify common configuration mistakes.
 
-        Supports:
+        Supported formats:
         - Platform OpenAI: https://api.openai.com/v1
-        - Azure OpenAI new format: https://{resource}.openai.azure.com/openai/v1
-        - Azure Foundry: https://{resource}.models.ai.azure.com/...
+        - Azure OpenAI: https://{resource}.openai.azure.com/openai/v1
+        - Azure Foundry: https://{resource}.models.ai.azure.com
+        - Anthropic: https://api.anthropic.com/v1
+        - Google Gemini: https://generativelanguage.googleapis.com/v1beta/openai
+        - Custom endpoints: Any format (warnings may be shown but URL is not modified)
         """
         # Merge custom headers with httpx_client_kwargs
         httpx_kwargs = self._httpx_client_kwargs.copy()
@@ -297,10 +343,8 @@ class OpenAITarget(PromptChatTarget):
         # Determine if this is Azure OpenAI based on the endpoint
         is_azure = "azure" in self._endpoint.lower() if self._endpoint else False
 
-        # Convert old Azure format to new format if needed
-        # Old formats include:
-        # 1. /deployments/{name}/... paths
-        # 2. Direct API paths like /responses, /chat/completions with api-version query params
+        # Warn about old Azure format but don't modify
+        warned_old_format = False
         if is_azure:
             parsed_url = urlparse(self._endpoint)
             # Check if it has api-version query parameter OR /deployments/ in path
@@ -308,23 +352,20 @@ class OpenAITarget(PromptChatTarget):
             has_deployments = "/deployments/" in parsed_url.path
 
             if has_deployments or has_api_version:
-                self._endpoint = self._convert_old_azure_url_to_new_format(self._endpoint)
+                self._warn_old_azure_url_format(self._endpoint)
+                warned_old_format = True
 
-        # Standard OpenAI client (used for all endpoints)
-        # The SDK expects base_url to be the base (e.g., https://api.openai.com/v1)
-        # For Azure format: https://{resource}.openai.azure.com/openai/v1
-        # For Azure Foundry: https://{resource}.models.ai.azure.com/v1
-        base_url = self._endpoint
+        # Validate URL format for target-specific issues
+        # Skip if we already warned about old format (to avoid duplicate warnings)
+        if not warned_old_format:
+            self._validate_url_for_target(self._endpoint)
 
-        # Let each target normalize URLs (strips API-specific paths)
-        base_url = self._normalize_url_for_target(base_url)
-        
-        # Ensure Azure endpoints have proper path structure
+        # Warn about Azure path structure issues
         if is_azure:
-            base_url = self._ensure_azure_openai_path_structure(base_url)
+            self._warn_azure_url_path_issues(self._endpoint)
 
-        # Update _endpoint with the fully normalized URL
-        self._endpoint = base_url
+        # Use endpoint as-is - the user knows their provider best
+        base_url = self._endpoint
 
         # For Azure with Entra auth, pass token provider as api_key
         api_key_value: Any = self._api_key
@@ -536,6 +577,54 @@ class OpenAITarget(PromptChatTarget):
         and api_key_environment_variable which are read from .env file.
         """
         raise NotImplementedError
+
+    def _warn_url_with_api_path(
+        self, endpoint_url: str, api_path: str, provider_examples: dict[str, str] = None
+    ) -> None:
+        """
+        Warn if URL includes API-specific path that should be handled by the SDK.
+
+        Args:
+            endpoint_url: The endpoint URL to check.
+            api_path: The API path to check for (e.g., "/chat/completions", "/responses").
+            provider_examples: Optional dict mapping provider patterns to example base URLs.
+        """
+        if api_path in endpoint_url:
+            parsed = urlparse(endpoint_url)
+            base_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path.replace(api_path, '')}"
+
+            message = (
+                f"URL includes API path '{api_path}' which the OpenAI SDK handles automatically. "
+                f"Current URL: {endpoint_url}. "
+                f"Recommended: Remove '{api_path}' from the URL. "
+            )
+
+            # Add provider-specific guidance
+            if provider_examples:
+                for pattern, example in provider_examples.items():
+                    if pattern in endpoint_url:
+                        message += f"Example: {example}. "
+                        break
+            else:
+                message += f"Suggested: {base_url}. "
+
+            logger.warning(message)
+
+    def _warn_url_with_query_params(self, endpoint_url: str) -> None:
+        """
+        Warn if URL includes query parameters like api-version.
+
+        Args:
+            endpoint_url: The endpoint URL to check.
+        """
+        parsed = urlparse(endpoint_url)
+        if parsed.query:
+            base_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+            logger.warning(
+                f"URL includes query parameters '{parsed.query}' which should be removed. "
+                f"Current URL: {endpoint_url}. "
+                f"Recommended: {base_url}"
+            )
 
     def _warn_if_irregular_endpoint(self, expected_url_regex) -> None:
         """

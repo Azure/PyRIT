@@ -47,10 +47,10 @@ class HuggingFaceEndpointTarget(PromptTarget):
         super().__init__(
             max_requests_per_minute=max_requests_per_minute, verbose=verbose, endpoint=endpoint, model_name=model_id
         )
-        
+
         validate_temperature(temperature)
         validate_top_p(top_p)
-        
+
         self.hf_token = hf_token
         self.endpoint = endpoint
         self.model_id = model_id

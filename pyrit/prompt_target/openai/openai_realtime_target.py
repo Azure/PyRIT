@@ -8,7 +8,6 @@ import re
 import wave
 from dataclasses import dataclass, field
 from typing import Any, List, Literal, Optional, Tuple
-from urllib.parse import urlparse, urlunparse
 
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AsyncOpenAI
@@ -97,58 +96,37 @@ class RealtimeTarget(OpenAITarget):
         self.endpoint_environment_variable = "OPENAI_REALTIME_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_REALTIME_API_KEY"
 
-    def _normalize_url_for_target(self, base_url: str) -> str:
+    def _get_target_api_paths(self) -> list[str]:
+        """Return API paths that should not be in the URL."""
+        return ["/realtime", "/v1/realtime"]
+
+    def _get_provider_examples(self) -> dict[str, str]:
+        """Return provider-specific example URLs."""
+        return {
+            ".openai.azure.com": "wss://{resource}.openai.azure.com/openai/v1",
+            "api.openai.com": "wss://api.openai.com/v1",
+        }
+
+    def _validate_url_for_target(self, endpoint_url: str) -> None:
         """
-        Normalize the URL for Realtime API by stripping the /realtime path.
-        The OpenAI SDK will construct the full path itself.
-        Also normalizes https:// to wss:// for websocket connections.
+        Validate URL for Realtime API with websocket-specific checks.
 
         Args:
-            base_url: The base URL to normalize
-
-        Returns:
-            The normalized URL without the /realtime path
+            endpoint_url: The endpoint URL to validate.
         """
-        self._warn_if_irregular_endpoint(base_url)
+        # Convert https to wss for validation (this is expected for websockets)
+        check_url = endpoint_url.replace("https://", "wss://") if endpoint_url.startswith("https://") else endpoint_url
 
-        # Convert https:// to wss:// for websocket connections
-        base_url = base_url.replace("https://", "wss://")
+        # Check for proper scheme
+        if not check_url.startswith("wss://"):
+            logger.warning(
+                f"Realtime endpoint should use 'wss://' or 'https://' scheme, got: {endpoint_url}. "
+                "The endpoint may not work correctly."
+            )
+            return
 
-        # Strip /realtime or /v1/realtime path if present
-        # e.g., wss://resource.openai.azure.com/openai/realtime -> wss://resource.openai.azure.com/openai
-        # or wss://api.openai.com/v1/realtime -> wss://api.openai.com/v1
-        if base_url.endswith("/v1/realtime"):
-            base_url = base_url[:-9]  # Remove "/realtime" (keep /v1)
-        elif base_url.endswith("/realtime"):
-            base_url = base_url[:-9]  # Remove "/realtime"
-
-        return base_url
-
-    def _ensure_azure_openai_path_structure(self, base_url: str) -> str:
-        """
-        Ensure Azure OpenAI URLs have the proper path structure while preserving wss:// scheme.
-        
-        Overrides parent to handle websocket URLs properly.
-
-        Args:
-            base_url: The Azure endpoint URL.
-
-        Returns:
-            The URL with proper Azure path structure and wss:// scheme preserved.
-        """
-        # Temporarily convert wss to https for parent class processing
-        was_wss = base_url.startswith("wss://")
-        if was_wss:
-            base_url = base_url.replace("wss://", "https://", 1)
-        
-        # Call parent implementation
-        result = super()._ensure_azure_openai_path_structure(base_url)
-        
-        # Convert back to wss if it was originally wss
-        if was_wss:
-            result = result.replace("https://", "wss://", 1)
-        
-        return result
+        # Call parent validation with the wss URL
+        super()._validate_url_for_target(check_url)
 
     def _warn_if_irregular_endpoint(self, endpoint: str) -> None:
         """
@@ -192,8 +170,12 @@ class RealtimeTarget(OpenAITarget):
         Uses the Azure GA approach with websocket_base_url.
         """
         if self._realtime_client is None:
-            # Use the normalized endpoint from parent class (_endpoint already has Azure path structure and wss:// scheme)
-            websocket_base_url = self._endpoint
+            # Convert https:// to wss:// for websocket connections if needed
+            websocket_base_url = (
+                self._endpoint.replace("https://", "wss://")
+                if self._endpoint.startswith("https://")
+                else self._endpoint
+            )
 
             logger.info(f"Creating realtime client with websocket_base_url: {websocket_base_url}")
 

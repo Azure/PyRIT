@@ -801,8 +801,12 @@ async def test_build_input_for_multi_modal_async_system_message_multiple_pieces(
 @pytest.mark.asyncio
 async def test_build_input_for_multi_modal_async_mixed_roles_raises(target: OpenAIResponseTarget):
     """Test that Message validation prevents pieces with different roles."""
-    user_piece = MessagePiece(role="user", original_value_data_type="text", original_value="Hello", conversation_id="123")
-    assistant_piece = MessagePiece(role="assistant", original_value_data_type="text", original_value="Hi", conversation_id="123")
+    user_piece = MessagePiece(
+        role="user", original_value_data_type="text", original_value="Hello", conversation_id="123"
+    )
+    assistant_piece = MessagePiece(
+        role="assistant", original_value_data_type="text", original_value="Hi", conversation_id="123"
+    )
     # Message validation should catch this before _build_input_for_multi_modal_async
     with pytest.raises(ValueError, match="Inconsistent roles within the same message entry"):
         Message(message_pieces=[user_piece, assistant_piece])

@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 import logging
 from typing import Any, Dict, Literal
-from urllib.parse import urlparse
 
 from pyrit.exceptions import (
     EmptyResponseException,
@@ -88,33 +87,16 @@ class OpenAIImageTarget(OpenAITarget):
         self.endpoint_environment_variable = "OPENAI_IMAGE_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_IMAGE_API_KEY"
 
-    def _normalize_url_for_target(self, base_url: str) -> str:
-        """
-        Normalize and validate the URL for image generation.
+    def _get_target_api_paths(self) -> list[str]:
+        """Return API paths that should not be in the URL."""
+        return ["/images/generations", "/v1/images/generations"]
 
-        Strips /images/generations if present (for all endpoints, since the SDK constructs the path).
-
-        Args:
-            base_url: The endpoint URL to normalize.
-
-        Returns:
-            The normalized URL.
-        """
-        # Validate URL format first, before any modifications
-        image_url_patterns = [
-            r"/v1$",
-            r"/images/generations",
-            r"/deployments/[^/]+/",
-            r"openai/v1",
-            r"\.models\.ai\.azure\.com",
-        ]
-        self._warn_if_irregular_endpoint(image_url_patterns)
-
-        # Strip images/generations path if present (SDK will add it back)
-        if base_url.endswith("/images/generations"):
-            base_url = base_url[: -len("/images/generations")]
-
-        return base_url
+    def _get_provider_examples(self) -> dict[str, str]:
+        """Return provider-specific example URLs."""
+        return {
+            ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
+            "api.openai.com": "https://api.openai.com/v1",
+        }
 
     @limit_requests_per_minute
     @pyrit_target_retry

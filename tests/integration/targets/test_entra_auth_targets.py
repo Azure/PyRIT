@@ -21,17 +21,16 @@ from pyrit.prompt_target import (
 @pytest.mark.parametrize(
     ("endpoint", "model_name", "supports_seed"),
     [
-        ("AZURE_OPENAI_GPT4O_ENDPOINT", "", True),
-        ("AZURE_OPENAI_GPT4O_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_GPT4O_MODEL", True),
-        ("AZURE_OPENAI_GPT4O_ENDPOINT2", "", True),
-        ("AZURE_OPENAI_GPT4O_AAD_ENDPOINT", "", True),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "", True),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "", True),
-        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "", True),
-        ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", "", True),
-        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "", True),
-        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "", True),
-        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "", True),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT2", "AZURE_OPENAI_GPT4O_MODEL2", True),
+        ("AZURE_OPENAI_GPT4O_AAD_ENDPOINT", "AZURE_OPENAI_GPT4O_AAD_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2", True),
+        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", "AZURE_OPENAI_GPT4O_STRICT_FILTER_MODEL", True),
+        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_MODEL", True),
         ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "", True),
         ("AZURE_FOUNDRY_PHI4_ENDPOINT", "", True),
         ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "", False),
@@ -61,16 +60,17 @@ async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_na
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "endpoint",
+    ("endpoint", "model_name"),
     [
-        "OPENAI_IMAGE_ENDPOINT1",
-        "OPENAI_IMAGE_ENDPOINT2",
+        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_MODEL1"),
+        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_MODEL2"),
     ],
 )
-async def test_openai_image_target_entra_auth(sqlite_instance, endpoint):
+async def test_openai_image_target_entra_auth(sqlite_instance, endpoint, model_name):
     args = {
         "endpoint": os.getenv(endpoint),
         "use_entra_auth": True,
+        "model_name": os.getenv(model_name),
     }
 
     target = OpenAIImageTarget(**args)
@@ -83,16 +83,17 @@ async def test_openai_image_target_entra_auth(sqlite_instance, endpoint):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "endpoint",
+    ("endpoint", "model_name"),
     [
-        "OPENAI_TTS_ENDPOINT1",
-        "OPENAI_TTS_ENDPOINT2",
+        ("OPENAI_TTS_ENDPOINT1", "OPENAI_TTS_MODEL1"),
+        ("OPENAI_TTS_ENDPOINT2", "OPENAI_TTS_MODEL2"),
     ],
 )
-async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint):
+async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint, model_name):
     args = {
         "endpoint": os.getenv(endpoint),
         "use_entra_auth": True,
+        "model_name": os.getenv(model_name),
     }
 
     target = OpenAITTSTarget(**args)
@@ -108,7 +109,6 @@ async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint):
     ("endpoint", "model_name"),
     [
         ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
-        ("AZURE_OPENAI_RESPONSES_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_RESPONSES_MODEL"),
         ("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT41_RESPONSES_MODEL"),
         ("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT5_MODEL"),
     ],

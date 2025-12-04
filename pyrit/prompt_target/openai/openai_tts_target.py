@@ -3,7 +3,6 @@
 
 import logging
 from typing import Any, Literal, Optional
-from urllib.parse import urlparse
 
 from pyrit.exceptions import (
     pyrit_target_retry,
@@ -72,33 +71,16 @@ class OpenAITTSTarget(OpenAITarget):
         self.endpoint_environment_variable = "OPENAI_TTS_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_TTS_KEY"
 
-    def _normalize_url_for_target(self, base_url: str) -> str:
-        """
-        Normalize and validate the URL for TTS (audio/speech).
+    def _get_target_api_paths(self) -> list[str]:
+        """Return API paths that should not be in the URL."""
+        return ["/audio/speech", "/v1/audio/speech"]
 
-        Strips /audio/speech if present (for all endpoints, since the SDK constructs the path).
-
-        Args:
-            base_url: The endpoint URL to normalize.
-
-        Returns:
-            The normalized URL.
-        """
-        # Validate URL format first, before any modifications
-        tts_url_patterns = [
-            r"/v1$",
-            r"/audio/speech",
-            r"/deployments/[^/]+/",
-            r"openai/v1",
-            r"\.models\.ai\.azure\.com",
-        ]
-        self._warn_if_irregular_endpoint(tts_url_patterns)
-
-        # Strip audio/speech path if present (SDK will add it back)
-        if base_url.endswith("/audio/speech"):
-            base_url = base_url[: -len("/audio/speech")]
-
-        return base_url
+    def _get_provider_examples(self) -> dict[str, str]:
+        """Return provider-specific example URLs."""
+        return {
+            ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
+            "api.openai.com": "https://api.openai.com/v1",
+        }
 
     @limit_requests_per_minute
     @pyrit_target_retry

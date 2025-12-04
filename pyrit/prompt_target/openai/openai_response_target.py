@@ -13,7 +13,6 @@ from typing import (
     MutableSequence,
     Optional,
 )
-from urllib.parse import urlparse
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -160,34 +159,16 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_RESPONSES_KEY"
 
-    def _normalize_url_for_target(self, base_url: str) -> str:
-        """
-        Normalize and validate the URL for responses.
+    def _get_target_api_paths(self) -> list[str]:
+        """Return API paths that should not be in the URL."""
+        return ["/responses", "/v1/responses"]
 
-        Strips /responses if present (for all endpoints, since the SDK constructs the path).
-
-        Args:
-            base_url: The endpoint URL to normalize.
-
-        Returns:
-            The normalized URL.
-        """
-        # Validate URL format first, before any modifications
-        response_url_patterns = [
-            r"/v1$",
-            r"/responses",
-            r"/deployments/[^/]+/",
-            r"openai/v1",
-            r"\.models\.ai\.azure\.com",
-        ]
-        self._warn_if_irregular_endpoint(response_url_patterns)
-
-        # Strip responses path if present (SDK will add it back)
-        if base_url.endswith("/responses"):
-            base_url = base_url[: -len("/responses")]
-
-        return base_url
-        return
+    def _get_provider_examples(self) -> dict[str, str]:
+        """Return provider-specific example URLs."""
+        return {
+            ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
+            "api.openai.com": "https://api.openai.com/v1",
+        }
 
     async def _construct_input_item_from_piece(self, piece: MessagePiece) -> Dict[str, Any]:
         """

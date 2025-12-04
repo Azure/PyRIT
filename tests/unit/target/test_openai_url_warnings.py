@@ -28,13 +28,12 @@ def patch_central_database():
         yield mock_memory
 
 
-class TestOldAzureURLConversion:
-    """Tests for converting old Azure URL format to new format."""
+class TestURLWarnings:
+    """Tests for URL format validation warnings (URLs are never modified)."""
 
-    def test_old_azure_chat_url_converted_with_warning(self, caplog, patch_central_database):
-        """Test old Azure chat URL is converted to new format and warning is logged."""
+    def test_old_azure_chat_url_warns_unchanged(self, caplog, patch_central_database):
+        """Test old Azure chat URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2024-02-15"
-        expected_new_url = "https://test.openai.azure.com/openai/v1"
 
         with patch.dict(os.environ, {}, clear=True):
             with caplog.at_level(logging.WARNING):
@@ -44,23 +43,21 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # Check that URL was converted
-        assert target._endpoint == expected_new_url
+        # Check that URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
         assert target._async_client is not None
-        assert str(target._async_client.base_url).rstrip("/") == expected_new_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
 
         # Check that warning was logged
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
-        assert "converted to new format" in conversion_warnings[0].message
-        assert old_url in conversion_warnings[0].message
-        assert expected_new_url in conversion_warnings[0].message
-        assert "deprecated in a future release" in conversion_warnings[0].message
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1  # May have multiple warnings
+        assert any("deployment in path" in log.message for log in conversion_warnings)
+        assert any("Recommended format:" in log.message for log in conversion_warnings)
 
     @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_completions_url_converted(self, explicit_model_name, caplog, patch_central_database):
-        """Test old Azure completions URL is converted, with or without explicit model_name."""
+    def test_old_azure_completions_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure completions URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/text-davinci-003/completions?api-version=2024-02-15"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -76,20 +73,25 @@ class TestOldAzureURLConversion:
 
                 target = OpenAICompletionTarget(**kwargs)
 
-        # Check that URL was converted
-        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        # Check that URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
         
         # Model name should be text-davinci-003 either way
-        assert target._model_name == "text-davinci-003"
+        if explicit_model_name:
+            assert target._model_name == "text-davinci-003"
+        else:
+            # Without explicit model name, it should be extracted from URL
+            assert target._model_name == "text-davinci-003"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1
 
     @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_images_url_converted(self, explicit_model_name, caplog, patch_central_database):
-        """Test old Azure images URL is converted, with or without explicit model_name."""
+    def test_old_azure_images_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure images URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/dall-e-3/images/generations?api-version=2024-02-15"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -105,20 +107,21 @@ class TestOldAzureURLConversion:
 
                 target = OpenAIImageTarget(**kwargs)
 
-        # Check that URL was converted
-        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        # Check that URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
         
         # Model name should be dall-e-3 either way
         assert target._model_name == "dall-e-3"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1
 
     @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_audio_url_converted(self, explicit_model_name, caplog, patch_central_database):
-        """Test old Azure audio/speech URL is converted, with or without explicit model_name."""
+    def test_old_azure_audio_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure audio/speech URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/tts-1/audio/speech?api-version=2024-02-15"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -134,20 +137,21 @@ class TestOldAzureURLConversion:
 
                 target = OpenAITTSTarget(**kwargs)
 
-        # Check that URL was converted
-        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        # Check that URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
         
         # Model name should be tts-1 either way
         assert target._model_name == "tts-1"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1
 
     @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_responses_url_converted(self, explicit_model_name, caplog, patch_central_database):
-        """Test old Azure responses URL is converted, with or without explicit model_name."""
+    def test_old_azure_responses_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure responses URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/o1-preview/responses?api-version=2024-09-01"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -163,20 +167,21 @@ class TestOldAzureURLConversion:
 
                 target = OpenAIResponseTarget(**kwargs)
 
-        # Check that URL was converted
-        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        # Check that URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
         
         # Model name should be o1-preview either way
         assert target._model_name == "o1-preview"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1
 
     @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_videos_url_converted(self, explicit_model_name, caplog, patch_central_database):
-        """Test old Azure videos URL is converted, with or without explicit model_name."""
+    def test_old_azure_videos_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+        """Test old Azure videos URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/sora-2/videos?api-version=2024-12-01"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -192,19 +197,20 @@ class TestOldAzureURLConversion:
 
                 target = OpenAIVideoTarget(**kwargs)
 
-        # Check that URL was converted
-        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        # Check that URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
         
         # Model name should be sora-2 either way (explicitly set or extracted from URL)
         assert target._model_name == "sora-2"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1
 
-    def test_old_azure_url_without_api_version_converted(self, caplog, patch_central_database):
-        """Test old Azure URL without api-version parameter is still converted."""
+    def test_old_azure_url_without_api_version_warns_unchanged(self, caplog, patch_central_database):
+        """Test old Azure URL without api-version parameter triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/gpt-4/chat/completions"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -215,16 +221,17 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # Check that URL was converted
-        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        # Check that URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1
 
-    def test_old_azure_url_without_api_version_converted(self, caplog, patch_central_database):
-        """Test new Azure URL format is not converted and no warning is logged."""
+    def test_new_azure_url_unchanged_no_warning(self, caplog, patch_central_database):
+        """Test new Azure URL format remains unchanged with no warning logged."""
         new_url = "https://test.openai.azure.com/openai/v1"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -237,14 +244,15 @@ class TestOldAzureURLConversion:
 
         # URL should remain unchanged
         assert target._endpoint == new_url
+        assert str(target._async_client.base_url).rstrip("/") == new_url.rstrip("/")
 
         # No conversion warning should be logged
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
         assert len(conversion_warnings) == 0
 
-    def test_platform_openai_chat_url_not_converted(self, caplog, patch_central_database):
-        """Test platform OpenAI chat URL is not converted (only path stripped)."""
+    def test_platform_openai_chat_url_warns_about_path(self, caplog, patch_central_database):
+        """Test platform OpenAI chat URL triggers warning about API path."""
         platform_url = "https://api.openai.com/v1/chat/completions"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -255,17 +263,17 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # URL should have path stripped
-        assert target._endpoint == "https://api.openai.com/v1"
-        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+        # URL should remain unchanged
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == platform_url.rstrip("/")
 
-        # No conversion warning
+        # Should have warning about API path
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 0
+        path_warnings = [log for log in warning_logs if "/chat/completions" in log.message]
+        assert len(path_warnings) >= 1
 
-    def test_platform_openai_completion_url_not_converted(self, caplog, patch_central_database):
-        """Test platform OpenAI completion URL is not converted (only path stripped)."""
+    def test_platform_openai_completion_url_warns_about_path(self, caplog, patch_central_database):
+        """Test platform OpenAI completion URL triggers warning about API path."""
         platform_url = "https://api.openai.com/v1/completions"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -276,16 +284,17 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # URL should have path stripped
-        assert target._endpoint == "https://api.openai.com/v1"
-        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+        # URL should remain unchanged
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == platform_url.rstrip("/")
 
+        # Should have warning about API path
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 0
+        path_warnings = [log for log in warning_logs if "/completions" in log.message]
+        assert len(path_warnings) >= 1
 
-    def test_platform_openai_response_url_not_converted(self, caplog, patch_central_database):
-        """Test platform OpenAI response URL is not converted (only path stripped)."""
+    def test_platform_openai_response_url_warns_about_path(self, caplog, patch_central_database):
+        """Test platform OpenAI response URL triggers warning about API path."""
         platform_url = "https://api.openai.com/v1/responses"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -296,16 +305,17 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # URL should have path stripped
-        assert target._endpoint == "https://api.openai.com/v1"
-        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+        # URL should remain unchanged
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == platform_url.rstrip("/")
 
+        # Should have warning about API path
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 0
+        path_warnings = [log for log in warning_logs if "/responses" in log.message]
+        assert len(path_warnings) >= 1
 
-    def test_platform_openai_image_url_not_converted(self, caplog, patch_central_database):
-        """Test platform OpenAI image URL is not converted (only path stripped)."""
+    def test_platform_openai_image_url_warns_about_path(self, caplog, patch_central_database):
+        """Test platform OpenAI image URL triggers warning about API path."""
         platform_url = "https://api.openai.com/v1/images/generations"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -316,16 +326,17 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # URL should have path stripped
-        assert target._endpoint == "https://api.openai.com/v1"
-        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+        # URL should remain unchanged
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == platform_url.rstrip("/")
 
+        # Should have warning about API path
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 0
+        path_warnings = [log for log in warning_logs if "/images/generations" in log.message]
+        assert len(path_warnings) >= 1
 
-    def test_platform_openai_tts_url_not_converted(self, caplog, patch_central_database):
-        """Test platform OpenAI TTS URL is not converted (only path stripped)."""
+    def test_platform_openai_tts_url_warns_about_path(self, caplog, patch_central_database):
+        """Test platform OpenAI TTS URL triggers warning about API path."""
         platform_url = "https://api.openai.com/v1/audio/speech"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -336,16 +347,17 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # URL should have path stripped
-        assert target._endpoint == "https://api.openai.com/v1"
-        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+        # URL should remain unchanged
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == platform_url.rstrip("/")
 
+        # Should have warning about API path
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 0
+        path_warnings = [log for log in warning_logs if "/audio/speech" in log.message]
+        assert len(path_warnings) >= 1
 
-    def test_platform_openai_video_url_not_converted(self, caplog, patch_central_database):
-        """Test platform OpenAI video URL is not converted (only path stripped)."""
+    def test_platform_openai_video_url_warns_about_path(self, caplog, patch_central_database):
+        """Test platform OpenAI video URL triggers warning about API path."""
         platform_url = "https://api.openai.com/v1/videos"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -356,16 +368,17 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # URL should have path stripped
-        assert target._endpoint == "https://api.openai.com/v1"
-        assert str(target._async_client.base_url).rstrip("/") == "https://api.openai.com/v1"
+        # URL should remain unchanged
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == platform_url.rstrip("/")
 
+        # Should have warning about API path
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 0
+        path_warnings = [log for log in warning_logs if "/videos" in log.message]
+        assert len(path_warnings) >= 1
 
-    def test_azure_foundry_url_not_converted(self, caplog, patch_central_database):
-        """Test Azure Foundry URL is not converted."""
+    def test_azure_foundry_url_unchanged(self, caplog, patch_central_database):
+        """Test Azure Foundry URL remains unchanged."""
         foundry_url = "https://my-resource.models.ai.azure.com/chat/completions"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -376,16 +389,18 @@ class TestOldAzureURLConversion:
                     api_key="test-key",
                 )
 
-        # URL should be processed but not converted (just normalized)
-        assert ".models.ai.azure.com" in target._endpoint
+        # URL should remain unchanged
+        assert target._endpoint == foundry_url
+        assert str(target._async_client.base_url).rstrip("/") == foundry_url.rstrip("/")
 
-        # No conversion warning
+        # May have warning about API path in URL
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
+        # No old Azure format warning
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
         assert len(conversion_warnings) == 0
 
-    def test_old_azure_url_with_entra_auth(self, caplog, patch_central_database):
-        """Test old Azure URL with Entra auth is converted and works."""
+    def test_old_azure_url_with_entra_auth_warns_unchanged(self, caplog, patch_central_database):
+        """Test old Azure URL with Entra auth triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2024-02-15"
 
         with patch.dict(os.environ, {}, clear=True):
@@ -403,13 +418,14 @@ class TestOldAzureURLConversion:
                             use_entra_auth=True,
                         )
 
-        # Check URL was converted
-        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
+        # Check URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
 
         # Check warning was logged
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1
 
     def test_warning_message_contains_documentation_link(self, caplog, patch_central_database):
         """Test that warning message includes link to Microsoft documentation."""
@@ -445,10 +461,9 @@ class TestOldAzureURLConversion:
 
         # Check warning contains deployment name
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
-        conversion_warnings = [log for log in warning_logs if "Old Azure URL format detected" in log.message]
-        assert len(conversion_warnings) == 1
-        assert "my-custom-gpt4" in conversion_warnings[0].message
-        assert "extracted as model name" in conversion_warnings[0].message.lower()
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1
+        assert any("my-custom-gpt4" in log.message for log in conversion_warnings)
 
 
 class TestClientTypeUsage:
@@ -504,13 +519,12 @@ class TestClientTypeUsage:
         assert isinstance(target._async_client, AsyncOpenAI)
 
 
-class TestRealtimeURLConversion:
-    """Tests for RealtimeTarget URL conversion."""
+class TestRealtimeURLWarnings:
+    """Tests for RealtimeTarget URL validation warnings."""
 
-    def test_old_azure_realtime_url_converted_with_warning(self, caplog, patch_central_database):
-        """Test old Azure realtime URL is converted to new format and warning is logged."""
+    def test_old_azure_realtime_url_warns_unchanged(self, caplog, patch_central_database):
+        """Test old Azure realtime URL triggers warning but remains unchanged."""
         old_url = "wss://test.openai.azure.com/openai/deployments/gpt-4o-realtime/realtime?api-version=2024-10-01"
-        expected_new_url = "wss://test.openai.azure.com/openai/v1"
 
         with patch.dict(os.environ, {}, clear=True):
             with caplog.at_level(logging.WARNING):
@@ -520,10 +534,10 @@ class TestRealtimeURLConversion:
                     api_key="test-key",
                 )
 
-        # Check that URL was converted and remains wss://
-        assert target._endpoint == expected_new_url
-        assert "Old Azure URL format detected and converted" in caplog.text
-        assert old_url in caplog.text
+        # Check that URL was NOT converted - kept as-is
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
+        assert "Old Azure URL format" in caplog.text
 
     def test_new_azure_realtime_url_with_v1(self, patch_central_database):
         """Test new Azure realtime URL with /openai/v1 is accepted."""
@@ -539,81 +553,103 @@ class TestRealtimeURLConversion:
         # URL should remain wss://
         assert target._endpoint == new_url
 
-    def test_https_realtime_url_accepted(self, patch_central_database):
-        """Test https realtime URL is converted to wss in normalization."""
+    def test_https_realtime_url_kept_as_https(self, caplog, patch_central_database):
+        """Test https realtime URL is kept as-is (not converted to wss)."""
         url = "https://test.openai.azure.com/openai/v1"
-        expected_url = "wss://test.openai.azure.com/openai/v1"
 
         with patch.dict(os.environ, {}, clear=True):
-            target = RealtimeTarget(
-                model_name="gpt-4o-realtime",
-                endpoint=url,
-                api_key="test-key",
-            )
+            with caplog.at_level(logging.WARNING):
+                target = RealtimeTarget(
+                    model_name="gpt-4o-realtime",
+                    endpoint=url,
+                    api_key="test-key",
+                )
 
-        # URL should be converted to wss://
-        assert target._endpoint == expected_url
+        # URL should remain https (not converted to wss)
+        assert target._endpoint == url
+        # There may be a warning about scheme
 
-    def test_platform_openai_realtime_url_not_converted(self, patch_central_database):
-        """Test platform OpenAI realtime URL has /realtime stripped to base URL."""
+    def test_platform_openai_realtime_url_warns_about_path(self, caplog, patch_central_database):
+        """Test platform OpenAI realtime URL triggers warning about API path."""
         platform_url = "wss://api.openai.com/v1/realtime"
-        expected_url = "wss://api.openai.com/v1"
 
         with patch.dict(os.environ, {}, clear=True):
-            target = RealtimeTarget(
-                model_name="gpt-4o-realtime-preview",
-                endpoint=platform_url,
-                api_key="test-key",
-            )
+            with caplog.at_level(logging.WARNING):
+                target = RealtimeTarget(
+                    model_name="gpt-4o-realtime-preview",
+                    endpoint=platform_url,
+                    api_key="test-key",
+                )
 
-        # Platform URL should have /realtime stripped and remain wss://
-        assert target._endpoint == expected_url
+        # Platform URL should remain unchanged
+        assert target._endpoint == platform_url
+        assert str(target._async_client.base_url).rstrip("/") == platform_url.rstrip("/")
+        # Should have warning about /realtime path
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        path_warnings = [log for log in warning_logs if "/realtime" in log.message]
+        assert len(path_warnings) >= 1
 
 
-class TestURLNormalization:
-    """Tests for URL normalization and base URL extraction."""
+class TestURLValidation:
+    """Tests for URL validation and warning behavior."""
 
-    def test_chat_completions_path_stripped(self, patch_central_database):
-        """Test that /chat/completions path is stripped from base URL."""
+    def test_chat_completions_path_triggers_warning(self, caplog, patch_central_database):
+        """Test that /chat/completions path triggers a warning but URL remains unchanged."""
         url = "https://test.openai.azure.com/openai/v1/chat/completions"
 
         with patch.dict(os.environ, {}, clear=True):
-            target = OpenAIChatTarget(
-                model_name="gpt-4",
-                endpoint=url,
-                api_key="test-key",
-            )
+            with caplog.at_level(logging.WARNING):
+                target = OpenAIChatTarget(
+                    model_name="gpt-4",
+                    endpoint=url,
+                    api_key="test-key",
+                )
 
-        # Base URL should not include /chat/completions
-        assert str(target._async_client.base_url).rstrip("/") == "https://test.openai.azure.com/openai/v1"
+        # URL should remain unchanged
+        assert target._endpoint == url
+        assert str(target._async_client.base_url).rstrip("/") == url.rstrip("/")
+        # Should have warning about API path
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        path_warnings = [log for log in warning_logs if "/chat/completions" in log.message]
+        assert len(path_warnings) >= 1
 
-    def test_azure_foundry_v1_appended(self, patch_central_database):
-        """Test that /v1 is appended to Azure Foundry URLs if missing."""
+    def test_azure_foundry_triggers_warning(self, caplog, patch_central_database):
+        """Test that Azure Foundry URL with API path triggers a warning."""
         url = "https://test.models.ai.azure.com/chat/completions"
 
         with patch.dict(os.environ, {}, clear=True):
-            target = OpenAIChatTarget(
-                model_name="deepseek-r1",
-                endpoint=url,
-                api_key="test-key",
-            )
+            with caplog.at_level(logging.WARNING):
+                target = OpenAIChatTarget(
+                    model_name="deepseek-r1",
+                    endpoint=url,
+                    api_key="test-key",
+                )
 
-        # Base URL should end with /v1 (or /v1/)
-        base_url_str = str(target._async_client.base_url).rstrip("/")
-        assert base_url_str.endswith("/v1")
+        # URL should remain unchanged
+        assert target._endpoint == url
+        assert str(target._async_client.base_url).rstrip("/") == url.rstrip("/")
+        # May have warning about API path
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        path_warnings = [log for log in warning_logs if "/chat/completions" in log.message]
+        # Azure Foundry may or may not trigger warnings depending on URL structure
+        # Just ensure URL is unchanged
 
-    def test_old_url_converted_then_normalized(self, patch_central_database):
-        """Test that old URL is first converted, then normalized."""
+    def test_old_url_warns_unchanged(self, caplog, patch_central_database):
+        """Test that old URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2024-02-15"
 
         with patch.dict(os.environ, {}, clear=True):
-            target = OpenAIChatTarget(
-                model_name="gpt-4",
-                endpoint=old_url,
-                api_key="test-key",
-            )
+            with caplog.at_level(logging.WARNING):
+                target = OpenAIChatTarget(
+                    model_name="gpt-4",
+                    endpoint=old_url,
+                    api_key="test-key",
+                )
 
-        # Should be converted to new format
-        assert target._endpoint == "https://test.openai.azure.com/openai/v1"
-        # And base URL should match
-        assert str(target._async_client.base_url).rstrip("/") == "https://test.openai.azure.com/openai/v1"
+        # URL should remain unchanged
+        assert target._endpoint == old_url
+        assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
+        # Should have warning about old format
+        warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
+        conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
+        assert len(conversion_warnings) >= 1

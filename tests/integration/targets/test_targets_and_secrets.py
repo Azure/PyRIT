@@ -96,17 +96,16 @@ async def _assert_can_send_video_prompt(target):
     [
         ("OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL", True),
         ("PLATFORM_OPENAI_CHAT_ENDPOINT", "PLATFORM_OPENAI_CHAT_KEY", "PLATFORM_OPENAI_CHAT_MODEL", True),
-        ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "", True),
-        ("AZURE_OPENAI_GPT4O_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "AZURE_OPENAI_GPT4O_MODEL", True),
-        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_KEY", "", True),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", "", True),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", "", True),
-        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY", "", True),
-        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_KEY", "", True),
-        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", "", True),
-        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "AZURE_FOUNDRY_DEEPSEEK_KEY", "", True),
-        ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "", True),
-        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "", False),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_KEY", "AZURE_OPENAI_GPT4O_MODEL", True),
+        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_KEY", "AZURE_OPENAI_INTEGRATION_TEST_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2", True),
+        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY", "AZURE_OPENAI_GPT3_5_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_KEY", "AZURE_OPENAI_GPT4_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", "AZURE_OPENAI_GPTV_CHAT_MODEL", True),
+        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "AZURE_FOUNDRY_DEEPSEEK_KEY", "AZURE_FOUNDRY_DEEPSEEK_MODEL", True),
+        ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "AZURE_CHAT_PHI4_MODEL", True),
+        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "AZURE_CHAT_MINSTRAL3B_KEY", "AZURE_CHAT_MINSTRAL3B_MODEL", False),
         ("GOOGLE_GEMINI_ENDPOINT", "GOOGLE_GEMINI_API_KEY", "GOOGLE_GEMINI_MODEL", False),
         ("ANTHROPIC_CHAT_ENDPOINT", "ANTHROPIC_CHAT_KEY", "ANTHROPIC_CHAT_MODEL", False),
     ],
@@ -142,11 +141,6 @@ async def test_connect_required_openai_text_targets(sqlite_instance, endpoint, a
         ),
         ("AZURE_OPENAI_RESPONSES_ENDPOINT", "AZURE_OPENAI_RESPONSES_KEY", "AZURE_OPENAI_RESPONSES_MODEL"),
         (
-            "AZURE_OPENAI_RESPONSES_NEW_FORMAT_ENDPOINT",
-            "AZURE_OPENAI_RESPONSES_KEY",
-            "AZURE_OPENAI_RESPONSES_MODEL",
-        ),
-        (
             "AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT",
             "AZURE_OPENAI_GPT41_RESPONSES_KEY",
             "AZURE_OPENAI_GPT41_RESPONSES_MODEL",
@@ -178,8 +172,7 @@ async def test_connect_required_openai_response_targets(sqlite_instance, endpoin
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("AZURE_OPENAI_REALTIME_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
-        ("AZURE_OPENAI_REALTIME_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
+        ("OPENAI_REALTIME_ENDPOINT", "OPENAI_REALTIME_API_KEY", "OPENAI_REALTIME_MODEL"),
     ],
 )
 async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_key, model_name):
@@ -201,7 +194,6 @@ async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_
     ("endpoint", "api_key", "model_name"),
     [
         ("AZURE_OPENAI_REALTIME_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
-        ("AZURE_OPENAI_REALTIME_NEW_FORMAT_ENDPOINT", "AZURE_OPENAI_REALTIME_API_KEY", "AZURE_OPENAI_REALTIME_MODEL"),
     ],
 )
 async def test_realtime_target_multi_objective(sqlite_instance, endpoint, api_key, model_name):
@@ -273,19 +265,21 @@ async def test_connect_openai_completion(sqlite_instance):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "api_key"),
+    ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_API_KEY1"),
-        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_API_KEY2"),
+        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_API_KEY1", "OPENAI_IMAGE_MODEL1"),
+        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_API_KEY2", "OPENAI_IMAGE_MODEL2"),
     ],
 )
-async def test_connect_image(sqlite_instance, endpoint, api_key):
+async def test_connect_image(sqlite_instance, endpoint, api_key, model_name):
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
+    model_name_value = os.getenv(model_name) if model_name else ""
 
     target = OpenAIImageTarget(
         endpoint=endpoint_value,
         api_key=api_key_value,
+        model_name=model_name_value,
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
@@ -293,19 +287,21 @@ async def test_connect_image(sqlite_instance, endpoint, api_key):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "api_key"),
+    ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_TTS_ENDPOINT1", "OPENAI_TTS_KEY1"),
-        ("OPENAI_TTS_ENDPOINT2", "OPENAI_TTS_KEY2"),
+        ("OPENAI_TTS_ENDPOINT1", "OPENAI_TTS_KEY1", "OPENAI_TTS_MODEL1"),
+        ("OPENAI_TTS_ENDPOINT2", "OPENAI_TTS_KEY2", "OPENAI_TTS_MODEL2"),
     ],
 )
-async def test_connect_tts(sqlite_instance, endpoint, api_key):
+async def test_connect_tts(sqlite_instance, endpoint, api_key, model_name):
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
+    model_name_value = os.getenv(model_name) if model_name else ""
 
     target = OpenAITTSTarget(
         endpoint=endpoint_value,
         api_key=api_key_value,
+        model_name=model_name_value,
     )
 
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
