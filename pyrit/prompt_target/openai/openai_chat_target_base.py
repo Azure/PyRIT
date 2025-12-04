@@ -173,3 +173,11 @@ class OpenAIChatTargetBase(OpenAITarget, PromptChatTarget):
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return self._is_json_supported
+
+    def get_identifier(self):
+        public_attributes = super().get_identifier()
+        if self._temperature:
+            public_attributes["temperature"] = self._temperature
+        if self._top_p:
+            public_attributes["top_p"] = self._top_p
+        return public_attributes

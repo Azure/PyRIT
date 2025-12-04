@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, Literal, Optional, Sequence
+from typing import Any, Dict, Literal, Optional, Sequence
 
 from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values, net_utility
@@ -59,6 +59,7 @@ class PromptShieldTarget(PromptTarget):
         use_entra_auth: bool = False,
         field: Optional[PromptShieldEntryField] = None,
         max_requests_per_minute: Optional[int] = None,
+        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Class that initializes an Azure Content Safety Prompt Shield Target.
@@ -77,11 +78,17 @@ class PromptShieldTarget(PromptTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
+            custom_metadata (Dict[str, Any], Optional): Custom metadata to associate with the target for identifier
+                purposes.
         """
         endpoint_value = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
-        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
+        super().__init__(
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint_value,
+            custom_metadata=custom_metadata,
+        )
 
         self._api_version = api_version
         if use_entra_auth:

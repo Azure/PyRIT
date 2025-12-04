@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.models import Message, construct_response_from_request
@@ -29,6 +29,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         top_p: float = 1.0,
         max_requests_per_minute: Optional[int] = None,
         verbose: bool = False,
+        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
@@ -42,9 +43,15 @@ class HuggingFaceEndpointTarget(PromptTarget):
             top_p (float, Optional): The cumulative probability for nucleus sampling. Defaults to 1.0.
             max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
             verbose (bool, Optional): Flag to enable verbose logging. Defaults to False.
+            custom_metadata (Optional[Dict[str, Any]]): Custom metadata to associate with the target for identifier
+                purposes.
         """
         super().__init__(
-            max_requests_per_minute=max_requests_per_minute, verbose=verbose, endpoint=endpoint, model_name=model_id
+            max_requests_per_minute=max_requests_per_minute,
+            verbose=verbose,
+            endpoint=endpoint,
+            model_name=model_id,
+            custom_metadata=custom_metadata,
         )
         self.hf_token = hf_token
         self.endpoint = endpoint
@@ -136,3 +143,11 @@ class HuggingFaceEndpointTarget(PromptTarget):
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return False
+
+    def get_identifier(self) -> dict:
+        public_attributes = super().get_identifier()
+        if self.temperature:
+            public_attributes["temperature"] = self.temperature
+        if self.top_p:
+            public_attributes["top_p"] = self.top_p
+        return public_attributes

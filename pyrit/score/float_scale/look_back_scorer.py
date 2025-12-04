@@ -3,7 +3,7 @@
 import logging
 import re
 from pathlib import Path
-from typing import Optional
+from typing import ClassVar, Optional
 
 import yaml
 
@@ -26,6 +26,7 @@ class LookBackScorer(FloatScaleScorer):
             Must be passed as a keyword argument.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator()
 
     def __init__(
@@ -103,3 +104,10 @@ class LookBackScorer(FloatScaleScorer):
             "LookBackScorer:", score.score_value, score.score_value_description, "Rationale: ", score.score_rationale
         )
         return [score]
+
+    def _get_scorer_specific_params(self):
+        scorer_specific_params = super()._get_scorer_specific_params()
+        return {
+            **(scorer_specific_params or {}),
+            "exclude_instruction_prompts": self.exclude_instruction_prompts,
+        }

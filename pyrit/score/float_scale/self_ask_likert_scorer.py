@@ -4,7 +4,7 @@
 import enum
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import ClassVar, Dict, Optional, Union
 
 import yaml
 
@@ -36,6 +36,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(

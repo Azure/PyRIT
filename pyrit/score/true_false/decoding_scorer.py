@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pyrit.analytics.text_matching import ExactTextMatching, TextMatching
 from pyrit.memory.central_memory import CentralMemory
@@ -23,6 +23,7 @@ class DecodingScorer(TrueFalseScorer):
     text matching strategy.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"], supported_roles=["assistant"]
     )
@@ -101,3 +102,10 @@ class DecodingScorer(TrueFalseScorer):
         ]
 
         return score
+
+    def _get_scorer_specific_params(self):
+        scorer_specific_params = super()._get_scorer_specific_params()
+        return {
+            **(scorer_specific_params or {}),
+            "text_matcher": self._text_matcher.__class__.__name__,
+        }

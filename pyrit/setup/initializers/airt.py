@@ -139,7 +139,9 @@ class AIRTInitializer(PyRITInitializer):
         scorer_target = OpenAIChatTarget(
             endpoint=endpoint,
             api_key=api_key,
+            model_name="gpt-4o",
             temperature=0.3,
+            custom_metadata={"safety": "unsafe"},
         )
 
         # Configure composite harm scorer
