@@ -704,22 +704,19 @@ def test_set_auth_with_api_key(patch_central_database):
     assert target._api_key == "test_api_key_456"
 
 
-def test_url_validation_warning_for_incorrect_endpoint(caplog, patch_central_database):
-    """Test that URL validation warns for incorrect endpoints."""
+def test_url_validation_no_warning_for_custom_endpoint(caplog, patch_central_database):
+    """Test that URL validation doesn't warn for custom endpoint paths."""
     with patch.dict(os.environ, {}, clear=True):
         with caplog.at_level(logging.WARNING):
             target = OpenAIChatTarget(
                 model_name="gpt-4",
-                endpoint="https://api.openai.com/v1/wrong/path",  # Incorrect endpoint
+                endpoint="https://some.provider.com/v1/custom/path",  # Incorrect endpoint
                 api_key="test-key",
             )
 
-    # Should have a warning about incorrect endpoint
+    # Should NOT warn about custom paths - they could be for custom endpoints
     warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    assert len(warning_logs) >= 1
-    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
-    assert len(endpoint_warnings) == 1
-    assert "/chat/completions" in endpoint_warnings[0].message
+    assert len(warning_logs) == 0
     assert target
 
 
@@ -732,12 +729,6 @@ def test_url_validation_no_warning_for_correct_azure_endpoint(caplog, patch_cent
                 endpoint="https://myservice.openai.azure.com/openai/deployments/gpt-4/chat/completions",
                 api_key="test-key",
             )
-
-    # Should not have URL validation warnings
-    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
-    assert len(endpoint_warnings) == 0
-    assert target
 
     # Should not have URL validation warnings
     warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
