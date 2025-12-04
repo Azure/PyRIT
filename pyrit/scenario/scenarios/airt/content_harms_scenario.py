@@ -146,7 +146,7 @@ class ContentHarmsScenario(Scenario):
             if objectives_by_harm and harm_strategy in objectives_by_harm:
                 seeds_by_strategy[harm_strategy] = objectives_by_harm[harm_strategy]
             else:
-                harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "harms"
+                harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
                 strategy_seed_dataset = SeedDataset.from_yaml_file(harm_dataset_path / f"{harm_strategy}.prompt")
                 seeds_by_strategy[harm_strategy] = SeedDataset.group_seed_prompts_by_prompt_group_id(
                     strategy_seed_dataset.seeds
