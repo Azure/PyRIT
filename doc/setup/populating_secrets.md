@@ -53,9 +53,9 @@ The simplest approach is using API keys as shown above. Most targets support thi
 For Azure resources, you can use Entra auth instead of API keys. This requires:
 
 1. Install Azure CLI for your OS:
-   - [Windows](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli)
-   - [Linux](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt)
-   - [macOS](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-macos)
+   - [Windows](https://learn.microsoft.com/cli/azure/install-azure-cli-windows)
+   - [Linux](https://learn.microsoft.com/cli/azure/install-azure-cli-linux)
+   - [macOS](https://learn.microsoft.com/cli/azure/install-azure-cli-macos)
 
 2. Log in to Azure:
    ```bash

@@ -12,6 +12,9 @@ from typing import Any, List, Literal, Optional, Tuple
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AsyncOpenAI
 
+from pyrit.exceptions import (
+    pyrit_target_retry,
+)
 from pyrit.exceptions.exception_classes import ServerErrorException
 from pyrit.models import (
     Message,
@@ -280,6 +283,7 @@ class RealtimeTarget(OpenAITarget):
         return "You are a helpful AI assistant"
 
     @limit_requests_per_minute
+    @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
 
         conversation_id = message.message_pieces[0].conversation_id

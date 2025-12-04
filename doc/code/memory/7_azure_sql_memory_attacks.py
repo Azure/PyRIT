@@ -129,6 +129,7 @@ logging.basicConfig(level=logging.WARNING)
 img_prompt_target = OpenAIImageTarget(
     endpoint=os.environ.get("OPENAI_IMAGE_ENDPOINT"),
     api_key=os.environ.get("OPENAI_IMAGE_API_KEY"),
+    model_name=os.environ.get("OPENAI_IMAGE_MODEL"),
 )
 red_teaming_llm = OpenAIChatTarget()
 scoring_target = OpenAIChatTarget()

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import logging
-from typing import Any, Dict, Literal
+from typing import Any, Dict, Literal, Optional
 
 from pyrit.exceptions import (
     EmptyResponseException,
@@ -23,11 +23,9 @@ class OpenAIImageTarget(OpenAITarget):
 
     def __init__(
         self,
-        image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024",
-        num_images: int = 1,
-        image_version: Literal["dall-e-2", "dall-e-3"] = "dall-e-2",
-        quality: Literal["standard", "hd"] = "standard",
-        style: Literal["natural", "vivid"] = "natural",
+        image_size: Literal["256x256", "512x512", "1024x1024", "1536x1024", "1024x1536"] = "1024x1024",
+        quality: Optional[Literal["standard", "hd", "low", "medium", "high"]] = None,
+        style: Optional[Literal["natural", "vivid"]] = None,
         *args,
         **kwargs,
     ):
@@ -49,36 +47,22 @@ class OpenAIImageTarget(OpenAITarget):
                 will be capped at the value provided.
             image_size (Literal["256x256", "512x512", "1024x1024"], Optional): The size of the generated images.
                 Defaults to "1024x1024".
-            num_images (int, Optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be
-                between 1 and 10. For DALL-E-3, this must be 1.
-            image_version (Literal["dall-e-2", "dall-e-3"], Optional): The version of DALL-E to use. Defaults to
-                "dall-e-2".
-            quality (Literal["standard", "hd"], Optional): The quality of the generated images. Only applicable for
-                DALL-E-3. Defaults to "standard".
-            style (Literal["natural", "vivid"], Optional): The style of the generated images. Only applicable for
-                DALL-E-3. Defaults to "natural".
+            quality (Literal["standard", "hd", "low", "medium", "high"], Optional): The quality of the generated images.
+                Different models support different quality settings.
+                For DALL-E-3, there's "standard" and "hd".
+                For newer models, there are "low", "medium", and "high".
+                Default is to not specify.
+            style (Literal["natural", "vivid"], Optional): The style of the generated images.
+                Default is to not specify.
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
-
-        Raises:
-            ValueError: If `num_images` is not 1 for DALL-E-3.
-            ValueError: If `num_images` is less than 1 or greater than 10 for DALL-E-2.
         """
-        self.image_version = image_version
-        if image_version == "dall-e-3":
-            if num_images != 1:
-                raise ValueError("DALL-E-3 can only generate 1 image at a time.")
-            self.quality = quality
-            self.style = style
-        elif image_version == "dall-e-2":
-            if num_images < 1 or num_images > 10:
-                raise ValueError("DALL-E-2 can generate only up to 10 images at a time.")
-
+        self.quality = quality
+        self.style = style
         self.image_size = image_size
-        self.num_images = num_images
 
         super().__init__(*args, **kwargs)
 
@@ -123,12 +107,12 @@ class OpenAIImageTarget(OpenAITarget):
         image_generation_args: Dict[str, Any] = {
             "model": self._model_name,
             "prompt": message_piece.converted_value,
-            "n": self.num_images,
             "size": self.image_size,
-            "response_format": "b64_json",
         }
-        if self.image_version == "dall-e-3" and self.quality and self.style:
+
+        if self.quality:
             image_generation_args["quality"] = self.quality
+        if self.style:
             image_generation_args["style"] = self.style
 
         # Use unified error handler for consistent error handling

@@ -3,7 +3,7 @@
 
 import logging
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -409,14 +409,16 @@ class TestURLWarnings:
                     with patch(
                         "pyrit.auth.azure_auth.get_async_token_provider_from_default_azure_credential"
                     ) as mock_provider:
-                        mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
-                        mock_provider.return_value = lambda: "mock-token"
+                        with patch("azure.identity.DefaultAzureCredential.get_token") as mock_get_token:
+                            mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
+                            mock_provider.return_value = lambda: "mock-token"
+                            mock_get_token.return_value = MagicMock(token="mock-token", expires_on=9999999999)
 
-                        target = OpenAIChatTarget(
-                            model_name="gpt-4",
-                            endpoint=old_url,
-                            use_entra_auth=True,
-                        )
+                            target = OpenAIChatTarget(
+                                model_name="gpt-4",
+                                endpoint=old_url,
+                                use_entra_auth=True,
+                            )
 
         # Check URL was NOT converted - kept as-is
         assert target._endpoint == old_url

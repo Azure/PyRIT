@@ -140,6 +140,7 @@ prepended_conversation = [
 oai_objective_target = OpenAIChatTarget(
     api_key=os.getenv("AZURE_OPENAI_GPT4_CHAT_KEY"),
     endpoint=os.getenv("AZURE_OPENAI_GPT4_CHAT_ENDPOINT"),
+    model_name=os.getenv("AZURE_OPENAI_GPT4_CHAT_MODEL"),
 )
 
 red_teaming_attack = RedTeamingAttack(

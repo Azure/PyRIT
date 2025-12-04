@@ -20,7 +20,7 @@ from pyrit.prompt_target import OpenAIImageTarget
 @pytest.fixture
 def image_target(patch_central_database) -> OpenAIImageTarget:
     return OpenAIImageTarget(
-        model_name="test",
+        model_name="dall-e-3",
         endpoint="test",
         api_key="test",
     )
@@ -46,18 +46,7 @@ def sample_conversations() -> MutableSequence[MessagePiece]:
 
 def test_initialization_with_required_parameters(image_target: OpenAIImageTarget):
     assert image_target
-    assert image_target._model_name == "test"
-
-
-def test_initialization_invalid_num_images():
-    with pytest.raises(ValueError):
-        OpenAIImageTarget(
-            model_name="test",
-            endpoint="test",
-            api_key="test",
-            image_version="dall-e-3",
-            num_images=3,
-        )
+    assert image_target._model_name == "dall-e-3"
 
 
 @pytest.mark.asyncio
