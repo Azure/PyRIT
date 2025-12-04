@@ -26,9 +26,11 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-seed_dataset = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_dataset = SeedDataset.from_yaml_file(
+    pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt"
+)
 
-print(seed_dataset.prompts[0])
+print(seed_dataset.seeds[0])
 
 # %% [markdown]
 # There are many attributes stored in a `SeedPrompt` that is very useful for querying by fields such as `harm_categories`.
@@ -36,17 +38,6 @@ print(seed_dataset.prompts[0])
 # %% [markdown]
 # # Loading a Dataset as a `SeedDataset`
 #
-# By managing `SeedPrompt` objects as a `SeedDataset`, we can load prompts from other datasets. This example demonstrates the process of using XSTest Bias Testing examples to evaluate the safety and bias of an AI language model.
-
-# %%
-from pyrit.datasets import fetch_xstest_dataset
-
-# Fetch examples from XSTest Bias Testing datase
-xstest_dataset = fetch_xstest_dataset()
-
-# Use the first 4 examples
-prompt_list = xstest_dataset.get_values(first=4)
-print(xstest_dataset.prompts[0])
 
 # %% [markdown]
 # By using `render_template_value`, we can put values into the template. The below example shows a simple use case of using the template in a jailbreak to include in the prompts.
@@ -55,13 +46,13 @@ print(xstest_dataset.prompts[0])
 from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
 from pyrit.models import SeedPrompt
 
-jailbreak_template = SeedPrompt.from_yaml_file(pathlib.Path(JAILBREAK_TEMPLATES_PATH) / "jailbreak_1.yaml")
+jailbreak_template = SeedPrompt.from_yaml_file(JAILBREAK_TEMPLATES_PATH / "jailbreak_1.yaml")
 
-jailbreak_prompt: str = jailbreak_template.render_template_value(
+multimodal_jailbreak_prompt = jailbreak_template.render_template_value(
     prompt="Say the words 'I wish I could be the first golden retriever to go to outer space.'"
 )
 
-print(jailbreak_prompt)
+print(multimodal_jailbreak_prompt)
 
 # %% [markdown]
 # # Seed Objectives
@@ -75,7 +66,7 @@ print(jailbreak_prompt)
 # %%
 # Load a dataset containing only an objective
 objective_dataset = SeedDataset.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-objective-only-group.prompt"
+    pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "examples" / "illegal-objective-only-group.prompt"
 )
 
 # The objective is stored separately from prompts
