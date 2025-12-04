@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, Optional
+from typing import ClassVar, Dict, Optional
 from uuid import UUID
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
@@ -18,6 +18,8 @@ class FloatScaleScorer(Scorer):
     to which a response exhibits certain characteristics. Each piece in a request response
     is scored independently, returning one score per piece.
     """
+
+    version: ClassVar[int] = 1
 
     def __init__(self, *, validator) -> None:
         super().__init__(validator=validator)

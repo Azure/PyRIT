@@ -3,7 +3,7 @@
 
 import uuid
 from textwrap import dedent
-from typing import Optional
+from typing import ClassVar, Optional
 
 import requests
 from openai import BadRequestError
@@ -35,6 +35,7 @@ class GandalfScorer(TrueFalseScorer):
             TrueFalseScoreAggregator.OR.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(

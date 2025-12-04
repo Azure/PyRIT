@@ -79,7 +79,7 @@ class Scenario(ABC):
         name: str,
         version: int,
         strategy_class: Type[ScenarioStrategy],
-        objective_scorer_identifier: Optional[Dict[str, str]] = None,
+        objective_scorer_identifier: Optional[Dict] = None,
         include_default_baseline: bool = True,
         scenario_result_id: Optional[Union[uuid.UUID, str]] = None,
     ) -> None:
@@ -90,7 +90,7 @@ class Scenario(ABC):
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
             strategy_class (Type[ScenarioStrategy]): The strategy enum class for this scenario.
-            objective_scorer_identifier (Optional[Dict[str, str]]): Identifier for the objective scorer.
+            objective_scorer_identifier (Optional[Dict]): Identifier for the objective scorer.
             include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 from the first atomic attack without modifications. Most scenarios should have some kind of
                 baseline so users can understand the impact of strategies, but subclasses can optionally write

@@ -3,7 +3,7 @@
 
 import abc
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Identifier, Message
@@ -26,12 +26,16 @@ class PromptTarget(abc.ABC, Identifier):
         max_requests_per_minute: Optional[int] = None,
         endpoint: str = "",
         model_name: str = "",
+        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._max_requests_per_minute = max_requests_per_minute
         self._endpoint = endpoint
         self._model_name = model_name
+        # Store any custom metadata provided for identifier purposes, including safety (safe vs. unsafe),
+        # specific guardrails, fine-tuning information, version, etc.
+        self._custom_metadata = custom_metadata
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -63,12 +67,32 @@ class PromptTarget(abc.ABC, Identifier):
         """
         self._memory.dispose_engine()
 
-    def get_identifier(self) -> dict:
-        public_attributes = {}
+    def get_identifier(self) -> Dict[str, Any]:
+        public_attributes: Dict[str, Any] = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         if self._endpoint:
             public_attributes["endpoint"] = self._endpoint
         if self._model_name:
             public_attributes["model_name"] = self._model_name
+        if self._custom_metadata:
+            public_attributes["custom_metadata"] = self._custom_metadata
         return public_attributes
+
+    def get_eval_identifier(self) -> Dict[str, Any]:
+        """
+        Get an identifier for scorer evaluation purposes.
+
+        This method returns only the essential attributes needed for scorer evaluation
+        and registry tracking.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing identification attributes for scorer evaluation purposes.
+        """
+        eval_identifier = self.get_identifier()
+        if "__module__" in eval_identifier:
+            del eval_identifier["__module__"]
+        if "endpoint" in eval_identifier:
+            del eval_identifier["endpoint"]
+
+        return eval_identifier

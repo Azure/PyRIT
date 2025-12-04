@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 
 import yaml
 
@@ -62,6 +62,7 @@ class TrueFalseQuestion:
 class SelfAskTrueFalseScorer(TrueFalseScorer):
     """A class that represents a self-ask true/false for scoring."""
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )
@@ -127,10 +128,12 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
                 The score_value is True or False based on which description fits best.
                 Metadata can be configured to provide additional information.
         """
+        scoring_prompt = f"objective: {objective}\nresponse: {message_piece.converted_value}"
+
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            message_value=message_piece.converted_value,
+            message_value=scoring_prompt,
             message_data_type=message_piece.converted_value_data_type,
             scored_prompt_id=message_piece.id,
             category=self._score_category,

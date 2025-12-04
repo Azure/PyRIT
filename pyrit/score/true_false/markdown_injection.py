@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import re
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -22,6 +22,7 @@ class MarkdownInjectionScorer(TrueFalseScorer):
     might be exploited. Returns True if markdown injection is detected.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(

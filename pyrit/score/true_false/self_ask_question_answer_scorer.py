@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.models import MessagePiece, Score, UnvalidatedScore
@@ -25,6 +25,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
     to objective target or you need more flexibility in determining if the questions were answered correctly.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         is_objective_required=True,

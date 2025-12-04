@@ -10,7 +10,17 @@ import logging
 import uuid
 from abc import abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 
 from pyrit.exceptions import (
     InvalidJsonException,
@@ -32,6 +42,10 @@ from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
+    from pyrit.score.scorer_evaluation.scorer_metrics_registry import RegistryType
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +55,9 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+    version: ClassVar[int] = 1
+    """The version of the scorer implementation. This should only be incremented when
+    the fundamental behavior of the scorer changes, which may impact scores."""
 
     def __init__(self, *, validator: ScorerPromptValidator):
         self._validator = validator
@@ -193,6 +210,31 @@ class Scorer(abc.ABC):
         scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
         return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
 
+    def get_scorer_metrics_from_registry(
+        self, registry_type: Optional["RegistryType"] = None
+    ) -> Optional["ScorerMetrics"]:
+        """
+        Get scorer metrics from the registry based on this specific scorer configuration.
+
+        Args:
+            registry_type (Optional[RegistryType]): The type of registry to query (HARM or OBJECTIVE).
+
+        Returns:
+            List[MetricsRegistryEntry]: A list of registry entries matching the filters,
+                ordered by accuracy from highest to lowest.
+        """
+        from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
+            MetricsRegistry,
+            ScorerEvalIdentifier,
+        )
+
+        registry = MetricsRegistry()
+        eval_identifier = ScorerEvalIdentifier(**self.get_identifier())
+        metrics = registry.get_scorer_registry_metrics_by_identifier(
+            scorer_identifier=eval_identifier, registry_type=registry_type
+        )
+        return metrics
+
     async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given text based on the task using the chat target.
@@ -342,11 +384,14 @@ class Scorer(abc.ABC):
         Returns:
             dict: The identifier dictionary.
         """
-        identifier = {}
-        identifier["__type__"] = self.__class__.__name__
-        identifier["__module__"] = self.__class__.__module__
-        identifier["sub_identifier"] = self._get_sub_identifier()
-        return identifier
+        return {
+            "type": self.__class__.__name__,
+            "version": self.version,
+            "system_prompt": self._get_system_prompt(),
+            "sub_identifier": self._get_sub_identifier(),
+            "model_info": self._get_model_info(),
+            "scorer_specific_params": self._get_scorer_specific_params(),
+        }
 
     def _get_sub_identifier(self) -> Optional[Union[Dict, List[Dict]]]:
         """
@@ -355,6 +400,44 @@ class Scorer(abc.ABC):
 
         Returns:
             None, dict, or list[dict]: The sub-identifier(s) of wrapped scorer(s), or None for non-composite scorers.
+        """
+        return None
+
+    def _get_system_prompt(self) -> Optional[str]:
+        """
+        Returns system prompt text if applicable.
+
+        Returns:
+            str: The system prompt text.
+        """
+        target_attrs = ["_system_prompt", "_system_prompt_with_objective", "_system_prompt_format_string"]
+
+        for attr_name in target_attrs:
+            if hasattr(self, attr_name):
+                return getattr(self, attr_name)
+        return None
+
+    def _get_model_info(self) -> Optional[Dict[str, Any]]:
+        """
+        Returns model information from the prompt target if available.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing model information, or None if not applicable.
+        """
+        prompt_target = getattr(self, "_prompt_target", None)
+
+        if prompt_target and hasattr(prompt_target, "get_eval_identifier"):
+            return prompt_target.get_eval_identifier()
+
+        return None
+
+    def _get_scorer_specific_params(self) -> Optional[Dict[str, Any]]:
+        """
+        Returns additional scorer-specific parameters if applicable.
+        Override this method in subclasses to provide specific parameters.
+
+        Returns:
+            Optional[Dict[str, Union[str, int]]]: A dictionary containing additional parameters, or None if not applicable.
         """
         return None
 
@@ -547,7 +630,7 @@ class Scorer(abc.ABC):
             skip_on_error_result (bool): If True, skip scoring pieces that have errors (default: `True`)
 
         Returns:
-            Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
+            Dict[str, List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
                 containing lists of scores from each type of scorer.
         """
         result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}

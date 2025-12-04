@@ -4,7 +4,7 @@
 import enum
 import json
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pyrit.common import net_utility
 from pyrit.models import Message, construct_response_from_request
@@ -33,6 +33,7 @@ class GandalfTarget(PromptTarget):
         *,
         level: GandalfLevel,
         max_requests_per_minute: Optional[int] = None,
+        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the Gandalf target.
@@ -42,9 +43,15 @@ class GandalfTarget(PromptTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
+            custom_metadata (Optional[Dict[str, Any]]): Custom metadata to associate with the target for
+                identifier purposes.
         """
         endpoint = "https://gandalf-api.lakera.ai/api/send-message"
-        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
+        super().__init__(
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint,
+            custom_metadata=custom_metadata,
+        )
 
         self._defender = level.value
 

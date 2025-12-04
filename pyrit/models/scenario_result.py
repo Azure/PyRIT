@@ -4,10 +4,14 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 import pyrit
 from pyrit.models import AttackOutcome, AttackResult
+
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
+    from pyrit.score.scorer_evaluation.scorer_metrics_registry import RegistryType
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +70,7 @@ class ScenarioResult:
         self.id = id if id is not None else uuid.uuid4()
         self.scenario_identifier = scenario_identifier
         self.objective_target_identifier = objective_target_identifier
-        self.objective_scorer_identifier = objective_scorer_identifier
+        self.objective_scorer_identifier = objective_scorer_identifier or {}
         self.scenario_run_state = scenario_run_state
         self.attack_results = attack_results
         self.labels = labels if labels is not None else {}
@@ -136,3 +140,21 @@ class ScenarioResult:
 
         successful_results = sum(1 for result in all_results if result.outcome == AttackOutcome.SUCCESS)
         return int((successful_results / total_results) * 100)
+
+    def get_scorer_evaluation_metrics(
+        self, registry_type: Optional["RegistryType"] = None
+    ) -> Optional["ScorerMetrics"]:
+        """
+        Get the evaluation metrics for the scenario's scorer from the scorer evaluation registry.
+
+        Returns:
+            ScorerMetrics: The evaluation metrics object.
+        """
+        from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
+            MetricsRegistry,
+            ScorerEvalIdentifier,
+        )
+
+        eval_identifier = ScorerEvalIdentifier(**self.objective_scorer_identifier)
+        registry = MetricsRegistry()
+        return registry.get_scorer_registry_metrics_by_identifier(eval_identifier, registry_type=registry_type)

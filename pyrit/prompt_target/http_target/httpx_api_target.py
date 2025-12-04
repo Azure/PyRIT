@@ -42,6 +42,7 @@ class HTTPXAPITarget(HTTPTarget):
         http2: Optional[bool] = None,
         callback_function: Callable | None = None,
         max_requests_per_minute: Optional[int] = None,
+        custom_metadata: Optional[dict[str, Any]] = None,
         **httpx_client_kwargs: Any,
     ) -> None:
         """
@@ -53,6 +54,7 @@ class HTTPXAPITarget(HTTPTarget):
             use_tls=True,
             callback_function=callback_function,
             max_requests_per_minute=max_requests_per_minute,
+            custom_metadata=custom_metadata,
             **httpx_client_kwargs,
         )
 

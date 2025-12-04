@@ -25,6 +25,11 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     ObjectiveHumanLabeledEntry,
 )
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
+    MetricsRegistry,
+    RegistryType,
+    ScorerEvalIdentifier,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 from .krippendorff import krippendorff_alpha
@@ -180,6 +185,7 @@ class ScorerEvaluator(abc.ABC):
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
+        add_to_registry: bool = False,
     ) -> ScorerMetrics:
         """
         Run the evaluation for the scorer/policy combination on the passed in CSV file.
@@ -200,6 +206,8 @@ class ScorerEvaluator(abc.ABC):
             dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
                 file name. This is used to inform the name of the metrics file and model scoring results CSV to save
                 in the 'scorer_evals' directory.
+            add_to_registry (bool): Whether to add the metrics to the MetricsRegistry. Defaults to False. This should
+                only be True when running evaluations on official consolidated datasets.
 
         Returns:
             ScorerMetrics: The metrics for the scorer.
@@ -208,7 +216,12 @@ class ScorerEvaluator(abc.ABC):
 
     @abc.abstractmethod
     async def run_evaluation_async(
-        self, labeled_dataset: HumanLabeledDataset, num_scorer_trials: int = 1, save_results: bool = True
+        self,
+        labeled_dataset: HumanLabeledDataset,
+        num_scorer_trials: int = 1,
+        save_results: bool = True,
+        csv_path: Optional[Union[str, Path]] = None,
+        add_to_registry: bool = False,
     ) -> ScorerMetrics:
         """
         Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
@@ -218,6 +231,9 @@ class ScorerEvaluator(abc.ABC):
             num_scorer_trials (int): The number of trials to run the scorer on all responses.
             save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
                 in a CSV file. Defaults to True.
+            csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
+            add_to_registry (bool): Whether to add the metrics to the MetricsRegistry. Defaults to False. This should
+                only be True when running evaluations on official consolidated datasets.
 
         Returns:
             ScorerMetrics: The metrics for the scorer. This will be either HarmScorerMetrics or ObjectiveScorerMetrics
@@ -321,6 +337,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
+        add_to_registry: bool = False,
     ) -> HarmScorerMetrics:
         labeled_dataset = HumanLabeledDataset.from_csv(
             csv_path=csv_path,
@@ -336,6 +353,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             num_scorer_trials=num_scorer_trials,
             save_results=save_results,
             csv_path=csv_path,
+            add_to_registry=add_to_registry,
         )
 
         return metrics
@@ -346,6 +364,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         num_scorer_trials: int = 1,
         save_results: bool = True,
         csv_path: Optional[Union[str, Path]] = None,
+        add_to_registry: bool = False,
     ) -> HarmScorerMetrics:
         """
         Evaluate the scorer against a HumanLabeledDataset of type HARM. If save_results is True, the evaluation
@@ -357,10 +376,15 @@ class HarmScorerEvaluator(ScorerEvaluator):
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
             csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
+            add_to_registry (bool): Whether to add the metrics to the MetricsRegistry. Defaults to False. This should
+                only be True when running evaluations on official consolidated datasets.
 
         Returns:
             HarmScorerMetrics: The metrics for the harm scorer.
         """
+        if add_to_registry:
+            logger.warning("Registry functionality is not implemented for harm scoring. Ignoring add_to_registry flag.")
+
         if labeled_dataset.metrics_type != MetricsType.HARM:
             raise ValueError("The HumanLabeledDataset must be of type HARM to evaluate a harm scorer.")
 
@@ -551,6 +575,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
+        add_to_registry: bool = False,
     ) -> ObjectiveScorerMetrics:
         labeled_dataset = HumanLabeledDataset.from_csv(
             csv_path=csv_path,
@@ -566,6 +591,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             num_scorer_trials=num_scorer_trials,
             save_results=save_results,
             csv_path=csv_path,
+            add_to_registry=add_to_registry,
         )
 
         return metrics
@@ -576,6 +602,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         num_scorer_trials: int = 1,
         save_results: bool = True,
         csv_path: Optional[Union[str, Path]] = None,
+        add_to_registry: bool = False,
     ) -> ObjectiveScorerMetrics:
         """
         Evaluate the scorer against a HumanLabeledDataset of type OBJECTIVE. If save_results is True, the evaluation
@@ -586,6 +613,9 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
+            csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
+            add_to_registry (bool): Whether to add the metrics to the MetricsRegistry. Defaults to False. This should
+                only be True when running evaluations on official consolidated datasets.
 
         Returns:
             ObjectiveScorerMetrics: The metrics for the objective scorer.
@@ -625,6 +655,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             all_human_scores=all_human_scores,
             all_model_scores=all_model_scores,
         )
+
         if save_results:
             # Calculate the gold scores (majority vote of human scores) for the CSV output
             gold_scores = np.round(np.mean(all_human_scores, axis=0))
@@ -640,6 +671,20 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             # Save the metrics to a JSON file
             with open(metrics_path, "w") as f:
                 json.dump(asdict(objective_metrics), f, indent=4)
+
+        if add_to_registry:
+            try:
+                registry = MetricsRegistry()
+                scorer_identifier = ScorerEvalIdentifier(**self.scorer.get_identifier())
+                registry.add_entry(
+                    scorer_identifier=scorer_identifier,
+                    metrics=objective_metrics,
+                    registry_type=RegistryType.OBJECTIVE,
+                    dataset_version=labeled_dataset.version,
+                )
+                logger.info(f"Added metrics for {scorer_identifier.type} to registry")
+            except Exception as e:
+                logger.warning(f"Failed to add metrics to registry: {e}")
 
         return objective_metrics
 

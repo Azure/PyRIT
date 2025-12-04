@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from azure.ai.contentsafety import ContentSafetyClient
 from azure.ai.contentsafety.models import (
@@ -33,6 +33,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
     more severe content. Supports both text and image inputs.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )
@@ -165,3 +166,10 @@ class AzureContentFilterScorer(FloatScaleScorer):
         )
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
+
+    def _get_scorer_specific_params(self):
+        scorer_specific_params = super()._get_scorer_specific_params()
+        return {
+            **(scorer_specific_params or {}),
+            "harm_categories": self._score_categories,
+        }

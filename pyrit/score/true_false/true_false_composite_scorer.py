@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -19,6 +19,8 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
     aggregation function (e.g., ``TrueFalseScoreAggregator.AND``, ``TrueFalseScoreAggregator.OR``,
     ``TrueFalseScoreAggregator.MAJORITY``).
     """
+
+    version: ClassVar[int] = 1
 
     def __init__(
         self,

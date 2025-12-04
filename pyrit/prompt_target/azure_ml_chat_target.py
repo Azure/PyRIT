@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from httpx import HTTPStatusError
 
@@ -40,6 +40,7 @@ class AzureMLChatTarget(PromptChatTarget):
         top_p: float = 1.0,
         repetition_penalty: float = 1.0,
         max_requests_per_minute: Optional[int] = None,
+        custom_metadata: Optional[Dict[str, Any]] = None,
         **param_kwargs,
     ) -> None:
         """
@@ -71,6 +72,8 @@ class AzureMLChatTarget(PromptChatTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
+            custom_metadata (Optional[Dict[str, Any]]): Custom metadata to associate with the target for identifier
+                purposes.
             **param_kwargs: Additional parameters to pass to the model for generating responses. Example
                 parameters can be found here: https://huggingface.co/docs/api-inference/tasks/text-generation.
                 Note that the link above may not be comprehensive, and specific acceptable parameters may be
@@ -80,7 +83,12 @@ class AzureMLChatTarget(PromptChatTarget):
         endpoint_value = default_values.get_required_value(
             env_var_name=self.endpoint_uri_environment_variable, passed_value=endpoint
         )
-        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
+        PromptChatTarget.__init__(
+            self,
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint_value,
+            custom_metadata=custom_metadata,
+        )
 
         self._initialize_vars(endpoint=endpoint, api_key=api_key)
 

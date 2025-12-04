@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pyrit.models import MessagePiece, Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -40,6 +40,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         category_output_key (str): JSON key for the category. Defaults to "category".
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         is_objective_required=True,
@@ -131,3 +132,12 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
             score_type="float_scale",
         )
         return [score]
+
+    def _get_scorer_specific_params(self):
+        scorer_specific_params = super()._get_scorer_specific_params()
+        return {
+            **(scorer_specific_params or {}),
+            "prompt_format_string": self._prompt_format_string,
+            "min_value": self._min_value,
+            "max_value": self._max_value,
+        }

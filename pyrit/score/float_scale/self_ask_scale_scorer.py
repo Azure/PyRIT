@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 
 import yaml
 
@@ -18,6 +18,8 @@ class SelfAskScaleScorer(FloatScaleScorer):
     """
     A class that represents a "self-ask" score for text scoring for a customizable numeric scale.
     """
+
+    version: ClassVar[int] = 1
 
     class ScalePaths(enum.Enum):
         TREE_OF_ATTACKS_SCALE = Path(SCORER_SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()

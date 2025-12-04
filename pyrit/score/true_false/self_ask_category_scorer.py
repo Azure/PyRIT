@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import ClassVar, Dict, Optional, Union
 
 import yaml
 
@@ -32,6 +32,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
     There is also a false category that is used if the MessagePiece does not fit any of the categories.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator()
 
     def __init__(

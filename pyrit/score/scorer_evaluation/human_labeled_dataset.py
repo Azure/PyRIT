@@ -82,19 +82,14 @@ class HumanLabeledDataset:
             OBJECTIVE.
     """
 
-    def __init__(
-        self,
-        *,
-        name: str,
-        entries: List[HumanLabeledEntry],
-        metrics_type: MetricsType,
-    ):
+    def __init__(self, *, name: str, entries: List[HumanLabeledEntry], metrics_type: MetricsType, version: str = "1.0"):
         if not name:
             raise ValueError("Dataset name cannot be an empty string.")
 
         self.name = name
         self.entries = entries
         self.metrics_type = metrics_type
+        self.version = version
 
         for entry in self.entries:
             self._validate_entry(entry)
@@ -113,6 +108,8 @@ class HumanLabeledDataset:
     ) -> "HumanLabeledDataset":
         """
         Load a human-labeled dataset from a CSV file. This only allows for single turn scored text responses.
+        You can optionally include a # comment line at the top of the CSV file to specify the dataset version
+        (e.g. # version=1.0).
 
         Args:
             csv_path (Union[str, Path]): The path to the CSV file.
@@ -135,12 +132,18 @@ class HumanLabeledDataset:
         """
         if not os.path.exists(csv_path):
             raise ValueError(f"CSV file does not exist: {csv_path}")
+        # Read the first line to check for version info
+        version = "1.0"
+        with open(csv_path, "r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            if first_line.startswith("#") and "version=" in first_line:
+                version = first_line.split("=", 1)[1].strip()
 
         # Try UTF-8 first, fall back to latin-1 for files with special characters
         try:
-            eval_df = pd.read_csv(csv_path, encoding="utf-8")
+            eval_df = pd.read_csv(csv_path, comment="#", encoding="utf-8")
         except UnicodeDecodeError:
-            eval_df = pd.read_csv(csv_path, encoding="latin-1")
+            eval_df = pd.read_csv(csv_path, comment="#", encoding="latin-1")
 
         # cls._validate_fields
         cls._validate_columns(
@@ -201,7 +204,7 @@ class HumanLabeledDataset:
             entries.append(entry)
 
         dataset_name = dataset_name or Path(csv_path).stem
-        return cls(entries=entries, name=dataset_name, metrics_type=metrics_type)
+        return cls(entries=entries, name=dataset_name, metrics_type=metrics_type, version=version)
 
     def add_entries(self, entries: List[HumanLabeledEntry]):
         """

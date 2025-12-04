@@ -114,6 +114,7 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
             print()
             self._print_colored(f"{self._indent}📊 Scorer Information", Style.BRIGHT)
             self._print_scorer_info(result.objective_scorer_identifier, indent_level=2)
+            self._print_registry_metrics(result)
 
         # Overall statistics
         self._print_section_header("Overall Statistics")
@@ -195,6 +196,9 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
             elif isinstance(sub_identifier, dict):
                 self._print_colored(f"{indent}  └─ Wraps:", Fore.CYAN)
                 self._print_scorer_info(sub_identifier, indent_level=indent_level + 2)
+
+    def _print_registry_metrics(self, result: ScenarioResult) -> None:
+        print(result.get_scorer_evaluation_metrics())  # make prettier
 
     def _get_rate_color(self, rate: int) -> str:
         """
