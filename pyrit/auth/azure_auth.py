@@ -15,8 +15,8 @@ from azure.identity import (
     ManagedIdentityCredential,
     get_bearer_token_provider,
 )
-from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCredential
 from azure.identity.aio import (
+    DefaultAzureCredential as AsyncDefaultAzureCredential,
     get_bearer_token_provider as get_async_bearer_token_provider,
 )
 
