@@ -6,7 +6,11 @@ from typing import Any, MutableSequence, Optional
 from urllib.parse import urlparse
 
 from pyrit.common import convert_local_image_to_data_url
-from pyrit.exceptions import PyritException, pyrit_target_retry
+from pyrit.exceptions import (
+    EmptyResponseException,
+    PyritException,
+    pyrit_target_retry,
+)
 from pyrit.models import (
     ChatMessage,
     ChatMessageListDictContent,
@@ -250,8 +254,6 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             PyritException: For unexpected response structures or finish reasons.
             EmptyResponseException: When the API returns an empty response.
         """
-        from pyrit.exceptions import EmptyResponseException, PyritException
-
         # Check for missing choices
         if not response.choices:
             raise PyritException(message="No choices returned in the completion response.")

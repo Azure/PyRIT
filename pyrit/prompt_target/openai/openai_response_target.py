@@ -393,8 +393,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             PyritException: For unexpected response structures or errors.
             EmptyResponseException: When the API returns no valid output.
         """
-        from pyrit.exceptions import EmptyResponseException, PyritException
-
         # Check for error response - error is a ResponseError object or None
         # (content_filter is handled by _check_content_filter)
         if response.error is not None and response.error.code != "content_filter":
