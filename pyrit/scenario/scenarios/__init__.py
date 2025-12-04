@@ -5,7 +5,7 @@
 
 from pyrit.scenario.scenarios.encoding_scenario import EncodingScenario, EncodingStrategy
 from pyrit.scenario.scenarios.foundry_scenario import FoundryScenario, FoundryStrategy
-from pyrit.scenario.scenarios.airt import CyberScenario, CyberStrategy
+from pyrit.scenario.scenarios.airt import CyberScenario, CyberStrategy, ContentHarmsScenario, ContentHarmsStrategy
 
 __all__ = [
     "CyberScenario",
@@ -14,4 +14,6 @@ __all__ = [
     "EncodingStrategy",
     "FoundryScenario",
     "FoundryStrategy",
+    "ContentHarmsScenario",
+    "ContentHarmsStrategy",
 ]
