@@ -46,7 +46,7 @@
 # - The dataset updates frequently and you want the latest version
 # - The dataset is large and better hosted externally
 #
-# Remote datasets are typically fetched from URLs or HuggingFace. To add one, create a `RemoteDatasetLoader` subclass with helper functions for parsing, caching, and downloading. These loaders are automatically discovered by `SeedDatasetProvider`.
+# Remote datasets are typically fetched from URLs or HuggingFace. To add one, create a `_RemoteDatasetLoader` subclass with helper functions for parsing, caching, and downloading. These loaders are automatically discovered by `SeedDatasetProvider`.
 #
 # ### Example: DarkBench Remote Loader
 #
@@ -54,12 +54,12 @@
 
 # %%
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
-    RemoteDatasetLoader,
+    _RemoteDatasetLoader,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
 
-class SimpeDarkBench(RemoteDatasetLoader):
+class SimpeDarkBench(_RemoteDatasetLoader):
 
     @property
     def dataset_name(self) -> str:
