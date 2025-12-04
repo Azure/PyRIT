@@ -94,7 +94,12 @@ class ScenarioRegistry:
                     if module_name.startswith("_"):
                         continue
 
-                    full_module_name = f"pyrit.scenario.scenarios.{base_module}.{module_name}"
+                    # Build the full module name correctly
+                    if base_module:
+                        full_module_name = f"{base_module}.{module_name}"
+                    else:
+                        full_module_name = f"pyrit.scenario.scenarios.{module_name}"
+
                     try:
                         # Import the module
                         module = importlib.import_module(full_module_name)
@@ -119,7 +124,7 @@ class ScenarioRegistry:
                         logger.warning(f"Failed to load scenario module {full_module_name}: {e}")
 
             # Start discovery from the scenarios package root
-            discover_modules(package_path, "pyrit.scenarios.scenarios")
+            discover_modules(package_path, "")
 
         except Exception as e:
             logger.error(f"Failed to discover built-in scenarios: {e}")

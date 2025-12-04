@@ -33,7 +33,6 @@ chapters:
     - file: code/datasets/0_dataset
       sections:
       - file: code/datasets/1_seed_prompt
-      - file: code/datasets/2_fetch_dataset
     - file: code/executor/0_executor
       sections:
         - file: code/executor/attack/0_attack

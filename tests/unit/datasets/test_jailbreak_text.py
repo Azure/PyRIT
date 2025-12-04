@@ -1,15 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pathlib
+
 import pytest
 
-from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
+from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import TextJailBreak
 
 
 @pytest.fixture
 def jailbreak_dir():
-    return JAILBREAK_TEMPLATES_PATH
+    return pathlib.Path(DATASETS_PATH) / "jailbreak" / "templates"
 
 
 def test_init_with_template_path(jailbreak_dir):
