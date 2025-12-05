@@ -86,6 +86,18 @@ class ContentHarmsScenario(Scenario):
             ScenarioStrategy: ContentHarmsStrategy.ALL
         """
         return ContentHarmsStrategy.ALL
+    
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+       return [ 
+            'airt_hate',
+            'airt_fairness',
+            'airt_violence',
+            'airt_sexual',
+            'airt_harassment',
+            'airt_misinformation',
+            'airt_leakage',
+        ]
 
     @apply_defaults
     def __init__(
@@ -137,6 +149,7 @@ class ContentHarmsScenario(Scenario):
         Returns:
             Dict[str, Sequence[SeedGroup]]: A dictionary mapping harm strategies to their corresponding SeedGroups.
         """
+
         seeds_by_strategy = {}
 
         selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
@@ -146,7 +159,11 @@ class ContentHarmsScenario(Scenario):
             seeds_by_strategy[harm_strategy] = self._memory.get_seeds(
                 is_objective=True,
                 harm_categories=harm_strategy,
+                dataset_name_pattern="airt_%",
             )
+
+            if not seeds_by_strategy[harm_strategy]:
+                self._raise_dataset_exception()
                 
         return seeds_by_strategy
 

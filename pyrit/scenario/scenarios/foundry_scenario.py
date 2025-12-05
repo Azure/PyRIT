@@ -11,6 +11,7 @@ Foundry attacks against specified datasets.
 
 import os
 from inspect import signature
+import random
 from typing import List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
@@ -228,6 +229,12 @@ class FoundryScenario(Scenario):
             ScenarioStrategy: FoundryStrategy.EASY (easy difficulty strategies).
         """
         return FoundryStrategy.EASY
+    
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+       return [ 
+            'harmbench',
+        ]
 
     @apply_defaults
     def __init__(
@@ -263,13 +270,8 @@ class FoundryScenario(Scenario):
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
 
-        if objectives:
-            self._objectives = objectives
-        else:
-            # This is a temporary fix to use a local dataset until the database is ready
-            dataset_path = DATASETS_PATH / "seed_datasets" / "local" / "adv_bench.prompt"
-            dataset = SeedDataset.from_yaml_file(dataset_path)
-            self._objectives = list(dataset.get_random_values(number=4))
+        self._objectives = objectives if objectives else self._get_default_objectives()
+            
 
         super().__init__(
             name="Foundry Scenario",
@@ -279,6 +281,17 @@ class FoundryScenario(Scenario):
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
+
+    def _get_default_objectives(self) -> list[str]:
+        seed_objectives = self._memory.get_seeds(
+            dataset_name="harmbench"
+        )
+
+        if not seed_objectives:
+            self._raise_dataset_exception()
+
+        sampled_seeds = random.sample(list(seed_objectives), min(5, len(seed_objectives)))
+        return [seed.value for seed in sampled_seeds]
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
