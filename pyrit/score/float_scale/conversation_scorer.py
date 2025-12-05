@@ -10,6 +10,7 @@ from pyrit.models.message_piece import Originator
 from pyrit.score import Scorer
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -41,7 +42,7 @@ class ConversationScorer(Scorer):
                 Must be an instance of FloatScaleScorer or TrueFalseScorer.
             validator (Optional[ScorerPromptValidator]): Optional validator override.
         """
-        super().__init__(validator=validator or scorer._validator or self._default_validator)
+        super().__init__(validator=validator or self._default_validator)
         self._wrapped_scorer = scorer
 
         # Preserve scorer type from the wrapped scorer if it exists
@@ -81,7 +82,7 @@ class ConversationScorer(Scorer):
         for conv_message in conversation:
             for piece in conv_message.message_pieces:
                 # Only include user and assistant messages in the conversation text
-                if piece.role in ["user", "assistant"]:
+                if piece.role in ["user", "assistant", "tool"]:
                     role_display = piece.role.capitalize()
                     conversation_text += f"{role_display}: {piece.converted_value}\n"
 
@@ -184,9 +185,6 @@ def create_conversation_scorer(
 
             # For TrueFalseScorer, we need to handle score_aggregator
             if isinstance(scorer, TrueFalseScorer):
-                from pyrit.score.true_false.true_false_score_aggregator import (
-                    TrueFalseScoreAggregator,
-                )
 
                 self._score_aggregator = getattr(scorer, "_score_aggregator", TrueFalseScoreAggregator.OR)
 
