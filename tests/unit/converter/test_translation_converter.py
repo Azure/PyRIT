@@ -86,7 +86,7 @@ async def test_translation_converter_succeeds_after_retries(sqlite_instance):
 
     # fail twice, then succeed
     mock_send_prompt = AsyncMock()
-    mock_send_prompt.side_effect = [Exception("First failure"), Exception("Second failure"), success_response]
+    mock_send_prompt.side_effect = [Exception("First failure"), Exception("Second failure"), [success_response]]
 
     with patch.object(prompt_target, "send_prompt_async", mock_send_prompt):
         result = await translation_converter.convert_async(prompt="hello")

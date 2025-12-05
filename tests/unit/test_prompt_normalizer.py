@@ -148,7 +148,7 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
 
     response = MessagePiece(role="assistant", original_value="test_response").to_message()
 
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -247,7 +247,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
 @pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_group, response: Message):
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -259,7 +259,7 @@ async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_gr
 async def test_send_prompt_async_no_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -272,7 +272,7 @@ async def test_send_prompt_async_no_converters_response(mock_memory_instance, se
 async def test_send_prompt_async_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     response_converter = PromptConverterConfiguration(converters=[Base64Converter()], indexes_to_apply=[0])
 
@@ -291,7 +291,7 @@ async def test_send_prompt_async_converters_response(mock_memory_instance, seed_
 async def test_send_prompt_async_image_converter(mock_memory_instance):
     prompt_target = MagicMock(PromptTarget)
     prompt_target.send_prompt_async = AsyncMock(
-        return_value=MessagePiece(role="assistant", original_value="response").to_message()
+        return_value=[MessagePiece(role="assistant", original_value="response").to_message()]
     )
 
     mock_image_converter = MagicMock(PromptConverter)

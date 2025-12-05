@@ -438,10 +438,10 @@ API Reference
     HuggingFaceEndpointTarget
     limit_requests_per_minute
     OpenAICompletionTarget
-    OpenAIDALLETarget
+    OpenAIImageTarget
     OpenAIChatTarget
     OpenAIResponseTarget
-    OpenAISoraTarget
+    OpenAIVideoTarget
     OpenAITTSTarget
     OpenAITarget
     PlaywrightTarget

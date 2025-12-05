@@ -99,7 +99,7 @@ class PromptShieldTarget(PromptTarget):
         self._force_entry_field: PromptShieldEntryField = field
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Parses the text in message to separate the userPrompt and documents contents,
         then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
@@ -146,7 +146,7 @@ class PromptShieldTarget(PromptTarget):
             prompt_metadata=request.prompt_metadata,
         )
 
-        return response_entry
+        return [response_entry]
 
     def _validate_request(self, *, message: Message) -> None:
         message_pieces: Sequence[MessagePiece] = message.message_pieces

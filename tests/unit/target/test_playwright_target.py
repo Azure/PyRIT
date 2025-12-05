@@ -162,9 +162,10 @@ class TestPlaywrightTarget:
         response = await target.send_prompt_async(message=request)
 
         # Verify response structure
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].role == "assistant"
-        assert response.get_value() == "Processed: Hello, how are you?"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].get_value() == "Processed: Hello, how are you?"
 
         # Verify interaction function was called correctly
         mock_interaction_func.assert_awaited_once_with(mock_page, request)
@@ -178,9 +179,10 @@ class TestPlaywrightTarget:
         response = await target.send_prompt_async(message=request)
 
         # Verify response structure
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].role == "assistant"
-        assert response.get_value() == "Processed: Hello"  # First piece's value
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].get_value() == "Processed: Hello"  # First piece's value
 
         # Verify interaction function was called with the complete request
         mock_interaction_func.assert_awaited_once_with(mock_page, request)
@@ -194,9 +196,10 @@ class TestPlaywrightTarget:
         response = await target.send_prompt_async(message=request)
 
         # Verify response structure
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].role == "assistant"
-        assert response.get_value() == "Processed: /path/to/image.jpg"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].get_value() == "Processed: /path/to/image.jpg"
 
         # Verify interaction function was called correctly
         mock_interaction_func.assert_awaited_once_with(mock_page, request)
@@ -242,9 +245,10 @@ class TestPlaywrightTarget:
             request=text_message_piece, response_text_pieces=["Custom response text"]
         )
 
-        assert response.message_pieces[0].original_value == expected_response.message_pieces[0].original_value
-        assert response.message_pieces[0].converted_value == expected_response.message_pieces[0].converted_value
-        assert response.message_pieces[0].role == expected_response.message_pieces[0].role
+        assert len(response) == 1
+        assert response[0].message_pieces[0].original_value == expected_response.message_pieces[0].original_value
+        assert response[0].message_pieces[0].converted_value == expected_response.message_pieces[0].converted_value
+        assert response[0].message_pieces[0].role == expected_response.message_pieces[0].role
 
     @pytest.mark.asyncio
     async def test_send_prompt_async_empty_response(self, mock_page, text_message_piece):
@@ -260,9 +264,10 @@ class TestPlaywrightTarget:
         response = await target.send_prompt_async(message=request)
 
         # Verify empty response is handled correctly
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].role == "assistant"
-        assert response.get_value() == ""
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].get_value() == ""
 
     def test_protocol_interaction_function_signature(self):
         """Test that InteractionFunction protocol is properly defined."""
@@ -369,4 +374,5 @@ class TestPlaywrightTargetEdgeCases:
 
         response = await target.send_prompt_async(message=request)
 
-        assert response.get_value() == "Processed[First] | Processed[Second]"
+        assert len(response) == 1
+        assert response[0].get_value() == "Processed[First] | Processed[Second]"
