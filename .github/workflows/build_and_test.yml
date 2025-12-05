@@ -98,15 +98,6 @@ jobs:
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
 
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
-            ${{ runner.os }}-pip-
-
       - name: Install uv
         uses: astral-sh/setup-uv@v1 # Use the latest stable version
         with:
@@ -124,11 +115,17 @@ jobs:
           restore-keys: |
             pre-commit-${{ runner.os }}-
 
-      - name: Upgrade pip and setuptools
-        run: uv python -m pip install --upgrade pip setuptools packaging
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1 # Use the latest stable version
+        with:
+          version: 'latest' # Or a specific version like '0.1.0'
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
 
       - name: Install dev extras
-        run: uv pip install --no-cache-dir '.[dev,all]'
+        run: uv sync --extra dev --extra all
 
       - name: disk space
         run: df -all -h
