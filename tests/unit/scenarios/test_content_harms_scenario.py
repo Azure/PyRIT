@@ -360,7 +360,7 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
         },
     )
@@ -373,7 +373,7 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
         },
     )
@@ -493,7 +493,7 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
         },
     )

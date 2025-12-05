@@ -158,7 +158,7 @@ class CyberScenario(Scenario):
             OpenAIChatTarget: Default adversarial target, using an unfiltered endpoint.
         """
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
             temperature=1.2,
         )
