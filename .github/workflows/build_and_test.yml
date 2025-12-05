@@ -149,9 +149,18 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1 # Use the latest stable version
+        with:
+          version: 'latest' # Or a specific version like '0.1.0'
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+
       # Cache pip packages
       # GitHub automatically handles cache eviction after 7 days of inactivity (or 10GB)
-      # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
+      # https://docs.github.com/en/actions/working-with-workflows/caching-dependencies-to-speed-up-workflows
       # - name: Cache pip packages
       #   uses: actions/cache@v3
       #   with:
