@@ -143,14 +143,11 @@ class ContentHarmsScenario(Scenario):
             self._scenario_composites, strategy_type=ContentHarmsStrategy
         )
         for harm_strategy in selected_harms:
-            if objectives_by_harm and harm_strategy in objectives_by_harm:
-                seeds_by_strategy[harm_strategy] = objectives_by_harm[harm_strategy]
-            else:
-                harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "harms"
-                strategy_seed_dataset = SeedDataset.from_yaml_file(harm_dataset_path / f"{harm_strategy}.prompt")
-                seeds_by_strategy[harm_strategy] = SeedDataset.group_seed_prompts_by_prompt_group_id(
-                    strategy_seed_dataset.seeds
-                )
+            seeds_by_strategy[harm_strategy] = self._memory.get_seeds(
+                is_objective=True,
+                harm_categories=harm_strategy,
+            )
+                
         return seeds_by_strategy
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
