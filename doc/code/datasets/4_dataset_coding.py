@@ -30,11 +30,11 @@
 # ### Common Locations for YAML Files
 #
 # **Jailbreak Templates:**
-# - Location: [`pyrit/datasets/jailbreak/templates/`](../../../pyrit/datasets/jailbreak/templates/)
+# - Location: `pyrit/datasets/jailbreak/templates/`
 # - Usage: Automatically included via `TextJailBreak` classes and used in converters like `TextJailBreakConverter`
 #
 # **Harm Datasets:**
-# - Location: [`pyrit/datasets/seed_datasets/local/`](../../../pyrit/datasets/seed_datasets/local/)
+# - Location: `pyrit/datasets/seed_datasets/local/`
 # - Usage: Automatically loaded with `SeedDatasetProvider` for use in various attack scenarios
 #
 # For details on YAML format, see [Seed Programming](./2_seed_programming.ipynb).
