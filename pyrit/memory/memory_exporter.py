@@ -16,6 +16,11 @@ class MemoryExporter:
     """
 
     def __init__(self):
+        """
+        Initialize the MemoryExporter.
+
+        Sets up the available export formats using the strategy design pattern.
+        """
         # Using strategy design pattern for export functionality.
         self.export_strategies = {
             "json": self.export_to_json,
@@ -28,7 +33,7 @@ class MemoryExporter:
         self, data: list[MessagePiece], *, file_path: Optional[Path] = None, export_type: str = "json"
     ):  # type: ignore
         """
-        Exports the provided data to a file in the specified format.
+        Export the provided data to a file in the specified format.
 
         Args:
             data (list[MessagePiece]): The data to be exported, as a list of MessagePiece instances.
@@ -49,7 +54,7 @@ class MemoryExporter:
 
     def export_to_json(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
         """
-        Exports the provided data to a JSON file at the specified file path.
+        Export the provided data to a JSON file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
@@ -72,7 +77,7 @@ class MemoryExporter:
 
     def export_to_csv(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
         """
-        Exports the provided data to a CSV file at the specified file path.
+        Export the provided data to a CSV file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
@@ -98,7 +103,7 @@ class MemoryExporter:
 
     def export_to_markdown(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
         """
-        Exports the provided data to a Markdown file at the specified file path.
+        Export the provided data to a Markdown file at the specified file path.
         Each item in the data list is converted to a dictionary and formatted as a table.
 
         Args:
