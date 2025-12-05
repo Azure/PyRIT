@@ -17,6 +17,7 @@ chapters:
     sections:
     - file: contributing/1a_install_conda
     - file: contributing/1b_install_devcontainers
+    - file: contributing/1c_setting_up_uv
     - file: contributing/2_git
     - file: contributing/3_incorporating_research
     - file: contributing/4_style_guide
