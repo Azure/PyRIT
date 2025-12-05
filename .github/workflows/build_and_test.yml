@@ -27,23 +27,12 @@ jobs:
     permissions:
       contents: read
 
-    env:
-      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
-
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
-            ${{ runner.os }}-pip-
 
       - name: Cache pre-commit environments
         uses: actions/cache@v3
@@ -53,11 +42,17 @@ jobs:
           restore-keys: |
             pre-commit-${{ runner.os }}-
 
-      - name: Upgrade pip and setuptools
-        run: python -m pip install --upgrade pip setuptools packaging
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1 # Use the latest stable version
+        with:
+          version: 'latest' # Or a specific version like '0.1.0'
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
 
       - name: Install dev extras
-        run: pip install --no-cache-dir .[dev,all]
+        run: uv sync --extra dev --extra all
 
       - name: disk space
         run: df -all -h
@@ -66,19 +61,17 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           git fetch origin main
-          pre-commit run --from-ref origin/main --to-ref HEAD
+          uv run pre-commit run --from-ref origin/main --to-ref HEAD
 
       - name: Run pre-commit fully (on main)
         if: github.ref == 'refs/heads/main'
         run: |
-          pre-commit run --all-files
+          uv run pre-commit run --all-files
 
   pre-commit-windows:
     runs-on: windows-latest
     permissions:
       contents: read
-    env:
-      PIP_CACHE_DIR: ${{ github.workspace }}\.cache\pip
     defaults:
       run:
         shell: pwsh
@@ -89,14 +82,14 @@ jobs:
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
 
-      - name: Cache pip packages
-        uses: actions/cache@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1 # Use the latest stable version
         with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
-            ${{ runner.os }}-pip-
+          version: 'latest' # Or a specific version like '0.1.0'
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
 
       - name: Cache pre-commit environments
         uses: actions/cache@v3
@@ -106,11 +99,17 @@ jobs:
           restore-keys: |
             pre-commit-${{ runner.os }}-
 
-      - name: Upgrade pip and setuptools
-        run: python -m pip install --upgrade pip setuptools packaging
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1 # Use the latest stable version
+        with:
+          version: 'latest' # Or a specific version like '0.1.0'
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
 
       - name: Install dev extras
-        run: pip install --no-cache-dir '.[dev,all]'
+        run: uv sync --extra dev --extra all
 
       - name: disk space
         run: df -all -h
@@ -119,12 +118,12 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           git fetch origin main
-          pre-commit run --from-ref origin/main --to-ref HEAD
+          uv run pre-commit run --from-ref origin/main --to-ref HEAD
 
       - name: Run pre-commit fully (on main)
         if: github.ref == 'refs/heads/main'
         run: |
-          pre-commit run --all-files
+          uv run pre-commit run --all-files
 
   # Main job runs only if pre-commit succeeded
   main-job:
@@ -136,8 +135,6 @@ jobs:
         package_name: ["pyrit"]
         package_extras: ["dev", "dev_all"]
     runs-on: ${{ matrix.os }}
-    env:
-      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
       contents: read
@@ -152,35 +149,41 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1 # Use the latest stable version
+        with:
+          version: 'latest' # Or a specific version like '0.1.0'
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+
       # Cache pip packages
       # GitHub automatically handles cache eviction after 7 days of inactivity (or 10GB)
-      # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-
-            ${{ runner.os }}-pip-${{ matrix.python }}-
-            ${{ runner.os }}-pip-
-
-      - name: Install setuptools and pip
-        run: python -m pip install --upgrade pip setuptools packaging
+      # https://docs.github.com/en/actions/working-with-workflows/caching-dependencies-to-speed-up-workflows
+      # - name: Cache pip packages
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ${{ env.PIP_CACHE_DIR }}
+      #     key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-
+      #       ${{ runner.os }}-pip-${{ matrix.python }}-
+      #       ${{ runner.os }}-pip-
 
       # Install PyRIT with optional extras
-      - name: Install PyRIT with pip
+      # TODO UPDATE EXTRAS!!!
+      - name: Install PyRIT with uv
         # If the matrix extras is 'dev_all', then we install '.[dev,all]'
         # otherwise just install the literal extras from the matrix
         shell: bash
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
-            extras="dev,all"
+            uv sync --no-cache --extra dev --extra all
           else
             extras="${{ matrix.package_extras }}"
+            uv sync --no-cache ".[${extras}]"
           fi
-
-          pip install --no-cache-dir ".[${extras}]"
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
