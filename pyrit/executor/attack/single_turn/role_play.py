@@ -7,7 +7,7 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
@@ -16,6 +16,8 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 from pyrit.models import (
     Message,
     SeedDataset,
+    SeedGroup,
+    SeedPrompt,
 )
 from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -25,10 +27,10 @@ logger = logging.getLogger(__name__)
 
 
 class RolePlayPaths(enum.Enum):
-    VIDEO_GAME = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "video_game.yaml"
-    MOVIE_SCRIPT = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "movie_script.yaml"
-    TRIVIA_GAME = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "trivia_game.yaml"
-    PERSUASION_SCRIPT = pathlib.Path(DATASETS_PATH) / "executors" / "role_play" / "persuasion_script.yaml"
+    VIDEO_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "video_game.yaml"
+    MOVIE_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "movie_script.yaml"
+    TRIVIA_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "trivia_game.yaml"
+    PERSUASION_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "persuasion_script.yaml"
 
 
 class RolePlayAttack(PromptSendingAttack):
@@ -101,7 +103,7 @@ class RolePlayAttack(PromptSendingAttack):
         self._parse_role_play_definition(role_play_definition)
 
         # Create the rephrase converter configuration
-        rephrase_converter = PromptConverterConfiguration.from_converters(
+        self._rephrase_converter = PromptConverterConfiguration.from_converters(
             converters=[
                 LLMGenericTextConverter(
                     converter_target=self._adversarial_chat,
@@ -110,18 +112,24 @@ class RolePlayAttack(PromptSendingAttack):
             ]
         )
 
-        # Prepend the rephrase converter to existing request converters
-        self._request_converters = rephrase_converter + self._request_converters
-
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
-        Sets up the attack by preparing conversation context with role-play start.
+        Sets up the attack by preparing conversation context with role-play start
+        and converting the objective to role-play format.
 
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
         """
-        # Get role-play conversation start
+        # Get role-play conversation start (turns 0 and 1)
         context.prepended_conversation = await self._get_conversation_start() or []
+
+        # Rephrase the objective using the LLM converter
+        # This converts the user's objective into a role-play scenario
+        rephrased_objective = await self._rephrase_objective_async(objective=context.objective)
+
+        # Set the rephrased objective as the seed_group
+        # This will be used by _get_prompt_group() to send the rephrased content to the target
+        context.seed_group = SeedGroup(seeds=[SeedPrompt(value=rephrased_objective, data_type="text")])
 
         # Call parent setup which handles conversation ID generation, memory labels, etc.
         await super()._setup_async(context=context)
@@ -129,14 +137,39 @@ class RolePlayAttack(PromptSendingAttack):
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
         Validate the context before executing the attack.
+
         Args:
             context (SingleTurnAttackContext): The attack context containing parameters and objective.
+
         Raises:
-            ValueError: If the context is invalid.
+            ValueError: If seed_group or prepended_conversation are provided by the user.
         """
+        if context.seed_group is not None:
+            raise ValueError(
+                "RolePlayAttack does not accept a seed_group parameter. "
+                "The seed group is generated internally by rephrasing the objective."
+            )
         if context.prepended_conversation:
-            raise ValueError("RolePlayAttack does not support prepended conversations.")
+            raise ValueError(
+                "RolePlayAttack does not accept prepended_conversation parameter. "
+                "The conversation start is generated internally from the role-play definition."
+            )
         super()._validate_context(context=context)
+
+    async def _rephrase_objective_async(self, *, objective: str) -> str:
+        """
+        Rephrase the objective into a role-play scenario using the adversarial chat.
+
+        Args:
+            objective (str): The original objective to rephrase.
+
+        Returns:
+            str: The rephrased objective in role-play format.
+        """
+        # Use the LLMGenericTextConverter to rephrase the objective
+        converter = self._rephrase_converter[0].converters[0]
+        result = await converter.convert_async(prompt=objective, input_type="text")
+        return result.output_text
 
     async def _get_conversation_start(self) -> Optional[list[Message]]:
         """

@@ -6,7 +6,7 @@ from __future__ import annotations
 import pathlib
 from typing import Optional
 
-from pyrit.common.path import SCORER_CONFIG_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.models import MessagePiece, Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
@@ -49,11 +49,10 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
         """
-
         true_false_question_path = self._verify_and_resolve_path(
             true_false_question_path
             if true_false_question_path
-            else SCORER_CONFIG_PATH / "true_false_question" / "question_answering.yaml"
+            else SCORER_SEED_PROMPT_PATH / "true_false_question" / "question_answering.yaml"
         )
         super().__init__(
             chat_target=chat_target,
@@ -74,7 +73,6 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         Returns:
             list[Score]: A list containing a single Score object representing whether the answer was correct.
         """
-
         prompt = (
             f"{objective}\n\nThe target response is as follows. "
             f"Evaluate if the response is correct:\n{message_piece.converted_value}"

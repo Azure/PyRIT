@@ -132,7 +132,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             self._create_auth_token()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
-        """Creates the SQLAlchemy engine for Azure SQL Server.
+        """
+        Creates the SQLAlchemy engine for Azure SQL Server.
 
         Creates an engine bound to the specified server and database. The `has_echo` parameter
         controls the verbosity of SQL execution logging.
@@ -140,7 +141,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Args:
             has_echo (bool): Flag to enable detailed SQL execution logging.
         """
-
         try:
             # Create the SQLAlchemy engine.
             # Use pool_pre_ping (health check) to gracefully handle server-closed connections
@@ -193,11 +193,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             # Using the 'checkfirst=True' parameter to avoid attempting to recreate existing tables
             Base.metadata.create_all(self.engine, checkfirst=True)
         except Exception as e:
-            logger.error(f"Error during table creation: {e}")
+            logger.exception(f"Error during table creation: {e}")
+            raise
 
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
-        Inserts embedding data into memory storage
+        Inserts embedding data into memory storage.
         """
         self._insert_entries(entries=embedding_data)
 
@@ -258,6 +259,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # for safe parameter passing, preventing SQL injection
+        # Note: JSON_VALUE always returns nvarchar in SQL Server, so we must convert all values to strings
+        # to avoid type conversion errors when comparing mixed types (e.g., int and string)
         condition = text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
@@ -450,6 +453,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
+                raise
 
     # The following methods are not part of MemoryInterface, but seem
     # common between SQLAlchemy-based implementations, regardless of engine.
@@ -483,7 +487,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Fetches data from the specified table model with optional conditions.
 
         Args:
-            model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (defaults to False).
             join_scores: Flag to join the scores table with entries (defaults to False).
@@ -508,7 +511,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {Model.__tablename__}: {e}")
-                return []
+                raise
 
     def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
@@ -545,10 +548,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error updating entries: {e}")
-                return False
+                raise
 
     def reset_database(self):
-        """Drop and recreate existing tables"""
+        """Drop and recreate existing tables."""
         # Drop all existing tables
         Base.metadata.drop_all(self.engine)
         # Recreate the tables

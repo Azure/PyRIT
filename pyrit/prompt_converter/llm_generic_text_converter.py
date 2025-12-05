@@ -69,7 +69,6 @@ class LLMGenericTextConverter(PromptConverter):
         Returns:
             ConverterResult: The result containing the converted output and its type.
         """
-
         conversation_id = str(uuid.uuid4())
 
         kwargs = self._prompt_kwargs.copy()
@@ -106,7 +105,7 @@ class LLMGenericTextConverter(PromptConverter):
         )
 
         response = await self._converter_target.send_prompt_async(message=request)
-        return ConverterResult(output_text=response.get_value(), output_type="text")
+        return ConverterResult(output_text=response[0].get_value(), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

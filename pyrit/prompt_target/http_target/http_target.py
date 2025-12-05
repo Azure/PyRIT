@@ -24,7 +24,7 @@ RequestBody = dict[str, Any] | str
 
 class HTTPTarget(PromptTarget):
     """
-    HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt
+    HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt.
 
     Parameters:
         http_request (str): the header parameters as a request (i.e., from Burp)
@@ -96,7 +96,7 @@ class HTTPTarget(PromptTarget):
     def _inject_prompt_into_request(self, request: MessagePiece) -> str:
         """
         Adds the prompt into the URL if the prompt_regex_string is found in the
-        http_request
+        http_request.
         """
         re_pattern = re.compile(self.prompt_regex_string)
         if re.search(self.prompt_regex_string, self.http_request):
@@ -106,7 +106,7 @@ class HTTPTarget(PromptTarget):
         return http_request_w_prompt
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         self._validate_request(message=message)
         request = message.message_pieces[0]
 
@@ -152,14 +152,17 @@ class HTTPTarget(PromptTarget):
             if self.callback_function:
                 response_content = self.callback_function(response=response)
 
-            return construct_response_from_request(request=request, response_text_pieces=[str(response_content)])
+            response_message = construct_response_from_request(
+                request=request, response_text_pieces=[str(response_content)]
+            )
+            return [response_message]
         finally:
             if cleanup_client:
                 await client.aclose()
 
     def parse_raw_http_request(self, http_request: str) -> tuple[Dict[str, str], RequestBody, str, str, str]:
         """
-        Parses the HTTP request string into a dictionary of headers
+        Parses the HTTP request string into a dictionary of headers.
 
         Parameters:
             http_request: the header parameters as a request str with
@@ -172,7 +175,6 @@ class HTTPTarget(PromptTarget):
             http_method (str): method (ie GET vs POST)
             http_version (str): HTTP version to use
         """
-
         headers_dict: Dict[str, str] = {}
         if self._client:
             headers_dict = dict(self._client.headers.copy())

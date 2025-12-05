@@ -6,7 +6,7 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -36,14 +36,11 @@ class MathPromptConverter(LLMGenericTextConverter):
                 Can be omitted if a default has been configured via PyRIT initialization.
             prompt_template (SeedPrompt): The seed prompt template to use.
         """
-
         # Load the template from the YAML file or use a default template if not provided
         prompt_template = (
             prompt_template
             if prompt_template
-            else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "math_prompt_converter.yaml"
-            )
+            else SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "math_prompt_converter.yaml")
         )
 
         super().__init__(converter_target=converter_target, system_prompt_template=prompt_template)

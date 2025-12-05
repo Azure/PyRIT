@@ -50,7 +50,7 @@ def response() -> Message:
 @pytest.fixture
 def seed_group() -> SeedGroup:
     return SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(
                 value="Hello",
                 data_type="text",
@@ -148,7 +148,7 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
 
     response = MessagePiece(role="assistant", original_value="test_response").to_message()
 
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -222,7 +222,7 @@ async def test_send_prompt_async_different_sequences(mock_memory_instance):
         SeedPrompt(value="test1", sequence=1, role="user"),
         SeedPrompt(value="test2", sequence=2, role="user"),
     ]  # Different sequence
-    group = SeedGroup(prompts=prompts)
+    group = SeedGroup(seeds=prompts)
 
     with pytest.raises(ValueError, match="All SeedPrompts in the SeedGroup must have the same sequence"):
         await normalizer.send_prompt_async(seed_group=group, target=prompt_target)
@@ -238,7 +238,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
         SeedPrompt(value="test1", sequence=1, role="user"),
         SeedPrompt(value="test2", role="user"),
     ]  # No sequence (will default to None)
-    group = SeedGroup(prompts=prompts)
+    group = SeedGroup(seeds=prompts)
 
     with pytest.raises(ValueError, match="All SeedPrompts in the SeedGroup must have the same sequence"):
         await normalizer.send_prompt_async(seed_group=group, target=prompt_target)
@@ -247,7 +247,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
 @pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_group, response: Message):
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -259,7 +259,7 @@ async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_gr
 async def test_send_prompt_async_no_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -272,7 +272,7 @@ async def test_send_prompt_async_no_converters_response(mock_memory_instance, se
 async def test_send_prompt_async_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     response_converter = PromptConverterConfiguration(converters=[Base64Converter()], indexes_to_apply=[0])
 
@@ -291,7 +291,7 @@ async def test_send_prompt_async_converters_response(mock_memory_instance, seed_
 async def test_send_prompt_async_image_converter(mock_memory_instance):
     prompt_target = MagicMock(PromptTarget)
     prompt_target.send_prompt_async = AsyncMock(
-        return_value=MessagePiece(role="assistant", original_value="response").to_message()
+        return_value=[MessagePiece(role="assistant", original_value="response").to_message()]
     )
 
     mock_image_converter = MagicMock(PromptConverter)
@@ -313,7 +313,7 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
 
         prompt_text = "Hello"
 
-        seed_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text")])
 
         normalizer = PromptNormalizer()
         # Mock the async read_file method
@@ -567,7 +567,7 @@ async def test_build_message_harm_categories(mock_memory_instance):
 
     # Create a seed group with harm categories
     seed_group = SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(
                 value="Test harmful prompt",
                 data_type="text",

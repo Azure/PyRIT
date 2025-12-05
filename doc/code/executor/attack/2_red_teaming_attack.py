@@ -140,6 +140,7 @@ prepended_conversation = [
 oai_objective_target = OpenAIChatTarget(
     api_key=os.getenv("AZURE_OPENAI_GPT4_CHAT_KEY"),
     endpoint=os.getenv("AZURE_OPENAI_GPT4_CHAT_ENDPOINT"),
+    model_name=os.getenv("AZURE_OPENAI_GPT4_CHAT_MODEL"),
 )
 
 red_teaming_attack = RedTeamingAttack(
@@ -262,7 +263,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     RTASystemPromptPaths,
 )
-from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIImageTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 from pyrit.setup import IN_MEMORY, initialize_pyrit
 
@@ -287,9 +288,9 @@ scoring_config = AttackScoringConfig(
 )
 
 # Create the attack
-dalle_target = OpenAIDALLETarget()
+image_target = OpenAIImageTarget()
 red_teaming_attack = RedTeamingAttack(
-    objective_target=dalle_target,
+    objective_target=image_target,
     attack_adversarial_config=adversarial_config,
     attack_scoring_config=scoring_config,
     max_turns=3,

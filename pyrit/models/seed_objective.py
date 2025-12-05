@@ -19,7 +19,7 @@ class SeedObjective(Seed):
     """Represents a seed objective with various attributes and metadata."""
 
     def __post_init__(self) -> None:
-        """Post-initialization to render the template to replace existing values"""
+        """Post-initialization to render the template to replace existing values."""
         self.value = super().render_template_value_silent(**PATHS_DICT)
         self.data_type = "text"
 

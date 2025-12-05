@@ -140,7 +140,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                 file_picker_selector='span.fui-MenuItem__content:has-text("Upload images and files")',
             )
 
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Send a message to Microsoft Copilot and return the response.
 
@@ -149,8 +149,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                 of type 'text' or 'image_path'.
 
         Returns:
-            Message: The response from Copilot. May contain multiple
-                pieces if the response includes both text and images.
+            list[Message]: A list containing the response from Copilot.
         """
         self._validate_request(message=message)
 
@@ -187,7 +186,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
             response_entry = Message(message_pieces=response_message_pieces)
 
-        return response_entry
+        return [response_entry]
 
     async def _interact_with_copilot_async(self, message: Message) -> Union[str, List[Tuple[str, PromptDataType]]]:
         """Interact with Microsoft Copilot interface to send multimodal prompts."""
@@ -290,7 +289,8 @@ class PlaywrightCopilotTarget(PromptTarget):
             return None
 
     async def _extract_text_from_message_groups(self, ai_message_groups: list, text_selector: str) -> List[str]:
-        """Extract text content from message groups using the provided selector.
+        """
+        Extract text content from message groups using the provided selector.
 
         Args:
             ai_message_groups: List of message group elements to extract text from
@@ -313,7 +313,8 @@ class PlaywrightCopilotTarget(PromptTarget):
         return all_text_parts
 
     def _filter_placeholder_text(self, text_parts: List[str]) -> List[str]:
-        """Filter out placeholder/loading text from extracted content.
+        """
+        Filter out placeholder/loading text from extracted content.
 
         Args:
             text_parts: List of text strings to filter
@@ -329,7 +330,8 @@ class PlaywrightCopilotTarget(PromptTarget):
         return [text for text in text_parts if text.lower() not in placeholder_texts]
 
     async def _count_images_in_groups(self, message_groups: list) -> int:
-        """Count total images in message groups (both iframes and direct).
+        """
+        Count total images in message groups (both iframes and direct).
 
         Args:
             message_groups: List of message group elements to search
@@ -357,7 +359,8 @@ class PlaywrightCopilotTarget(PromptTarget):
         return image_count
 
     async def _wait_minimum_time(self, seconds: int):
-        """Wait for a minimum amount of time, logging progress.
+        """
+        Wait for a minimum amount of time, logging progress.
 
         Args:
             seconds: Number of seconds to wait
@@ -369,7 +372,8 @@ class PlaywrightCopilotTarget(PromptTarget):
     async def _wait_for_images_to_stabilize(
         self, selectors: CopilotSelectors, ai_message_groups: list, initial_group_count: int = 0
     ) -> list:
-        """Wait for images to appear and DOM to stabilize.
+        """
+        Wait for images to appear and DOM to stabilize.
 
         Images may appear 1-5 seconds after text, and the DOM structure can change
         (e.g., from 3 groups to 2 groups). This method waits until either:
@@ -435,7 +439,8 @@ class PlaywrightCopilotTarget(PromptTarget):
         return all_groups[initial_group_count:]
 
     async def _extract_images_from_iframes(self, ai_message_groups: list) -> list:
-        """Extract images from iframes within message groups.
+        """
+        Extract images from iframes within message groups.
 
         Args:
             ai_message_groups: List of message group elements to search
@@ -470,7 +475,8 @@ class PlaywrightCopilotTarget(PromptTarget):
         return iframe_images
 
     async def _extract_images_from_message_groups(self, selectors: CopilotSelectors, ai_message_groups: list) -> list:
-        """Extract images directly from message groups (fallback when no iframes).
+        """
+        Extract images directly from message groups (fallback when no iframes).
 
         Args:
             selectors: The selectors for the Copilot interface
@@ -516,7 +522,8 @@ class PlaywrightCopilotTarget(PromptTarget):
         return image_elements
 
     async def _process_image_elements(self, image_elements: list) -> List[Tuple[str, PromptDataType]]:
-        """Process image elements and save them to disk.
+        """
+        Process image elements and save them to disk.
 
         Args:
             image_elements: List of image elements to process
@@ -556,7 +563,8 @@ class PlaywrightCopilotTarget(PromptTarget):
     async def _extract_and_filter_text_async(
         self, *, ai_message_groups: list, text_selector: str
     ) -> List[Tuple[str, PromptDataType]]:
-        """Extract and filter text content from message groups.
+        """
+        Extract and filter text content from message groups.
 
         Args:
             ai_message_groups: Message groups to process
@@ -584,7 +592,8 @@ class PlaywrightCopilotTarget(PromptTarget):
     async def _extract_all_images_async(
         self, *, selectors: CopilotSelectors, ai_message_groups: list, initial_group_count: int
     ) -> List[Tuple[str, PromptDataType]]:
-        """Extract all images from message groups using iframe and direct methods.
+        """
+        Extract all images from message groups using iframe and direct methods.
 
         Args:
             selectors: Copilot interface selectors
@@ -612,7 +621,8 @@ class PlaywrightCopilotTarget(PromptTarget):
         return await self._process_image_elements(image_elements)
 
     async def _extract_fallback_text_async(self, *, ai_message_groups: list) -> str:
-        """Extract fallback text content when no other content is found.
+        """
+        Extract fallback text content when no other content is found.
 
         Args:
             ai_message_groups: Message groups to extract from
@@ -632,7 +642,8 @@ class PlaywrightCopilotTarget(PromptTarget):
     def _assemble_response(
         self, *, response_pieces: List[Tuple[str, PromptDataType]]
     ) -> Union[str, List[Tuple[str, PromptDataType]]]:
-        """Assemble response pieces into appropriate return format.
+        """
+        Assemble response pieces into appropriate return format.
 
         Args:
             response_pieces: List of (content, data_type) tuples
@@ -654,7 +665,8 @@ class PlaywrightCopilotTarget(PromptTarget):
     async def _extract_multimodal_content_async(
         self, selectors: CopilotSelectors, initial_group_count: int = 0
     ) -> Union[str, List[Tuple[str, PromptDataType]]]:
-        """Extract multimodal content (text and images) from Copilot response.
+        """
+        Extract multimodal content (text and images) from Copilot response.
 
         Args:
             selectors: The selectors for the Copilot interface

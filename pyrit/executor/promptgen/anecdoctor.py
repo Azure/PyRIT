@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, overload
 
 import yaml
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.core.config import StrategyConverterConfig
 from pyrit.executor.promptgen.core import (
@@ -93,7 +93,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
     _ANECDOCTOR_BUILD_KG_YAML = "anecdoctor_build_knowledge_graph.yaml"
     _ANECDOCTOR_USE_KG_YAML = "anecdoctor_use_knowledge_graph.yaml"
     _ANECDOCTOR_USE_FEWSHOT_YAML = "anecdoctor_use_fewshot.yaml"
-    _ANECDOCTOR_PROMPT_PATH = Path("executors", "anecdoctor")
+    _ANECDOCTOR_PROMPT_PATH = Path("anecdoctor")
 
     def __init__(
         self,
@@ -143,7 +143,6 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         Raises:
             ValueError: If the context is invalid.
         """
-
         if not context.content_type:
             raise ValueError("content_type must be provided in the context")
 
@@ -263,7 +262,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         """
         # Create seed group containing the formatted examples
         prompt_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=formatted_examples,
                     data_type="text",
@@ -300,7 +299,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             yaml.YAMLError: If the YAML file is malformed.
             KeyError: If the 'value' key is not found in the YAML data.
         """
-        prompt_path = Path(DATASETS_PATH, self._ANECDOCTOR_PROMPT_PATH, yaml_filename)
+        prompt_path = Path(EXECUTOR_SEED_PROMPT_PATH, self._ANECDOCTOR_PROMPT_PATH, yaml_filename)
         prompt_data = prompt_path.read_text(encoding="utf-8")
         yaml_data = yaml.safe_load(prompt_data)
         return yaml_data["value"]
@@ -355,7 +354,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
 
         # Create seed group for the processing model
         kg_prompt_group = SeedGroup(
-            prompts=[
+            seeds=[
                 SeedPrompt(
                     value=formatted_examples,
                     data_type="text",
@@ -417,7 +416,6 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         """
         Execute the prompt generation strategy asynchronously with the provided parameters.
         """
-
         # Validate parameters before creating context
         content_type = get_kwarg_param(kwargs=kwargs, param_name="content_type", expected_type=str)
         language = get_kwarg_param(kwargs=kwargs, param_name="language", expected_type=str)

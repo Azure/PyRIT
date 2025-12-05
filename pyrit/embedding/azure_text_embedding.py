@@ -11,6 +11,10 @@ from pyrit.embedding._text_embedding import _TextEmbedding
 
 
 class AzureTextEmbedding(_TextEmbedding):
+    """
+    Provide text embedding functionality using Azure OpenAI services.
+    """
+
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_EMBEDDING_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_EMBEDDING_ENDPOINT"
     DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_EMBEDDING_DEPLOYMENT"
@@ -24,7 +28,8 @@ class AzureTextEmbedding(_TextEmbedding):
         api_version: str = "2024-02-01",
         use_entra_auth: bool = False,
     ) -> None:
-        """Generate embedding using the Azure API. Authenticate with either an API key or Entra authentication.
+        """
+        Generate embedding using the Azure API. Authenticate with either an API key or Entra authentication.
 
         Args:
             api_key: The API key to use (only if you're not using Entra authentication). Defaults to
@@ -34,6 +39,9 @@ class AzureTextEmbedding(_TextEmbedding):
                         Defaults to environment variable.
             api_version: The API version to use. Defaults to "2024-02-01".
             use_entra_auth: Whether to use Entra authentication. Defaults to False.
+
+        Raises:
+            ValueError: If using Entra ID auth and an api_key is also provided.
         """
         endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint

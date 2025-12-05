@@ -354,9 +354,10 @@ class TestPlaywrightCopilotTarget:
         with patch.object(target, "_interact_with_copilot_async", return_value="AI response") as mock_interact:
             response = await target.send_prompt_async(message=request)
 
+        assert len(response) == 1
         mock_interact.assert_awaited_once_with(request)
-        assert response.message_pieces[0].converted_value == "AI response"
-        assert response.message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].converted_value == "AI response"
+        assert response[0].message_pieces[0].role == "assistant"
 
     @pytest.mark.asyncio
     async def test_no_page(self, text_request_piece):
@@ -1019,13 +1020,14 @@ class TestPlaywrightCopilotTargetMultimodal:
         with patch.object(target, "_interact_with_copilot_async", return_value=multimodal_content):
             response = await target.send_prompt_async(message=request)
 
-        assert len(response.message_pieces) == 2
-        assert response.message_pieces[0].converted_value == "Here is an image"
-        assert response.message_pieces[0].converted_value_data_type == "text"
-        assert response.message_pieces[0].role == "assistant"
-        assert response.message_pieces[1].converted_value == "/path/to/image.png"
-        assert response.message_pieces[1].converted_value_data_type == "image_path"
-        assert response.message_pieces[1].role == "assistant"
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 2
+        assert response[0].message_pieces[0].converted_value == "Here is an image"
+        assert response[0].message_pieces[0].converted_value_data_type == "text"
+        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[1].converted_value == "/path/to/image.png"
+        assert response[0].message_pieces[1].converted_value_data_type == "image_path"
+        assert response[0].message_pieces[1].role == "assistant"
 
     @pytest.mark.asyncio
     async def test_wait_for_response_with_placeholder_content(self, mock_page):

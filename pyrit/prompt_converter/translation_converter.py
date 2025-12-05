@@ -15,7 +15,7 @@ from tenacity import (
 )
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -68,9 +68,7 @@ class TranslationConverter(PromptConverter):
         prompt_template = (
             prompt_template
             if prompt_template
-            else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "translation_converter.yaml"
-            )
+            else SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "translation_converter.yaml")
         )
 
         if not language:
@@ -93,7 +91,6 @@ class TranslationConverter(PromptConverter):
         Raises:
             ValueError: If the input type is not supported.
         """
-
         conversation_id = str(uuid.uuid4())
 
         self.converter_target.set_system_prompt(system_prompt=self.system_prompt, conversation_id=conversation_id)
@@ -138,7 +135,7 @@ class TranslationConverter(PromptConverter):
             with attempt:
                 logger.debug(f"Attempt {attempt.retry_state.attempt_number} for translation")
                 response = await self.converter_target.send_prompt_async(message=request)
-                response_msg = response.get_value()
+                response_msg = response[0].get_value()
                 return response_msg.strip()
 
         # when we exhaust all retries without success, raise an exception

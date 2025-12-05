@@ -7,7 +7,7 @@ from typing import Dict, Optional, Union
 
 import yaml
 
-from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
+from pyrit.common.path import SCORER_CONTENT_CLASSIFIERS_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -19,8 +19,8 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class ContentClassifierPaths(enum.Enum):
-    HARMFUL_CONTENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "harmful_content.yaml").resolve()
-    SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
+    HARMFUL_CONTENT_CLASSIFIER = Path(SCORER_CONTENT_CLASSIFIERS_PATH, "harm.yaml").resolve()
+    SENTIMENT_CLASSIFIER = Path(SCORER_CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
 
 
 class SelfAskCategoryScorer(TrueFalseScorer):
@@ -52,7 +52,6 @@ class SelfAskCategoryScorer(TrueFalseScorer):
                 Defaults to TrueFalseScoreAggregator.OR.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
-
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
         content_classifier_path = self._verify_and_resolve_path(content_classifier_path)
 
@@ -64,7 +63,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
 
         content_classifier_system_prompt = self._verify_and_resolve_path(
-            CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
+            SCORER_CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(content_classifier_system_prompt)

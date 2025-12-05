@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class SupportedContentType(Enum):
     """
     All supported content types for uploading blobs to provided storage account container.
-    See all options here: https://www.iana.org/assignments/media-types/media-types.xhtml
+    See all options here: https://www.iana.org/assignments/media-types/media-types.xhtml.
     """
 
     PLAIN_TEXT = "text/plain"
@@ -68,9 +68,11 @@ class AzureBlobStorageTarget(PromptTarget):
         super().__init__(endpoint=self._container_url, max_requests_per_minute=max_requests_per_minute)
 
     async def _create_container_client_async(self) -> None:
-        """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
+        """
+        Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
-        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
+        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication.
+        """
         container_url, _ = self._parse_url()
         try:
             sas_token: str = default_values.get_required_value(
@@ -94,7 +96,6 @@ class AzureBlobStorageTarget(PromptTarget):
             data (bytes): Byte representation of content to upload to container.
             content_type (str): Content type to upload.
         """
-
         content_settings = ContentSettings(content_type=f"{content_type}")
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
@@ -135,7 +136,7 @@ class AzureBlobStorageTarget(PromptTarget):
         return container_url, blob_prefix
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
@@ -146,7 +147,7 @@ class AzureBlobStorageTarget(PromptTarget):
             normalizer_id (str): ID provided by the prompt normalizer.
 
         Returns:
-            blob_url (str): The Blob URL of the created blob within the provided storage container.
+            list[Message]: A list containing the response with the Blob URL.
         """
         self._validate_request(message=message)
         request = message.message_pieces[0]
@@ -165,7 +166,7 @@ class AzureBlobStorageTarget(PromptTarget):
             request=request, response_text_pieces=[blob_url], response_type="url"
         )
 
-        return response
+        return [response]
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

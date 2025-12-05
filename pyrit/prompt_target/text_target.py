@@ -14,7 +14,7 @@ from pyrit.prompt_target import PromptTarget
 class TextTarget(PromptTarget):
     """
     The TextTarget takes prompts, adds them to memory and writes them to io
-    which is sys.stdout by default
+    which is sys.stdout by default.
 
     This can be useful in various situations, for example, if operators want to generate prompts
     but enter them manually.
@@ -28,14 +28,14 @@ class TextTarget(PromptTarget):
         super().__init__()
         self._text_stream = text_stream
 
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
 
         self._validate_request(message=message)
 
         self._text_stream.write(f"{str(message)}\n")
         self._text_stream.flush()
 
-        return None
+        return []
 
     def import_scores_from_csv(self, csv_file_path: Path) -> list[MessagePiece]:
 

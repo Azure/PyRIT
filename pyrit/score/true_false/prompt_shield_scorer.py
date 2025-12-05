@@ -36,7 +36,8 @@ class PromptShieldScorer(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
-        """Initialize the PromptShieldScorer.
+        """
+        Initialize the PromptShieldScorer.
 
         Args:
             prompt_shield_target (PromptShieldTarget): The Prompt Shield target to use for scoring.
@@ -66,7 +67,7 @@ class PromptShieldScorer(TrueFalseScorer):
 
         # The body of the Prompt Shield response
         target_response = await self._prompt_target.send_prompt_async(message=request)
-        response: str = target_response.get_value()
+        response: str = target_response[0].get_value()
 
         # Whether or not any of the documents or userPrompt got flagged as an attack
         result: bool = any(self._parse_response_to_boolean_list(response))
@@ -96,7 +97,6 @@ class PromptShieldScorer(TrueFalseScorer):
         Remember that you can just access the metadata attribute to get the original Prompt Shield endpoint response,
         and then just call json.loads() on it to interact with it.
         """
-
         response_json: dict = json.loads(response)
 
         user_detections = []
