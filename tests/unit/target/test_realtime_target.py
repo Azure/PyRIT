@@ -1,13 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
-import re
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from websockets.exceptions import ConnectionClosed
-from websockets.frames import Close
 
 from pyrit.exceptions.exception_classes import ServerErrorException
 from pyrit.models import Message, MessagePiece
@@ -20,21 +16,17 @@ def target(sqlite_instance):
     return RealtimeTarget(api_key="test_key", endpoint="wss://test_url", model_name="test")
 
 
-@pytest.fixture
-def target_with_entra(sqlite_instance):
-    target = RealtimeTarget(endpoint="wss://test_url", api_key="test_api_key")
-    target._azure_auth = MagicMock()
-    target._azure_auth.refresh_token = MagicMock(return_value="test_access_token")
-    return target
-
-
 @pytest.mark.asyncio
 async def test_connect_success(target):
-    with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
-        await target.connect()
-        mock_connect.assert_called_once_with(
-            "wss://test_url?deployment=test&OpenAI-Beta=realtime%3Dv1&api-key=test_key"
-        )
+    mock_connection = AsyncMock()
+    mock_client = MagicMock()
+    mock_client.realtime.connect = MagicMock()
+    mock_client.realtime.connect.return_value.__aenter__ = AsyncMock(return_value=mock_connection)
+
+    with patch.object(target, "_get_openai_client", return_value=mock_client):
+        connection = await target.connect(conversation_id="test_conv")
+        assert connection == mock_connection
+        mock_client.realtime.connect.assert_called_once_with(model="test")
     await target.cleanup_target()
 
 
@@ -45,7 +37,6 @@ async def test_send_prompt_async(target):
     target.send_config = AsyncMock()
     result = RealtimeTargetResult(audio_bytes=b"file", transcripts=["hello"])
     target.send_text_async = AsyncMock(return_value=("output.wav", result))
-    target.set_system_prompt = MagicMock()
 
     # Create a mock Message with a valid data type
     message_piece = MessagePiece(
@@ -61,54 +52,77 @@ async def test_send_prompt_async(target):
     # Call the send_prompt_async method
     response = await target.send_prompt_async(message=message)
 
+    assert len(response) == 1
     assert response
 
     target.send_text_async.assert_called_once_with(
         text="Hello",
         conversation_id="test_conversation_id",
     )
-    assert response.get_value() == "hello"
-    assert response.get_value(1) == "output.wav"
+    assert response[0].get_value() == "hello"
+    assert response[0].get_value(1) == "output.wav"
 
     # Clean up the WebSocket connections
     await target.cleanup_target()
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_adds_system_prompt_to_memory(target):
+async def test_get_system_prompt_from_conversation_with_system_message(target):
+    """Test that system prompt is extracted from conversation history when present."""
+    conversation_id = "test_conversation_with_system"
 
-    # Mock the necessary methods
-    target.connect = AsyncMock(return_value=AsyncMock())
-    target.send_config = AsyncMock()
-    result = RealtimeTargetResult(audio_bytes=b"event1", transcripts=["event2"])
-    target.send_text_async = AsyncMock(return_value=("output_audio_path", result))
-    target.set_system_prompt = MagicMock()
-
-    # Create a mock Message with a valid data type
-    message_piece = MessagePiece(
-        original_value="Hello",
-        original_value_data_type="text",
-        converted_value="Hello",
-        converted_value_data_type="text",
-        role="user",
-        conversation_id="new_conversation_id",
+    # Add a system message to memory
+    system_message = Message(
+        message_pieces=[
+            MessagePiece(
+                role="system",
+                original_value="You are a helpful assistant specialized in security.",
+                converted_value="You are a helpful assistant specialized in security.",
+                conversation_id=conversation_id,
+            )
+        ]
     )
-    message = Message(message_pieces=[message_piece])
+    target._memory.add_message_to_memory(request=system_message)
 
-    # Call the send_prompt_async method
-    await target.send_prompt_async(message=message)
+    # Get the system prompt
+    system_prompt = target._get_system_prompt_from_conversation(conversation_id=conversation_id)
 
-    # Assert that set_system_prompt was called with the correct arguments
-    target.set_system_prompt.assert_called_once_with(
-        system_prompt=target.system_prompt,
-        conversation_id="new_conversation_id",
-        attack_identifier=target.get_identifier(),
+    assert system_prompt == "You are a helpful assistant specialized in security."
+
+
+@pytest.mark.asyncio
+async def test_get_system_prompt_from_conversation_default(target):
+    """Test that default system prompt is returned when no system message in conversation."""
+    conversation_id = "test_conversation_no_system"
+
+    # Add a user message (no system message)
+    user_message = Message(
+        message_pieces=[
+            MessagePiece(
+                role="user",
+                original_value="Hello",
+                converted_value="Hello",
+                conversation_id=conversation_id,
+            )
+        ]
     )
+    target._memory.add_message_to_memory(request=user_message)
 
-    # Assert that the system_prompt is the default value
-    assert target.system_prompt == "You are a helpful AI assistant"
+    # Get the system prompt
+    system_prompt = target._get_system_prompt_from_conversation(conversation_id=conversation_id)
 
-    await target.cleanup_target()
+    assert system_prompt == "You are a helpful AI assistant"
+
+
+@pytest.mark.asyncio
+async def test_get_system_prompt_empty_conversation(target):
+    """Test that default system prompt is returned for empty conversation."""
+    conversation_id = "test_empty_conversation"
+
+    # Get the system prompt without adding any messages
+    system_prompt = target._get_system_prompt_from_conversation(conversation_id=conversation_id)
+
+    assert system_prompt == "You are a helpful AI assistant"
 
 
 @pytest.mark.asyncio
@@ -118,7 +132,6 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
     target.send_config = AsyncMock()
     result = RealtimeTargetResult(audio_bytes=b"event1", transcripts=["event2"])
     target.send_text_async = AsyncMock(return_value=("output_audio_path", result))
-    target.set_system_prompt = MagicMock()
 
     # Create mock Messages for two different conversations
     message_piece_1 = MessagePiece(
@@ -173,137 +186,78 @@ async def test_send_prompt_async_invalid_request(target):
 
 
 @pytest.mark.asyncio
-def test_add_auth_param_to_query_params_with_api_key(target_with_entra):
-    query_params = {}
-    target_with_entra._add_auth_param_to_query_params(query_params)
-    assert query_params["api-key"] == "test_api_key"
-
-
-def test_add_auth_param_to_query_params_with_azure_auth(target_with_entra):
-    query_params = {}
-    target_with_entra._add_auth_param_to_query_params(query_params)
-    assert "test_access_token" in query_params["Authorization"]
-
-
-def test_add_auth_param_to_query_params_with_both_auth_methods(target_with_entra):
-    query_params = {}
-    target_with_entra._add_auth_param_to_query_params(query_params)
-    assert query_params["api-key"] == "test_api_key"
-    assert "test_access_token" in query_params["Authorization"]
-
-
-@pytest.mark.asyncio
 async def test_receive_events_empty_output(target: RealtimeTarget):
     """Test handling of response.done event with empty output array."""
-    mock_websocket = AsyncMock()
+    mock_connection = AsyncMock()
     conversation_id = "test_empty_output"
-    target._existing_conversation[conversation_id] = mock_websocket
+    target._existing_conversation[conversation_id] = mock_connection
 
-    empty_output_response = {
-        "type": "response.done",
-        "event_id": "event_123",
-        "response": {
-            "status": "failed",
-            "status_details": {
-                "type": "failed",
-                "error": {"type": "server_error", "message": "The server had an error processing your request"},
-            },
-            "output": [],
-            "conversation_id": conversation_id,
-        },
-    }
+    # Mock the event with empty output - simulates server error
+    mock_event = MagicMock()
+    mock_event.type = "response.done"
+    mock_event.response.status = "failed"
 
-    # mock websocket yield our test response
-    mock_websocket.__aiter__.return_value = [json.dumps(empty_output_response)]
-    with pytest.raises(ServerErrorException, match="The server had an error processing your request"):
+    # Create nested error structure matching the actual API response
+    mock_error = MagicMock()
+    mock_error.type = "server_error"
+    mock_error.message = "The server had an error processing your request"
+
+    mock_status_details = MagicMock()
+    mock_status_details.error = mock_error
+
+    mock_event.response.status_details = mock_status_details
+    mock_event.response.output = []
+
+    # Mock connection to yield our test event
+    mock_connection.__aiter__.return_value = [mock_event]
+
+    with pytest.raises(ServerErrorException, match=r"\[server_error\] The server had an error processing your request"):
         await target.receive_events(conversation_id)
 
 
 @pytest.mark.asyncio
-async def test_receive_events_missing_content(target):
-    """Test handling of response.done event with output but missing content."""
-    mock_websocket = AsyncMock()
-    conversation_id = "test_missing_content"
-    target._existing_conversation[conversation_id] = mock_websocket
+async def test_receive_events_response_done_no_transcript_validation(target):
+    """Test that response.done no longer validates transcript structure (collected from deltas instead)."""
+    mock_connection = AsyncMock()
+    conversation_id = "test_response_done"
+    target._existing_conversation[conversation_id] = mock_connection
 
-    missing_content_response = {
-        "type": "response.done",
-        "event_id": "event_456",
-        "response": {
-            "status": "success",
-            "output": [
-                {
-                    # missing 'content' field
-                    "type": "text"
-                }
-            ],
-            "conversation_id": conversation_id,
-        },
-    }
+    # Mock response.done event - no longer extracts or validates transcript
+    mock_event = MagicMock()
+    mock_event.type = "response.done"
+    mock_event.response.status = "success"
 
-    # mock websocket to yield test response
-    mock_websocket.__aiter__.return_value = [json.dumps(missing_content_response)]
-    first_output = missing_content_response["response"]["output"][0]
-    with pytest.raises(ValueError, match=re.escape(f"Missing or invalid 'content' in: {first_output}")):
-        await target.receive_events(conversation_id)
+    # Mock connection to yield test event
+    mock_connection.__aiter__.return_value = [mock_event]
 
-
-@pytest.mark.asyncio
-async def test_receive_events_missing_transcript(target):
-    """Test handling of response.done event with content but missing transcript."""
-    mock_websocket = AsyncMock()
-    conversation_id = "test_missing_transcript"
-    target._existing_conversation[conversation_id] = mock_websocket
-
-    missing_transcript_response = {
-        "type": "response.done",
-        "event_id": "event_789",
-        "response": {
-            "status": "success",
-            "output": [
-                {
-                    "content": [
-                        {
-                            # missing 'transcript' field
-                            "type": "text"
-                        }
-                    ]
-                }
-            ],
-            "conversation_id": conversation_id,
-        },
-    }
-
-    # mock websocket to yield test response
-    mock_websocket.__aiter__.return_value = [json.dumps(missing_transcript_response)]
-
-    content = missing_transcript_response["response"]["output"][0]["content"]
-    with pytest.raises(ValueError, match=f"Missing 'transcript' in: {content}"):
-        await target.receive_events(conversation_id)
+    # Should complete successfully without raising - transcripts come from delta events
+    result = await target.receive_events(conversation_id)
+    assert result is not None
+    assert len(result.transcripts) == 0  # No deltas, so no transcripts
 
 
 @pytest.mark.asyncio
 async def test_receive_events_audio_buffer_only(target):
     """Test receiving only audio data with no transcript."""
-    mock_websocket = AsyncMock()
+    mock_connection = AsyncMock()
     conversation_id = "test_audio_only"
-    target._existing_conversation[conversation_id] = mock_websocket
+    target._existing_conversation[conversation_id] = mock_connection
 
-    # create audio delta and done events with no transcript
-    audio_delta_event = {
-        "type": "response.audio.delta",
-        # base64 encoded "dummyaudio"
-        "delta": "ZHVtbXlhdWRpbw==",
-    }
+    # Create audio delta event
+    mock_audio_event = MagicMock()
+    mock_audio_event.type = "response.audio.delta"
+    mock_audio_event.delta = "ZHVtbXlhdWRpbw=="  # base64 for "dummyaudio"
 
-    audio_done_event = {"type": "response.audio.done", "event_id": "event_abc"}
+    # Create audio done event
+    mock_done_event = MagicMock()
+    mock_done_event.type = "response.audio.done"
 
-    # mock websocket to yield both events
-    mock_websocket.__aiter__.return_value = [json.dumps(audio_delta_event), json.dumps(audio_done_event)]
+    # Mock connection to yield both events
+    mock_connection.__aiter__.return_value = [mock_audio_event, mock_done_event]
 
     result = await target.receive_events(conversation_id)
 
-    # it should have the audio buffer in the result
+    # Should have audio buffer but no transcript
     assert len(result.transcripts) == 0
     assert result.audio_bytes == b"dummyaudio"
 
@@ -311,39 +265,34 @@ async def test_receive_events_audio_buffer_only(target):
 @pytest.mark.asyncio
 async def test_receive_events_error_event(target):
     """Test handling of direct error event."""
-    mock_websocket = AsyncMock()
+    mock_connection = AsyncMock()
     conversation_id = "test_error_event"
-    target._existing_conversation[conversation_id] = mock_websocket
+    target._existing_conversation[conversation_id] = mock_connection
 
-    error_event = {"type": "error", "error": {"type": "invalid_request_error", "message": "Invalid request"}}
+    # Mock error event
+    mock_event = MagicMock()
+    mock_event.type = "error"
+    mock_event.error.type = "invalid_request_error"
+    mock_event.error.message = "Invalid request"
 
-    # mock websocket to yield test response
-    mock_websocket.__aiter__.return_value = [json.dumps(error_event)]
+    # Mock connection to yield test event
+    mock_connection.__aiter__.return_value = [mock_event]
 
-    result = await target.receive_events(conversation_id)
-    assert len(result.transcripts) == 0
-    assert result.audio_bytes == b""
+    # Error events now raise RuntimeError with details
+    with pytest.raises(RuntimeError, match=r"Server error: \[invalid_request_error\] Invalid request"):
+        await target.receive_events(conversation_id)
 
 
 @pytest.mark.asyncio
 async def test_receive_events_connection_closed(target):
-    """Test handling of WebSocket connection closing unexpectedly."""
-    mock_websocket = AsyncMock()
+    """Test handling of connection closing unexpectedly."""
+    mock_connection = AsyncMock()
     conversation_id = "test_connection_closed"
-    target._existing_conversation[conversation_id] = mock_websocket
+    target._existing_conversation[conversation_id] = mock_connection
 
-    # create Close objects for the rcvd and sent parameters
-    close_frame = Close(1000, "Normal closure")
+    # Mock connection that returns empty list (simulates closed connection)
+    mock_connection.__aiter__.return_value = []
 
-    # forcing the websocket to raise a ConnectionClosed when iterated
-    class FailingAsyncIterator:
-        def __aiter__(self):
-            return self
-
-        async def __anext__(self):
-            raise ConnectionClosed(rcvd=close_frame, sent=None)
-
-    mock_websocket.__aiter__.side_effect = lambda: FailingAsyncIterator()
     result = await target.receive_events(conversation_id)
     assert len(result.transcripts) == 0
     assert result.audio_bytes == b""
@@ -352,38 +301,46 @@ async def test_receive_events_connection_closed(target):
 @pytest.mark.asyncio
 async def test_receive_events_with_audio_and_transcript(target):
     """Test successful processing of both audio data and transcript."""
-    mock_websocket = AsyncMock()
+    mock_connection = AsyncMock()
     conversation_id = "test_success"
-    target._existing_conversation[conversation_id] = mock_websocket
+    target._existing_conversation[conversation_id] = mock_connection
 
-    audio_delta_event = {
-        "type": "response.audio.delta",
-        # base64 encoded "dummyaudio"
-        "delta": "ZHVtbXlhdWRpbw==",
-    }
+    # Create audio delta event
+    mock_audio_event = MagicMock()
+    mock_audio_event.type = "response.audio.delta"
+    mock_audio_event.delta = "ZHVtbXlhdWRpbw=="  # base64 for "dummyaudio"
 
-    audio_done_event = {"type": "response.audio.done", "event_id": "event_def"}
+    # Create audio done event
+    mock_audio_done_event = MagicMock()
+    mock_audio_done_event.type = "response.audio.done"
 
-    transcript_event = {
-        "type": "response.done",
-        "event_id": "event_ghi",
-        "response": {
-            "status": "success",
-            "output": [{"content": [{"transcript": "Hello, this is a test transcript."}]}],
-            "conversation_id": conversation_id,
-        },
-    }
+    # Create transcript delta events (transcripts now come from deltas, not response.done)
+    mock_transcript_delta1 = MagicMock()
+    mock_transcript_delta1.type = "response.audio_transcript.delta"
+    mock_transcript_delta1.delta = "Hello, "
 
-    # mock websocket to yield all events
-    mock_websocket.__aiter__.return_value = [
-        json.dumps(audio_delta_event),
-        json.dumps(audio_done_event),
-        json.dumps(transcript_event),
+    mock_transcript_delta2 = MagicMock()
+    mock_transcript_delta2.type = "response.audio_transcript.delta"
+    mock_transcript_delta2.delta = "this is a test transcript."
+
+    # Create response.done event (no longer extracts transcript)
+    mock_done_event = MagicMock()
+    mock_done_event.type = "response.done"
+    mock_done_event.response.status = "success"
+
+    # Mock connection to yield all events
+    mock_connection.__aiter__.return_value = [
+        mock_audio_event,
+        mock_transcript_delta1,
+        mock_transcript_delta2,
+        mock_audio_done_event,
+        mock_done_event,
     ]
 
     result = await target.receive_events(conversation_id)
 
-    # result should have both the audio buffer and transcript
-    assert len(result.transcripts) == 1
+    # Result should have both audio buffer and transcript from deltas
+    assert len(result.transcripts) == 2
     assert result.audio_bytes == b"dummyaudio"
-    assert result.transcripts[0] == "Hello, this is a test transcript."
+    assert result.transcripts[0] == "Hello, "
+    assert result.transcripts[1] == "this is a test transcript."

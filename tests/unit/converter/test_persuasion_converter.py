@@ -82,7 +82,7 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
                 )
             ]
         )
-        mock_create.return_value = message
+        mock_create.return_value = [message]
 
         with pytest.raises(InvalidJsonException):
             await prompt_persuasion.convert_async(prompt="testing", input_type="text")

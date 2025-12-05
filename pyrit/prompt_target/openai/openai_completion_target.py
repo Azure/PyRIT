@@ -1,20 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import logging
-from typing import Optional
+from typing import Any, Optional
 
-import httpx
-
-from pyrit.common import net_utility
 from pyrit.exceptions.exception_classes import (
-    EmptyResponseException,
-    RateLimitException,
-    handle_bad_request_exception,
     pyrit_target_retry,
 )
-from pyrit.models import Message, MessagePiece, construct_response_from_request
+from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -79,49 +72,30 @@ class OpenAICompletionTarget(OpenAITarget):
         self.endpoint_environment_variable = "OPENAI_COMPLETION_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_COMPLETION_API_KEY"
 
+    def _get_target_api_paths(self) -> list[str]:
+        """Return API paths that should not be in the URL."""
+        return ["/completions", "/v1/completions"]
+
+    def _get_provider_examples(self) -> dict[str, str]:
+        """Return provider-specific example URLs."""
+        return {
+            ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
+            "api.openai.com": "https://api.openai.com/v1",
+        }
+
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
 
         self._validate_request(message=message)
         message_piece = message.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {message_piece}")
 
-        self.refresh_auth_headers()
-
-        body = await self._construct_request_body(request=message_piece)
-
-        try:
-            str_response: httpx.Response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._endpoint,
-                method="POST",
-                headers=self._headers,
-                request_body=body,
-                **self._httpx_client_kwargs,
-            )
-        except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
-                # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=message_piece)
-            elif StatusError.response.status_code == 429:
-                raise RateLimitException()
-            else:
-                raise
-
-        logger.info(f'Received the following response from the prompt target "{str_response.text}"')
-
-        response_entry = self._construct_message_from_openai_json(
-            open_ai_str_response=str_response.text, message_piece=message_piece
-        )
-
-        return response_entry
-
-    async def _construct_request_body(self, request: MessagePiece) -> dict:
-
+        # Build request parameters
         body_parameters = {
             "model": self._model_name,
-            "prompt": request.converted_value,
+            "prompt": message_piece.converted_value,
             "top_p": self._top_p,
             "temperature": self._temperature,
             "frequency_penalty": self._frequency_penalty,
@@ -131,26 +105,32 @@ class OpenAICompletionTarget(OpenAITarget):
         }
 
         # Filter out None values
-        return {k: v for k, v in body_parameters.items() if v is not None}
+        request_params = {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _construct_message_from_openai_json(
-        self,
-        *,
-        open_ai_str_response: str,
-        message_piece: MessagePiece,
-    ) -> Message:
+        # Use unified error handler - automatically detects Completion and validates
+        response = await self._handle_openai_request(
+            api_call=lambda: self._async_client.completions.create(**request_params),  # type: ignore[call-overload]
+            request=message,
+        )
+        return [response]
 
-        response = json.loads(open_ai_str_response)
+    async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
+        """
+        Construct a Message from a Completion response.
 
-        extracted_response = []
-        for response_piece in response["choices"]:
-            extracted_response.append(response_piece["text"])
+        Args:
+            response: The Completion response from OpenAI SDK.
+            request: The original request MessagePiece.
 
-        if not extracted_response:
-            logger.log(logging.ERROR, "The chat returned an empty response.")
-            raise EmptyResponseException(message="The chat returned an empty response.")
+        Returns:
+            Message: Constructed message with extracted text.
+        """
+        logger.info(f"Received response from the prompt target with {len(response.choices)} choices")
 
-        return construct_response_from_request(request=message_piece, response_text_pieces=extracted_response)
+        # Extract response text from validated choices
+        extracted_response = [choice.text for choice in response.choices]
+
+        return construct_response_from_request(request=request, response_text_pieces=extracted_response)
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

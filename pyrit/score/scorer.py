@@ -434,7 +434,7 @@ class Scorer(abc.ABC):
 
         response_json: str = ""
         try:
-            response_json = response.get_value()
+            response_json = response[0].get_value()
 
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)

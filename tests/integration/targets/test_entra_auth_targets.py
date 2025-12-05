@@ -8,10 +8,10 @@ import pytest
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_target import (
     OpenAIChatTarget,
-    OpenAIDALLETarget,
+    OpenAIImageTarget,
     OpenAIResponseTarget,
-    OpenAISoraTarget,
     OpenAITTSTarget,
+    OpenAIVideoTarget,
     PromptShieldTarget,
     RealtimeTarget,
 )
@@ -19,32 +19,34 @@ from pyrit.prompt_target import (
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "model_name"),
+    ("endpoint", "model_name", "supports_seed"),
     [
-        ("AZURE_OPENAI_GPT4O_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4O_ENDPOINT2", ""),
-        ("AZURE_OPENAI_GPT4O_AAD_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", ""),
-        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", ""),
-        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", ""),
-        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", ""),
-        ("AZURE_FOUNDRY_PHI4_ENDPOINT", ""),
-        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", ""),
-        ("XPIAI_OPENAI_GPT4O_CHAT_ENDPOINT", "XPIA_OPENAI_MODEL"),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT", "AZURE_OPENAI_GPT4O_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_ENDPOINT2", "AZURE_OPENAI_GPT4O_MODEL2", True),
+        ("AZURE_OPENAI_GPT4O_AAD_ENDPOINT", "AZURE_OPENAI_GPT4O_AAD_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2", "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2", True),
+        ("AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT", "AZURE_OPENAI_INTEGRATION_TEST_MODEL", True),
+        ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", "AZURE_OPENAI_GPT4O_STRICT_FILTER_MODEL", True),
+        ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_MODEL", True),
+        ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "", True),
+        ("AZURE_FOUNDRY_PHI4_ENDPOINT", "", True),
+        ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "", False),
+        ("XPIA_OPENAI_GPT4O_ENDPOINT", "XPIA_OPENAI_MODEL", True),
     ],
 )
-async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_name):
+async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_name, supports_seed):
     args = {
         "endpoint": os.getenv(endpoint),
         "temperature": 0.0,
-        "seed": 42,
         "use_entra_auth": True,
         "model_name": os.getenv(model_name),
     }
+
+    if supports_seed:
+        args["seed"] = 42
 
     # These endpoints should have Entra authentication enabled in the current context
     # e.g. Cognitive Services OpenAI Contributor or Cognitive Services User/Contributor role (for non-OpenAI resources)
@@ -58,19 +60,20 @@ async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_na
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "endpoint",
+    ("endpoint", "model_name"),
     [
-        "OPENAI_DALLE_ENDPOINT1",
-        "OPENAI_DALLE_ENDPOINT2",
+        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_MODEL1"),
+        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_MODEL2"),
     ],
 )
-async def test_openai_dalle_target_entra_auth(sqlite_instance, endpoint):
+async def test_openai_image_target_entra_auth(sqlite_instance, endpoint, model_name):
     args = {
         "endpoint": os.getenv(endpoint),
         "use_entra_auth": True,
+        "model_name": os.getenv(model_name),
     }
 
-    target = OpenAIDALLETarget(**args)
+    target = OpenAIImageTarget(**args)
 
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="A cute baby sea otter")
@@ -80,16 +83,17 @@ async def test_openai_dalle_target_entra_auth(sqlite_instance, endpoint):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "endpoint",
+    ("endpoint", "model_name"),
     [
-        "OPENAI_TTS_ENDPOINT1",
-        "OPENAI_TTS_ENDPOINT2",
+        ("OPENAI_TTS_ENDPOINT1", "OPENAI_TTS_MODEL1"),
+        ("OPENAI_TTS_ENDPOINT2", "OPENAI_TTS_MODEL2"),
     ],
 )
-async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint):
+async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint, model_name):
     args = {
         "endpoint": os.getenv(endpoint),
         "use_entra_auth": True,
+        "model_name": os.getenv(model_name),
     }
 
     target = OpenAITTSTarget(**args)
@@ -105,6 +109,8 @@ async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint):
     ("endpoint", "model_name"),
     [
         ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT41_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT5_MODEL"),
     ],
 )
 async def test_openai_responses_target_entra_auth(sqlite_instance, endpoint, model_name):
@@ -137,9 +143,12 @@ async def test_openai_realtime_target_entra_auth(sqlite_instance, endpoint, mode
 
 
 @pytest.mark.asyncio
-async def test_sora_target_entra_auth(sqlite_instance):
+async def test_video_target_entra_auth(sqlite_instance):
     # Takes a long time and sometimes encounters retry errors.
-    target = OpenAISoraTarget(endpoint=os.getenv("OPENAI_SORA_ENDPOINT"), use_entra_auth=True)
+    # Note: OPENAI_VIDEO_ENDPOINT should be configured for Sora v2 API
+    target = OpenAIVideoTarget(
+        endpoint=os.getenv("OPENAI_VIDEO2_ENDPOINT"), model_name=os.getenv("OPENAI_VIDEO2_MODEL"), use_entra_auth=True
+    )
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="test")
     assert result is not None

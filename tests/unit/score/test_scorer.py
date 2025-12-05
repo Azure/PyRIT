@@ -146,7 +146,7 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
     bad_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=bad_json, conversation_id="test-convo")]
     )
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
     scorer = MockScorer()
     with pytest.raises(InvalidJsonException):
         await scorer._score_value_with_llm(
@@ -189,7 +189,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
-    chat_target.send_prompt_async = AsyncMock(return_value=message)
+    chat_target.send_prompt_async = AsyncMock(return_value=[message])
     chat_target.set_system_prompt = MagicMock()
 
     expected_system_prompt = "system_prompt"
@@ -224,7 +224,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
-    chat_target.send_prompt_async = AsyncMock(return_value=message)
+    chat_target.send_prompt_async = AsyncMock(return_value=[message])
     chat_target.set_system_prompt = MagicMock()
 
     expected_system_prompt = "system_prompt"
@@ -255,7 +255,7 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
-    chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
 
     scorer = MockScorer()
 
@@ -279,7 +279,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
-    chat_target.send_prompt_async = AsyncMock(return_value=good_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
 
     scorer = MockScorer()
 

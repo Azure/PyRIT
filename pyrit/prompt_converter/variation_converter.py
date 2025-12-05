@@ -120,7 +120,7 @@ class VariationConverter(PromptConverter):
         """Sends the message to the converter target and retrieves the response."""
         response = await self.converter_target.send_prompt_async(message=request)
 
-        response_msg = response.get_value()
+        response_msg = response[0].get_value()
         response_msg = remove_markdown_json(response_msg)
         try:
             response = json.loads(response_msg)

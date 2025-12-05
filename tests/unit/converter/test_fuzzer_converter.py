@@ -98,7 +98,7 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
                 )
             ]
         )
-        mock_create.return_value = message
+        mock_create.return_value = [message]
 
         if update:
             converter.update(prompt_templates=["testing 2"])

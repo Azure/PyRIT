@@ -128,8 +128,9 @@ async def test_send_prompt_async(
 
     response = await azure_blob_storage_target.send_prompt_async(message=request)
 
+    assert len(response) == 1
     assert response
-    blob_url = response.get_value()
+    blob_url = response[0].get_value()
     assert azure_blob_storage_target._container_url in blob_url
     assert blob_url.endswith(".txt")
     mock_upload_blob.assert_awaited_once()

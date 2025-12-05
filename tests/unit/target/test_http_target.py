@@ -70,7 +70,8 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
     message.message_pieces = [MagicMock(converted_value="test_prompt")]
     mock_request.return_value = mock_http_response
     response = await mock_http_target.send_prompt_async(message=message)
-    assert response.get_value() == "value1"
+    assert len(response) == 1
+    assert response[0].get_value() == "value1"
     assert mock_request.call_count == 1
     mock_request.assert_called_with(
         method="POST",
@@ -157,7 +158,8 @@ async def test_send_prompt_regex_parse_async(mock_request, mock_http_target):
     mock_request.return_value = mock_response
 
     response = await mock_http_target.send_prompt_async(message=message)
-    assert response.get_value() == "Match: 1234"
+    assert len(response) == 1
+    assert response[0].get_value() == "Match: 1234"
     assert mock_request.call_count == 1
     mock_request.assert_called_with(
         method="POST",
@@ -180,7 +182,8 @@ async def test_send_prompt_async_keeps_original_template(mock_request, mock_http
     message.message_pieces = [MagicMock(converted_value="test_prompt")]
     response = await mock_http_target.send_prompt_async(message=message)
 
-    assert response.get_value() == "value1"
+    assert len(response) == 1
+    assert response[0].get_value() == "value1"
     assert mock_http_target.http_request == original_http_request
 
     assert mock_request.call_count == 1
@@ -246,7 +249,8 @@ async def test_http_target_with_injected_client():
 
         response = await target.send_prompt_async(message=message)
 
-        assert response.get_value() == "test_value"
+        assert len(response) == 1
+        assert response[0].get_value() == "test_value"
         assert mock_request.call_count == 1
         args, kwargs = mock_request.call_args
         assert args == ()

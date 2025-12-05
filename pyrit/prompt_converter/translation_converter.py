@@ -135,7 +135,7 @@ class TranslationConverter(PromptConverter):
             with attempt:
                 logger.debug(f"Attempt {attempt.retry_state.attempt_number} for translation")
                 response = await self.converter_target.send_prompt_async(message=request)
-                response_msg = response.get_value()
+                response_msg = response[0].get_value()
                 return response_msg.strip()
 
         # when we exhaust all retries without success, raise an exception

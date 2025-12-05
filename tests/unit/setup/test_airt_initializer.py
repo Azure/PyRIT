@@ -35,7 +35,7 @@ class TestAIRTInitializerInitialize:
         """Set up before each test."""
         reset_default_values()
         # Set up required env vars for AIRT
-        os.environ["AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"] = "https://test-converter.openai.azure.com"
+        os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"] = "https://test-converter.openai.azure.com"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"] = "test_converter_key"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2"] = "https://test-scorer.openai.azure.com"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"] = "test_scorer_key"
@@ -56,7 +56,7 @@ class TestAIRTInitializerInitialize:
         reset_default_values()
         # Clean up env vars
         for var in [
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2",
@@ -117,20 +117,20 @@ class TestAIRTInitializerInitialize:
     def test_validate_missing_env_vars_raises_error(self):
         """Test that validate raises error when required env vars are missing."""
         # Remove one required env var
-        del os.environ["AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"]
+        del os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"]
 
         init = AIRTInitializer()
         with pytest.raises(ValueError) as exc_info:
             init.validate()
 
         error_message = str(exc_info.value)
-        assert "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT" in error_message
+        assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT" in error_message
         assert "environment variables" in error_message
 
     def test_validate_missing_multiple_env_vars_raises_error(self):
         """Test that validate raises error listing all missing env vars."""
         # Remove multiple required env vars
-        del os.environ["AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"]
+        del os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"]
         del os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"]
 
         init = AIRTInitializer()
@@ -138,7 +138,7 @@ class TestAIRTInitializerInitialize:
             init.validate()
 
         error_message = str(exc_info.value)
-        assert "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT" in error_message
+        assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT" in error_message
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY" in error_message
 
 
@@ -153,7 +153,7 @@ class TestAIRTInitializerGetInfo:
         assert info["name"] == "AIRT Default Configuration"
         assert info["class"] == "AIRTInitializer"
         assert "required_env_vars" in info
-        assert "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT" in info["required_env_vars"]
+        assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT" in info["required_env_vars"]
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY" in info["required_env_vars"]
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2" in info["required_env_vars"]
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2" in info["required_env_vars"]

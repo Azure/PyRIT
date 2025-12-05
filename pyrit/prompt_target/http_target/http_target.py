@@ -106,7 +106,7 @@ class HTTPTarget(PromptTarget):
         return http_request_w_prompt
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         self._validate_request(message=message)
         request = message.message_pieces[0]
 
@@ -152,7 +152,10 @@ class HTTPTarget(PromptTarget):
             if self.callback_function:
                 response_content = self.callback_function(response=response)
 
-            return construct_response_from_request(request=request, response_text_pieces=[str(response_content)])
+            response_message = construct_response_from_request(
+                request=request, response_text_pieces=[str(response_content)]
+            )
+            return [response_message]
         finally:
             if cleanup_client:
                 await client.aclose()

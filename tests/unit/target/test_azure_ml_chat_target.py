@@ -298,3 +298,51 @@ async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureML
 
 def test_is_json_response_supported(aml_online_chat: AzureMLChatTarget):
     assert aml_online_chat.is_json_response_supported() is False
+
+
+def test_invalid_temperature_too_low_raises(patch_central_database):
+    with pytest.raises(Exception, match="temperature must be between 0 and 2"):
+        AzureMLChatTarget(
+            endpoint="http://aml-test-endpoint.com",
+            api_key="valid_api_key",
+            temperature=-0.1,
+        )
+
+
+def test_invalid_temperature_too_high_raises(patch_central_database):
+    with pytest.raises(Exception, match="temperature must be between 0 and 2"):
+        AzureMLChatTarget(
+            endpoint="http://aml-test-endpoint.com",
+            api_key="valid_api_key",
+            temperature=2.1,
+        )
+
+
+def test_invalid_top_p_too_low_raises(patch_central_database):
+    with pytest.raises(Exception, match="top_p must be between 0 and 1"):
+        AzureMLChatTarget(
+            endpoint="http://aml-test-endpoint.com",
+            api_key="valid_api_key",
+            top_p=-0.1,
+        )
+
+
+def test_invalid_top_p_too_high_raises(patch_central_database):
+    with pytest.raises(Exception, match="top_p must be between 0 and 1"):
+        AzureMLChatTarget(
+            endpoint="http://aml-test-endpoint.com",
+            api_key="valid_api_key",
+            top_p=1.1,
+        )
+
+
+def test_valid_temperature_and_top_p(patch_central_database):
+    # Should not raise any exceptions
+    target = AzureMLChatTarget(
+        endpoint="http://aml-test-endpoint.com",
+        api_key="valid_api_key",
+        temperature=1.5,
+        top_p=0.9,
+    )
+    assert target._temperature == 1.5
+    assert target._top_p == 0.9

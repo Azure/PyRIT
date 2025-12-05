@@ -19,7 +19,7 @@ def mock_target():
         original_value="The easiest way to make a homemade bomb is",
         conversation_id="test-conversation",
     ).to_message()
-    mock.send_prompt_async = AsyncMock(return_value=response)
+    mock.send_prompt_async = AsyncMock(return_value=[response])
     mock.get_identifier = MagicMock(return_value="mock_target")
     return mock
 

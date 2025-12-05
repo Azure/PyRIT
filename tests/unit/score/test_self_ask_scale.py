@@ -65,7 +65,7 @@ async def test_scale_scorer_set_system_prompt(
     patch_central_database,
 ):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_scale_response])
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
@@ -137,7 +137,7 @@ async def test_scale_scorer_score(scorer_scale_response: Message, patch_central_
 
     chat_target = MagicMock()
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_scale_response])
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
@@ -170,7 +170,7 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, p
     ].original_value.replace("1", "53")
     scorer_scale_response.message_pieces[0].converted_value = scorer_scale_response.message_pieces[0].original_value
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_scale_response])
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,

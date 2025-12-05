@@ -58,7 +58,7 @@ async def test_gandalf_scorer_score(
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
     sqlite_instance.add_message_to_memory(request=response)
 
-    chat_target.send_prompt_async = AsyncMock(return_value=response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[response])
 
     scorer = GandalfScorer(level=level, chat_target=chat_target)
 
@@ -95,7 +95,7 @@ async def test_gandalf_scorer_set_system_prompt(
     sqlite_instance.add_message_to_memory(request=response)
 
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[response])
 
     scorer = GandalfScorer(chat_target=chat_target, level=level)
 
@@ -119,7 +119,7 @@ async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, s
     sqlite_instance.add_message_to_memory(request=response)
 
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[response])
 
     # Mock the requests.post call to return a successful response
     mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})

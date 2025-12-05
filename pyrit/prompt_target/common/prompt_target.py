@@ -37,9 +37,13 @@ class PromptTarget(abc.ABC, Identifier):
             logging.basicConfig(level=logging.INFO)
 
     @abc.abstractmethod
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Sends a normalized prompt async to the prompt target.
+
+        Returns:
+            list[Message]: A list of message responses. Most targets return a single message,
+                but some (like response target with tool calls) may return multiple messages.
         """
 
     @abc.abstractmethod

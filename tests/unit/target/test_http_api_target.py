@@ -33,8 +33,11 @@ async def test_send_prompt_async_file_upload(mock_request, patch_central_databas
     response = await target.send_prompt_async(message=message)
 
     # Our mock transport returns a JSON string containing "File uploaded successfully".
+    assert len(response) == 1
     response_text = (
-        str(response.message_pieces[0].converted_value) if response.message_pieces[0].converted_value else str(response)
+        str(response[0].message_pieces[0].converted_value)
+        if response[0].message_pieces[0].converted_value
+        else str(response[0])
     )
     assert "File uploaded successfully" in response_text
 
@@ -58,8 +61,11 @@ async def test_send_prompt_async_no_file(mock_request, patch_central_database):
     response = await target.send_prompt_async(message=message)
 
     # The mock transport returns a JSON string containing "Sample JSON response".
+    assert len(response) == 1
     response_text = (
-        str(response.message_pieces[0].converted_value) if response.message_pieces[0].converted_value else str(response)
+        str(response[0].message_pieces[0].converted_value)
+        if response[0].message_pieces[0].converted_value
+        else str(response[0])
     )
     assert "Sample JSON response" in response_text
 

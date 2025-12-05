@@ -20,6 +20,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,9 @@ class AzureMLChatTarget(PromptChatTarget):
         PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
 
         self._initialize_vars(endpoint=endpoint, api_key=api_key)
+
+        validate_temperature(temperature)
+        validate_top_p(top_p)
 
         self.chat_message_normalizer = chat_message_normalizer
         self._max_new_tokens = max_new_tokens
@@ -157,13 +161,13 @@ class AzureMLChatTarget(PromptChatTarget):
         self._extra_parameters = param_kwargs
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
 
         self._validate_request(message=message)
         request = message.message_pieces[0]
 
+        # Get chat messages from memory and append the current message
         messages = list(self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id))
-
         messages.append(request.to_chat_message())
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
@@ -187,7 +191,7 @@ class AzureMLChatTarget(PromptChatTarget):
                 raise hse
 
         logger.info("Received the following response from the prompt target" + f"{response_entry.get_value()}")
-        return response_entry
+        return [response_entry]
 
     @pyrit_target_retry
     async def _complete_chat_async(

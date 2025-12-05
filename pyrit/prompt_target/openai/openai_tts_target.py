@@ -2,19 +2,13 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
-import httpx
-
-from pyrit.common import net_utility
 from pyrit.exceptions import (
-    RateLimitException,
-    handle_bad_request_exception,
     pyrit_target_retry,
 )
 from pyrit.models import (
     Message,
-    MessagePiece,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -67,9 +61,6 @@ class OpenAITTSTarget(OpenAITarget):
         if not self._model_name:
             self._model_name = "tts-1"
 
-        tts_url_patterns = [r"/audio/speech"]
-        self._warn_if_irregular_endpoint(tts_url_patterns)
-
         self._voice = voice
         self._response_format = response_format
         self._language = language
@@ -80,35 +71,62 @@ class OpenAITTSTarget(OpenAITarget):
         self.endpoint_environment_variable = "OPENAI_TTS_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_TTS_KEY"
 
+    def _get_target_api_paths(self) -> list[str]:
+        """Return API paths that should not be in the URL."""
+        return ["/audio/speech", "/v1/audio/speech"]
+
+    def _get_provider_examples(self) -> dict[str, str]:
+        """Return provider-specific example URLs."""
+        return {
+            ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
+            "api.openai.com": "https://api.openai.com/v1",
+        }
+
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         self._validate_request(message=message)
-        request = message.message_pieces[0]
+        message_piece = message.message_pieces[0]
 
-        logger.info(f"Sending the following prompt to the prompt target: {request}")
+        logger.info(f"Sending the following prompt to the prompt target: {message_piece}")
 
-        # Refresh auth headers if using Entra authentication
-        self.refresh_auth_headers()
+        # Construct request parameters for SDK
+        body_parameters: dict[str, object] = {
+            "model": self._model_name,
+            "input": message_piece.converted_value,
+            "voice": self._voice,
+            "response_format": self._response_format,
+        }
 
-        body = self._construct_request_body(request=request)
+        # Add optional parameters
+        if self._speed is not None:
+            body_parameters["speed"] = self._speed
 
-        try:
-            response = await net_utility.make_request_and_raise_if_error_async(
-                endpoint_uri=self._endpoint,
-                method="POST",
-                headers=self._headers,
-                request_body=body,
-                **self._httpx_client_kwargs,
-            )
-        except httpx.HTTPStatusError as StatusError:
-            if StatusError.response.status_code == 400:
-                # Handle Bad Request
-                return handle_bad_request_exception(response_text=StatusError.response.text, request=request)
-            elif StatusError.response.status_code == 429:
-                raise RateLimitException()
-            else:
-                raise
+        # Use unified error handler for consistent error handling
+        response = await self._handle_openai_request(
+            api_call=lambda: self._async_client.audio.speech.create(
+                model=body_parameters["model"],  # type: ignore[arg-type]
+                voice=body_parameters["voice"],  # type: ignore[arg-type]
+                input=body_parameters["input"],  # type: ignore[arg-type]
+                response_format=body_parameters.get("response_format"),  # type: ignore[arg-type]
+                speed=body_parameters.get("speed"),  # type: ignore[arg-type]
+            ),
+            request=message,
+        )
+        return [response]
+
+    async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
+        """
+        Construct a Message from a TTS audio response.
+
+        Args:
+            response: The audio response from OpenAI SDK.
+            request: The original request MessagePiece.
+
+        Returns:
+            Message: Constructed message with audio file path.
+        """
+        audio_bytes = response.content
 
         logger.info("Received valid response from the prompt target")
 
@@ -116,29 +134,11 @@ class OpenAITTSTarget(OpenAITarget):
             category="prompt-memory-entries", data_type="audio_path", extension=self._response_format
         )
 
-        data = response.content
+        await audio_response.save_data(data=audio_bytes)
 
-        await audio_response.save_data(data=data)
-
-        response_entry = construct_response_from_request(
+        return construct_response_from_request(
             request=request, response_text_pieces=[str(audio_response.value)], response_type="audio_path"
         )
-
-        return response_entry
-
-    def _construct_request_body(self, request: MessagePiece) -> dict:
-
-        body_parameters: dict[str, object] = {
-            "model": self._model_name,
-            "input": request.converted_value,
-            "voice": self._voice,
-            "file": self._response_format,
-            "language": self._language,
-            "speed": self._speed,
-        }
-
-        # Filter out None values
-        return {k: v for k, v in body_parameters.items() if v is not None}
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

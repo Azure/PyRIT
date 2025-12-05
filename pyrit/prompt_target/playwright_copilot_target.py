@@ -140,7 +140,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                 file_picker_selector='span.fui-MenuItem__content:has-text("Upload images and files")',
             )
 
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Send a message to Microsoft Copilot and return the response.
 
@@ -149,8 +149,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                 of type 'text' or 'image_path'.
 
         Returns:
-            Message: The response from Copilot. May contain multiple
-                pieces if the response includes both text and images.
+            list[Message]: A list containing the response from Copilot.
         """
         self._validate_request(message=message)
 
@@ -187,7 +186,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
             response_entry = Message(message_pieces=response_message_pieces)
 
-        return response_entry
+        return [response_entry]
 
     async def _interact_with_copilot_async(self, message: Message) -> Union[str, List[Tuple[str, PromptDataType]]]:
         """Interact with Microsoft Copilot interface to send multimodal prompts."""
