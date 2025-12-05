@@ -37,7 +37,7 @@ initialize_pyrit(
     memory_db_type=IN_MEMORY,
 )
 
-objective_target = OpenAIChatTarget(model_name="gpt4o")
+objective_target = OpenAIChatTarget()
 printer = ConsoleScenarioResultPrinter()
 
 # %% [markdown]

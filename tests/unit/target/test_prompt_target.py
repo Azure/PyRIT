@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import uuid
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -86,12 +85,19 @@ async def test_send_prompt_with_system_calls_chat_complete(
     mock_attack_strategy: AttackStrategy,
 ):
 
-    openai_mock_return = MagicMock()
-    openai_mock_return.text = json.dumps(openai_response_json)
+    # Mock SDK response
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.finish_reason = "stop"
+    mock_message = MagicMock()
+    mock_message.content = "hi"
+    mock_choice.message = mock_message
+    mock_response.choices = [mock_choice]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_create:
-
-        mock_create.return_value = openai_mock_return
+    with patch.object(
+        azure_openai_target._async_client.chat.completions, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
 
         azure_openai_target.set_system_prompt(
             system_prompt="system prompt",
@@ -117,12 +123,20 @@ async def test_send_prompt_async_with_delay(
 ):
     azure_openai_target._max_requests_per_minute = 10
 
-    openai_mock_return = MagicMock()
-    openai_mock_return.text = json.dumps(openai_response_json)
+    # Mock SDK response
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.finish_reason = "stop"
+    mock_message = MagicMock()
+    mock_message.content = "hi"
+    mock_choice.message = mock_message
+    mock_response.choices = [mock_choice]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_create:
+    with patch.object(
+        azure_openai_target._async_client.chat.completions, "create", new_callable=AsyncMock
+    ) as mock_create:
         with patch("asyncio.sleep") as mock_sleep:
-            mock_create.return_value = openai_mock_return
+            mock_create.return_value = mock_response
 
             request = sample_entries[0]
             request.converted_value = "hi, I am a victim chatbot, how can I help?"

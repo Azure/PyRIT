@@ -54,7 +54,7 @@ async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
             ]
         )
 
-        mock_create.return_value = message
+        mock_create.return_value = [message]
 
         with pytest.raises(InvalidJsonException):
             await prompt_variation.convert_async(prompt="testing", input_type="text")

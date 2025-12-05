@@ -613,7 +613,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to check for refusal")
 
-        scores = await self._refusal_scorer.score_async(message=context.last_response, objective=objective)
+        scores = await self._refusal_scorer.score_async(
+            message=context.last_response, objective=objective, skip_on_error_result=True
+        )
         return scores[0]
 
     async def _score_response_async(self, *, context: CrescendoAttackContext) -> Score:
@@ -639,6 +641,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             auxiliary_scorers=self._auxiliary_scorers,
             role_filter="assistant",
             objective=context.objective,
+            skip_on_error_result=True,
         )
 
         objective_score = scoring_results["objective_scores"]
@@ -763,7 +766,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         prompt_sent: str,
     ) -> bool:
         """
-        Check if the response indicates a refusal and perform backtracking if needed.
+        Check if the response indicates a refusal or error and perform backtracking if needed.
 
         Args:
             context (CrescendoAttackContext): The attack context containing the response to check.
@@ -777,32 +780,49 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             self._logger.debug(f"Backtrack limit reached ({self._max_backtracks}), continuing without backtracking")
             return False
 
-        # Check for refusal
-        refusal_score = await self._check_refusal_async(context, prompt_sent)
-
-        self._logger.debug(f"Refusal check: {refusal_score.get_value()} - {refusal_score.score_rationale[:100]}...")
-
-        if not refusal_score.get_value():
-            # No refusal detected
-            return False
-
-        # Refusal detected, perform backtracking
-        self._logger.info(
-            f"Response refused, backtracking (attempt {context.backtrack_count + 1}/{self._max_backtracks})"
+        # Check for content filter error (response_error is on the message piece)
+        is_content_filter_error = (
+            context.last_response.is_error() and context.last_response.message_pieces[0].response_error == "blocked"
         )
 
-        # Store refused text for next iteration
+        # Check for refusal
+        is_refusal = False
+        if not is_content_filter_error:
+            refusal_score = await self._check_refusal_async(context, prompt_sent)
+            self._logger.debug(f"Refusal check: {refusal_score.get_value()} - {refusal_score.score_rationale[:100]}...")
+            is_refusal = refusal_score.get_value()
+
+        # Determine if backtracking is needed
+        should_backtrack = is_content_filter_error or is_refusal
+
+        if not should_backtrack:
+            return False
+
+        # Log appropriate message for backtracking reason
+        if is_content_filter_error:
+            self._logger.info(
+                f"Content filter error detected, backtracking "
+                f"(attempt {context.backtrack_count + 1}/{self._max_backtracks})"
+            )
+            piece = context.last_response.message_pieces[0]
+            self._logger.debug(
+                f"Error details: response_error={piece.response_error}, "
+                f"converted_value={piece.converted_value[:100]}..."
+            )
+        else:
+            self._logger.info(
+                f"Response refused, backtracking (attempt {context.backtrack_count + 1}/{self._max_backtracks})"
+            )
+
+        # Perform backtracking
         context.refused_text = prompt_sent
 
-        # Track the conversation ID that will be pruned
         old_conversation_id = context.session.conversation_id
 
-        # Backtrack conversation by duplicating without last turn
         context.session.conversation_id = await self._backtrack_memory_async(
             conversation_id=context.session.conversation_id
         )
 
-        # Add the old conversation ID to the pruned set
         context.related_conversations.add(
             ConversationReference(
                 conversation_id=old_conversation_id,

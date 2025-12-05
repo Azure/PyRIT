@@ -158,7 +158,7 @@ class CyberScenario(Scenario):
             OpenAIChatTarget: Default adversarial target, using an unfiltered endpoint.
         """
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
             temperature=1.2,
         )
@@ -173,7 +173,7 @@ class CyberScenario(Scenario):
             list[str]: List of seed prompt strings to be encoded and tested.
         """
         seed_prompts: List[str] = []
-        malware_path = pathlib.Path(DATASETS_PATH) / "seed_prompts"
+        malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
         seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
         return seed_prompts
 

@@ -30,7 +30,7 @@ def slow_cyberstrategy():
 @pytest.fixture
 def malware_prompts():
     """The default malware prompts."""
-    malware_path = pathlib.Path(DATASETS_PATH) / "seed_prompts"
+    malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
     seed_prompts = list(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
     return seed_prompts
 
@@ -40,7 +40,7 @@ def mock_runtime_env():
     with patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
             "OPENAI_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "OPENAI_CHAT_KEY": "test-key",
