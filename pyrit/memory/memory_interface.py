@@ -753,6 +753,7 @@ class MemoryInterface(abc.ABC):
         value: Optional[str] = None,
         value_sha256: Optional[Sequence[str]] = None,
         dataset_name: Optional[str] = None,
+        dataset_name_pattern: Optional[str] = None,
         data_types: Optional[Sequence[str]] = None,
         harm_categories: Optional[Sequence[str]] = None,
         added_by: Optional[str] = None,
@@ -770,7 +771,11 @@ class MemoryInterface(abc.ABC):
         Args:
             value (str): The value to match by substring. If None, all values are returned.
             value_sha256 (str): The SHA256 hash of the value to match. If None, all values are returned.
-            dataset_name (str): The dataset name to match. If None, all dataset names are considered.
+            dataset_name (str): The dataset name to match exactly. If None, all dataset names are considered.
+            dataset_name_pattern (str): A pattern to match dataset names using SQL LIKE syntax.
+                Supports wildcards: % (any characters) and _ (single character).
+                Examples: "harm%" matches names starting with "harm", "%test%" matches names containing "test".
+                If both dataset_name and dataset_name_pattern are provided, dataset_name takes precedence.
             data_types (Optional[Sequence[str], Optional): List of data types to filter seed prompts by
                 (e.g., text, image_path).
             harm_categories (Sequence[str]): A list of harm categories to filter by. If None,
@@ -800,6 +805,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedEntry.value_sha256.in_(value_sha256))  # type: ignore
         if dataset_name:
             conditions.append(SeedEntry.dataset_name == dataset_name)
+        elif dataset_name_pattern:
+            conditions.append(SeedEntry.dataset_name.like(dataset_name_pattern))  # type: ignore
         if prompt_group_ids:
             conditions.append(SeedEntry.prompt_group_id.in_(prompt_group_ids))  # type: ignore
         if data_types:
@@ -984,6 +991,7 @@ class MemoryInterface(abc.ABC):
         value: Optional[str] = None,
         value_sha256: Optional[Sequence[str]] = None,
         dataset_name: Optional[str] = None,
+        dataset_name_pattern: Optional[str] = None,
         data_types: Optional[Sequence[str]] = None,
         harm_categories: Optional[Sequence[str]] = None,
         added_by: Optional[str] = None,
@@ -1002,7 +1010,11 @@ class MemoryInterface(abc.ABC):
         Args:
             value (Optional[str], Optional): The value to match by substring.
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed groups by.
-            dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
+            dataset_name (Optional[str], Optional): Name of the dataset to match exactly.
+            dataset_name_pattern (Optional[str], Optional): A pattern to match dataset names using SQL LIKE syntax.
+                Supports wildcards: % (any characters) and _ (single character).
+                Examples: "harm%" matches names starting with "harm", "%test%" matches names containing "test".
+                If both dataset_name and dataset_name_pattern are provided, dataset_name takes precedence.
             data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
             harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
@@ -1024,6 +1036,7 @@ class MemoryInterface(abc.ABC):
             value=value,
             value_sha256=value_sha256,
             dataset_name=dataset_name,
+            dataset_name_pattern=dataset_name_pattern,
             data_types=data_types,
             harm_categories=harm_categories,
             added_by=added_by,
