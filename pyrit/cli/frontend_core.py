@@ -105,20 +105,17 @@ class FrontendCore:
         # Configure logging
         logging.basicConfig(level=getattr(logging, self._log_level))
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         """Initialize PyRIT and load registries (heavy operation)."""
         if self._initialized:
             return
-
-        print("Loading PyRIT modules...")
-        sys.stdout.flush()
 
         from pyrit.cli.initializer_registry import InitializerRegistry
         from pyrit.cli.scenario_registry import ScenarioRegistry
         from pyrit.setup import initialize_pyrit
 
         # Initialize PyRIT without initializers (they run per-scenario)
-        initialize_pyrit(
+        await initialize_pyrit(
             memory_db_type=self._database,
             initialization_scripts=None,
             initializers=None,
@@ -137,22 +134,26 @@ class FrontendCore:
 
     @property
     def scenario_registry(self) -> "ScenarioRegistry":
-        """Get the scenario registry (initializes if needed)."""
+        """Get the scenario registry. Must call await initialize_async() first."""
         if not self._initialized:
-            self.initialize()
+            raise RuntimeError(
+                "FrontendCore not initialized. Call 'await context.initialize_async()' before accessing registries."
+            )
         assert self._scenario_registry is not None
         return self._scenario_registry
 
     @property
     def initializer_registry(self) -> "InitializerRegistry":
-        """Get the initializer registry (initializes if needed)."""
+        """Get the initializer registry. Must call await initialize_async() first."""
         if not self._initialized:
-            self.initialize()
+            raise RuntimeError(
+                "FrontendCore not initialized. Call 'await context.initialize_async()' before accessing registries."
+            )
         assert self._initializer_registry is not None
         return self._initializer_registry
 
 
-def list_scenarios(*, context: FrontendCore) -> list[ScenarioInfo]:
+async def list_scenarios(*, context: FrontendCore) -> list[ScenarioInfo]:
     """
     List all available scenarios.
 
@@ -162,10 +163,12 @@ def list_scenarios(*, context: FrontendCore) -> list[ScenarioInfo]:
     Returns:
         List of scenario info dictionaries.
     """
+    if not context._initialized:
+        await context.initialize_async()
     return context.scenario_registry.list_scenarios()
 
 
-def list_initializers(*, context: FrontendCore, discovery_path: Optional[Path] = None) -> "Sequence[InitializerInfo]":
+async def list_initializers(*, context: FrontendCore, discovery_path: Optional[Path] = None) -> "Sequence[InitializerInfo]":
     """
     List all available initializers.
 
@@ -181,6 +184,9 @@ def list_initializers(*, context: FrontendCore, discovery_path: Optional[Path] =
 
         registry = InitializerRegistry(discovery_path=discovery_path)
         return registry.list_initializers()
+    
+    if not context._initialized:
+        await context.initialize_async()
     return context.initializer_registry.list_initializers()
 
 
@@ -221,7 +227,7 @@ async def run_scenario_async(
     # Ensure context is initialized first (loads registries)
     # This must happen BEFORE we run initializers to avoid double-initialization
     if not context._initialized:
-        context.initialize()
+        await context.initialize_async()
 
     # Run initializers before scenario
     initializer_instances = None
@@ -237,7 +243,7 @@ async def run_scenario_async(
 
     # Re-initialize PyRIT with the scenario-specific initializers
     # This resets memory and applies initializer defaults
-    initialize_pyrit(
+    await initialize_pyrit(
         memory_db_type=context._database,
         initialization_scripts=context._initialization_scripts,
         initializers=initializer_instances,
@@ -615,7 +621,7 @@ def get_default_initializer_discovery_path() -> Path:
     return PYRIT_PATH / "setup" / "initializers" / "scenarios"
 
 
-def print_scenarios_list(*, context: FrontendCore) -> int:
+async def print_scenarios_list(*, context: FrontendCore) -> int:
     """
     Print a formatted list of all available scenarios.
 
@@ -625,7 +631,7 @@ def print_scenarios_list(*, context: FrontendCore) -> int:
     Returns:
         Exit code (0 for success).
     """
-    scenarios = list_scenarios(context=context)
+    scenarios = await list_scenarios(context=context)
 
     if not scenarios:
         print("No scenarios found.")
@@ -640,7 +646,7 @@ def print_scenarios_list(*, context: FrontendCore) -> int:
     return 0
 
 
-def print_initializers_list(*, context: FrontendCore, discovery_path: Optional[Path] = None) -> int:
+async def print_initializers_list(*, context: FrontendCore, discovery_path: Optional[Path] = None) -> int:
     """
     Print a formatted list of all available initializers.
 
@@ -651,7 +657,7 @@ def print_initializers_list(*, context: FrontendCore, discovery_path: Optional[P
     Returns:
         Exit code (0 for success).
     """
-    initializers = list_initializers(context=context, discovery_path=discovery_path)
+    initializers = await list_initializers(context=context, discovery_path=discovery_path)
 
     if not initializers:
         print("No initializers found.")

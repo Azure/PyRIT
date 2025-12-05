@@ -57,18 +57,20 @@ class TestInitializePyrit:
         """Clear default values before each test."""
         reset_default_values()
 
+    @pytest.mark.asyncio
     @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
     @mock.patch("pyrit.setup.initialization._load_environment_files")
-    def test_initialize_basic(self, mock_load_env, mock_set_memory):
+    async def test_initialize_basic(self, mock_load_env, mock_set_memory):
         """Test basic initialization."""
-        initialize_pyrit(memory_db_type=IN_MEMORY)
+        await initialize_pyrit(memory_db_type=IN_MEMORY)
 
         mock_load_env.assert_called_once()
         mock_set_memory.assert_called_once()
 
+    @pytest.mark.asyncio
     @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
     @mock.patch("pyrit.setup.initialization._load_environment_files")
-    def test_initialize_with_script(self, mock_load_env, mock_set_memory):
+    async def test_initialize_with_script(self, mock_load_env, mock_set_memory):
         """Test initialization with a script."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(
@@ -84,20 +86,21 @@ class ScriptInit(PyRITInitializer):
     def description(self) -> str:
         return "From script"
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         pass
 """
             )
             script_path = f.name
 
         try:
-            initialize_pyrit(memory_db_type=IN_MEMORY, initialization_scripts=[script_path])
+            await initialize_pyrit(memory_db_type=IN_MEMORY, initialization_scripts=[script_path])
             mock_load_env.assert_called_once()
             mock_set_memory.assert_called_once()
         finally:
             os.unlink(script_path)
 
-    def test_invalid_memory_type_raises_error(self):
+    @pytest.mark.asyncio
+    async def test_invalid_memory_type_raises_error(self):
         """Test that invalid memory type raises ValueError."""
         with pytest.raises(ValueError, match="is not a supported type"):
-            initialize_pyrit(memory_db_type="InvalidType")  # type: ignore
+            await initialize_pyrit(memory_db_type="InvalidType")  # type: ignore

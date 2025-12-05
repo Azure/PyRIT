@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import os
 import tempfile
 from typing import Generator
@@ -19,7 +20,8 @@ os.environ["RETRY_MAX_NUM_ATTEMPTS"] = "9"
 os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
 os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+# Initialize PyRIT for integration tests
+asyncio.run(initialize_pyrit(memory_db_type=IN_MEMORY))
 
 
 @pytest.fixture

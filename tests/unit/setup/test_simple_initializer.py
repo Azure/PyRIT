@@ -48,16 +48,18 @@ class TestSimpleInitializerInitialize:
             if hasattr(sys.modules["__main__"], attr):
                 delattr(sys.modules["__main__"], attr)
 
-    def test_initialize_runs_without_error(self):
+    @pytest.mark.asyncio
+    async def test_initialize_runs_without_error(self):
         """Test that initialize runs without errors."""
         init = SimpleInitializer()
         # Should not raise any errors
-        init.initialize()
+        await init.initialize_async()
 
-    def test_get_info_after_initialize_has_populated_data(self):
+    @pytest.mark.asyncio
+    async def test_get_info_after_initialize_has_populated_data(self):
         """Test that get_info() returns populated data after initialization."""
         init = SimpleInitializer()
-        init.initialize()
+        await init.initialize_async()
 
         info = SimpleInitializer.get_info()
 

@@ -49,7 +49,7 @@ class ScenarioObjectiveTargetInitializer(PyRITInitializer):
             "DEFAULT_OPENAI_FRONTEND_KEY",
         ]
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         """Set default objective target for scenarios that accept them."""
         objective_target = OpenAIChatTarget(
             endpoint=os.getenv("DEFAULT_OPENAI_FRONTEND_ENDPOINT"),

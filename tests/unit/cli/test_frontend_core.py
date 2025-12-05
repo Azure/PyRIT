@@ -64,7 +64,8 @@ class TestFrontendCore:
     ):
         """Test initialize method loads registries."""
         context = frontend_core.FrontendCore()
-        context.initialize()
+        import asyncio
+        asyncio.run(context.initialize_async())
 
         assert context._initialized is True
         mock_init_pyrit.assert_called_once()

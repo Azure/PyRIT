@@ -179,14 +179,6 @@ class TestLoadDefaultDatasets:
                         call_kwargs = mock_fetch.call_args.kwargs
                         assert "dataset1" in call_kwargs["dataset_names"]
 
-    def test_initialize_calls_async_helper(self) -> None:
-        """Test that initialize() properly calls the async helper."""
-        initializer = LoadDefaultDatasets()
-
-        with patch.object(initializer, "_initialize_async", new_callable=AsyncMock) as mock_async:
-            initializer.initialize()
-            mock_async.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_all_required_datasets_available_in_seed_provider(self) -> None:
         """

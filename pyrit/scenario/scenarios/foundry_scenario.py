@@ -270,9 +270,7 @@ class FoundryScenario(Scenario):
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
 
-        self._objectives = objectives if objectives else self._get_default_objectives()
-            
-
+        # Call super().__init__() first to initialize self._memory
         super().__init__(
             name="Foundry Scenario",
             version=self.version,
@@ -281,6 +279,9 @@ class FoundryScenario(Scenario):
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
+
+        # Now we can safely access self._memory
+        self._objectives = objectives if objectives else self._get_default_objectives()
 
     def _get_default_objectives(self) -> list[str]:
         seed_objectives = self._memory.get_seeds(

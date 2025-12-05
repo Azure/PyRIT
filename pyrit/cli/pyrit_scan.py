@@ -158,14 +158,14 @@ def main(args=None) -> int:
             log_level=parsed_args.log_level,
         )
 
-        return frontend_core.print_scenarios_list(context=context)
+        return asyncio.run(frontend_core.print_scenarios_list(context=context))
 
     if parsed_args.list_initializers:
         # Discover from scenarios directory
         scenarios_path = frontend_core.get_default_initializer_discovery_path()
 
         context = frontend_core.FrontendCore(log_level=parsed_args.log_level)
-        return frontend_core.print_initializers_list(context=context, discovery_path=scenarios_path)
+        return asyncio.run(frontend_core.print_initializers_list(context=context, discovery_path=scenarios_path))
 
     # Verify scenario was provided
     if not parsed_args.scenario_name:

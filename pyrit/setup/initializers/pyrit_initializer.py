@@ -91,12 +91,13 @@ class PyRITInitializer(ABC):
         return 1
 
     @abstractmethod
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         """
-        Execute the initialization logic.
+        Execute the initialization logic asynchronously.
 
         This method should contain all the configuration logic, including
         calls to set_default_value() and set_global_variable() as needed.
+        All initializers must implement this as an async method.
         """
         pass
 
@@ -119,16 +120,16 @@ class PyRITInitializer(ABC):
                 f"{', '.join(missing_vars)}"
             )
 
-    def initialize_with_tracking(self) -> None:
+    async def initialize_with_tracking(self) -> None:
         """
         Execute initialization while tracking what changes are made.
 
-        This method runs initialize() and captures information about what
+        This method runs initialize_async() and captures information about what
         default values and global variables were set. The tracking information
         is not cached - it's captured during the actual initialization run.
         """
         with self._track_initialization_changes():
-            self.initialize()
+            await self.initialize_async()
 
     @contextmanager
     def _track_initialization_changes(self) -> Iterator[Dict[str, Any]]:
@@ -212,7 +213,8 @@ class PyRITInitializer(ABC):
 
             # Run initialization in sandbox with tracking (starting from empty state)
             with self._track_initialization_changes() as tracking_info:
-                self.initialize()
+                import asyncio
+                asyncio.run(self.initialize_async())
 
             return tracking_info
 

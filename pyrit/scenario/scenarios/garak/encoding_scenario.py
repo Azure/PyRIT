@@ -155,7 +155,6 @@ class EncodingScenario(Scenario):
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
-        self._seed_prompts: list[str] = seed_prompts if seed_prompts else self._get_default_dataset()
         self._encoding_templates = encoding_templates or AskToDecodeConverter.garak_templates
 
         super().__init__(
@@ -166,6 +165,9 @@ class EncodingScenario(Scenario):
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
+
+        # Now we can safely access self._memory
+        self._seed_prompts: list[str] = seed_prompts if seed_prompts else self._get_default_dataset()
 
     # Use the same as Garak by default
     def _get_default_dataset(self) -> list[str]:

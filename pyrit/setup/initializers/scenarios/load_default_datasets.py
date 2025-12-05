@@ -8,7 +8,6 @@ If you don't have a database already, this can enable you to run all scenarios u
 the pre-defined datasets in PyRIT. These are meant as a starting point only.
 """
 
-import asyncio
 import logging
 import textwrap
 from typing import List
@@ -48,16 +47,8 @@ class LoadDefaultDatasets(PyRITInitializer):
     def required_env_vars(self) -> List[str]:
         return []
 
-    def initialize(self) -> None:
-        """
-        Load default datasets for scenarios by calling async helper.
-
-        This is not ideal, and we may want to refactor initializers to support async in the future.
-        """
-        asyncio.run(self._initialize_async())
-
-    async def _initialize_async(self) -> None:
-        """Async helper to load datasets from all registered scenarios."""
+    async def initialize_async(self) -> None:
+        """Load default datasets from all registered scenarios."""
         # Get ScenarioRegistry to discover all scenarios
         registry = ScenarioRegistry()
         
