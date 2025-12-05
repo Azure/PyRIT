@@ -88,7 +88,7 @@ class ScenarioRegistry:
                 package_path = Path(package_file).parent
 
             # Iterate through all Python files in the scenarios directory and subdirectories
-            def discover_modules(base_path: Path, base_module: str) -> None:
+            def discover_modules(base_path: Path, base_module: str, relative_prefix: str = "") -> None:
                 """Recursively discover modules in the scenarios package and subdirectories."""
                 for _, module_name, is_pkg in pkgutil.iter_modules([str(base_path)]):
                     if module_name.startswith("_"):
@@ -100,6 +100,12 @@ class ScenarioRegistry:
                     else:
                         full_module_name = f"pyrit.scenario.scenarios.{module_name}"
 
+                    # Build the relative path for the scenario name
+                    if relative_prefix:
+                        scenario_name = f"{relative_prefix}.{module_name}"
+                    else:
+                        scenario_name = module_name
+
                     try:
                         # Import the module
                         module = importlib.import_module(full_module_name)
@@ -110,15 +116,13 @@ class ScenarioRegistry:
                             for name, obj in inspect.getmembers(module, inspect.isclass):
                                 # Check if it's a Scenario subclass (but not Scenario itself)
                                 if issubclass(obj, Scenario) and obj is not Scenario:
-                                    # Use the module name as the scenario identifier
-                                    scenario_name = module_name
                                     self._scenarios[scenario_name] = obj
                                     logger.debug(f"Registered built-in scenario: {scenario_name} ({obj.__name__})")
 
                         # If it's a package, recursively discover its submodules
                         if is_pkg:
                             subpackage_path = base_path / module_name
-                            discover_modules(subpackage_path, full_module_name)
+                            discover_modules(subpackage_path, full_module_name, scenario_name)
 
                     except Exception as e:
                         logger.warning(f"Failed to load scenario module {full_module_name}: {e}")
@@ -218,6 +222,7 @@ class ScenarioRegistry:
                 - default_strategy: The default strategy used when none specified
                 - all_strategies: All available strategy values
                 - aggregate_strategies: Aggregate strategy values
+                - required_datasets: Names of datasets required to be in memory
         """
         # If we already have metadata, return it
         if self._scenario_metadata is not None:
@@ -239,6 +244,9 @@ class ScenarioRegistry:
             # Get the strategy class for this scenario
             strategy_class = scenario_class.get_strategy_class()
 
+            required_datasets = scenario_class.required_datasets()
+
+
             scenarios_info.append(
                 {
                     "name": name,
@@ -247,6 +255,7 @@ class ScenarioRegistry:
                     "default_strategy": scenario_class.get_default_strategy().value,
                     "all_strategies": [s.value for s in strategy_class.get_all_strategies()],
                     "aggregate_strategies": [s.value for s in strategy_class.get_aggregate_strategies()],
+                    "required_datasets": required_datasets,
                 }
             )
 

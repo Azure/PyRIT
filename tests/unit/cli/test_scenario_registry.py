@@ -38,6 +38,10 @@ class MockScenario(Scenario):
     def get_default_strategy(cls) -> ScenarioStrategy:
         return MockStrategy.ALL
 
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+        return []
+
 
 class TestScenarioRegistry:
     """Tests for ScenarioRegistry class."""
@@ -144,6 +148,14 @@ class TestScenarioRegistry:
                         assert call_path.startswith(
                             "pyrit.scenario.scenarios."
                         ), f"Module path doesn't start with correct base: {call_path}"
+                    
+                    # Verify scenarios are registered with their full relative paths
+                    # Top-level scenarios should use just the module name
+                    assert "encoding_scenario" in registry._scenarios
+                    assert "foundry_scenario" in registry._scenarios
+                    # Nested scenarios should use dot notation (e.g., "airt.content_harms_scenario")
+                    assert "airt.content_harms_scenario" in registry._scenarios
+                    assert "airt.cyber_scenario" in registry._scenarios
 
     def test_get_scenario_existing(self):
         """Test getting an existing scenario."""
@@ -198,6 +210,10 @@ class TestScenarioRegistry:
             def get_default_strategy(cls) -> ScenarioStrategy:
                 return MockStrategy.ALL
 
+            @classmethod
+            def required_datasets(cls) -> list[str]:
+                return ["test_dataset_1", "test_dataset_2"]
+
         registry = ScenarioRegistry()
         registry._scenarios = {
             "test_scenario": DocumentedScenario,
@@ -210,6 +226,7 @@ class TestScenarioRegistry:
         assert scenarios[0]["name"] == "test_scenario"
         assert scenarios[0]["class_name"] == "DocumentedScenario"
         assert "test scenario" in scenarios[0]["description"].lower()
+        assert scenarios[0]["required_datasets"] == ["test_dataset_1", "test_dataset_2"]
 
     def test_list_scenarios_no_description(self):
         """Test list_scenarios with scenario lacking docstring."""
@@ -226,6 +243,10 @@ class TestScenarioRegistry:
             def get_default_strategy(cls) -> ScenarioStrategy:
                 return MockStrategy.ALL
 
+            @classmethod
+            def required_datasets(cls) -> list[str]:
+                return []
+
         # Remove docstring
         UndocumentedScenario.__doc__ = None
 
@@ -237,6 +258,35 @@ class TestScenarioRegistry:
 
         assert len(scenarios) == 1
         assert scenarios[0]["description"] == "No description available"
+
+    def test_list_scenarios_with_required_datasets_error(self):
+        """Test list_scenarios raises error when required_datasets fails."""
+
+        class BrokenScenario(Scenario):
+            """Scenario that raises error on required_datasets."""
+
+            async def _get_atomic_attacks_async(self):
+                return []
+
+            @classmethod
+            def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+                return MockStrategy
+
+            @classmethod
+            def get_default_strategy(cls) -> ScenarioStrategy:
+                return MockStrategy.ALL
+
+            @classmethod
+            def required_datasets(cls) -> list[str]:
+                raise ValueError("Cannot get datasets")
+
+        registry = ScenarioRegistry()
+        registry._scenarios = {"broken": BrokenScenario}
+        registry._discovered = True
+
+        # Should raise the exception instead of catching it
+        with pytest.raises(ValueError, match="Cannot get datasets"):
+            registry.list_scenarios()
 
     def test_class_name_to_scenario_name_with_scenario_suffix(self):
         """Test converting class name with 'Scenario' suffix."""

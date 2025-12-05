@@ -60,6 +60,7 @@ class ScenarioInfo(TypedDict):
     default_strategy: str
     all_strategies: list[str]
     aggregate_strategies: list[str]
+    required_datasets: list[str]
 
 
 class FrontendCore:
@@ -364,6 +365,15 @@ def format_scenario_info(*, scenario_info: ScenarioInfo) -> None:
 
     if scenario_info.get("default_strategy"):
         print(f"    Default Strategy: {scenario_info['default_strategy']}")
+
+    if scenario_info.get("required_datasets"):
+        datasets = scenario_info["required_datasets"]
+        if datasets:
+            print(f"    Required Datasets ({len(datasets)}):")
+            formatted = _format_wrapped_text(text=", ".join(datasets), indent="      ")
+            print(formatted)
+        else:
+            print("    Required Datasets: None")
 
 
 def format_initializer_info(*, initializer_info: "InitializerInfo") -> None:
