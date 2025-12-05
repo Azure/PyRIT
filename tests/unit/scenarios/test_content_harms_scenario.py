@@ -525,7 +525,7 @@ class TestContentHarmsScenarioBasic:
     @pytest.mark.parametrize(
         "harm_category", ["hate", "fairness", "violence", "sexual", "harassment", "misinformation", "leakage"]
     )
-    def test_harm_category_prompt_file_exists(harm_category):
+    def test_harm_category_prompt_file_exists(self, harm_category):
         harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
         file_path = harm_dataset_path / f"{harm_category}.prompt"
         assert file_path.exists(), f"Missing file: {file_path}"  # Fails if file does not exist
