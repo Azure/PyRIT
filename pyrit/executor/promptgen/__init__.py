@@ -1,7 +1,7 @@
-"""Prompt generator strategy imports."""
-
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
+"""Prompt generator strategy imports."""
 
 from pyrit.executor.promptgen.anecdoctor import AnecdoctorContext, AnecdoctorGenerator, AnecdoctorResult
 

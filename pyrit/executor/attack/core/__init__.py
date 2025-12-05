@@ -1,7 +1,7 @@
-"""Core attack strategy module."""
-
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
+"""Core attack strategy module."""
 
 from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategy,

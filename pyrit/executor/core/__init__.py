@@ -1,7 +1,7 @@
-"""Core strategy imports."""
-
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
+"""Core executor module."""
 
 from pyrit.executor.core.strategy import (
     Strategy,
