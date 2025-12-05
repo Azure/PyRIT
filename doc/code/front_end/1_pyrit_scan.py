@@ -120,12 +120,11 @@
 # You can define your own scenarios in initialization scripts. The CLI will automatically discover any `Scenario` subclasses and make them available:
 #
 
-from pyrit.common.apply_defaults import apply_defaults
-
 # %%
 # my_custom_scenarios.py
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.scenario import Scenario
-from pyrit.scenario.scenario_strategy import ScenarioStrategy
+from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
 
 
 class MyCustomStrategy(ScenarioStrategy):

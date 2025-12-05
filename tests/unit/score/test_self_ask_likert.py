@@ -38,7 +38,7 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         chat_target = MagicMock()
-        chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
+        chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
 
         scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
@@ -71,7 +71,7 @@ async def test_likert_scorer_must_have_category():
 async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
@@ -85,7 +85,7 @@ async def test_likert_scorer_score(patch_central_database, scorer_likert_respons
 
     chat_target = MagicMock()
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
 
     scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
@@ -108,7 +108,7 @@ async def test_self_ask_scorer_bad_json_exception_retries():
     chat_target = MagicMock()
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
     scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
     with pytest.raises(InvalidJsonException):
@@ -136,7 +136,7 @@ async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
     scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
     with pytest.raises(InvalidJsonException):

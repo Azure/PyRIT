@@ -53,7 +53,7 @@ class TestFoundryScenarioInitialization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -74,7 +74,7 @@ class TestFoundryScenarioInitialization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -100,7 +100,7 @@ class TestFoundryScenarioInitialization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -116,7 +116,7 @@ class TestFoundryScenarioInitialization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -135,7 +135,7 @@ class TestFoundryScenarioInitialization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -151,7 +151,7 @@ class TestFoundryScenarioInitialization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -178,7 +178,7 @@ class TestFoundryScenarioInitialization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
             "AZURE_CONTENT_SAFETY_API_ENDPOINT": "https://test.content.azure.com/",
             "AZURE_CONTENT_SAFETY_API_KEY": "test-content-key",
@@ -206,7 +206,7 @@ class TestFoundryScenarioStrategyNormalization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -228,7 +228,7 @@ class TestFoundryScenarioStrategyNormalization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -250,7 +250,7 @@ class TestFoundryScenarioStrategyNormalization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -274,7 +274,7 @@ class TestFoundryScenarioStrategyNormalization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -298,7 +298,7 @@ class TestFoundryScenarioStrategyNormalization:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -330,7 +330,7 @@ class TestFoundryScenarioAttackCreation:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -359,7 +359,7 @@ class TestFoundryScenarioAttackCreation:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -394,7 +394,7 @@ class TestFoundryScenarioGetAttack:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -423,7 +423,7 @@ class TestFoundryScenarioGetAttack:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -458,7 +458,7 @@ class TestFoundryScenarioAllStrategies:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -511,7 +511,7 @@ class TestFoundryScenarioAllStrategies:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -556,7 +556,7 @@ class TestFoundryScenarioProperties:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -588,7 +588,7 @@ class TestFoundryScenarioProperties:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
@@ -604,7 +604,7 @@ class TestFoundryScenarioProperties:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
         },
     )
