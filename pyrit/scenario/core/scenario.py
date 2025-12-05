@@ -10,6 +10,7 @@ AtomicAttack instances sequentially, enabling comprehensive security testing cam
 
 import asyncio
 import logging
+import textwrap
 import uuid
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Sequence, Set, Type, Union
@@ -163,16 +164,6 @@ class Scenario(ABC):
 
         Returns:
             Type[ScenarioStrategy]: The strategy enum class (e.g., FoundryStrategy, EncodingStrategy).
-
-        Example:
-            >>> class MyScenario(Scenario):
-            ...     @classmethod
-            ...     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
-            ...         return MyStrategy
-            >>>
-            >>> # Registry can now discover strategies without instantiation
-            >>> strategy_class = MyScenario.get_strategy_class()
-            >>> all_strategies = list(strategy_class)
         """
         pass
 
@@ -188,15 +179,14 @@ class Scenario(ABC):
 
         Returns:
             ScenarioStrategy: The default aggregate strategy (e.g., FoundryStrategy.EASY, EncodingStrategy.ALL).
+        """
+        pass
 
-        Example:
-            >>> class MyScenario(Scenario):
-            ...     @classmethod
-            ...     def get_default_strategy(cls) -> ScenarioStrategy:
-            ...         return MyStrategy.EASY
-            >>>
-            >>> # Registry can discover default strategy without instantiation
-            >>> default = MyScenario.get_default_strategy()
+    @classmethod
+    @abstractmethod
+    def required_datasets(cls) -> list[str]:
+        """
+        Returns a list of dataset names required by this scenario.
         """
         pass
 
@@ -373,6 +363,17 @@ class Scenario(ABC):
             objectives=objectives,
             memory_labels=self._memory_labels,
         )
+    
+    def _raise_dataset_exception(self) -> None:
+            error_msg = textwrap.dedent(f"""
+            Dataset is not available or failed to load.
+            Scenarios require datasets loaded in CentralMemory or to be passed explicitly.
+            Either load the datasets into the database before running the scenario, or for
+            example datasets, you can use the `load_default_datasets` initializer.
+
+            Required datasets: {', '.join(self.required_datasets())} 
+            """)
+            raise ValueError(error_msg)
 
     def _validate_stored_scenario(self, *, stored_result: ScenarioResult) -> bool:
         """

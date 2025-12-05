@@ -13,6 +13,7 @@ from pyrit.executor.attack.core.attack_config import (
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedDataset, SeedGroup
+from pyrit.models.seed import Seed
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_converter import (
     AsciiSmugglerConverter,
@@ -115,6 +116,13 @@ class EncodingScenario(Scenario):
         """
         return EncodingStrategy.ALL
 
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+       return [ 
+            'garak_slur_terms_en',
+            'garak_web_html_js'
+        ]
+
     @apply_defaults
     def __init__(
         self,
@@ -171,12 +179,16 @@ class EncodingScenario(Scenario):
         Returns:
             list[str]: List of seed prompt strings to be encoded and tested.
         """
-        seed_prompts: list[str] = []
-        garak_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "garak"
-        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "slur_terms_en.prompt").get_values())
-        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "web_html_js.prompt").get_values())
 
-        return seed_prompts
+        seeds: list[Seed] = []
+
+        for dataset_name in EncodingScenario.required_datasets():
+            seeds.extend(self._memory.get_seeds(dataset_name=dataset_name))
+
+        if not seeds:
+            self._raise_dataset_exception()
+
+        return [seed.value for seed in seeds]
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
