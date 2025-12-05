@@ -13,12 +13,16 @@ from pyrit.scenario.scenarios import (
     EncodingStrategy,
     FoundryStrategy,
     FoundryScenario,
+    ContentHarmsStrategy,
+    ContentHarmsScenario,
 )
 
 __all__ = [
     "AtomicAttack",
     "CyberScenario",
     "CyberStrategy",
+    "ContentHarmsScenario",
+    "ContentHarmsStrategy",
     "EncodingScenario",
     "EncodingStrategy",
     "FoundryStrategy",
