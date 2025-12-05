@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ManyShotJailbreakAttack(PromptSendingAttack):
     """
-    This attack implements implements the Many Shot Jailbreak method as discussed in research found here:
+    Implement the Many Shot Jailbreak method as discussed in research found here:
     https://www.anthropic.com/research/many-shot-jailbreaking.
 
     Prepends the seed prompt with a faux dialogue between a human and an AI, using examples from a dataset
@@ -49,6 +49,9 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
                 Shot Jailbreaking dataset. Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
                 If not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.
+        
+        Raises:
+            ValueError: If many_shot_examples is empty.
         """
         super().__init__(
             objective_target=objective_target,

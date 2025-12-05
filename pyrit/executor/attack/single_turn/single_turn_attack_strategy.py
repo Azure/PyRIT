@@ -48,7 +48,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         logger: logging.Logger = logger,
     ):
         """
-        The base class for single-turn attack strategies.
+        Define a base class for single-turn attack strategies.
 
         Args:
             objective_target (PromptTarget): The target system to attack.
@@ -66,6 +66,17 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         seed_group: Optional[SeedGroup] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
+    ) -> AttackResult: ...
+
+    @overload
+    async def execute_async(
+        self,
+        **kwargs,
+    ) -> AttackResult: ...
+
+    async def execute_async(
+        self,
+        **kwargs,
     ) -> AttackResult:
         """
         Execute the single-turn attack strategy asynchronously with the provided parameters.
@@ -79,21 +90,9 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
 
         Returns:
             AttackResult: The result of the attack execution.
-        """
-        ...
-
-    @overload
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> AttackResult: ...
-
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> AttackResult:
-        """
-        Execute the attack strategy asynchronously with the provided parameters.
+        
+        Raises:
+            ValueError: If both objective and seed_group with objective are provided.
         """
         # Validate parameters before creating context
         seed_group = get_kwarg_param(kwargs=kwargs, param_name="seed_group", expected_type=SeedGroup, required=False)

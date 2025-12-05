@@ -39,15 +39,30 @@ class AttackExecutorResult(Generic[AttackResultT]):
     incomplete_objectives: List[tuple[str, BaseException]]
 
     def __iter__(self):
-        """Iterate over completed results."""
+        """
+        Iterate over completed results.
+        
+        Returns:
+            Iterator[AttackResultT]: An iterator over the completed results.
+        """
         return iter(self.completed_results)
 
     def __len__(self) -> int:
-        """Return number of completed results."""
+        """
+        Return number of completed results.
+        
+        Returns:
+            int: The number of completed results.
+        """
         return len(self.completed_results)
 
     def __getitem__(self, index: int) -> AttackResultT:
-        """Access completed results by index."""
+        """
+        Access completed results by index.
+        
+        Returns:
+            AttackResultT: The completed result at the specified index.
+        """
         return self.completed_results[index]
 
     @property
@@ -226,6 +241,7 @@ class AttackExecutor:
 
         Raises:
             BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
+            TypeError: If the attack strategy does not use SingleTurnAttackContext.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)
@@ -326,6 +342,7 @@ class AttackExecutor:
 
         Raises:
             BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
+            TypeError: If the attack strategy does not use MultiTurnAttackContext.
 
         Example:
             >>> executor = AttackExecutor(max_concurrency=3)

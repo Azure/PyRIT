@@ -1,3 +1,5 @@
+"""Core attack strategy module."""
+
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 

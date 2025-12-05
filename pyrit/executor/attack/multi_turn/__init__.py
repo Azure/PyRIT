@@ -1,3 +1,5 @@
+"""Multi-turn attack strategies module."""
+
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 

@@ -1,3 +1,5 @@
+"""Attack components module."""
+
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 

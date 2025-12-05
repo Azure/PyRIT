@@ -1,3 +1,5 @@
+"""Workflow components and strategies used by the PyRIT executor."""
+
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
