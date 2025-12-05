@@ -27,23 +27,12 @@ jobs:
     permissions:
       contents: read
 
-    env:
-      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
-
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
-            ${{ runner.os }}-pip-
 
       - name: Cache pre-commit environments
         uses: actions/cache@v3
@@ -61,9 +50,6 @@ jobs:
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
-
-      - name: Upgrade pip and setuptools
-        run: python -m pip install --upgrade pip setuptools packaging
 
       - name: Install dev extras
         run: uv sync --extra dev --extra all
@@ -86,8 +72,6 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
-    env:
-      PIP_CACHE_DIR: ${{ github.workspace }}\.cache\pip
     defaults:
       run:
         shell: pwsh
@@ -151,8 +135,6 @@ jobs:
         package_name: ["pyrit"]
         package_extras: ["dev", "dev_all"]
     runs-on: ${{ matrix.os }}
-    env:
-      PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
     permissions:
       contents: read
@@ -170,32 +152,29 @@ jobs:
       # Cache pip packages
       # GitHub automatically handles cache eviction after 7 days of inactivity (or 10GB)
       # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-
-            ${{ runner.os }}-pip-${{ matrix.python }}-
-            ${{ runner.os }}-pip-
-
-      - name: Install setuptools and pip
-        run: uv python -m pip install --upgrade pip setuptools packaging
+      # - name: Cache pip packages
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ${{ env.PIP_CACHE_DIR }}
+      #     key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-
+      #       ${{ runner.os }}-pip-${{ matrix.python }}-
+      #       ${{ runner.os }}-pip-
 
       # Install PyRIT with optional extras
+      # TODO UPDATE EXTRAS!!!
       - name: Install PyRIT with uv
         # If the matrix extras is 'dev_all', then we install '.[dev,all]'
         # otherwise just install the literal extras from the matrix
         shell: bash
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
-            extras="dev,all"
+            uv sync --no-cache --extra dev --extra all
           else
             extras="${{ matrix.package_extras }}"
+            uv sync --no-cache ".[${extras}]"
           fi
-
-          uv pip install --no-cache-dir ".[${extras}]"
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
