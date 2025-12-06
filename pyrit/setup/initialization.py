@@ -184,7 +184,7 @@ async def _execute_initializers(*, initializers: Sequence["PyRITInitializer"]) -
             raise
 
 
-async def initialize_pyrit(
+async def initialize_pyrit_async(
     memory_db_type: Union[MemoryDatabaseType, str],
     *,
     initialization_scripts: Optional[Sequence[Union[str, pathlib.Path]]] = None,

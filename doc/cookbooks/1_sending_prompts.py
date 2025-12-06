@@ -26,10 +26,10 @@
 # %%
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 
 # Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
-initialize_pyrit(memory_db_type="InMemory")
+await initialize_pyrit_async(memory_db_type="InMemory")  # type: ignore
 
 memory = CentralMemory.get_memory_instance()
 

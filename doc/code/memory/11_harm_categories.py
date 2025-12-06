@@ -24,9 +24,9 @@ import pathlib
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import SeedDataset
-from pyrit.setup.initialization import initialize_pyrit
+from pyrit.setup.initialization import initialize_pyrit_async
 
-initialize_pyrit(memory_db_type="InMemory")
+await initialize_pyrit_async(memory_db_type="InMemory")  # type: ignore
 
 memory = CentralMemory.get_memory_instance()
 

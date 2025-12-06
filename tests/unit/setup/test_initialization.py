@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 
 from pyrit.common.apply_defaults import reset_default_values
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 from pyrit.setup.initialization import _load_initializers_from_scripts
 
 
@@ -62,7 +62,7 @@ class TestInitializePyrit:
     @mock.patch("pyrit.setup.initialization._load_environment_files")
     async def test_initialize_basic(self, mock_load_env, mock_set_memory):
         """Test basic initialization."""
-        await initialize_pyrit(memory_db_type=IN_MEMORY)
+        await initialize_pyrit_async(memory_db_type=IN_MEMORY)
 
         mock_load_env.assert_called_once()
         mock_set_memory.assert_called_once()
@@ -93,7 +93,7 @@ class ScriptInit(PyRITInitializer):
             script_path = f.name
 
         try:
-            await initialize_pyrit(memory_db_type=IN_MEMORY, initialization_scripts=[script_path])
+            await initialize_pyrit_async(memory_db_type=IN_MEMORY, initialization_scripts=[script_path])
             mock_load_env.assert_called_once()
             mock_set_memory.assert_called_once()
         finally:
@@ -103,4 +103,4 @@ class ScriptInit(PyRITInitializer):
     async def test_invalid_memory_type_raises_error(self):
         """Test that invalid memory type raises ValueError."""
         with pytest.raises(ValueError, match="is not a supported type"):
-            await initialize_pyrit(memory_db_type="InvalidType")  # type: ignore
+            await initialize_pyrit_async(memory_db_type="InvalidType")  # type: ignore

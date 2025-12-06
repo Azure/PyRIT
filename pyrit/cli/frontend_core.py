@@ -112,10 +112,10 @@ class FrontendCore:
 
         from pyrit.cli.initializer_registry import InitializerRegistry
         from pyrit.cli.scenario_registry import ScenarioRegistry
-        from pyrit.setup import initialize_pyrit
+        from pyrit.setup import initialize_pyrit_async
 
         # Initialize PyRIT without initializers (they run per-scenario)
-        await initialize_pyrit(
+        await initialize_pyrit_async(
             memory_db_type=self._database,
             initialization_scripts=None,
             initializers=None,
@@ -232,7 +232,7 @@ async def run_scenario_async(
         Initializers from PyRITContext will be run before the scenario executes.
     """
     from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
-    from pyrit.setup import initialize_pyrit
+    from pyrit.setup import initialize_pyrit_async
 
     # Ensure context is initialized first (loads registries)
     # This must happen BEFORE we run initializers to avoid double-initialization
@@ -253,7 +253,7 @@ async def run_scenario_async(
 
     # Re-initialize PyRIT with the scenario-specific initializers
     # This resets memory and applies initializer defaults
-    await initialize_pyrit(
+    await initialize_pyrit_async(
         memory_db_type=context._database,
         initialization_scripts=context._initialization_scripts,
         initializers=initializer_instances,

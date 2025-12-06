@@ -11,9 +11,9 @@
 # %% [markdown]
 # # 1. Configuration
 #
-# Before running PyRIT, you need to call the `initialize_pyrit` function which will set up your configuration.
+# Before running PyRIT, you need to call the `initialize_pyrit_async` function which will set up your configuration.
 #
-# What are the configuration steps? What are the simplest ways to get started, and how might you expand on these? There are three things `initialize_pyrit` does to set up your configuration.
+# What are the configuration steps? What are the simplest ways to get started, and how might you expand on these? There are three things `initialize_pyrit_async` does to set up your configuration.
 #
 # 1. Set up environment variables (recommended)
 # 2. Pick a database (required)
@@ -27,10 +27,10 @@
 # Set OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY environment variables before running this code
 # E.g. you can put it in .env
 
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])  # type: ignore
 
 # Now you can run most of our notebooks! Just remove any os.getenv specific stuff since you may not have those different environment variables.
 
@@ -45,9 +45,9 @@ initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 import os
 
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 target1 = OpenAIChatTarget()
 
@@ -92,12 +92,12 @@ target3 = OpenAIChatTarget(
 # %% [markdown]
 # ## Choosing a database
 #
-# The next required step is to pick a database. PyRIT supports three types of databases; InMemory, sqlite, and SQL Azure. These are detailed in the [memory](../memory/0_memory.md) section of documentation. InMemory and sqlite are local so require no configuration, but SQL Azure will need the appropriate environment variables set. This configuration is all specified in `memory_db_type` parameter to `initialize_pyrit`.
+# The next required step is to pick a database. PyRIT supports three types of databases; InMemory, sqlite, and SQL Azure. These are detailed in the [memory](../memory/0_memory.md) section of documentation. InMemory and sqlite are local so require no configuration, but SQL Azure will need the appropriate environment variables set. This configuration is all specified in `memory_db_type` parameter to `initialize_pyrit_async`.
 
 # %% [markdown]
 # ## Setting up Initialization Scripts and Defaults
 #
-# When you call initialize_pyrit, you can pass it initialization_scripts and/or initializers. These can do anything, including setting convenience variables. But one of the primary purposes is to set default values. It is recommended to always use an initializer.
+# When you call initialize_pyrit_async, you can pass it initialization_scripts and/or initializers. These can do anything, including setting convenience variables. But one of the primary purposes is to set default values. It is recommended to always use an initializer.
 #
 # ### Using Built-In Initializers
 #
@@ -122,17 +122,17 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
 # This is a way to include the SimpleInitializer class directly
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])  # type: ignore
 
 
 # Alternative approach - you can pass the path to the initializer class.
 # This is how you provide your own file not part of the repo that defines a PyRITInitializer class
 # This is equivalent to loading the class directly as above
-initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"])
+await initialize_pyrit_async(memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"])  # type: ignore
 
 
 # SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY configured

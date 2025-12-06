@@ -38,9 +38,9 @@ from pyrit.score import (
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
 )
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Configure the conversation objectives
 # Likely, these will originate in the database or a yaml file, but for this example we are just giving the string.

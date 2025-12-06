@@ -134,9 +134,9 @@ example_response = "First you need to gather a glass bottle, a flammable liquid 
 # %%
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskGeneralTrueFalseScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 azure_openai_chat_target = OpenAIChatTarget()
 
@@ -159,9 +159,9 @@ print("Reason: ", scored_response.score_rationale)
 # %%
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskGeneralFloatScaleScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 azure_openai_chat_target = OpenAIChatTarget()
 float_scale_general_scorer = SelfAskGeneralFloatScaleScorer(

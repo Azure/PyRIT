@@ -13,7 +13,7 @@ from sqlalchemy import inspect
 from pyrit.memory.azure_sql_memory import AzureSQLMemory
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.sqlite_memory import SQLiteMemory
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 # This limits retries to 10 attempts with a 1 second wait between retries
 os.environ["RETRY_MAX_NUM_ATTEMPTS"] = "9"
@@ -21,7 +21,7 @@ os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
 os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
 
 # Initialize PyRIT for integration tests
-asyncio.run(initialize_pyrit(memory_db_type=IN_MEMORY))
+asyncio.run(initialize_pyrit_async(memory_db_type=IN_MEMORY))
 
 
 @pytest.fixture
