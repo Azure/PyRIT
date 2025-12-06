@@ -84,12 +84,12 @@ class LoadDefaultDatasets(PyRITInitializer):
         logger.info(f"Loading {len(unique_datasets)} unique datasets required by all scenarios")
 
         # Fetch the datasets
-        datasets = await SeedDatasetProvider.fetch_datasets_async(
+        dataset_list = await SeedDatasetProvider.fetch_datasets_async(
             dataset_names=unique_datasets,
         )
 
         # Store datasets in CentralMemory
         memory = CentralMemory.get_memory_instance()
-        await memory.add_seed_datasets_to_memory_async(datasets=datasets, added_by="LoadDefaultDatasets")
+        await memory.add_seed_datasets_to_memory_async(datasets=dataset_list, added_by="LoadDefaultDatasets")ts")
 
-        logger.info(f"Successfully loaded {len(datasets)} datasets into CentralMemory")
+        logger.info(f"Successfully loaded {len(dataset_list)} datasets into CentralMemory")
