@@ -19,20 +19,18 @@
 # First we import a dataset which has individual prompts with different harm categories as an example.
 
 # %%
-import pathlib
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import SeedDataset
 from pyrit.setup.initialization import initialize_pyrit_async
 
-await initialize_pyrit_async(memory_db_type="InMemory")  # type: ignore
+await initialize_pyrit_async(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()
 
-seed_prompts = SeedDataset.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt"
-)
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_illegal"])  # type: ignore
+seed_prompts = datasets[0].seeds
+
 
 print(f"Dataset name: {seed_prompts.dataset_name}")
 print(f"Number of prompts in dataset: {len(seed_prompts.prompts)}")
@@ -59,14 +57,17 @@ attack = PromptSendingAttack(objective_target=target)
 
 # Configure this to load the prompts loaded in the previous step.
 # In the last section, they were in the illegal.prompt file (which has a configured name of "2025_06_pyrit_illegal_example")
-prompt_groups = memory.get_seed_groups(dataset_name="2025_06_pyrit_illegal_example")
+prompt_groups = memory.get_seed_groups(dataset_name="airt_illegal")
 print(f"Found {len(prompt_groups)} prompt groups for dataset")
 
 for i, group in enumerate(prompt_groups):
     prompt_text = group.prompts[0].value
-
-    results = await attack.execute_async(objective=prompt_text, seed_group=group)  # type: ignore
-
+    
+    results = await attack.execute_async( # type: ignore
+        objective=prompt_text,
+        seed_group=group
+    )
+    
     print(f"Attack completed - Conversation ID: {results.conversation_id}")
     await ConsoleAttackResultPrinter().print_conversation_async(result=results)  # type: ignore
 
@@ -75,7 +76,7 @@ for i, group in enumerate(prompt_groups):
 # Now you can query your attack results by `targeted_harm_category`!
 
 # %% [markdown]
-# ### Single harm category:
+# ### Single harm category: 
 #
 # Here, we by a single harm category (eg shown below is querying for the harm category  `['illegal']`)
 
@@ -99,7 +100,7 @@ overall_stats = overall_analytics["Overall"]
 print(f"  Success rate: {overall_stats.success_rate}")
 print(f"  Successes: {overall_stats.successes}")
 print(f"  Failures: {overall_stats.failures}")
-print(f"  Undetermined: {overall_stats.undetermined}")
+print(f"  Undetermined: {overall_stats.undetermined}") 
 print()
 
 # Example 1: Query for a single harm category
