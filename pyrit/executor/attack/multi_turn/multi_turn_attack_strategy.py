@@ -57,6 +57,11 @@ class MultiTurnAttackContext(AttackContext):
 
 
 class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, AttackStrategyResultT], ABC):
+    """
+    Strategy for executing multi-turn attacks.
+    This strategy is designed to handle attacks that consist of multiple turns
+    of interaction with the target model.
+    """
 
     def __init__(
         self,
@@ -66,7 +71,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         logger: logging.Logger = logger,
     ):
         """
-        The base class for multi-turn attack strategies.
+        Implement the base class for multi-turn attack strategies.
 
         Args:
             objective_target (PromptTarget): The target system to attack.
@@ -84,6 +89,17 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         custom_prompt: Optional[str] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
+    ) -> AttackStrategyResultT: ...
+
+    @overload
+    async def execute_async(
+        self,
+        **kwargs,
+    ) -> AttackStrategyResultT: ...
+
+    async def execute_async(
+        self,
+        **kwargs,
     ) -> AttackStrategyResultT:
         """
         Execute the multi-turn attack strategy asynchronously with the provided parameters.
@@ -97,21 +113,6 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
 
         Returns:
             AttackStrategyResultT: The result of the attack execution.
-        """
-        ...
-
-    @overload
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> AttackStrategyResultT: ...
-
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> AttackStrategyResultT:
-        """
-        Execute the attack strategy asynchronously with the provided parameters.
         """
         # Validate parameters before creating context
         custom_prompt = get_kwarg_param(kwargs=kwargs, param_name="custom_prompt", expected_type=str, required=False)

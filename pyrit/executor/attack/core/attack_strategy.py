@@ -105,6 +105,9 @@ class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyCont
         Args:
             event_data (StrategyEventData[AttackStrategyContextT, AttackStrategyResultT]): The event data containing
                 context and result.
+
+        Raises:
+            ValueError: If the attack context is None.
         """
         if not event_data.context:
             raise ValueError("Attack context is None. Cannot proceed with execution.")
@@ -122,7 +125,11 @@ class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyCont
         Handle post-execution logic after the attack strategy has run.
 
         Args:
-            result (AttackResult): The result of the attack strategy execution.
+            event_data (StrategyEventData[AttackStrategyContextT, AttackStrategyResultT]): The event data containing
+                context and result.
+
+        Raises:
+            ValueError: If the attack result is None.
         """
         if not event_data.result:
             raise ValueError("Attack result is None. Cannot log or record the outcome.")
@@ -216,20 +223,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         prepended_conversation: Optional[list[Message]] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
-    ) -> AttackStrategyResultT:
-        """
-        Execute the attack strategy asynchronously with the provided parameters.
-
-        Args:
-            objective (str): The objective of the attack.
-            prepended_conversation (Optional[List[Message]]): Conversation to prepend.
-            memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
-            **kwargs: Additional parameters for the attack.
-
-        Returns:
-            AttackStrategyResultT: The result of the attack execution.
-        """
-        ...
+    ) -> AttackStrategyResultT: ...
 
     @overload
     async def execute_async(
@@ -243,6 +237,15 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
     ) -> AttackStrategyResultT:
         """
         Execute the attack strategy asynchronously with the provided parameters.
+
+        Args:
+            objective (str): The objective of the attack.
+            prepended_conversation (Optional[List[Message]]): Conversation to prepend.
+            memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
+            **kwargs: Additional parameters for the attack.
+
+        Returns:
+            AttackStrategyResultT: The result of the attack execution.
         """
         # Validate parameters before creating context
         objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str)

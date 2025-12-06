@@ -387,21 +387,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         evaluation_data: List[str],
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
-    ) -> AnecdoctorResult:
-        """
-        Execute the prompt generation strategy asynchronously with the provided parameters.
-
-        Args:
-            content_type (str): The type of content to generate (e.g., "viral tweet", "news article").
-            language (str): The language of the content to generate (e.g., "english", "spanish").
-            evaluation_data (List[str]): The data in ClaimsReview format to use in constructing the prompt.
-            memory_labels (Optional[Dict[str, str]]): Memory labels for the generation context.
-            **kwargs: Additional parameters for the generation.
-
-        Returns:
-            AnecdoctorResult: The result of the anecdoctor generation.
-        """
-        ...
+    ) -> AnecdoctorResult: ...
 
     @overload
     async def execute_async(
@@ -415,6 +401,16 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
     ) -> AnecdoctorResult:
         """
         Execute the prompt generation strategy asynchronously with the provided parameters.
+
+        Args:
+            content_type (str): The type of content to generate (e.g., "viral tweet", "news article").
+            language (str): The language of the content to generate (e.g., "english", "spanish").
+            evaluation_data (List[str]): The data in ClaimsReview format to use in constructing the prompt.
+            memory_labels (Optional[Dict[str, str]]): Memory labels for the generation context.
+            **kwargs: Additional parameters for the generation.
+
+        Returns:
+            AnecdoctorResult: The result of the anecdoctor generation.
         """
         # Validate parameters before creating context
         content_type = get_kwarg_param(kwargs=kwargs, param_name="content_type", expected_type=str)

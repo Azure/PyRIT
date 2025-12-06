@@ -37,7 +37,9 @@ class XPIAProcessingCallback(Protocol):
     of the processing target and return the response as a string.
     """
 
-    async def __call__(self) -> str: ...
+    async def __call__(self) -> str:
+        """Execute the processing callback and return response text."""
+        ...
 
 
 class XPIAStatus(Enum):
@@ -227,7 +229,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """
-        Setup phase before executing the workflow.
+        Set up the phase before executing the workflow.
 
         This method prepares the execution context by generating conversation IDs
         and combining memory labels for the workflow execution.
@@ -275,7 +277,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
 
     async def _setup_attack_async(self, *, context: XPIAContext) -> str:
         """
-        Setup and send the attack prompt to the attack setup target.
+        Set up and send the attack prompt to the attack setup target.
 
         This method sends the attack content to the attack setup target
         using configured request converters.
@@ -389,6 +391,17 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         processing_prompt: Optional[SeedGroup] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,
+    ) -> XPIAResult: ...
+
+    @overload
+    async def execute_async(
+        self,
+        **kwargs,
+    ) -> XPIAResult: ...
+
+    async def execute_async(
+        self,
+        **kwargs,
     ) -> XPIAResult:
         """
         Execute the XPIA workflow strategy asynchronously with the provided parameters.
@@ -405,21 +418,9 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
 
         Returns:
             XPIAResult: The result of the workflow execution.
-        """
-        ...
 
-    @overload
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> XPIAResult: ...
-
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> XPIAResult:
-        """
-        Execute the XPIA workflow strategy asynchronously with the provided parameters.
+        Raises:
+            TypeError: If any of the provided parameters are of incorrect type.
         """
         attack_content = get_kwarg_param(kwargs=kwargs, param_name="attack_content", expected_type=SeedGroup)
 
@@ -510,7 +511,7 @@ class XPIATestWorkflow(XPIAWorkflow):
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """
-        Setup phase for XPIA test workflow execution.
+        Set up for XPIA test workflow execution.
 
         This method creates an automated processing callback that sends the processing
         prompt to the configured processing target. The callback is attached to the
@@ -606,7 +607,7 @@ class XPIAManualProcessingWorkflow(XPIAWorkflow):
 
     async def _setup_async(self, *, context: XPIAContext) -> None:
         """
-        Setup phase for XPIA manual processing workflow execution.
+        Set up for XPIA manual processing workflow execution.
 
         This method creates a manual input callback that prompts the operator
         to trigger the processing target's execution and paste the output.

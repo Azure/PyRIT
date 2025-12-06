@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 
 
 class RTASystemPromptPaths(enum.Enum):
+    """Enum for predefined red teaming attack system prompt paths."""
+
     TEXT_GENERATION = Path(EXECUTOR_RED_TEAM_PATH, "text_generation.yaml").resolve()
     IMAGE_GENERATION = Path(EXECUTOR_RED_TEAM_PATH, "image_generation.yaml").resolve()
     NAIVE_CRESCENDO = Path(EXECUTOR_RED_TEAM_PATH, "naive_crescendo.yaml").resolve()
@@ -330,6 +332,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             str: The generated prompt to be sent to the adversarial chat.
+
+        Raises:
+            ValueError: If no response is received from the adversarial chat.
         """
         # If custom prompt provided, use it and clear it
         if context.custom_prompt:
@@ -441,6 +446,10 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             str: The suitable feedback or error message to pass back to the adversarial chat.
+
+        Raises:
+            RuntimeError: If the target response indicates an error.
+            ValueError: If scoring is disabled or no scoring rationale is available.
         """
         if not context.last_response:
             return "No response available. Please continue."
@@ -484,6 +493,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             Message: The system's response to the prompt.
+
+        Raises:
+            ValueError: If no response is received from the target system.
         """
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 

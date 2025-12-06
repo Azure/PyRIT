@@ -154,7 +154,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
 
     async def _setup_async(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """
-        Setup phase before executing the strategy.
+        Set up the phase before executing the strategy.
 
         Args:
             context (QuestionAnsweringBenchmarkContext): The context for the strategy.
@@ -263,20 +263,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **kwargs,
-    ) -> AttackResult:
-        """
-        Execute the QA benchmark strategy asynchronously with the provided parameters.
-
-        Args:
-            question_answering_entry (QuestionAnsweringEntry): The question answering entry to evaluate.
-            prepended_conversation (Optional[List[Message]]): Conversation to prepend.
-            memory_labels (Optional[Dict[str, str]]): Memory labels for the benchmark context.
-            **kwargs: Additional parameters for the benchmark.
-
-        Returns:
-            AttackResult: The result of the benchmark execution.
-        """
-        ...
+    ) -> AttackResult: ...
 
     @overload
     async def execute_async(
@@ -289,7 +276,16 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         **kwargs,
     ) -> AttackResult:
         """
-        Execute the benchmark strategy asynchronously with the provided parameters.
+        Execute the QA benchmark strategy asynchronously with the provided parameters.
+
+        Args:
+            question_answering_entry (QuestionAnsweringEntry): The question answering entry to evaluate.
+            prepended_conversation (Optional[List[Message]]): Conversation to prepend.
+            memory_labels (Optional[Dict[str, str]]): Memory labels for the benchmark context.
+            **kwargs: Additional parameters for the benchmark.
+
+        Returns:
+            AttackResult: The result of the benchmark execution.
         """
         # Validate parameters before creating context
         question_answering_entry = get_kwarg_param(

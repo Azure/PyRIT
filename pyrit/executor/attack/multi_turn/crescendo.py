@@ -138,6 +138,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for prompts.
             max_backtracks (int): Maximum number of backtracks allowed.
             max_turns (int): Maximum number of turns allowed.
+
+        Raises:
+            ValueError: If objective_target is not a PromptChatTarget.
         """
         # Initialize base class
         super().__init__(objective_target=objective_target, logger=logger, context_type=CrescendoAttackContext)
@@ -494,6 +497,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         Returns:
             str: The response text from the adversarial chat.
+
+        Raises:
+            ValueError: If no response is received from the adversarial chat.
         """
         # Set JSON format in metadata
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
@@ -596,10 +602,13 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         Args:
             context (CrescendoAttackContext): The attack context containing the response to check.
-            task (str): The task/prompt that was sent.
+            objective (str): The attack objective.
 
         Returns:
             Score: The refusal score.
+
+        Raises:
+            ValueError: If no response is available in the context to check for refusal.
         """
         if not context.last_response:
             raise ValueError("No response available in context to check for refusal")
