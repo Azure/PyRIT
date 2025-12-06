@@ -31,8 +31,8 @@ class PartialUndefined(Undefined):
         return f"{{{{ {self._undefined_name} }}}}" if self._undefined_name else ""
 
     def __iter__(self):
-        """Prevent Jinja from evaluating loops by returning a placeholder string instead of an iterable."""
-        return self
+        """Return an empty iterator to prevent Jinja from trying to loop over undefined variables."""
+        return iter([])
 
     def __bool__(self):
         return True  # Ensures it doesn't evaluate to False

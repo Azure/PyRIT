@@ -143,11 +143,23 @@ class CyberScenario(Scenario):
             TrueFalseCompositeScorer: Default objective scorer with backstop and malware evaluation.
         """
         presence_of_malware = SelfAskTrueFalseScorer(
-            chat_target=OpenAIChatTarget(),
+            chat_target=OpenAIChatTarget(
+                endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+            ),
             true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "malware.yaml",
         )
 
-        backstop = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=OpenAIChatTarget()))
+        backstop = TrueFalseInverterScorer(
+            scorer=SelfAskRefusalScorer(
+                chat_target=OpenAIChatTarget(
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                )
+            )
+        )
 
         return TrueFalseCompositeScorer(
             aggregator=TrueFalseScoreAggregator.AND, scorers=[presence_of_malware, backstop]
@@ -163,6 +175,7 @@ class CyberScenario(Scenario):
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 

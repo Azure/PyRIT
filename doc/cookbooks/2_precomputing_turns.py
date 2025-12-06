@@ -58,6 +58,7 @@ conversation_objectives = [
 objective_target = OpenAIChatTarget(
     endpoint=os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_GPT4O_KEY"],
+    model_name=os.environ["AZURE_OPENAI_GPT4O_MODEL"],
 )
 
 # Configure the labels you want to send
@@ -74,7 +75,7 @@ memory_labels = {"op_name": "new_op", "user_name": "roakey", "test_name": "cookb
 converter_target = OpenAIChatTarget(
     endpoint=os.environ["PLATFORM_OPENAI_CHAT_ENDPOINT"],
     api_key=os.environ["PLATFORM_OPENAI_CHAT_KEY"],
-    model_name="gpt-4o",
+    model_name=os.environ["PLATFORM_OPENAI_CHAT_MODEL"],
 )
 
 converters = [
@@ -137,6 +138,7 @@ memory = CentralMemory.get_memory_instance()
 new_objective_target = OpenAIChatTarget(
     endpoint=os.environ["AZURE_FOUNDRY_DEEPSEEK_ENDPOINT"],
     api_key=os.environ["AZURE_FOUNDRY_DEEPSEEK_KEY"],
+    model_name=os.environ["AZURE_FOUNDRY_DEEPSEEK_MODEL"],
 )
 
 # Configure your new attack.

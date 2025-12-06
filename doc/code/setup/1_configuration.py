@@ -138,8 +138,9 @@ await initialize_pyrit_async(memory_db_type="InMemory", initialization_scripts=[
 # SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY configured
 # It is meant to only require these two env vars to be configured
 # It can easily be swapped for another PyRITInitializer, like AIRTInitializer which is better but requires more env configuration
-# get_info() is a class method that shows how this initializer configures defaults and what global variables it sets
-for key, value in SimpleInitializer.get_info().items():
+# get_info_async() is a class method that shows how this initializer configures defaults and what global variables it sets
+info = await SimpleInitializer.get_info_async()  # type: ignore
+for key, value in info.items():
     print(f"{key}: {value}")
 
 

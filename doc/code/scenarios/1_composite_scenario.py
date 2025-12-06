@@ -28,14 +28,20 @@
 # First, we'll initialize PyRIT and configure the target we want to test.
 
 # %%
+
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenario import FoundryScenario, FoundryStrategy, ScenarioCompositeStrategy
 from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-await initialize_pyrit_async(
-    memory_db_type=IN_MEMORY,
-)  # type: ignore
+
+async def setup():
+    await initialize_pyrit_async(
+        memory_db_type=IN_MEMORY,
+    )  # type: ignore
+
+
+await setup()  # type: ignore
 
 objective_target = OpenAIChatTarget()
 printer = ConsoleScenarioResultPrinter()

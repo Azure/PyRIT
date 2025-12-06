@@ -134,7 +134,8 @@ class FrontendCore:
 
     @property
     def scenario_registry(self) -> "ScenarioRegistry":
-        """Get the scenario registry. Must call await initialize_async() first.
+        """
+        Get the scenario registry. Must call await initialize_async() first.
 
         Raises:
             RuntimeError: If initialize_async() has not been called.
@@ -148,7 +149,8 @@ class FrontendCore:
 
     @property
     def initializer_registry(self) -> "InitializerRegistry":
-        """Get the initializer registry. Must call await initialize_async() first.
+        """
+        Get the initializer registry. Must call await initialize_async() first.
 
         Raises:
             RuntimeError: If initialize_async() has not been called.

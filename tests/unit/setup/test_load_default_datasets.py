@@ -52,9 +52,7 @@ class TestLoadDefaultDatasets:
         initializer = LoadDefaultDatasets()
 
         with patch.object(ScenarioRegistry, "get_scenario_names", return_value=[]):
-            with patch.object(
-                SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock
-            ) as mock_fetch:
+            with patch.object(SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock) as mock_fetch:
                 with patch.object(CentralMemory, "get_memory_instance") as mock_memory:
                     mock_memory_instance = MagicMock()
                     mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()
@@ -77,9 +75,7 @@ class TestLoadDefaultDatasets:
 
         with patch.object(ScenarioRegistry, "get_scenario_names", return_value=["mock_scenario"]):
             with patch.object(ScenarioRegistry, "get_scenario", return_value=mock_scenario_class):
-                with patch.object(
-                    SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock
-                ) as mock_fetch:
+                with patch.object(SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock) as mock_fetch:
                     mock_dataset1 = MagicMock(spec=SeedDataset)
                     mock_dataset2 = MagicMock(spec=SeedDataset)
                     mock_fetch.return_value = [mock_dataset1, mock_dataset2]
@@ -122,9 +118,7 @@ class TestLoadDefaultDatasets:
 
         with patch.object(ScenarioRegistry, "get_scenario_names", return_value=["scenario1", "scenario2"]):
             with patch.object(ScenarioRegistry, "get_scenario", side_effect=get_scenario_side_effect):
-                with patch.object(
-                    SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock
-                ) as mock_fetch:
+                with patch.object(SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock) as mock_fetch:
                     mock_fetch.return_value = []
 
                     with patch.object(CentralMemory, "get_memory_instance") as mock_memory:
@@ -162,9 +156,7 @@ class TestLoadDefaultDatasets:
 
         with patch.object(ScenarioRegistry, "get_scenario_names", return_value=["good_scenario", "bad_scenario"]):
             with patch.object(ScenarioRegistry, "get_scenario", side_effect=get_scenario_side_effect):
-                with patch.object(
-                    SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock
-                ) as mock_fetch:
+                with patch.object(SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock) as mock_fetch:
                     mock_fetch.return_value = []
 
                     with patch.object(CentralMemory, "get_memory_instance") as mock_memory:
@@ -215,7 +207,7 @@ class TestLoadDefaultDatasets:
         # Assert that all required datasets are available
         assert (
             len(missing_datasets) == 0
-        ), f"The following scenarios require datasets not available in SeedDatasetProvider:\n" + "\n".join(
+        ), "The following scenarios require datasets not available in SeedDatasetProvider:\n" + "\n".join(
             missing_datasets
         )
 
@@ -229,9 +221,7 @@ class TestLoadDefaultDatasets:
 
         with patch.object(ScenarioRegistry, "get_scenario_names", return_value=["empty_scenario"]):
             with patch.object(ScenarioRegistry, "get_scenario", return_value=mock_scenario):
-                with patch.object(
-                    SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock
-                ) as mock_fetch:
+                with patch.object(SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock) as mock_fetch:
                     with patch.object(CentralMemory, "get_memory_instance") as mock_memory:
                         mock_memory_instance = MagicMock()
                         mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()
@@ -250,9 +240,7 @@ class TestLoadDefaultDatasets:
 
         with patch.object(ScenarioRegistry, "get_scenario_names", return_value=["nonexistent_scenario"]):
             with patch.object(ScenarioRegistry, "get_scenario", return_value=None):
-                with patch.object(
-                    SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock
-                ) as mock_fetch:
+                with patch.object(SeedDatasetProvider, "fetch_datasets_async", new_callable=AsyncMock) as mock_fetch:
                     with patch.object(CentralMemory, "get_memory_instance") as mock_memory:
                         mock_memory_instance = MagicMock()
                         mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()

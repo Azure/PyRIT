@@ -36,8 +36,8 @@ Examples:
   # Run with custom initialization scripts
   pyrit_scan garak.encoding_scenario --initialization-scripts ./my_config.py
 
-  # Run specific strategies
-  pyrit_scan garak.encoding_scenario --initializers openai_objective_target load_default_datasets --strategies base64 rot13
+  # Run specific strategies or options
+  pyrit scan foundry_scenario --strategies base64 rot13 --initializers openai_objective_target
   pyrit_scan foundry_scenario --initializers openai_objective_target --max-concurrency 10 --max-retries 3
   pyrit_scan garak.encoding_scenario --initializers openai_objective_target --memory-labels '{"run_id":"test123"}'
 """,

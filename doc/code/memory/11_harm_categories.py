@@ -30,7 +30,9 @@ await initialize_pyrit_async(memory_db_type="InMemory")  # type: ignore
 
 memory = CentralMemory.get_memory_instance()
 
-seed_prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+seed_prompts = SeedDataset.from_yaml_file(
+    pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt"
+)
 
 print(f"Dataset name: {seed_prompts.dataset_name}")
 print(f"Number of prompts in dataset: {len(seed_prompts.prompts)}")

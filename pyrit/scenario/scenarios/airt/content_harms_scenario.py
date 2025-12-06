@@ -137,9 +137,7 @@ class ContentHarmsScenario(Scenario):
         )
         self._objectives_by_harm = objectives_by_harm
 
-    def _get_objectives_by_harm(
-        self, objectives_by_harm: Optional[Dict[str, Sequence[SeedGroup]]] = None
-    ) -> Dict[str, Sequence[SeedGroup]]:
+    def _get_objectives_by_harm(self) -> Dict[str, Sequence[SeedGroup]]:
         """
         Retrieve SeedGroups for each harm strategy. If objectives_by_harm is provided for a given harm strategy,
         use that directly.
@@ -154,11 +152,12 @@ class ContentHarmsScenario(Scenario):
             self._scenario_composites, strategy_type=ContentHarmsStrategy
         )
         for harm_strategy in selected_harms:
-            seeds_by_strategy[harm_strategy] = self._memory.get_seeds(
+            seeds = self._memory.get_seed_groups(
                 is_objective=True,
                 harm_categories=harm_strategy,
                 dataset_name_pattern="airt_%",
             )
+            seeds_by_strategy[harm_strategy] = seeds
 
             if not seeds_by_strategy[harm_strategy]:
                 self._raise_dataset_exception()
@@ -169,6 +168,7 @@ class ContentHarmsScenario(Scenario):
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
@@ -178,6 +178,7 @@ class ContentHarmsScenario(Scenario):
                 chat_target=OpenAIChatTarget(
                     endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
                     api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             ),
         )
@@ -193,7 +194,7 @@ class ContentHarmsScenario(Scenario):
         selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
             self._scenario_composites, strategy_type=ContentHarmsStrategy
         )
-        merged_objectives_by_harm = self._get_objectives_by_harm(self._objectives_by_harm)
+        merged_objectives_by_harm = self._get_objectives_by_harm()
         for strategy in selected_harms:
             atomic_attacks.extend(
                 self._get_strategy_attacks(strategy=strategy, seed_groups=merged_objectives_by_harm[strategy])

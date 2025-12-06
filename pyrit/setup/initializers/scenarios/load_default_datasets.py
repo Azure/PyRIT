@@ -26,7 +26,6 @@ class LoadDefaultDatasets(PyRITInitializer):
     @property
     def name(self) -> str:
         """Return the name of this initializer."""
-
         return "Default Dataset Loader for Scenarios"
 
     @property
