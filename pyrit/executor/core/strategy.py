@@ -107,7 +107,12 @@ class StrategyLogAdapter(logging.LoggerAdapter):
     _STRATEGY_ID_KEY = "strategy_id"
 
     def process(self, msg: Any, kwargs: MutableMapping[str, Any]) -> tuple[str, MutableMapping[str, Any]]:
-        """Add strategy context to each log message."""
+        """
+        Add strategy context to each log message.
+
+        Returns:
+            tuple: The modified log message and keyword arguments.
+        """
         if not self.extra:
             return msg, kwargs
 
@@ -171,6 +176,12 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         )
 
     def get_identifier(self):
+        """
+        Get a serializable identifier for the strategy instance.
+
+        Returns:
+            dict: A dictionary containing the type, module, and unique ID of the strategy.
+        """
         return {
             "__type__": self.__class__.__name__,
             "__module__": self.__class__.__module__,
@@ -204,7 +215,7 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
     @abstractmethod
     async def _setup_async(self, *, context: StrategyContextT) -> None:
         """
-        Setup phase before executing the strategy.
+        Set up the phase before executing the strategy.
         This method should be implemented by subclasses to prepare any necessary state or resources.
         This method is guaranteed to be called before the strategy execution and after context validation.
 
@@ -273,7 +284,7 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
     @asynccontextmanager
     async def _execution_context(self, context: StrategyContextT) -> AsyncIterator[None]:
         """
-        Manages the complete lifecycle of a strategy execution as an async context manager.
+        Manage the complete lifecycle of a strategy execution as an async context manager.
 
         This method provides a context manager that ensures proper setup and teardown
         of strategy resources, regardless of whether the strategy completes successfully
@@ -343,6 +354,9 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
     async def execute_async(self, **kwargs) -> StrategyResultT:
         """
         Execute the strategy asynchronously with the given keyword arguments.
+
+        Returns:
+            StrategyResultT: The result of the strategy execution.
         """
         context = self._context_type(**kwargs)
         return await self.execute_with_context_async(context=context)
