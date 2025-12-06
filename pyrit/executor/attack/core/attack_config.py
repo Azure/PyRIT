@@ -59,7 +59,7 @@ class AttackScoringConfig:
     def __post_init__(self) -> None:
         """
         Validate configuration values.
-        
+
         Raises:
             ValueError: If successful_objective_threshold is not between 0.0 and 1.0, or if
                 the objective or refusal scorers are not of type TrueFalseScorer.

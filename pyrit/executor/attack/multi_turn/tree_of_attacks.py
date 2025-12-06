@@ -840,7 +840,7 @@ class _TreeOfAttacksNode:
     def __str__(self) -> str:
         """
         Return string representation of the node showing key execution results.
-        
+
         Returns:
             str: A string summarizing the node's completion status, objective score,
                  node ID, and conversation ID.

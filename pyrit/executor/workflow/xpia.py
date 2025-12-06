@@ -37,7 +37,7 @@ class XPIAProcessingCallback(Protocol):
     of the processing target and return the response as a string.
     """
 
-    async def __call__(self) -> str: 
+    async def __call__(self) -> str:
         """Execute the processing callback and return response text."""
         ...
 

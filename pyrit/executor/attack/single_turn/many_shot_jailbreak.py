@@ -63,7 +63,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
                 Shot Jailbreaking dataset. Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
                 If not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.
-        
+
         Raises:
             ValueError: If many_shot_examples is empty.
         """

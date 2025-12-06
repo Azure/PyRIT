@@ -90,7 +90,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
 
         Returns:
             AttackResult: The result of the attack execution.
-        
+
         Raises:
             ValueError: If both objective and seed_group with objective are provided.
         """

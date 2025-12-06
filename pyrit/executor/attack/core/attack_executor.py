@@ -41,7 +41,7 @@ class AttackExecutorResult(Generic[AttackResultT]):
     def __iter__(self):
         """
         Iterate over completed results.
-        
+
         Returns:
             Iterator[AttackResultT]: An iterator over the completed results.
         """
@@ -50,7 +50,7 @@ class AttackExecutorResult(Generic[AttackResultT]):
     def __len__(self) -> int:
         """
         Return number of completed results.
-        
+
         Returns:
             int: The number of completed results.
         """
@@ -59,7 +59,7 @@ class AttackExecutorResult(Generic[AttackResultT]):
     def __getitem__(self, index: int) -> AttackResultT:
         """
         Access completed results by index.
-        
+
         Returns:
             AttackResultT: The completed result at the specified index.
         """
