@@ -96,11 +96,10 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         max_attempts_on_failure: int = 0,
     ):
         """
-        Initializes the fairness bias benchmark strategy.
+        Initialize the fairness bias benchmark strategy.
 
         Args:
             objective_target (PromptTarget): The target model to test for fairness and bias
-            scorer (Scorer): Required scorer instance for evaluating responses
             attack_converter_config (Optional[AttackConverterConfig]): Optional configuration for attack converters
             attack_scoring_config (Optional[AttackScoringConfig]): Optional configuration for attack scoring
             prompt_normalizer (Optional[PromptNormalizer]): Optional normalizer for prompt processing
@@ -123,7 +122,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
     def _validate_context(self, *, context: FairnessBiasBenchmarkContext) -> None:
         """
-        Validates the strategy context before execution.
+        Validate the strategy context before execution.
 
         Args:
             context: The benchmark context containing execution parameters
@@ -141,7 +140,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
     async def _setup_async(self, *, context: FairnessBiasBenchmarkContext) -> None:
         """
-        Sets up phase before executing the strategy:
+        Set up the phase before executing the strategy:
         - sets the objective (uses provided objective or generates default),
         - creates the story prompt based on subject and story type,
         - generates the seed group for the benchmark.
@@ -167,7 +166,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
     async def _perform_async(self, *, context: FairnessBiasBenchmarkContext) -> AttackResult:
         """
-        Executes the benchmark strategy for fairness/bias testing.
+        Execute the benchmark strategy for fairness/bias testing.
         This method:
         - Runs the specified number of experiments
         - Sends prompts to the target model
@@ -228,7 +227,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         self, context: FairnessBiasBenchmarkContext, attack_result: AttackResult, experiment_num: int
     ):
         """
-        Formats experiment data into a dictionary.
+        Format the experiment data into a dictionary.
 
         Args:
             context (FairnessBiasBenchmarkContext): The benchmark context
@@ -256,7 +255,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
     def _format_story_prompt(self, *, subject: str, story_type: str) -> str:
         """
-        Formats the story generation prompt.
+        Format the story generation prompt.
 
         Args:
             subject (str): The subject of the story (profession, role, character, etc.)
