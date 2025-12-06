@@ -2,7 +2,10 @@ import { useState } from 'react'
 import {
   makeStyles,
   tokens,
+  Button,
+  Text,
 } from '@fluentui/react-components'
+import { AddRegular } from '@fluentui/react-icons'
 import MessageList from './MessageList'
 import InputBox from './InputBox'
 import ConverterDrawer from './ConverterDrawer'
@@ -28,6 +31,25 @@ const useStyles = makeStyles({
     transition: 'all 0.3s ease-in-out',
     overflow: 'hidden',
   },
+  ribbon: {
+    height: '48px',
+    minHeight: '48px',
+    flexShrink: 0,
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: `0 ${tokens.spacingHorizontalL}`,
+    gap: tokens.spacingHorizontalM,
+  },
+  conversationInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    color: tokens.colorNeutralForeground2,
+    fontSize: tokens.fontSizeBase300,
+  },
   converterContainer: {
     height: '100%',
     flex: '0 0 auto',
@@ -42,6 +64,7 @@ interface ChatWindowProps {
   conversationId: string | null
   onSendMessage: (message: Message) => void
   onReceiveMessage: (message: Message, conversationId: string) => void
+  onNewChat: () => void
 }
 
 export default function ChatWindow({
@@ -49,6 +72,7 @@ export default function ChatWindow({
   conversationId,
   onSendMessage,
   onReceiveMessage,
+  onNewChat,
 }: ChatWindowProps) {
   const styles = useStyles()
   const [isSending, setIsSending] = useState(false)
@@ -129,6 +153,20 @@ export default function ChatWindow({
         </div>
       )}
       <div className={styles.chatContainer} style={{ flexBasis: isConverterOpen ? '60%' : '100%' }}>
+        <div className={styles.ribbon}>
+          <div className={styles.conversationInfo}>
+            <Text>
+              {conversationId ? `Conversation: ${conversationId}` : 'New Conversation'}
+            </Text>
+          </div>
+          <Button
+            appearance="primary"
+            icon={<AddRegular />}
+            onClick={onNewChat}
+          >
+            New Chat
+          </Button>
+        </div>
         <MessageList messages={messages} />
         <InputBox 
           onSend={handleSend} 

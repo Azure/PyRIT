@@ -108,7 +108,13 @@ async def send_message(
         return response
     except Exception as e:
         logger.exception(f"Failed to send message: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to send message: {str(e)}")
+        # Include traceback in error response for debugging
+        import traceback
+        error_details = traceback.format_exc()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to send message: {str(e)}\n\nTraceback:\n{error_details}"
+        )
 
 
 @router.get("/chat/conversations", response_model=List[ConversationHistory])

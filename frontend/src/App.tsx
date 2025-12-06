@@ -33,6 +33,10 @@ function App() {
     setCurrentView('chat')
   }
 
+  const handleReturnToChat = () => {
+    setCurrentView('chat')
+  }
+
   const handleShowHistory = () => {
     setCurrentView('history')
   }
@@ -63,8 +67,9 @@ function App() {
       <MainLayout 
         onToggleTheme={toggleTheme} 
         isDarkMode={isDarkMode} 
-        onNewChat={handleNewChat}
+        onReturnToChat={handleReturnToChat}
         onShowHistory={handleShowHistory}
+        currentView={currentView}
       >
         {currentView === 'chat' ? (
           <ChatWindow
@@ -72,6 +77,7 @@ function App() {
             conversationId={conversationId}
             onSendMessage={handleSendMessage}
             onReceiveMessage={handleReceiveMessage}
+            onNewChat={handleNewChat}
           />
         ) : (
           <HistoryPage onSelectConversation={handleSelectConversation} />

@@ -50,7 +50,7 @@ async def convert_text(request: ConvertRequest):
             value=request.text,
             data_type="text"
         )
-        seed_group = SeedGroup(prompts=[seed_prompt])
+        seed_group = SeedGroup(seeds=[seed_prompt])
         
         # Build converter configurations for PromptNormalizer
         converter_configs = []

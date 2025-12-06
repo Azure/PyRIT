@@ -1,4 +1,3 @@
-import { ReactNode } from 'react'
 import {
   makeStyles,
   tokens,
@@ -58,14 +57,22 @@ const useStyles = makeStyles({
 })
 
 interface MainLayoutProps {
-  children: ReactNode
+  children: React.ReactNode
   onToggleTheme: () => void
   isDarkMode: boolean
-  onNewChat: () => void
+  onReturnToChat: () => void
   onShowHistory: () => void
+  currentView: 'chat' | 'history'
 }
 
-export default function MainLayout({ children, onToggleTheme, isDarkMode, onNewChat, onShowHistory }: MainLayoutProps) {
+export default function MainLayout({ 
+  children, 
+  onToggleTheme, 
+  isDarkMode, 
+  onReturnToChat, 
+  onShowHistory, 
+  currentView 
+}: MainLayoutProps) {
   const styles = useStyles()
 
   return (
@@ -81,14 +88,13 @@ export default function MainLayout({ children, onToggleTheme, isDarkMode, onNewC
       </div>
       <div className={styles.contentArea}>
         <aside className={styles.sidebar}>
-                <div className={styles.sidebar}>
-        <Navigation 
-          onToggleTheme={onToggleTheme} 
-          isDarkMode={isDarkMode} 
-          onNewChat={onNewChat}
-          onShowHistory={onShowHistory}
-        />
-      </div>
+          <Navigation 
+            onToggleTheme={onToggleTheme} 
+            isDarkMode={isDarkMode} 
+            onReturnToChat={onReturnToChat}
+            onShowHistory={onShowHistory}
+            currentView={currentView}
+          />
         </aside>
         <main className={styles.main}>{children}</main>
       </div>

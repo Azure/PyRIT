@@ -6,10 +6,11 @@ Target registry service for managing available PyRIT targets
 """
 
 import os
-from typing import List, Optional, Dict, Any
+import re
+from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
 
-from pyrit.prompt_target import OpenAIChatTarget, AzureMLChatTarget
+import pyrit.prompt_target as pt
 
 
 @dataclass
@@ -26,172 +27,92 @@ class TargetConfig:
 class TargetRegistry:
     """Registry of available PyRIT targets based on environment configuration"""
 
-    # Mapping of target types to their environment variable prefixes
-    TARGET_ENV_MAPPINGS = {
-        "OpenAIChatTarget": {
-            "prefix": "OPENAI_CHAT",
-            "endpoint_var": "OPENAI_CHAT_ENDPOINT",
-            "key_var": "OPENAI_CHAT_KEY",
-            "model_var": "OPENAI_CHAT_MODEL",
-        },
-        "AzureOpenAIGPT4o": {
-            "prefix": "AZURE_OPENAI_GPT4O",
-            "endpoint_var": "AZURE_OPENAI_GPT4O_ENDPOINT",
-            "key_var": "AZURE_OPENAI_GPT4O_KEY",
-            "model_var": None,  # Azure endpoints include deployment
-        },
-        "AzureOpenAIGPT4oUnsafe": {
-            "prefix": "AZURE_OPENAI_GPT4O_UNSAFE",
-            "endpoint_var": "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT",
-            "key_var": "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
-            "model_var": None,
-        },
-        "AzureOpenAIGPT35": {
-            "prefix": "AZURE_OPENAI_GPT3_5",
-            "endpoint_var": "AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT",
-            "key_var": "AZURE_OPENAI_GPT3_5_CHAT_KEY",
-            "model_var": None,
-        },
-        "AzureMLChatTarget": {
-            "prefix": "AZURE_ML",
-            "endpoint_var": "AZURE_ML_MANAGED_ENDPOINT",
-            "key_var": "AZURE_ML_KEY",
-            "model_var": None,
-        },
-    }
-
     @classmethod
     def get_available_targets(cls) -> List[Dict[str, Any]]:
-        """Get list of available targets from environment variables"""
+        """
+        Get list of available targets from environment variables.
+        Returns simple filtered lists of endpoint/key/model env vars.
+        """
+        all_vars = list(os.environ.keys())
+        
+        endpoint_vars = sorted([v for v in all_vars if "ENDPOINT" in v and os.getenv(v)])
+        key_vars = sorted([v for v in all_vars if ("KEY" in v or "API" in v) and os.getenv(v)])
+        model_vars = sorted([v for v in all_vars if "MODEL" in v and os.getenv(v)])
+        
+        # Return as targets for compatibility
         targets = []
-
-        for target_id, config in cls.TARGET_ENV_MAPPINGS.items():
-            endpoint = os.getenv(config["endpoint_var"])
-            api_key = os.getenv(config["key_var"])
-            model = os.getenv(config["model_var"]) if config["model_var"] else None
-
-            # Check if this target is configured
-            if endpoint:
-                status = "available" if (api_key or "azure" in endpoint.lower()) else "needs_api_key"
-
-                target_info = {
-                    "id": target_id,
-                    "name": cls._format_name(target_id),
-                    "type": cls._get_target_class(target_id),
-                    "description": cls._get_description(target_id),
-                    "status": status,
-                    "endpoint": endpoint,
-                    "model": model,
-                    "has_api_key": bool(api_key),
-                }
-                targets.append(target_info)
-
-        # If no targets configured, return default OpenAIChatTarget structure
-        if not targets:
-            targets.append(
-                {
-                    "id": "OpenAIChatTarget",
-                    "name": "OpenAI Chat (unconfigured)",
-                    "type": "OpenAIChatTarget",
-                    "description": "OpenAI Chat Target - requires OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY",
-                    "status": "not_configured",
-                    "endpoint": None,
-                    "model": None,
-                    "has_api_key": False,
-                }
-            )
-
+        for endpoint_var in endpoint_vars:
+            endpoint_value = os.getenv(endpoint_var)
+            # Simple name from var name
+            name = endpoint_var.replace("_ENDPOINT", "").replace("_", " ").title()
+            
+            targets.append({
+                "id": endpoint_var,
+                "name": name,
+                "type": "OpenAIChatTarget",
+                "description": f"Endpoint: {endpoint_value}",
+                "status": "available",
+                "endpoint": endpoint_value,
+                "endpoint_var": endpoint_var,
+            })
+        
         return targets
 
     @classmethod
-    def create_target_instance(cls, target_id: str, **overrides) -> Optional[Any]:
+    def create_target_instance(
+        cls, 
+        target_type: str = "OpenAIChatTarget",
+        endpoint_var: Optional[str] = None,
+        key_var: Optional[str] = None,
+        model_var: Optional[str] = None,
+        **overrides
+    ) -> Optional[Any]:
         """
-        Create an instance of a target by ID
+        Create an instance of a target from user-selected environment variables
 
         Args:
-            target_id: The target identifier
-            **overrides: Override parameters (endpoint, api_key, model_name, etc.)
+            target_type: The target class type (currently only OpenAIChatTarget supported)
+            endpoint_var: Name of environment variable containing the endpoint
+            key_var: Name of environment variable containing the API key
+            model_var: Name of environment variable containing the model name
+            **overrides: Direct override values (endpoint, api_key, model_name)
 
         Returns:
             Target instance or None if not available
         """
-        config = cls.TARGET_ENV_MAPPINGS.get(target_id)
-        if not config:
-            return None
-
-        # Get values from environment or overrides
-        endpoint = overrides.get("endpoint") or os.getenv(config["endpoint_var"])
-        api_key = overrides.get("api_key") or os.getenv(config["key_var"])
-        model_name = overrides.get("model_name")
-        if config["model_var"] and not model_name:
-            model_name = os.getenv(config["model_var"])
+        # Get values from environment variables or overrides
+        endpoint = overrides.get("endpoint") or (os.getenv(endpoint_var) if endpoint_var else None)
+        api_key = overrides.get("api_key") or (os.getenv(key_var) if key_var else None)
+        model_name = overrides.get("model_name") or (os.getenv(model_var) if model_var else None)
 
         if not endpoint:
-            raise ValueError(f"Endpoint not configured for {target_id}")
+            raise ValueError("Endpoint is required")
 
-        # Create appropriate target instance
-        target_class = cls._get_target_class(target_id)
+        # Dynamically load the target class
+        try:
+            target_class = getattr(pt, target_type)
+        except AttributeError:
+            raise ValueError(f"Unknown target type: {target_type}")
 
-        if target_class == "AzureMLChatTarget":
-            return AzureMLChatTarget(endpoint=endpoint, api_key=api_key)
-        else:
-            # Most targets use OpenAIChatTarget
-            kwargs = {"endpoint": endpoint}
-            if api_key:
-                kwargs["api_key"] = api_key
-            if model_name:
-                kwargs["model_name"] = model_name
-
-            return OpenAIChatTarget(**kwargs)
-
-    @classmethod
-    def get_default_attack_target(cls) -> OpenAIChatTarget:
-        """
-        Get the default target for attacks (converters, scorers, adversarial_chat)
-        Uses OpenAIChatTarget with OPENAI_CHAT_* environment variables
-        """
-        endpoint = os.getenv("OPENAI_CHAT_ENDPOINT")
-        api_key = os.getenv("OPENAI_CHAT_KEY")
-        model_name = os.getenv("OPENAI_CHAT_MODEL")
-
-        kwargs = {}
-        if endpoint:
-            kwargs["endpoint"] = endpoint
+        # Create instance with the provided parameters
+        kwargs = {"endpoint": endpoint}
         if api_key:
             kwargs["api_key"] = api_key
         if model_name:
             kwargs["model_name"] = model_name
 
-        return OpenAIChatTarget(**kwargs)
+        return target_class(**kwargs)
 
-    @staticmethod
-    def _format_name(target_id: str) -> str:
-        """Format target ID into readable name"""
-        # Convert CamelCase to Title Case with spaces
-        import re
+    @classmethod
+    def get_default_attack_target(cls):
+        """
+        Get the default target for attacks (converters, scorers, adversarial_chat)
+        Uses OpenAIChatTarget with OPENAI_CHAT_* environment variables
+        """
+        return cls.create_target_instance(
+            target_type="OpenAIChatTarget",
+            endpoint_var="OPENAI_CHAT_ENDPOINT",
+            key_var="OPENAI_CHAT_KEY",
+            model_var="OPENAI_CHAT_MODEL"
+        )
 
-        name = re.sub(r"([A-Z])", r" \1", target_id).strip()
-        # Special formatting
-        name = name.replace("Gpt", "GPT")
-        name = name.replace("Api", "API")
-        name = name.replace("Ml", "ML")
-        return name
-
-    @staticmethod
-    def _get_target_class(target_id: str) -> str:
-        """Get the target class name"""
-        if "AzureML" in target_id:
-            return "AzureMLChatTarget"
-        return "OpenAIChatTarget"
-
-    @staticmethod
-    def _get_description(target_id: str) -> str:
-        """Get description for target"""
-        descriptions = {
-            "OpenAIChatTarget": "Standard OpenAI Chat Completions endpoint",
-            "AzureOpenAIGPT4o": "Azure OpenAI GPT-4o deployment",
-            "AzureOpenAIGPT4oUnsafe": "Azure OpenAI GPT-4o (unsafe content filter)",
-            "AzureOpenAIGPT35": "Azure OpenAI GPT-3.5 Turbo deployment",
-            "AzureMLChatTarget": "Azure ML managed endpoint for chat models",
-        }
-        return descriptions.get(target_id, f"{target_id} chat target")

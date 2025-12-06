@@ -123,8 +123,8 @@ class PromptNormalizer:
         responses = None
 
         try:
-            responses = await target.send_prompt_async(message=request)
-            self._memory.add_message_to_memory(request=request)
+            responses = await target.send_prompt_async(message=message)
+            self._memory.add_message_to_memory(request=message)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
             self._memory.add_message_to_memory(request=message)

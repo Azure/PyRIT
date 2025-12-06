@@ -139,11 +139,14 @@ class ChatService:
                     assistant_response = "No response from target"
                     
             except ValueError as e:
-                logger.error(f"Configuration error: {e}")
+                logger.exception(f"Configuration error: {e}")
                 assistant_response = f"Configuration error: {str(e)}"
             except Exception as e:
-                logger.error(f"Error getting target response: {e}")
-                assistant_response = f"Error: {str(e)}"
+                logger.exception(f"Error getting target response: {e}")
+                # Include more details in error message
+                import traceback
+                error_details = traceback.format_exc()
+                assistant_response = f"Error communicating with target: {str(e)}\n\nDetails:\n{error_details}"
 
         # Add assistant message
         assistant_message = DisplayMessage(role="assistant", content=assistant_response)

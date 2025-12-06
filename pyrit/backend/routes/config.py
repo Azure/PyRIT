@@ -12,11 +12,19 @@ router = APIRouter()
 async def get_env_vars() -> Dict[str, List[str]]:
     """Get available environment variables for target configuration"""
     
-    # Get all environment variables, sorted alphabetically
-    all_vars = sorted(list(os.environ.keys()))
+    # Get all environment variables
+    all_vars = list(os.environ.keys())
+    
+    # Filter by type
+    endpoint_vars = sorted([v for v in all_vars if "ENDPOINT" in v])
+    key_vars = sorted([v for v in all_vars if "KEY" in v or "API" in v])
+    model_vars = sorted([v for v in all_vars if "MODEL" in v])
     
     return {
-        "all": all_vars,
+        "all": sorted(all_vars),
+        "endpoints": endpoint_vars,
+        "keys": key_vars,
+        "models": model_vars,
     }
 
 
@@ -44,34 +52,60 @@ async def get_env_var_value(var_name: str) -> Dict[str, Any]:
 
 @router.get("/target-types")
 async def get_target_types() -> List[Dict[str, Any]]:
-    """Get available PyRIT target types with their default env vars"""
+    """Get available PyRIT target types"""
     
-    # Import here to avoid circular dependencies
-    import inspect
-    import pyrit.prompt_target as pt
-    from pyrit.backend.services.target_registry import TargetRegistry
+    # Return OpenAI-compatible targets with their default environment variable names
+    target_types = [
+        {
+            "id": "OpenAIChatTarget",
+            "name": "OpenAI Chat",
+            "description": "OpenAI-compatible chat endpoint (works with Azure OpenAI, OpenAI, and compatible APIs)",
+            "default_env_vars": {
+                "endpoint": "OPENAI_CHAT_ENDPOINT",
+                "api_key": "OPENAI_CHAT_KEY",
+                "model": "OPENAI_CHAT_MODEL"
+            }
+        },
+        {
+            "id": "OpenAIImageTarget",
+            "name": "OpenAI Image (DALL-E)",
+            "description": "OpenAI image generation endpoint (DALL-E)",
+            "default_env_vars": {
+                "endpoint": "OPENAI_IMAGE_ENDPOINT",
+                "api_key": "OPENAI_IMAGE_API_KEY",
+                "model": "OPENAI_IMAGE_MODEL"
+            }
+        },
+        {
+            "id": "OpenAITTSTarget",
+            "name": "OpenAI Text-to-Speech",
+            "description": "OpenAI text-to-speech endpoint",
+            "default_env_vars": {
+                "endpoint": "OPENAI_TTS_ENDPOINT",
+                "api_key": "OPENAI_TTS_KEY",
+                "model": "OPENAI_TTS_MODEL"
+            }
+        },
+        {
+            "id": "OpenAIVideoTarget",
+            "name": "OpenAI Video",
+            "description": "OpenAI video generation endpoint",
+            "default_env_vars": {
+                "endpoint": "OPENAI_VIDEO_ENDPOINT",
+                "api_key": "OPENAI_VIDEO_KEY",
+                "model": "OPENAI_VIDEO_MODEL"
+            }
+        },
+        {
+            "id": "RealtimeTarget",
+            "name": "OpenAI Realtime",
+            "description": "OpenAI realtime API endpoint",
+            "default_env_vars": {
+                "endpoint": "OPENAI_REALTIME_ENDPOINT",
+                "api_key": "OPENAI_REALTIME_API_KEY",
+                "model": "OPENAI_REALTIME_MODEL"
+            }
+        },
+    ]
     
-    target_types = []
-    
-    # Get all classes from pyrit.prompt_target
-    for name, obj in inspect.getmembers(pt):
-        if inspect.isclass(obj) and name.endswith('Target'):
-            # Try to find matching env var mapping
-            default_env_vars = {}
-            for target_id, config in TargetRegistry.TARGET_ENV_MAPPINGS.items():
-                if target_id == name or target_id in name:
-                    default_env_vars = {
-                        "api_key": config.get("key_var", ""),
-                        "endpoint": config.get("endpoint_var", ""),
-                        "model": config.get("model_var", ""),
-                    }
-                    break
-            
-            target_types.append({
-                "name": name,
-                "module": obj.__module__,
-                "description": (obj.__doc__ or "").split('\n')[0].strip() if obj.__doc__ else "",
-                "default_env_vars": default_env_vars,
-            })
-    
-    return sorted(target_types, key=lambda x: x['name'])
+    return target_types
