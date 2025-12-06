@@ -124,7 +124,7 @@ class InitializerRegistry:
         relative_path = file_path.relative_to(initializers_base)
         module_parts = list(relative_path.parts[:-1]) + [relative_path.stem]
         module_name = ".".join(module_parts)
-        
+
         # Use just the filename as the name (e.g., "load_default_datasets")
         short_name = file_path.stem
 

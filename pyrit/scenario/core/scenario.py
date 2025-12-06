@@ -185,9 +185,7 @@ class Scenario(ABC):
     @classmethod
     @abstractmethod
     def required_datasets(cls) -> list[str]:
-        """
-        Returns a list of dataset names required by this scenario.
-        """
+        """Return a list of dataset names required by this scenario."""
         pass
 
     @apply_defaults
@@ -363,17 +361,19 @@ class Scenario(ABC):
             objectives=objectives,
             memory_labels=self._memory_labels,
         )
-    
+
     def _raise_dataset_exception(self) -> None:
-            error_msg = textwrap.dedent(f"""
+        error_msg = textwrap.dedent(
+            f"""
             Dataset is not available or failed to load.
             Scenarios require datasets loaded in CentralMemory or to be passed explicitly.
             Either load the datasets into the database before running the scenario, or for
             example datasets, you can use the `load_default_datasets` initializer.
 
-            Required datasets: {', '.join(self.required_datasets())} 
-            """)
-            raise ValueError(error_msg)
+            Required datasets: {', '.join(self.required_datasets())}
+            """
+        )
+        raise ValueError(error_msg)
 
     def _validate_stored_scenario(self, *, stored_result: ScenarioResult) -> bool:
         """

@@ -2,11 +2,9 @@
 # Licensed under the MIT license.
 
 import os
-import pathlib
 from typing import Dict, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (
     AttackScoringConfig,
     AttackStrategy,
@@ -16,7 +14,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     RolePlayPaths,
 )
-from pyrit.models import SeedDataset, SeedGroup, SeedObjective, SeedPrompt
+from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -86,17 +84,18 @@ class ContentHarmsScenario(Scenario):
             ScenarioStrategy: ContentHarmsStrategy.ALL
         """
         return ContentHarmsStrategy.ALL
-    
+
     @classmethod
     def required_datasets(cls) -> list[str]:
-       return [ 
-            'airt_hate',
-            'airt_fairness',
-            'airt_violence',
-            'airt_sexual',
-            'airt_harassment',
-            'airt_misinformation',
-            'airt_leakage',
+        """Return a list of dataset names required by this scenario."""
+        return [
+            "airt_hate",
+            "airt_fairness",
+            "airt_violence",
+            "airt_sexual",
+            "airt_harassment",
+            "airt_misinformation",
+            "airt_leakage",
         ]
 
     @apply_defaults
@@ -149,7 +148,6 @@ class ContentHarmsScenario(Scenario):
         Returns:
             Dict[str, Sequence[SeedGroup]]: A dictionary mapping harm strategies to their corresponding SeedGroups.
         """
-
         seeds_by_strategy = {}
 
         selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
@@ -164,7 +162,7 @@ class ContentHarmsScenario(Scenario):
 
             if not seeds_by_strategy[harm_strategy]:
                 self._raise_dataset_exception()
-                
+
         return seeds_by_strategy
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:

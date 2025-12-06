@@ -166,7 +166,7 @@ class PyRITInitializer(ABC):
                 if name not in current_main_dict and name not in tracking_info["global_variables"]:
                     tracking_info["global_variables"].append(name)
 
-    def get_dynamic_default_values_info(self) -> Dict[str, Any]:
+    async def get_dynamic_default_values_info(self) -> Dict[str, Any]:
         """
         Get information about what default values and global variables this initializer sets.
         This is useful for debugging what default_values are set by an initializer.
@@ -213,8 +213,7 @@ class PyRITInitializer(ABC):
 
             # Run initialization in sandbox with tracking (starting from empty state)
             with self._track_initialization_changes() as tracking_info:
-                import asyncio
-                asyncio.run(self.initialize_async())
+                await self.initialize_async()
 
             return tracking_info
 
@@ -248,12 +247,12 @@ class PyRITInitializer(ABC):
                 sys.modules["__main__"].__dict__[var_name] = value
 
     @classmethod
-    def get_info(cls) -> Dict[str, Any]:
+    async def get_info_async(cls) -> Dict[str, Any]:
         """
         Get information about this initializer class.
 
         This is a class method so it can be called without instantiating the class:
-        SimpleInitializer.get_info() instead of SimpleInitializer().get_info()
+        await SimpleInitializer.get_info_async() instead of SimpleInitializer().get_info_async()
 
         Returns:
             Dict[str, Any]: Dictionary containing name, description, class information, and default values.
@@ -274,7 +273,7 @@ class PyRITInitializer(ABC):
 
         # Add dynamic default values information
         try:
-            defaults_info = instance.get_dynamic_default_values_info()
+            defaults_info = await instance.get_dynamic_default_values_info()
             base_info["default_values"] = defaults_info["default_values"]
             base_info["global_variables"] = defaults_info["global_variables"]
         except Exception as e:

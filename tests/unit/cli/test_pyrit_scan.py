@@ -6,7 +6,7 @@ Unit tests for the pyrit_scan CLI module.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -155,9 +155,9 @@ class TestParseArgs:
 class TestMain:
     """Tests for main function."""
 
-    @patch("pyrit.cli.frontend_core.print_scenarios_list")
+    @patch("pyrit.cli.frontend_core.print_scenarios_list_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.FrontendCore")
-    def test_main_list_scenarios(self, mock_frontend_core: MagicMock, mock_print_scenarios: MagicMock):
+    def test_main_list_scenarios(self, mock_frontend_core: MagicMock, mock_print_scenarios: AsyncMock):
         """Test main with --list-scenarios flag."""
         mock_print_scenarios.return_value = 0
 
@@ -167,14 +167,14 @@ class TestMain:
         mock_print_scenarios.assert_called_once()
         mock_frontend_core.assert_called_once()
 
-    @patch("pyrit.cli.frontend_core.print_initializers_list")
+    @patch("pyrit.cli.frontend_core.print_initializers_list_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.FrontendCore")
     @patch("pyrit.cli.frontend_core.get_default_initializer_discovery_path")
     def test_main_list_initializers(
         self,
         mock_get_path: MagicMock,
         mock_frontend_core: MagicMock,
-        mock_print_initializers: MagicMock,
+        mock_print_initializers: AsyncMock,
     ):
         """Test main with --list-initializers flag."""
         mock_print_initializers.return_value = 0
@@ -186,14 +186,14 @@ class TestMain:
         mock_print_initializers.assert_called_once()
         mock_get_path.assert_called_once()
 
-    @patch("pyrit.cli.frontend_core.print_scenarios_list")
+    @patch("pyrit.cli.frontend_core.print_scenarios_list_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.resolve_initialization_scripts")
     @patch("pyrit.cli.frontend_core.FrontendCore")
     def test_main_list_scenarios_with_scripts(
         self,
         mock_frontend_core: MagicMock,
         mock_resolve_scripts: MagicMock,
-        mock_print_scenarios: MagicMock,
+        mock_print_scenarios: AsyncMock,
     ):
         """Test main with --list-scenarios and --initialization-scripts."""
         mock_resolve_scripts.return_value = [Path("/test/script.py")]
@@ -223,12 +223,12 @@ class TestMain:
         assert "No scenario specified" in captured.out
 
     @patch("pyrit.cli.pyrit_scan.asyncio.run")
-    @patch("pyrit.cli.frontend_core.run_scenario_async")
+    @patch("pyrit.cli.frontend_core.run_scenario_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.FrontendCore")
     def test_main_run_scenario_basic(
         self,
         mock_frontend_core: MagicMock,
-        mock_run_scenario: MagicMock,
+        mock_run_scenario: AsyncMock,
         mock_asyncio_run: MagicMock,
     ):
         """Test main running a basic scenario."""
@@ -238,14 +238,14 @@ class TestMain:
         mock_asyncio_run.assert_called_once()
 
     @patch("pyrit.cli.pyrit_scan.asyncio.run")
-    @patch("pyrit.cli.frontend_core.run_scenario_async")
+    @patch("pyrit.cli.frontend_core.run_scenario_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.resolve_initialization_scripts")
     @patch("pyrit.cli.frontend_core.FrontendCore")
     def test_main_run_scenario_with_scripts(
         self,
         mock_frontend_core: MagicMock,
         mock_resolve_scripts: MagicMock,
-        mock_run_scenario: MagicMock,
+        mock_run_scenario: AsyncMock,
         mock_asyncio_run: MagicMock,
     ):
         """Test main running scenario with initialization scripts."""
@@ -267,12 +267,12 @@ class TestMain:
         assert result == 1
 
     @patch("pyrit.cli.pyrit_scan.asyncio.run")
-    @patch("pyrit.cli.frontend_core.run_scenario_async")
+    @patch("pyrit.cli.frontend_core.run_scenario_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.FrontendCore")
     def test_main_run_scenario_with_all_options(
         self,
         mock_frontend_core: MagicMock,
-        mock_run_scenario: MagicMock,
+        mock_run_scenario: AsyncMock,
         mock_asyncio_run: MagicMock,
     ):
         """Test main with all scenario options."""
@@ -309,12 +309,12 @@ class TestMain:
 
     @patch("pyrit.cli.pyrit_scan.asyncio.run")
     @patch("pyrit.cli.frontend_core.parse_memory_labels")
-    @patch("pyrit.cli.frontend_core.run_scenario_async")
+    @patch("pyrit.cli.frontend_core.run_scenario_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.FrontendCore")
     def test_main_run_scenario_with_memory_labels(
         self,
         mock_frontend_core: MagicMock,
-        mock_run_scenario: MagicMock,
+        mock_run_scenario: AsyncMock,
         mock_parse_labels: MagicMock,
         mock_asyncio_run: MagicMock,
     ):
@@ -389,14 +389,14 @@ class TestMain:
 class TestMainIntegration:
     """Integration-style tests for main function."""
 
-    @patch("pyrit.cli.frontend_core.print_scenarios_list")
+    @patch("pyrit.cli.frontend_core.print_scenarios_list_async", new_callable=AsyncMock)
     @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
-    @patch("pyrit.setup.initialize_pyrit")
+    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
     def test_main_list_scenarios_integration(
         self,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
         mock_scenario_registry: MagicMock,
-        mock_print_scenarios: MagicMock,
+        mock_print_scenarios: AsyncMock,
     ):
         """Test main --list-scenarios with minimal mocking."""
         mock_print_scenarios.return_value = 0
@@ -405,12 +405,12 @@ class TestMainIntegration:
 
         assert result == 0
 
-    @patch("pyrit.cli.frontend_core.print_initializers_list")
+    @patch("pyrit.cli.frontend_core.print_initializers_list_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.get_default_initializer_discovery_path")
     def test_main_list_initializers_integration(
         self,
         mock_get_path: MagicMock,
-        mock_print_initializers: MagicMock,
+        mock_print_initializers: AsyncMock,
     ):
         """Test main --list-initializers with minimal mocking."""
         mock_get_path.return_value = Path("/test/path")

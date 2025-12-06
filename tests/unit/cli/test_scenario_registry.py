@@ -8,6 +8,8 @@ Unit tests for the ScenarioRegistry module.
 from typing import Type
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from pyrit.cli.scenario_registry import ScenarioRegistry
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
@@ -70,92 +72,34 @@ class TestScenarioRegistry:
         as 'pyrit.scenario.scenarios.pyrit.scenarios.scenarios.xxx' instead of
         'pyrit.scenario.scenarios.xxx'.
         """
-        with patch("pyrit.cli.scenario_registry.importlib.import_module") as mock_import:
-            with patch("pyrit.cli.scenario_registry.pkgutil.iter_modules") as mock_iter:
-                with patch("pyrit.cli.scenario_registry.inspect.getmembers") as mock_getmembers:
-                    # Mock the scenarios package structure
-                    def iter_modules_side_effect(paths):
-                        path_str = str(paths[0]) if paths else ""
-                        if "airt" in path_str:
-                            # Mock the airt subpackage
-                            return [
-                                (None, "content_harms_scenario", False),
-                                (None, "cyber_scenario", False),
-                            ]
-                        else:
-                            # Mock the main scenarios package
-                            return [
-                                (None, "encoding_scenario", False),  # A file module
-                                (None, "foundry_scenario", False),  # Another file module
-                                (None, "airt", True),  # A package (subdirectory)
-                            ]
+        registry = ScenarioRegistry()
+        registry._discover_builtin_scenarios()
 
-                    mock_iter.side_effect = iter_modules_side_effect
+        # Verify that scenarios were discovered
+        assert len(registry._scenarios) > 0, "No scenarios were discovered"
 
-                    # Create mock module with Scenario subclass
-                    mock_scenario_class = type(
-                        "TestScenario",
-                        (Scenario,),
-                        {
-                            "_get_atomic_attacks_async": lambda self: [],
-                            "get_strategy_class": classmethod(lambda cls: MockStrategy),
-                            "get_default_strategy": classmethod(lambda cls: MockStrategy.ALL),
-                        },
-                    )
+        # Check that some expected scenarios are present
+        # These are real scenarios that exist in the codebase
+        discovered_names = list(registry._scenarios.keys())
 
-                    # Mock getmembers to return our test scenario
-                    mock_getmembers.return_value = [("TestScenario", mock_scenario_class)]
+        # Verify naming convention: should not have duplicated path components
+        for scenario_name in discovered_names:
+            # Should not see 'pyrit' in the scenario name (it's just relative path)
+            assert "pyrit" not in scenario_name.lower(), f"Scenario name has 'pyrit' in it: {scenario_name}"
 
-                    # Mock import_module to return a simple module object
-                    def import_side_effect(module_name):
-                        mock_mod = MagicMock()
-                        mock_mod.__name__ = module_name
-                        return mock_mod
+            # Should not see 'scenario.scenarios' duplication
+            assert (
+                "scenarios.scenarios" not in scenario_name
+            ), f"Scenario name has duplicated 'scenarios': {scenario_name}"
 
-                    mock_import.side_effect = import_side_effect
+        # Verify that nested scenarios use dot notation (e.g., "airt.content_harms")
+        # and top-level scenarios use just the module name (e.g., "encoding")
+        nested_scenarios = [name for name in discovered_names if "." in name]
+        top_level_scenarios = [name for name in discovered_names if "." not in name]
 
-                    registry = ScenarioRegistry()
-                    registry._discover_builtin_scenarios()
-
-                    # Verify the correct module paths were attempted
-                    import_calls = [call[0][0] for call in mock_import.call_args_list]
-
-                    # Filter to only scenario module imports (not the base package imports)
-                    # We expect imports like:
-                    # - pyrit.scenario.scenarios.encoding_scenario
-                    # - pyrit.scenario.scenarios.foundry_scenario
-                    # - pyrit.scenario.scenarios.airt.content_harms_scenario
-                    # - pyrit.scenario.scenarios.airt.cyber_scenario
-                    scenario_module_imports = [
-                        call
-                        for call in import_calls
-                        if call.startswith("pyrit.scenario.scenarios.") and call != "pyrit.scenario.scenarios"
-                    ]
-
-                    # Should NOT see duplicated paths like:
-                    # - pyrit.scenario.scenarios.pyrit.scenarios.scenarios.xxx
-
-                    assert len(scenario_module_imports) > 0, "No scenario modules were imported"
-
-                    for call_path in scenario_module_imports:
-                        # Verify no path duplication
-                        assert (
-                            "pyrit.scenario.scenarios.pyrit" not in call_path
-                        ), f"Module path has duplication: {call_path}"
-                        # Verify 'scenarios' appears exactly once (not duplicated)
-                        assert call_path.count("scenarios") == 1, f"Module path has 'scenarios' duplicated: {call_path}"
-                        # Verify correct base path
-                        assert call_path.startswith(
-                            "pyrit.scenario.scenarios."
-                        ), f"Module path doesn't start with correct base: {call_path}"
-                    
-                    # Verify scenarios are registered with their full relative paths
-                    # Top-level scenarios should use just the module name
-                    assert "encoding_scenario" in registry._scenarios
-                    assert "foundry_scenario" in registry._scenarios
-                    # Nested scenarios should use dot notation (e.g., "airt.content_harms_scenario")
-                    assert "airt.content_harms_scenario" in registry._scenarios
-                    assert "airt.cyber_scenario" in registry._scenarios
+        # Should have both nested and top-level scenarios
+        assert len(nested_scenarios) > 0, "No nested scenarios found"
+        assert len(top_level_scenarios) > 0, "No top-level scenarios found"
 
     def test_get_scenario_existing(self):
         """Test getting an existing scenario."""

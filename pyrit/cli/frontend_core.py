@@ -134,7 +134,11 @@ class FrontendCore:
 
     @property
     def scenario_registry(self) -> "ScenarioRegistry":
-        """Get the scenario registry. Must call await initialize_async() first."""
+        """Get the scenario registry. Must call await initialize_async() first.
+
+        Raises:
+            RuntimeError: If initialize_async() has not been called.
+        """
         if not self._initialized:
             raise RuntimeError(
                 "FrontendCore not initialized. Call 'await context.initialize_async()' before accessing registries."
@@ -144,7 +148,11 @@ class FrontendCore:
 
     @property
     def initializer_registry(self) -> "InitializerRegistry":
-        """Get the initializer registry. Must call await initialize_async() first."""
+        """Get the initializer registry. Must call await initialize_async() first.
+
+        Raises:
+            RuntimeError: If initialize_async() has not been called.
+        """
         if not self._initialized:
             raise RuntimeError(
                 "FrontendCore not initialized. Call 'await context.initialize_async()' before accessing registries."
@@ -153,7 +161,7 @@ class FrontendCore:
         return self._initializer_registry
 
 
-async def list_scenarios(*, context: FrontendCore) -> list[ScenarioInfo]:
+async def list_scenarios_async(*, context: FrontendCore) -> list[ScenarioInfo]:
     """
     List all available scenarios.
 
@@ -168,7 +176,9 @@ async def list_scenarios(*, context: FrontendCore) -> list[ScenarioInfo]:
     return context.scenario_registry.list_scenarios()
 
 
-async def list_initializers(*, context: FrontendCore, discovery_path: Optional[Path] = None) -> "Sequence[InitializerInfo]":
+async def list_initializers_async(
+    *, context: FrontendCore, discovery_path: Optional[Path] = None
+) -> "Sequence[InitializerInfo]":
     """
     List all available initializers.
 
@@ -184,7 +194,7 @@ async def list_initializers(*, context: FrontendCore, discovery_path: Optional[P
 
         registry = InitializerRegistry(discovery_path=discovery_path)
         return registry.list_initializers()
-    
+
     if not context._initialized:
         await context.initialize_async()
     return context.initializer_registry.list_initializers()
@@ -621,7 +631,7 @@ def get_default_initializer_discovery_path() -> Path:
     return PYRIT_PATH / "setup" / "initializers" / "scenarios"
 
 
-async def print_scenarios_list(*, context: FrontendCore) -> int:
+async def print_scenarios_list_async(*, context: FrontendCore) -> int:
     """
     Print a formatted list of all available scenarios.
 
@@ -631,7 +641,7 @@ async def print_scenarios_list(*, context: FrontendCore) -> int:
     Returns:
         Exit code (0 for success).
     """
-    scenarios = await list_scenarios(context=context)
+    scenarios = await list_scenarios_async(context=context)
 
     if not scenarios:
         print("No scenarios found.")
@@ -646,7 +656,7 @@ async def print_scenarios_list(*, context: FrontendCore) -> int:
     return 0
 
 
-async def print_initializers_list(*, context: FrontendCore, discovery_path: Optional[Path] = None) -> int:
+async def print_initializers_list_async(*, context: FrontendCore, discovery_path: Optional[Path] = None) -> int:
     """
     Print a formatted list of all available initializers.
 
@@ -657,7 +667,7 @@ async def print_initializers_list(*, context: FrontendCore, discovery_path: Opti
     Returns:
         Exit code (0 for success).
     """
-    initializers = await list_initializers(context=context, discovery_path=discovery_path)
+    initializers = await list_initializers_async(context=context, discovery_path=discovery_path)
 
     if not initializers:
         print("No initializers found.")

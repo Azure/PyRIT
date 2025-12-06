@@ -2,11 +2,10 @@
 # Licensed under the MIT license.
 
 import os
-import pathlib
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH, SCORER_SEED_PROMPT_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -14,7 +13,6 @@ from pyrit.executor.attack.core.attack_config import (
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -76,10 +74,11 @@ class CyberScenario(Scenario):
             ScenarioStrategy: CyberStrategy.ALL (all cyber strategies).
         """
         return CyberStrategy.ALL
-    
+
     @classmethod
     def required_datasets(cls) -> list[str]:
-       return ["airt_malware"]
+        """Return a list of dataset names required by this scenario."""
+        return ["airt_malware"]
 
     @apply_defaults
     def __init__(
@@ -176,9 +175,7 @@ class CyberScenario(Scenario):
         Returns:
             list[str]: List of objectives to be encoded and tested.
         """
-        seed_objectives = self._memory.get_seeds(
-            dataset_name="airt_malware", is_objective=True
-        )
+        seed_objectives = self._memory.get_seeds(dataset_name="airt_malware", is_objective=True)
 
         if not seed_objectives:
             self._raise_dataset_exception()

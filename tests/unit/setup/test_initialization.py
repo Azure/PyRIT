@@ -31,7 +31,7 @@ class TestInitializer(PyRITInitializer):
     def description(self) -> str:
         return "Test description"
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         pass
 """
             )

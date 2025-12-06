@@ -246,7 +246,6 @@ class ScenarioRegistry:
 
             required_datasets = scenario_class.required_datasets()
 
-
             scenarios_info.append(
                 {
                     "name": name,

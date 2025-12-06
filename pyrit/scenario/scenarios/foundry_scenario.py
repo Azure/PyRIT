@@ -10,12 +10,11 @@ Foundry attacks against specified datasets.
 """
 
 import os
-from inspect import signature
 import random
+from inspect import signature
 from typing import List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
@@ -26,7 +25,6 @@ from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedDataset
 from pyrit.prompt_converter import (
     AnsiAttackConverter,
     AsciiArtConverter,
@@ -229,11 +227,12 @@ class FoundryScenario(Scenario):
             ScenarioStrategy: FoundryStrategy.EASY (easy difficulty strategies).
         """
         return FoundryStrategy.EASY
-    
+
     @classmethod
     def required_datasets(cls) -> list[str]:
-       return [ 
-            'harmbench',
+        """Return a list of dataset names required by this scenario."""
+        return [
+            "harmbench",
         ]
 
     @apply_defaults
@@ -284,9 +283,7 @@ class FoundryScenario(Scenario):
         self._objectives = objectives if objectives else self._get_default_objectives()
 
     def _get_default_objectives(self) -> list[str]:
-        seed_objectives = self._memory.get_seeds(
-            dataset_name="harmbench"
-        )
+        seed_objectives = self._memory.get_seeds(dataset_name="harmbench")
 
         if not seed_objectives:
             self._raise_dataset_exception()

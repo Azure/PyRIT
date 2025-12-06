@@ -14,7 +14,6 @@ import asyncio
 import cmd
 import sys
 import threading
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -110,6 +109,7 @@ class PyRITShell(cmd.Cmd):
     def _background_init(self):
         """Initialize PyRIT modules in the background. This dramatically speeds up shell startup."""
         import asyncio
+
         asyncio.run(self.context.initialize_async())
         self._init_complete.set()
 
@@ -124,7 +124,7 @@ class PyRITShell(cmd.Cmd):
         """List all available scenarios."""
         self._ensure_initialized()
         try:
-            asyncio.run(frontend_core.print_scenarios_list(context=self.context))
+            asyncio.run(frontend_core.print_scenarios_list_async(context=self.context))
         except Exception as e:
             print(f"Error listing scenarios: {e}")
 
@@ -134,7 +134,9 @@ class PyRITShell(cmd.Cmd):
         try:
             # Discover from scenarios directory by default (same as scan)
             discovery_path = frontend_core.get_default_initializer_discovery_path()
-            asyncio.run(frontend_core.print_initializers_list(context=self.context, discovery_path=discovery_path))
+            asyncio.run(
+                frontend_core.print_initializers_list_async(context=self.context, discovery_path=discovery_path)
+            )
         except Exception as e:
             print(f"Error listing initializers: {e}")
 

@@ -57,11 +57,11 @@ class TestSimpleInitializerInitialize:
 
     @pytest.mark.asyncio
     async def test_get_info_after_initialize_has_populated_data(self):
-        """Test that get_info() returns populated data after initialization."""
+        """Test that get_info_async() returns populated data after initialization."""
         init = SimpleInitializer()
         await init.initialize_async()
 
-        info = SimpleInitializer.get_info()
+        info = await SimpleInitializer.get_info_async()
 
         # Verify basic structure
         assert isinstance(info, dict)
@@ -91,9 +91,9 @@ class TestSimpleInitializerInitialize:
 class TestSimpleInitializerGetInfo:
     """Tests for SimpleInitializer.get_info method - basic functionality."""
 
-    def test_get_info_returns_expected_structure(self):
-        """Test that get_info returns expected structure."""
-        info = SimpleInitializer.get_info()
+    async def test_get_info_returns_expected_structure(self):
+        """Test that get_info_async() returns expected structure."""
+        info = await SimpleInitializer.get_info_async()
 
         assert isinstance(info, dict)
         assert info["name"] == "Simple Complete Configuration"

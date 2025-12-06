@@ -21,9 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 class LoadDefaultDatasets(PyRITInitializer):
+    """Load default datasets for all registered scenarios."""
 
     @property
     def name(self) -> str:
+        """Return the name of this initializer."""
+
         return "Default Dataset Loader for Scenarios"
 
     @property
@@ -33,31 +36,33 @@ class LoadDefaultDatasets(PyRITInitializer):
 
     @property
     def description(self) -> str:
-        return (
-            textwrap.dedent("""
+        """Return a description of this initializer."""
+        return textwrap.dedent(
+            """
                 This configuration uses the DatasetLoader to load default datasets into memory.
                 This will enable all scenarios to run. Datasets can be customized in memory.
-                            
+
                 Note: if you are using persistent memory, avoid calling this every time as datasets
                 can take time to load.
-            """).strip()
-            )
-          
+            """
+        ).strip()
+
     @property
     def required_env_vars(self) -> List[str]:
+        """Return the list of required environment variables."""
         return []
 
     async def initialize_async(self) -> None:
         """Load default datasets from all registered scenarios."""
         # Get ScenarioRegistry to discover all scenarios
         registry = ScenarioRegistry()
-        
+
         # Collect all required datasets from all scenarios
         all_required_datasets: List[str] = []
-        
+
         # Get all scenario names from registry
         scenario_names = registry.get_scenario_names()
-        
+
         for scenario_name in scenario_names:
             scenario_class = registry.get_scenario(scenario_name)
             if scenario_class:
@@ -68,23 +73,23 @@ class LoadDefaultDatasets(PyRITInitializer):
                     logger.info(f"Scenario '{scenario_name}' requires datasets: {datasets}")
                 except Exception as e:
                     logger.warning(f"Could not get required datasets from scenario '{scenario_name}': {e}")
-        
+
         # Remove duplicates
         unique_datasets = list(dict.fromkeys(all_required_datasets))
-        
+
         if not unique_datasets:
             logger.warning("No datasets required by any scenario")
             return
-        
+
         logger.info(f"Loading {len(unique_datasets)} unique datasets required by all scenarios")
-        
+
         # Fetch the datasets
         datasets = await SeedDatasetProvider.fetch_datasets_async(
             dataset_names=unique_datasets,
         )
-        
+
         # Store datasets in CentralMemory
         memory = CentralMemory.get_memory_instance()
         await memory.add_seed_datasets_to_memory_async(datasets=datasets, added_by="LoadDefaultDatasets")
-        
+
         logger.info(f"Successfully loaded {len(datasets)} datasets into CentralMemory")

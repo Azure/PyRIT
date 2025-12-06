@@ -2,17 +2,15 @@
 # Licensed under the MIT license.
 
 
-import pathlib
 from typing import List, Optional, Sequence
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedDataset, SeedGroup
+from pyrit.models import SeedGroup
 from pyrit.models.seed import Seed
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_converter import (
@@ -118,10 +116,8 @@ class EncodingScenario(Scenario):
 
     @classmethod
     def required_datasets(cls) -> list[str]:
-       return [ 
-            'garak_slur_terms_en',
-            'garak_web_html_js'
-        ]
+        """Return a list of dataset names required by this scenario."""
+        return ["garak_slur_terms_en", "garak_web_html_js"]
 
     @apply_defaults
     def __init__(
@@ -181,7 +177,6 @@ class EncodingScenario(Scenario):
         Returns:
             list[str]: List of seed prompt strings to be encoded and tested.
         """
-
         seeds: list[Seed] = []
 
         for dataset_name in EncodingScenario.required_datasets():

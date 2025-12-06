@@ -789,14 +789,22 @@ async def test_get_seed_groups_with_dataset_name_pattern_startswith(sqlite_insta
         SeedGroup(
             seeds=[
                 SeedPrompt(
-                    value="Test prompt 1", dataset_name="harm_category_1", added_by="tester", data_type="text", sequence=0
+                    value="Test prompt 1",
+                    dataset_name="harm_category_1",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
                 )
             ]
         ),
         SeedGroup(
             seeds=[
                 SeedPrompt(
-                    value="Test prompt 2", dataset_name="harm_category_2", added_by="tester", data_type="text", sequence=0
+                    value="Test prompt 2",
+                    dataset_name="harm_category_2",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
                 )
             ]
         ),
@@ -821,21 +829,33 @@ async def test_get_seed_groups_with_dataset_name_pattern_contains(sqlite_instanc
         SeedGroup(
             seeds=[
                 SeedPrompt(
-                    value="Test prompt 1", dataset_name="test_harm_dataset", added_by="tester", data_type="text", sequence=0
+                    value="Test prompt 1",
+                    dataset_name="test_harm_dataset",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
                 )
             ]
         ),
         SeedGroup(
             seeds=[
                 SeedPrompt(
-                    value="Test prompt 2", dataset_name="another_harm_set", added_by="tester", data_type="text", sequence=0
+                    value="Test prompt 2",
+                    dataset_name="another_harm_set",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
                 )
             ]
         ),
         SeedGroup(
             seeds=[
                 SeedPrompt(
-                    value="Test prompt 3", dataset_name="unrelated_dataset", added_by="tester", data_type="text", sequence=0
+                    value="Test prompt 3",
+                    dataset_name="unrelated_dataset",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
                 )
             ]
         ),

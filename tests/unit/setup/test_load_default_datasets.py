@@ -60,7 +60,7 @@ class TestLoadDefaultDatasets:
                     mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()
                     mock_memory.return_value = mock_memory_instance
 
-                    await initializer._initialize_async()
+                    await initializer.initialize_async()
 
                     # Should not fetch datasets if no scenarios
                     mock_fetch.assert_not_called()
@@ -89,7 +89,7 @@ class TestLoadDefaultDatasets:
                         mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()
                         mock_memory.return_value = mock_memory_instance
 
-                        await initializer._initialize_async()
+                        await initializer.initialize_async()
 
                         # Verify fetch_datasets_async was called with correct datasets
                         mock_fetch.assert_called_once()
@@ -132,7 +132,7 @@ class TestLoadDefaultDatasets:
                         mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()
                         mock_memory.return_value = mock_memory_instance
 
-                        await initializer._initialize_async()
+                        await initializer.initialize_async()
 
                         # Verify only unique datasets were requested
                         mock_fetch.assert_called_once()
@@ -172,7 +172,7 @@ class TestLoadDefaultDatasets:
                         mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()
                         mock_memory.return_value = mock_memory_instance
 
-                        await initializer._initialize_async()
+                        await initializer.initialize_async()
 
                         # Verify it still fetched datasets from the good scenario
                         mock_fetch.assert_called_once()
@@ -237,7 +237,7 @@ class TestLoadDefaultDatasets:
                         mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()
                         mock_memory.return_value = mock_memory_instance
 
-                        await initializer._initialize_async()
+                        await initializer.initialize_async()
 
                         # Should not fetch datasets when all scenarios return empty lists
                         mock_fetch.assert_not_called()
@@ -258,7 +258,7 @@ class TestLoadDefaultDatasets:
                         mock_memory_instance.add_seed_datasets_to_memory_async = AsyncMock()
                         mock_memory.return_value = mock_memory_instance
 
-                        await initializer._initialize_async()
+                        await initializer.initialize_async()
 
                         # Should not crash, just skip the None scenario
                         mock_fetch.assert_not_called()
