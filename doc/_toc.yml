@@ -32,7 +32,10 @@ chapters:
     sections:
     - file: code/datasets/0_dataset
       sections:
-      - file: code/datasets/1_seed_prompt
+      - file: code/datasets/1_loading_datasets
+      - file: code/datasets/2_seed_programming
+      - file: code/datasets/3_dataset_writing
+      - file: code/datasets/4_dataset_coding
     - file: code/executor/0_executor
       sections:
         - file: code/executor/attack/0_attack

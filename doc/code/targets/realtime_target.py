@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -75,6 +75,12 @@ await target.cleanup_target()  # type: ignore
 # This section below shows how to interact with the Realtime Target with text prompts
 
 # %%
+from pyrit.executor.attack import (
+    AttackExecutor,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
+
 prompt_to_send = "What is the capitol of France?"
 second_prompt_to_send = "What is the size of that city?"
 # Showing how to send multiple prompts but each is its own conversation, ie the second prompt is not a follow up to the first

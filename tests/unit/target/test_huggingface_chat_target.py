@@ -179,7 +179,8 @@ async def test_send_prompt_async():
     response = await hf_chat.send_prompt_async(message=message)  # type: ignore
 
     # Access the response text via message_pieces
-    assert response.message_pieces[0].original_value == "Assistant's response"
+    assert len(response) == 1
+    assert response[0].message_pieces[0].original_value == "Assistant's response"
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
