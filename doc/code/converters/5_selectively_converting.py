@@ -23,6 +23,8 @@
 # 2. **Using SelectiveTextConverter** (more flexible) - Programmatically select what to convert based on patterns, positions, etc.
 
 # %%
+import os
+
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
@@ -48,7 +50,7 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-target = TextTarget()
+target = TextTarget(text_stream=open(os.devnull, "w"))
 printer = ConsoleAttackResultPrinter()
 
 
