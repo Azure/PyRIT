@@ -18,19 +18,32 @@ class MemoryEmbedding:
     """
 
     def __init__(self, *, embedding_model: Optional[EmbeddingSupport] = None):
+        """
+        Initialize the memory embedding helper with a backing embedding model.
+
+        Args:
+            embedding_model (Optional[EmbeddingSupport]): The embedding model used to
+                generate text embeddings. If not provided, a ValueError is raised.
+
+        Raises:
+            ValueError: If `embedding_model` is not provided.
+        """
         if embedding_model is None:
             raise ValueError("embedding_model must be set.")
         self.embedding_model = embedding_model
 
     def generate_embedding_memory_data(self, *, message_piece: MessagePiece) -> EmbeddingDataEntry:
         """
-        Generates metadata for a message piece.
+        Generate metadata for a message piece.
 
         Args:
             message_piece (MessagePiece): the message piece for which to generate a text embedding
 
         Returns:
             EmbeddingDataEntry: The generated metadata.
+
+        Raises:
+            ValueError: If the message piece is not of type text.
         """
         if message_piece.converted_value_data_type == "text":
             embedding_data = EmbeddingDataEntry(
@@ -46,6 +59,24 @@ class MemoryEmbedding:
 
 
 def default_memory_embedding_factory(embedding_model: Optional[EmbeddingSupport] = None) -> MemoryEmbedding | None:
+    """
+    Create a MemoryEmbedding instance with default or provided embedding model.
+
+    Factory function that creates a MemoryEmbedding instance. If an embedding_model
+    is provided, it uses that model. Otherwise, it attempts to create an Azure
+    OpenAI embedding model from environment variables.
+
+    Args:
+        embedding_model: Optional embedding model to use. If not provided,
+            attempts to create AzureTextEmbedding from environment variables.
+
+    Returns:
+        MemoryEmbedding: Configured memory embedding instance.
+
+    Raises:
+        ValueError: If no embedding model is provided and required Azure
+            OpenAI environment variables are not set.
+    """
     if embedding_model:
         return MemoryEmbedding(embedding_model=embedding_model)
 
