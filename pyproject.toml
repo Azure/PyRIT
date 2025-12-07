@@ -24,7 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.10, <3.14"
+requires-python = ">=3.10, <3.15"
 dependencies = [
     "aiofiles>=24,<25",
     "appdirs>=1.4.0",
@@ -87,7 +87,7 @@ dev = [
     "types-requests>=2.31.0.20250515",
 ]
 huggingface = [
-    "torch>=2.7.0",
+    "torch>=2.7.0; python_version < '3.14'", # https://github.com/pytorch/pytorch/issues/156856
 ]
 gcg = [
     "accelerate>=1.7.0",
@@ -96,7 +96,7 @@ gcg = [
     "mlflow>=2.22.0",
     "ml-collections>=1.1.0",
     "sentencepiece>=0.2.0",
-    "torch>=2.7.0",
+    "torch>=2.7.0; python_version < '3.14'",  # https://github.com/pytorch/pytorch/issues/156856
 ]
 playwright = [
     "flask>=3.1.0",
@@ -109,7 +109,7 @@ gradio = [
     "pywebview>=5.4"
 ]
 fairness_bias = [
-    "spacy>=3.8.7",
+    "spacy>=3.8.7; python_version < '3.14'",  # https://github.com/explosion/spaCy/pull/13870
 ]
 opencv = [
     "opencv-python>=4.11.0.86",
@@ -136,9 +136,9 @@ all = [
     "opencv-python>=4.11.0.86",
     "playwright>=1.49.0",
     "pywebview>=5.4",
-    "spacy>=3.8.7",
+    "spacy>=3.8.7; python_version < '3.14'",  # https://github.com/explosion/spaCy/pull/13870
     "rpyc>=6.0.1",
-    "torch>=2.7.0",
+    "torch>=2.7.0; python_version < '3.14'",  # https://github.com/pytorch/pytorch/issues/156856
     "types-PyYAML>=6.0.12.20250516",
     "types-requests>=2.31.0.20250515",
 ]
