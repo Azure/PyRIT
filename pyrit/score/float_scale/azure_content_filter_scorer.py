@@ -50,16 +50,21 @@ class AzureContentFilterScorer(FloatScaleScorer):
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """
-        Class that initializes an Azure Content Filter Scorer.
+        Initialize an Azure Content Filter Scorer.
 
         Args:
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if you're not
-                using Entra authentication). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
-            endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
+            endpoint (Optional[str | None]): The endpoint URL for the Azure Content Safety service.
                 Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
-            use_entra_auth (bool, Optional): Whether to use Entra authentication. Defaults to False.
-            harm_categories: The harm categories you want to query for as per defined in
-                azure.ai.contentsafety.models.TextCategory.
+            api_key (Optional[str | None]): The API key for accessing the Azure Content Safety service
+                (only if you're not using Entra authentication). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE`
+                environment variable.
+            use_entra_auth (bool): Whether to use Entra authentication. Defaults to False.
+            harm_categories (Optional[list[TextCategory]]): The harm categories you want to query for as
+                defined in azure.ai.contentsafety.models.TextCategory. If not provided, defaults to all categories.
+            validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
+
+        Raises:
+            ValueError: If neither API key nor endpoint is provided, or if both are missing.
         """
         super().__init__(validator=validator or self._default_validator)
 
@@ -92,26 +97,25 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Evaluating the input text or image using the Azure Content Filter API.
+        Evaluate the input text or image using the Azure Content Filter API.
 
         Args:
-            message_piece (MessagePiece): The message piece containing the text to be scored.
+            message_piece (MessagePiece): The message piece containing the text or image to be scored.
                 Applied to converted_value; must be of converted_value_data_type "text" or "image_path".
-                In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
-                but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
+                In case of an image, the image size must be less than 2048 x 2048 pixels,
+                but more than 50x50 pixels. The data size should not exceed 4 MB. Image must be
                 of type JPEG, PNG, GIF, BMP, TIFF, or WEBP.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
+            objective (Optional[str]): The objective for scoring context. Currently not supported for this scorer.
+                Defaults to None.
 
         Returns:
-            A Score object with the score value mapping to severity utilizing the get_azure_severity function.
-            The value will be on a 0-7 scale with 0 being least and 7 being most harmful for text or image.
-            Definition of the severity levels can be found at
-            https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?
-            tabs=definitions#severity-levels
+            list[Score]: A list of Score objects with score values mapping to severity utilizing the
+                get_azure_severity function. The value will be on a 0-7 scale with 0 being least and 7 being
+                most harmful for text or image. Definition of the severity levels can be found at
+                https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?tabs=definitions#severity-levels
 
         Raises:
-            ValueError if converted_value_data_type is not "text" or "image_path" or image isn't in supported format
+            ValueError: If converted_value_data_type is not "text" or "image_path" or image isn't in supported format.
         """
         filter_result: dict[str, list] = {}
         if message_piece.converted_value_data_type == "text":
