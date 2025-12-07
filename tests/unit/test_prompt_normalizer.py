@@ -353,22 +353,24 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 
     normalizer = PromptNormalizer()
 
-    if max_requests_per_minute and batch_size != 1:
-        with pytest.raises(ValueError):
+    # Mock asyncio.sleep to avoid 6s delay in rate limiting test
+    with patch("asyncio.sleep", new_callable=AsyncMock):
+        if max_requests_per_minute and batch_size != 1:
+            with pytest.raises(ValueError):
+                results = await normalizer.send_prompt_batch_to_target_async(
+                    requests=[normalizer_request],
+                    target=prompt_target,
+                    batch_size=batch_size,
+                )
+        else:
             results = await normalizer.send_prompt_batch_to_target_async(
                 requests=[normalizer_request],
                 target=prompt_target,
                 batch_size=batch_size,
             )
-    else:
-        results = await normalizer.send_prompt_batch_to_target_async(
-            requests=[normalizer_request],
-            target=prompt_target,
-            batch_size=batch_size,
-        )
 
-        assert "S_G_V_s_b_G_8_=" in prompt_target.prompt_sent
-        assert len(results) == 1
+            assert "S_G_V_s_b_G_8_=" in prompt_target.prompt_sent
+            assert len(results) == 1
 
 
 @pytest.mark.asyncio
