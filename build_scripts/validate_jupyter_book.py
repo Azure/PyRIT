@@ -40,10 +40,9 @@ def parse_api_rst(api_rst_path: Path) -> List[Tuple[str, List[str]]]:
     # Pattern to match :py:mod:`module.name`
     module_pattern = re.compile(r":py:mod:`(pyrit\.[^`]+)`")
     # Pattern to match autosummary sections
-    autosummary_pattern = re.compile(r"\.\. autosummary::\s+:nosignatures:\s+:toctree: _autosummary/\s+((?:\s+\w+\s*\n)+)", re.MULTILINE)
-
-    # Find all modules
-    module_matches = module_pattern.findall(content)
+    autosummary_pattern = re.compile(
+        r"\.\. autosummary::\s+:nosignatures:\s+:toctree: _autosummary/\s+((?:\s+\w+\s*\n)+)", re.MULTILINE
+    )
 
     # Split content by module sections
     sections = re.split(r":py:mod:`(pyrit\.[^`]+)`", content)
@@ -88,26 +87,43 @@ def validate_api_rst_modules(modules: List[Tuple[str, List[str]]], repo_root: Pa
             errors.append(f"Module file not found for '{module_name}': checked {[str(p) for p in possible_paths]}")
             continue
 
-        # Try to import the module and validate members (skip if dependencies missing)
+        # Validate members by checking the source file directly (works even without dependencies)
         if members:
-            try:
-                mod = importlib.import_module(module_name)
-
-                for member in members:
-                    if not hasattr(mod, member):
-                        errors.append(f"Member '{member}' not found in module '{module_name}'")
-
-            except ImportError as e:
-                # Check if it's a missing dependency (not a module structure issue)
-                error_msg = str(e)
-                if "No module named 'pyrit" in error_msg:
-                    # This is a structural issue - pyrit module itself not found
-                    errors.append(f"Failed to import module '{module_name}': {e}")
-                # Otherwise, it's likely a missing dependency - skip validation
-                # (dependencies may not be installed in pre-commit environment)
-            except Exception as e:
-                # Only report unexpected errors
-                errors.append(f"Error validating module '{module_name}': {e}")
+            # Find the actual module file
+            module_file = None
+            for path in possible_paths:
+                if path.exists():
+                    module_file = path
+                    break
+            
+            if module_file:
+                # Read the source file and check for member definitions
+                try:
+                    with open(module_file, 'r', encoding='utf-8') as f:
+                        source_content = f.read()
+                    
+                    for member in members:
+                        # Check for various definition patterns:
+                        # - def member(...
+                        # - class member(...
+                        # - member = ...
+                        # Also check __all__ if present
+                        patterns = [
+                            rf"^def {re.escape(member)}\s*\(",
+                            rf"^class {re.escape(member)}\s*[\(:]",
+                            rf"^{re.escape(member)}\s*=",
+                            rf"^\s+{re.escape(member)}\s*=",  # indented assignments
+                            rf'"{re.escape(member)}"',  # in __all__ or strings
+                            rf"'{re.escape(member)}'",
+                        ]
+                        
+                        found = any(re.search(pattern, source_content, re.MULTILINE) for pattern in patterns)
+                        
+                        if not found:
+                            errors.append(f"Member '{member}' not found in module '{module_name}' (searched {module_file})")
+                            
+                except Exception as e:
+                    errors.append(f"Error reading source file for '{module_name}': {e}")
 
     return errors
 
@@ -162,7 +178,9 @@ def validate_toc_yml_files(toc_files: Set[str], doc_root: Path) -> List[str]:
         file_exists = any((doc_root / f"{file_ref}{ext}").exists() for ext in possible_extensions)
 
         if not file_exists:
-            errors.append(f"File referenced in _toc.yml not found: '{file_ref}' (checked extensions: {possible_extensions})")
+            errors.append(
+                f"File referenced in _toc.yml not found: '{file_ref}' (checked extensions: {possible_extensions})"
+            )
 
     return errors
 
@@ -176,15 +194,18 @@ def find_orphaned_doc_files(toc_files: Set[str], doc_root: Path) -> List[str]:
     """
     # Directories to skip
     skip_dirs = {
-        "_build", "_autosummary", "_static", "_templates", "generate_docs",
-        ".ipynb_checkpoints", "__pycache__", "playwright_demo"
+        "_build",
+        "_autosummary",
+        "_static",
+        "_templates",
+        "generate_docs",
+        ".ipynb_checkpoints",
+        "__pycache__",
+        "playwright_demo",
     }
 
     # Files to skip (these are special/configuration files)
-    skip_files = {
-        "_config.yml", "conf.py", "references.bib", "roakey.png",
-        ".gitignore", "requirements.txt"
-    }
+    skip_files = {"_config.yml", "conf.py", "references.bib", "roakey.png", ".gitignore", "requirements.txt"}
 
     # Normalize toc_files to handle both with and without extensions
     normalized_toc_files = set()
@@ -240,7 +261,6 @@ def main():
     script_dir = Path(__file__).parent
     repo_root = script_dir.parent
     doc_root = repo_root / "doc"
-    pyrit_root = repo_root / "pyrit"
     api_rst = doc_root / "api.rst"
     toc_yml = doc_root / "_toc.yml"
 

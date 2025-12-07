@@ -124,7 +124,7 @@ def extract_all_urls_from_files(files):
     """
     file_urls = {}
     skipped_files = ["doc/blog/"]
-    
+
     for file_path in files:
         if any(file_path.startswith(skipped) for skipped in skipped_files):
             continue
@@ -132,23 +132,23 @@ def extract_all_urls_from_files(files):
         resolved_urls = [resolve_relative_url(file_path, url) for url in urls]
         if resolved_urls:
             file_urls[file_path] = resolved_urls
-    
+
     return file_urls
 
 
 def check_all_links_parallel(file_urls, max_workers=20):
     """
     Check all URLs across all files in parallel with a shared thread pool.
-    
+
     Args:
         file_urls: Dict of {file_path: [urls]}
         max_workers: Max concurrent HTTP requests across ALL files
-    
+
     Returns:
         Dict of {file_path: [broken_urls]}
     """
     all_broken_urls = {}
-    
+
     # Create a mapping of url -> file_path for tracking which file each URL came from
     url_to_files = {}
     for file_path, urls in file_urls.items():
@@ -156,7 +156,7 @@ def check_all_links_parallel(file_urls, max_workers=20):
             if url not in url_to_files:
                 url_to_files[url] = []
             url_to_files[url].append(file_path)
-    
+
     # Check all unique URLs in parallel
     url_results = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -165,7 +165,7 @@ def check_all_links_parallel(file_urls, max_workers=20):
             url = futures[future]
             _, is_valid = future.result()
             url_results[url] = is_valid
-    
+
     # Map broken URLs back to their files
     for url, is_valid in url_results.items():
         if not is_valid:
@@ -173,26 +173,26 @@ def check_all_links_parallel(file_urls, max_workers=20):
                 if file_path not in all_broken_urls:
                     all_broken_urls[file_path] = []
                 all_broken_urls[file_path].append(url)
-    
+
     return all_broken_urls
 
 
 if __name__ == "__main__":
     files = sys.argv[1:]
-    
+
     print(f"Extracting URLs from {len(files)} file(s)...")
     file_urls = extract_all_urls_from_files(files)
-    
+
     if not file_urls:
         print("No URLs found to check.")
         sys.exit(0)
-    
+
     total_urls = sum(len(urls) for urls in file_urls.values())
     unique_urls = len(set(url for urls in file_urls.values() for url in urls))
     print(f"Checking {unique_urls} unique URL(s) across {len(file_urls)} file(s) (total: {total_urls})...")
-    
+
     all_broken_urls = check_all_links_parallel(file_urls, max_workers=30)
-    
+
     if all_broken_urls:
         print("\n" + "=" * 80)
         for file_path, urls in all_broken_urls.items():

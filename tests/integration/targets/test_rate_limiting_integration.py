@@ -16,7 +16,9 @@ from pyrit.memory import CentralMemory
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
-from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 
 
 @pytest.fixture
@@ -45,7 +47,7 @@ def mock_memory_instance():
 async def test_rate_limiting_with_real_delay(mock_memory_instance, seed_group):
     """
     Integration test: Verify rate limiting enforces actual delays.
-    
+
     With rpm=10, each request should sleep 60/10 = 6 seconds.
     This tests the actual timing behavior that unit tests mock out.
     """

@@ -23,8 +23,7 @@ def main():
         print("RUN_LONG_PRECOMMIT=true: Running full Jupyter Book build...")
         # Run jb build with the same flags as before
         result = subprocess.run(
-            ["jb", "build", "-W", "-q", "./doc"],
-            cwd=os.path.dirname(os.path.dirname(__file__))  # Repository root
+            ["jb", "build", "-W", "-q", "./doc"], cwd=os.path.dirname(os.path.dirname(__file__))  # Repository root
         )
         return result.returncode
     else:
