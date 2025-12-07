@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 
 
 class RTASystemPromptPaths(enum.Enum):
+    """Enum for predefined red teaming attack system prompt paths."""
+
     TEXT_GENERATION = Path(EXECUTOR_RED_TEAM_PATH, "text_generation.yaml").resolve()
     IMAGE_GENERATION = Path(EXECUTOR_RED_TEAM_PATH, "image_generation.yaml").resolve()
     NAIVE_CRESCENDO = Path(EXECUTOR_RED_TEAM_PATH, "naive_crescendo.yaml").resolve()
@@ -330,6 +332,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             str: The generated prompt to be sent to the adversarial chat.
+
+        Raises:
+            ValueError: If no response is received from the adversarial chat.
         """
         # If custom prompt provided, use it and clear it
         if context.custom_prompt:
@@ -441,6 +446,10 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             str: The suitable feedback or error message to pass back to the adversarial chat.
+
+        Raises:
+            RuntimeError: If the target response indicates an error.
+            ValueError: If scoring is disabled or no scoring rationale is available.
         """
         if not context.last_response:
             return "No response available. Please continue."
@@ -484,6 +493,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             Message: The system's response to the prompt.
+
+        Raises:
+            ValueError: If no response is received from the target system.
         """
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 
@@ -539,13 +551,14 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             return None
 
         # Use the built-in scorer method for objective scoring
-        # This method already handles error responses internally via skip_on_error=True
+        # This method already handles error responses internally via skip_on_error_result=True
         scoring_results = await Scorer.score_response_async(
             response=context.last_response,
             objective_scorer=self._objective_scorer,
             auxiliary_scorers=None,  # No auxiliary scorers for red teaming by default
             role_filter="assistant",
             objective=context.objective,
+            skip_on_error_result=True,
         )
         objective_scores = scoring_results["objective_scores"]
         return objective_scores[0] if objective_scores else None

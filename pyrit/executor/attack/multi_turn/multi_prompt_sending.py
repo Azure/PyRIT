@@ -312,6 +312,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             objective_scorer=self._objective_scorer if self._objective_scorer else None,
             role_filter="assistant",
             objective=objective,
+            skip_on_error_result=True,
         )
 
         objective_scores = scoring_results["objective_scores"]
@@ -326,6 +327,9 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
     ) -> AttackResult:
         """
         Execute the attack strategy asynchronously with the provided parameters.
+
+        Returns:
+            AttackResult: The result of the attack execution.
         """
         # Validate parameters before creating context
         prompt_sequence = get_kwarg_param(

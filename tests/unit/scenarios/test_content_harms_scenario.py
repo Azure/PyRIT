@@ -3,16 +3,18 @@
 
 """Tests for the ContentHarmsScenario class."""
 
+import pathlib
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from pyrit.common.path import DATASETS_PATH
 from pyrit.models.seed_group import SeedGroup
 from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenario.scenarios.airt import (
+from pyrit.scenario import (
     ContentHarmsScenario,
     ContentHarmsStrategy,
 )
@@ -358,7 +360,7 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
         },
     )
@@ -371,7 +373,7 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
         },
     )
@@ -491,7 +493,7 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
         },
     )
@@ -519,3 +521,11 @@ class TestContentHarmsScenarioBasic:
 
         # Verify the objectives_by_harm is stored
         assert scenario._objectives_by_harm == custom_objectives
+
+    @pytest.mark.parametrize(
+        "harm_category", ["hate", "fairness", "violence", "sexual", "harassment", "misinformation", "leakage"]
+    )
+    def test_harm_category_prompt_file_exists(self, harm_category):
+        harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
+        file_path = harm_dataset_path / f"{harm_category}.prompt"
+        assert file_path.exists(), f"Missing file: {file_path}"  # Fails if file does not exist
