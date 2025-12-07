@@ -32,11 +32,11 @@ class TokenSelectionStrategy(TextSelectionStrategy):
     """
     A special selection strategy that signals SelectiveTextConverter to auto-detect
     and convert text between start/end tokens (e.g., ⟪ and ⟫).
-    
+
     This strategy is used when chaining converters with preserve_tokens=True.
     Instead of programmatically selecting text, it relies on tokens already present
     in the text from a previous converter.
-    
+
     Example:
         >>> first_converter = SelectiveTextConverter(
         ...     converter=Base64Converter(),
@@ -69,7 +69,7 @@ class TokenSelectionStrategy(TextSelectionStrategy):
 class WordSelectionStrategy(TextSelectionStrategy):
     """
     Base class for word-level selection strategies.
-    
+
     Word selection strategies work by splitting text into words and selecting specific word indices.
     They provide a select_words() method and implement select_range() by converting word selections
     to character ranges.
@@ -91,7 +91,7 @@ class WordSelectionStrategy(TextSelectionStrategy):
     def select_range(self, *, text: str, word_separator: str = " ") -> tuple[int, int]:
         """
         Selects a character range by first selecting words, then converting to character positions.
-        
+
         This implementation splits the text by word_separator, gets selected word indices,
         then calculates the character range that spans those words.
 
@@ -105,19 +105,19 @@ class WordSelectionStrategy(TextSelectionStrategy):
         """
         words = text.split(word_separator)
         selected_indices = self.select_words(words=words)
-        
+
         if not selected_indices:
             return (0, 0)
-        
+
         # Find the character positions of the selected words
         min_idx = min(selected_indices)
         max_idx = max(selected_indices)
-        
+
         # Calculate character positions
         char_pos = 0
         start_char = 0
         end_char = 0
-        
+
         for i, word in enumerate(words):
             if i == min_idx:
                 start_char = char_pos
@@ -125,7 +125,7 @@ class WordSelectionStrategy(TextSelectionStrategy):
                 end_char = char_pos + len(word)
                 break
             char_pos += len(word) + len(word_separator)
-        
+
         return (start_char, end_char)
 
 
@@ -273,9 +273,7 @@ class PositionSelectionStrategy(TextSelectionStrategy):
         }
 
         if position not in valid_positions:
-            raise ValueError(
-                f"Invalid position '{position}'. Valid positions are: {', '.join(valid_positions.keys())}"
-            )
+            raise ValueError(f"Invalid position '{position}'. Valid positions are: {', '.join(valid_positions.keys())}")
 
         self._start_proportion, self._end_proportion = valid_positions[position]
 
@@ -438,9 +436,7 @@ class WordIndexSelectionStrategy(WordSelectionStrategy):
         invalid_indices = [i for i in self._indices if i < 0 or i >= len(words)]
 
         if invalid_indices:
-            raise ValueError(
-                f"Invalid word indices {invalid_indices} provided. Valid range is 0 to {len(words) - 1}."
-            )
+            raise ValueError(f"Invalid word indices {invalid_indices} provided. Valid range is 0 to {len(words) - 1}.")
 
         return valid_indices
 
@@ -584,9 +580,7 @@ class WordPositionSelectionStrategy(WordSelectionStrategy):
         }
 
         if position not in valid_positions:
-            raise ValueError(
-                f"Invalid position '{position}'. Valid positions are: {', '.join(valid_positions.keys())}"
-            )
+            raise ValueError(f"Invalid position '{position}'. Valid positions are: {', '.join(valid_positions.keys())}")
 
         self._start_proportion, self._end_proportion = valid_positions[position]
 

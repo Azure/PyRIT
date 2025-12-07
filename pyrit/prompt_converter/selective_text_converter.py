@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
@@ -21,7 +20,7 @@ class SelectiveTextConverter(PromptConverter):
     - Character-level: Selects a contiguous character range (e.g., IndexSelectionStrategy, RegexSelectionStrategy)
     - Word-level: Selects specific words (e.g., WordIndexSelectionStrategy, WordPositionSelectionStrategy)
     - Token-based: Auto-detects and converts text between ⟪⟫ tokens (TokenSelectionStrategy)
-    
+
     Most use cases will use word-level strategies for more intuitive selection.
 
     Example:
@@ -115,8 +114,7 @@ class SelectiveTextConverter(PromptConverter):
             if self._preserve_tokens and self._start_token not in result.output_text:
                 # Wrap the result with tokens if they were removed
                 result = ConverterResult(
-                    output_text=f"{self._start_token}{result.output_text}{self._end_token}",
-                    output_type="text"
+                    output_text=f"{self._start_token}{result.output_text}{self._end_token}", output_type="text"
                 )
             return result
 
@@ -128,7 +126,7 @@ class SelectiveTextConverter(PromptConverter):
     async def _convert_word_level_async(self, *, prompt: str) -> ConverterResult:
         """Converts selected words using word-level selection strategy."""
         words = prompt.split(self._word_separator)
-        
+
         # Get selected word indices
         selected_indices = self._selection_strategy.select_words(words=words)  # type: ignore
 

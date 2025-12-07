@@ -3,7 +3,11 @@
 
 import pytest
 
-from pyrit.prompt_converter import Base64Converter, ROT13Converter, SelectiveTextConverter
+from pyrit.prompt_converter import (
+    Base64Converter,
+    ROT13Converter,
+    SelectiveTextConverter,
+)
 from pyrit.prompt_converter.text_selection_strategy import (
     IndexSelectionStrategy,
     KeywordSelectionStrategy,

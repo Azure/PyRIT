@@ -3,9 +3,9 @@
 
 import logging
 import random
-import re
-from typing import List, Optional, Union
+from typing import Optional
 
+from pyrit.prompt_converter.text_selection_strategy import WordSelectionStrategy
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 # Unicode combining characters for Zalgo effect (U+0300–U+036F)
@@ -25,27 +25,18 @@ class ZalgoConverter(WordLevelConverter):
         *,
         intensity: int = 10,
         seed: Optional[int] = None,
-        indices: Optional[List[int]] = None,
-        keywords: Optional[List[str]] = None,
-        proportion: Optional[float] = None,
-        regex: Optional[Union[str, re.Pattern]] = None,
+        word_selection_strategy: Optional[WordSelectionStrategy] = None,
     ):
         """
         Initializes the converter with the specified selection parameters.
 
-        This class allows for selection of words to convert based on various criteria.
-        Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
-        If no selection parameter is provided, all words will be converted.
-
         Args:
             intensity (int): Number of combining marks per character (higher = more cursed). Default is 10.
             seed (Optional[int]): Optional seed for reproducible output.
-            indices (Optional[List[int]]): Specific indices of words to convert.
-            keywords (Optional[List[str]]): Keywords to select words for conversion.
-            proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
-            regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
+            word_selection_strategy (Optional[WordSelectionStrategy]): Strategy for selecting which words to convert.
+                If None, all words will be converted.
         """
-        super().__init__(indices=indices, keywords=keywords, proportion=proportion, regex=regex)
+        super().__init__(word_selection_strategy=word_selection_strategy)
         self._intensity = self._normalize_intensity(intensity)
         self._seed = seed
 
