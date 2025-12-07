@@ -391,7 +391,7 @@ class TestMainIntegration:
 
     @patch("pyrit.cli.frontend_core.print_scenarios_list_async", new_callable=AsyncMock)
     @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     def test_main_list_scenarios_integration(
         self,
         mock_init_pyrit: AsyncMock,

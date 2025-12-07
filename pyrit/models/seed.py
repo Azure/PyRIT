@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import abc
 import logging
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -124,6 +125,19 @@ class Seed(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
+        # Check if the template contains Jinja2 control structures (for loops, if statements, etc.)
+        # If it does, and we don't have all required parameters, don't render it to preserve the structure
+
+        has_control_structures = bool(re.search(r"\{%[-\s]*(for|if|block|macro|call)", self.value))
+
+        if has_control_structures:
+            # Check if all parameters in control structures are provided
+            # Extract variable names from {% for var in collection %} patterns
+            for_vars = re.findall(r"\{%[-\s]*for\s+\w+\s+in\s+(\w+)", self.value)
+            if any(var not in kwargs for var in for_vars):
+                # Don't render if we're missing loop collection variables - preserve the template as-is
+                return self.value
+
         # Create a Jinja template with PartialUndefined placeholders
         env = Environment(loader=BaseLoader, undefined=PartialUndefined)  # type: ignore
         jinja_template = env.from_string(self.value)

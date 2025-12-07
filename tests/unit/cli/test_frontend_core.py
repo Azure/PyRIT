@@ -55,7 +55,7 @@ class TestFrontendCore:
 
     @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
     @patch("pyrit.cli.initializer_registry.InitializerRegistry")
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     def test_initialize_loads_registries(
         self,
         mock_init_pyrit: AsyncMock,
@@ -75,7 +75,7 @@ class TestFrontendCore:
 
     @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
     @patch("pyrit.cli.initializer_registry.InitializerRegistry")
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     async def test_scenario_registry_property_initializes(
         self,
         mock_init_pyrit: AsyncMock,
@@ -94,7 +94,7 @@ class TestFrontendCore:
 
     @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
     @patch("pyrit.cli.initializer_registry.InitializerRegistry")
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     async def test_initializer_registry_property_initializes(
         self,
         mock_init_pyrit: AsyncMock,
@@ -600,7 +600,7 @@ class TestParseRunArguments:
 class TestRunScenarioAsync:
     """Tests for run_scenario_async function."""
 
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_basic(
         self,
@@ -640,7 +640,7 @@ class TestRunScenarioAsync:
         mock_scenario_instance.run_async.assert_called_once()
         mock_printer.print_summary_async.assert_called_once_with(mock_result)
 
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     async def test_run_scenario_async_not_found(self, mock_init_pyrit: AsyncMock):
         """Test running non-existent scenario raises ValueError."""
         context = frontend_core.FrontendCore()
@@ -658,7 +658,7 @@ class TestRunScenarioAsync:
                 context=context,
             )
 
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_strategies(
         self,
@@ -704,7 +704,7 @@ class TestRunScenarioAsync:
         call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
         assert "scenario_strategies" in call_kwargs
 
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_initializers(
         self,
@@ -743,7 +743,7 @@ class TestRunScenarioAsync:
         # Verify initializer was retrieved
         mock_initializer_registry.get_initializer_class.assert_called_once_with(name="test_init")
 
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_max_concurrency(
         self,
@@ -782,7 +782,7 @@ class TestRunScenarioAsync:
         call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
         assert call_kwargs["max_concurrency"] == 5
 
-    @patch("pyrit.setup.initialize_pyrit", new_callable=AsyncMock)
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_without_print_summary(
         self,

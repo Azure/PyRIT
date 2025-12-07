@@ -89,6 +89,6 @@ class LoadDefaultDatasets(PyRITInitializer):
 
         # Store datasets in CentralMemory
         memory = CentralMemory.get_memory_instance()
-        await memory.add_seed_datasets_to_memory_async(datasets=dataset_list, added_by="airt_default")
+        await memory.add_seed_datasets_to_memory_async(datasets=dataset_list, added_by="LoadDefaultDatasets")
 
         logger.info(f"Successfully loaded {len(dataset_list)} datasets into CentralMemory")
