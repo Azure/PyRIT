@@ -184,6 +184,7 @@ class _TreeOfAttacksNode:
         memory_labels: Optional[dict[str, str]] = None,
         parent_id: Optional[str] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        error_score_map: Optional[dict[str, float]] = None
     ) -> None:
         """
         Initialize a tree node.
@@ -219,6 +220,7 @@ class _TreeOfAttacksNode:
         self._auxiliary_scorers = auxiliary_scorers or []
         self._attack_id = attack_id
         self._memory_labels = memory_labels or {}
+        self._error_score_map = error_score_map
 
         # Initialize utilities
         self._memory = CentralMemory.get_memory_instance()
@@ -446,6 +448,29 @@ class _TreeOfAttacksNode:
             Higher scores indicate more successful attacks and influence which branches
             the TAP algorithm explores in subsequent iterations.
         """
+        response_piece = response.request_pieces[0]
+
+        if response_piece.has_error() and response_piece.response_error in self._error_score_map:
+            assigned_score = self._error_score_map[response_piece.response_error]
+            logger.debug(
+                f"Node {self.node_id}: Response has error '{response_piece.response_error}', assigning score {assigned_score}"
+            )
+            self.objective_score = Score(
+                score_value=str(assigned_score),  # Convert float to string
+                score_value_description=f"Assigned score {assigned_score} for {response_piece.response_error} response",
+                score_type="float_scale",  
+                score_category="error_handling",
+                score_rationale=f"Assigned score {assigned_score} for {response_piece.response_error} error",
+                score_metadata=str(response_piece.prompt_metadata) if response_piece.prompt_metadata else "",
+                prompt_request_response_id=str(response_piece.id),
+                scorer_class_identifier=self._objective_scorer.get_identifier(),
+                task=objective,
+            )
+            logger.debug(
+                f"Node {self.node_id}: Assigned error score {assigned_score} for response error: {response_piece.response_error}; objective_score: {self.objective_score.get_value()}"
+            )
+            return
+
         # Use the Scorer utility method to handle all scoring
         scoring_results = await Scorer.score_response_async(
             response=response,
@@ -576,6 +601,7 @@ class _TreeOfAttacksNode:
             desired_response_prefix=self._desired_response_prefix,
             parent_id=self.node_id,
             prompt_normalizer=self._prompt_normalizer,
+            error_score_map=self._error_score_map,
         )
 
         # Duplicate the conversations to preserve history
@@ -945,6 +971,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         on_topic_checking_enabled: bool = True,
         desired_response_prefix: str = "Sure, here is",
         batch_size: int = 10,
+        error_score_map: Optional[dict[str, float]] = None,
     ):
         """
         Initialize the Tree of Attacks with Pruning attack strategy.
@@ -992,6 +1019,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         self._on_topic_checking_enabled = on_topic_checking_enabled
         self._desired_response_prefix = desired_response_prefix
         self._batch_size = batch_size
+        self._error_score_map = error_score_map or {}
 
         # Initialize adversarial configuration
         self._adversarial_chat = attack_adversarial_config.target
@@ -1468,6 +1496,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             desired_response_prefix=self._desired_response_prefix,
             parent_id=parent_id,
             prompt_normalizer=self._prompt_normalizer,
+            error_score_map=self._error_score_map,
         )
 
         # Add the adversarial chat conversation ID to the context's tracking (ensuring uniqueness)
