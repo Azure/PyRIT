@@ -19,6 +19,8 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class ContentClassifierPaths(enum.Enum):
+    """Paths to content classifier YAML files."""
+
     HARMFUL_CONTENT_CLASSIFIER = Path(SCORER_CONTENT_CLASSIFIERS_PATH, "harm.yaml").resolve()
     SENTIMENT_CLASSIFIER = Path(SCORER_CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
 
@@ -43,7 +45,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """
-        Initializes a new instance of the SelfAskCategoryScorer class.
+        Initialize a new instance of the SelfAskCategoryScorer class.
 
         Args:
             chat_target (PromptChatTarget): The chat target to interact with.
@@ -75,13 +77,17 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
     def _content_classifier_to_string(self, categories: list[Dict[str, str]]) -> str:
         """
-        Converts the content classifier categories to a string representation to be put in a system prompt.
+        Convert the content classifier categories to a string representation to be put in a system prompt.
 
         Args:
             categories (list[Dict[str, str]]): The categories to convert.
 
         Returns:
             str: The string representation of the categories.
+
+        Raises:
+            ValueError: If no categories are provided.
+            ValueError: If the no_category_found category is not found in the provided categories.
         """
         if not categories:
             raise ValueError("Improperly formatted content classifier yaml file. No categories provided")
@@ -105,8 +111,8 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
         Args:
             message_piece (MessagePiece): The message piece to score.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
+            objective (Optional[str]): The task based on which the text should be scored
+                (the original attacker model's objective). Defaults to None.
 
         Returns:
             list[Score]: The message_piece's score.
