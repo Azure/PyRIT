@@ -398,10 +398,10 @@ class MemoryInterface(abc.ABC):
             role (Optional[str], optional): The role of the prompt. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
-            Defaults to None.
+                Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
             prompt_metadata (Optional[dict[str, Union[str, int]]], optional): The metadata associated with the prompt.
-            Defaults to None.
+                Defaults to None.
             sent_after (Optional[datetime], optional): Filter for prompts sent after this datetime. Defaults to None.
             sent_before (Optional[datetime], optional): Filter for prompts sent before this datetime. Defaults to None.
             original_values (Optional[Sequence[str]], optional): A list of original values. Defaults to None.
@@ -409,7 +409,7 @@ class MemoryInterface(abc.ABC):
             data_type (Optional[str], optional): The data type to filter by. Defaults to None.
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
             converted_value_sha256 (Optional[Sequence[str]], optional): A list of SHA256 hashes of converted values.
-            Defaults to None.
+                Defaults to None.
 
         Returns:
             Sequence[Score]: A list of scores extracted from the message pieces.
