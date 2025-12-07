@@ -16,7 +16,6 @@ Exit codes:
     1: Validation errors found
 """
 
-import importlib
 import os
 import re
 import sys
@@ -37,14 +36,12 @@ def parse_api_rst(api_rst_path: Path) -> List[Tuple[str, List[str]]]:
         content = f.read()
 
     modules = []
-    # Pattern to match :py:mod:`module.name`
-    module_pattern = re.compile(r":py:mod:`(pyrit\.[^`]+)`")
     # Pattern to match autosummary sections
     autosummary_pattern = re.compile(
         r"\.\. autosummary::\s+:nosignatures:\s+:toctree: _autosummary/\s+((?:\s+\w+\s*\n)+)", re.MULTILINE
     )
 
-    # Split content by module sections
+    # Split content by module sections using :py:mod:`module.name`
     sections = re.split(r":py:mod:`(pyrit\.[^`]+)`", content)
 
     for i in range(1, len(sections), 2):
@@ -95,13 +92,13 @@ def validate_api_rst_modules(modules: List[Tuple[str, List[str]]], repo_root: Pa
                 if path.exists():
                     module_file = path
                     break
-            
+
             if module_file:
                 # Read the source file and check for member definitions
                 try:
-                    with open(module_file, 'r', encoding='utf-8') as f:
+                    with open(module_file, "r", encoding="utf-8") as f:
                         source_content = f.read()
-                    
+
                     for member in members:
                         # Check for various definition patterns:
                         # - def member(...
@@ -116,12 +113,14 @@ def validate_api_rst_modules(modules: List[Tuple[str, List[str]]], repo_root: Pa
                             rf'"{re.escape(member)}"',  # in __all__ or strings
                             rf"'{re.escape(member)}'",
                         ]
-                        
+
                         found = any(re.search(pattern, source_content, re.MULTILINE) for pattern in patterns)
-                        
+
                         if not found:
-                            errors.append(f"Member '{member}' not found in module '{module_name}' (searched {module_file})")
-                            
+                            errors.append(
+                                f"Member '{member}' not found in module '{module_name}' (searched {module_file})"
+                            )
+
                 except Exception as e:
                     errors.append(f"Error reading source file for '{module_name}': {e}")
 
