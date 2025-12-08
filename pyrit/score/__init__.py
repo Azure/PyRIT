@@ -1,6 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""
+Scoring functionality for evaluating AI model responses across various dimensions
+including harm detection, objective completion, and content classification.
+"""
+
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer

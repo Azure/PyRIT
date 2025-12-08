@@ -22,6 +22,9 @@ def get_harm_eval_datasets(category: str, metrics_type: str):
 
     Returns:
         dict: A dictionary containing dataset file path, evaluation rubric file path, and dataset name.
+
+    Raises:
+        ValueError: If an unknown metrics type is provided or if the category is not found.
     """
     directory = ""
     if metrics_type == "harm":
