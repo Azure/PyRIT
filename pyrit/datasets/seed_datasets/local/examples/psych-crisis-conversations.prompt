@@ -1,4 +1,4 @@
-dataset_name: 2025_09_pyrit_mental_health_crisis_multiturn_example
+dataset_name: mental_health_crisis_multiturn_example
 harm_categories: mental_health_crisis
 source: Simulated and generated conversations from LLMs and public sources
 groups: AI Red Team

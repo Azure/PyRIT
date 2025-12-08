@@ -60,6 +60,9 @@ class ConversationScorer(Scorer):
 
         Returns:
             list[Score]: List of Score objects from the underlying scorer
+
+        Raises:
+            ValueError: If conversation with the given ID is not found in memory.
         """
         if not message.message_pieces:
             return []
@@ -116,7 +119,7 @@ class ConversationScorer(Scorer):
 
         # Score using the underlying scorer's _score_async method (not score_async)
         # This prevents double-insertion into the database since the parent's score_async
-        # will handle adding scores to memory
+        # will handle adding scores to memory and validation via the inherited validate_return_scores.
         scores = await self._wrapped_scorer._score_async(message=conversation_message, objective=objective)
 
         return scores
@@ -126,13 +129,6 @@ class ConversationScorer(Scorer):
         Required abstract method - not used for ConversationScorer as we override _score_async.
         """
         raise NotImplementedError("ConversationScorer uses _score_async, not _score_piece_async")
-
-    def validate_return_scores(self, scores: list[Score]):
-        """
-        Validates the scores returned by the wrapped scorer.
-        Delegates to the underlying scorer's validation.
-        """
-        self._wrapped_scorer.validate_return_scores(scores=scores)
 
 
 def create_conversation_scorer(
@@ -180,12 +176,7 @@ def create_conversation_scorer(
         """Dynamic ConversationScorer that inherits from both ConversationScorer and the wrapped scorer's base class."""
 
         def __init__(self):
-            # Initialize ConversationScorer properly
+            # Initialize ConversationScorer - this also calls Scorer.__init__
             ConversationScorer.__init__(self, scorer=scorer, validator=validator)
-
-            # For TrueFalseScorer, we need to handle score_aggregator
-            if isinstance(scorer, TrueFalseScorer):
-
-                self._score_aggregator = getattr(scorer, "_score_aggregator", TrueFalseScoreAggregator.OR)
 
     return DynamicConversationScorer()

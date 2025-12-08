@@ -6,6 +6,7 @@ Scoring functionality for evaluating AI model responses across various dimension
 including harm detection, objective completion, and content classification.
 """
 
+from pyrit.score.conversation_scorer import ConversationScorer, create_conversation_scorer
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -50,7 +51,6 @@ from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPat
 from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
-from pyrit.score.float_scale.conversation_scorer import ConversationScorer, create_conversation_scorer
 from pyrit.score.true_false.self_ask_true_false_scorer import (
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
