@@ -21,7 +21,7 @@
 #
 # The adversarial LLM engages with the target LLM, probing to identify the deception and persuasion tactics employed. Specifically, the adversarial LLM tests whether the target LLM will break its persona and admit it is an AI.
 #
-# Upon completion of the interaction, the entire conversation is evaluated by the LookBackScorer. This tool assesses the effectiveness of the persuasion and deception tactics by analyzing behavior changes throughout the conversation.
+# Upon completion of the interaction, the entire conversation is evaluated by the ConversationScorer. This tool assesses the effectiveness of the persuasion and deception tactics by analyzing behavior changes throughout the conversation.
 #
 #
 
