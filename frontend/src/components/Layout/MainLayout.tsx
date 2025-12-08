@@ -2,8 +2,11 @@ import {
   makeStyles,
   tokens,
   Text,
+  Tooltip,
 } from '@fluentui/react-components'
+import { useEffect, useState } from 'react'
 import Navigation from '../Sidebar/Navigation'
+import { apiClient } from '../../services/api'
 
 const useStyles = makeStyles({
   root: {
@@ -25,6 +28,7 @@ const useStyles = makeStyles({
   logo: {
     width: '40px',
     height: '40px',
+    cursor: 'help',
   },
   title: {
     fontSize: tokens.fontSizeHero700,
@@ -74,15 +78,29 @@ export default function MainLayout({
   currentView 
 }: MainLayoutProps) {
   const styles = useStyles()
+  const [version, setVersion] = useState<string>('Loading...')
+
+  useEffect(() => {
+    // Fetch version information
+    apiClient.get<{version: string, display?: string}>('/api/version')
+      .then((response) => {
+        setVersion(response.data.display || response.data.version)
+      })
+      .catch(() => {
+        setVersion('Unknown')
+      })
+  }, [])
 
   return (
     <div className={styles.root}>
       <div className={styles.topBar}>
-        <img 
-          src="/roakey.png" 
-          alt="Co-PyRIT Logo" 
-          className={styles.logo}
-        />
+        <Tooltip content={`PyRIT Version: ${version}`} relationship="label">
+          <img 
+            src="/roakey.png" 
+            alt="Co-PyRIT Logo" 
+            className={styles.logo}
+          />
+        </Tooltip>
         <Text className={styles.title}>Co-PyRIT</Text>
         <Text className={styles.subtitle}>Python Risk Identification Tool</Text>
       </div>

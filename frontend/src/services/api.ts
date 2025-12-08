@@ -10,6 +10,8 @@ const apiClient = axios.create({
   },
 })
 
+export { apiClient }
+
 export const chatApi = {
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
     // Always use FormData for consistency (backend expects Form parameters)

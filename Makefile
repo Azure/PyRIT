@@ -31,5 +31,11 @@ unit-test-cov-xml:
 integration-test:
 	$(CMD) pytest $(INTEGRATION_TESTS) --cov=$(PYMODULE) $(INTEGRATION_TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
 
+prepare-package:
+	python build_scripts/prepare_package.py
+
+build: prepare-package
+	python -m build
+
 #clean:
 #	git clean -Xdf # Delete all files in .gitignore

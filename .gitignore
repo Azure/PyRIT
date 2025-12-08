@@ -5,6 +5,9 @@ dbdata/
 eval/
 default_memory.json.memory
 
+# Frontend build artifacts copied to backend for packaging
+pyrit/backend/frontend/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1,21 +1,12 @@
 #!/bin/bash
 set -e
 
-# Clone PyRIT repository if not already present
-if [ ! -d "/app/PyRIT" ]; then
-    echo "Cloning PyRIT repository..."
-    git clone https://github.com/Azure/PyRIT
-else
-    echo "PyRIT repository already exists. Updating..."
-    cd /app/PyRIT
-    git pull
-    cd /app
+# Check if PYRIT_MODE is set
+if [ -z "$PYRIT_MODE" ]; then
+    echo "ERROR: PYRIT_MODE environment variable is not set!"
+    echo "Please set PYRIT_MODE to either 'jupyter' or 'gui'"
+    exit 1
 fi
-
-# Copy doc folder to notebooks directory
-echo "Copying documentation to notebooks directory..."
-cp -r /app/PyRIT/doc/* /app/notebooks/
-rm -rf /app/PyRIT
 
 # Default to CPU mode
 export CUDA_VISIBLE_DEVICES="-1"
@@ -32,5 +23,15 @@ fi
 # Print PyRIT version
 python -c "import pyrit; print(f'Running PyRIT version: {pyrit.__version__}')"
 
-# Execute the command passed to docker run (or the CMD if none provided)
-exec "$@"
+# Start the appropriate service based on PYRIT_MODE
+if [ "$PYRIT_MODE" = "jupyter" ]; then
+    echo "Starting JupyterLab on port 8888..."
+    echo "Note: Notebooks are from the local source at build time"
+    exec jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password='' --notebook-dir=/app/notebooks
+elif [ "$PYRIT_MODE" = "gui" ]; then
+    echo "Starting PyRIT GUI on port 8000..."
+    exec python -m uvicorn pyrit.backend.main:app --host 0.0.0.0 --port 8000
+else
+    echo "ERROR: Invalid PYRIT_MODE '$PYRIT_MODE'. Must be 'jupyter' or 'gui'"
+    exit 1
+fi

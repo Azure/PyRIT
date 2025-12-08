@@ -53,17 +53,23 @@ def start_backend():
     # Change to workspace root
     os.chdir(WORKSPACE_ROOT)
     
+    # Set development mode environment variable
+    env = os.environ.copy()
+    env["PYRIT_DEV_MODE"] = "true"
+    
     # Start backend with uvicorn
     if is_windows():
         backend = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "pyrit.backend.main:app", 
              "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"],
+            env=env,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0,
         )
     else:
         backend = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "pyrit.backend.main:app", 
              "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"],
+            env=env,
         )
     
     return backend

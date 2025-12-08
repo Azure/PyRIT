@@ -39,7 +39,7 @@ Get started immediately with a pre-configured environment:
 
 - ✅ All dependencies included
 - ✅ No Python setup needed
-- ✅ JupyterLab built-in
+- ✅ Web GUI or JupyterLab
 - ✅ Works on all platforms
 
 +++

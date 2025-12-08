@@ -79,7 +79,29 @@ After pushing the branch to remote, check the release branch to make sure it loo
 
 ## 4. Build Package
 
-You'll need the build package to build the project. If it’s not already installed, install it `pip install build`.
+### Prerequisites
+
+Ensure you have:
+- Build tools: `pip install build twine`
+- Node.js and npm (see [contributor setup guide](./1a_install_conda.md) for installation)
+
+### Prepare the Package (Build Frontend)
+
+**Important**: Before building the Python package, you must build the frontend and copy it into the package structure.
+
+Run the prepare script:
+
+```bash
+python build_scripts/prepare_package.py
+```
+
+This script will:
+1. Check for npm/Node.js installation
+2. Install frontend dependencies (`npm install`)
+3. Build the frontend for production (`npm run build`)
+4. Copy `frontend/dist/` to `pyrit/backend/frontend/` for packaging
+
+### Build the Python Package
 
 To build the package wheel and archive for PyPI run
 
@@ -90,6 +112,24 @@ python -m build
 This should print
 
 > Successfully built pyrit-x.y.z.tar.gz and pyrit-x.y.z-py3-none-any.whl
+
+### Verify Package Contents
+
+Check that the frontend files are included:
+
+```bash
+# For wheel files
+unzip -l dist/pyrit-*.whl | grep frontend
+
+# For source distribution
+tar -tzf dist/pyrit-*.tar.gz | grep frontend
+```
+
+The package includes:
+- **Python code**: All modules in the `pyrit/` directory
+- **Frontend**: Static files from `frontend/dist/` copied to `pyrit/backend/frontend/`
+- **Data files**: CSVs, JSONs, prompts, YAML files (specified in `MANIFEST.in`)
+- **Dependencies**: Defined in `pyproject.toml`
 
 ## 5. Test Built Package
 

@@ -110,6 +110,7 @@ gradio = [
 ]
 fastapi = [
     "fastapi>=0.115.0",
+    "python-multipart>=0.0.6",
     "uvicorn[standard]>=0.32.0",
 ]
 fairness_bias = [
@@ -176,6 +177,11 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["pyrit", "pyrit.*"]
+
+[tool.setuptools.package-data]
+pyrit = [
+    "backend/frontend/**/*",
+]
 
 [tool.jupytext]
 formats = "ipynb,py:percent"

@@ -11,7 +11,6 @@ import {
   DialogBody,
   DialogActions,
   DialogContent,
-  Input,
   Field,
   Select,
 } from '@fluentui/react-components'
@@ -55,7 +54,7 @@ interface NavigationProps {
   currentView: 'chat' | 'history'
 }
 
-export default function Navigation({ onToggleTheme, isDarkMode, onReturnToChat, onShowHistory, currentView }: NavigationProps) {
+export default function Navigation({ onToggleTheme, isDarkMode, onReturnToChat, onShowHistory }: NavigationProps) {
   const styles = useStyles()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [targetConfig, setTargetConfig] = useState({

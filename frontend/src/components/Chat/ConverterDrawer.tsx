@@ -124,7 +124,6 @@ export default function ConverterDrawer({ isOpen, onClose, onApply, initialText 
   const [text, setText] = useState(initialText)
   const [converters, setConverters] = useState<ConverterInstance[]>([])
   const [availableConverters, setAvailableConverters] = useState<ConverterInfo[]>([])
-  const [loading, setLoading] = useState(false)
   const [previewText, setPreviewText] = useState('')
   const [generatingPreview, setGeneratingPreview] = useState(false)
   const [converterIdentifiers, setConverterIdentifiers] = useState<Array<Record<string, string>>>([])
@@ -141,13 +140,10 @@ export default function ConverterDrawer({ isOpen, onClose, onApply, initialText 
 
   const loadConverters = async () => {
     try {
-      setLoading(true)
       const data = await convertersApi.getConverters()
       setAvailableConverters(data)
     } catch (error) {
       console.error('Failed to load converters:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -213,8 +209,8 @@ export default function ConverterDrawer({ isOpen, onClose, onApply, initialText 
         defaultConfig[param.name] = 0
       } else if (param.type === 'str') {
         defaultConfig[param.name] = ''
-      } else if (param.type === 'enum' && param.options && param.options.length > 0) {
-        defaultConfig[param.name] = param.options[0]
+      } else if (param.type === 'enum' && param.enum_values && param.enum_values.length > 0) {
+        defaultConfig[param.name] = param.enum_values[0]
       }
     })
     
