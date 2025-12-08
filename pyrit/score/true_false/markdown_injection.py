@@ -30,6 +30,14 @@ class MarkdownInjectionScorer(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
+        """
+        Initialize the MarkdownInjectionScorer.
+
+        Args:
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
+            score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
+        """
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._category = "security"
 
