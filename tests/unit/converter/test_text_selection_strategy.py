@@ -4,12 +4,18 @@
 import pytest
 
 from pyrit.prompt_converter.text_selection_strategy import (
+    AllWordsSelectionStrategy,
     IndexSelectionStrategy,
     KeywordSelectionStrategy,
     PositionSelectionStrategy,
     ProportionSelectionStrategy,
     RangeSelectionStrategy,
     RegexSelectionStrategy,
+    WordIndexSelectionStrategy,
+    WordKeywordSelectionStrategy,
+    WordPositionSelectionStrategy,
+    WordProportionSelectionStrategy,
+    WordRegexSelectionStrategy,
 )
 
 
@@ -116,43 +122,78 @@ class TestKeywordSelectionStrategy:
 
 class TestPositionSelectionStrategy:
     def test_select_range_first_half(self):
-        strategy = PositionSelectionStrategy(position="first_half")
+        strategy = PositionSelectionStrategy(start_proportion=0.0, end_proportion=0.5)
         result = strategy.select_range(text="0123456789")
         assert result == (0, 5)
 
     def test_select_range_second_half(self):
-        strategy = PositionSelectionStrategy(position="second_half")
+        strategy = PositionSelectionStrategy(start_proportion=0.5, end_proportion=1.0)
         result = strategy.select_range(text="0123456789")
         assert result == (5, 10)
 
     def test_select_range_first_third(self):
-        strategy = PositionSelectionStrategy(position="first_third")
+        strategy = PositionSelectionStrategy(start_proportion=0.0, end_proportion=1 / 3)
         result = strategy.select_range(text="012345678")
         assert result == (0, 3)
 
     def test_select_range_second_third(self):
-        strategy = PositionSelectionStrategy(position="second_third")
+        strategy = PositionSelectionStrategy(start_proportion=1 / 3, end_proportion=2 / 3)
         result = strategy.select_range(text="012345678")
         assert result == (3, 6)
 
     def test_select_range_last_third(self):
-        strategy = PositionSelectionStrategy(position="last_third")
+        strategy = PositionSelectionStrategy(start_proportion=2 / 3, end_proportion=1.0)
         result = strategy.select_range(text="012345678")
         assert result == (6, 9)
 
     def test_select_range_first_quarter(self):
-        strategy = PositionSelectionStrategy(position="first_quarter")
+        strategy = PositionSelectionStrategy(start_proportion=0.0, end_proportion=0.25)
         result = strategy.select_range(text="0123456789ABCDEF")
         assert result == (0, 4)
 
     def test_select_range_last_quarter(self):
-        strategy = PositionSelectionStrategy(position="last_quarter")
+        strategy = PositionSelectionStrategy(start_proportion=0.75, end_proportion=1.0)
         result = strategy.select_range(text="0123456789ABCDEF")
         assert result == (12, 16)
 
-    def test_invalid_position_raises_error(self):
-        with pytest.raises(ValueError, match="Invalid position 'invalid'"):
-            PositionSelectionStrategy(position="invalid")
+    def test_select_range_middle_half(self):
+        strategy = PositionSelectionStrategy(start_proportion=0.25, end_proportion=0.75)
+        result = strategy.select_range(text="0123456789")
+        assert result == (2, 7)
+
+    def test_invalid_start_proportion_too_high_raises_error(self):
+        with pytest.raises(ValueError, match="start_proportion must be between 0.0 and 1.0"):
+            PositionSelectionStrategy(start_proportion=1.5, end_proportion=1.0)
+
+    def test_invalid_end_proportion_too_high_raises_error(self):
+        with pytest.raises(ValueError, match="end_proportion must be between 0.0 and 1.0"):
+            PositionSelectionStrategy(start_proportion=0.0, end_proportion=1.5)
+
+    def test_invalid_start_proportion_negative_raises_error(self):
+        with pytest.raises(ValueError, match="start_proportion must be between 0.0 and 1.0"):
+            PositionSelectionStrategy(start_proportion=-0.1, end_proportion=1.0)
+
+    def test_invalid_end_proportion_negative_raises_error(self):
+        with pytest.raises(ValueError, match="end_proportion must be between 0.0 and 1.0"):
+            PositionSelectionStrategy(start_proportion=0.0, end_proportion=-0.1)
+
+    def test_invalid_start_equals_end_raises_error(self):
+        with pytest.raises(ValueError, match="start_proportion .* must be less than end_proportion"):
+            PositionSelectionStrategy(start_proportion=0.5, end_proportion=0.5)
+
+    def test_invalid_start_greater_than_end_raises_error(self):
+        with pytest.raises(ValueError, match="start_proportion .* must be less than end_proportion"):
+            PositionSelectionStrategy(start_proportion=0.75, end_proportion=0.25)
+
+    def test_select_range_custom_range(self):
+        strategy = PositionSelectionStrategy(start_proportion=0.1, end_proportion=0.9)
+        result = strategy.select_range(text="0123456789")
+        assert result == (1, 9)
+
+    def test_select_range_boundary_values(self):
+        strategy = PositionSelectionStrategy(start_proportion=0.0, end_proportion=1.0)
+        result = strategy.select_range(text="0123456789")
+        assert result == (0, 10)
 
 
 class TestProportionSelectionStrategy:
@@ -251,3 +292,231 @@ class TestRangeSelectionStrategy:
     def test_invalid_start_greater_than_end_raises_error(self):
         with pytest.raises(ValueError, match="start_proportion .* must be less than end_proportion"):
             RangeSelectionStrategy(start_proportion=0.75, end_proportion=0.25)
+
+
+# ============================================================================
+# Word-Level Selection Strategy Tests
+# ============================================================================
+
+
+class TestWordIndexSelectionStrategy:
+    def test_select_words_specific_indices(self):
+        strategy = WordIndexSelectionStrategy(indices=[0, 2, 4])
+        words = ["The", "quick", "brown", "fox", "jumps"]
+        result = strategy.select_words(words=words)
+        assert result == [0, 2, 4]
+
+    def test_select_words_single_index(self):
+        strategy = WordIndexSelectionStrategy(indices=[3])
+        words = ["The", "quick", "brown", "fox", "jumps"]
+        result = strategy.select_words(words=words)
+        assert result == [3]
+
+    def test_select_words_empty_list(self):
+        strategy = WordIndexSelectionStrategy(indices=[0, 1])
+        result = strategy.select_words(words=[])
+        assert result == []
+
+    def test_select_words_out_of_range_raises_error(self):
+        strategy = WordIndexSelectionStrategy(indices=[0, 10])
+        words = ["The", "quick", "brown"]
+        with pytest.raises(ValueError, match="Invalid word indices"):
+            strategy.select_words(words=words)
+
+    def test_select_words_negative_index_raises_error(self):
+        strategy = WordIndexSelectionStrategy(indices=[-1])
+        words = ["The", "quick", "brown"]
+        with pytest.raises(ValueError, match="Invalid word indices"):
+            strategy.select_words(words=words)
+
+    def test_select_range_converts_words_to_chars(self):
+        strategy = WordIndexSelectionStrategy(indices=[1, 2])
+        result = strategy.select_range(text="The quick brown fox")
+        # "quick brown" starts at index 4 and ends at index 15
+        assert result == (4, 15)
+
+
+class TestWordKeywordSelectionStrategy:
+    def test_select_words_exact_matches(self):
+        strategy = WordKeywordSelectionStrategy(keywords=["quick", "fox"])
+        words = ["The", "quick", "brown", "fox", "jumps"]
+        result = strategy.select_words(words=words)
+        assert result == [1, 3]
+
+    def test_select_words_case_sensitive(self):
+        strategy = WordKeywordSelectionStrategy(keywords=["Quick"], case_sensitive=True)
+        words = ["The", "quick", "brown", "fox"]
+        result = strategy.select_words(words=words)
+        assert result == []
+
+    def test_select_words_case_insensitive(self):
+        strategy = WordKeywordSelectionStrategy(keywords=["QUICK", "FOX"], case_sensitive=False)
+        words = ["The", "quick", "brown", "fox"]
+        result = strategy.select_words(words=words)
+        assert result == [1, 3]
+
+    def test_select_words_no_matches(self):
+        strategy = WordKeywordSelectionStrategy(keywords=["dog", "cat"])
+        words = ["The", "quick", "brown", "fox"]
+        result = strategy.select_words(words=words)
+        assert result == []
+
+    def test_select_words_empty_list(self):
+        strategy = WordKeywordSelectionStrategy(keywords=["test"])
+        result = strategy.select_words(words=[])
+        assert result == []
+
+
+class TestWordProportionSelectionStrategy:
+    def test_select_words_half_proportion(self):
+        strategy = WordProportionSelectionStrategy(proportion=0.5, seed=42)
+        words = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+        result = strategy.select_words(words=words)
+        assert len(result) == 5
+        assert all(0 <= idx < 10 for idx in result)
+
+    def test_select_words_reproducible_with_seed(self):
+        strategy1 = WordProportionSelectionStrategy(proportion=0.3, seed=42)
+        strategy2 = WordProportionSelectionStrategy(proportion=0.3, seed=42)
+        words = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+        result1 = strategy1.select_words(words=words)
+        result2 = strategy2.select_words(words=words)
+        assert result1 == result2
+
+    def test_select_words_zero_proportion(self):
+        strategy = WordProportionSelectionStrategy(proportion=0.0, seed=42)
+        words = ["a", "b", "c", "d", "e"]
+        result = strategy.select_words(words=words)
+        assert result == []
+
+    def test_select_words_full_proportion(self):
+        strategy = WordProportionSelectionStrategy(proportion=1.0, seed=42)
+        words = ["a", "b", "c", "d", "e"]
+        result = strategy.select_words(words=words)
+        assert len(result) == 5
+
+    def test_select_words_empty_list(self):
+        strategy = WordProportionSelectionStrategy(proportion=0.5, seed=42)
+        result = strategy.select_words(words=[])
+        assert result == []
+
+    def test_invalid_proportion_too_high_raises_error(self):
+        with pytest.raises(ValueError, match="Proportion must be between 0.0 and 1.0"):
+            WordProportionSelectionStrategy(proportion=1.5)
+
+    def test_invalid_proportion_negative_raises_error(self):
+        with pytest.raises(ValueError, match="Proportion must be between 0.0 and 1.0"):
+            WordProportionSelectionStrategy(proportion=-0.1)
+
+
+class TestWordRegexSelectionStrategy:
+    def test_select_words_matching_pattern(self):
+        strategy = WordRegexSelectionStrategy(pattern=r"\d+")
+        words = ["The", "number", "123", "and", "456", "here"]
+        result = strategy.select_words(words=words)
+        assert result == [2, 4]
+
+    def test_select_words_partial_match(self):
+        strategy = WordRegexSelectionStrategy(pattern=r"^[A-Z]")
+        words = ["The", "quick", "Brown", "fox"]
+        result = strategy.select_words(words=words)
+        assert result == [0, 2]
+
+    def test_select_words_complex_pattern(self):
+        strategy = WordRegexSelectionStrategy(pattern=r"^[a-z]+ing$")
+        words = ["running", "jump", "walking", "sit", "thinking"]
+        result = strategy.select_words(words=words)
+        assert result == [0, 2, 4]
+
+    def test_select_words_no_matches(self):
+        strategy = WordRegexSelectionStrategy(pattern=r"\d+")
+        words = ["The", "quick", "brown", "fox"]
+        result = strategy.select_words(words=words)
+        assert result == []
+
+    def test_select_words_empty_list(self):
+        strategy = WordRegexSelectionStrategy(pattern=r"\w+")
+        result = strategy.select_words(words=[])
+        assert result == []
+
+
+class TestWordPositionSelectionStrategy:
+    def test_select_words_first_half(self):
+        strategy = WordPositionSelectionStrategy(start_proportion=0.0, end_proportion=0.5)
+        words = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+        result = strategy.select_words(words=words)
+        assert result == [0, 1, 2, 3, 4]
+
+    def test_select_words_second_half(self):
+        strategy = WordPositionSelectionStrategy(start_proportion=0.5, end_proportion=1.0)
+        words = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+        result = strategy.select_words(words=words)
+        assert result == [5, 6, 7, 8, 9]
+
+    def test_select_words_first_third(self):
+        strategy = WordPositionSelectionStrategy(start_proportion=0.0, end_proportion=1 / 3)
+        words = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+        result = strategy.select_words(words=words)
+        assert result == [0, 1, 2]
+
+    def test_select_words_middle_third(self):
+        strategy = WordPositionSelectionStrategy(start_proportion=1 / 3, end_proportion=2 / 3)
+        words = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+        result = strategy.select_words(words=words)
+        assert result == [3, 4, 5]
+
+    def test_select_words_last_third(self):
+        strategy = WordPositionSelectionStrategy(start_proportion=2 / 3, end_proportion=1.0)
+        words = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+        result = strategy.select_words(words=words)
+        assert result == [6, 7, 8]
+
+    def test_select_words_custom_range(self):
+        strategy = WordPositionSelectionStrategy(start_proportion=0.2, end_proportion=0.8)
+        words = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+        result = strategy.select_words(words=words)
+        assert result == [2, 3, 4, 5, 6, 7]
+
+    def test_select_words_empty_list(self):
+        strategy = WordPositionSelectionStrategy(start_proportion=0.0, end_proportion=0.5)
+        result = strategy.select_words(words=[])
+        assert result == []
+
+    def test_invalid_start_proportion_too_high_raises_error(self):
+        with pytest.raises(ValueError, match="start_proportion must be between 0.0 and 1.0"):
+            WordPositionSelectionStrategy(start_proportion=1.5, end_proportion=1.0)
+
+    def test_invalid_end_proportion_too_high_raises_error(self):
+        with pytest.raises(ValueError, match="end_proportion must be between 0.0 and 1.0"):
+            WordPositionSelectionStrategy(start_proportion=0.0, end_proportion=1.5)
+
+    def test_invalid_start_proportion_negative_raises_error(self):
+        with pytest.raises(ValueError, match="start_proportion must be between 0.0 and 1.0"):
+            WordPositionSelectionStrategy(start_proportion=-0.1, end_proportion=1.0)
+
+    def test_invalid_start_equals_end_raises_error(self):
+        with pytest.raises(ValueError, match="start_proportion .* must be less than end_proportion"):
+            WordPositionSelectionStrategy(start_proportion=0.5, end_proportion=0.5)
+
+    def test_invalid_start_greater_than_end_raises_error(self):
+        with pytest.raises(ValueError, match="start_proportion .* must be less than end_proportion"):
+            WordPositionSelectionStrategy(start_proportion=0.75, end_proportion=0.25)
+
+
+class TestAllWordsSelectionStrategy:
+    def test_select_all_words(self):
+        strategy = AllWordsSelectionStrategy()
+        words = ["The", "quick", "brown", "fox", "jumps"]
+        result = strategy.select_words(words=words)
+        assert result == [0, 1, 2, 3, 4]
+
+    def test_select_all_words_single_word(self):
+        strategy = AllWordsSelectionStrategy()
+        words = ["Hello"]
+        result = strategy.select_words(words=words)
+        assert result == [0]
+
+    def test_select_all_words_empty_list(self):
+        strategy = AllWordsSelectionStrategy()
+        result = strategy.select_words(words=[])
+        assert result == []

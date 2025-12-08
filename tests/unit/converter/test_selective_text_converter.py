@@ -94,7 +94,7 @@ class TestSelectiveTextConverter:
     async def test_convert_async_with_position_strategy(self):
         converter = SelectiveTextConverter(
             converter=Base64Converter(),
-            selection_strategy=PositionSelectionStrategy(position="first_half"),
+            selection_strategy=PositionSelectionStrategy(start_proportion=0.0, end_proportion=0.5),
         )
         result = await converter.convert_async(prompt="0123456789", input_type="text")
         # "01234" in base64 is "MDEyMzQ="
@@ -166,7 +166,7 @@ class TestSelectiveTextConverter:
         # First converter: convert first half with preserve_tokens
         converter1 = SelectiveTextConverter(
             converter=Base64Converter(),
-            selection_strategy=PositionSelectionStrategy(position="first_half"),
+            selection_strategy=PositionSelectionStrategy(start_proportion=0.0, end_proportion=0.5),
             preserve_tokens=True,
         )
         result1 = await converter1.convert_async(prompt="HelloWorld", input_type="text")
@@ -174,7 +174,7 @@ class TestSelectiveTextConverter:
         # Second converter: convert second half with preserve_tokens
         converter2 = SelectiveTextConverter(
             converter=ROT13Converter(),
-            selection_strategy=PositionSelectionStrategy(position="second_half"),
+            selection_strategy=PositionSelectionStrategy(start_proportion=0.5, end_proportion=1.0),
             preserve_tokens=True,
         )
         result2 = await converter2.convert_async(prompt="HelloWorld", input_type="text")

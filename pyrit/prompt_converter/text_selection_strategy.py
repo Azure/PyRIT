@@ -40,7 +40,7 @@ class TokenSelectionStrategy(TextSelectionStrategy):
     Example:
         >>> first_converter = SelectiveTextConverter(
         ...     converter=Base64Converter(),
-        ...     selection_strategy=WordPositionSelectionStrategy(position="second_half"),
+        ...     selection_strategy=WordPositionSelectionStrategy(start_proportion=0.5, end_proportion=1.0),
         ...     preserve_tokens=True
         ... )
         >>> # Text after first converter: "hello world ⟪Y29udmVydGVk⟫"
@@ -244,38 +244,31 @@ class KeywordSelectionStrategy(TextSelectionStrategy):
 
 class PositionSelectionStrategy(TextSelectionStrategy):
     """
-    Selects text based on relative positions like 'first_half', 'second_half', etc.
+    Selects text based on proportional start and end positions.
     """
 
-    def __init__(self, *, position: str) -> None:
+    def __init__(self, *, start_proportion: float, end_proportion: float) -> None:
         """
         Initializes the position selection strategy.
 
         Args:
-            position (str): The position identifier. Valid values:
-                - 'first_half', 'second_half'
-                - 'first_third', 'second_third', 'last_third'
-                - 'first_quarter', 'second_quarter', 'third_quarter', 'last_quarter'
+            start_proportion (float): The starting position as a proportion (0.0 to 1.0).
+            end_proportion (float): The ending position as a proportion (0.0 to 1.0).
 
         Raises:
-            ValueError: If the position string is not recognized.
+            ValueError: If proportions are not between 0.0 and 1.0, or start >= end.
         """
-        valid_positions = {
-            "first_half": (0.0, 0.5),
-            "second_half": (0.5, 1.0),
-            "first_third": (0.0, 1 / 3),
-            "second_third": (1 / 3, 2 / 3),
-            "last_third": (2 / 3, 1.0),
-            "first_quarter": (0.0, 0.25),
-            "second_quarter": (0.25, 0.5),
-            "third_quarter": (0.5, 0.75),
-            "last_quarter": (0.75, 1.0),
-        }
+        if not 0.0 <= start_proportion <= 1.0:
+            raise ValueError(f"start_proportion must be between 0.0 and 1.0, got {start_proportion}")
+        if not 0.0 <= end_proportion <= 1.0:
+            raise ValueError(f"end_proportion must be between 0.0 and 1.0, got {end_proportion}")
+        if start_proportion >= end_proportion:
+            raise ValueError(
+                f"start_proportion ({start_proportion}) must be less than end_proportion ({end_proportion})"
+            )
 
-        if position not in valid_positions:
-            raise ValueError(f"Invalid position '{position}'. Valid positions are: {', '.join(valid_positions.keys())}")
-
-        self._start_proportion, self._end_proportion = valid_positions[position]
+        self._start_proportion = start_proportion
+        self._end_proportion = end_proportion
 
     def select_range(self, *, text: str) -> tuple[int, int]:
         """
@@ -551,38 +544,31 @@ class WordRegexSelectionStrategy(WordSelectionStrategy):
 
 class WordPositionSelectionStrategy(WordSelectionStrategy):
     """
-    Selects words based on relative positions like 'first_half', 'second_half', etc.
+    Selects words based on proportional start and end positions.
     """
 
-    def __init__(self, *, position: str) -> None:
+    def __init__(self, *, start_proportion: float, end_proportion: float) -> None:
         """
         Initializes the word position selection strategy.
 
         Args:
-            position (str): The position identifier. Valid values:
-                - 'first_half', 'second_half'
-                - 'first_third', 'second_third', 'last_third'
-                - 'first_quarter', 'second_quarter', 'third_quarter', 'last_quarter'
+            start_proportion (float): The starting position as a proportion (0.0 to 1.0).
+            end_proportion (float): The ending position as a proportion (0.0 to 1.0).
 
         Raises:
-            ValueError: If the position string is not recognized.
+            ValueError: If proportions are not between 0.0 and 1.0, or start >= end.
         """
-        valid_positions = {
-            "first_half": (0.0, 0.5),
-            "second_half": (0.5, 1.0),
-            "first_third": (0.0, 1 / 3),
-            "second_third": (1 / 3, 2 / 3),
-            "last_third": (2 / 3, 1.0),
-            "first_quarter": (0.0, 0.25),
-            "second_quarter": (0.25, 0.5),
-            "third_quarter": (0.5, 0.75),
-            "last_quarter": (0.75, 1.0),
-        }
+        if not 0.0 <= start_proportion <= 1.0:
+            raise ValueError(f"start_proportion must be between 0.0 and 1.0, got {start_proportion}")
+        if not 0.0 <= end_proportion <= 1.0:
+            raise ValueError(f"end_proportion must be between 0.0 and 1.0, got {end_proportion}")
+        if start_proportion >= end_proportion:
+            raise ValueError(
+                f"start_proportion ({start_proportion}) must be less than end_proportion ({end_proportion})"
+            )
 
-        if position not in valid_positions:
-            raise ValueError(f"Invalid position '{position}'. Valid positions are: {', '.join(valid_positions.keys())}")
-
-        self._start_proportion, self._end_proportion = valid_positions[position]
+        self._start_proportion = start_proportion
+        self._end_proportion = end_proportion
 
     def select_words(self, *, words: List[str]) -> List[int]:
         """

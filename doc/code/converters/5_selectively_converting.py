@@ -112,7 +112,7 @@ await printer.print_conversation_async(result=result)  # type: ignore
 # Convert all numbers in the prompt
 converter = SelectiveTextConverter(
     converter=Base64Converter(),
-    selection_strategy=WordRegexSelectionStrategy(pattern=r"\\d+"),
+    selection_strategy=WordRegexSelectionStrategy(pattern=r"\d+"),
 )
 
 converters = PromptConverterConfiguration.from_converters(converters=[converter])
@@ -137,7 +137,7 @@ await printer.print_conversation_async(result=result)  # type: ignore
 # Convert the second half of the prompt
 converter = SelectiveTextConverter(
     converter=ROT13Converter(),
-    selection_strategy=WordPositionSelectionStrategy(position="second_half"),
+    selection_strategy=WordPositionSelectionStrategy(start_proportion=0.5, end_proportion=1.0),
 )
 
 converters = PromptConverterConfiguration.from_converters(converters=[converter])
@@ -206,16 +206,16 @@ await printer.print_conversation_async(result=result)  # type: ignore
 # You can apply different converters in sequence by preserving the tokens. This example converts the first half of the text to Russian, and the second half to Spanish.
 
 # %%
-# First convert the second half to russian
+# First convert the first half to russian
 first_converter = SelectiveTextConverter(
     converter=TranslationConverter(converter_target=OpenAIChatTarget(), language="russian"),
-    selection_strategy=WordPositionSelectionStrategy(position="first_half"),
+    selection_strategy=WordPositionSelectionStrategy(start_proportion=0.0, end_proportion=0.5),
 )
 
 # Then converts the second half to spanish
 second_converter = SelectiveTextConverter(
     converter=TranslationConverter(converter_target=OpenAIChatTarget(), language="spanish"),
-    selection_strategy=WordPositionSelectionStrategy(position="second_half"),
+    selection_strategy=WordPositionSelectionStrategy(start_proportion=0.5, end_proportion=1.0),
 )
 
 converters = PromptConverterConfiguration.from_converters(converters=[first_converter, second_converter])
@@ -240,7 +240,7 @@ await printer.print_conversation_async(result=result)  # type: ignore
 
 first_converter = SelectiveTextConverter(
     converter=ToneConverter(converter_target=OpenAIChatTarget(), tone="angry"),
-    selection_strategy=WordPositionSelectionStrategy(position="second_half"),
+    selection_strategy=WordPositionSelectionStrategy(start_proportion=0.5, end_proportion=1.0),
     preserve_tokens=True,
 )
 
@@ -289,5 +289,5 @@ await printer.print_conversation_async(result=result)  # type: ignore
 # - `WordIndexSelectionStrategy` - Specific word indices
 # - `WordKeywordSelectionStrategy` - Match specific keywords
 # - `WordRegexSelectionStrategy` - Match regex patterns
-# - `WordPositionSelectionStrategy` - Relative positions (first_half, second_half, first_third, etc.)
+# - `WordPositionSelectionStrategy` - Proportional positions (e.g., start_proportion=0.0, end_proportion=0.5 for first half)
 # - `WordProportionSelectionStrategy` - Random proportion of words
