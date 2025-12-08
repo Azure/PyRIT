@@ -137,7 +137,7 @@ def _load_initializers_from_scripts(
     return loaded_initializers
 
 
-async def _execute_initializers(*, initializers: Sequence["PyRITInitializer"]) -> None:
+async def _execute_initializers_async(*, initializers: Sequence["PyRITInitializer"]) -> None:
     """
     Execute PyRITInitializer instances in execution order.
 
@@ -175,7 +175,7 @@ async def _execute_initializers(*, initializers: Sequence["PyRITInitializer"]) -
             initializer.validate()
 
             # Then initialize with tracking to capture what was configured
-            await initializer.initialize_with_tracking()
+            await initializer.initialize_with_tracking_async()
 
             logger.debug(f"Successfully executed initializer: {initializer.name}")
 
@@ -254,4 +254,4 @@ async def initialize_pyrit_async(
 
     # Execute all initializers (sorted by execution_order)
     if all_initializers:
-        await _execute_initializers(initializers=all_initializers)
+        await _execute_initializers_async(initializers=all_initializers)

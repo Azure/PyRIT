@@ -120,7 +120,7 @@ class PyRITInitializer(ABC):
                 f"{', '.join(missing_vars)}"
             )
 
-    async def initialize_with_tracking(self) -> None:
+    async def initialize_with_tracking_async(self) -> None:
         """
         Execute initialization while tracking what changes are made.
 
@@ -166,7 +166,7 @@ class PyRITInitializer(ABC):
                 if name not in current_main_dict and name not in tracking_info["global_variables"]:
                     tracking_info["global_variables"].append(name)
 
-    async def get_dynamic_default_values_info(self) -> Dict[str, Any]:
+    async def get_dynamic_default_values_info_async(self) -> Dict[str, Any]:
         """
         Get information about what default values and global variables this initializer sets.
         This is useful for debugging what default_values are set by an initializer.
@@ -273,7 +273,7 @@ class PyRITInitializer(ABC):
 
         # Add dynamic default values information
         try:
-            defaults_info = await instance.get_dynamic_default_values_info()
+            defaults_info = await instance.get_dynamic_default_values_info_async()
             base_info["default_values"] = defaults_info["default_values"]
             base_info["global_variables"] = defaults_info["global_variables"]
         except Exception as e:

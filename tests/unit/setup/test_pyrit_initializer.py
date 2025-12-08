@@ -204,7 +204,7 @@ class TestPyRITInitializerBase:
 
 
 class TestInitializeWithTracking:
-    """Tests for initialize_with_tracking method."""
+    """Tests for initialize_with_tracking_async method."""
 
     def setup_method(self) -> None:
         """Clear default values before each test."""
@@ -219,7 +219,7 @@ class TestInitializeWithTracking:
             delattr(sys.modules["__main__"], "tracked_var")
 
     async def test_initialize_with_tracking_calls_initialize(self):
-        """Test that initialize_with_tracking calls initialize method."""
+        """Test that initialize_with_tracking_async calls initialize method."""
         executed = False
 
         class TrackableInit(PyRITInitializer):
@@ -236,7 +236,7 @@ class TestInitializeWithTracking:
                 executed = True
 
         init = TrackableInit()
-        await init.initialize_with_tracking()
+        await init.initialize_with_tracking_async()
         assert executed
 
     async def test_initialize_with_tracking_captures_default_values(self):
@@ -259,7 +259,7 @@ class TestInitializeWithTracking:
                 set_default_value(class_type=DummyClass, parameter_name="value", value="tracked")
 
         init = TrackingInit()
-        await init.initialize_with_tracking()
+        await init.initialize_with_tracking_async()
 
         # Verify the default was actually set
         from pyrit.common.apply_defaults import get_global_default_values
@@ -283,7 +283,7 @@ class TestInitializeWithTracking:
                 set_global_variable(name="tracked_var", value="test_value")
 
         init = GlobalVarInit()
-        await init.initialize_with_tracking()
+        await init.initialize_with_tracking_async()
 
         # Verify the global variable was set
         assert hasattr(sys.modules["__main__"], "tracked_var")
@@ -517,7 +517,7 @@ class TestGetInfoTracking:
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestGetDynamicDefaultValuesInfo:
-    """Tests for get_dynamic_default_values_info method."""
+    """Tests for get_dynamic_default_values_info_async method."""
 
     def setup_method(self) -> None:
         """Clear default values before each test."""
@@ -543,7 +543,7 @@ class TestGetDynamicDefaultValuesInfo:
                 pass
 
         init = DynamicInit()
-        info = await init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
         assert isinstance(info, dict)
 
     async def test_get_dynamic_info_has_required_keys(self):
@@ -562,7 +562,7 @@ class TestGetDynamicDefaultValuesInfo:
                 pass
 
         init = KeysInit()
-        info = await init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
         assert "default_values" in info
         assert "global_variables" in info
 
@@ -586,7 +586,7 @@ class TestGetDynamicDefaultValuesInfo:
                 set_default_value(class_type=DummyClass, parameter_name="value", value="captured")
 
         init = DefaultsInit()
-        info = await init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
 
         # Should capture that a default was set
         assert isinstance(info["default_values"], list)
@@ -607,7 +607,7 @@ class TestGetDynamicDefaultValuesInfo:
                 set_global_variable(name="dynamic_test_var", value="captured")
 
         init = GlobalsInit()
-        info = await init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
 
         assert isinstance(info["global_variables"], list)
 
@@ -634,7 +634,7 @@ class TestGetDynamicDefaultValuesInfo:
                 set_default_value(class_type=DummyClass, parameter_name="other_value", value="temporary")
 
         init = RestoringInit()
-        await init.get_dynamic_default_values_info()
+        await init.get_dynamic_default_values_info_async()
 
         # Original default should still be there
         from pyrit.common.apply_defaults import get_global_default_values
@@ -645,7 +645,7 @@ class TestGetDynamicDefaultValuesInfo:
 
 
 class TestGetDynamicDefaultValuesInfoWithoutMemory:
-    """Tests for get_dynamic_default_values_info method without memory."""
+    """Tests for get_dynamic_default_values_info_async method without memory."""
 
     async def test_get_dynamic_info_without_memory_returns_message(self):
         """Test that method returns helpful message when memory not initialized."""
@@ -667,7 +667,7 @@ class TestGetDynamicDefaultValuesInfoWithoutMemory:
                 pass
 
         init = NoMemoryInit()
-        info = await init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
 
         # Should return helpful messages
         assert "initialize_pyrit()" in str(info["default_values"])
