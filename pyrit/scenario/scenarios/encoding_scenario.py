@@ -172,7 +172,7 @@ class EncodingScenario(Scenario):
             list[str]: List of seed prompt strings to be encoded and tested.
         """
         seed_prompts: list[str] = []
-        garak_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "garak"
+        garak_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "garak"
         seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "slur_terms_en.prompt").get_values())
         seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "web_html_js.prompt").get_values())
 

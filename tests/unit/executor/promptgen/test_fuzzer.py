@@ -44,8 +44,10 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def simple_prompts(self) -> list[str]:
         """Sample prompts for testing."""
-        prompts = SeedDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
-        return [p.value for p in prompts.prompts]
+        prompts = SeedDataset.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt" / "illegal.prompt"
+        )
+        return [p.value for p in prompts.seeds]
 
     @pytest.fixture
     def simple_prompt_templates(self) -> list[str]:

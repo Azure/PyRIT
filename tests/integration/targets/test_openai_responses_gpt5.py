@@ -47,9 +47,10 @@ async def test_openai_responses_gpt5(sqlite_instance, gpt5_args):
 
     result = await target.send_prompt_async(message=user_piece.to_message())
     assert result is not None
-    assert len(result.message_pieces) == 2
-    assert result.message_pieces[0].role == "assistant"
-    assert result.message_pieces[1].role == "assistant"
+    assert len(result) == 1
+    assert len(result[0].message_pieces) == 2
+    assert result[0].message_pieces[0].role == "assistant"
+    assert result[0].message_pieces[1].role == "assistant"
     # Hope that the model manages to give the correct answer somewhere (GPT-5 really should)
     assert "Paris" in result.message_pieces[1].converted_value
 

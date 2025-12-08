@@ -123,33 +123,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    fetch_adv_bench_dataset
-    fetch_aya_redteaming_dataset
-    fetch_babelscape_alert_dataset
-    fetch_ccp_sensitive_prompts_dataset
-    fetch_darkbench_dataset
-    fetch_decoding_trust_stereotypes_dataset
-    fetch_equitymedqa_dataset_unique_values
-    fetch_examples
-    fetch_forbidden_questions_dataset
-    fetch_harmbench_dataset
-    fetch_harmbench_multimodal_dataset_async
-    fetch_librAI_do_not_answer_dataset
-    fetch_llm_latent_adversarial_training_harmful_dataset
-    fetch_jbb_behaviors_by_harm_category
-    fetch_jbb_behaviors_by_jbb_category
-    fetch_jbb_behaviors_dataset
-    fetch_many_shot_jailbreaking_dataset
-    fetch_medsafetybench_dataset
-    fetch_mlcommons_ailuminate_demo_dataset
-    fetch_multilingual_vulnerability_dataset
-    fetch_pku_safe_rlhf_dataset
-    fetch_seclists_bias_testing_dataset
-    fetch_sorry_bench_dataset
-    fetch_sosbench_dataset
-    fetch_tdc23_redteaming_dataset
-    fetch_wmdp_dataset
-    fetch_xstest_dataset
+    SeedDatasetProvider
+    TextJailBreak
 
 
 
@@ -463,10 +438,10 @@ API Reference
     HuggingFaceEndpointTarget
     limit_requests_per_minute
     OpenAICompletionTarget
-    OpenAIDALLETarget
+    OpenAIImageTarget
     OpenAIChatTarget
     OpenAIResponseTarget
-    OpenAISoraTarget
+    OpenAIVideoTarget
     OpenAITTSTarget
     OpenAITarget
     PlaywrightTarget

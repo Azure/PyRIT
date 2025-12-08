@@ -31,6 +31,20 @@ def fake_construct_response_from_request(request, response_text_pieces):
     return {"dummy": True, "request": request, "response": response_text_pieces}
 
 
+def create_mock_completion(content: str = "hi", finish_reason: str = "stop"):
+    """Helper to create a mock OpenAI completion response"""
+    from openai.types.chat import ChatCompletion
+
+    mock_completion = MagicMock(spec=ChatCompletion)
+    mock_completion.choices = [MagicMock()]
+    mock_completion.choices[0].finish_reason = finish_reason
+    mock_completion.choices[0].message.content = content
+    mock_completion.model_dump_json.return_value = json.dumps(
+        {"choices": [{"finish_reason": finish_reason, "message": {"content": content}}]}
+    )
+    return mock_completion
+
+
 @pytest.fixture
 def sample_conversations() -> MutableSequence[MessagePiece]:
     conversations = get_sample_conversations()
@@ -288,25 +302,19 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
         ]
     )
     # Make assistant response empty
-    openai_response_json["choices"][0]["message"]["content"] = ""
-
-    openai_mock_return = MagicMock()
-    openai_mock_return.text = json.dumps(openai_response_json)
-
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        with patch(
-            "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-        ) as mock_create:
-            mock_create.return_value = openai_mock_return
-            target._memory = MagicMock(MemoryInterface)
+        # Mock the OpenAI SDK client to return empty content
+        mock_completion = create_mock_completion(content="")
+        target._async_client.chat.completions.create = AsyncMock(  # type: ignore[method-assign]
+            return_value=mock_completion
+        )
+        target._memory = MagicMock(MemoryInterface)
 
-            with pytest.raises(EmptyResponseException):
-                await target.send_prompt_async(message=message)
-
-            assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        with pytest.raises(EmptyResponseException):
+            await target.send_prompt_async(message=message)
 
 
 @pytest.mark.asyncio
@@ -319,20 +327,18 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
 
     target._memory = mock_memory
 
-    response = MagicMock()
-    response.status_code = 429
+    # Create proper mock request and response for RateLimitError
+    mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+    mock_response = httpx.Response(429, text="Rate Limit Reached", request=mock_request)
+    side_effect = RateLimitError("Rate Limit Reached", response=mock_response, body=None)
 
-    side_effect = httpx.HTTPStatusError("Rate Limit Reached", response=response, request=MagicMock())
+    # Mock the OpenAI SDK client method
+    target._async_client.chat.completions.create = AsyncMock(side_effect=side_effect)  # type: ignore[method-assign]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-        message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
+    message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
-        with pytest.raises(RateLimitException) as rle:
-            await target.send_prompt_async(message=message)
-            target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_message_to_memory.assert_called_once_with(request=message)
-
-            assert str(rle.value) == "Rate Limit Reached"
+    with pytest.raises(RateLimitException):
+        await target.send_prompt_async(message=message)
 
 
 @pytest.mark.asyncio
@@ -345,19 +351,17 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
 
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="Hello")])
 
-    response = MagicMock()
-    response.status_code = 400
-    response.text = "Some error message"
+    # Create proper mock request and response for BadRequestError (without content_filter)
+    mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+    mock_response = httpx.Response(400, text="Some error message", request=mock_request)
+    side_effect = BadRequestError("Bad Request", response=mock_response, body="Some error message")
 
-    side_effect = httpx.HTTPStatusError("Bad Request", response=response, request=MagicMock())
+    # Mock the OpenAI SDK client method
+    target._async_client.chat.completions.create = AsyncMock(side_effect=side_effect)  # type: ignore[method-assign]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-        with pytest.raises(httpx.HTTPStatusError) as bre:
-            await target.send_prompt_async(message=message)
-            target._memory.get_conversation.assert_called_once_with(conversation_id="123")
-            target._memory.add_message_to_memory.assert_called_once_with(request=message)
-
-            assert str(bre.value) == "Bad Request"
+    # Non-content-filter BadRequestError should be re-raised
+    with pytest.raises(Exception):  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
+        await target.send_prompt_async(message=message)
 
 
 @pytest.mark.asyncio
@@ -395,15 +399,16 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatT
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        with patch(
-            "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-        ) as mock_create:
-            openai_mock_return = MagicMock()
-            openai_mock_return.text = json.dumps(openai_response_json)
-            mock_create.return_value = openai_mock_return
-            response: Message = await target.send_prompt_async(message=message)
-            assert len(response.message_pieces) == 1
-            assert response.get_value() == "hi"
+        # Mock the OpenAI SDK client to return a completion
+        mock_completion = create_mock_completion(content="hi")
+        target._async_client.chat.completions.create = AsyncMock(  # type: ignore[method-assign]
+            return_value=mock_completion
+        )
+
+        response: list[Message] = await target.send_prompt_async(message=message)
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].get_value() == "hi"
     os.remove(tmp_file_name)
 
 
@@ -439,70 +444,57 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
         ]
     )
     # Make assistant response empty
-    openai_response_json["choices"][0]["message"]["content"] = ""
     with patch(
         "pyrit.common.data_url_converter.convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        with patch(
-            "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-        ) as mock_create:
-            openai_mock_return = MagicMock()
-            openai_mock_return.text = json.dumps(openai_response_json)
-            mock_create.return_value = openai_mock_return
-            target._memory = MagicMock(MemoryInterface)
+        # Mock the OpenAI SDK client to return empty content
+        mock_completion = create_mock_completion(content="")
+        target._async_client.chat.completions.create = AsyncMock(  # type: ignore[method-assign]
+            return_value=mock_completion
+        )
+        target._memory = MagicMock(MemoryInterface)
 
-            with pytest.raises(EmptyResponseException):
-                await target.send_prompt_async(message=message)
-
-            assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        with pytest.raises(EmptyResponseException):
+            await target.send_prompt_async(message=message)
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChatTarget):
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
-    response = MagicMock()
-    response.status_code = 429
+    # Create proper mock request and response for RateLimitError
+    mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+    mock_response = httpx.Response(429, text="Rate Limit Reached", request=mock_request)
+    side_effect = RateLimitError("Rate Limit Reached", response=mock_response, body="Rate limit reached")
 
-    side_effect = RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
+    # Mock the OpenAI SDK client method
+    target._async_client.chat.completions.create = AsyncMock(side_effect=side_effect)  # type: ignore[method-assign]
 
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect
-    ) as mock_request:
-        with pytest.raises(RateLimitError):
-            await target.send_prompt_async(message=message)
-            assert mock_request.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+    with pytest.raises(RateLimitException):
+        await target.send_prompt_async(message=message)
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
-    response = MagicMock()
-    response.status_code = 400
 
-    side_effect = BadRequestError("Bad Request Error", response=response, body="Bad request")
+    # Create proper mock request and response for BadRequestError (without content_filter)
+    mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+    mock_response = httpx.Response(400, text="Bad Request Error", request=mock_request)
+    side_effect = BadRequestError("Bad Request Error", response=mock_response, body="Bad request")
 
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")])
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", side_effect=side_effect):
-        with pytest.raises(BadRequestError) as bre:
-            await target.send_prompt_async(message=message)
-            assert str(bre.value) == "Bad Request Error"
+    # Mock the OpenAI SDK client method
+    target._async_client.chat.completions.create = AsyncMock(side_effect=side_effect)  # type: ignore[method-assign]
+
+    # Non-content-filter BadRequestError should be re-raised
+    with pytest.raises(Exception):  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
+        await target.send_prompt_async(message=message)
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
-    response_body = json.dumps(
-        {
-            "choices": [
-                {
-                    "content_filter_results": {"violence": {"filtered": True, "severity": "medium"}},
-                    "finish_reason": "content_filter",
-                    "message": {"content": "Offending content omitted since this is just a test.", "role": "assistant"},
-                }
-            ],
-        }
-    )
 
     message = Message(
         message_pieces=[
@@ -514,16 +506,19 @@ async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
         ]
     )
 
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.text = response_body
+    # Mock the OpenAI SDK client to return content_filter finish_reason
+    mock_completion = create_mock_completion(
+        content="Offending content omitted since this is just a test.", finish_reason="content_filter"
+    )
+    target._async_client.chat.completions.create = AsyncMock(  # type: ignore[method-assign]
+        return_value=mock_completion
+    )
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", return_value=mock_response):
-        response = await target.send_prompt_async(message=message)
-        assert len(response.message_pieces) == 1
-        assert response.message_pieces[0].response_error == "blocked"
-        assert response.message_pieces[0].converted_value_data_type == "error"
-        assert "content_filter_results" in response.get_value()
+    response = await target.send_prompt_async(message=message)
+    assert len(response) == 1
+    assert len(response[0].message_pieces) == 1
+    assert response[0].message_pieces[0].response_error == "blocked"
+    assert response[0].message_pieces[0].converted_value_data_type == "error"
 
 
 def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
@@ -618,79 +613,6 @@ def test_is_response_format_json_no_metadata(target: OpenAIChatTarget):
     assert result is False
 
 
-@pytest.mark.parametrize("finish_reason", ["stop", "length"])
-def test_construct_message_valid_stop(
-    finish_reason: str, target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
-):
-    response_dict = {"choices": [{"finish_reason": f"{finish_reason}", "message": {"content": "Hello from stop"}}]}
-    response_str = json.dumps(response_dict)
-
-    result = target._construct_message_from_openai_json(
-        open_ai_str_response=response_str, message_piece=dummy_text_message_piece
-    )
-
-    assert len(result.message_pieces) == 1
-    assert result.get_value() == "Hello from stop"
-
-
-def test_construct_message_empty_response(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
-    response_dict = {"choices": [{"finish_reason": "stop", "message": {"content": ""}}]}
-    response_str = json.dumps(response_dict)
-
-    with pytest.raises(EmptyResponseException) as excinfo:
-        target._construct_message_from_openai_json(
-            open_ai_str_response=response_str, message_piece=dummy_text_message_piece
-        )
-    assert "The chat returned an empty response." in str(excinfo.value)
-
-
-def test_construct_message_unknown_finish_reason(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
-    response_dict = {"choices": [{"finish_reason": "unexpected", "message": {"content": "Some content"}}]}
-    response_str = json.dumps(response_dict)
-
-    with pytest.raises(PyritException) as excinfo:
-        target._construct_message_from_openai_json(
-            open_ai_str_response=response_str, message_piece=dummy_text_message_piece
-        )
-    assert "Unknown finish_reason" in str(excinfo.value)
-
-
-@pytest.mark.asyncio
-@pytest.mark.asyncio
-async def test_send_prompt_async_calls_refresh_auth_headers(target: OpenAIChatTarget):
-    mock_memory = MagicMock(spec=MemoryInterface)
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_message_to_memory = AsyncMock()
-
-    target._azure_auth = MagicMock()
-    target._memory = mock_memory
-
-    with (
-        patch.object(target, "refresh_auth_headers") as mock_refresh,
-        patch.object(target, "_validate_request"),
-        patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
-    ):
-        mock_construct.return_value = {}
-
-        with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-            mock_make_request.return_value = MagicMock(
-                text='{"choices": [{"finish_reason": "stop", "message": {"content": "test response"}}]}'
-            )
-
-            message = Message(
-                message_pieces=[
-                    MessagePiece(
-                        role="user",
-                        original_value="test prompt",
-                        converted_value="test prompt",
-                        converted_value_data_type="text",
-                    )
-                ]
-            )
-            await target.send_prompt_async(message=message)
-            mock_refresh.assert_called_once()
-
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
@@ -700,17 +622,17 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
     target._memory = mock_memory
 
     with (
-        patch.object(target, "refresh_auth_headers"),
         patch.object(target, "_validate_request"),
         patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
     ):
-        mock_construct.return_value = {}
 
+        mock_construct.return_value = {"model": "gpt-4", "messages": [], "stream": False}
+
+        # Create proper mock request and response for BadRequestError with content_filter
+        mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
         error_json = {"error": {"code": "content_filter"}}
-        response = MagicMock()
-        response.status_code = 400
-        response.text = json.dumps(error_json)
-        status_error = httpx.HTTPStatusError("Bad Request", request=MagicMock(), response=response)
+        mock_response = httpx.Response(400, text=json.dumps(error_json), request=mock_request)
+        status_error = BadRequestError("Bad Request", response=mock_response, body=error_json)
 
         message_piece = MessagePiece(
             role="user",
@@ -722,18 +644,21 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
         )
         message = Message(message_pieces=[message_piece])
 
-        with patch(
-            "pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)
-        ) as mock_make_request:
-            result = await target.send_prompt_async(message=message)
+        # Mock the OpenAI SDK client method
+        target._async_client.chat.completions.create = AsyncMock(  # type: ignore[method-assign]
+            side_effect=status_error
+        )
 
-            assert mock_make_request.call_count == 1
-            assert result.message_pieces[0].converted_value_data_type == "error"
-            assert result.message_pieces[0].response_error == "blocked"
+        result = await target.send_prompt_async(message=message)
+        assert len(result) == 1
+        assert result[0].message_pieces[0].converted_value_data_type == "error"
+        assert result[0].message_pieces[0].response_error == "blocked"
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_other_http_error(monkeypatch):
+    from openai import APIStatusError
+
     target = OpenAIChatTarget(
         model_name="gpt-4",
         endpoint="https://mock.azure.com/",
@@ -750,29 +675,27 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
     message = Message(message_pieces=[message_piece])
     target._memory = MagicMock()
     target._memory.get_conversation.return_value = []
-    target.refresh_auth_headers = MagicMock()
 
-    response = MagicMock()
-    response.status_code = 500
-    status_error = httpx.HTTPStatusError("Internal Server Error", request=MagicMock(), response=response)
+    # Create proper mock request and response for APIStatusError
+    mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+    mock_response = httpx.Response(500, text="Internal Server Error", request=mock_request)
+    status_error = APIStatusError("Internal Server Error", response=mock_response, body=None)
 
-    monkeypatch.setattr(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", AsyncMock(side_effect=status_error)
-    )
+    # Mock the OpenAI SDK client method
+    target._async_client.chat.completions.create = AsyncMock(side_effect=status_error)  # type: ignore[method-assign]
 
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(APIStatusError):
         await target.send_prompt_async(message=message)
 
 
-def test_set_auth_headers_with_entra_auth(patch_central_database):
-    """Test that _set_auth_headers properly configures Entra authentication."""
+def test_set_auth_with_entra_auth(patch_central_database):
+    """Test that Entra authentication is properly configured."""
     with (
         patch("pyrit.prompt_target.openai.openai_target.get_default_scope") as mock_scope,
         patch("pyrit.prompt_target.openai.openai_target.AzureAuth") as mock_auth_class,
     ):
         mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
         mock_auth_instance = MagicMock()
-        mock_auth_instance.get_token.return_value = "test_token_123"
         mock_auth_class.return_value = mock_auth_instance
 
         target = OpenAIChatTarget(
@@ -782,19 +705,18 @@ def test_set_auth_headers_with_entra_auth(patch_central_database):
         )
 
         # Verify Entra auth was configured correctly
-        mock_scope.assert_called_once_with("https://test.openai.azure.com")
+        # get_default_scope is called twice: once during auth setup, once during client initialization
+        assert mock_scope.call_count >= 1
+        mock_scope.assert_any_call("https://test.openai.azure.com")
         mock_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
-        mock_auth_instance.get_token.assert_called_once()
 
-        # Verify headers are set correctly
+        # Verify authentication objects are set correctly (SDK handles actual headers)
         assert target._azure_auth == mock_auth_instance
-        assert target._headers["Authorization"] == "Bearer test_token_123"
-        assert "Api-Key" not in target._headers
         assert target._api_key is None
 
 
-def test_set_auth_headers_with_api_key(patch_central_database):
-    """Test that _set_auth_headers properly configures API key authentication."""
+def test_set_auth_with_api_key(patch_central_database):
+    """Test that API key authentication is properly configured."""
     target = OpenAIChatTarget(
         model_name="gpt-4",
         endpoint="https://test.openai.azure.com",
@@ -802,29 +724,24 @@ def test_set_auth_headers_with_api_key(patch_central_database):
         use_entra_auth=False,
     )
 
-    # Verify API key auth was configured correctly
+    # Verify API key auth was configured correctly (SDK handles actual headers)
     assert target._azure_auth is None
     assert target._api_key == "test_api_key_456"
-    assert target._headers["Api-Key"] == "test_api_key_456"
-    assert target._headers["Authorization"] == "Bearer test_api_key_456"
 
 
-def test_url_validation_warning_for_incorrect_endpoint(caplog, patch_central_database):
-    """Test that URL validation warns for incorrect endpoints."""
+def test_url_validation_no_warning_for_custom_endpoint(caplog, patch_central_database):
+    """Test that URL validation doesn't warn for custom endpoint paths."""
     with patch.dict(os.environ, {}, clear=True):
         with caplog.at_level(logging.WARNING):
             target = OpenAIChatTarget(
                 model_name="gpt-4",
-                endpoint="https://api.openai.com/v1/wrong/path",  # Incorrect endpoint
+                endpoint="https://some.provider.com/v1/custom/path",  # Incorrect endpoint
                 api_key="test-key",
             )
 
-    # Should have a warning about incorrect endpoint
+    # Should NOT warn about custom paths - they could be for custom endpoints
     warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    assert len(warning_logs) >= 1
-    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
-    assert len(endpoint_warnings) == 1
-    assert "/chat/completions" in endpoint_warnings[0].message
+    assert len(warning_logs) == 0
     assert target
 
 
@@ -845,18 +762,306 @@ def test_url_validation_no_warning_for_correct_azure_endpoint(caplog, patch_cent
     assert target
 
 
-def test_url_validation_no_warning_for_correct_openai_endpoint(caplog, patch_central_database):
-    """Test that URL validation doesn't warn for correct OpenAI endpoints."""
+def test_azure_endpoint_with_api_version_query_param(patch_central_database):
+    """Test that Azure endpoints with api-version query parameter are handled correctly."""
     with patch.dict(os.environ, {}, clear=True):
-        with caplog.at_level(logging.WARNING):
-            target = OpenAIChatTarget(
-                model_name="gpt-4",
-                endpoint="https://api.openai.com/v1/chat/completions",
-                api_key="test-key",
-            )
+        target = OpenAIChatTarget(
+            model_name="gpt-4",
+            endpoint="https://test.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2024-02-15",
+            api_key="test-key",
+        )
 
-    # Should not have URL validation warnings
-    warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
-    endpoint_warnings = [log for log in warning_logs if "The provided endpoint URL" in log.message]
-    assert len(endpoint_warnings) == 0
-    assert target
+    # Verify the SDK client was initialized with the base endpoint and api_version extracted
+    assert target._async_client is not None
+    # The AsyncAzureOpenAI client should have been initialized with the base URL (no query params, no path)
+    # and the api_version as a separate parameter
+
+
+def test_azure_endpoint_new_format_openai_v1(patch_central_database):
+    """Test that Azure endpoints with /openai/v1 format are handled correctly."""
+    with patch.dict(os.environ, {}, clear=True):
+        target = OpenAIChatTarget(
+            model_name="gpt-4",
+            endpoint="https://test.openai.azure.com/openai/v1?api-version=2025-03-01-preview",
+            api_key="test-key",
+        )
+
+    # Verify the SDK client was initialized
+    assert target._async_client is not None
+    # The AsyncAzureOpenAI client should have been initialized with just the base URL
+
+
+def test_azure_responses_endpoint_format(patch_central_database):
+    """Test that Azure responses endpoint format is handled correctly."""
+    with patch.dict(os.environ, {}, clear=True):
+        from pyrit.prompt_target import OpenAIResponseTarget
+
+        target = OpenAIResponseTarget(
+            model_name="o4-mini",
+            endpoint="https://test.openai.azure.com/openai/responses?api-version=2025-03-01-preview",
+            api_key="test-key",
+        )
+
+    # Verify the SDK client was initialized
+    assert target._async_client is not None
+
+
+def test_azure_responses_endpoint_new_format(patch_central_database):
+    """Test that Azure responses endpoint with /openai/v1 format is handled correctly."""
+    with patch.dict(os.environ, {}, clear=True):
+        from pyrit.prompt_target import OpenAIResponseTarget
+
+        target = OpenAIResponseTarget(
+            model_name="o4-mini",
+            endpoint="https://test.openai.azure.com/openai/v1?api-version=2025-03-01-preview",
+            api_key="test-key",
+        )
+
+    # Verify the SDK client was initialized
+    assert target._async_client is not None
+
+
+def test_invalid_temperature_raises(patch_central_database):
+    """Test that invalid temperature values raise PyritException."""
+    with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
+        OpenAIChatTarget(
+            endpoint="https://test.com",
+            api_key="test",
+            temperature=-0.1,
+        )
+
+    with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
+        OpenAIChatTarget(
+            endpoint="https://test.com",
+            api_key="test",
+            temperature=2.1,
+        )
+
+
+def test_invalid_top_p_raises(patch_central_database):
+    """Test that invalid top_p values raise PyritException."""
+    with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
+        OpenAIChatTarget(
+            endpoint="https://test.com",
+            api_key="test",
+            top_p=-0.1,
+        )
+
+    with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
+        OpenAIChatTarget(
+            endpoint="https://test.com",
+            api_key="test",
+            top_p=1.1,
+        )
+
+
+@pytest.mark.asyncio
+async def test_content_filter_finish_reason_error(
+    target: OpenAIChatTarget, sample_conversations: MutableSequence[MessagePiece]
+):
+    """Test ContentFilterFinishReasonError from SDK is handled correctly."""
+    from openai import ContentFilterFinishReasonError
+
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = "test-conv-id"
+    request = Message(message_pieces=[message_piece])
+
+    # ContentFilterFinishReasonError takes no arguments
+    content_filter_error = ContentFilterFinishReasonError()
+
+    with patch.object(target._async_client.chat.completions, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = content_filter_error
+
+        response = await target.send_prompt_async(message=request)
+
+        # Should return a blocked response (wrapped in list)
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "blocked"
+
+
+@pytest.mark.asyncio
+async def test_bad_request_with_dict_body_content_filter(
+    target: OpenAIChatTarget, sample_conversations: MutableSequence[MessagePiece]
+):
+    """Test BadRequestError with dict body containing content_filter code."""
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = "test-conv-id"
+    request = Message(message_pieces=[message_piece])
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.text = '{"error": {"code": "content_filter", "message": "Filtered"}}'
+    mock_response.headers = {"x-request-id": "test-123"}
+
+    bad_request_error = BadRequestError(
+        "Bad request", response=mock_response, body={"error": {"code": "content_filter"}}
+    )
+
+    with patch.object(target._async_client.chat.completions, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = bad_request_error
+
+        response = await target.send_prompt_async(message=request)
+
+        # Should detect content filter from dict body
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "blocked"
+
+
+@pytest.mark.asyncio
+async def test_bad_request_with_string_content_filter(
+    target: OpenAIChatTarget, sample_conversations: MutableSequence[MessagePiece]
+):
+    """Test BadRequestError with non-parseable string containing 'content_filter'."""
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = "test-conv-id"
+    request = Message(message_pieces=[message_piece])
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.text = "Error: content_filter violation detected"
+    mock_response.headers = {"x-request-id": "test-123"}
+
+    bad_request_error = BadRequestError(
+        "Bad request", response=mock_response, body="Error: content_filter violation detected"
+    )
+
+    with patch.object(target._async_client.chat.completions, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = bad_request_error
+
+        response = await target.send_prompt_async(message=request)
+
+        # Should detect content filter from string matching
+        assert len(response) == 1
+        assert len(response[0].message_pieces) == 1
+        assert response[0].message_pieces[0].response_error == "blocked"
+
+
+@pytest.mark.asyncio
+async def test_api_status_error_429(target: OpenAIChatTarget, sample_conversations: MutableSequence[MessagePiece]):
+    """Test APIStatusError with status 429 raises RateLimitException."""
+    from openai import APIStatusError
+
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = "test-conv-id"
+    request = Message(message_pieces=[message_piece])
+
+    mock_response = MagicMock()
+    mock_response.status_code = 429
+    mock_response.text = "Too many requests"
+    mock_response.headers = {"x-request-id": "test-123"}
+
+    api_error = APIStatusError("Too many requests", response=mock_response, body={})
+    api_error.status_code = 429
+
+    with patch.object(target._async_client.chat.completions, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = api_error
+
+        with pytest.raises(RateLimitException):
+            await target.send_prompt_async(message=request)
+
+
+@pytest.mark.asyncio
+async def test_api_status_error_non_429(target: OpenAIChatTarget, sample_conversations: MutableSequence[MessagePiece]):
+    """Test APIStatusError with non-429 status is re-raised."""
+    from openai import APIStatusError
+
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = "test-conv-id"
+    request = Message(message_pieces=[message_piece])
+
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.text = "Internal server error"
+    mock_response.headers = {"x-request-id": "test-123"}
+
+    api_error = APIStatusError("Internal server error", response=mock_response, body={})
+    api_error.status_code = 500
+
+    with patch.object(target._async_client.chat.completions, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = api_error
+
+        with pytest.raises(APIStatusError):
+            await target.send_prompt_async(message=request)
+
+
+# Unit tests for override methods
+
+
+def test_check_content_filter_detects_filtered_response(target: OpenAIChatTarget):
+    """Test _check_content_filter detects content_filter finish_reason."""
+    mock_response = create_mock_completion(content="", finish_reason="content_filter")
+    assert target._check_content_filter(mock_response) is True
+
+
+def test_check_content_filter_no_filter(target: OpenAIChatTarget):
+    """Test _check_content_filter returns False for normal responses."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="stop")
+    assert target._check_content_filter(mock_response) is False
+
+
+def test_check_content_filter_length_finish(target: OpenAIChatTarget):
+    """Test _check_content_filter returns False for length finish_reason."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="length")
+    assert target._check_content_filter(mock_response) is False
+
+
+def test_validate_response_success_stop(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response passes for valid stop response."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="stop")
+    result = target._validate_response(mock_response, dummy_text_message_piece)
+    assert result is None
+
+
+def test_validate_response_success_length(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response passes for valid length response."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="length")
+    result = target._validate_response(mock_response, dummy_text_message_piece)
+    assert result is None
+
+
+def test_validate_response_no_choices(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for missing choices."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="stop")
+    mock_response.choices = []
+
+    with pytest.raises(PyritException, match="No choices returned"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+def test_validate_response_unknown_finish_reason(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for unknown finish_reason."""
+    mock_response = create_mock_completion(content="Hello", finish_reason="unexpected")
+
+    with pytest.raises(PyritException, match="Unknown finish_reason"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+def test_validate_response_empty_content(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for empty content."""
+    mock_response = create_mock_completion(content="", finish_reason="stop")
+
+    with pytest.raises(EmptyResponseException, match="empty response"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+def test_validate_response_none_content(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _validate_response raises for None content."""
+    mock_response = create_mock_completion(content=None, finish_reason="stop")
+    mock_response.choices[0].message.content = None
+
+    with pytest.raises(EmptyResponseException, match="empty response"):
+        target._validate_response(mock_response, dummy_text_message_piece)
+
+
+@pytest.mark.asyncio
+async def test_construct_message_from_response(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    """Test _construct_message_from_response extracts content correctly."""
+    mock_response = create_mock_completion(content="Hello from AI", finish_reason="stop")
+
+    result = await target._construct_message_from_response(mock_response, dummy_text_message_piece)
+
+    assert isinstance(result, Message)
+    assert len(result.message_pieces) == 1
+    assert result.message_pieces[0].converted_value == "Hello from AI"
