@@ -284,3 +284,113 @@ def test_is_json_response_supported(patch_central_database):
 
     mock_image_target = OpenAIImageTarget(model_name="test", endpoint="test", api_key="test")
     assert mock_image_target.is_json_response_supported() is False
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_url_response_triggers_retry(
+    image_target: OpenAIImageTarget,
+    sample_conversations: MutableSequence[MessagePiece],
+):
+    """Test that when model returns URL instead of base64, it triggers retry with response_format."""
+    request = sample_conversations[0]
+    request.conversation_id = str(uuid.uuid4())
+
+    # First call returns URL (no b64_json)
+    mock_response_url = MagicMock()
+    mock_image_url = MagicMock()
+    mock_image_url.b64_json = None
+    mock_image_url.url = "https://example.com/image.png"
+    mock_response_url.data = [mock_image_url]
+
+    # Second call returns base64 (after retry with response_format)
+    mock_response_b64 = MagicMock()
+    mock_image_b64 = MagicMock()
+    mock_image_b64.b64_json = "aGVsbG8="  # Base64 encoded "hello"
+    mock_response_b64.data = [mock_image_b64]
+
+    with patch.object(image_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
+        # First call returns URL, second call returns base64
+        mock_generate.side_effect = [mock_response_url, mock_response_b64]
+
+        resp = await image_target.send_prompt_async(message=Message([request]))
+        
+        # Should have called generate twice (initial + retry)
+        assert mock_generate.call_count == 2
+        
+        # First call should NOT have response_format
+        first_call_kwargs = mock_generate.call_args_list[0][1]
+        assert "response_format" not in first_call_kwargs
+        
+        # Second call should have response_format set to b64_json
+        second_call_kwargs = mock_generate.call_args_list[1][1]
+        assert second_call_kwargs["response_format"] == "b64_json"
+        
+        # Should have successfully returned the image
+        assert len(resp) == 1
+        path = resp[0].message_pieces[0].original_value
+        assert os.path.isfile(path)
+        
+        with open(path, "r") as file:
+            data = file.read()
+            assert data == "hello"
+        
+        os.remove(path)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_url_response_sets_flag(
+    image_target: OpenAIImageTarget,
+    sample_conversations: MutableSequence[MessagePiece],
+):
+    """Test that _requires_response_format flag is set after detecting URL response."""
+    request = sample_conversations[0]
+    request.conversation_id = str(uuid.uuid4())
+
+    # Initially, flag should be False
+    assert image_target._requires_response_format is False
+
+    # First call returns URL (no b64_json)
+    mock_response_url = MagicMock()
+    mock_image_url = MagicMock()
+    mock_image_url.b64_json = None
+    mock_image_url.url = "https://example.com/image.png"
+    mock_response_url.data = [mock_image_url]
+
+    # Second call returns base64
+    mock_response_b64 = MagicMock()
+    mock_image_b64 = MagicMock()
+    mock_image_b64.b64_json = "aGVsbG8="
+    mock_response_b64.data = [mock_image_b64]
+
+    with patch.object(image_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
+        mock_generate.side_effect = [mock_response_url, mock_response_b64]
+        await image_target.send_prompt_async(message=Message([request]))
+        
+        # After handling URL response, flag should be True
+        assert image_target._requires_response_format is True
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_uses_response_format_when_flag_set(
+    image_target: OpenAIImageTarget,
+    sample_conversations: MutableSequence[MessagePiece],
+):
+    """Test that once flag is set, response_format is always included."""
+    request = sample_conversations[0]
+
+    # Set the flag (simulating previous URL detection)
+    image_target._requires_response_format = True
+
+    mock_response = MagicMock()
+    mock_image = MagicMock()
+    mock_image.b64_json = "aGVsbG8="
+    mock_response.data = [mock_image]
+
+    with patch.object(image_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
+        mock_generate.return_value = mock_response
+        await image_target.send_prompt_async(message=Message([request]))
+        
+        # Should include response_format in the call
+        call_kwargs = mock_generate.call_args[1]
+        assert call_kwargs["response_format"] == "b64_json"
+
