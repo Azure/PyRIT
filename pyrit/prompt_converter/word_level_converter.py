@@ -2,18 +2,23 @@
 # Licensed under the MIT license.
 
 import abc
-import re
-from typing import List, Optional, Union
+from typing import Optional
 
-from pyrit.common.utils import get_random_indices
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_converter.prompt_converter import ConverterResult
+from pyrit.prompt_converter.text_selection_strategy import (
+    AllWordsSelectionStrategy,
+    WordSelectionStrategy,
+)
 
 
 class WordLevelConverter(PromptConverter):
     """
     Base class for word-level converters. Designed to convert text by processing each word individually.
+
+    This class now uses WordSelectionStrategy to determine which words to convert, providing
+    flexible selection options including indices, keywords, proportions, regex patterns, and positions.
 
     Note:
         The `convert_word_async` method is an abstract method that must be implemented by subclasses.
@@ -23,69 +28,21 @@ class WordLevelConverter(PromptConverter):
     def __init__(
         self,
         *,
-        indices: Optional[List[int]] = None,
-        keywords: Optional[List[str]] = None,
-        proportion: Optional[float] = None,
-        regex: Optional[Union[str, re.Pattern]] = None,
+        word_selection_strategy: Optional[WordSelectionStrategy] = None,
         word_split_separator: Optional[str] = " ",
     ):
         """
-        Initializes the converter with the specified selection parameters.
-
-        This class allows for selection of words to convert based on various criteria.
-        Only one selection parameter may be provided at a time (indices, keywords, proportion, or regex).
-        If no selection parameter is provided, all words will be converted.
+        Initializes the converter with the specified selection strategy.
 
         Args:
-            indices (Optional[List[int]]): Specific indices of words to convert.
-            keywords (Optional[List[str]]): Keywords to select words for conversion.
-            proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
-            regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
-            word_split_separator (Optional[str]): Separator used to split words in the input text (default " ").
+            word_selection_strategy (Optional[WordSelectionStrategy]): The strategy for selecting which
+                words to convert. If None, all words will be converted. Defaults to None.
+            word_split_separator (Optional[str]): Separator used to split words in the input text.
+                If None, splits by any whitespace. Defaults to " ".
         """
-        # Make sure at most one selection criteria is provided
-        criteria_map = {"indices": indices, "keywords": keywords, "proportion": proportion, "regex": regex}
-        provided_criteria = {name: value for name, value in criteria_map.items() if value is not None}
-
-        if len(provided_criteria) > 1:
-            raise ValueError("Only one selection criteria can be provided at a time")
-
-        if provided_criteria:
-            self._mode = list(provided_criteria.keys())[0]
-        else:
-            self._mode = "all"
-
-        self._keywords = keywords or []
-        self._indices = indices or []
-        self._proportion = 1.0 if proportion is None else proportion
-        self._regex = regex or ".*"
+        super().__init__()
+        self._word_selection_strategy = word_selection_strategy or AllWordsSelectionStrategy()
         self._word_split_separator = word_split_separator
-
-    def _select_word_indices(self, words: List[str]) -> List[int]:
-        """Returns indices of words to be converted based on the selection criteria."""
-        if not words:
-            return []
-
-        match self._mode:
-            case "all":
-                return list(range(len(words)))
-            case "keywords":
-                return [i for i, word in enumerate(words) if word in self._keywords]
-            case "proportion":
-                return get_random_indices(start=0, size=len(words), proportion=self._proportion)
-            case "regex":
-                return [i for i, word in enumerate(words) if re.search(self._regex, word)]
-            case "indices":
-                valid_indices = [i for i in self._indices if 0 <= i < len(words)]
-                invalid_indices = [i for i in self._indices if i < 0 or i >= len(words)]
-                if invalid_indices:
-                    raise ValueError(
-                        f"Invalid indices {invalid_indices} provided for custom selection."
-                        f" Valid range is 0 to {len(words) - 1}."
-                    )
-                return valid_indices
-            case _:
-                return list(range(len(words)))
 
     @abc.abstractmethod
     async def convert_word_async(self, word: str) -> str:
@@ -135,7 +92,8 @@ class WordLevelConverter(PromptConverter):
             words = prompt.split()  # if no specified separator, split by all whitespace
         else:
             words = prompt.split(self._word_split_separator)
-        selected_indices = self._select_word_indices(words=words)
+
+        selected_indices = self._word_selection_strategy.select_words(words=words)
 
         # Convert only selected words
         for idx in selected_indices:
