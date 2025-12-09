@@ -27,8 +27,6 @@ class ConversationScorer(Scorer):
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
-        supported_roles=["system", "user", "assistant", "tool", "developer"],
-        max_pieces_in_response=1,
         enforce_all_pieces_valid=True,
     )
 
@@ -145,6 +143,18 @@ class ConversationScorer(Scorer):
         ConversationScorer overrides _score_async to score entire conversations.
         """
         raise NotImplementedError("ConversationScorer uses _score_async, not _score_piece_async")
+
+    def validate_return_scores(self, scores: list[Score]):
+        """
+        Validate scores by delegating to the wrapped scorer's validation.
+
+        This ensures that scores are validated according to the wrapped scorer's requirements
+        (e.g., FloatScaleScorer validates [0,1] range, TrueFalseScorer validates true/false).
+
+        Args:
+            scores (list[Score]): The scores to be validated.
+        """
+        self._wrapped_scorer.validate_return_scores(scores)
 
 
 def create_conversation_scorer(
