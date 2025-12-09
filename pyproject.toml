@@ -80,6 +80,7 @@ dev = [
     "pytest-asyncio>=1.0.0",
     "pytest-cov>=6.1.1",
     "pytest-timeout>=2.4.0",
+    "pytest-xdist>=3.6.1",
     "respx>=0.22.0",
     "ruff>=0.14.4",
     "sphinxcontrib-mermaid>=1.0.0",
