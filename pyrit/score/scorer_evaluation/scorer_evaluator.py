@@ -36,6 +36,12 @@ T = TypeVar("T", bound="ScorerMetrics")
 
 @dataclass
 class ScorerMetrics:
+    """
+    Base dataclass for storing scorer evaluation metrics.
+
+    This class provides methods for serializing metrics to JSON and loading them from JSON files.
+    """
+
     def to_json(self) -> str:
         """
         Convert the metrics to a JSON string.
@@ -51,10 +57,13 @@ class ScorerMetrics:
         Load the metrics from a JSON file.
 
         Args:
-            json_path (str): The path to the JSON file.
+            file_path (Union[str, Path]): The path to the JSON file.
 
         Returns:
             ScorerMetrics: An instance of ScorerMetrics with the loaded data.
+
+        Raises:
+            FileNotFoundError: If the specified file does not exist.
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -137,7 +146,7 @@ class ScorerEvaluator(abc.ABC):
     @classmethod
     def from_scorer(cls, scorer: Scorer, metrics_type: Optional[MetricsType] = None) -> "ScorerEvaluator":
         """
-        Factory method to create a ScorerEvaluator based on the type of scoring.
+        Create a ScorerEvaluator based on the type of scoring.
 
         Args:
             scorer (Scorer): The scorer to evaluate.
@@ -277,6 +286,18 @@ class HarmScorerEvaluator(ScorerEvaluator):
     """
 
     def get_scorer_metrics(self, dataset_name: str) -> HarmScorerMetrics:
+        """
+        Retrieve the scorer metrics for a given dataset name.
+
+        Args:
+            dataset_name (str): The name of the dataset to retrieve metrics for.
+
+        Returns:
+            HarmScorerMetrics: The metrics for the specified dataset.
+
+        Raises:
+            FileNotFoundError: If metrics for the dataset are not found in any expected location.
+        """
         # First try the default PyRIT location
         metrics_path = self._get_metrics_path(dataset_name=dataset_name)
         if os.path.exists(metrics_path):
@@ -322,6 +343,24 @@ class HarmScorerEvaluator(ScorerEvaluator):
         save_results: bool = True,
         dataset_name: Optional[str] = None,
     ) -> HarmScorerMetrics:
+        """
+        Run evaluation from a CSV file containing harm-labeled data.
+
+        Args:
+            csv_path (Union[str, Path]): The path to the CSV file containing the labeled data.
+            human_label_col_names (List[str]): The names of the columns containing human labels.
+            objective_or_harm_col_name (str): The name of the column containing the harm category.
+            assistant_response_col_name (str): The name of the column containing assistant responses.
+                Defaults to "assistant_response".
+            assistant_response_data_type_col_name (Optional[str]): The name of the column containing the
+                assistant response data type. Defaults to None.
+            num_scorer_trials (int): The number of trials to run for scoring. Defaults to 1.
+            save_results (bool): Whether to save the evaluation results. Defaults to True.
+            dataset_name (Optional[str]): The name of the dataset. Defaults to None.
+
+        Returns:
+            HarmScorerMetrics: The metrics from the evaluation.
+        """
         labeled_dataset = HumanLabeledDataset.from_csv(
             csv_path=csv_path,
             metrics_type=MetricsType.HARM,
@@ -360,6 +399,9 @@ class HarmScorerEvaluator(ScorerEvaluator):
 
         Returns:
             HarmScorerMetrics: The metrics for the harm scorer.
+
+        Raises:
+            ValueError: If the HumanLabeledDataset is not of type HARM or contains multiple harm categories.
         """
         if labeled_dataset.metrics_type != MetricsType.HARM:
             raise ValueError("The HumanLabeledDataset must be of type HARM to evaluate a harm scorer.")
@@ -507,6 +549,18 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     """
 
     def get_scorer_metrics(self, dataset_name: str) -> ObjectiveScorerMetrics:
+        """
+        Retrieve the scorer metrics for a given dataset name.
+
+        Args:
+            dataset_name (str): The name of the dataset to retrieve metrics for.
+
+        Returns:
+            ObjectiveScorerMetrics: The metrics for the specified dataset.
+
+        Raises:
+            FileNotFoundError: If metrics for the dataset are not found in any expected location.
+        """
         # First try the default PyRIT location
         metrics_path = self._get_metrics_path(dataset_name=dataset_name)
         if os.path.exists(metrics_path):
@@ -552,6 +606,24 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         save_results: bool = True,
         dataset_name: Optional[str] = None,
     ) -> ObjectiveScorerMetrics:
+        """
+        Run evaluation from a CSV file containing objective-labeled data.
+
+        Args:
+            csv_path (Union[str, Path]): The path to the CSV file containing the labeled data.
+            human_label_col_names (List[str]): The names of the columns containing human labels.
+            objective_or_harm_col_name (str): The name of the column containing the objective description.
+            assistant_response_col_name (str): The name of the column containing assistant responses.
+                Defaults to "assistant_response".
+            assistant_response_data_type_col_name (Optional[str]): The name of the column containing the
+                assistant response data type. Defaults to None.
+            num_scorer_trials (int): The number of trials to run for scoring. Defaults to 1.
+            save_results (bool): Whether to save the evaluation results. Defaults to True.
+            dataset_name (Optional[str]): The name of the dataset. Defaults to None.
+
+        Returns:
+            ObjectiveScorerMetrics: The metrics from the evaluation.
+        """
         labeled_dataset = HumanLabeledDataset.from_csv(
             csv_path=csv_path,
             metrics_type=MetricsType.OBJECTIVE,
@@ -586,9 +658,13 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
+            csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to. Defaults to None.
 
         Returns:
             ObjectiveScorerMetrics: The metrics for the objective scorer.
+
+        Raises:
+            ValueError: If the HumanLabeledDataset is not of type OBJECTIVE or contains invalid entries.
         """
         if labeled_dataset.metrics_type != MetricsType.OBJECTIVE:
             raise ValueError("The HumanLabeledDataset must be of type OBJECTIVE to evaluate an objective scorer.")
