@@ -7,10 +7,9 @@ from uuid import UUID
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.models.literals import PromptResponseError
 from pyrit.models.message_piece import Originator
-from pyrit.score import Scorer
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -126,7 +125,10 @@ class ConversationScorer(Scorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Required abstract method - not used for ConversationScorer as we override _score_async.
+        Raise NotImplementedError as ConversationScorer uses _score_async instead.
+
+        This method is required by the abstract base class but not used.
+        ConversationScorer overrides _score_async to score entire conversations.
         """
         raise NotImplementedError("ConversationScorer uses _score_async, not _score_piece_async")
 
@@ -137,7 +139,7 @@ def create_conversation_scorer(
     validator: Optional[ScorerPromptValidator] = None,
 ) -> Scorer:
     """
-    Factory method to create a ConversationScorer that inherits from the same type as the wrapped scorer.
+    Create a ConversationScorer that inherits from the same type as the wrapped scorer.
 
     This factory dynamically creates a ConversationScorer class that inherits from the wrapped scorer's
     base class (FloatScaleScorer or TrueFalseScorer), ensuring the returned scorer is an instance
@@ -151,6 +153,9 @@ def create_conversation_scorer(
 
     Returns:
         Scorer: A ConversationScorer instance that is also an instance of the wrapped scorer's type.
+
+    Raises:
+        ValueError: If the scorer is not an instance of FloatScaleScorer or TrueFalseScorer.
 
     Example:
         >>> float_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=scale_path)
