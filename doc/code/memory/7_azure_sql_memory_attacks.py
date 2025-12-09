@@ -31,9 +31,9 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import AZURE_SQL, initialize_pyrit
+from pyrit.setup import AZURE_SQL, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=AZURE_SQL)
+await initialize_pyrit_async(memory_db_type=AZURE_SQL)  # type: ignore
 
 target = OpenAIChatTarget()
 
@@ -173,9 +173,9 @@ from pyrit.executor.attack import (
 )
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import AZURE_SQL, initialize_pyrit
+from pyrit.setup import AZURE_SQL, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=AZURE_SQL)
+await initialize_pyrit_async(memory_db_type=AZURE_SQL)  # type: ignore
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
 
 image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
