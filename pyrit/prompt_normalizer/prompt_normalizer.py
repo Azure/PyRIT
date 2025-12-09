@@ -403,10 +403,10 @@ class PromptNormalizer:
                 if attack_identifier:
                     piece.attack_identifier = attack_identifier
 
-                # if the piece is retrieved from somewhere else, it needs to be unique
-                # and if not, this won't hurt anything
-                piece.id = uuid4()
+            # if the piece is retrieved from somewhere else, it needs to be unique
+            # and if not, this won't hurt anything
+            piece.id = uuid4()
 
-            self._memory.add_message_to_memory(request=request)
+        self._memory.add_message_to_memory(request=request)
 
         return prepended_conversation

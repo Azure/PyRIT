@@ -20,7 +20,8 @@
 # - AZURE_CONTENT_SAFETY_API_ENDPOINT: The endpoint for the Azure Content Safety API
 # - AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API (if not using Entra Auth)
 #
-# As an alternative to key-based authentication, you may set `use_entra_auth=True` and use identity-based authentication.
+# As an alternative to key-based authentication, you can use Entra ID (identity-based) authentication.
+# Use get_token_provider_from_default_azure_credential() from pyrit.auth.azure_auth and pass it as the api_key parameter.
 #
 # Note that this api returns a value between 0 and 7. This is different from likert scales, which return a value between 1 and 5. Because both are `float_scale` scores, these values are all normalized to floating point values between 0.0 and 1.0 and can be directly compared. This is sometimes interesting as an operator e.g. if there are scenarios where a `SelfAskLikertScorer` and `AzureContentFilterScorer` produce very different values.
 #
@@ -39,11 +40,15 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Set up the Azure Content Filter
 azure_content_filter = AzureContentFilterScorer(
-    # Comment out either api_key or use_entra_auth
     api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
-    # use_entra_auth=True,
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
 )
+# For Entra ID authentication:
+# from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
+# azure_content_filter = AzureContentFilterScorer(
+#     api_key=get_token_provider_from_default_azure_credential(),
+#     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
+# )
 
 response = Message(
     message_pieces=[

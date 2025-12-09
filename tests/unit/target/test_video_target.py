@@ -73,7 +73,7 @@ def test_video_validate_prompt_type(video_target: OpenAIVideoTarget):
 
 
 def test_is_json_response_supported(patch_central_database):
-    target = OpenAIVideoTarget(endpoint="test", api_key="test")
+    target = OpenAIVideoTarget(endpoint="test", api_key="test", model_name="test-model")
     assert target.is_json_response_supported() is False
 
 

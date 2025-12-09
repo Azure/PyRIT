@@ -45,6 +45,7 @@ objective_target = OpenAIChatTarget()
 adversarial_chat = OpenAIChatTarget(
     endpoint=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"],
+    model_name=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"],
 )
 
 converters = PromptConverterConfiguration.from_converters(converters=[CharSwapConverter()])

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 from azure.ai.contentsafety import ContentSafetyClient
 from azure.ai.contentsafety.models import (
@@ -10,9 +10,8 @@ from azure.ai.contentsafety.models import (
     ImageData,
     TextCategory,
 )
-from azure.core.credentials import AzureKeyCredential
+from azure.core.credentials import AzureKeyCredential, TokenCredential
 
-from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values
 from pyrit.models import (
     DataTypeSerializer,
@@ -44,8 +43,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         self,
         *,
         endpoint: Optional[str | None] = None,
-        api_key: Optional[str | None] = None,
-        use_entra_auth: bool = False,
+        api_key: Optional[str | Callable[[], str | Awaitable[str]] | None] = None,
         harm_categories: Optional[list[TextCategory]] = None,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
@@ -55,10 +53,12 @@ class AzureContentFilterScorer(FloatScaleScorer):
         Args:
             endpoint (Optional[str | None]): The endpoint URL for the Azure Content Safety service.
                 Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
-            api_key (Optional[str | None]): The API key for accessing the Azure Content Safety service
-                (only if you're not using Entra authentication). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE`
-                environment variable.
-            use_entra_auth (bool): Whether to use Entra authentication. Defaults to False.
+            api_key (Optional[str | Callable[[], str | Awaitable[str]] | None]):
+                The API key for accessing the Azure Content Safety service,
+                or a callable that returns an access token. For Azure endpoints with Entra authentication,
+                pass a token provider from pyrit.auth
+                (e.g., get_azure_token_provider(get_default_azure_scope(endpoint))).
+                Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             harm_categories (Optional[list[TextCategory]]): The harm categories you want to query for as
                 defined in azure.ai.contentsafety.models.TextCategory. If not provided, defaults to all categories.
             validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
@@ -77,23 +77,25 @@ class AzureContentFilterScorer(FloatScaleScorer):
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint or ""
         )
 
-        if not use_entra_auth:
-            self._api_key = default_values.get_required_value(
-                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key or ""
+        # Store api_key as-is (could be string or callable)
+        if api_key is None:
+            self._api_key = default_values.get_non_required_value(  # type: ignore[assignment]
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=None
             )
         else:
-            if api_key:
-                raise ValueError("Please specify either use_add_auth or api_key")
-            else:
-                self._api_key = None
+            self._api_key = api_key  # type: ignore[assignment]
 
+        # Create ContentSafetyClient with appropriate credential
         if self._api_key is not None and self._endpoint is not None:
-            self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
-        elif use_entra_auth and self._endpoint is not None:
-            azure_auth = AzureAuth(token_scope=get_default_scope(self._endpoint))
-            self._azure_cf_client = ContentSafetyClient(self._endpoint, credential=azure_auth.azure_creds)
+            if callable(self._api_key):
+                # Token provider - create a custom TokenCredential wrapper
+                credential = _TokenProviderCredential(self._api_key)
+                self._azure_cf_client = ContentSafetyClient(self._endpoint, credential=credential)
+            else:
+                # String API key
+                self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
         else:
-            raise ValueError("Please provide the Azure Content Safety endpoint")
+            raise ValueError("Please provide the Azure Content Safety endpoint and api_key")
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -169,3 +171,26 @@ class AzureContentFilterScorer(FloatScaleScorer):
         )
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
+
+
+class _TokenProviderCredential(TokenCredential):
+    """Helper class to wrap a token provider callable as an Azure TokenCredential."""
+
+    def __init__(self, token_provider: Callable[[], str | Awaitable[str]]):
+        self._token_provider = token_provider
+
+    def get_token(self, *scopes, **kwargs):
+        """
+        Get token synchronously.
+
+        Returns:
+            AccessToken: The access token with expiration time.
+        """
+        import time
+
+        from azure.core.credentials import AccessToken
+
+        token = self._token_provider()
+        # Set expiration far in the future - the provider handles refresh
+        expires_on = int(time.time()) + 3600
+        return AccessToken(token, expires_on)
