@@ -41,7 +41,7 @@ def test_azure_openai_embedding_with_entra_auth():
     """Test Azure OpenAI embedding with Entra (token provider) authentication."""
     endpoint = os.environ["OPENAI_EMBEDDING_ENDPOINT"]
     model = os.environ["OPENAI_EMBEDDING_MODEL"]
-    
+
     # Get token provider for Entra auth
     token_provider = get_azure_openai_auth(endpoint)
 

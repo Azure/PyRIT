@@ -5,7 +5,7 @@ import json
 import logging
 import re
 from abc import abstractmethod
-from typing import Any, Callable, Optional, Awaitable
+from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import urlparse
 
 from openai import (
