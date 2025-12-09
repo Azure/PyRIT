@@ -127,6 +127,11 @@ class ConcreteScenario(Scenario):
         """Return the default strategy for testing."""
         return cls.get_strategy_class().ALL
 
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+        """Return the list of required datasets for testing."""
+        return []
+
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return
 

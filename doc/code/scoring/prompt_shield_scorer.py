@@ -47,9 +47,9 @@ from pyrit.executor.attack import (
 from pyrit.memory import CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget, PromptShieldTarget
 from pyrit.score import BatchScorer, PromptShieldScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 pst = PromptShieldTarget()
 # For an Azure Content Safety endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.

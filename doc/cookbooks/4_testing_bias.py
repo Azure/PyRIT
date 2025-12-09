@@ -41,9 +41,9 @@ from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, Message
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 memory = CentralMemory.get_memory_instance()
 
 objective_target = OpenAIChatTarget()

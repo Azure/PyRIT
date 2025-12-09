@@ -368,6 +368,24 @@ class TestContentHarmsScenarioBasic:
         """Test that scenario has correct version."""
         assert ContentHarmsScenario.version == 1
 
+    @patch.dict(
+        "os.environ",
+        {
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+        },
+    )
+    @pytest.mark.asyncio
+    async def test_initialize_raises_exception_when_no_datasets_available(
+        self, mock_objective_target, mock_adversarial_target
+    ):
+        """Test that initialization raises ValueError when datasets are not available in memory."""
+        # Don't mock _get_objectives_by_harm, let it try to load from empty memory
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+
+        with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
+            await scenario.initialize_async(objective_target=mock_objective_target)
+
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
     @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_objectives_by_harm")
