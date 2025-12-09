@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from abc import ABC
+from abc import ABC, abstractmethod
+import uuid
 from typing import Optional, Type, cast
 from uuid import UUID
 
@@ -32,7 +33,6 @@ class ConversationScorer(Scorer, ABC):
         supported_data_types=["text"],
         enforce_all_pieces_valid=True,
     )
-    _wrapped_scorer: Scorer
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -102,25 +102,43 @@ class ConversationScorer(Scorer, ABC):
             ]
         )
 
-        scores = await self._wrapped_scorer.score_async(message=conversation_message, objective=objective)
+        wrapped_scorer = self._get_wrapped_scorer()
+        scores = await wrapped_scorer.score_async(message=conversation_message, objective=objective)
+
+        # Generate new IDs for the scores to avoid ID collisions when the wrapped scorer's
+        # scores are already in the database
+        for score in scores:
+            score.id = uuid.uuid4()
+
         return scores
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Raise NotImplementedError as ConversationScorer uses _score_async instead.
-
-        This method is required by the abstract base class but not used.
-        ConversationScorer overrides _score_async to score entire conversations.
+        Not used - ConversationScorer operates at conversation level via _score_async.
+        
+        This implementation satisfies the Scorer ABC requirement but is never called
+        since ConversationScorer overrides _score_async.
         """
         raise NotImplementedError("ConversationScorer uses _score_async, not _score_piece_async")
 
-    def validate_return_scores(self, scores: list[Score]) -> None:
+    @abstractmethod
+    def _get_wrapped_scorer(self) -> Scorer:
         """
-        Validate scores - implementation provided by scorer_base_class in DynamicConversationScorer.
-
-        This method is required by the Scorer ABC. But validation happens in the wrapped scorer.
+        Abstract method to enforce that ConversationScorer cannot be instantiated directly.
+        
+        This must be implemented by the factory-created subclass.
         """
         pass
+
+    def validate_return_scores(self, scores: list[Score]) -> None:
+        """
+        Validate scores by delegating to the wrapped scorer's validation.
+
+        Args:
+            scores (list[Score]): The scores to validate.
+        """
+        wrapped_scorer = self._get_wrapped_scorer()
+        wrapped_scorer.validate_return_scores(scores)
 
 
 def create_conversation_scorer(
@@ -174,5 +192,9 @@ def create_conversation_scorer(
             # Initialize with the validator and wrapped scorer
             Scorer.__init__(self, validator=validator or ConversationScorer._default_validator)
             self._wrapped_scorer = scorer
+
+        def _get_wrapped_scorer(self) -> Scorer:
+            """Return the wrapped scorer."""
+            return self._wrapped_scorer
 
     return DynamicConversationScorer()

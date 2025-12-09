@@ -104,7 +104,8 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
         objective="test_objective",
         score_type="float_scale",
     )
-    mock_scorer._score_async = AsyncMock(return_value=[score])
+    mock_scorer.score_async = AsyncMock(return_value=[score])
+    mock_scorer.validate_return_scores = MagicMock()
 
     scorer = create_conversation_scorer(scorer=mock_scorer)
     scores = await scorer.score_async(message)
@@ -116,9 +117,9 @@ async def test_conversation_history_scorer_score_async_success(patch_central_dat
     assert result_score.score_rationale == "Valid rationale"
 
     # Verify the underlying scorer was called with conversation history
-    mock_scorer._score_async.assert_awaited_once()
-    call_args = mock_scorer._score_async.call_args
-    called_message = call_args[1]["message"]
+    mock_scorer.score_async.assert_awaited_once()
+    call_args = mock_scorer.score_async.call_args
+    called_message = call_args.kwargs["message"]
     called_piece = called_message.message_pieces[0]
 
     # Verify the conversation text was built correctly
@@ -195,13 +196,14 @@ async def test_conversation_history_scorer_filters_roles_correctly(patch_central
         objective="test",
         score_type="float_scale",
     )
-    mock_scorer._score_async = AsyncMock(return_value=[score])
+    mock_scorer.score_async = AsyncMock(return_value=[score])
+    mock_scorer.validate_return_scores = MagicMock()
 
     scorer = create_conversation_scorer(scorer=mock_scorer)
     await scorer.score_async(message)
 
-    call_args = mock_scorer._score_async.call_args
-    called_message = call_args[1]["message"]
+    call_args = mock_scorer.score_async.call_args
+    called_message = call_args.kwargs["message"]
     called_piece = called_message.message_pieces[0]
 
     expected_conversation = "User: User message\n" "Assistant: Assistant message\n"
@@ -242,14 +244,15 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
         objective="test",
         score_type="float_scale",
     )
-    mock_scorer._score_async = AsyncMock(return_value=[score])
+    mock_scorer.score_async = AsyncMock(return_value=[score])
+    mock_scorer.validate_return_scores = MagicMock()
 
     scorer = create_conversation_scorer(scorer=mock_scorer)
 
     await scorer.score_async(message)
 
-    call_args = mock_scorer._score_async.call_args
-    called_message = call_args[1]["message"]
+    call_args = mock_scorer.score_async.call_args
+    called_message = call_args.kwargs["message"]
     called_piece = called_message.message_pieces[0]
 
     assert called_piece.id == message_piece.id
@@ -259,16 +262,61 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
     assert called_piece.attack_identifier == message_piece.attack_identifier
 
 
-def test_conversation_scorer_cannot_be_instantiated_directly():
-    """Test that ConversationScorer raises TypeError when instantiated directly due to ABC."""
-    mock_scorer = MagicMock(spec=FloatScaleScorer)
+@pytest.mark.asyncio
+async def test_conversation_scorer_regenerates_score_ids_to_prevent_collisions(patch_central_database):
+    """Test that ConversationScorer regenerates score IDs to prevent database UNIQUE constraint violations."""
+    memory = CentralMemory.get_memory_instance()
+    conversation_id = str(uuid.uuid4())
+
+    message_piece = MessagePiece(
+        role="assistant",
+        original_value="Test response",
+        conversation_id=conversation_id,
+        sequence=1,
+    )
+    memory.add_message_pieces_to_memory(message_pieces=[message_piece])
+
+    # Create a score and capture its original ID
+    score = Score(
+        score_value="0.5",
+        score_value_description="Test",
+        score_rationale="Test rationale",
+        score_metadata={},
+        score_category=["test"],
+        scorer_class_identifier={"test": "test"},
+        message_piece_id=message_piece.id,
+        objective="test",
+        score_type="float_scale",
+    )
+    original_id = score.id
+
+    # Mock scorer returns the score (which will be mutated by ConversationScorer)
+    mock_scorer = MagicMock(spec=SelfAskGeneralFloatScaleScorer)
     mock_scorer._validator = ScorerPromptValidator(supported_data_types=["text"])
+    mock_scorer.score_async = AsyncMock(return_value=[score])
+    mock_scorer.validate_return_scores = MagicMock()
+
+    # Create conversation scorer and score the message
+    conv_scorer = create_conversation_scorer(scorer=mock_scorer)
+    message = MagicMock()
+    message.message_pieces = [message_piece]
+    result_scores = await conv_scorer.score_async(message)
+
+    # Verify that ConversationScorer regenerated the ID
+    assert len(result_scores) == 1
+    assert result_scores[0].id != original_id, "ConversationScorer should regenerate score IDs to prevent collisions"
+    assert isinstance(result_scores[0].id, uuid.UUID), "Regenerated ID should be a valid UUID"
+
+
+def test_conversation_scorer_cannot_be_instantiated_directly():
+    """Test that ConversationScorer raises TypeError when instantiated directly due to abstract method."""
+    validator = ScorerPromptValidator(supported_data_types=["text"])
 
     with pytest.raises(
         TypeError,
-        match=r"Can't instantiate abstract class ConversationScorer",
+        match=r"Can't instantiate abstract class ConversationScorer.*_get_wrapped_scorer",
     ):
-        ConversationScorer(scorer=mock_scorer)
+        ConversationScorer(validator=validator)
 
 
 def test_factory_returns_instance_of_float_scale_scorer():
@@ -297,9 +345,12 @@ def test_factory_preserves_wrapped_scorer():
     conv_scorer = create_conversation_scorer(scorer=original_scorer)
 
     # Verify wrapped scorer is preserved
+    assert isinstance(conv_scorer, ConversationScorer)
+    # Access via attribute since _get_wrapped_scorer is available at runtime
     assert hasattr(conv_scorer, "_wrapped_scorer")
-    assert conv_scorer._wrapped_scorer is original_scorer
-    assert conv_scorer._wrapped_scorer.custom_attr == "test_value"  # type: ignore
+    wrapped = getattr(conv_scorer, "_wrapped_scorer")
+    assert wrapped is original_scorer
+    assert wrapped.custom_attr == "test_value"  # type: ignore
 
 
 def test_factory_with_custom_validator():
