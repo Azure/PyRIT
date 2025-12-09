@@ -16,9 +16,9 @@
 # %%
 from pyrit.memory import CentralMemory
 from pyrit.score import HumanInTheLoopScorerGradio
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 # This will start the Gradio UI and can only be created once per notebook. If you restart the kernel, run this cell again.
 scorer = HumanInTheLoopScorerGradio()
 

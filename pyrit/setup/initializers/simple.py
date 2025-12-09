@@ -51,7 +51,7 @@ class SimpleInitializer(PyRITInitializer):
 
     Example:
         initializer = SimpleInitializer()
-        initializer.initialize()  # Sets up complete simple configuration
+        await initializer.initialize_async()  # Sets up complete simple configuration
     """
 
     def __init__(self) -> None:
@@ -80,7 +80,7 @@ class SimpleInitializer(PyRITInitializer):
             "OPENAI_CHAT_KEY",
         ]
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         """
         Execute the complete simple initialization.
 

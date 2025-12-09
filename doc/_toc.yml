@@ -118,7 +118,6 @@ chapters:
       - file: code/memory/8_seed_database
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md
-      - file: code/memory/11_harm_categories
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
     - file: code/setup/0_setup

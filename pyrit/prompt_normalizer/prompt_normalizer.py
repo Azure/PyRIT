@@ -25,11 +25,15 @@ logger = logging.getLogger(__name__)
 
 
 class PromptNormalizer:
+    """
+    Handles normalization and processing of prompts before they are sent to targets.
+    """
+
     _memory: MemoryInterface = None
 
     def __init__(self, start_token: str = "⟪", end_token: str = "⟫") -> None:
         """
-        Initializes the PromptNormalizer.
+        Initialize the PromptNormalizer.
 
         start_token and end_token are used to delineate which part of a prompt is converted.
         """
@@ -51,7 +55,7 @@ class PromptNormalizer:
         attack_identifier: Optional[dict[str, str]] = None,
     ) -> Message:
         """
-        Sends a single request to a target.
+        Send a single request to a target.
 
         Args:
             seed_group (SeedGroup): The seed group to be sent.
@@ -151,7 +155,7 @@ class PromptNormalizer:
         batch_size: int = 10,
     ) -> list[Message]:
         """
-        Sends a batch of prompts to the target asynchronously.
+        Send a batch of prompts to the target asynchronously.
 
         Args:
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects to be sent.
@@ -198,8 +202,15 @@ class PromptNormalizer:
         self,
         converter_configurations: list[PromptConverterConfiguration],
         message: Message,
-    ):
+    ) -> None:
+        """
+        Apply converter configurations to message pieces.
 
+        Args:
+            converter_configurations (list[PromptConverterConfiguration]): List of configurations specifying
+                which converters to apply and to which message pieces.
+            message (Message): The message containing pieces to be converted.
+        """
         for converter_configuration in converter_configurations:
             for piece_index, piece in enumerate(message.message_pieces):
                 indexes = converter_configuration.indexes_to_apply
@@ -234,7 +245,7 @@ class PromptNormalizer:
         self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState, ensure_response=True
     ) -> None:
         """
-        Sets the skip criteria for the attack.
+        Set the skip criteria for the attack.
 
         If prompts match this in memory and are the same as one being sent, then they won't be sent to a target.
 
@@ -281,9 +292,12 @@ class PromptNormalizer:
 
     def _should_skip_based_on_skip_criteria(self, message: Message) -> bool:
         """
-        Filters out prompts from message_list that match the skip criteria.
+        Filter out prompts from message_list that match the skip criteria.
 
         Every message_piece of the message needs to have matching sha256 to skip.
+
+        Returns:
+            bool: True if the message should be skipped, False otherwise.
         """
         if not self._skip_criteria:
             return False
@@ -298,9 +312,7 @@ class PromptNormalizer:
         return True
 
     async def _calc_hash(self, request: Message) -> None:
-        """
-        Adds a request to the memory.
-        """
+        """Add a request to the memory."""
         tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.message_pieces]
         await asyncio.gather(*tasks)
 
@@ -315,7 +327,7 @@ class PromptNormalizer:
         attack_identifier: Optional[dict[str, str]] = None,
     ) -> Message:
         """
-        Builds a message based on the given parameters.
+        Build a message based on the given parameters.
 
         Applies parameters and converters to the prompt text and puts all the pieces together.
 
@@ -346,7 +358,6 @@ class PromptNormalizer:
                 prompt_target_identifier=target.get_identifier(),
                 attack_identifier=attack_identifier,
                 original_value_data_type=seed_prompt.data_type,
-                targeted_harm_categories=list(seed_prompt.harm_categories) if seed_prompt.harm_categories else None,
             )
 
             entries.append(message_piece)
@@ -365,7 +376,7 @@ class PromptNormalizer:
         prepended_conversation: Optional[list[Message]] = None,
     ) -> Optional[list[Message]]:
         """
-        Processes the prepended conversation by converting it if needed and adding it to memory.
+        Process the prepended conversation by converting it if needed and adding it to memory.
 
         Args:
             conversation_id (str): The conversation ID to use for the message pieces

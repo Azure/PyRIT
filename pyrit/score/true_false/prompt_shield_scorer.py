@@ -96,6 +96,9 @@ class PromptShieldScorer(TrueFalseScorer):
         """
         Remember that you can just access the metadata attribute to get the original Prompt Shield endpoint response,
         and then just call json.loads() on it to interact with it.
+
+        Returns:
+            list[bool]: A list of boolean values indicating whether an attack was detected.
         """
         response_json: dict = json.loads(response)
 

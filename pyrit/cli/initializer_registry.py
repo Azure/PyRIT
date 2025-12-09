@@ -118,7 +118,14 @@ class InitializerRegistry:
         # Runtime import to avoid loading heavy modules at module level
         from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
-        # Use filename as the short name (e.g., "objective_target" instead of "scenarios.objective_target")
+        # Calculate module name for import (still needs full path for Python import)
+        # Convert file path to module path relative to initializers directory
+        initializers_base = Path(PYRIT_PATH) / "setup" / "initializers"
+        relative_path = file_path.relative_to(initializers_base)
+        module_parts = list(relative_path.parts[:-1]) + [relative_path.stem]
+        module_name = ".".join(module_parts)
+
+        # Use just the filename as the name (e.g., "load_default_datasets")
         short_name = file_path.stem
 
         # Check for name collision
@@ -130,13 +137,6 @@ class InitializerRegistry:
                 f"Initializer filenames must be unique across all directories."
             )
             return
-
-        # Calculate module name for import (still needs full path for Python import)
-        # Convert file path to module path relative to initializers directory
-        initializers_base = Path(PYRIT_PATH) / "setup" / "initializers"
-        relative_path = file_path.relative_to(initializers_base)
-        module_parts = list(relative_path.parts[:-1]) + [relative_path.stem]
-        module_name = ".".join(module_parts)
 
         try:
             spec = importlib.util.spec_from_file_location(f"pyrit.setup.initializers.{module_name}", file_path)

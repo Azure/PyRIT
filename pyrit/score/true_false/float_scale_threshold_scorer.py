@@ -32,6 +32,9 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             threshold (float): The threshold value between 0 and 1. Scores >= threshold are True, otherwise False.
             float_scale_aggregator (FloatScaleAggregatorFunc): The aggregator function to use for combining
                 multiple float scale scores. Defaults to FloatScaleScoreAggregator.MAX.
+
+        Raises:
+            ValueError: If the threshold is not between 0 and 1.
         """
         self._scorer = scorer
         self._threshold = threshold
@@ -113,7 +116,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
 
     def _get_sub_identifier(self):
         """
-        Returns the identifier of the underlying float scale scorer.
+        Return the identifier of the underlying float scale scorer.
 
         Returns:
             dict: The identifier dictionary of the wrapped scorer.

@@ -39,9 +39,9 @@
 # %%
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory import CentralMemory
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Seed Prompts can be created directly, loaded from yaml files, or fetched from built-in datasets
 datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["pyrit_example_dataset"])  # type: ignore

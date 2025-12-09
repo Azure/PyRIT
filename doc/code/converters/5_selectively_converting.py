@@ -46,11 +46,11 @@ from pyrit.prompt_converter import (
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget, TextTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY) # type: ignore
 
-target = TextTarget(text_stream=open(os.devnull, "w"))
+target = TextTarget(text_stream=open(os.devnull, "w", encoding="utf-8"))
 printer = ConsoleAttackResultPrinter()
 
 

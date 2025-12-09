@@ -2,17 +2,16 @@
 # Licensed under the MIT license.
 
 
-import pathlib
 from typing import List, Optional, Sequence
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedDataset, SeedGroup
+from pyrit.models import SeedGroup
+from pyrit.models.seed import Seed
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_converter import (
     AsciiSmugglerConverter,
@@ -115,6 +114,11 @@ class EncodingScenario(Scenario):
         """
         return EncodingStrategy.ALL
 
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+        """Return a list of dataset names required by this scenario."""
+        return ["garak_slur_terms_en", "garak_web_html_js"]
+
     @apply_defaults
     def __init__(
         self,
@@ -147,7 +151,6 @@ class EncodingScenario(Scenario):
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
-        self._seed_prompts: list[str] = seed_prompts if seed_prompts else self._get_default_dataset()
         self._encoding_templates = encoding_templates or AskToDecodeConverter.garak_templates
 
         super().__init__(
@@ -158,6 +161,9 @@ class EncodingScenario(Scenario):
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
+
+        # Now we can safely access self._memory
+        self._seed_prompts: list[str] = seed_prompts if seed_prompts else self._get_default_dataset()
 
     # Use the same as Garak by default
     def _get_default_dataset(self) -> list[str]:
@@ -171,12 +177,15 @@ class EncodingScenario(Scenario):
         Returns:
             list[str]: List of seed prompt strings to be encoded and tested.
         """
-        seed_prompts: list[str] = []
-        garak_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "garak"
-        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "slur_terms_en.prompt").get_values())
-        seed_prompts.extend(SeedDataset.from_yaml_file(garak_path / "web_html_js.prompt").get_values())
+        seeds: list[Seed] = []
 
-        return seed_prompts
+        for dataset_name in EncodingScenario.required_datasets():
+            seeds.extend(self._memory.get_seeds(dataset_name=dataset_name))
+
+        if not seeds:
+            self._raise_dataset_exception()
+
+        return [seed.value for seed in seeds]
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
