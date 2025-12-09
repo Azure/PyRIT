@@ -358,7 +358,6 @@ class PromptNormalizer:
                 prompt_target_identifier=target.get_identifier(),
                 attack_identifier=attack_identifier,
                 original_value_data_type=seed_prompt.data_type,
-                targeted_harm_categories=list(seed_prompt.harm_categories) if seed_prompt.harm_categories else None,
             )
 
             entries.append(message_piece)

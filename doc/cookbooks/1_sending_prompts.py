@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit
 #     language: python
 #     name: python3
 # ---
@@ -266,9 +266,8 @@ all_message_pieces = memory.get_message_pieces(labels=memory_labels)
 # central_memory.add_message_pieces_to_memory(message_pieces=all_message_pieces)
 
 # %% [markdown]
-# ## Querying Attack Results by Labels and Harm Categories
-#
-# One of the most powerful features for large-scale testing is the ability to query attack results by the labels and harm categories you've assigned. This enables  filtering and analysis of your results.
+# ## Querying Attack Results by Labels
+# One of the most powerful features for large-scale testing is the ability to query attack results by the labels you've assigned. This enables filtering and analysis of your results.
 
 # %%
 # Query attack results using the labels we assigned earlier
@@ -286,13 +285,3 @@ print(f"Found {len(user_results)} attack results from user 'roakey'")
 precise_results = memory.get_attack_results(labels=memory_labels)
 
 print(f"Found {len(precise_results)} attack results matching all labels")
-
-# Combine harm categories with labels for very specific filtering
-violence_from_operation = memory.get_attack_results(targeted_harm_categories=["violence"], labels={"op_name": "new_op"})
-
-print(f"\n*****Found {len(violence_from_operation)} violence-related results from our operation")
-
-for conversation in violence_from_operation:
-    print(f"Conversation ID: {conversation.conversation_id}")
-    print(f"Objective: {conversation.objective}")
-    print(f"Beginning of Last Response: {conversation.last_response.original_value[:50]}\n")
