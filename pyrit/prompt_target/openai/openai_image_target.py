@@ -63,6 +63,9 @@ class OpenAIImageTarget(OpenAITarget):
         self.quality = quality
         self.style = style
         self.image_size = image_size
+        # Flag to track if we need to explicitly request b64_json format
+        # Will be set to True if the model returns URLs instead of base64
+        self._requires_response_format = False
 
         super().__init__(*args, **kwargs)
 
@@ -110,6 +113,10 @@ class OpenAIImageTarget(OpenAITarget):
             "size": self.image_size,
         }
 
+        # Add response_format if we've detected the model returns URLs by default
+        if self._requires_response_format:
+            image_generation_args["response_format"] = "b64_json"
+
         if self.quality:
             image_generation_args["quality"] = self.quality
         if self.style:
@@ -132,13 +139,33 @@ class OpenAIImageTarget(OpenAITarget):
 
         Returns:
             Message: Constructed message with image path.
-        """
-        # Extract base64 image data from response
-        b64_data = response.data[0].b64_json
 
-        # Handle empty response using retry
+        Note:
+            PyRIT expects base64-encoded images. Some models (like dall-e) return URLs by default,
+            while others (like gpt-image-1) always return base64. This method detects the format
+            and adapts automatically.
+        """
+        image_data = response.data[0]
+
+        # Try to get base64 data first (preferred format)
+        b64_data = getattr(image_data, "b64_json", None)
+
         if not b64_data:
-            raise EmptyResponseException(message="The image generation returned an empty response.")
+            # Check if URL format was returned instead
+            image_url = getattr(image_data, "url", None)
+            if image_url:
+                # Model returned URL instead of base64 - set flag and retry
+                logger.info(
+                    "Image model returned URL instead of base64. "
+                    "Setting flag to request b64_json format in future calls."
+                )
+                self._requires_response_format = True
+                raise EmptyResponseException(
+                    message="Image was returned as URL instead of base64. Retrying with response_format parameter."
+                )
+            else:
+                # Neither URL nor base64 - truly empty response
+                raise EmptyResponseException(message="The image generation returned an empty response.")
 
         # Save the image and get the file path
         data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
