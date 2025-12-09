@@ -32,21 +32,35 @@ class ConversationScorer(Scorer):
         enforce_all_pieces_valid=True,
     )
 
-    def __init__(self, *, scorer: Scorer, validator: Optional[ScorerPromptValidator] = None):
+    def __init__(
+        self, *, scorer: Scorer, validator: Optional[ScorerPromptValidator] = None, _from_factory: bool = False
+    ):
         """
         Initialize the ConversationScorer.
+
+        Note: This class should not be instantiated directly. Use create_conversation_scorer() factory instead.
+        Direct instantiation will raise a TypeError to prevent misuse.
 
         Args:
             scorer (Scorer): The scorer to wrap for conversation-level evaluation.
                 Must be an instance of FloatScaleScorer or TrueFalseScorer.
             validator (Optional[ScorerPromptValidator]): Optional validator override.
+            _from_factory (bool): Internal flag to verify factory instantiation. Do not use.
+
+        Raises:
+            TypeError: If instantiated directly without using the factory.
         """
+        # Prevent direct instantiation - must use create_conversation_scorer() factory
+        if not _from_factory:
+            raise TypeError(
+                "ConversationScorer cannot be instantiated directly. "
+                "Use create_conversation_scorer() factory instead. "
+                "Direct instantiation would not work properly in many situations "
+                "(e.g., when used as a TrueFalseScorer in an attack)."
+            )
+
         super().__init__(validator=validator or self._default_validator)
         self._wrapped_scorer = scorer
-
-        # Preserve scorer type from the wrapped scorer if it exists
-        if hasattr(scorer, "scorer_type"):
-            self.scorer_type = scorer.scorer_type
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -182,6 +196,7 @@ def create_conversation_scorer(
 
         def __init__(self):
             # Initialize ConversationScorer - this also calls Scorer.__init__
-            ConversationScorer.__init__(self, scorer=scorer, validator=validator)
+            # Pass _from_factory=True to allow instantiation via factory
+            ConversationScorer.__init__(self, scorer=scorer, validator=validator, _from_factory=True)
 
     return DynamicConversationScorer()
