@@ -313,27 +313,27 @@ async def test_send_prompt_async_url_response_triggers_retry(
         mock_generate.side_effect = [mock_response_url, mock_response_b64]
 
         resp = await image_target.send_prompt_async(message=Message([request]))
-        
+
         # Should have called generate twice (initial + retry)
         assert mock_generate.call_count == 2
-        
+
         # First call should NOT have response_format
         first_call_kwargs = mock_generate.call_args_list[0][1]
         assert "response_format" not in first_call_kwargs
-        
+
         # Second call should have response_format set to b64_json
         second_call_kwargs = mock_generate.call_args_list[1][1]
         assert second_call_kwargs["response_format"] == "b64_json"
-        
+
         # Should have successfully returned the image
         assert len(resp) == 1
         path = resp[0].message_pieces[0].original_value
         assert os.path.isfile(path)
-        
+
         with open(path, "r") as file:
             data = file.read()
             assert data == "hello"
-        
+
         os.remove(path)
 
 
@@ -365,7 +365,7 @@ async def test_send_prompt_async_url_response_sets_flag(
     with patch.object(image_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.side_effect = [mock_response_url, mock_response_b64]
         await image_target.send_prompt_async(message=Message([request]))
-        
+
         # After handling URL response, flag should be True
         assert image_target._requires_response_format is True
 
@@ -389,8 +389,7 @@ async def test_send_prompt_async_uses_response_format_when_flag_set(
     with patch.object(image_target._async_client.images, "generate", new_callable=AsyncMock) as mock_generate:
         mock_generate.return_value = mock_response
         await image_target.send_prompt_async(message=Message([request]))
-        
+
         # Should include response_format in the call
         call_kwargs = mock_generate.call_args[1]
         assert call_kwargs["response_format"] == "b64_json"
-

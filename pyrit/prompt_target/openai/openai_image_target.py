@@ -139,20 +139,20 @@ class OpenAIImageTarget(OpenAITarget):
 
         Returns:
             Message: Constructed message with image path.
-        
+
         Note:
             PyRIT expects base64-encoded images. Some models (like dall-e) return URLs by default,
             while others (like gpt-image-1) always return base64. This method detects the format
             and adapts automatically.
         """
         image_data = response.data[0]
-        
+
         # Try to get base64 data first (preferred format)
-        b64_data = getattr(image_data, 'b64_json', None)
-        
+        b64_data = getattr(image_data, "b64_json", None)
+
         if not b64_data:
             # Check if URL format was returned instead
-            image_url = getattr(image_data, 'url', None)
+            image_url = getattr(image_data, "url", None)
             if image_url:
                 # Model returned URL instead of base64 - set flag and retry
                 logger.info(
