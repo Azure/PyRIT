@@ -150,10 +150,15 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._n = n
         self._extra_body_parameters = extra_body_parameters
 
-    def _set_openai_env_configuration_vars(self):
+    def _set_openai_env_configuration_vars(self) -> None:
+        """
+        Sets deployment_environment_variable, endpoint_environment_variable,
+        and api_key_environment_variable which are read from .env file.
+        """
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+        self.underlying_model_environment_variable = "OPENAI_CHAT_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -420,3 +425,27 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
+
+    async def _fetch_underlying_model_async(self) -> Optional[str]:
+        """
+        Fetch the underlying model name by making a minimal chat request.
+
+        Sends a simple "hi" message with max_tokens=1 to minimize cost and latency,
+        then extracts the model name from the response.
+
+        Returns:
+            Optional[str]: The underlying model name (with date suffix stripped),
+                or None if it cannot be determined.
+        """
+        try:
+            response = await self._async_client.chat.completions.create(
+                model=self._model_name,
+                messages=[{"role": "user", "content": "hi"}],
+                max_completion_tokens=1,
+            )
+
+            raw_model = getattr(response, "model", None)
+            return raw_model
+        except Exception as e:
+            logger.warning(f"Failed to fetch underlying model from endpoint: {e}")
+            return None

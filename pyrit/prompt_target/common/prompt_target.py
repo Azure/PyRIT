@@ -26,12 +26,24 @@ class PromptTarget(abc.ABC, Identifier):
         max_requests_per_minute: Optional[int] = None,
         endpoint: str = "",
         model_name: str = "",
+        underlying_model: Optional[str] = None,
     ) -> None:
+        """
+        Initialize the prompt target.
+
+        Args:
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+            endpoint (str): The endpoint URL for the target.
+            model_name (str): The model/deployment name.
+            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o").
+                This is useful when the deployment name in Azure differs from the actual model.
+        """
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._max_requests_per_minute = max_requests_per_minute
         self._endpoint = endpoint
         self._model_name = model_name
+        self._underlying_model = underlying_model
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -73,6 +85,10 @@ class PromptTarget(abc.ABC, Identifier):
         public_attributes["__module__"] = self.__class__.__module__
         if self._endpoint:
             public_attributes["endpoint"] = self._endpoint
-        if self._model_name:
-            public_attributes["model_name"] = self._model_name
+        # if the underlying model is specified, use it as the model name for identification
+        # otherwise, use the model name (which is often the deployment name in Azure)
+        if self._underlying_model:
+            public_attributes["model"] = self._underlying_model
+        elif self._model_name:
+            public_attributes["model"] = self._model_name
         return public_attributes

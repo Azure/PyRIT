@@ -158,6 +158,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
         self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_RESPONSES_KEY"
+        self.underlying_model_environment_variable = "OPENAI_RESPONSES_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -701,3 +702,26 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             prompt_target_identifier=reference_piece.prompt_target_identifier,
             attack_identifier=reference_piece.attack_identifier,
         )
+
+    async def _fetch_underlying_model_async(self) -> Optional[str]:
+        """
+        Fetch the underlying model name by making a minimal response request.
+
+        Sends a simple "hi" message to minimize cost and latency,
+        then extracts the model name from the response.
+
+        Returns:
+            Optional[str]: The underlying model name, or None if it cannot be determined.
+        """
+        try:
+            response = await self._async_client.responses.create(
+                model=self._model_name,
+                input=[{"role": "user", "content": [{"type": "input_text", "text": "hi"}]}],
+                max_output_tokens=16,  # minimum is 16
+            )
+
+            raw_model = getattr(response, "model", None)
+            return raw_model
+        except Exception as e:
+            logger.warning(f"Failed to fetch underlying model from endpoint: {e}")
+            return None

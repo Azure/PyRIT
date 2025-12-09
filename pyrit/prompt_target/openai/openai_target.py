@@ -49,6 +49,7 @@ class OpenAITarget(PromptChatTarget):
     model_name_environment_variable: str
     endpoint_environment_variable: str
     api_key_environment_variable: str
+    underlying_model_environment_variable: str
 
     _azure_auth: Optional[AzureAuth] = None
     _async_client: Optional[AsyncOpenAI] = None
@@ -63,6 +64,7 @@ class OpenAITarget(PromptChatTarget):
         use_entra_auth: bool = False,
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict] = None,
+        underlying_model: Optional[str] = None,
     ) -> None:
         """
         Abstract class that initializes an Azure or non-Azure OpenAI chat target.
@@ -70,6 +72,9 @@ class OpenAITarget(PromptChatTarget):
         Read more about the various models here:
         https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
 
+        Note: If underlying_model is not provided and not set via environment variable,
+        it will remain None. Use `get_underlying_model_async()` to attempt fetching it from the
+        endpoint.
 
         Args:
             model_name (str, Optional): The name of the model.
@@ -86,6 +91,8 @@ class OpenAITarget(PromptChatTarget):
                 will be capped at the value provided.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
+            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o").
+                If not provided, will attempt to fetch from environment variable.
         """
         self._headers: dict = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
@@ -113,9 +120,18 @@ class OpenAITarget(PromptChatTarget):
             if extracted:  # Only use extracted deployment if we actually found one
                 self._model_name = extracted
 
+        # Get underlying_model from passed value or environment variable
+        underlying_model_value = default_values.get_non_required_value(
+            env_var_name=self.underlying_model_environment_variable, passed_value=underlying_model
+        )
+
         # Initialize parent with endpoint and model_name
         PromptChatTarget.__init__(
-            self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value, model_name=self._model_name
+            self,
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint_value,
+            model_name=self._model_name,
+            underlying_model=underlying_model_value,
         )
 
         self._api_key = api_key
@@ -516,6 +532,39 @@ class OpenAITarget(PromptChatTarget):
             Message: Constructed message with extracted content.
         """
         pass
+
+    async def _fetch_underlying_model_async(self) -> Optional[str]:
+        """
+        Fetch the underlying model name by making a minimal request to the endpoint.
+
+        This method sends a basic request to the endpoint and extracts the model name
+        from the response. Subclasses should override this based on their specific
+        API response format.
+
+        Returns:
+            Optional[str]: The underlying model name extracted from the response,
+                or None if it cannot be determined.
+        """
+        return None
+
+    async def get_underlying_model_async(self) -> Optional[str]:
+        """
+        Get the underlying model name, fetching from endpoint if not already set.
+
+        This method returns the underlying model if already configured. If not,
+        it attempts to fetch it by making a minimal request to the endpoint and setting
+        it in the target's underlying_model attribute.
+
+        Returns:
+            Optional[str]: The underlying model name, or None if it cannot be determined.
+        """
+        if self._underlying_model:
+            return self._underlying_model
+
+        # Attempt to fetch from endpoint
+        self._underlying_model = await self._fetch_underlying_model_async()
+
+        return self._underlying_model
 
     def _check_content_filter(self, response: Any) -> bool:
         """
