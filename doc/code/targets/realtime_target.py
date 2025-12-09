@@ -20,9 +20,9 @@
 
 # %%
 from pyrit.prompt_target import RealtimeTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 target = RealtimeTarget()
 # For Azure OpenAI with Entra ID authentication:
@@ -111,9 +111,9 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, RealtimeTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 logging.basicConfig(level=logging.WARNING)
 

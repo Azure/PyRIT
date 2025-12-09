@@ -86,9 +86,16 @@ repos:
 
   - repo: local
     hooks:
+      - id: validate-jupyter-book
+        name: Validate Jupyter Book Structure
+        entry: python ./build_scripts/validate_jupyter_book.py
+        language: python
+        files: ^(doc/.*\.(py|ipynb|md|rst)|doc/_toc\.yml)$
+        pass_filenames: false
+        additional_dependencies: ['pyyaml']
       - id: website
         name: Jupyter Book Build Check
-        entry: jb build -W -q ./doc
+        entry: python ./build_scripts/conditional_jb_build.py
         language: system
         types: [python]
         pass_filenames: false

@@ -71,9 +71,9 @@ import os
 
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import PromptShieldTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 
 pst = PromptShieldTarget(os.environ.get("AZURE_CONTENT_SAFETY_ENDPOINT"), os.environ.get("AZURE_CONTENT_SAFETY_KEY"))

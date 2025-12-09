@@ -536,7 +536,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    initialize_pyrit
+    initialize_pyrit_async
     AZURE_SQL
     SQLITE
     IN_MEMORY
@@ -555,3 +555,5 @@ API Reference
     PyRITInitializer
     AIRTInitializer
     SimpleInitializer
+    LoadDefaultDatasets
+    ScenarioObjectiveListInitializer

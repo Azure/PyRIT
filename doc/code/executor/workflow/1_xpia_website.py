@@ -58,9 +58,9 @@ from openai.types.responses import (
     ResponseOutputMessage,
 )
 
-from pyrit.setup import SQLITE, initialize_pyrit
+from pyrit.setup import SQLITE, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=SQLITE)
+await initialize_pyrit_async(memory_db_type=SQLITE)  # type: ignore
 
 
 async def processing_callback() -> str:

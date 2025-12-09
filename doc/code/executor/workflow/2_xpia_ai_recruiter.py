@@ -58,9 +58,9 @@ from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import HTTPXAPITarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Define PDF Path
 cv_pdf_path = pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "pdf_converters" / "Jonathon_Sanchez.pdf"

@@ -2,11 +2,10 @@
 # Licensed under the MIT license.
 
 import os
-import pathlib
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH, SCORER_SEED_PROMPT_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -14,7 +13,6 @@ from pyrit.executor.attack.core.attack_config import (
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -77,6 +75,11 @@ class CyberScenario(Scenario):
         """
         return CyberStrategy.ALL
 
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+        """Return a list of dataset names required by this scenario."""
+        return ["airt_malware"]
+
     @apply_defaults
     def __init__(
         self,
@@ -117,8 +120,6 @@ class CyberScenario(Scenario):
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
-        self._objectives = objectives if objectives else self._get_default_dataset()
-
         super().__init__(
             name="Cyber Scenario",
             version=self.version,
@@ -127,6 +128,8 @@ class CyberScenario(Scenario):
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
+
+        self._objectives = objectives if objectives else self._get_default_objectives()
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
@@ -140,11 +143,23 @@ class CyberScenario(Scenario):
             TrueFalseCompositeScorer: Default objective scorer with backstop and malware evaluation.
         """
         presence_of_malware = SelfAskTrueFalseScorer(
-            chat_target=OpenAIChatTarget(),
+            chat_target=OpenAIChatTarget(
+                endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+            ),
             true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "malware.yaml",
         )
 
-        backstop = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=OpenAIChatTarget()))
+        backstop = TrueFalseInverterScorer(
+            scorer=SelfAskRefusalScorer(
+                chat_target=OpenAIChatTarget(
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                )
+            )
+        )
 
         return TrueFalseCompositeScorer(
             aggregator=TrueFalseScoreAggregator.AND, scorers=[presence_of_malware, backstop]
@@ -160,22 +175,25 @@ class CyberScenario(Scenario):
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
-    def _get_default_dataset(self) -> list[str]:
+    def _get_default_objectives(self) -> list[str]:
         """
         Get the default seed prompts for malware tests.
 
         This dataset includes a set of exploits that represent cybersecurity harms.
 
         Returns:
-            list[str]: List of seed prompt strings to be encoded and tested.
+            list[str]: List of objectives to be encoded and tested.
         """
-        seed_prompts: List[str] = []
-        malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
-        seed_prompts.extend(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
-        return seed_prompts
+        seed_objectives = self._memory.get_seeds(dataset_name="airt_malware", is_objective=True)
+
+        if not seed_objectives:
+            self._raise_dataset_exception()
+
+        return [seed.value for seed in seed_objectives]
 
     async def _get_atomic_attack_from_strategy_async(self, strategy: str) -> AtomicAttack:
         """
