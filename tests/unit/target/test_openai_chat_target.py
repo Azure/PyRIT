@@ -175,6 +175,7 @@ async def test_construct_request_body_includes_extra_body_params(
     patch_central_database, dummy_text_message_piece: MessagePiece
 ):
     target = OpenAIChatTarget(
+        model_name="gpt-4",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         extra_body_parameters={"key": "value"},
@@ -776,6 +777,7 @@ def test_invalid_temperature_raises(patch_central_database):
     """Test that invalid temperature values raise PyritException."""
     with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
         OpenAIChatTarget(
+            model_name="gpt-4",
             endpoint="https://test.com",
             api_key="test",
             temperature=-0.1,
@@ -783,6 +785,7 @@ def test_invalid_temperature_raises(patch_central_database):
 
     with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
         OpenAIChatTarget(
+            model_name="gpt-4",
             endpoint="https://test.com",
             api_key="test",
             temperature=2.1,
@@ -793,6 +796,7 @@ def test_invalid_top_p_raises(patch_central_database):
     """Test that invalid top_p values raise PyritException."""
     with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
         OpenAIChatTarget(
+            model_name="gpt-4",
             endpoint="https://test.com",
             api_key="test",
             top_p=-0.1,
@@ -800,6 +804,7 @@ def test_invalid_top_p_raises(patch_central_database):
 
     with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
         OpenAIChatTarget(
+            model_name="gpt-4",
             endpoint="https://test.com",
             api_key="test",
             top_p=1.1,

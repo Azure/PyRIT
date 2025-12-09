@@ -343,6 +343,7 @@ class TestContentHarmsScenarioBasic:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_get_default_adversarial_target(self, mock_objective_target):
@@ -356,6 +357,7 @@ class TestContentHarmsScenarioBasic:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_get_default_scorer(self, mock_objective_target):
@@ -373,6 +375,7 @@ class TestContentHarmsScenarioBasic:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
