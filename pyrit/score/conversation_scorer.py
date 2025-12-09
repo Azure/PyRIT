@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from abc import ABC
 from typing import Optional, Type, cast
 from uuid import UUID
 
@@ -13,7 +14,7 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
-class ConversationScorer(Scorer):
+class ConversationScorer(Scorer, ABC):
     """
     Scorer that evaluates entire conversation history rather than individual messages.
 
@@ -23,42 +24,15 @@ class ConversationScorer(Scorer):
 
     The ConversationScorer dynamically inherits from the same base class as the wrapped scorer,
     ensuring proper type compatibility.
+
+    Note: This class cannot be instantiated directly. Use create_conversation_scorer() factory instead.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         enforce_all_pieces_valid=True,
     )
-
-    def __init__(
-        self, *, scorer: Scorer, validator: Optional[ScorerPromptValidator] = None, _from_factory: bool = False
-    ):
-        """
-        Initialize the ConversationScorer.
-
-        Note: This class should not be instantiated directly. Use create_conversation_scorer() factory instead.
-        Direct instantiation will raise a TypeError to prevent misuse.
-
-        Args:
-            scorer (Scorer): The scorer to wrap for conversation-level evaluation.
-                Must be an instance of FloatScaleScorer or TrueFalseScorer.
-            validator (Optional[ScorerPromptValidator]): Optional validator override.
-            _from_factory (bool): Internal flag to verify factory instantiation. Do not use.
-
-        Raises:
-            TypeError: If instantiated directly without using the factory.
-        """
-        # Prevent direct instantiation - must use create_conversation_scorer() factory
-        if not _from_factory:
-            raise TypeError(
-                "ConversationScorer cannot be instantiated directly. "
-                "Use create_conversation_scorer() factory instead. "
-                "Direct instantiation would not work properly in many situations "
-                "(e.g., when used as a TrueFalseScorer in an attack)."
-            )
-
-        super().__init__(validator=validator or self._default_validator)
-        self._wrapped_scorer = scorer
+    _wrapped_scorer: Scorer
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -128,11 +102,7 @@ class ConversationScorer(Scorer):
             ]
         )
 
-        # Score using the underlying scorer's _score_async method (not score_async)
-        # This prevents double-insertion into the database since the parent's score_async
-        # will handle adding scores to memory and validation via the inherited validate_return_scores.
-        scores = await self._wrapped_scorer._score_async(message=conversation_message, objective=objective)
-
+        scores = await self._wrapped_scorer.score_async(message=conversation_message, objective=objective)
         return scores
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -144,17 +114,13 @@ class ConversationScorer(Scorer):
         """
         raise NotImplementedError("ConversationScorer uses _score_async, not _score_piece_async")
 
-    def validate_return_scores(self, scores: list[Score]):
+    def validate_return_scores(self, scores: list[Score]) -> None:
         """
-        Validate scores by delegating to the wrapped scorer's validation.
+        Validate scores - implementation provided by scorer_base_class in DynamicConversationScorer.
 
-        This ensures that scores are validated according to the wrapped scorer's requirements
-        (e.g., FloatScaleScorer validates [0,1] range, TrueFalseScorer validates true/false).
-
-        Args:
-            scores (list[Score]): The scores to be validated.
+        This method is required by the Scorer ABC. But validation happens in the wrapped scorer.
         """
-        self._wrapped_scorer.validate_return_scores(scores)
+        pass
 
 
 def create_conversation_scorer(
@@ -205,8 +171,8 @@ def create_conversation_scorer(
         """Dynamic ConversationScorer that inherits from both ConversationScorer and the wrapped scorer's base class."""
 
         def __init__(self):
-            # Initialize ConversationScorer - this also calls Scorer.__init__
-            # Pass _from_factory=True to allow instantiation via factory
-            ConversationScorer.__init__(self, scorer=scorer, validator=validator, _from_factory=True)
+            # Initialize with the validator and wrapped scorer
+            Scorer.__init__(self, validator=validator or ConversationScorer._default_validator)
+            self._wrapped_scorer = scorer
 
     return DynamicConversationScorer()

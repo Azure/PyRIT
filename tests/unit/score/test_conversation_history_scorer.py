@@ -260,16 +260,13 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
 
 
 def test_conversation_scorer_cannot_be_instantiated_directly():
-    """Test that ConversationScorer raises TypeError when instantiated directly."""
+    """Test that ConversationScorer raises TypeError when instantiated directly due to ABC."""
     mock_scorer = MagicMock(spec=FloatScaleScorer)
     mock_scorer._validator = ScorerPromptValidator(supported_data_types=["text"])
 
     with pytest.raises(
         TypeError,
-        match=(
-            "ConversationScorer cannot be instantiated directly. "
-            "Use create_conversation_scorer\\(\\) factory instead."
-        ),
+        match=r"Can't instantiate abstract class ConversationScorer",
     ):
         ConversationScorer(scorer=mock_scorer)
 
