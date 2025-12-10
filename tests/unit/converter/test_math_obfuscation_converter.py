@@ -1,4 +1,4 @@
-# Copyright (c)
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 import asyncio
@@ -80,7 +80,7 @@ def test_math_obfuscation_default_suffix():
     converter = MathObfuscationConverter(rng=random.Random(0), hint="")
 
     result = asyncio.run(converter.convert_async(prompt="A"))
-    
+
     assert result.output_text.endswith(MathObfuscationConverter.DEFAULT_SUFFIX)
     assert "There is something I want you to provide instructions" in result.output_text
 
@@ -91,7 +91,7 @@ def test_math_obfuscation_custom_suffix():
     converter = MathObfuscationConverter(rng=random.Random(0), hint="", suffix=custom_suffix)
 
     result = asyncio.run(converter.convert_async(prompt="A"))
-    
+
     assert result.output_text.endswith(custom_suffix)
     assert "There is something" not in result.output_text
 
@@ -102,7 +102,7 @@ def test_math_obfuscation_no_suffix():
 
     result = asyncio.run(converter.convert_async(prompt="AB"))
     lines = result.output_text.splitlines()
-    
+
     assert len(lines) == 2
     assert all(" = " in line for line in lines)
 
@@ -113,7 +113,7 @@ def test_math_obfuscation_default_hint():
 
     result = asyncio.run(converter.convert_async(prompt="AB"))
     lines = result.output_text.splitlines()
-    
+
     assert MathObfuscationConverter.DEFAULT_HINT in lines[0]
     assert MathObfuscationConverter.DEFAULT_HINT not in lines[1]
 
@@ -125,7 +125,7 @@ def test_math_obfuscation_custom_hint():
 
     result = asyncio.run(converter.convert_async(prompt="AB"))
     lines = result.output_text.splitlines()
-    
+
     assert custom_hint in lines[0]
     assert "each variable corresponds" not in result.output_text
 
@@ -135,7 +135,7 @@ def test_math_obfuscation_no_hint():
     converter = MathObfuscationConverter(rng=random.Random(0), hint="", suffix="")
 
     result = asyncio.run(converter.convert_async(prompt="A"))
-    
+
     # Should be just the equation, no extra content
     assert result.output_text == "A = 8A - 7A"
 
@@ -145,7 +145,7 @@ def test_math_obfuscation_full_defaults():
     converter = MathObfuscationConverter(rng=random.Random(0))
 
     result = asyncio.run(converter.convert_async(prompt="Hi"))
-    
+
     assert MathObfuscationConverter.DEFAULT_HINT in result.output_text
     assert MathObfuscationConverter.DEFAULT_SUFFIX in result.output_text
     # Hint should be on first line only
