@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, Awaitable, Callable, Literal, Optional, Sequence
+from typing import Any, Callable, Literal, Optional, Sequence
 
 from pyrit.common import default_values, net_utility
 from pyrit.models import (

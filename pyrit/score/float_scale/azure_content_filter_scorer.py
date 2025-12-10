@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import time
 from typing import Awaitable, Callable, Optional
 
 from azure.ai.contentsafety import ContentSafetyClient
@@ -10,7 +11,7 @@ from azure.ai.contentsafety.models import (
     ImageData,
     TextCategory,
 )
-from azure.core.credentials import AzureKeyCredential, TokenCredential
+from azure.core.credentials import AccessToken, AzureKeyCredential, TokenCredential
 
 from pyrit.common import default_values
 from pyrit.models import (
@@ -21,8 +22,6 @@ from pyrit.models import (
 )
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-import time
-from azure.core.credentials import AccessToken
 
 
 class AzureContentFilterScorer(FloatScaleScorer):

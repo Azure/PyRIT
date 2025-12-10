@@ -5,7 +5,7 @@ import json
 import logging
 import re
 from abc import abstractmethod
-from typing import Any, Callable, Optional, Awaitable
+from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import urlparse
 
 from openai import (
@@ -107,7 +107,7 @@ class OpenAITarget(PromptChatTarget):
         self._api_key = default_values.get_required_value(  # type: ignore[assignment]
             env_var_name=self.api_key_environment_variable, passed_value=api_key
         )
-        
+
         self._initialize_openai_client()
 
     def _extract_deployment_from_azure_url(self, url: str) -> str:

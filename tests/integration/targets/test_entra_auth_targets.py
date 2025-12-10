@@ -5,7 +5,10 @@ import os
 
 import pytest
 
-from pyrit.auth import get_azure_openai_auth, get_azure_token_provider, get_default_azure_scope
+from pyrit.auth import (
+    get_azure_openai_auth,
+    get_azure_token_provider,
+)
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_target import (
     OpenAIChatTarget,
