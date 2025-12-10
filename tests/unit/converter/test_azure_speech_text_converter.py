@@ -32,9 +32,13 @@ class TestAzureSpeechAudioToTextConverter:
         assert converter._azure_speech_key == "dummy_key"
         assert converter.done is False
 
+    @patch(
+        "pyrit.common.default_values.get_required_value",
+        side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
+    )
     @patch("azure.cognitiveservices.speech.SpeechRecognizer")
     @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
-    def test_stop_cb(self, mock_logger, MockSpeechRecognizer):
+    def test_stop_cb(self, mock_logger, MockSpeechRecognizer, mock_get_required_value):
         import azure.cognitiveservices.speech as speechsdk
 
         # Create a mock event
@@ -59,9 +63,13 @@ class TestAzureSpeechAudioToTextConverter:
         )
         mock_logger.info.assert_called_with("End of audio stream detected.")
 
+    @patch(
+        "pyrit.common.default_values.get_required_value",
+        side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
+    )
     @patch("azure.cognitiveservices.speech.SpeechRecognizer")
     @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
-    def test_transcript_cb(self, mock_logger, MockSpeechRecognizer):
+    def test_transcript_cb(self, mock_logger, MockSpeechRecognizer, mock_get_required_value):
         import azure.cognitiveservices.speech as speechsdk
 
         # Create a mock event
@@ -82,21 +90,33 @@ class TestAzureSpeechAudioToTextConverter:
         mock_logger.info.assert_called_once_with("RECOGNIZED: {}".format(mock_event.result.text))
         assert mock_event.result.text in transcript
 
-    def test_azure_speech_audio_text_converter_input_supported(self):
+    @patch(
+        "pyrit.common.default_values.get_required_value",
+        side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
+    )
+    def test_azure_speech_audio_text_converter_input_supported(self, mock_get_required_value):
         converter = AzureSpeechAudioToTextConverter()
         assert converter.input_supported("image_path") is False
         assert converter.input_supported("audio_path") is True
 
     @pytest.mark.asyncio
-    async def test_azure_speech_audio_text_converter_nonexistent_path(self):
+    @patch(
+        "pyrit.common.default_values.get_required_value",
+        side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
+    )
+    async def test_azure_speech_audio_text_converter_nonexistent_path(self, mock_get_required_value):
         converter = AzureSpeechAudioToTextConverter()
         prompt = "nonexistent_path2.wav"
         with pytest.raises(FileNotFoundError):
             assert await converter.convert_async(prompt=prompt, input_type="audio_path")
 
     @pytest.mark.asyncio
+    @patch(
+        "pyrit.common.default_values.get_required_value",
+        side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
+    )
     @patch("os.path.exists", return_value=True)
-    async def test_azure_speech_audio_text_converter_non_wav_file(self, mock_path_exists):
+    async def test_azure_speech_audio_text_converter_non_wav_file(self, mock_path_exists, mock_get_required_value):
         converter = AzureSpeechAudioToTextConverter()
         prompt = "dummy_audio.mp3"
         with pytest.raises(ValueError):

@@ -58,7 +58,7 @@ class AIRTInitializer(PyRITInitializer):
 
     Example:
         initializer = AIRTInitializer()
-        initializer.initialize()  # Sets up complete AIRT configuration
+        await initializer.initialize_async()  # Sets up complete AIRT configuration
     """
 
     def __init__(self) -> None:
@@ -92,7 +92,7 @@ class AIRTInitializer(PyRITInitializer):
             "AZURE_CONTENT_SAFETY_API_KEY",
         ]
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         """
         Execute the complete AIRT initialization.
 

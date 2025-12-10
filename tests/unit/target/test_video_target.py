@@ -37,6 +37,7 @@ def test_video_initializes(video_target: OpenAIVideoTarget):
 def test_video_initialization_invalid_resolution(patch_central_database):
     with pytest.raises(ValueError, match="Invalid resolution"):
         OpenAIVideoTarget(
+            model_name="gpt-4",
             endpoint="https://api.openai.com/v1",
             api_key="test",
             resolution_dimensions="invalid",
@@ -46,6 +47,7 @@ def test_video_initialization_invalid_resolution(patch_central_database):
 def test_video_initialization_invalid_duration(patch_central_database):
     with pytest.raises(ValueError, match="Invalid duration"):
         OpenAIVideoTarget(
+            model_name="gpt-4",
             endpoint="https://api.openai.com/v1",
             api_key="test",
             n_seconds=20,  # Only 4, 8, 12 are supported
@@ -73,7 +75,7 @@ def test_video_validate_prompt_type(video_target: OpenAIVideoTarget):
 
 
 def test_is_json_response_supported(patch_central_database):
-    target = OpenAIVideoTarget(endpoint="test", api_key="test")
+    target = OpenAIVideoTarget(endpoint="test", api_key="test", model_name="test-model")
     assert target.is_json_response_supported() is False
 
 

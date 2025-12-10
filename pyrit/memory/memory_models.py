@@ -58,21 +58,54 @@ class CustomUUID(TypeDecorator):
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
+        """
+        Load the dialect-specific implementation for UUID handling.
+
+        Args:
+            dialect: The database dialect being used.
+
+        Returns:
+            The appropriate type descriptor for the given dialect.
+        """
         if dialect.name == "sqlite":
             return dialect.type_descriptor(CHAR(36))
         else:
             return dialect.type_descriptor(Uuid())
 
     def process_bind_param(self, value, dialect):
+        """
+        Process a parameter value before binding it to a database statement.
+
+        Args:
+            value: The value to be processed (UUID or None).
+            dialect: The database dialect being used.
+
+        Returns:
+            str or None: The string representation of the UUID or None if value is None.
+        """
         return str(value) if value else None
 
     def process_result_value(self, value, dialect):
+        """
+        Process a result value after it has been retrieved from the database.
+
+        Args:
+            value: The value to be processed (UUID or None).
+            dialect: The database dialect being used.
+
+        Returns:
+            UUID or None: The UUID object or None if value is None.
+        """
         if dialect.name == "sqlite":
             return uuid.UUID(value) if value else None
         return value
 
 
 class Base(DeclarativeBase):
+    """
+    Base class for all database models.
+    """
+
     pass
 
 
@@ -152,6 +185,12 @@ class PromptMemoryEntry(Base):
     )
 
     def __init__(self, *, entry: MessagePiece):
+        """
+        Initialize a PromptMemoryEntry from a MessagePiece.
+
+        Args:
+            entry (MessagePiece): The message piece to convert into a database entry.
+        """
         self.id = entry.id
         self.role = entry.role
         self.conversation_id = entry.conversation_id
@@ -177,6 +216,12 @@ class PromptMemoryEntry(Base):
         self.original_prompt_id = entry.original_prompt_id
 
     def get_message_piece(self) -> MessagePiece:
+        """
+        Convert this database entry back into a MessagePiece object.
+
+        Returns:
+            MessagePiece: The reconstructed message piece with all its data and scores.
+        """
         message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
@@ -202,6 +247,12 @@ class PromptMemoryEntry(Base):
         return message_piece
 
     def __str__(self):
+        """
+        Return a string representation of the memory entry.
+
+        Returns:
+            str: Formatted string representation of the memory entry.
+        """
         if self.prompt_target_identifier:
             return f"{self.prompt_target_identifier['__type__']}: {self.role}: {self.converted_value}"
         return f": {self.role}: {self.converted_value}"
@@ -227,6 +278,12 @@ class EmbeddingDataEntry(Base):  # type: ignore
     embedding_type_name = mapped_column(String)
 
     def __str__(self):
+        """
+        Return a string representation of the embedding data entry (its ID).
+
+        Returns:
+            str: The stringified ID of the entry.
+        """
         return f"{self.id}"
 
 
@@ -254,6 +311,12 @@ class ScoreEntry(Base):  # type: ignore
     prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
+        """
+        Initialize a ScoreEntry from a Score object.
+
+        Args:
+            entry (Score): The score object to convert into a database entry.
+        """
         self.id = entry.id
         self.score_value = entry.score_value
         self.score_value_description = entry.score_value_description
@@ -291,6 +354,12 @@ class ScoreEntry(Base):  # type: ignore
         return normalized
 
     def get_score(self) -> Score:
+        """
+        Convert this database entry back into a Score object.
+
+        Returns:
+            Score: The reconstructed score object with all its data.
+        """
         return Score(
             id=self.id,
             score_value=self.score_value,
@@ -329,6 +398,12 @@ class ScoreEntry(Base):  # type: ignore
         return denormalized
 
     def to_dict(self) -> dict:
+        """
+        Convert this database entry to a dictionary.
+
+        Returns:
+            dict: The dictionary representation of the score entry.
+        """
         return {
             "id": str(self.id),
             "score_value": self.score_value,
@@ -345,6 +420,16 @@ class ScoreEntry(Base):  # type: ignore
 
 
 class ConversationMessageWithSimilarity(BaseModel):
+    """
+    Represents a conversation message with its similarity score.
+
+    Attributes:
+        role (str): The role of the message (e.g., "user", "assistant").
+        content (str): The content of the message.
+        metric (str): The metric used to calculate the similarity score.
+        score (float): The similarity score (default is 0.0).
+    """
+
     model_config = ConfigDict(extra="forbid")
     role: str
     content: str
@@ -353,6 +438,15 @@ class ConversationMessageWithSimilarity(BaseModel):
 
 
 class EmbeddingMessageWithSimilarity(BaseModel):
+    """
+    Represents an embedding message with its similarity score.
+
+    Parameters:
+        uuid (uuid.UUID): The UUID of the embedding message.
+        metric (str): The metric used to calculate the similarity score.
+        score (float): The similarity score (default is 0.0).
+    """
+
     model_config = ConfigDict(extra="forbid")
     uuid: uuid.UUID
     metric: str
@@ -422,6 +516,12 @@ class SeedEntry(Base):
     is_objective: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
     def __init__(self, *, entry: Seed):
+        """
+        Initialize a SeedEntry from a Seed object.
+
+        Args:
+            entry (Seed): The seed object to convert into a database entry.
+        """
         is_objective = isinstance(entry, SeedObjective)
 
         self.id = entry.id
@@ -445,6 +545,12 @@ class SeedEntry(Base):
         self.is_objective = is_objective
 
     def get_seed(self) -> Seed:
+        """
+        Convert this database entry back into a Seed object.
+
+        Returns:
+            Seed: The reconstructed seed object (SeedPrompt or SeedObjective)
+        """
         if self.is_objective:
             return SeedObjective(
                 id=self.id,
@@ -548,6 +654,12 @@ class AttackResultEntry(Base):
     )
 
     def __init__(self, *, entry: AttackResult):
+        """
+        Initialize an AttackResultEntry from an AttackResult object.
+
+        Args:
+            entry (AttackResult): The attack result object to convert into a database entry.
+        """
         self.id = uuid.uuid4()
         self.conversation_id = entry.conversation_id
         self.objective = entry.objective
@@ -622,7 +734,12 @@ class AttackResultEntry(Base):
         return filtered_metadata
 
     def get_attack_result(self) -> AttackResult:
+        """
+        Convert this database entry back into an AttackResult object.
 
+        Returns:
+            AttackResult: The reconstructed attack result including related conversations and scores.
+        """
         related_conversations: set[ConversationReference] = set()
 
         for cid in self.pruned_conversation_ids or []:
@@ -716,6 +833,12 @@ class ScenarioResultEntry(Base):
     timestamp = mapped_column(DateTime, nullable=False)
 
     def __init__(self, *, entry: ScenarioResult):
+        """
+        Initialize a ScenarioResultEntry from a ScenarioResult object.
+
+        Args:
+            entry (ScenarioResult): The scenario result object to convert into a database entry.
+        """
         self.id = entry.id
         self.scenario_name = entry.scenario_identifier.name
         self.scenario_description = entry.scenario_identifier.description
@@ -783,4 +906,10 @@ class ScenarioResultEntry(Base):
         return json.loads(self.attack_results_json)
 
     def __str__(self):
+        """
+        Return a string representation of the scenario result entry.
+
+        Returns:
+            str: String representation of the scenario result entry
+        """
         return f"ScenarioResultEntry: {self.scenario_name} (version {self.scenario_version})"

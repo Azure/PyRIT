@@ -75,6 +75,11 @@ class ConcreteScenario(Scenario):
     def get_default_strategy(cls):
         return cls.get_strategy_class().ALL
 
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+        """Return the list of required datasets for testing."""
+        return []
+
 
 @pytest.mark.usefixtures("patch_central_database")
 @pytest.mark.asyncio

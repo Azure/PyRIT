@@ -27,10 +27,28 @@ class TrueFalseScorer(Scorer):
         validator: ScorerPromptValidator,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
+        """
+        Initialize the TrueFalseScorer.
+
+        Args:
+            validator (ScorerPromptValidator): Custom validator.
+            score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
+        """
         super().__init__(validator=validator)
         self._score_aggregator = score_aggregator
 
     def validate_return_scores(self, scores: list[Score]):
+        """
+        Validate the scores returned by the scorer.
+
+        Args:
+            scores (list[Score]): The scores to be validated.
+
+        Raises:
+            ValueError: If the number of scores is not exactly one.
+            ValueError: If the score value is not "true" or "false".
+        """
         if len(scores) != 1:
             raise ValueError("TrueFalseScorer should return exactly one score.")
 
@@ -49,6 +67,9 @@ class TrueFalseScorer(Scorer):
 
         Returns:
             list[Score]: A list containing a single true/false Score object.
+
+        Raises:
+            ValueError: If no pieces are scored and cannot determine a piece ID for the return score.
         """
         # Get individual scores for all supported pieces using base implementation logic
         score_list = await super()._score_async(message, objective=objective)

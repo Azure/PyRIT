@@ -13,6 +13,8 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 
 class PlagiarismMetric(Enum):
+    """Enum representing different plagiarism detection metrics."""
+
     LCS = "lcs"
     LEVENSHTEIN = "levenshtein"
     JACCARD = "jaccard"
@@ -39,12 +41,13 @@ class PlagiarismScorer(FloatScaleScorer):
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """
-        Initializes the PlagiarismScorer.
+        Initialize the PlagiarismScorer.
 
         Args:
             reference_text (str): The reference text to compare against.
-            metric (PlagiarismMetric, optional): The plagiarism detection metric to use.
-            n (int, optional): The n-gram size for n-gram similarity (default is 5).
+            metric (PlagiarismMetric): The plagiarism detection metric to use. Defaults to PlagiarismMetric.LCS.
+            n (int): The n-gram size for n-gram similarity. Defaults to 5.
+            validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
         """
         super().__init__(validator=validator or self._default_validator)
 
@@ -53,13 +56,23 @@ class PlagiarismScorer(FloatScaleScorer):
         self.n = n
 
     def _tokenize(self, text: str) -> List[str]:
-        """Simple whitespace-based tokenizer (case-insensitive)."""
+        """
+        Tokenize text using whitespace-based tokenization (case-insensitive).
+
+        Returns:
+            List[str]: List of lowercase tokens with punctuation removed.
+        """
         text = text.lower()
         text = re.sub(r"[^\w\s]", "", text)
         return text.split()
 
     def _lcs_length(self, a: List[str], b: List[str]) -> int:
-        """Compute the length of the Longest Common Subsequence at word level."""
+        """
+        Compute the length of the Longest Common Subsequence at word level.
+
+        Returns:
+            int: Length of the longest common subsequence.
+        """
         dp = np.zeros((len(a) + 1, len(b) + 1), dtype=int)
         for i in range(1, len(a) + 1):
             for j in range(1, len(b) + 1):
@@ -70,7 +83,12 @@ class PlagiarismScorer(FloatScaleScorer):
         return dp[len(a)][len(b)]
 
     def _levenshtein_distance(self, a: List[str], b: List[str]) -> int:
-        """Compute Levenshtein edit distance at word level."""
+        """
+        Compute Levenshtein edit distance at word level.
+
+        Returns:
+            int: The Levenshtein distance between the two token lists.
+        """
         dp = np.zeros((len(a) + 1, len(b) + 1), dtype=int)
         for i in range(len(a) + 1):
             dp[i][0] = i
@@ -83,7 +101,12 @@ class PlagiarismScorer(FloatScaleScorer):
         return dp[len(a)][len(b)]
 
     def _ngram_set(self, tokens: List[str], n: int) -> set:
-        """Generate a set of n-grams from token list."""
+        """
+        Generate a set of n-grams from token list.
+
+        Returns:
+            set: Set of n-gram tuples.
+        """
         return set(tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1))
 
     def _plagiarism_score(

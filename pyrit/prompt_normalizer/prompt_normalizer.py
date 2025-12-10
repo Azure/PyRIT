@@ -5,7 +5,7 @@ import asyncio
 import copy
 import logging
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 from uuid import uuid4
 
 from pyrit.exceptions import EmptyResponseException
@@ -16,7 +16,6 @@ from pyrit.models import (
     SeedGroup,
     construct_response_from_request,
 )
-from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
@@ -25,11 +24,15 @@ logger = logging.getLogger(__name__)
 
 
 class PromptNormalizer:
+    """
+    Handles normalization and processing of prompts before they are sent to targets.
+    """
+
     _memory: MemoryInterface = None
 
     def __init__(self, start_token: str = "⟪", end_token: str = "⟫") -> None:
         """
-        Initializes the PromptNormalizer.
+        Initialize the PromptNormalizer.
 
         start_token and end_token are used to delineate which part of a prompt is converted.
         """
@@ -37,7 +40,6 @@ class PromptNormalizer:
         self._start_token = start_token
         self._end_token = end_token
         self.id = str(uuid4())
-        self._skip_criteria: Optional[PromptFilterCriteria] = None
 
     async def send_prompt_async(
         self,
@@ -51,7 +53,7 @@ class PromptNormalizer:
         attack_identifier: Optional[dict[str, str]] = None,
     ) -> Message:
         """
-        Sends a single request to a target.
+        Send a single request to a target.
 
         Args:
             seed_group (SeedGroup): The seed group to be sent.
@@ -86,9 +88,6 @@ class PromptNormalizer:
         )
 
         await self._calc_hash(request=request)
-
-        if self._should_skip_based_on_skip_criteria(request):
-            return None
 
         responses = None
 
@@ -151,7 +150,7 @@ class PromptNormalizer:
         batch_size: int = 10,
     ) -> list[Message]:
         """
-        Sends a batch of prompts to the target asynchronously.
+        Send a batch of prompts to the target asynchronously.
 
         Args:
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects to be sent.
@@ -191,15 +190,22 @@ class PromptNormalizer:
             attack_identifier=attack_identifier,
         )
 
-        # send_prompt_async can return None if the prompt is skipped
+        # Filter out None responses (e.g., from empty responses)
         return [response for response in responses if response is not None]
 
     async def convert_values(
         self,
         converter_configurations: list[PromptConverterConfiguration],
         message: Message,
-    ):
+    ) -> None:
+        """
+        Apply converter configurations to message pieces.
 
+        Args:
+            converter_configurations (list[PromptConverterConfiguration]): List of configurations specifying
+                which converters to apply and to which message pieces.
+            message (Message): The message containing pieces to be converted.
+        """
         for converter_configuration in converter_configurations:
             for piece_index, piece in enumerate(message.message_pieces):
                 indexes = converter_configuration.indexes_to_apply
@@ -230,77 +236,8 @@ class PromptNormalizer:
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type
 
-    def set_skip_criteria(
-        self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState, ensure_response=True
-    ) -> None:
-        """
-        Sets the skip criteria for the attack.
-
-        If prompts match this in memory and are the same as one being sent, then they won't be sent to a target.
-
-        Prompts are the same if either the original prompt or the converted prompt, determined by skip_value_type flag.
-        """
-        self._skip_criteria = skip_criteria
-
-        skip_args: Dict[str, Any] = {
-            "attack_id": self._skip_criteria.attack_id,
-            "conversation_id": self._skip_criteria.conversation_id,
-            "prompt_ids": self._skip_criteria.prompt_ids,
-            "labels": self._skip_criteria.labels,
-            "sent_after": self._skip_criteria.sent_after,
-            "sent_before": self._skip_criteria.sent_before,
-            "original_values": self._skip_criteria.original_values,
-            "converted_values": self._skip_criteria.converted_values,
-            "data_type": self._skip_criteria.data_type,
-            "not_data_type": self._skip_criteria.not_data_type,
-            "converted_value_sha256": self._skip_criteria.converted_value_sha256,
-        }
-
-        prompts_to_skip = self._memory.get_message_pieces(role="user", **skip_args)
-
-        if ensure_response:
-            # If a request was sent but we don't have a response we need to retry
-            # so remove such requests from the prompts to skip list.
-            responses = self._memory.get_message_pieces(role="assistant", **skip_args)
-            response_conversation_ids = {response.conversation_id for response in responses}
-            prompt_conversation_ids = {prompt.conversation_id for prompt in prompts_to_skip}
-            missing_response_conversation_ids = prompt_conversation_ids - response_conversation_ids
-            prompts_to_skip = [
-                prompt for prompt in prompts_to_skip if prompt.conversation_id not in missing_response_conversation_ids
-            ]
-
-        self._original_sha256_prompts_to_skip = [
-            prompt.original_value_sha256 for prompt in prompts_to_skip if prompt.original_value_sha256
-        ]
-
-        self._converted_sha256_prompts_to_skip = [
-            prompt.converted_value_sha256 for prompt in prompts_to_skip if prompt.converted_value_sha256
-        ]
-
-        self._skip_value_type = skip_value_type
-
-    def _should_skip_based_on_skip_criteria(self, message: Message) -> bool:
-        """
-        Filters out prompts from message_list that match the skip criteria.
-
-        Every message_piece of the message needs to have matching sha256 to skip.
-        """
-        if not self._skip_criteria:
-            return False
-
-        for user_prompt in message.message_pieces:
-            if self._skip_value_type == "converted":
-                if user_prompt.converted_value_sha256 not in self._converted_sha256_prompts_to_skip:
-                    return False
-            else:
-                if user_prompt.original_value_sha256 not in self._original_sha256_prompts_to_skip:
-                    return False
-        return True
-
     async def _calc_hash(self, request: Message) -> None:
-        """
-        Adds a request to the memory.
-        """
+        """Add a request to the memory."""
         tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.message_pieces]
         await asyncio.gather(*tasks)
 
@@ -315,7 +252,7 @@ class PromptNormalizer:
         attack_identifier: Optional[dict[str, str]] = None,
     ) -> Message:
         """
-        Builds a message based on the given parameters.
+        Build a message based on the given parameters.
 
         Applies parameters and converters to the prompt text and puts all the pieces together.
 
@@ -346,7 +283,6 @@ class PromptNormalizer:
                 prompt_target_identifier=target.get_identifier(),
                 attack_identifier=attack_identifier,
                 original_value_data_type=seed_prompt.data_type,
-                targeted_harm_categories=list(seed_prompt.harm_categories) if seed_prompt.harm_categories else None,
             )
 
             entries.append(message_piece)
@@ -365,7 +301,7 @@ class PromptNormalizer:
         prepended_conversation: Optional[list[Message]] = None,
     ) -> Optional[list[Message]]:
         """
-        Processes the prepended conversation by converting it if needed and adding it to memory.
+        Process the prepended conversation by converting it if needed and adding it to memory.
 
         Args:
             conversation_id (str): The conversation ID to use for the message pieces
