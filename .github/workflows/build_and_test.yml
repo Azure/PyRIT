@@ -181,8 +181,9 @@ jobs:
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
             uv sync --no-cache --extra dev --extra all
           else
-            uv sync --no-cache --extra all
+            uv sync --no-cache --extra dev 
           fi
+          uv pip list
 
       - name: Run unit tests with code coverage
         run: make unit-test-cov-xml
