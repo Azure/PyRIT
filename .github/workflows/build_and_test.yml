@@ -52,7 +52,7 @@ jobs:
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --group dev --group all --no-cache
+        run: uv sync --extra dev --extra all --no-cache
 
       - name: disk space
         run: df -all -h
@@ -109,7 +109,7 @@ jobs:
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --group dev --group all --no-cache
+        run: uv sync --extra dev --extra all --no-cache
 
       - name: disk space
         run: df -all -h
@@ -179,12 +179,12 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
-            uv sync --no-cache --group dev --group all
+            uv sync --no-cache --extra dev --extra all
           elif [ "${{ matrix.package_extras }}" = "dev" ]; then
-            uv sync --no-cache --group dev
+            uv sync --no-cache --extra dev
           else
             extras="${{ matrix.package_extras }}"
-            uv sync --group ".${extras}" --no-cache
+            uv sync --extra ".${extras}" --no-cache
           fi
 
       - name: Run unit tests with code coverage
