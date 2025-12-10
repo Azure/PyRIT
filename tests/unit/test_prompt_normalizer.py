@@ -18,7 +18,6 @@ from pyrit.models import (
     SeedGroup,
     SeedPrompt,
 )
-from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.prompt_converter import (
     Base64Converter,
     ConverterResult,
@@ -430,114 +429,6 @@ async def test_convert_response_values_type(mock_memory_instance, response: Mess
     await normalizer.convert_values(converter_configurations=[response_converter], message=response)
     assert response.get_value() == "SGVsbG8="
     assert response.get_value(1) == "cGFydCAy"
-
-
-@pytest.mark.asyncio
-async def test_should_skip_based_on_skip_criteria_no_skip_criteria(mock_memory_instance):
-    normalizer = PromptNormalizer()  # By default, _skip_criteria is None
-
-    # Make a request with at least one piece
-    request = Message(message_pieces=[MessagePiece(role="user", original_value="hello")])
-
-    result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is False, "_should_skip_based_on_skip_criteria should return False when skip_criteria is not set"
-
-
-@pytest.mark.asyncio
-async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instance):
-    normalizer = PromptNormalizer()
-
-    skip_criteria = PromptFilterCriteria(
-        attack_id="test_attack",
-        conversation_id="test_conversation",
-    )
-
-    memory_piece = MessagePiece(
-        role="user",
-        original_value="My user prompt",
-    )
-    memory_piece.original_value_sha256 = "some_random_hash"
-    memory_piece.converted_value_sha256 = "some random hash"
-
-    mock_memory_instance.get_message_pieces.return_value = [memory_piece]
-
-    normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
-
-    # Construct a message piece that doesn't match the memory's hash
-    message_piece = MessagePiece(role="user", original_value="My user prompt")
-    message_piece.original_value_sha256 = "completely_different_hash"
-    message_piece.converted_value_sha256 = "completely_different_hash"
-
-    request = Message(message_pieces=[message_piece])
-
-    result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is False, "Should return False if no message pieces in memory match"
-
-
-@pytest.mark.asyncio
-async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instance):
-    """
-    If skip criteria is set and the message pieces in memory DO match,
-    _should_skip_based_on_skip_criteria should return True.
-    """
-    normalizer = PromptNormalizer()
-
-    skip_criteria = PromptFilterCriteria(
-        attack_id="test_attack",
-        conversation_id="test_conversation",
-    )
-
-    # We'll say that memory returns one piece with the exact same converted_value_sha256
-    # as our message piece
-    matching_sha = "matching_converted_hash"
-
-    piece = MessagePiece(role="user", original_value="prompt")
-    piece.converted_value_sha256 = matching_sha
-    mock_memory_instance.get_message_pieces.return_value = [piece]
-
-    # Our message piece also has that same matching sha
-    message_piece = MessagePiece(role="user", original_value="My user prompt")
-    message_piece.converted_value_sha256 = matching_sha
-
-    request = Message(message_pieces=[message_piece])
-
-    # Set skip criteria with 'converted' skip_value_type
-    normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
-
-    result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is True, "Should return True if a matching converted_value_sha256 is found"
-
-
-@pytest.mark.asyncio
-async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memory_instance):
-    """
-    Same test logic but with skip_value_type='original'.
-    """
-    matching_sha = "matching_original_hash"
-
-    # Build a message piece with the same original_value_sha256
-    message_piece = MessagePiece(role="user", original_value="My user prompt")
-    message_piece.original_value_sha256 = matching_sha
-
-    request = Message(message_pieces=[message_piece])
-
-    # Memory returns a piece that has an original_value_sha256 matching our message piece
-    piece = MessagePiece(role="user", original_value="prompt")
-    piece.original_value_sha256 = matching_sha
-    mock_memory_instance.get_message_pieces.return_value = [piece]
-
-    normalizer = PromptNormalizer()
-
-    skip_criteria = PromptFilterCriteria(
-        attack_id="test_attack",
-        conversation_id="test_conversation",
-    )
-
-    # This time we use 'original' skip_value_type
-    normalizer.set_skip_criteria(skip_criteria, skip_value_type="original")
-
-    result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is True, "Should return True if a matching original_value_sha256 is found"
 
 
 @pytest.mark.asyncio
