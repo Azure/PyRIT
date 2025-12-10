@@ -79,27 +79,30 @@ def test_get_file_name_subdirectory():
     assert "{{ prompt }}" not in result
 
 
-def test_all_templates_have_single_prompt_parameter(jailbreak_dir):
-    """Test that all jailbreak template files have exactly one prompt parameter in their definition."""
+def test_all_templates_render_without_syntax_errors(jailbreak_dir):
+    """Test that all jailbreak templates can be successfully rendered with a test prompt."""
     yaml_files = [f for f in jailbreak_dir.rglob("*.yaml") if "multi_parameter" not in f.parts]
     assert len(yaml_files) > 0, "No YAML templates found in jailbreak directory"
+
+    test_prompt = "This is a test prompt for template validation"
+    failed_templates = []
 
     for template_file in yaml_files:
         try:
             jailbreak = TextJailBreak(template_path=str(template_file))
-            template_params = jailbreak.template.parameters
-
-            prompt_params = [p for p in template_params if p == "prompt"]
-            assert (
-                len(prompt_params) == 1
-            ), f"Template {template_file.name} has {len(prompt_params)} prompt parameters in definition, expected 1"
-            assert (
-                len(template_params) == 1
-            ), f"Template {template_file.name} has {len(template_params)} parameters in definition, expected 1"
-            if len(template_params) > 1:
-                print(f"Template {template_file.name} has {len(template_params)} parameters in definition, expected 1")
+            # Attempt to render the template - this will catch Jinja2 syntax errors
+            result = jailbreak.get_jailbreak(test_prompt)
+            # Verify the prompt was inserted and template placeholders were removed
+            assert test_prompt in result, f"Template {template_file.name} did not insert test prompt"
+            assert "{{ prompt }}" not in result, f"Template {template_file.name} still contains template placeholder"
         except Exception as e:
-            pytest.fail(f"Failed processing template file '{template_file.name}': {str(e)}")
+            failed_templates.append((template_file.relative_to(jailbreak_dir), str(e)))
+
+    if failed_templates:
+        error_msg = "The following templates failed to render:\n"
+        for template_path, error in failed_templates:
+            error_msg += f"  - {template_path}: {error}\n"
+        pytest.fail(error_msg)
 
 
 def test_template_with_multiple_parameters_success(jailbreak_dir):
@@ -137,3 +140,48 @@ def test_template_with_multiple_parameters_prompt_ignored(jailbreak_dir):
     assert "This should be ignored" not in result  # The prompt from kwargs should not appear
     assert "{{ prompt }}" not in result
     assert "{{ target_group }}" not in result
+
+
+def test_random_template_validation_fails_on_invalid_syntax():
+    """Test that random template selection validates syntax and fails with clear error on invalid templates."""
+    # Create a temporary invalid template to test validation
+    import tempfile
+    from pathlib import Path
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        invalid_template_path = tmpdir_path / "invalid.yaml"
+        
+        # Create a template with invalid Jinja2 syntax
+        invalid_template_path.write_text("""---
+name: test_invalid_template
+parameters:
+  - prompt
+data_type: text
+value: |
+  This has invalid syntax: {{ '{' }}{{ prompt }}{{ '}' }}
+""")
+        
+        # Try to load and validate it
+        with pytest.raises(ValueError) as exc_info:
+            jailbreak = TextJailBreak(template_path=str(invalid_template_path))
+            jailbreak.get_jailbreak("test")
+        
+        # Verify error message contains helpful context
+        error_msg = str(exc_info.value)
+        assert "Failed to render jailbreak template" in error_msg or "Error rendering template" in error_msg
+        assert "invalid.yaml" in error_msg or str(invalid_template_path) in error_msg
+
+
+def test_template_source_tracking(jailbreak_dir):
+    """Test that template source is tracked for better error reporting."""
+    template_path = jailbreak_dir / "dan_1.yaml"
+    jailbreak = TextJailBreak(template_path=str(template_path))
+    
+    # Verify template_source is set
+    assert hasattr(jailbreak, "template_source")
+    assert "dan_1.yaml" in str(jailbreak.template_source)
+    
+    # Test with string template
+    jailbreak_string = TextJailBreak(string_template="Test {{ prompt }}")
+    assert jailbreak_string.template_source == "<string_template>"

@@ -27,7 +27,13 @@ class TextJailbreakConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        jailbreak_prompt = self.jail_break_template.get_jailbreak(prompt=prompt)
+        try:
+            jailbreak_prompt = self.jail_break_template.get_jailbreak(prompt=prompt)
+        except ValueError as e:
+            template_source = getattr(self.jail_break_template, "template_source", "<unknown>")
+            raise ValueError(
+                f"TextJailbreakConverter failed to convert prompt using template '{template_source}': {str(e)}"
+            ) from e
         return ConverterResult(output_text=jailbreak_prompt, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
