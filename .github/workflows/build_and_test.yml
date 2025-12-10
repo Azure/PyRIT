@@ -180,11 +180,8 @@ jobs:
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
             uv sync --no-cache --extra dev --extra all
-          elif [ "${{ matrix.package_extras }}" = "dev" ]; then
-            uv sync --no-cache --extra dev
           else
-            extras="${{ matrix.package_extras }}"
-            uv sync --extra ".${extras}" --no-cache
+            uv sync --no-cache --extra dev
           fi
 
       - name: Run unit tests with code coverage
