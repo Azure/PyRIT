@@ -171,7 +171,6 @@ jobs:
       #       ${{ runner.os }}-pip-
 
       # Install PyRIT with optional extras
-      # TODO UPDATE EXTRAS!!!
       - name: Install PyRIT with uv
         # If the matrix extras is 'dev_all', then we install '.[dev,all]'
         # otherwise just install the literal extras from the matrix
@@ -182,10 +181,11 @@ jobs:
           else
             uv sync --no-cache --only-dev 
           fi
-          uv pip list
 
       - name: Run unit tests with code coverage
-        run: make unit-test-cov-xml
+        run: |
+          set -x PYTHONPATH
+          make unit-test-cov-xml
 
       - name: Publish Pytest Results
         uses: EnricoMi/publish-unit-test-result-action@v2

@@ -62,7 +62,7 @@ dependencies = [
     "websockets>=14.0",
 ]
 
-[dependency-groups]
+[project.optional-dependencies]
 # always make sure the individual ones are in sync with the all group
 dev = [
     "black>=25.1.0",
