@@ -176,7 +176,11 @@ class TestContextValidation:
     @pytest.mark.parametrize(
         "objective,conversation_id,expected_error",
         [
-            ("", str(uuid.uuid4()), "Attack objective must be provided and non-empty in the context"),
+            (
+                "",
+                "a6742ba7-3ce7-4db7-a0f5-769a0fb18c3c",
+                "Attack objective must be provided and non-empty in the context",
+            ),
         ],
     )
     def test_validate_context_raises_errors(self, mock_target, objective, conversation_id, expected_error):
@@ -368,6 +372,7 @@ class TestResponseEvaluation:
                 objective_scorer=mock_true_false_scorer,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
     @pytest.mark.asyncio
@@ -390,6 +395,7 @@ class TestResponseEvaluation:
                 objective_scorer=None,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
     @pytest.mark.asyncio
@@ -432,6 +438,7 @@ class TestResponseEvaluation:
                 objective_scorer=mock_true_false_scorer,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
 

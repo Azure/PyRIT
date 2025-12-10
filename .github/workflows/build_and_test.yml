@@ -59,12 +59,16 @@ jobs:
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
+        env:
+          RUN_LONG_PRECOMMIT: true
         run: |
           git fetch origin main
           uv run pre-commit run --from-ref origin/main --to-ref HEAD
 
       - name: Run pre-commit fully (on main)
         if: github.ref == 'refs/heads/main'
+        env:
+          RUN_LONG_PRECOMMIT: true
         run: |
           uv run pre-commit run --all-files
 
@@ -107,12 +111,16 @@ jobs:
 
       - name: Run pre-commit incrementally (on PR)
         if: github.event_name == 'pull_request'
+        env:
+          RUN_LONG_PRECOMMIT: true
         run: |
           git fetch origin main
           uv run pre-commit run --from-ref origin/main --to-ref HEAD
 
       - name: Run pre-commit fully (on main)
         if: github.ref == 'refs/heads/main'
+        env:
+          RUN_LONG_PRECOMMIT: true
         run: |
           uv run pre-commit run --all-files
 

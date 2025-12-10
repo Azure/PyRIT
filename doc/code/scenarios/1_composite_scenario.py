@@ -28,16 +28,17 @@
 # First, we'll initialize PyRIT and configure the target we want to test.
 
 # %%
+
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenario import FoundryScenario, FoundryStrategy, ScenarioCompositeStrategy
 from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(
+await initialize_pyrit_async(  # type: ignore
     memory_db_type=IN_MEMORY,
 )
 
-objective_target = OpenAIChatTarget(model_name="gpt4o")
+objective_target = OpenAIChatTarget()
 printer = ConsoleScenarioResultPrinter()
 
 # %% [markdown]

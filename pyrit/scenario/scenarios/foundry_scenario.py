@@ -10,11 +10,11 @@ Foundry attacks against specified datasets.
 """
 
 import os
+import random
 from inspect import signature
 from typing import List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
@@ -25,7 +25,6 @@ from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedDataset
 from pyrit.prompt_converter import (
     AnsiAttackConverter,
     AsciiArtConverter,
@@ -229,6 +228,13 @@ class FoundryScenario(Scenario):
         """
         return FoundryStrategy.EASY
 
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+        """Return a list of dataset names required by this scenario."""
+        return [
+            "harmbench",
+        ]
+
     @apply_defaults
     def __init__(
         self,
@@ -263,14 +269,7 @@ class FoundryScenario(Scenario):
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
 
-        if objectives:
-            self._objectives = objectives
-        else:
-            # This is a temporary fix to use a local dataset until the database is ready
-            dataset_path = DATASETS_PATH / "seed_datasets" / "local" / "adv_bench.prompt"
-            dataset = SeedDataset.from_yaml_file(dataset_path)
-            self._objectives = list(dataset.get_random_values(number=4))
-
+        # Call super().__init__() first to initialize self._memory
         super().__init__(
             name="Foundry Scenario",
             version=self.version,
@@ -279,6 +278,18 @@ class FoundryScenario(Scenario):
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
+
+        # Now we can safely access self._memory
+        self._objectives = objectives if objectives else self._get_default_objectives()
+
+    def _get_default_objectives(self) -> list[str]:
+        seed_objectives = self._memory.get_seeds(dataset_name="harmbench")
+
+        if not seed_objectives:
+            self._raise_dataset_exception()
+
+        sampled_seeds = random.sample(list(seed_objectives), min(5, len(seed_objectives)))
+        return [seed.value for seed in sampled_seeds]
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -294,8 +305,9 @@ class FoundryScenario(Scenario):
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
@@ -307,8 +319,9 @@ class FoundryScenario(Scenario):
                 TrueFalseInverterScorer(
                     scorer=SelfAskRefusalScorer(
                         chat_target=OpenAIChatTarget(
-                            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+                            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
                             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                             temperature=0.9,
                         )
                     ),

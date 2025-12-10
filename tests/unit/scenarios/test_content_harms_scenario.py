@@ -3,16 +3,18 @@
 
 """Tests for the ContentHarmsScenario class."""
 
+import pathlib
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from pyrit.common.path import DATASETS_PATH
 from pyrit.models.seed_group import SeedGroup
 from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenario.scenarios.airt import (
+from pyrit.scenario import (
     ContentHarmsScenario,
     ContentHarmsStrategy,
 )
@@ -49,7 +51,7 @@ def sample_objectives():
     return ["objective1", "objective2", "objective3"]
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def mock_seed_groups():
     """Create mock seed groups for testing."""
 
@@ -71,6 +73,20 @@ def mock_seed_groups():
         ]
 
     return create_seed_groups_for_strategy
+
+
+@pytest.fixture(scope="class")
+def mock_all_harm_objectives(mock_seed_groups):
+    """Class-scoped fixture for all harm category objectives to reduce test code duplication."""
+    return {
+        "hate": mock_seed_groups("hate"),
+        "fairness": mock_seed_groups("fairness"),
+        "violence": mock_seed_groups("violence"),
+        "sexual": mock_seed_groups("sexual"),
+        "harassment": mock_seed_groups("harassment"),
+        "misinformation": mock_seed_groups("misinformation"),
+        "leakage": mock_seed_groups("leakage"),
+    }
 
 
 class TestContentHarmsStrategy:
@@ -192,20 +208,11 @@ class TestContentHarmsScenarioBasic:
         mock_objective_target,
         mock_adversarial_target,
         mock_objective_scorer,
-        mock_seed_groups,
+        mock_all_harm_objectives,
     ):
         """Test initialization with only required parameters."""
         mock_get_scorer.return_value = mock_objective_scorer
-        # Return seed groups for all harm strategies that might be used
-        mock_get_objectives.return_value = {
-            "hate": mock_seed_groups("hate"),
-            "fairness": mock_seed_groups("fairness"),
-            "violence": mock_seed_groups("violence"),
-            "sexual": mock_seed_groups("sexual"),
-            "harassment": mock_seed_groups("harassment"),
-            "misinformation": mock_seed_groups("misinformation"),
-            "leakage": mock_seed_groups("leakage"),
-        }
+        mock_get_objectives.return_value = mock_all_harm_objectives
 
         scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
@@ -269,19 +276,11 @@ class TestContentHarmsScenarioBasic:
         mock_objective_target,
         mock_adversarial_target,
         mock_objective_scorer,
-        mock_seed_groups,
+        mock_all_harm_objectives,
     ):
         """Test initialization with custom max concurrency."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_objectives.return_value = {
-            "hate": mock_seed_groups("hate"),
-            "fairness": mock_seed_groups("fairness"),
-            "violence": mock_seed_groups("violence"),
-            "sexual": mock_seed_groups("sexual"),
-            "harassment": mock_seed_groups("harassment"),
-            "misinformation": mock_seed_groups("misinformation"),
-            "leakage": mock_seed_groups("leakage"),
-        }
+        mock_get_objectives.return_value = mock_all_harm_objectives
 
         scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
@@ -299,19 +298,11 @@ class TestContentHarmsScenarioBasic:
         mock_objective_target,
         mock_adversarial_target,
         mock_objective_scorer,
-        mock_seed_groups,
+        mock_all_harm_objectives,
     ):
         """Test initialization with custom seed dataset prefix."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_objectives.return_value = {
-            "hate": mock_seed_groups("hate"),
-            "fairness": mock_seed_groups("fairness"),
-            "violence": mock_seed_groups("violence"),
-            "sexual": mock_seed_groups("sexual"),
-            "harassment": mock_seed_groups("harassment"),
-            "misinformation": mock_seed_groups("misinformation"),
-            "leakage": mock_seed_groups("leakage"),
-        }
+        mock_get_objectives.return_value = mock_all_harm_objectives
 
         scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
@@ -330,19 +321,11 @@ class TestContentHarmsScenarioBasic:
         mock_objective_target,
         mock_adversarial_target,
         mock_objective_scorer,
-        mock_seed_groups,
+        mock_all_harm_objectives,
     ):
         """Test that initialization defaults to ALL strategy when none provided."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_objectives.return_value = {
-            "hate": mock_seed_groups("hate"),
-            "fairness": mock_seed_groups("fairness"),
-            "violence": mock_seed_groups("violence"),
-            "sexual": mock_seed_groups("sexual"),
-            "harassment": mock_seed_groups("harassment"),
-            "misinformation": mock_seed_groups("misinformation"),
-            "leakage": mock_seed_groups("leakage"),
-        }
+        mock_get_objectives.return_value = mock_all_harm_objectives
 
         scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
@@ -358,8 +341,9 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_get_default_adversarial_target(self, mock_objective_target):
@@ -371,8 +355,9 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_get_default_scorer(self, mock_objective_target):
@@ -385,6 +370,25 @@ class TestContentHarmsScenarioBasic:
         """Test that scenario has correct version."""
         assert ContentHarmsScenario.version == 1
 
+    @patch.dict(
+        "os.environ",
+        {
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
+        },
+    )
+    @pytest.mark.asyncio
+    async def test_initialize_raises_exception_when_no_datasets_available(
+        self, mock_objective_target, mock_adversarial_target
+    ):
+        """Test that initialization raises ValueError when datasets are not available in memory."""
+        # Don't mock _get_objectives_by_harm, let it try to load from empty memory
+        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+
+        with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
+            await scenario.initialize_async(objective_target=mock_objective_target)
+
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
     @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_objectives_by_harm")
@@ -395,19 +399,11 @@ class TestContentHarmsScenarioBasic:
         mock_objective_target,
         mock_adversarial_target,
         mock_objective_scorer,
-        mock_seed_groups,
+        mock_all_harm_objectives,
     ):
         """Test initialization with max_retries parameter."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_objectives.return_value = {
-            "hate": mock_seed_groups("hate"),
-            "fairness": mock_seed_groups("fairness"),
-            "violence": mock_seed_groups("violence"),
-            "sexual": mock_seed_groups("sexual"),
-            "harassment": mock_seed_groups("harassment"),
-            "misinformation": mock_seed_groups("misinformation"),
-            "leakage": mock_seed_groups("leakage"),
-        }
+        mock_get_objectives.return_value = mock_all_harm_objectives
 
         scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
 
@@ -425,19 +421,11 @@ class TestContentHarmsScenarioBasic:
         mock_objective_target,
         mock_adversarial_target,
         mock_objective_scorer,
-        mock_seed_groups,
+        mock_all_harm_objectives,
     ):
         """Test that memory labels are properly stored."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_objectives.return_value = {
-            "hate": mock_seed_groups("hate"),
-            "fairness": mock_seed_groups("fairness"),
-            "violence": mock_seed_groups("violence"),
-            "sexual": mock_seed_groups("sexual"),
-            "harassment": mock_seed_groups("harassment"),
-            "misinformation": mock_seed_groups("misinformation"),
-            "leakage": mock_seed_groups("leakage"),
-        }
+        mock_get_objectives.return_value = mock_all_harm_objectives
 
         memory_labels = {"test_run": "123", "category": "harm"}
 
@@ -491,8 +479,9 @@ class TestContentHarmsScenarioBasic:
     @patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.endpoint",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     async def test_initialization_with_objectives_by_harm(
@@ -519,3 +508,11 @@ class TestContentHarmsScenarioBasic:
 
         # Verify the objectives_by_harm is stored
         assert scenario._objectives_by_harm == custom_objectives
+
+    @pytest.mark.parametrize(
+        "harm_category", ["hate", "fairness", "violence", "sexual", "harassment", "misinformation", "leakage"]
+    )
+    def test_harm_category_prompt_file_exists(self, harm_category):
+        harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
+        file_path = harm_dataset_path / f"{harm_category}.prompt"
+        assert file_path.exists(), f"Missing file: {file_path}"  # Fails if file does not exist

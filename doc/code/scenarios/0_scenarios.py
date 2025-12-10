@@ -161,9 +161,9 @@ class MyScenario(Scenario):
 
 # %%
 
-from pyrit.cli.frontend_core import FrontendCore, print_scenarios_list
+from pyrit.cli.frontend_core import FrontendCore, print_scenarios_list_async
 
-print_scenarios_list(context=FrontendCore())
+await print_scenarios_list_async(context=FrontendCore())  # type: ignore
 
 # %% [markdown]
 

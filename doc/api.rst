@@ -139,8 +139,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    AzureTextEmbedding
-    OpenAiTextEmbedding
+    OpenAITextEmbedding
 
 :py:mod:`pyrit.exceptions`
 ==========================
@@ -363,6 +362,7 @@ API Reference
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
+    MathObfuscationConverter
     MathPromptConverter
     MorseConverter
     NoiseConverter
@@ -438,10 +438,10 @@ API Reference
     HuggingFaceEndpointTarget
     limit_requests_per_minute
     OpenAICompletionTarget
-    OpenAIDALLETarget
+    OpenAIImageTarget
     OpenAIChatTarget
     OpenAIResponseTarget
-    OpenAISoraTarget
+    OpenAIVideoTarget
     OpenAITTSTarget
     OpenAITarget
     PlaywrightTarget
@@ -537,7 +537,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    initialize_pyrit
+    initialize_pyrit_async
     AZURE_SQL
     SQLITE
     IN_MEMORY
@@ -556,3 +556,5 @@ API Reference
     PyRITInitializer
     AIRTInitializer
     SimpleInitializer
+    LoadDefaultDatasets
+    ScenarioObjectiveListInitializer

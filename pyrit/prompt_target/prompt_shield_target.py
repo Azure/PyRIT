@@ -3,9 +3,8 @@
 
 import json
 import logging
-from typing import Any, Literal, Optional, Sequence
+from typing import Any, Callable, Literal, Optional, Sequence
 
-from pyrit.auth.azure_auth import AzureAuth, get_default_scope
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
     Message,
@@ -47,16 +46,15 @@ class PromptShieldTarget(PromptTarget):
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_ENDPOINT"
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_KEY"
     _endpoint: str
-    _api_key: str | None
+    _api_key: str | Callable[[], str] | None
     _api_version: str
     _force_entry_field: PromptShieldEntryField
 
     def __init__(
         self,
         endpoint: Optional[str] = None,
-        api_key: Optional[str] = None,
+        api_key: Optional[str | Callable[[], str]] = None,
         api_version: Optional[str] = "2024-09-01",
-        use_entra_auth: bool = False,
         field: Optional[PromptShieldEntryField] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
@@ -66,11 +64,13 @@ class PromptShieldTarget(PromptTarget):
         Args:
             endpoint (str, Optional): The endpoint URL for the Azure Content Safety service.
                 Defaults to the `ENDPOINT_URI_ENVIRONMENT_VARIABLE` environment variable.
-            api_key (str, Optional): The API key for accessing the Azure Content Safety service
-                (only if you're not using Entra auth). Defaults to the `API_KEY_ENVIRONMENT_VARIABLE`
-                environment variable.
+            api_key (str | Callable[[], str | Awaitable[str]], Optional):
+                The API key for accessing the Azure Content Safety service,
+                or a callable that returns an access token. For Azure endpoints with Entra authentication,
+                pass a token provider from pyrit.auth
+                (e.g., get_azure_token_provider('https://cognitiveservices.azure.com/.default')).
+                Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             api_version (str, Optional): The version of the Azure Content Safety API. Defaults to "2024-09-01".
-            use_entra_auth (bool, Optional): Whether to use Entra ID authentication. Defaults to False.
             field (PromptShieldEntryField, Optional): If "userPrompt", all input is sent to the userPrompt field.
                 If "documents", all input is sent to the documents field. If None, the input is parsed to separate
                 userPrompt and documents. Defaults to None.
@@ -84,22 +84,16 @@ class PromptShieldTarget(PromptTarget):
         super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
 
         self._api_version = api_version
-        if use_entra_auth:
-            if api_key:
-                raise ValueError("If using Entra ID auth, please do not specify api_key.")
-            scope = get_default_scope(self._endpoint)
-            self._azure_auth = AzureAuth(token_scope=scope)
-            self._api_key = None
-        else:
-            self._api_key = default_values.get_required_value(
-                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-            )
-            self._azure_auth = None
+
+        # API key is required - either from parameter or environment variable
+        self._api_key = default_values.get_required_value(
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
 
         self._force_entry_field: PromptShieldEntryField = field
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Parses the text in message to separate the userPrompt and documents contents,
         then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
@@ -146,7 +140,7 @@ class PromptShieldTarget(PromptTarget):
             prompt_metadata=request.prompt_metadata,
         )
 
-        return response_entry
+        return [response_entry]
 
     def _validate_request(self, *, message: Message) -> None:
         message_pieces: Sequence[MessagePiece] = message.message_pieces
@@ -203,10 +197,13 @@ class PromptShieldTarget(PromptTarget):
 
     def _add_auth_param_to_headers(self, headers: dict) -> None:
         """
-        Adds the API key or Entra authentication parameters to the headers.
+        Adds the API key or token to the headers.
         """
         if self._api_key:
-            headers["Ocp-Apim-Subscription-Key"] = self._api_key
-        if self._azure_auth:
-            token = self._azure_auth.refresh_token()
-            headers["Authorization"] = f"Bearer {token}"
+            # If callable, call it to get the token
+            if callable(self._api_key):
+                token = self._api_key()
+                headers["Authorization"] = f"Bearer {token}"
+            else:
+                # String API key
+                headers["Ocp-Apim-Subscription-Key"] = self._api_key

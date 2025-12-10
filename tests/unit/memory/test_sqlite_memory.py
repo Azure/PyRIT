@@ -284,9 +284,9 @@ def test_disable_embedding(sqlite_instance):
 
 
 def test_default_enable_embedding(sqlite_instance):
-    os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = "mock_key"
-    os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = "embedding"
-    os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"] = "deployment"
+    os.environ["OPENAI_EMBEDDING_KEY"] = "mock_key"
+    os.environ["OPENAI_EMBEDDING_ENDPOINT"] = "embedding"
+    os.environ["OPENAI_EMBEDDING_MODEL"] = "deployment"
 
     sqlite_instance.enable_embedding()
 
@@ -296,9 +296,9 @@ def test_default_enable_embedding(sqlite_instance):
 
 
 def test_default_embedding_raises(sqlite_instance):
-    os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = ""
-    os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = ""
-    os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"] = ""
+    os.environ["OPENAI_EMBEDDING_KEY"] = ""
+    os.environ["OPENAI_EMBEDDING_ENDPOINT"] = ""
+    os.environ["OPENAI_EMBEDDING_MODEL"] = ""
 
     with pytest.raises(ValueError):
         sqlite_instance.enable_embedding()

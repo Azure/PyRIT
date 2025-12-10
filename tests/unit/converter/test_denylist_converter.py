@@ -27,7 +27,7 @@ def mock_target() -> MockPromptTarget:
             )
         ]
     )
-    target.send_prompt_async = AsyncMock(return_value=response)
+    target.send_prompt_async = AsyncMock(return_value=[response])
     return target
 
 
