@@ -184,7 +184,7 @@ jobs:
 
       - name: Run unit tests with code coverage
         run: |
-          set -x PYTHONPATH
+          set -x PYTHONPATH .
           make unit-test-cov-xml
 
       - name: Publish Pytest Results
