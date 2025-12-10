@@ -181,7 +181,7 @@ jobs:
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
             uv sync --no-cache --extra dev --extra all
           else
-            uv sync --no-cache --extra dev 
+            uv sync --no-cache --only-dev 
           fi
           uv pip list
 
