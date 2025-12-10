@@ -10,14 +10,14 @@ using the pyrit_scan command with standard initializers.
 
 import pytest
 
-from pyrit.cli.scenario_registry import ScenarioRegistry
 from pyrit.cli.pyrit_scan import main as pyrit_scan_main
+from pyrit.cli.scenario_registry import ScenarioRegistry
 
 
 def get_all_scenarios():
     """
     Dynamically discover all available scenarios from the scenario registry.
-    
+
     Returns:
         List[str]: Sorted list of scenario names.
     """
@@ -30,20 +30,26 @@ def get_all_scenarios():
 def test_scenario_with_pyrit_scan(scenario_name):
     """
     Test each scenario runs successfully using pyrit_scan with standard initializers.
-    
+
     Args:
         scenario_name: Name of the scenario to test (dynamically discovered).
     """
     try:
-        result = pyrit_scan_main([
-            scenario_name,
-            "--initializers", "openai_objective_target", "load_default_datasets",
-            "--database", "InMemory",
-            "--log-level", "WARNING",
-        ])
-        
+        result = pyrit_scan_main(
+            [
+                scenario_name,
+                "--initializers",
+                "openai_objective_target",
+                "load_default_datasets",
+                "--database",
+                "InMemory",
+                "--log-level",
+                "WARNING",
+            ]
+        )
+
         assert result == 0, f"Scenario '{scenario_name}' failed with exit code {result}"
-        
+
     except Exception as e:
         # Re-raise with scenario context while preserving full traceback
         raise AssertionError(f"Scenario '{scenario_name}' raised an exception") from e
