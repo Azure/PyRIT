@@ -99,16 +99,6 @@ def test_init_with_no_additional_request_headers_var_raises():
             OpenAIChatTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
 
 
-def test_init_with_passed_api_key_and_use_entra_auth_raises(patch_central_database):
-    with pytest.raises(ValueError, match="If using Entra ID auth, please do not specify api_key"):
-        OpenAIChatTarget(
-            model_name="gpt-4",
-            endpoint="https://mock.azure.com/",
-            api_key="xxxxx",
-            use_entra_auth=True,
-        )
-
-
 def test_init_is_json_supported_defaults_to_true(patch_central_database):
     target = OpenAIChatTarget(
         model_name="gpt-4",
@@ -184,6 +174,7 @@ async def test_construct_request_body_includes_extra_body_params(
     patch_central_database, dummy_text_message_piece: MessagePiece
 ):
     target = OpenAIChatTarget(
+        model_name="gpt-4",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         extra_body_parameters={"key": "value"},
@@ -618,7 +609,6 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
     mock_memory = MagicMock(spec=MemoryInterface)
     mock_memory.get_conversation.return_value = []
     mock_memory.add_message_to_memory = AsyncMock()
-    target._azure_auth = MagicMock()
     target._memory = mock_memory
 
     with (
@@ -690,29 +680,19 @@ async def test_send_prompt_async_other_http_error(monkeypatch):
 
 def test_set_auth_with_entra_auth(patch_central_database):
     """Test that Entra authentication is properly configured."""
-    with (
-        patch("pyrit.prompt_target.openai.openai_target.get_default_scope") as mock_scope,
-        patch("pyrit.prompt_target.openai.openai_target.AzureAuth") as mock_auth_class,
-    ):
-        mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
-        mock_auth_instance = MagicMock()
-        mock_auth_class.return_value = mock_auth_instance
 
-        target = OpenAIChatTarget(
-            model_name="gpt-4",
-            endpoint="https://test.openai.azure.com",
-            use_entra_auth=True,
-        )
+    def mock_token_provider():
+        return "mock-entra-token"
 
-        # Verify Entra auth was configured correctly
-        # get_default_scope is called twice: once during auth setup, once during client initialization
-        assert mock_scope.call_count >= 1
-        mock_scope.assert_any_call("https://test.openai.azure.com")
-        mock_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
+    target = OpenAIChatTarget(
+        model_name="gpt-4",
+        endpoint="https://test.openai.azure.com",
+        api_key=mock_token_provider,
+    )
 
-        # Verify authentication objects are set correctly (SDK handles actual headers)
-        assert target._azure_auth == mock_auth_instance
-        assert target._api_key is None
+    # Verify token provider was stored as api_key
+    assert callable(target._api_key)
+    assert target._api_key() == "mock-entra-token"
 
 
 def test_set_auth_with_api_key(patch_central_database):
@@ -721,11 +701,9 @@ def test_set_auth_with_api_key(patch_central_database):
         model_name="gpt-4",
         endpoint="https://test.openai.azure.com",
         api_key="test_api_key_456",
-        use_entra_auth=False,
     )
 
-    # Verify API key auth was configured correctly (SDK handles actual headers)
-    assert target._azure_auth is None
+    # Verify API key was stored correctly
     assert target._api_key == "test_api_key_456"
 
 
@@ -825,6 +803,7 @@ def test_invalid_temperature_raises(patch_central_database):
     """Test that invalid temperature values raise PyritException."""
     with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
         OpenAIChatTarget(
+            model_name="gpt-4",
             endpoint="https://test.com",
             api_key="test",
             temperature=-0.1,
@@ -832,6 +811,7 @@ def test_invalid_temperature_raises(patch_central_database):
 
     with pytest.raises(PyritException, match="temperature must be between 0 and 2"):
         OpenAIChatTarget(
+            model_name="gpt-4",
             endpoint="https://test.com",
             api_key="test",
             temperature=2.1,
@@ -842,6 +822,7 @@ def test_invalid_top_p_raises(patch_central_database):
     """Test that invalid top_p values raise PyritException."""
     with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
         OpenAIChatTarget(
+            model_name="gpt-4",
             endpoint="https://test.com",
             api_key="test",
             top_p=-0.1,
@@ -849,6 +830,7 @@ def test_invalid_top_p_raises(patch_central_database):
 
     with pytest.raises(PyritException, match="top_p must be between 0 and 1"):
         OpenAIChatTarget(
+            model_name="gpt-4",
             endpoint="https://test.com",
             api_key="test",
             top_p=1.1,

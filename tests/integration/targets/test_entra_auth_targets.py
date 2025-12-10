@@ -5,6 +5,10 @@ import os
 
 import pytest
 
+from pyrit.auth import (
+    get_azure_openai_auth,
+    get_azure_token_provider,
+)
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.prompt_target import (
     OpenAIChatTarget,
@@ -34,15 +38,15 @@ from pyrit.prompt_target import (
         ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "", True),
         ("AZURE_FOUNDRY_PHI4_ENDPOINT", "", True),
         ("AZURE_FOUNDRY_MINSTRAL3B_ENDPOINT", "", False),
-        ("XPIA_OPENAI_GPT4O_ENDPOINT", "XPIA_OPENAI_MODEL", True),
     ],
 )
 async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_name, supports_seed):
+    endpoint_value = os.environ[endpoint]
     args = {
-        "endpoint": os.getenv(endpoint),
+        "endpoint": endpoint_value,
         "temperature": 0.0,
-        "use_entra_auth": True,
-        "model_name": os.getenv(model_name),
+        "api_key": get_azure_openai_auth(endpoint_value),
+        "model_name": os.environ[model_name] if model_name else None,
     }
 
     if supports_seed:
@@ -67,10 +71,11 @@ async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_na
     ],
 )
 async def test_openai_image_target_entra_auth(sqlite_instance, endpoint, model_name):
+    endpoint_value = os.environ[endpoint]
     args = {
-        "endpoint": os.getenv(endpoint),
-        "use_entra_auth": True,
-        "model_name": os.getenv(model_name),
+        "endpoint": endpoint_value,
+        "api_key": get_azure_openai_auth(endpoint_value),
+        "model_name": os.environ[model_name],
     }
 
     target = OpenAIImageTarget(**args)
@@ -90,10 +95,11 @@ async def test_openai_image_target_entra_auth(sqlite_instance, endpoint, model_n
     ],
 )
 async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint, model_name):
+    endpoint_value = os.environ[endpoint]
     args = {
-        "endpoint": os.getenv(endpoint),
-        "use_entra_auth": True,
-        "model_name": os.getenv(model_name),
+        "endpoint": endpoint_value,
+        "api_key": get_azure_openai_auth(endpoint_value),
+        "model_name": os.environ[model_name],
     }
 
     target = OpenAITTSTarget(**args)
@@ -114,7 +120,12 @@ async def test_openai_tts_target_entra_auth(sqlite_instance, endpoint, model_nam
     ],
 )
 async def test_openai_responses_target_entra_auth(sqlite_instance, endpoint, model_name):
-    args = {"endpoint": os.getenv(endpoint), "model_name": os.getenv(model_name), "use_entra_auth": True}
+    endpoint_value = os.environ[endpoint]
+    args = {
+        "endpoint": endpoint_value,
+        "model_name": os.environ[model_name],
+        "api_key": get_azure_openai_auth(endpoint_value),
+    }
 
     target = OpenAIResponseTarget(**args)
 
@@ -128,13 +139,17 @@ async def test_openai_responses_target_entra_auth(sqlite_instance, endpoint, mod
 @pytest.mark.parametrize(
     ("endpoint", "model_name"),
     [
-        ("OPENAI_REALTIME_ENDPOINT", ""),
+        ("OPENAI_REALTIME_ENDPOINT", "OPENAI_REALTIME_MODEL"),
     ],
 )
 async def test_openai_realtime_target_entra_auth(sqlite_instance, endpoint, model_name):
-    args = {"endpoint": os.getenv(endpoint), "model_name": model_name, "use_entra_auth": True}
-
-    target = RealtimeTarget(**args)
+    endpoint_value = os.environ[endpoint]
+    model_name_value = os.environ[model_name]
+    target = RealtimeTarget(
+        endpoint=endpoint_value,
+        model_name=model_name_value,
+        api_key=get_azure_openai_auth(endpoint_value),
+    )
 
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="Hello, how are you?")
@@ -146,8 +161,11 @@ async def test_openai_realtime_target_entra_auth(sqlite_instance, endpoint, mode
 async def test_video_target_entra_auth(sqlite_instance):
     # Takes a long time and sometimes encounters retry errors.
     # Note: OPENAI_VIDEO_ENDPOINT should be configured for Sora v2 API
+    endpoint = os.environ["OPENAI_VIDEO2_ENDPOINT"]
     target = OpenAIVideoTarget(
-        endpoint=os.getenv("OPENAI_VIDEO2_ENDPOINT"), model_name=os.getenv("OPENAI_VIDEO2_MODEL"), use_entra_auth=True
+        endpoint=endpoint,
+        model_name=os.environ["OPENAI_VIDEO2_MODEL"],
+        api_key=get_azure_openai_auth(endpoint),
     )
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="test")
@@ -158,9 +176,10 @@ async def test_video_target_entra_auth(sqlite_instance):
 @pytest.mark.asyncio
 async def test_prompt_shield_target_entra_auth(sqlite_instance):
     # Make sure to assign the Cognitive Services User or Contributor role
+    endpoint = os.environ["AZURE_CONTENT_SAFETY_API_ENDPOINT"]
     target = PromptShieldTarget(
-        endpoint=os.getenv("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
-        use_entra_auth=True,
+        endpoint=endpoint,
+        api_key=get_azure_token_provider("https://cognitiveservices.azure.com/.default"),
         field="userPrompt",
     )
     attack = PromptSendingAttack(objective_target=target)

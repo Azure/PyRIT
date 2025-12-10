@@ -38,9 +38,9 @@ from pyrit.prompt_target import (
     get_http_target_regex_matching_callback_function,
 )
 from pyrit.score import SelfAskTrueFalseScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 endpoint = os.environ.get("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT")
 api_key = os.environ.get("AZURE_OPENAI_GPT3_5_CHAT_KEY")

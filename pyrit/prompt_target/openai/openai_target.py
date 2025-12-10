@@ -5,7 +5,7 @@ import json
 import logging
 import re
 from abc import abstractmethod
-from typing import Any, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import urlparse
 
 from openai import (
@@ -21,11 +21,6 @@ from openai._exceptions import (
     AuthenticationError,
 )
 
-from pyrit.auth import AzureAuth
-from pyrit.auth.azure_auth import (
-    get_async_token_provider_from_default_azure_credential,
-    get_default_scope,
-)
 from pyrit.common import default_values
 from pyrit.exceptions.exception_classes import (
     RateLimitException,
@@ -50,7 +45,6 @@ class OpenAITarget(PromptChatTarget):
     endpoint_environment_variable: str
     api_key_environment_variable: str
 
-    _azure_auth: Optional[AzureAuth] = None
     _async_client: Optional[AsyncOpenAI] = None
 
     def __init__(
@@ -58,9 +52,8 @@ class OpenAITarget(PromptChatTarget):
         *,
         model_name: Optional[str] = None,
         endpoint: Optional[str] = None,
-        api_key: Optional[str] = None,
+        api_key: Optional[str | Callable[[], str | Awaitable[str]]] = None,
         headers: Optional[str] = None,
-        use_entra_auth: bool = False,
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
@@ -73,14 +66,13 @@ class OpenAITarget(PromptChatTarget):
 
         Args:
             model_name (str, Optional): The name of the model.
+                If no value is provided, the environment variable will be used (set by subclass).
             endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if you're not using
-                Entra authentication). Defaults to the `OPENAI_CHAT_KEY` environment variable.
+            api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
+                or a callable that returns an access token. For Azure endpoints with Entra authentication,
+                pass a token provider from pyrit.auth (e.g., get_azure_openai_auth(endpoint)).
+                Defaults to the target-specific API key environment variable.
             headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_entra_auth (bool): When set to True, user authentication is used
-                instead of API Key. DefaultAzureCredential is taken for
-                https://cognitiveservices.azure.com/.default. Please run `az login` locally
-                to leverage user AuthN.
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -89,7 +81,6 @@ class OpenAITarget(PromptChatTarget):
         """
         self._headers: dict = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
-        self._use_entra_auth = use_entra_auth
 
         request_headers = default_values.get_non_required_value(
             env_var_name=self.ADDITIONAL_REQUEST_HEADERS, passed_value=headers
@@ -100,53 +91,24 @@ class OpenAITarget(PromptChatTarget):
 
         self._set_openai_env_configuration_vars()
 
-        self._model_name: str = default_values.get_non_required_value(
+        self._model_name: str = default_values.get_required_value(
             env_var_name=self.model_name_environment_variable, passed_value=model_name
         )
         endpoint_value = default_values.get_required_value(
             env_var_name=self.endpoint_environment_variable, passed_value=endpoint
         )
 
-        # For Azure endpoints with deployment in URL, extract it if model_name not provided
-        if not self._model_name and "azure" in endpoint_value.lower():
-            extracted = self._extract_deployment_from_azure_url(endpoint_value)
-            if extracted:  # Only use extracted deployment if we actually found one
-                self._model_name = extracted
-
         # Initialize parent with endpoint and model_name
         PromptChatTarget.__init__(
             self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value, model_name=self._model_name
         )
 
-        self._api_key = api_key
+        # API key is required - either from parameter or environment variable
+        self._api_key = default_values.get_required_value(  # type: ignore[assignment]
+            env_var_name=self.api_key_environment_variable, passed_value=api_key
+        )
 
-        self._configure_auth(use_entra_auth=use_entra_auth, passed_api_key=api_key)
         self._initialize_openai_client()
-
-    def _configure_auth(self, use_entra_auth, passed_api_key) -> None:
-        """
-        Configure authentication for the OpenAI client.
-
-        Sets up either Entra ID authentication (using AzureAuth) or API key authentication.
-        Note: Actual auth headers/token providers are configured in _initialize_openai_client.
-
-        TODO: Revisit this to better align with newer OpenAI SDK token provider patterns.
-
-        Args:
-            use_entra_auth: Whether to use Entra ID authentication.
-            passed_api_key: The API key if provided by the user.
-        """
-        if use_entra_auth:
-            if passed_api_key:
-                raise ValueError("If using Entra ID auth, please do not specify api_key.")
-            logger.info("Authenticating with AzureAuth")
-            scope = get_default_scope(self._endpoint)
-            self._azure_auth = AzureAuth(token_scope=scope)
-            self._api_key = None
-        else:
-            self._api_key = default_values.get_non_required_value(
-                env_var_name=self.api_key_environment_variable, passed_value=passed_api_key
-            )
 
     def _extract_deployment_from_azure_url(self, url: str) -> str:
         """
@@ -367,18 +329,10 @@ class OpenAITarget(PromptChatTarget):
         # Use endpoint as-is - the user knows their provider best
         base_url = self._endpoint
 
-        # For Azure with Entra auth, pass token provider as api_key
-        api_key_value: Any = self._api_key
-        if is_azure and self._use_entra_auth and self._azure_auth:
-            # Token provider callable that the SDK will call to get bearer tokens
-            # Use the Azure SDK's async get_bearer_token_provider for proper token management
-            # This returns an async callable that the OpenAI SDK can await natively
-            scope = get_default_scope(self._endpoint)
-            api_key_value = get_async_token_provider_from_default_azure_credential(scope)
-
+        # Pass api_key directly to the SDK - it handles both strings and callables
         self._async_client = AsyncOpenAI(
             base_url=base_url,
-            api_key=api_key_value,
+            api_key=self._api_key,
             **httpx_kwargs,
         )
 

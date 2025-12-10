@@ -416,8 +416,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
         for index, entry in enumerate(labeled_dataset.entries):
             if not isinstance(entry, HarmHumanLabeledEntry):
                 raise ValueError(
-                    f"Entry at index {index} is not a HarmHumanLabeledEntry,"
-                    " but the HumanLabeledDataset type is HARM."
+                    f"Entry at index {index} is not a HarmHumanLabeledEntry, "
+                    "but the HumanLabeledDataset type is HARM."
                 )
             for message in entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)
@@ -672,8 +672,8 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         for index, entry in enumerate(labeled_dataset.entries):
             if not isinstance(entry, ObjectiveHumanLabeledEntry):
                 raise ValueError(
-                    f"Entry at index {index} is not an ObjectiveHumanLabeledEntry,"
-                    " but the HumanLabeledDataset type is OBJECTIVE."
+                    f"Entry at index {index} is not an ObjectiveHumanLabeledEntry, "
+                    "but the HumanLabeledDataset type is OBJECTIVE."
                 )
             for message in entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)

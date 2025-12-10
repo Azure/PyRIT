@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -46,10 +46,12 @@ async def test_make_request_and_raise_if_error_failure():
     method = "GET"
     mock_route = respx.get(url).respond(500)
 
-    with pytest.raises(httpx.HTTPStatusError):
-        await make_request_and_raise_if_error_async(endpoint_uri=url, method=method)
-    assert mock_route.called
-    assert len(mock_route.calls) == 2
+    # Mock asyncio.sleep to avoid 1s fixed wait delay
+    with patch("asyncio.sleep", new_callable=AsyncMock):
+        with pytest.raises(httpx.HTTPStatusError):
+            await make_request_and_raise_if_error_async(endpoint_uri=url, method=method)
+        assert mock_route.called
+        assert len(mock_route.calls) == 2
 
 
 @respx.mock
@@ -68,10 +70,12 @@ async def test_make_request_and_raise_if_error_retries():
 
     mock_route = respx.route(method=method, url=url).mock(side_effect=response_callback)
 
-    with pytest.raises(httpx.HTTPStatusError):
-        await make_request_and_raise_if_error_async(endpoint_uri=url, method=method)
-    assert call_count == 2, "The request should have been retried exactly once."
-    assert mock_route.called
+    # Mock asyncio.sleep to avoid 1s fixed wait delay
+    with patch("asyncio.sleep", new_callable=AsyncMock):
+        with pytest.raises(httpx.HTTPStatusError):
+            await make_request_and_raise_if_error_async(endpoint_uri=url, method=method)
+        assert call_count == 2, "The request should have been retried exactly once."
+        assert mock_route.called
 
 
 @pytest.mark.asyncio

@@ -84,6 +84,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         Args:
             custom_functions: Mapping of user-defined function names (e.g., "my_func").
             model_name (str, Optional): The name of the model.
+                If no value is provided, the OPENAI_RESPONSES_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the OPENAI_RESPONSES_KEY environment variable.

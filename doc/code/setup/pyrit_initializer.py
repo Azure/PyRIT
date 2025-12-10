@@ -17,7 +17,7 @@
 #
 # ## Execution Order
 #
-# When `initialize_pyrit` is called:
+# When `initialize_pyrit_async` is called:
 # 1. Environment files are loaded (`.env`, `.env.local`)
 # 2. Memory database is configured
 # 3. All initializers are sorted by `execution_order` and executed
@@ -61,11 +61,11 @@ class CustomInitializer(PyRITInitializer):
 # These are easy to include.
 
 # %%
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
 # Using built-in initializer
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])  # type: ignore
 
 # %% [markdown]
 # ## External Scripts
@@ -84,7 +84,7 @@ import os
 import shutil
 import tempfile
 
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 
 temp_dir = tempfile.mkdtemp()
 script_path = os.path.join(temp_dir, "custom_init.py")
@@ -119,7 +119,7 @@ with open(script_path, "w") as f:
 print(f"Created: {script_path}")
 
 
-initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[temp_dir + "/custom_init.py"])
+await initialize_pyrit_async(memory_db_type="InMemory", initialization_scripts=[temp_dir + "/custom_init.py"])  # type: ignore
 
 
 if os.path.exists(temp_dir):

@@ -55,16 +55,18 @@ class TestFrontendCore:
 
     @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
     @patch("pyrit.cli.initializer_registry.InitializerRegistry")
-    @patch("pyrit.setup.initialize_pyrit")
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     def test_initialize_loads_registries(
         self,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
         mock_init_registry: MagicMock,
         mock_scenario_registry: MagicMock,
     ):
         """Test initialize method loads registries."""
         context = frontend_core.FrontendCore()
-        context.initialize()
+        import asyncio
+
+        asyncio.run(context.initialize_async())
 
         assert context._initialized is True
         mock_init_pyrit.assert_called_once()
@@ -73,10 +75,10 @@ class TestFrontendCore:
 
     @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
     @patch("pyrit.cli.initializer_registry.InitializerRegistry")
-    @patch("pyrit.setup.initialize_pyrit")
-    def test_scenario_registry_property_initializes(
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
+    async def test_scenario_registry_property_initializes(
         self,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
         mock_init_registry: MagicMock,
         mock_scenario_registry: MagicMock,
     ):
@@ -84,6 +86,7 @@ class TestFrontendCore:
         context = frontend_core.FrontendCore()
         assert context._initialized is False
 
+        await context.initialize_async()
         registry = context.scenario_registry
 
         assert context._initialized is True
@@ -91,10 +94,10 @@ class TestFrontendCore:
 
     @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
     @patch("pyrit.cli.initializer_registry.InitializerRegistry")
-    @patch("pyrit.setup.initialize_pyrit")
-    def test_initializer_registry_property_initializes(
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
+    async def test_initializer_registry_property_initializes(
         self,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
         mock_init_registry: MagicMock,
         mock_scenario_registry: MagicMock,
     ):
@@ -102,6 +105,7 @@ class TestFrontendCore:
         context = frontend_core.FrontendCore()
         assert context._initialized is False
 
+        await context.initialize_async()
         registry = context.initializer_registry
 
         assert context._initialized is True
@@ -268,10 +272,10 @@ class TestGetDefaultInitializerDiscoveryPath:
 
 
 class TestListFunctions:
-    """Tests for list_scenarios and list_initializers functions."""
+    """Tests for list_scenarios_async and list_initializers_async functions."""
 
-    def test_list_scenarios(self):
-        """Test list_scenarios returns scenarios from registry."""
+    async def test_list_scenarios(self):
+        """Test list_scenarios_async returns scenarios from registry."""
         mock_registry = MagicMock()
         mock_registry.list_scenarios.return_value = [{"name": "test_scenario"}]
 
@@ -279,13 +283,13 @@ class TestListFunctions:
         context._scenario_registry = mock_registry
         context._initialized = True
 
-        result = frontend_core.list_scenarios(context=context)
+        result = await frontend_core.list_scenarios_async(context=context)
 
         assert result == [{"name": "test_scenario"}]
         mock_registry.list_scenarios.assert_called_once()
 
-    def test_list_initializers_without_discovery_path(self):
-        """Test list_initializers without discovery path."""
+    async def test_list_initializers_without_discovery_path(self):
+        """Test list_initializers_async without discovery path."""
         mock_registry = MagicMock()
         mock_registry.list_initializers.return_value = [{"name": "test_init"}]
 
@@ -293,14 +297,14 @@ class TestListFunctions:
         context._initializer_registry = mock_registry
         context._initialized = True
 
-        result = frontend_core.list_initializers(context=context)
+        result = await frontend_core.list_initializers_async(context=context)
 
         assert result == [{"name": "test_init"}]
         mock_registry.list_initializers.assert_called_once()
 
     @patch("pyrit.cli.initializer_registry.InitializerRegistry")
-    def test_list_initializers_with_discovery_path(self, mock_init_registry_class: MagicMock):
-        """Test list_initializers with discovery path."""
+    async def test_list_initializers_with_discovery_path(self, mock_init_registry_class: MagicMock):
+        """Test list_initializers_async with discovery path."""
         mock_registry = MagicMock()
         mock_registry.list_initializers.return_value = [{"name": "custom_init"}]
         mock_init_registry_class.return_value = mock_registry
@@ -308,7 +312,7 @@ class TestListFunctions:
         context = frontend_core.FrontendCore()
         discovery_path = Path("/custom/path")
 
-        result = frontend_core.list_initializers(context=context, discovery_path=discovery_path)
+        result = await frontend_core.list_initializers_async(context=context, discovery_path=discovery_path)
 
         mock_init_registry_class.assert_called_once_with(discovery_path=discovery_path)
         assert result == [{"name": "custom_init"}]
@@ -317,7 +321,7 @@ class TestListFunctions:
 class TestPrintFunctions:
     """Tests for print functions."""
 
-    def test_print_scenarios_list_with_scenarios(self, capsys):
+    async def test_print_scenarios_list_with_scenarios(self, capsys):
         """Test print_scenarios_list with scenarios."""
         context = frontend_core.FrontendCore()
         mock_registry = MagicMock()
@@ -331,14 +335,14 @@ class TestPrintFunctions:
         context._scenario_registry = mock_registry
         context._initialized = True
 
-        result = frontend_core.print_scenarios_list(context=context)
+        result = await frontend_core.print_scenarios_list_async(context=context)
 
         assert result == 0
         captured = capsys.readouterr()
         assert "Available Scenarios" in captured.out
         assert "test_scenario" in captured.out
 
-    def test_print_scenarios_list_empty(self, capsys):
+    async def test_print_scenarios_list_empty(self, capsys):
         """Test print_scenarios_list with no scenarios."""
         context = frontend_core.FrontendCore()
         mock_registry = MagicMock()
@@ -346,14 +350,14 @@ class TestPrintFunctions:
         context._scenario_registry = mock_registry
         context._initialized = True
 
-        result = frontend_core.print_scenarios_list(context=context)
+        result = await frontend_core.print_scenarios_list_async(context=context)
 
         assert result == 0
         captured = capsys.readouterr()
         assert "No scenarios found" in captured.out
 
-    def test_print_initializers_list_with_initializers(self, capsys):
-        """Test print_initializers_list with initializers."""
+    async def test_print_initializers_list_with_initializers(self, capsys):
+        """Test print_initializers_list_async with initializers."""
         context = frontend_core.FrontendCore()
         mock_registry = MagicMock()
         mock_registry.list_initializers.return_value = [
@@ -367,22 +371,22 @@ class TestPrintFunctions:
         context._initializer_registry = mock_registry
         context._initialized = True
 
-        result = frontend_core.print_initializers_list(context=context)
+        result = await frontend_core.print_initializers_list_async(context=context)
 
         assert result == 0
         captured = capsys.readouterr()
         assert "Available Initializers" in captured.out
         assert "test_init" in captured.out
 
-    def test_print_initializers_list_empty(self, capsys):
-        """Test print_initializers_list with no initializers."""
+    async def test_print_initializers_list_empty(self, capsys):
+        """Test print_initializers_list_async with no initializers."""
         context = frontend_core.FrontendCore()
         mock_registry = MagicMock()
         mock_registry.list_initializers.return_value = []
         context._initializer_registry = mock_registry
         context._initialized = True
 
-        result = frontend_core.print_initializers_list(context=context)
+        result = await frontend_core.print_initializers_list_async(context=context)
 
         assert result == 0
         captured = capsys.readouterr()
@@ -434,7 +438,7 @@ class TestFormatFunctions:
         assert "strategy2" in captured.out
         assert "Default Strategy" in captured.out
 
-    def test_format_initializer_info_basic(self, capsys):
+    def test_format_initializer_info_basic(self, capsys) -> None:
         """Test format_initializer_info with basic info."""
         from pyrit.cli.initializer_registry import InitializerInfo
 
@@ -454,7 +458,7 @@ class TestFormatFunctions:
         assert "TestInit" in captured.out
         assert "100" in captured.out
 
-    def test_format_initializer_info_with_env_vars(self, capsys):
+    def test_format_initializer_info_with_env_vars(self, capsys) -> None:
         """Test format_initializer_info with environment variables."""
         from pyrit.cli.initializer_registry import InitializerInfo
 
@@ -473,7 +477,7 @@ class TestFormatFunctions:
         assert "VAR1" in captured.out
         assert "VAR2" in captured.out
 
-    def test_format_initializer_info_with_description(self, capsys):
+    def test_format_initializer_info_with_description(self, capsys) -> None:
         """Test format_initializer_info with description."""
         from pyrit.cli.initializer_registry import InitializerInfo
 
@@ -596,12 +600,12 @@ class TestParseRunArguments:
 class TestRunScenarioAsync:
     """Tests for run_scenario_async function."""
 
-    @patch("pyrit.setup.initialize_pyrit")
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_basic(
         self,
         mock_printer_class: MagicMock,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
     ):
         """Test running a basic scenario."""
         # Mock context
@@ -636,8 +640,8 @@ class TestRunScenarioAsync:
         mock_scenario_instance.run_async.assert_called_once()
         mock_printer.print_summary_async.assert_called_once_with(mock_result)
 
-    @patch("pyrit.setup.initialize_pyrit")
-    async def test_run_scenario_async_not_found(self, mock_init_pyrit: MagicMock):
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
+    async def test_run_scenario_async_not_found(self, mock_init_pyrit: AsyncMock):
         """Test running non-existent scenario raises ValueError."""
         context = frontend_core.FrontendCore()
         mock_scenario_registry = MagicMock()
@@ -654,12 +658,12 @@ class TestRunScenarioAsync:
                 context=context,
             )
 
-    @patch("pyrit.setup.initialize_pyrit")
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_strategies(
         self,
         mock_printer_class: MagicMock,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
     ):
         """Test running scenario with strategies."""
         context = frontend_core.FrontendCore()
@@ -700,12 +704,12 @@ class TestRunScenarioAsync:
         call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
         assert "scenario_strategies" in call_kwargs
 
-    @patch("pyrit.setup.initialize_pyrit")
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_initializers(
         self,
         mock_printer_class: MagicMock,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
     ):
         """Test running scenario with initializers."""
         context = frontend_core.FrontendCore(initializer_names=["test_init"])
@@ -739,12 +743,12 @@ class TestRunScenarioAsync:
         # Verify initializer was retrieved
         mock_initializer_registry.get_initializer_class.assert_called_once_with(name="test_init")
 
-    @patch("pyrit.setup.initialize_pyrit")
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_max_concurrency(
         self,
         mock_printer_class: MagicMock,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
     ):
         """Test running scenario with max_concurrency."""
         context = frontend_core.FrontendCore()
@@ -778,12 +782,12 @@ class TestRunScenarioAsync:
         call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
         assert call_kwargs["max_concurrency"] == 5
 
-    @patch("pyrit.setup.initialize_pyrit")
+    @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_without_print_summary(
         self,
         mock_printer_class: MagicMock,
-        mock_init_pyrit: MagicMock,
+        mock_init_pyrit: AsyncMock,
     ):
         """Test running scenario without printing summary."""
         context = frontend_core.FrontendCore()
