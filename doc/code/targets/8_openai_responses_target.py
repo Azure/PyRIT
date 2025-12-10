@@ -29,7 +29,7 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttac
 from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignoree=IN_MEMORY)  # type: ignore
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 target = OpenAIResponseTarget()
 # For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
