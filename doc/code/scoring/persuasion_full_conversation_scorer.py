@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # LookBack Scorer - optional
+# # Conversation History Scorer - optional
 # ## Persuasion and Deception Example with RedTeamingAttack
 #
 #
