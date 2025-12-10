@@ -50,7 +50,7 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
             env_var_name=target.model_name_environment_variable, passed_value="deploymenttest"
         )
         mock_get_required.assert_any_call(
-            env_var_name=target.API_KEY_ENVIRONMENT_VARIABLE, passed_value="keytest"
+            env_var_name=target.api_key_environment_variable, passed_value="keytest"
         )
 
 
