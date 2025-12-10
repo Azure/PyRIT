@@ -481,6 +481,7 @@ class TestContentHarmsScenarioBasic:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.endpoint",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test_key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     async def test_initialization_with_objectives_by_harm(
