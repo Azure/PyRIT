@@ -224,14 +224,18 @@ class PromptNormalizer:
                 converted_text_data_type = piece.converted_value_data_type
 
                 for converter in converter_configuration.converters:
-                    converter_result = await converter.convert_tokens_async(
-                        prompt=converted_text,
-                        input_type=converted_text_data_type,
-                        start_token=self._start_token,
-                        end_token=self._end_token,
-                    )
-                    converted_text = converter_result.output_text
-                    converted_text_data_type = converter_result.output_type
+                    try:
+                        converter_result = await converter.convert_tokens_async(
+                            prompt=converted_text,
+                            input_type=converted_text_data_type,
+                            start_token=self._start_token,
+                            end_token=self._end_token,
+                        )
+                        converted_text = converter_result.output_text
+                        converted_text_data_type = converter_result.output_type
+                    except Exception as e:
+                        # Add converter context to exception for better error tracing
+                        raise type(e)(f"Error in converter {converter.__class__.__name__}: {str(e)}") from e
 
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type

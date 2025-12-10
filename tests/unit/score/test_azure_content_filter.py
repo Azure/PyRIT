@@ -41,9 +41,9 @@ async def test_score_piece_async_invalid_type(patch_central_database, audio_mess
         message_pieces=[audio_message_piece],
     )
 
-    # Should raise ValueError for unsupported data type
-    with pytest.raises(ValueError, match="There are no valid pieces to score"):
-        await scorer.score_async(message=request)
+    # Should return empty list for unsupported data type (raise_on_no_valid_pieces=False by default)
+    scores = await scorer.score_async(message=request)
+    assert scores == []
     os.remove(audio_message_piece.converted_value)
 
 
@@ -142,3 +142,45 @@ def test_azure_content_default_category():
 def test_azure_content_explicit_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
     assert len(scorer._score_categories) == 1
+
+
+@pytest.mark.asyncio
+async def test_azure_content_filter_scorer_filters_long_text(patch_central_database):
+    """
+    Test that AzureContentFilterScorer filters out text longer than 10,000 characters
+    and returns empty scores instead of raising an error.
+    """
+    memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
+
+        # Create text longer than 10,000 characters
+        long_text = "a" * 10001
+
+        # Should return empty list since all pieces are filtered
+        scores = await scorer.score_text_async(text=long_text)
+        assert scores == []
+
+
+@pytest.mark.asyncio
+async def test_azure_content_filter_scorer_accepts_short_text(patch_central_database):
+    """
+    Test that AzureContentFilterScorer accepts text under 10,000 characters.
+    """
+    memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
+
+        mock_client = MagicMock()
+        mock_client.analyze_text.return_value = {"categoriesAnalysis": [{"severity": "3", "category": "Hate"}]}
+        scorer._azure_cf_client = mock_client
+
+        # Create text just under the limit
+        text_near_limit = "a" * 9999
+
+        scores = await scorer.score_text_async(text=text_near_limit)
+
+        # Should successfully score the text
+        assert len(scores) == 1
+        assert scores[0].score_value == str(3.0 / 7)
+        mock_client.analyze_text.assert_called_once()

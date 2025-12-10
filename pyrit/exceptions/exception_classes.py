@@ -62,21 +62,21 @@ class PyritException(Exception, ABC):
 class BadRequestException(PyritException):
     """Exception class for bad client requests."""
 
-    def __init__(self, status_code: int = 400, *, message: str = "Bad Request"):
+    def __init__(self, status_code: int = 400, message: str = "Bad Request"):
         super().__init__(status_code, message=message)
 
 
 class RateLimitException(PyritException):
     """Exception class for authentication errors."""
 
-    def __init__(self, status_code: int = 429, *, message: str = "Rate Limit Exception"):
+    def __init__(self, status_code: int = 429, message: str = "Rate Limit Exception"):
         super().__init__(status_code, message=message)
 
 
 class ServerErrorException(PyritException):
     """Exception class for opaque 5xx errors returned by the server."""
 
-    def __init__(self, status_code: int = 500, *, message: str = "Server Error", body: Optional[str] = None):
+    def __init__(self, status_code: int = 500, message: str = "Server Error", body: Optional[str] = None):
         super().__init__(status_code, message=message)
         self.body = body
 
@@ -84,21 +84,21 @@ class ServerErrorException(PyritException):
 class EmptyResponseException(BadRequestException):
     """Exception class for empty response errors."""
 
-    def __init__(self, status_code: int = 204, *, message: str = "No Content"):
+    def __init__(self, status_code: int = 204, message: str = "No Content"):
         super().__init__(status_code=status_code, message=message)
 
 
 class InvalidJsonException(PyritException):
     """Exception class for blocked content errors."""
 
-    def __init__(self, *, message: str = "Invalid JSON Response"):
+    def __init__(self, message: str = "Invalid JSON Response"):
         super().__init__(message=message)
 
 
 class MissingPromptPlaceholderException(PyritException):
     """Exception class for missing prompt placeholder errors."""
 
-    def __init__(self, *, message: str = "No prompt placeholder"):
+    def __init__(self, message: str = "No prompt placeholder"):
         super().__init__(message=message)
 
 

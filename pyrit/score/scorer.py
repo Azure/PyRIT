@@ -113,10 +113,14 @@ class Scorer(abc.ABC):
         if infer_objective_from_request and (not objective):
             objective = self._extract_objective_from_response(message)
 
-        scores = await self._score_async(
-            message,
-            objective=objective,
-        )
+        try:
+            scores = await self._score_async(
+                message,
+                objective=objective,
+            )
+        except Exception as e:
+            # Add scorer context to exception for better error tracing
+            raise type(e)(f"Error in scorer {self.__class__.__name__}: {str(e)}") from e
 
         self.validate_return_scores(scores=scores)
         self._memory.add_scores_to_memory(scores=scores)

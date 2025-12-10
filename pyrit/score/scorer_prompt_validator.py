@@ -21,7 +21,9 @@ class ScorerPromptValidator:
         required_metadata: Optional[Sequence[str]] = None,
         supported_roles: Optional[Sequence[ChatMessageRole]] = None,
         max_pieces_in_response: Optional[int] = None,
+        max_text_length: Optional[int] = None,
         enforce_all_pieces_valid: Optional[bool] = False,
+        raise_on_no_valid_pieces: Optional[bool] = True,
         is_objective_required=False,
     ):
         """
@@ -36,8 +38,12 @@ class ScorerPromptValidator:
                 Defaults to all roles if not provided.
             max_pieces_in_response (Optional[int]): Maximum number of pieces allowed in a response.
                 Defaults to None (no limit).
+            max_text_length (Optional[int]): Maximum character length for text data type pieces.
+                Defaults to None (no limit).
             enforce_all_pieces_valid (Optional[bool]): Whether all pieces must be valid or just at least one.
                 Defaults to False.
+            raise_on_no_valid_pieces (Optional[bool]): Whether to raise ValueError when no pieces are valid.
+                Defaults to True for backwards compatibility. Set to False to allow empty scores.
             is_objective_required (bool): Whether an objective must be provided for scoring. Defaults to False.
         """
         if supported_data_types:
@@ -53,7 +59,9 @@ class ScorerPromptValidator:
         self._required_metadata = required_metadata or []
 
         self._max_pieces_in_response = max_pieces_in_response
+        self._max_text_length = max_text_length
         self._enforce_all_pieces_valid = enforce_all_pieces_valid
+        self._raise_on_no_valid_pieces = raise_on_no_valid_pieces
 
         self._is_objective_required = is_objective_required
 
@@ -77,7 +85,7 @@ class ScorerPromptValidator:
                     f"Message piece {piece.id} with data type {piece.converted_value_data_type} is not supported."
                 )
 
-        if valid_pieces_count < 1:
+        if valid_pieces_count < 1 and self._raise_on_no_valid_pieces:
             attempted_metadata = [getattr(piece, "prompt_metadata", None) for piece in message.message_pieces]
             raise ValueError(
                 "There are no valid pieces to score. \n\n"
@@ -119,5 +127,12 @@ class ScorerPromptValidator:
 
         if message_piece.role not in self._supported_roles:
             return False
+
+        # Check text length limit for text data types
+        if self._max_text_length is not None:
+            if message_piece.converted_value_data_type == "text":
+                text_length = len(message_piece.converted_value) if message_piece.converted_value else 0
+                if text_length > self._max_text_length:
+                    return False
 
         return True

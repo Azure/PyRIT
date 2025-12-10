@@ -35,6 +35,8 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
+        max_text_length=10000,  # Azure Content Safety API limit
+        raise_on_no_valid_pieces=False,  # Allow empty scores when all pieces filtered
     )
 
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_KEY"
