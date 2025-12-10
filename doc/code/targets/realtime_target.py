@@ -26,8 +26,13 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 target = RealtimeTarget()
 # For Azure OpenAI with Entra ID authentication:
-# from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
-# target = RealtimeTarget(api_key=get_token_provider_from_default_azure_credential())
+# from pyrit.auth import get_azure_openai_auth
+# endpoint = "https://your-endpoint.openai.azure.com"
+# target = RealtimeTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_openai_auth(endpoint),
+#     model_name="your-deployment-name"
+# )
 
 # %% [markdown]
 # ## Audio Conversation

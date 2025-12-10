@@ -5,7 +5,7 @@ import json
 import logging
 import re
 from abc import abstractmethod
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Callable, Optional, Awaitable
 from urllib.parse import urlparse
 
 from openai import (
@@ -103,27 +103,12 @@ class OpenAITarget(PromptChatTarget):
             self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value, model_name=self._model_name
         )
 
-        self._configure_auth(passed_api_key=api_key)
+        # API key is required - either from parameter or environment variable
+        self._api_key = default_values.get_required_value(  # type: ignore[assignment]
+            env_var_name=self.api_key_environment_variable, passed_value=api_key
+        )
+        
         self._initialize_openai_client()
-
-    def _configure_auth(self, *, passed_api_key: Optional[str | Callable[[], str | Awaitable[str]]]) -> None:
-        """
-        Configure authentication for the OpenAI client.
-
-        Stores the API key (string or callable token provider) to be used when initializing the client.
-        If a callable is provided, it will be called by the OpenAI SDK to get fresh tokens.
-
-        Args:
-            passed_api_key: The API key string or token provider callable.
-        """
-        if passed_api_key is None:
-            # Try to get from environment variable if not provided
-            self._api_key = default_values.get_non_required_value(  # type: ignore[assignment]
-                env_var_name=self.api_key_environment_variable, passed_value=None
-            )
-        else:
-            # Store as-is (could be string or callable)
-            self._api_key = passed_api_key  # type: ignore[assignment]
 
     def _extract_deployment_from_azure_url(self, url: str) -> str:
         """

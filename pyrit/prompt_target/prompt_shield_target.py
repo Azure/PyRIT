@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, Callable, Literal, Optional, Sequence
+from typing import Any, Awaitable, Callable, Literal, Optional, Sequence
 
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
@@ -68,7 +68,7 @@ class PromptShieldTarget(PromptTarget):
                 The API key for accessing the Azure Content Safety service,
                 or a callable that returns an access token. For Azure endpoints with Entra authentication,
                 pass a token provider from pyrit.auth
-                (e.g., get_azure_token_provider(get_default_azure_scope(endpoint))).
+                (e.g., get_azure_token_provider('https://cognitiveservices.azure.com/.default')).
                 Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             api_version (str, Optional): The version of the Azure Content Safety API. Defaults to "2024-09-01".
             field (PromptShieldEntryField, Optional): If "userPrompt", all input is sent to the userPrompt field.

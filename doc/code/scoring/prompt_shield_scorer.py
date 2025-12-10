@@ -52,9 +52,13 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 pst = PromptShieldTarget()
-# For Azure Content Safety with Entra ID authenticationenabled, use the following command instead. Make sure to run `az login` first.
-# from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
-# pst = PromptShieldTarget(api_key=get_token_provider_from_default_azure_credential())
+# For Azure Content Safety with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# from pyrit.auth import get_azure_token_provider
+# endpoint = "https://your-endpoint.cognitiveservices.azure.com"
+# pst = PromptShieldTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+# )
 
 scorer = PromptShieldScorer(prompt_shield_target=pst)
 

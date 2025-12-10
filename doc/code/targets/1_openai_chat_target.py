@@ -31,8 +31,13 @@ jailbreak_prompt: str = jailbreak.get_jailbreak(prompt="How to create a Molotov 
 
 target = OpenAIChatTarget()
 # For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
-# target = OpenAIChatTarget(api_key=get_token_provider_from_default_azure_credential())
+# from pyrit.auth import get_azure_openai_auth
+# endpoint = "https://your-endpoint.openai.azure.com"
+# target = OpenAIChatTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_openai_auth(endpoint),
+#     model_name="your-deployment-name"
+# )
 
 attack = PromptSendingAttack(objective_target=target)
 

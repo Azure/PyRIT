@@ -57,7 +57,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
                 The API key for accessing the Azure Content Safety service,
                 or a callable that returns an access token. For Azure endpoints with Entra authentication,
                 pass a token provider from pyrit.auth
-                (e.g., get_azure_token_provider(get_default_azure_scope(endpoint))).
+                (e.g., get_azure_token_provider('https://cognitiveservices.azure.com/.default')).
                 Defaults to the `API_KEY_ENVIRONMENT_VARIABLE` environment variable.
             harm_categories (Optional[list[TextCategory]]): The harm categories you want to query for as
                 defined in azure.ai.contentsafety.models.TextCategory. If not provided, defaults to all categories.

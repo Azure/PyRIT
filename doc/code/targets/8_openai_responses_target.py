@@ -29,12 +29,17 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttac
 from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignoree=IN_MEMORY)  # type: ignore
 
 target = OpenAIResponseTarget()
 # For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
-# target = OpenAIResponseTarget(api_key=get_token_provider_from_default_azure_credential())
+# from pyrit.auth import get_azure_openai_auth
+# endpoint = "https://your-endpoint.openai.azure.com"
+# target = OpenAIResponseTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_openai_auth(endpoint),
+#     model_name="your-deployment-name"
+# )
 
 attack = PromptSendingAttack(objective_target=target)
 
@@ -59,9 +64,9 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 # %%
 from pyrit.models import Message, MessagePiece
-from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 async def get_current_weather(args):
@@ -133,9 +138,9 @@ import os
 from pyrit.common.tool_configs import web_search_tool
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Note: web search is only supported on a limited set of models.
 target = OpenAIResponseTarget(
@@ -170,9 +175,9 @@ for response_msg in response:
 # Note that as of October 2025, this is only supported by OpenAI (not Azure) on "gpt-5"
 
 # %%
-from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+from pyrit.setup import IN_MEMORY, initialize_pyrit
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 message_piece = MessagePiece(
     role="user",
