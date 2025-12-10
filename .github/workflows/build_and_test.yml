@@ -128,7 +128,7 @@ jobs:
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --extra dev --extra all --no-cache
+        run: uv sync --extra dev --extra all  --cache-dir $env:UV_CACHE_DIR
 
       - name: disk space
         run: df -all -h
@@ -201,9 +201,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
-            uv sync --no-cache --extra dev --extra all
+            uv sync --extra dev --extra all --cache-dir $env:UV_CACHE_DIR
           else
-            uv sync --no-cache --only-dev 
+            uv sync --cache-dir $env:UV_CACHE_DIR --only-dev 
           fi
 
       - name: Run unit tests with code coverage
