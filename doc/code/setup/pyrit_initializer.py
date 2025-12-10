@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -31,9 +27,10 @@
 # %% [markdown]
 # The following is a minimal `PyRITInitializer` class. It doesn't need much! In this case, it sets the default value for temperature for all OpenAIChatTargets to .9.
 
-# %%
 from pyrit.common.apply_defaults import set_default_value
 from pyrit.prompt_target import OpenAIChatTarget
+
+# %%
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
@@ -41,18 +38,20 @@ class CustomInitializer(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Custom Configuration"
-    
+
     @property
     def execution_order(self) -> int:
         return 2  # Lower numbers run first (default is 1)
-    
-    def initialize(self) -> None:
+
+    async def initialize_async(self) -> None:
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
 
     @property
     def description(self) -> str:
         return "Sets custom temperature for OpenAI targets"
 
+
+CustomInitializer()
 
 # %% [markdown]
 # ## Built-in Initializers
@@ -69,10 +68,7 @@ from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
 # Using built-in initializer
-await initialize_pyrit_async(
-    memory_db_type="InMemory",
-    initializers=[SimpleInitializer()]
-)
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 
 # %% [markdown]
 # ## External Scripts
@@ -97,7 +93,7 @@ temp_dir = tempfile.mkdtemp()
 script_path = os.path.join(temp_dir, "custom_init.py")
 
 # This is the simple custom initializer from the "Creating an Initializer" section of this notebook
-script_content = '''
+script_content = """
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 from pyrit.common.apply_defaults import set_default_value
 from pyrit.prompt_target import OpenAIChatTarget
@@ -106,11 +102,11 @@ class CustomInitializer(PyRITInitializer):
     @property
     def name(self) -> str:
         return "Custom Configuration"
-    
+
     @property
     def execution_order(self) -> int:
         return 2  # Lower numbers run first (default is 1)
-    
+
     async def initialize_async(self) -> None:
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
 
@@ -118,17 +114,16 @@ class CustomInitializer(PyRITInitializer):
     def description(self) -> str:
         return "Sets custom temperature for OpenAI targets"
 
-'''
+"""
 
 with open(script_path, "w") as f:
     f.write(script_content)
-    
+
 print(f"Created: {script_path}")
 
 
-await initialize_pyrit_async( # type: ignore
-    memory_db_type="InMemory",
-    initialization_scripts=[temp_dir + "/custom_init.py"]
+await initialize_pyrit_async(  # type: ignore
+    memory_db_type="InMemory", initialization_scripts=[temp_dir + "/custom_init.py"]
 )
 
 
