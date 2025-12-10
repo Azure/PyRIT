@@ -68,7 +68,7 @@ from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
 # Using built-in initializer
-await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()]) # type: ignore
 
 # %% [markdown]
 # ## External Scripts
