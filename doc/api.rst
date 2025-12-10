@@ -363,6 +363,7 @@ API Reference
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
+    MathObfuscationConverter
     MathPromptConverter
     MorseConverter
     NoiseConverter

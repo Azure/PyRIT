@@ -45,8 +45,8 @@ from pyrit.prompt_converter.image_compression_converter import ImageCompressionC
 from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
-from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.math_obfuscation_converter import MathObfuscationConverter
+from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.nato_converter import NatoConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
@@ -123,8 +123,8 @@ __all__ = [
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MaliciousQuestionGeneratorConverter",
-    "MathPromptConverter",
     "MathObfuscationConverter",
+    "MathPromptConverter",
     "MorseConverter",
     "NatoConverter",
     "NoiseConverter",
