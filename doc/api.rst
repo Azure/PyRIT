@@ -139,8 +139,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    AzureTextEmbedding
-    OpenAiTextEmbedding
+    OpenAITextEmbedding
 
 :py:mod:`pyrit.exceptions`
 ==========================

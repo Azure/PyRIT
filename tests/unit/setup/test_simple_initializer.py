@@ -31,6 +31,7 @@ class TestSimpleInitializerInitialize:
         # Set up required env vars for OpenAI
         os.environ["OPENAI_CHAT_ENDPOINT"] = "https://test.openai.azure.com"
         os.environ["OPENAI_CHAT_KEY"] = "test_key"
+        os.environ["OPENAI_CHAT_MODEL"] = "gpt-4"
         # Clean up globals
         for attr in ["default_converter_target", "default_objective_scorer", "adversarial_config"]:
             if hasattr(sys.modules["__main__"], attr):
@@ -40,7 +41,7 @@ class TestSimpleInitializerInitialize:
         """Clean up after each test."""
         reset_default_values()
         # Clean up env vars
-        for var in ["OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY"]:
+        for var in ["OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL"]:
             if var in os.environ:
                 del os.environ[var]
         # Clean up globals

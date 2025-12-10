@@ -188,6 +188,7 @@ async def test_connect_required_openai_response_targets(sqlite_instance, endpoin
     ("endpoint", "api_key", "model_name"),
     [
         ("OPENAI_REALTIME_ENDPOINT", "OPENAI_REALTIME_API_KEY", "OPENAI_REALTIME_MODEL"),
+        ("PLATFORM_OPENAI_REALTIME_ENDPOINT", "PLATFORM_OPENAI_REALTIME_KEY", "PLATFORM_OPENAI_REALTIME_MODEL"),
     ],
 )
 async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_key, model_name):
