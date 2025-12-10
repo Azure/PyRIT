@@ -4,7 +4,6 @@ name: build_and_test
 
 env:
   PRE_COMMIT_PYTHON_VERSION: '3.11'
-  UV_CACHE_DIR: ${{ github.workspace }}/uv
 
 on:
   push:

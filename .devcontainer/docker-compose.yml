@@ -12,7 +12,7 @@ services:
       - ..:/workspace:delegated
       - pyrit-env:/opt/conda/envs/pyrit-dev:cached
       - pip-cache:/home/vscode/.cache/pip:cached
-      - uv-cache:/home/vscode/.uv:cached
+      - uv-cache:/home/vscode/.cache/uv:cached
       - precommit-cache:/home/vscode/.cache/pre-commit:cached
       - conda-cache:/home/vscode/.cache/conda:cached
       - mypy-cache:/workspace/.mypy_cache:cached
