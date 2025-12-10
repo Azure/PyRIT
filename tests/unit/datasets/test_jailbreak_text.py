@@ -169,10 +169,9 @@ value: |
             jailbreak = TextJailBreak(template_path=str(invalid_template_path))
             jailbreak.get_jailbreak("test")
 
-        # Verify error message contains helpful context
+        # Verify error message contains helpful context from seed.py
         error_msg = str(exc_info.value)
-        assert "Failed to render jailbreak template" in error_msg or "Error rendering template" in error_msg
-        assert "invalid.yaml" in error_msg or str(invalid_template_path) in error_msg
+        assert "Error rendering template" in error_msg
 
 
 def test_template_source_tracking(jailbreak_dir):

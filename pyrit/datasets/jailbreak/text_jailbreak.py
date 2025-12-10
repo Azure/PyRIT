@@ -124,7 +124,4 @@ class TextJailBreak:
         Raises:
             ValueError: If the template fails to render.
         """
-        try:
-            return self.template.render_template_value(prompt=prompt)
-        except ValueError as e:
-            raise ValueError(f"Failed to render jailbreak template from '{self.template_source}': {str(e)}") from e
+        return self.template.render_template_value(prompt=prompt)
