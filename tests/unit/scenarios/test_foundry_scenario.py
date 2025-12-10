@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedPrompt
@@ -77,7 +78,7 @@ class TestFoundryScenarioInitialization:
             FoundryScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
         ):
             scenario = FoundryScenario(
-                objective_scorer=mock_objective_scorer,
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             )
 
             await scenario.initialize_async(
@@ -108,7 +109,7 @@ class TestFoundryScenarioInitialization:
             FoundryScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
         ):
             scenario = FoundryScenario(
-                objective_scorer=mock_objective_scorer,
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             )
 
             await scenario.initialize_async(
@@ -129,7 +130,7 @@ class TestFoundryScenarioInitialization:
         """Test initialization with custom objectives."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         assert scenario._objectives == sample_objectives
@@ -149,7 +150,7 @@ class TestFoundryScenarioInitialization:
         scenario = FoundryScenario(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         assert scenario._adversarial_chat == mock_adversarial_target
@@ -165,7 +166,7 @@ class TestFoundryScenarioInitialization:
     def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objective scorer."""
         scenario = FoundryScenario(
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             objectives=sample_objectives,
         )
 
@@ -186,7 +187,7 @@ class TestFoundryScenarioInitialization:
 
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         assert scenario._memory_labels == {}
@@ -240,7 +241,7 @@ class TestFoundryScenarioInitialization:
         """Test that initialization raises ValueError when datasets are not available in memory."""
         # Don't mock _get_default_objectives, let it try to load from empty memory
         with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
-            FoundryScenario(objective_scorer=mock_objective_scorer)
+            FoundryScenario(attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer))
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -260,7 +261,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that EASY strategy expands to easy attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -283,7 +284,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that MODERATE strategy expands to moderate attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -308,7 +309,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that DIFFICULT strategy expands to difficult attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -333,7 +334,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that multiple difficulty levels expand correctly."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -358,7 +359,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that specific strategies combined with difficulty levels work correctly."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -391,7 +392,7 @@ class TestFoundryScenarioAttackCreation:
         """Test creating an attack from a single-turn strategy."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -422,7 +423,7 @@ class TestFoundryScenarioAttackCreation:
         scenario = FoundryScenario(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -457,7 +458,7 @@ class TestFoundryScenarioGetAttack:
         """Test creating a single-turn attack with converters."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -488,7 +489,7 @@ class TestFoundryScenarioGetAttack:
         scenario = FoundryScenario(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -549,7 +550,7 @@ class TestFoundryScenarioAllStrategies:
         """Test that all single-turn strategies can create attack runs."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -590,7 +591,7 @@ class TestFoundryScenarioAllStrategies:
         scenario = FoundryScenario(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -625,7 +626,7 @@ class TestFoundryScenarioProperties:
 
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             include_baseline=False,
         )
 
@@ -653,7 +654,7 @@ class TestFoundryScenarioProperties:
         """Test that scenario version is properly set."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         assert scenario.version == 1
@@ -679,7 +680,7 @@ class TestFoundryScenarioProperties:
 
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
