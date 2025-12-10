@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -46,9 +50,9 @@ from pyrit.score import (
     SelfAskGeneralFloatScaleScorer,
     create_conversation_scorer,
 )
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)
 
 # %% [markdown]
 # ## 1) User Context:
@@ -71,7 +75,7 @@ sample_user_context = {
 # To use this technique in our automation we store the contents in a YAML file. The contents are printed to demonstrate this.
 
 print("Attack Technique using Escalation for a user in imminent crisis:")
-attack_strategy_path = pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis_v1.yaml"
+attack_strategy_path = pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
 
 with open(attack_strategy_path, "r") as file:
     print(file.read())

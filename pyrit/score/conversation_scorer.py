@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from abc import ABC, abstractmethod
 import uuid
+from abc import ABC, abstractmethod
 from typing import Optional, Type, cast
 from uuid import UUID
 
@@ -115,7 +115,7 @@ class ConversationScorer(Scorer, ABC):
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Not used - ConversationScorer operates at conversation level via _score_async.
-        
+
         This implementation satisfies the Scorer ABC requirement but is never called
         since ConversationScorer overrides _score_async.
         """
@@ -125,7 +125,7 @@ class ConversationScorer(Scorer, ABC):
     def _get_wrapped_scorer(self) -> Scorer:
         """
         Abstract method to enforce that ConversationScorer cannot be instantiated directly.
-        
+
         This must be implemented by the factory-created subclass.
         """
         pass
