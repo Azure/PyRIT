@@ -21,8 +21,6 @@ class TextJailBreak:
         random_template=False,
         **kwargs,
     ):
-        # Track the template source for error reporting
-        self.template_source: str = "<unknown>"
         """
         Initialize a Jailbreak instance with exactly one template source.
 
@@ -37,6 +35,8 @@ class TextJailBreak:
         Raises:
             ValueError: If more than one template source is provided or if no template source is provided.
         """
+        # Track the template source for error reporting
+        self.template_source: str = "<unknown>"
         # Count how many template sources are provided
         template_sources = [template_path, template_file_name, string_template, random_template]
         provided_sources = [source for source in template_sources if source]
@@ -85,9 +85,7 @@ class TextJailBreak:
                             break
                         except ValueError as e:
                             # Template has syntax errors - fail fast with clear error
-                            raise ValueError(
-                                f"Invalid jailbreak template '{random_template_path}': {str(e)}"
-                            ) from e
+                            raise ValueError(f"Invalid jailbreak template '{random_template_path}': {str(e)}") from e
 
         # Validate that all required parameters (except 'prompt') are provided in kwargs
         required_params = [p for p in self.template.parameters if p != "prompt"]
@@ -122,6 +120,9 @@ class TextJailBreak:
 
         Returns:
             str: The rendered jailbreak template with the prompt parameter filled in.
+
+        Raises:
+            ValueError: If the template fails to render.
         """
         try:
             return self.template.render_template_value(prompt=prompt)

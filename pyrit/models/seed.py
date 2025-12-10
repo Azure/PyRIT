@@ -105,7 +105,7 @@ class Seed(YamlLoadable):
             ValueError: If parameters are missing or invalid in the template.
         """
         template_identifier = self.name or "<unnamed template>"
-        
+
         try:
             jinja_template = Template(self.value, undefined=StrictUndefined)
             return jinja_template.render(**kwargs)

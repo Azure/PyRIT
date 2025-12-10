@@ -147,26 +147,28 @@ def test_random_template_validation_fails_on_invalid_syntax():
     # Create a temporary invalid template to test validation
     import tempfile
     from pathlib import Path
-    
+
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
         invalid_template_path = tmpdir_path / "invalid.yaml"
-        
+
         # Create a template with invalid Jinja2 syntax
-        invalid_template_path.write_text("""---
+        invalid_template_path.write_text(
+            """---
 name: test_invalid_template
 parameters:
   - prompt
 data_type: text
 value: |
   This has invalid syntax: {{ '{' }}{{ prompt }}{{ '}' }}
-""")
-        
+"""
+        )
+
         # Try to load and validate it
         with pytest.raises(ValueError) as exc_info:
             jailbreak = TextJailBreak(template_path=str(invalid_template_path))
             jailbreak.get_jailbreak("test")
-        
+
         # Verify error message contains helpful context
         error_msg = str(exc_info.value)
         assert "Failed to render jailbreak template" in error_msg or "Error rendering template" in error_msg
@@ -177,11 +179,11 @@ def test_template_source_tracking(jailbreak_dir):
     """Test that template source is tracked for better error reporting."""
     template_path = jailbreak_dir / "dan_1.yaml"
     jailbreak = TextJailBreak(template_path=str(template_path))
-    
+
     # Verify template_source is set
     assert hasattr(jailbreak, "template_source")
     assert "dan_1.yaml" in str(jailbreak.template_source)
-    
+
     # Test with string template
     jailbreak_string = TextJailBreak(string_template="Test {{ prompt }}")
     assert jailbreak_string.template_source == "<string_template>"
