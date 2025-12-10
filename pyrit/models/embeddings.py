@@ -66,7 +66,7 @@ class EmbeddingSupport(ABC):
     @abstractmethod
     def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
         """
-        Generate text embedding.
+        Generate text embedding synchronously.
 
         Args:
             text: The text to generate the embedding for
@@ -76,3 +76,17 @@ class EmbeddingSupport(ABC):
             The embedding response
         """
         raise NotImplementedError("generate_text_embedding method not implemented")
+
+    @abstractmethod
+    async def generate_text_embedding_async(self, text: str, **kwargs) -> EmbeddingResponse:
+        """
+        Generate text embedding asynchronously.
+
+        Args:
+            text: The text to generate the embedding for
+            **kwargs: Additional arguments to pass to the function.
+
+        Returns:
+            The embedding response
+        """
+        raise NotImplementedError("generate_text_embedding_async method not implemented")

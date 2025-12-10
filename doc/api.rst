@@ -139,8 +139,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    AzureTextEmbedding
-    OpenAiTextEmbedding
+    OpenAITextEmbedding
 
 :py:mod:`pyrit.exceptions`
 ==========================
@@ -363,6 +362,7 @@ API Reference
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
+    MathObfuscationConverter
     MathPromptConverter
     MorseConverter
     NoiseConverter

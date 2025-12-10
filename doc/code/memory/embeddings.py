@@ -10,21 +10,21 @@
 # ---
 
 # %% [markdown]
-# # Azure OpenAI Embeddings - optional
+# # Embeddings - optional
 #
 # PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
 
 # %%
 from pprint import pprint
 
-from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
+from pyrit.embedding import OpenAITextEmbedding
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 input_text = "hello"
-ada_embedding_engine = AzureTextEmbedding()
-embedding_response = ada_embedding_engine.generate_text_embedding(text=input_text)
+ada_embedding_engine = OpenAITextEmbedding()
+embedding_response = await ada_embedding_engine.generate_text_embedding_async(text=input_text)  # type: ignore
 
 pprint(embedding_response, width=280, compact=True)
 

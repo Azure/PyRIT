@@ -32,8 +32,14 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 target = OpenAIResponseTarget()
-# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# target = OpenAIResponseTarget(use_entra_auth=True)
+# For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# from pyrit.auth import get_azure_openai_auth
+# endpoint = "https://your-endpoint.openai.azure.com"
+# target = OpenAIResponseTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_openai_auth(endpoint),
+#     model_name="your-deployment-name"
+# )
 
 attack = PromptSendingAttack(objective_target=target)
 

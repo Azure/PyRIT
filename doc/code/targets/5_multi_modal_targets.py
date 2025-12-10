@@ -39,8 +39,14 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 objective = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 
 img_prompt_target = OpenAIImageTarget()
-# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# target = OpenAIChatTarget(use_entra_auth=True)
+# For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# from pyrit.auth import get_azure_openai_auth
+# endpoint = "https://your-endpoint.openai.azure.com"
+# target = OpenAIChatTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_openai_auth(endpoint),
+#     model_name="your-deployment-name"
+# )
 
 image_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),

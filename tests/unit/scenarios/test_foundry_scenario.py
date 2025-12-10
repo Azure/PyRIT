@@ -67,6 +67,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -91,6 +92,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -120,6 +122,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives):
@@ -136,6 +139,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_init_with_custom_adversarial_target(
@@ -155,6 +159,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_objectives):
@@ -171,6 +176,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -198,6 +204,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
             "AZURE_CONTENT_SAFETY_API_ENDPOINT": "https://test.content.azure.com/",
             "AZURE_CONTENT_SAFETY_API_KEY": "test-content-key",
         },
@@ -226,6 +233,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_init_raises_exception_when_no_datasets_available(self, mock_objective_scorer):
@@ -244,6 +252,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -266,6 +275,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -288,6 +298,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -312,6 +323,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -336,6 +348,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -368,6 +381,7 @@ class TestFoundryScenarioAttackCreation:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -397,6 +411,7 @@ class TestFoundryScenarioAttackCreation:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -432,6 +447,7 @@ class TestFoundryScenarioGetAttack:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -461,6 +477,7 @@ class TestFoundryScenarioGetAttack:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -496,6 +513,7 @@ class TestFoundryScenarioAllStrategies:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.parametrize(
@@ -549,6 +567,7 @@ class TestFoundryScenarioAllStrategies:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.parametrize(
@@ -594,6 +613,7 @@ class TestFoundryScenarioProperties:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -626,6 +646,7 @@ class TestFoundryScenarioProperties:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer, sample_objectives):
@@ -642,6 +663,7 @@ class TestFoundryScenarioProperties:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio

@@ -164,33 +164,47 @@ def get_access_token_from_interactive_login(scope: str) -> str:
         raise
 
 
-def get_token_provider_from_default_azure_credential(scope: str) -> Callable[[], str]:
+def get_azure_token_provider(scope: str) -> Callable[[], str]:
     """
-    Connect to an AOAI endpoint via default Azure credential.
+    Get a synchronous Azure token provider using DefaultAzureCredential.
+
+    Returns a callable that returns a bearer token string. The callable handles
+    automatic token refresh.
+
+    Args:
+        scope (str): The Azure token scope (e.g., 'https://cognitiveservices.azure.com/.default').
 
     Returns:
-        Callable[[], str]: Authentication token provider
+        Callable[[], str]: A token provider function that returns bearer tokens.
+
+    Example:
+        >>> token_provider = get_azure_token_provider('https://cognitiveservices.azure.com/.default')
+        >>> token = token_provider()  # Get current token
     """
     try:
         token_provider = get_bearer_token_provider(DefaultAzureCredential(), scope)
         return token_provider
     except Exception as e:
-        logger.error(f"Failed to obtain token for '{scope}': {e}")
+        logger.error(f"Failed to obtain token provider for '{scope}': {e}")
         raise
 
 
-def get_async_token_provider_from_default_azure_credential(scope: str):  # type: ignore[no-untyped-def]
+def get_azure_async_token_provider(scope: str):  # type: ignore[no-untyped-def]
     """
-    Connect to an AOAI endpoint via default Azure credential with async support.
+    Get an asynchronous Azure token provider using AsyncDefaultAzureCredential.
 
-    This returns an async callable that can be awaited, suitable for use with
-    async clients like OpenAI's AsyncOpenAI.
+    Returns an async callable suitable for use with async clients like OpenAI's AsyncOpenAI.
+    The callable handles automatic token refresh.
 
     Args:
-        scope (str): The scope to request tokens for.
+        scope (str): The Azure token scope (e.g., 'https://cognitiveservices.azure.com/.default').
 
     Returns:
-        Authentication token provider (async callable)
+        Async callable that returns bearer tokens.
+
+    Example:
+        >>> token_provider = get_azure_async_token_provider('https://cognitiveservices.azure.com/.default')
+        >>> token = await token_provider()  # Get current token (in async context)
     """
     try:
         token_provider = get_async_bearer_token_provider(AsyncDefaultAzureCredential(), scope)
@@ -200,15 +214,21 @@ def get_async_token_provider_from_default_azure_credential(scope: str):  # type:
         raise
 
 
-def get_default_scope(endpoint: str) -> str:
+def get_default_azure_scope(endpoint: str) -> str:
     """
-    Get the default scope for the given endpoint.
+    Determine the appropriate Azure token scope based on the endpoint URL.
 
     Args:
-        endpoint (str): The endpoint to get the scope for.
+        endpoint (str): The Azure endpoint URL.
 
     Returns:
-        str: The default scope for the given endpoint.
+        str: The appropriate token scope for the endpoint.
+            - 'https://ml.azure.com/.default' for AI Foundry endpoints (*.ai.azure.com)
+            - 'https://cognitiveservices.azure.com/.default' for other Azure endpoints
+
+    Example:
+        >>> scope = get_default_azure_scope('https://myresource.openai.azure.com')
+        >>> # Returns 'https://cognitiveservices.azure.com/.default'
     """
     try:
         parsed_uri = urlparse(endpoint)
@@ -218,6 +238,30 @@ def get_default_scope(endpoint: str) -> str:
         pass
 
     return "https://cognitiveservices.azure.com/.default"
+
+
+def get_azure_openai_auth(endpoint: str):  # type: ignore[no-untyped-def]
+    """
+    Get an async Azure token provider for OpenAI endpoints.
+
+    Automatically determines the correct scope based on the endpoint URL and returns
+    an async token provider suitable for use with AsyncOpenAI clients.
+
+    Args:
+        endpoint (str): The Azure OpenAI endpoint URL.
+
+    Returns:
+        Async callable that returns bearer tokens.
+
+    Example:
+        >>> from pyrit.prompt_target import OpenAIChatTarget
+        >>> target = OpenAIChatTarget(
+        ...     endpoint='https://myresource.openai.azure.com',
+        ...     api_key=get_azure_openai_auth('https://myresource.openai.azure.com')
+        ... )
+    """
+    scope = get_default_azure_scope(endpoint)
+    return get_azure_async_token_provider(scope)
 
 
 def get_speech_config(resource_id: Union[str, None], key: Union[str, None], region: str):
@@ -284,7 +328,7 @@ def get_speech_config_from_default_azure_credential(resource_id: str, region: st
         raise e
 
     try:
-        azure_auth = AzureAuth(token_scope=get_default_scope(""))
+        azure_auth = AzureAuth(token_scope=get_default_azure_scope(""))
         token = azure_auth.get_token()
         authorization_token = "aad#" + resource_id + "#" + token
         speech_config = speechsdk.SpeechConfig(
