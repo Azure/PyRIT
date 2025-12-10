@@ -1,6 +1,6 @@
 .PHONY: all pre-commit mypy test test-cov-html test-cov-xml
 
-CMD:=python -m
+CMD:=uv run -m
 PYMODULE:=pyrit
 TESTS:=tests
 UNIT_TESTS:=tests/unit
