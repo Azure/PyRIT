@@ -104,12 +104,16 @@ class Seed(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-        jinja_template = Template(self.value, undefined=StrictUndefined)
+        template_identifier = self.name or "<unnamed template>"
 
         try:
+            jinja_template = Template(self.value, undefined=StrictUndefined)
             return jinja_template.render(**kwargs)
         except Exception as e:
-            raise ValueError(f"Error applying parameters: {str(e)}")
+            raise ValueError(
+                f"Error rendering template '{template_identifier}': {str(e)}. "
+                f"Template value preview: {self.value[:100]}..."
+            ) from e
 
     def render_template_value_silent(self, **kwargs) -> str:
         """

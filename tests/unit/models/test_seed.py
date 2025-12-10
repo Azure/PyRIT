@@ -109,7 +109,7 @@ def test_seed_prompt_render_template_no_param_success(seed_prompt_fixture):
 def test_seed_prompt_template_no_match(seed_prompt_fixture):
     seed_prompt_fixture.value = "Test prompt with {{ param1 }}"
 
-    with pytest.raises(ValueError, match="Error applying parameters"):
+    with pytest.raises(ValueError, match="Error rendering template"):
         seed_prompt_fixture.render_template_value(param2="value2")  # Using an invalid param
 
 
@@ -118,7 +118,7 @@ def test_seed_prompt_template_missing_param(seed_prompt_fixture):
     seed_prompt_fixture.parameters = ["param1", "param2"]  # Add both parameters
 
     # Attempt to apply only one of the required parameters
-    with pytest.raises(ValueError, match="Error applying parameters"):
+    with pytest.raises(ValueError, match="Error rendering template"):
         seed_prompt_fixture.render_template_value(param1="value1")  # Missing param2
 
 
