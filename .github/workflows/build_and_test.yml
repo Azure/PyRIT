@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
 
     steps:
       - uses: actions/checkout@v3
@@ -34,6 +36,15 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
+
+      - name: Cache uv packages
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.UV_CACHE_DIR }}
+          key: ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
+            ${{ runner.os }}-uv-
 
       - name: Cache pre-commit environments
         uses: actions/cache@v3
@@ -77,6 +88,8 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
     defaults:
       run:
         shell: pwsh
@@ -86,6 +99,16 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
+
+      - name: Cache uv packages
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.UV_CACHE_DIR }}
+          key: ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
+            ${{ runner.os }}-uv-
+
 
       - name: Cache pre-commit environments
         uses: actions/cache@v3
