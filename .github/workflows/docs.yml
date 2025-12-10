@@ -40,6 +40,15 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+    
+    # Cache uv cache for faster installs
+    - name: Cache uv cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
 
     # Install dependencies
     - name: Set up Python 3.11

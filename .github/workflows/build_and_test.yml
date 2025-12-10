@@ -183,9 +183,7 @@ jobs:
           fi
 
       - name: Run unit tests with code coverage
-        run: |
-          set -x PYTHONPATH .
-          make unit-test-cov-xml
+        run: make unit-test-cov-xml
 
       - name: Publish Pytest Results
         uses: EnricoMi/publish-unit-test-result-action@v2
