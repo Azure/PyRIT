@@ -85,13 +85,10 @@ class PromptShieldTarget(PromptTarget):
 
         self._api_version = api_version
 
-        # Store api_key as-is (could be string or callable)
-        if api_key is None:
-            self._api_key = default_values.get_non_required_value(
-                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=None
-            )
-        else:
-            self._api_key = api_key
+        # API key is required - either from parameter or environment variable
+        self._api_key = default_values.get_required_value(
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
 
         self._force_entry_field: PromptShieldEntryField = field
 

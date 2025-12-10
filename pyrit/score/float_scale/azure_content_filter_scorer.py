@@ -21,6 +21,8 @@ from pyrit.models import (
 )
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+import time
+from azure.core.credentials import AccessToken
 
 
 class AzureContentFilterScorer(FloatScaleScorer):
@@ -77,13 +79,10 @@ class AzureContentFilterScorer(FloatScaleScorer):
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint or ""
         )
 
-        # Store api_key as-is (could be string or callable)
-        if api_key is None:
-            self._api_key = default_values.get_non_required_value(  # type: ignore[assignment]
-                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=None
-            )
-        else:
-            self._api_key = api_key  # type: ignore[assignment]
+        # API key is required - either from parameter or environment variable
+        self._api_key = default_values.get_required_value(  # type: ignore[assignment]
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
 
         # Create ContentSafetyClient with appropriate credential
         if self._api_key is not None and self._endpoint is not None:
@@ -186,10 +185,6 @@ class _TokenProviderCredential(TokenCredential):
         Returns:
             AccessToken: The access token with expiration time.
         """
-        import time
-
-        from azure.core.credentials import AccessToken
-
         token = self._token_provider()
         # Set expiration far in the future - the provider handles refresh
         expires_on = int(time.time()) + 3600
