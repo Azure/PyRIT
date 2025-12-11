@@ -19,9 +19,9 @@ from uuid import uuid4
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 conversation_id = str(uuid4())
 

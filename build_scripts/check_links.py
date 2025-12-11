@@ -118,35 +118,88 @@ def check_url(url, retries=2, delay=2):
     return url, False
 
 
-def check_links_in_file(file_path):
-    urls = extract_urls(file_path)
-    resolved_urls = [resolve_relative_url(file_path, url) for url in urls]
-    broken_urls = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(check_url, url): url for url in resolved_urls}
+def extract_all_urls_from_files(files):
+    """
+    Extract all URLs from all files, returning a dict of {file_path: [urls]}.
+    """
+    file_urls = {}
+    skipped_files = ["doc/blog/"]
+
+    for file_path in files:
+        if any(file_path.startswith(skipped) for skipped in skipped_files):
+            continue
+        urls = extract_urls(file_path)
+        resolved_urls = [resolve_relative_url(file_path, url) for url in urls]
+        if resolved_urls:
+            file_urls[file_path] = resolved_urls
+
+    return file_urls
+
+
+def check_all_links_parallel(file_urls, max_workers=20):
+    """
+    Check all URLs across all files in parallel with a shared thread pool.
+
+    Args:
+        file_urls: Dict of {file_path: [urls]}
+        max_workers: Max concurrent HTTP requests across ALL files
+
+    Returns:
+        Dict of {file_path: [broken_urls]}
+    """
+    all_broken_urls = {}
+
+    # Create a mapping of url -> file_path for tracking which file each URL came from
+    url_to_files = {}
+    for file_path, urls in file_urls.items():
+        for url in urls:
+            if url not in url_to_files:
+                url_to_files[url] = []
+            url_to_files[url].append(file_path)
+
+    # Check all unique URLs in parallel
+    url_results = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(check_url, url): url for url in url_to_files.keys()}
         for future in as_completed(futures):
-            url, is_valid = future.result()
-            if not is_valid:
-                broken_urls.append(url)
-    return broken_urls
+            url = futures[future]
+            _, is_valid = future.result()
+            url_results[url] = is_valid
+
+    # Map broken URLs back to their files
+    for url, is_valid in url_results.items():
+        if not is_valid:
+            for file_path in url_to_files[url]:
+                if file_path not in all_broken_urls:
+                    all_broken_urls[file_path] = []
+                all_broken_urls[file_path].append(url)
+
+    return all_broken_urls
 
 
 if __name__ == "__main__":
     files = sys.argv[1:]
-    all_broken_urls = {}
-    skipped_files = ["doc/blog/"]
-    for file_path in files:
-        if any(file_path.startswith(skipped) for skipped in skipped_files):
-            continue
-        print(f"Checking links in {file_path}")
-        broken_urls = check_links_in_file(file_path)
-        if broken_urls:
-            all_broken_urls[file_path] = broken_urls
+
+    print(f"Extracting URLs from {len(files)} file(s)...")
+    file_urls = extract_all_urls_from_files(files)
+
+    if not file_urls:
+        print("No URLs found to check.")
+        sys.exit(0)
+
+    total_urls = sum(len(urls) for urls in file_urls.values())
+    unique_urls = len(set(url for urls in file_urls.values() for url in urls))
+    print(f"Checking {unique_urls} unique URL(s) across {len(file_urls)} file(s) (total: {total_urls})...")
+
+    all_broken_urls = check_all_links_parallel(file_urls, max_workers=30)
+
     if all_broken_urls:
+        print("\n" + "=" * 80)
         for file_path, urls in all_broken_urls.items():
             print(f"Broken links in {file_path}:")
             for url in urls:
                 print(f"  - {url}")
+        print("=" * 80)
         sys.exit(1)
     else:
         print("No broken links found.")

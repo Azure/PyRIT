@@ -31,6 +31,7 @@ class TestSimpleInitializerInitialize:
         # Set up required env vars for OpenAI
         os.environ["OPENAI_CHAT_ENDPOINT"] = "https://test.openai.azure.com"
         os.environ["OPENAI_CHAT_KEY"] = "test_key"
+        os.environ["OPENAI_CHAT_MODEL"] = "gpt-4"
         # Clean up globals
         for attr in ["default_converter_target", "default_objective_scorer", "adversarial_config"]:
             if hasattr(sys.modules["__main__"], attr):
@@ -40,7 +41,7 @@ class TestSimpleInitializerInitialize:
         """Clean up after each test."""
         reset_default_values()
         # Clean up env vars
-        for var in ["OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY"]:
+        for var in ["OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL"]:
             if var in os.environ:
                 del os.environ[var]
         # Clean up globals
@@ -48,18 +49,20 @@ class TestSimpleInitializerInitialize:
             if hasattr(sys.modules["__main__"], attr):
                 delattr(sys.modules["__main__"], attr)
 
-    def test_initialize_runs_without_error(self):
+    @pytest.mark.asyncio
+    async def test_initialize_runs_without_error(self):
         """Test that initialize runs without errors."""
         init = SimpleInitializer()
         # Should not raise any errors
-        init.initialize()
+        await init.initialize_async()
 
-    def test_get_info_after_initialize_has_populated_data(self):
-        """Test that get_info() returns populated data after initialization."""
+    @pytest.mark.asyncio
+    async def test_get_info_after_initialize_has_populated_data(self):
+        """Test that get_info_async() returns populated data after initialization."""
         init = SimpleInitializer()
-        init.initialize()
+        await init.initialize_async()
 
-        info = SimpleInitializer.get_info()
+        info = await SimpleInitializer.get_info_async()
 
         # Verify basic structure
         assert isinstance(info, dict)
@@ -89,9 +92,9 @@ class TestSimpleInitializerInitialize:
 class TestSimpleInitializerGetInfo:
     """Tests for SimpleInitializer.get_info method - basic functionality."""
 
-    def test_get_info_returns_expected_structure(self):
-        """Test that get_info returns expected structure."""
-        info = SimpleInitializer.get_info()
+    async def test_get_info_returns_expected_structure(self):
+        """Test that get_info_async() returns expected structure."""
+        info = await SimpleInitializer.get_info_async()
 
         assert isinstance(info, dict)
         assert info["name"] == "Simple Complete Configuration"

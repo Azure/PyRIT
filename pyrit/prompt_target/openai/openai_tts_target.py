@@ -36,15 +36,14 @@ class OpenAITTSTarget(OpenAITarget):
         Initialize the TTS target with specified parameters.
 
         Args:
-            model_name (str, Optional): The name of the model (or deployment name in Azure). Defaults to "tts-1".
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
+                If no value is provided, the OPENAI_TTS_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
+            api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
+                or a callable that returns an access token. For Azure endpoints with Entra authentication,
+                pass a token provider from pyrit.auth (e.g., get_azure_openai_auth(endpoint)).
                 Defaults to the `OPENAI_TTS_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_entra_auth (bool, Optional): When set to True, user authentication is used
-                instead of API Key. DefaultAzureCredential is taken for
-                https://cognitiveservices.azure.com/.default . Please run `az login` locally
-                to leverage user AuthN.
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -57,9 +56,6 @@ class OpenAITTSTarget(OpenAITarget):
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
         super().__init__(**kwargs)
-
-        if not self._model_name:
-            self._model_name = "tts-1"
 
         self._voice = voice
         self._response_format = response_format

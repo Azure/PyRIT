@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Sequence, Union, cast
 
 from pyrit.exceptions import (
     InvalidJsonException,
+    PyritException,
     pyrit_json_retry,
     remove_markdown_json,
 )
@@ -99,6 +100,10 @@ class Scorer(abc.ABC):
 
         Returns:
             list[Score]: A list of Score objects representing the results.
+
+        Raises:
+            PyritException: If scoring raises a PyRIT exception (re-raised with enhanced context).
+            RuntimeError: If scoring raises a non-PyRIT exception (wrapped with scorer context).
         """
         self._validator.validate(message, objective=objective)
 
@@ -113,10 +118,19 @@ class Scorer(abc.ABC):
         if infer_objective_from_request and (not objective):
             objective = self._extract_objective_from_response(message)
 
-        scores = await self._score_async(
-            message,
-            objective=objective,
-        )
+        try:
+            scores = await self._score_async(
+                message,
+                objective=objective,
+            )
+        except PyritException as e:
+            # Re-raise PyRIT exceptions with enhanced context while preserving type for retry decorators
+            e.message = f"Error in scorer {self.__class__.__name__}: {e.message}"
+            e.args = (f"Status Code: {e.status_code}, Message: {e.message}",)
+            raise
+        except Exception as e:
+            # Wrap non-PyRIT exceptions for better error tracing
+            raise RuntimeError(f"Error in scorer {self.__class__.__name__}: {str(e)}") from e
 
         self.validate_return_scores(scores=scores)
         self._memory.add_scores_to_memory(scores=scores)

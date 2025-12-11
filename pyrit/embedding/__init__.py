@@ -1,13 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Embedding module for PyRI to provide Azure and OpenAI text embedding classes."""
+"""Embedding module for PyRIT to provide OpenAI text embedding class."""
 
 
-from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
-from pyrit.embedding.openai_text_embedding import OpenAiTextEmbedding
+from pyrit.embedding.openai_text_embedding import OpenAITextEmbedding
 
 __all__ = [
-    "AzureTextEmbedding",
-    "OpenAiTextEmbedding",
+    "OpenAITextEmbedding",
 ]

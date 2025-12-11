@@ -188,6 +188,7 @@ async def test_connect_required_openai_response_targets(sqlite_instance, endpoin
     ("endpoint", "api_key", "model_name"),
     [
         ("OPENAI_REALTIME_ENDPOINT", "OPENAI_REALTIME_API_KEY", "OPENAI_REALTIME_MODEL"),
+        ("PLATFORM_OPENAI_REALTIME_ENDPOINT", "PLATFORM_OPENAI_REALTIME_KEY", "PLATFORM_OPENAI_REALTIME_MODEL"),
     ],
 )
 async def test_connect_required_realtime_targets(sqlite_instance, endpoint, api_key, model_name):
@@ -280,14 +281,19 @@ async def test_connect_openai_completion(sqlite_instance):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "api_key", "model_name"),
+    ("endpoint", "api_key", "model_name", "is_dalle_model"),
     [
-        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_API_KEY1", "OPENAI_IMAGE_MODEL1"),
-        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_API_KEY2", "OPENAI_IMAGE_MODEL2"),
-        ("PLATFORM_OPENAI_IMAGE_ENDPOINT", "PLATFORM_OPENAI_IMAGE_KEY", "PLATFORM_OPENAI_IMAGE_MODEL"),
+        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_API_KEY1", "OPENAI_IMAGE_MODEL1", True),  # DALL-E-3
+        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_API_KEY2", "OPENAI_IMAGE_MODEL2", False),  # gpt-image-1
+        (
+            "PLATFORM_OPENAI_IMAGE_ENDPOINT",
+            "PLATFORM_OPENAI_IMAGE_KEY",
+            "PLATFORM_OPENAI_IMAGE_MODEL",
+            True,
+        ),  # DALL-E-3
     ],
 )
-async def test_connect_image(sqlite_instance, endpoint, api_key, model_name):
+async def test_connect_image(sqlite_instance, endpoint, api_key, model_name, is_dalle_model):
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
     model_name_value = os.getenv(model_name) if model_name else ""
@@ -298,7 +304,32 @@ async def test_connect_image(sqlite_instance, endpoint, api_key, model_name):
         model_name=model_name_value,
     )
 
-    await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
+    # Verify the flag starts as False
+    assert target._requires_response_format is False
+
+    image_prompt = "A simple test image of a raccoon"
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective=image_prompt)
+
+    # For image generation, verify we got a successful response
+    assert result.last_response is not None
+    assert result.last_response.converted_value is not None
+    assert (
+        result.last_response.response_error == "none"
+    ), f"Expected successful response, got error: {result.last_response.response_error}"
+
+    # Validate we got a valid image file path
+    image_path = Path(result.last_response.converted_value)
+    assert image_path.exists(), f"Image file not found at path: {image_path}"
+    assert image_path.is_file(), f"Path exists but is not a file: {image_path}"
+
+    # Verify the adaptive response_format flag behavior
+    # DALL-E models return URLs by default, so flag should be set to True after first call
+    # gpt-image-1 always returns base64, so flag should remain False
+    if is_dalle_model:
+        assert target._requires_response_format is True, "DALL-E model should set response_format flag to True"
+    else:
+        assert target._requires_response_format is False, "gpt-image-1 should keep response_format flag as False"
 
 
 @pytest.mark.asyncio

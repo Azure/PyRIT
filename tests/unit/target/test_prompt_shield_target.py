@@ -2,12 +2,11 @@
 # Licensed under the MIT license.
 
 from typing import MutableSequence
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from unit.mocks import get_audio_message_piece, get_sample_conversations
 
-from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptShieldTarget
 
@@ -90,57 +89,21 @@ async def test_prompt_shield_response_validation(promptshield_target: PromptShie
     promptshield_target._validate_response(request_body=dict(), response_body=dict())
 
 
-def test_use_entra_auth_true_with_api_key_raises_error(sqlite_instance):
-    """Test that use_entra_auth=True with api_key raises ValueError."""
-    with pytest.raises(ValueError, match="If using Entra ID auth, please do not specify api_key."):
-        with patch.object(CentralMemory, "get_memory_instance", return_value=sqlite_instance):
-            PromptShieldTarget(
-                endpoint="https://test.endpoint.com",
-                api_key="test_key",
-                use_entra_auth=True,
-            )
-
-
-def test_use_entra_auth_true_uses_credential(sqlite_instance):
-    """Test that use_entra_auth=True uses Azure authentication."""
-    with (
-        patch("pyrit.prompt_target.prompt_shield_target.get_default_scope") as mock_scope,
-        patch("pyrit.prompt_target.prompt_shield_target.AzureAuth") as mock_auth_class,
-    ):
-
-        mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
-        mock_auth_instance = MagicMock()
-        mock_auth_class.return_value = mock_auth_instance
-
-        target = PromptShieldTarget(endpoint="https://test.endpoint.com", use_entra_auth=True)
-
-        # Verify Azure Auth was used correctly
-        mock_scope.assert_called_once_with("https://test.endpoint.com")
-        mock_auth_class.assert_called_once_with(token_scope="https://cognitiveservices.azure.com/.default")
-
-        # Verify target was created successfully with Entra auth
-        assert target is not None
-        assert target._azure_auth == mock_auth_instance
-        assert target._api_key is None
-
-
-def test_use_entra_auth_false_uses_api_key():
-    """Test that use_entra_auth=False uses API key authentication."""
-    target = PromptShieldTarget(endpoint="https://test.endpoint.com", api_key="test_key", use_entra_auth=False)
+def test_api_key_authentication():
+    """Test that API key authentication works correctly."""
+    target = PromptShieldTarget(endpoint="https://test.endpoint.com", api_key="test_key")
 
     # Verify target was created successfully with API key
     assert target is not None
     assert target._api_key == "test_key"
 
 
-def test_use_entra_auth_default_false_uses_api_key():
-    """Test that default behavior (use_entra_auth=False) uses API key authentication."""
-    target = PromptShieldTarget(
-        endpoint="https://test.endpoint.com",
-        api_key="test_key",
-        # use_entra_auth not specified, should default to False
-    )
+def test_token_provider_authentication():
+    """Test that token provider (callable) authentication works correctly."""
+    token_provider = MagicMock(return_value="test_token")
+    target = PromptShieldTarget(endpoint="https://test.endpoint.com", api_key=token_provider)
 
-    # Verify target was created successfully with API key (not Entra auth)
+    # Verify target was created successfully with token provider
     assert target is not None
-    assert target._api_key == "test_key"
+    assert target._api_key == token_provider
+    assert callable(target._api_key)

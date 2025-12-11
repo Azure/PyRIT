@@ -27,10 +27,11 @@
 # %% [markdown]
 # The following is a minimal `PyRITInitializer` class. It doesn't need much! In this case, it sets the default value for temperature for all OpenAIChatTargets to .9.
 
-# %%
 from pyrit.common.apply_defaults import set_default_value
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup.initializers import PyRITInitializer
+
+# %%
+from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
 class CustomInitializer(PyRITInitializer):
@@ -42,13 +43,15 @@ class CustomInitializer(PyRITInitializer):
     def execution_order(self) -> int:
         return 2  # Lower numbers run first (default is 1)
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
 
     @property
     def description(self) -> str:
         return "Sets custom temperature for OpenAI targets"
 
+
+CustomInitializer()
 
 # %% [markdown]
 # ## Built-in Initializers
@@ -61,11 +64,11 @@ class CustomInitializer(PyRITInitializer):
 # These are easy to include.
 
 # %%
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
 # Using built-in initializer
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])  # type: ignore
 
 # %% [markdown]
 # ## External Scripts
@@ -84,14 +87,14 @@ import os
 import shutil
 import tempfile
 
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 
 temp_dir = tempfile.mkdtemp()
 script_path = os.path.join(temp_dir, "custom_init.py")
 
 # This is the simple custom initializer from the "Creating an Initializer" section of this notebook
 script_content = """
-from pyrit.setup.initializers import PyRITInitializer
+from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 from pyrit.common.apply_defaults import set_default_value
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -104,7 +107,7 @@ class CustomInitializer(PyRITInitializer):
     def execution_order(self) -> int:
         return 2  # Lower numbers run first (default is 1)
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
 
     @property
@@ -119,7 +122,9 @@ with open(script_path, "w") as f:
 print(f"Created: {script_path}")
 
 
-initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[temp_dir + "/custom_init.py"])
+await initialize_pyrit_async(  # type: ignore
+    memory_db_type="InMemory", initialization_scripts=[temp_dir + "/custom_init.py"]
+)
 
 
 if os.path.exists(temp_dir):

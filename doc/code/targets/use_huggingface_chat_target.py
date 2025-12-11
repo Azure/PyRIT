@@ -48,9 +48,9 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
 )
 from pyrit.prompt_target import HuggingFaceChatTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # models to test
 model_id = "Qwen/Qwen2-0.5B-Instruct"

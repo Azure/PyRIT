@@ -125,11 +125,12 @@
 # %%
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenario import FoundryScenario, FoundryStrategy
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+from pyrit.setup.initializers import LoadDefaultDatasets
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY, initializers=[LoadDefaultDatasets()])  # type: ignore
 
-objective_target = OpenAIChatTarget(model_name="gpt-4o")
+objective_target = OpenAIChatTarget()
 
 # Create a scenario with retry configuration
 scenario = FoundryScenario()

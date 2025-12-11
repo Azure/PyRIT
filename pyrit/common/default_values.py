@@ -3,12 +3,12 @@
 
 import logging
 import os
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
-def get_required_value(*, env_var_name: str, passed_value: str) -> str:
+def get_required_value(*, env_var_name: str, passed_value: Any) -> Any:
     """
     Get a required value from an environment variable or a passed value,
     preferring the passed value.
@@ -17,10 +17,10 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
 
     Args:
         env_var_name (str): The name of the environment variable to check
-        passed_value (str): The value passed to the function.
+        passed_value: The value passed to the function. Can be a string or a callable that returns a string.
 
     Returns:
-        str: The passed value if provided, otherwise the value from the environment variable.
+        The passed value if provided, otherwise the value from the environment variable.
 
     Raises:
         ValueError: If neither the passed value nor the environment variable is provided.
