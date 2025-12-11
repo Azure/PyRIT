@@ -8,7 +8,7 @@ import traceback
 from typing import Any, List, Optional
 from uuid import uuid4
 
-from pyrit.exceptions import EmptyResponseException
+from pyrit.exceptions import EmptyResponseException, PyritException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     Message,
@@ -205,6 +205,10 @@ class PromptNormalizer:
             converter_configurations (list[PromptConverterConfiguration]): List of configurations specifying
                 which converters to apply and to which message pieces.
             message (Message): The message containing pieces to be converted.
+
+        Raises:
+            PyritException: If a converter raises a PyRIT exception (re-raised with enhanced context).
+            RuntimeError: If a converter raises a non-PyRIT exception (wrapped with converter context).
         """
         for converter_configuration in converter_configurations:
             for piece_index, piece in enumerate(message.message_pieces):
@@ -224,14 +228,23 @@ class PromptNormalizer:
                 converted_text_data_type = piece.converted_value_data_type
 
                 for converter in converter_configuration.converters:
-                    converter_result = await converter.convert_tokens_async(
-                        prompt=converted_text,
-                        input_type=converted_text_data_type,
-                        start_token=self._start_token,
-                        end_token=self._end_token,
-                    )
-                    converted_text = converter_result.output_text
-                    converted_text_data_type = converter_result.output_type
+                    try:
+                        converter_result = await converter.convert_tokens_async(
+                            prompt=converted_text,
+                            input_type=converted_text_data_type,
+                            start_token=self._start_token,
+                            end_token=self._end_token,
+                        )
+                        converted_text = converter_result.output_text
+                        converted_text_data_type = converter_result.output_type
+                    except PyritException as e:
+                        # Re-raise PyRIT exceptions with enhanced context while preserving type for retry decorators
+                        e.message = f"Error in converter {converter.__class__.__name__}: {e.message}"
+                        e.args = (f"Status Code: {e.status_code}, Message: {e.message}",)
+                        raise
+                    except Exception as e:
+                        # Wrap non-PyRIT exceptions for better error tracing
+                        raise RuntimeError(f"Error in converter {converter.__class__.__name__}: {str(e)}") from e
 
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type

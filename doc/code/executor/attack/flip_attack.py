@@ -7,19 +7,6 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
 # ---
-
-# %%
-from pyrit.executor.attack import (
-    AttackScoringConfig,
-    ConsoleAttackResultPrinter,
-    FlipAttack,
-)
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit_async
-
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
-
 # %% [markdown]
 # # Flip Attack (Single-Turn) - optional
 #
@@ -32,6 +19,13 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 
 # %%
+from pyrit.executor.attack import (
+    AttackScoringConfig,
+    ConsoleAttackResultPrinter,
+    FlipAttack,
+)
+from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
