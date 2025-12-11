@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import base64
 from typing import Awaitable, Callable, Optional
 
 from azure.ai.contentsafety import ContentSafetyClient
@@ -159,7 +160,8 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
         elif message_piece.converted_value_data_type == "image_path":
             base64_encoded_data = await self._get_base64_image_data(message_piece)
-            image_data = ImageData(content=base64_encoded_data)
+            # Decode base64 string to raw bytes for Azure API
+            image_data = ImageData(content=base64.b64decode(base64_encoded_data))
             image_request_options = AnalyzeImageOptions(
                 image=image_data, categories=self._score_categories, output_type="FourSeverityLevels"
             )
@@ -168,7 +170,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
         # Collect all scores from all chunks/images
         all_scores = []
-        for filter_result in filter_results:
+        for filter_result in filter_results:  # type: ignore[assignment]
             for score in filter_result["categoriesAnalysis"]:
                 value = score["severity"]
                 category = score["category"]

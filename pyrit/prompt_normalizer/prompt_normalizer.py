@@ -205,6 +205,10 @@ class PromptNormalizer:
             converter_configurations (list[PromptConverterConfiguration]): List of configurations specifying
                 which converters to apply and to which message pieces.
             message (Message): The message containing pieces to be converted.
+
+        Raises:
+            PyritException: If a converter raises a PyRIT exception (re-raised with enhanced context).
+            RuntimeError: If a converter raises a non-PyRIT exception (wrapped with converter context).
         """
         for converter_configuration in converter_configurations:
             for piece_index, piece in enumerate(message.message_pieces):

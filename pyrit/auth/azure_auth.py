@@ -57,7 +57,7 @@ class TokenProviderCredential:
         token = self._token_provider()
         # Set expiration far in the future - the provider handles refresh
         expires_on = int(time.time()) + 3600
-        return AccessToken(token, expires_on)
+        return AccessToken(str(token), expires_on)
 
 
 class AzureAuth(Authenticator):

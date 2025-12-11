@@ -100,6 +100,10 @@ class Scorer(abc.ABC):
 
         Returns:
             list[Score]: A list of Score objects representing the results.
+
+        Raises:
+            PyritException: If scoring raises a PyRIT exception (re-raised with enhanced context).
+            RuntimeError: If scoring raises a non-PyRIT exception (wrapped with scorer context).
         """
         self._validator.validate(message, objective=objective)
 
