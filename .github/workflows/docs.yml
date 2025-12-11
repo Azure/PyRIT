@@ -47,6 +47,15 @@ jobs:
       with:
         python-version: 3.11
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        # Install a specific version of uv.
+        version: "0.9.17"
+        cache-dependency-glob: |
+          **/pyproject.toml
+          **/uv.lock
+
     - name: Install PyRIT with uv
       run: uv sync --extra dev --dev
     # Build the book
