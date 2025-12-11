@@ -8,7 +8,7 @@ import traceback
 from typing import Any, List, Optional
 from uuid import uuid4
 
-from pyrit.exceptions import EmptyResponseException
+from pyrit.exceptions import EmptyResponseException, PyritException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     Message,
@@ -233,9 +233,14 @@ class PromptNormalizer:
                         )
                         converted_text = converter_result.output_text
                         converted_text_data_type = converter_result.output_type
+                    except PyritException as e:
+                        # Re-raise PyRIT exceptions with enhanced context while preserving type for retry decorators
+                        e.message = f"Error in converter {converter.__class__.__name__}: {e.message}"
+                        e.args = (f"Status Code: {e.status_code}, Message: {e.message}",)
+                        raise
                     except Exception as e:
-                        # Add converter context to exception for better error tracing
-                        raise type(e)(f"Error in converter {converter.__class__.__name__}: {str(e)}") from e
+                        # Wrap non-PyRIT exceptions for better error tracing
+                        raise RuntimeError(f"Error in converter {converter.__class__.__name__}: {str(e)}") from e
 
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type

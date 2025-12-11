@@ -163,6 +163,8 @@ async def test_float_scale_threshold_scorer_with_raise_on_empty_aggregator():
             scorer=scorer, threshold=0.5, float_scale_aggregator=FloatScaleScoreAggregator.MAX_RAISE_ON_EMPTY
         )
 
-        # Should raise ValueError when aggregator encounters empty list
-        with pytest.raises(ValueError, match="No scores available for aggregation"):
+        # Should raise RuntimeError wrapping ValueError when aggregator encounters empty list
+        with pytest.raises(
+            RuntimeError, match="Error in scorer FloatScaleThresholdScorer.*No scores available for aggregation"
+        ):
             await float_scale_threshold_scorer.score_text_async(text="mock example")

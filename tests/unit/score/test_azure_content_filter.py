@@ -41,9 +41,9 @@ async def test_score_piece_async_invalid_type(patch_central_database, audio_mess
         message_pieces=[audio_message_piece],
     )
 
-    # Should return empty list for unsupported data type (raise_on_no_valid_pieces=False by default)
-    scores = await scorer.score_async(message=request)
-    assert scores == []
+    # Should raise ValueError for unsupported data type
+    with pytest.raises(ValueError, match="There are no valid pieces to score"):
+        await scorer.score_async(message=request)
     os.remove(audio_message_piece.converted_value)
 
 
@@ -145,21 +145,28 @@ def test_azure_content_explicit_category():
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_filters_long_text(patch_central_database):
+async def test_azure_content_filter_scorer_chunks_long_text(patch_central_database):
     """
-    Test that AzureContentFilterScorer filters out text longer than 10,000 characters
-    and returns empty scores instead of raising an error.
+    Test that AzureContentFilterScorer chunks text longer than 10,000 characters
+    and aggregates the results by category.
     """
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
 
-        # Create text longer than 10,000 characters
+        mock_client = MagicMock()
+        # Mock returns for two chunks
+        mock_client.analyze_text.return_value = {"categoriesAnalysis": [{"severity": "3", "category": "Hate"}]}
+        scorer._azure_cf_client = mock_client
+
+        # Create text longer than 10,000 characters (will be split into 2 chunks)
         long_text = "a" * 10001
 
-        # Should return empty list since all pieces are filtered
+        # Should chunk the text and aggregate by category (max severity)
         scores = await scorer.score_text_async(text=long_text)
-        assert scores == []
+        assert len(scores) == 1  # One score per category
+        assert scores[0].score_category == ["Hate"]
+        assert mock_client.analyze_text.call_count == 2  # Called once per chunk
 
 
 @pytest.mark.asyncio

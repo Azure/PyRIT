@@ -26,6 +26,40 @@ from pyrit.auth.authenticator import Authenticator
 logger = logging.getLogger(__name__)
 
 
+class TokenProviderCredential:
+    """
+    Wrapper to convert a token provider callable into an Azure TokenCredential.
+
+    This class bridges the gap between token provider functions (like those returned by
+    get_azure_token_provider) and Azure SDK clients that require a TokenCredential object.
+    """
+
+    def __init__(self, token_provider: Callable[[], Union[str, Callable]]) -> None:
+        """
+        Initialize TokenProviderCredential.
+
+        Args:
+            token_provider: A callable that returns either a token string or an awaitable that returns a token string.
+        """
+        self._token_provider = token_provider
+
+    def get_token(self, *scopes, **kwargs) -> AccessToken:
+        """
+        Get an access token.
+
+        Args:
+            scopes: Token scopes (ignored as the scope is already configured in the token provider).
+            kwargs: Additional arguments (ignored).
+
+        Returns:
+            AccessToken: The access token with expiration time.
+        """
+        token = self._token_provider()
+        # Set expiration far in the future - the provider handles refresh
+        expires_on = int(time.time()) + 3600
+        return AccessToken(token, expires_on)
+
+
 class AzureAuth(Authenticator):
     """
     Azure CLI Authentication.

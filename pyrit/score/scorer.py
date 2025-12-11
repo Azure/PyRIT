@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Sequence, Union, cast
 
 from pyrit.exceptions import (
     InvalidJsonException,
+    PyritException,
     pyrit_json_retry,
     remove_markdown_json,
 )
@@ -118,9 +119,14 @@ class Scorer(abc.ABC):
                 message,
                 objective=objective,
             )
+        except PyritException as e:
+            # Re-raise PyRIT exceptions with enhanced context while preserving type for retry decorators
+            e.message = f"Error in scorer {self.__class__.__name__}: {e.message}"
+            e.args = (f"Status Code: {e.status_code}, Message: {e.message}",)
+            raise
         except Exception as e:
-            # Add scorer context to exception for better error tracing
-            raise type(e)(f"Error in scorer {self.__class__.__name__}: {str(e)}") from e
+            # Wrap non-PyRIT exceptions for better error tracing
+            raise RuntimeError(f"Error in scorer {self.__class__.__name__}: {str(e)}") from e
 
         self.validate_return_scores(scores=scores)
         self._memory.add_scores_to_memory(scores=scores)

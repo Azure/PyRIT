@@ -44,7 +44,7 @@ def _get_retry_wait_max_seconds() -> int:
 
 class PyritException(Exception, ABC):
 
-    def __init__(self, status_code=500, *, message: str = "An error occurred"):
+    def __init__(self, *, status_code: int = 500, message: str = "An error occurred") -> None:
         self.status_code = status_code
         self.message = message
         super().__init__(f"Status Code: {status_code}, Message: {message}")
@@ -62,43 +62,43 @@ class PyritException(Exception, ABC):
 class BadRequestException(PyritException):
     """Exception class for bad client requests."""
 
-    def __init__(self, status_code: int = 400, message: str = "Bad Request"):
-        super().__init__(status_code, message=message)
+    def __init__(self, *, status_code: int = 400, message: str = "Bad Request") -> None:
+        super().__init__(status_code=status_code, message=message)
 
 
 class RateLimitException(PyritException):
     """Exception class for authentication errors."""
 
-    def __init__(self, status_code: int = 429, message: str = "Rate Limit Exception"):
-        super().__init__(status_code, message=message)
+    def __init__(self, *, status_code: int = 429, message: str = "Rate Limit Exception") -> None:
+        super().__init__(status_code=status_code, message=message)
 
 
 class ServerErrorException(PyritException):
     """Exception class for opaque 5xx errors returned by the server."""
 
-    def __init__(self, status_code: int = 500, message: str = "Server Error", body: Optional[str] = None):
-        super().__init__(status_code, message=message)
+    def __init__(self, *, status_code: int = 500, message: str = "Server Error", body: Optional[str] = None) -> None:
+        super().__init__(status_code=status_code, message=message)
         self.body = body
 
 
 class EmptyResponseException(BadRequestException):
     """Exception class for empty response errors."""
 
-    def __init__(self, status_code: int = 204, message: str = "No Content"):
+    def __init__(self, *, status_code: int = 204, message: str = "No Content") -> None:
         super().__init__(status_code=status_code, message=message)
 
 
 class InvalidJsonException(PyritException):
     """Exception class for blocked content errors."""
 
-    def __init__(self, message: str = "Invalid JSON Response"):
+    def __init__(self, *, message: str = "Invalid JSON Response") -> None:
         super().__init__(message=message)
 
 
 class MissingPromptPlaceholderException(PyritException):
     """Exception class for missing prompt placeholder errors."""
 
-    def __init__(self, message: str = "No prompt placeholder"):
+    def __init__(self, *, message: str = "No prompt placeholder") -> None:
         super().__init__(message=message)
 
 
@@ -215,7 +215,7 @@ def handle_bad_request_exception(
         or is_content_filter
     ):
         # Handle bad request error when content filter system detects harmful content
-        bad_request_exception = BadRequestException(error_code, message=response_text)
+        bad_request_exception = BadRequestException(status_code=error_code, message=response_text)
         resp_text = bad_request_exception.process_exception()
         response_entry = construct_response_from_request(
             request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
