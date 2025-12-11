@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
     env:
-      UV_CACHE_DIR_CUSTOM: ${{ github.workspace }}\.cache\uv
+      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
 
     steps:
       - uses: actions/checkout@v3
@@ -39,7 +39,7 @@ jobs:
       - name: Cache uv packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.UV_CACHE_DIR_CUSTOM }}
+          path: ${{ env.UV_CACHE_DIR }}
           key: ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
@@ -53,25 +53,18 @@ jobs:
           restore-keys: |
             pre-commit-${{ runner.os }}-
 
-      - uses: actions/checkout@v5
-
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           # Install a specific version of uv.
           version: "0.9.17"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1 # Use the latest stable version
-        with:
-          version: 'latest' # Or a specific version like '0.1.0'
           enable-cache: true
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --extra dev --extra all --cache-dir ${{ env.UV_CACHE_DIR_CUSTOM }}
+        run: uv sync --all-extras --dev
 
       - name: disk space
         run: df -all -h
@@ -96,7 +89,7 @@ jobs:
     permissions:
       contents: read
     env:
-      UV_CACHE_DIR_CUSTOM: ${{ github.workspace }}\.cache\uv
+      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
     defaults:
       run:
         shell: pwsh
@@ -110,12 +103,11 @@ jobs:
       - name: Cache uv packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.UV_CACHE_DIR_CUSTOM }}
+          path: ${{ env.UV_CACHE_DIR }}
           key: ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
             ${{ runner.os }}-uv-
-
 
       - name: Cache pre-commit environments
         uses: actions/cache@v3
@@ -126,16 +118,17 @@ jobs:
             pre-commit-${{ runner.os }}-
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v1 # Use the latest stable version
+        uses: astral-sh/setup-uv@v7
         with:
-          version: 'latest' # Or a specific version like '0.1.0'
+          # Install a specific version of uv.
+          version: "0.9.17"
           enable-cache: true
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --extra dev --extra all  --cache-dir ${{ env.UV_CACHE_DIR_CUSTOM }}
+        run: uv sync --all-extras --dev
 
       - name: disk space
         run: df -all -h
@@ -154,54 +147,6 @@ jobs:
           RUN_LONG_PRECOMMIT: true
         run: |
           uv run pre-commit run --all-files
-  uv-example:
-    name: python
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: read
-      checks: write
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          # Install a specific version of uv.
-          version: "0.9.17"
-          cache-dependency-glob: |
-            **/pyproject.toml
-            **/uv.lock
-
-      - name: Install PyRIT with uv
-        shell: bash
-        run: uv sync --all-extras --dev
-
-      - name: Run tests
-        # For example, using `pytest`
-        run: make unit-test-cov-xml
-
-      - name: Publish Pytest Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: runner.os == 'ubuntu-latest'
-        with:
-          files: '**/test-*.xml'
-
-      - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        if: runner.os == 'ubuntu-latest'
-        with:
-          filename: coverage.xml
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: both
-          thresholds: '60 80'
 
   # Main job runs only if pre-commit succeeded
   main-job:
@@ -220,7 +165,7 @@ jobs:
       checks: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v3
 
       # Set up Python
       - uses: actions/setup-python@v3
@@ -228,10 +173,10 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7 # Use the latest stable version
+        uses: astral-sh/setup-uv@v7
         with:
-          version: 'latest' # Or a specific version like '0.1.0'
-          enable-cache: true
+          # Install a specific version of uv.
+          version: "0.9.17"
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
@@ -242,7 +187,7 @@ jobs:
       - name: Cache uv packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.UV_CACHE_DIR_CUSTOM }}
+          path: ${{ env.UV_CACHE_DIR }}
           key: ${{ runner.os }}-uv-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-uv-${{ matrix.python }}-${{ matrix.package_extras }}-
@@ -256,9 +201,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
-            uv sync --extra dev --extra all --cache-dir ${{ env.UV_CACHE_DIR_CUSTOM }}
+            uv sync --all-extras --dev
           else
-            uv sync --cache-dir ${{ env.UV_CACHE_DIR_CUSTOM }} --only-dev 
+            uv sync --only-dev
           fi
 
       - name: Run unit tests with code coverage
