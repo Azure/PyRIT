@@ -183,15 +183,15 @@ jobs:
       # Cache pip packages
       # GitHub automatically handles cache eviction after 7 days of inactivity (or 10GB)
       # https://docs.github.com/en/actions/working-with-workflows/caching-dependencies-to-speed-up-workflows
-      # - name: Cache pip packages
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ${{ env.PIP_CACHE_DIR }}
-      #     key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.package_extras }}-
-      #       ${{ runner.os }}-pip-${{ matrix.python }}-
-      #       ${{ runner.os }}-pip-
+      - name: Cache uv packages
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.UV_CACHE_DIR }}
+          key: ${{ runner.os }}-uv-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-${{ matrix.python }}-${{ matrix.package_extras }}-
+            ${{ runner.os }}-uv-${{ matrix.python }}-
+            ${{ runner.os }}-uv-
 
       # Install PyRIT with optional extras
       - name: Install PyRIT with uv
