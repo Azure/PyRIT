@@ -670,5 +670,5 @@ class TestGetDynamicDefaultValuesInfoWithoutMemory:
         info = await init.get_dynamic_default_values_info_async()
 
         # Should return helpful messages
-        assert "initialize_pyrit()" in str(info["default_values"])
-        assert "initialize_pyrit()" in str(info["global_variables"])
+        assert "await initialize_pyrit_async()" in str(info["default_values"])
+        assert "await initialize_pyrit_async()" in str(info["global_variables"])
