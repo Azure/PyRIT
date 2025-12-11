@@ -129,10 +129,9 @@ class ScorerPromptValidator:
             return False
 
         # Check text length limit for text data types
-        if self._max_text_length is not None:
-            if message_piece.converted_value_data_type == "text":
-                text_length = len(message_piece.converted_value) if message_piece.converted_value else 0
-                if text_length > self._max_text_length:
-                    return False
+        if self._max_text_length is not None and message_piece.converted_value_data_type == "text":
+            text_length = len(message_piece.converted_value) if message_piece.converted_value else 0
+            if text_length > self._max_text_length:
+                return False
 
         return True
