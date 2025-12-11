@@ -148,7 +148,7 @@ async def test_conversation_history_scorer_conversation_not_found(patch_central_
     message = MagicMock()
     message.message_pieces = [message_piece]
 
-    with pytest.raises(ValueError, match=f"Conversation with ID {nonexistent_conversation_id} not found in memory"):
+    with pytest.raises(RuntimeError, match=f"Conversation with ID {nonexistent_conversation_id} not found in memory"):
         await scorer.score_async(message)
 
 
