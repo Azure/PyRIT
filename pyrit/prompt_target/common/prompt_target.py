@@ -34,9 +34,10 @@ class PromptTarget(abc.ABC, Identifier):
         Args:
             max_requests_per_minute (int, Optional): Maximum number of requests per minute.
             endpoint (str): The endpoint URL for the target.
-            model_name (str): The model/deployment name.
-            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o").
-                This is useful when the deployment name in Azure differs from the actual model.
+            model_name (str): The model name (or deployment name in Azure).
+            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
+                identification purposes. This is useful when the deployment name in Azure differs
+                from the actual model.
         """
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose

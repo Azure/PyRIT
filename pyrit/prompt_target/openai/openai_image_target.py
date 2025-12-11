@@ -33,7 +33,7 @@ class OpenAIImageTarget(OpenAITarget):
         Initialize the image target with specified parameters.
 
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the `OPENAI_IMAGE_API_KEY` environment variable.

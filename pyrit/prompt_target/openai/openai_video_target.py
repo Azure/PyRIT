@@ -48,8 +48,8 @@ class OpenAIVideoTarget(OpenAITarget):
         Initialize the OpenAI Video Target.
 
         Args:
-            model_name (str, Optional): The video model to use (e.g., "sora-2", "sora-2-pro").
-                Defaults to "sora-2".
+            model_name (str, Optional): The video model to use (e.g., "sora-2", "sora-2-pro")
+                (or deployment name in Azure). Defaults to "sora-2".
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the service.
                 Uses OPENAI_VIDEO_KEY environment variable by default.

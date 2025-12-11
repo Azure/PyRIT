@@ -36,8 +36,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     Args:
         api_key (str): The api key for the OpenAI API
         endpoint (str): The endpoint for the OpenAI API
-        model_name (str): The model name for the OpenAI API
-        deployment_name (str): For Azure, the deployment name
+        model_name (str): The model name for the OpenAI API (or deployment name in Azure)
         temperature (float): The temperature for the completion
         max_completion_tokens (int): The maximum number of tokens to be returned by the model.
             The total length of input tokens and generated tokens is limited by

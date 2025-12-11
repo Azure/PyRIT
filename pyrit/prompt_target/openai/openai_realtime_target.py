@@ -67,7 +67,7 @@ class RealtimeTarget(OpenAITarget):
         and https://platform.openai.com/docs/guides/realtime-websocket
 
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
                 Defaults to `OPENAI_REALTIME_MODEL` environment variable.
             endpoint (str, Optional): The target URL for the OpenAI service.
                 Defaults to the `OPENAI_REALTIME_ENDPOINT` environment variable.

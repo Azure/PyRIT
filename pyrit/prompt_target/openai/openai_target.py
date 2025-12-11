@@ -72,12 +72,8 @@ class OpenAITarget(PromptChatTarget):
         Read more about the various models here:
         https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
 
-        Note: If underlying_model is not provided and not set via environment variable,
-        it will remain None. Use `get_underlying_model_async()` to attempt fetching it from the
-        endpoint.
-
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service (only if you're not using
                 Entra authentication). Defaults to the `OPENAI_CHAT_KEY` environment variable.
@@ -91,8 +87,13 @@ class OpenAITarget(PromptChatTarget):
                 will be capped at the value provided.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
-            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o").
-                If not provided, will attempt to fetch from environment variable.
+            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
+                identification purposes. This is useful when the deployment name in Azure differs
+                from the actual model. If not provided, will attempt to fetch from environment variable.
+
+                NOTE: If underlying_model is not provided and not set via environment variable,
+                it will remain None. Use `get_underlying_model_async()` to attempt fetching it from the
+                endpoint.
         """
         self._headers: dict = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
