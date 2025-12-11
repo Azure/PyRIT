@@ -203,7 +203,7 @@ jobs:
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
             uv sync --all-extras --dev
           else
-            uv sync --only-dev
+            uv sync --all-extras --dev
           fi
 
       - name: Run unit tests with code coverage
