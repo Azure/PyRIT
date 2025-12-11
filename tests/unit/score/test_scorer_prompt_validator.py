@@ -301,3 +301,74 @@ class TestScorerPromptValidatorCombined:
         # Should fail without objective
         with pytest.raises(ValueError, match="Objective is required"):
             validator.validate(response, objective=None)
+
+
+class TestScorerPromptValidatorMaxTextLength:
+    """Test max_text_length filtering functionality."""
+
+    def test_max_text_length_filters_long_text(self):
+        """Test that validator filters out text exceeding max_text_length."""
+        validator = ScorerPromptValidator(supported_data_types=["text"], max_text_length=100)
+
+        short_piece = MessagePiece(role="assistant", original_value="a" * 50, converted_value_data_type="text")
+        long_piece = MessagePiece(role="assistant", original_value="a" * 101, converted_value_data_type="text")
+
+        assert validator.is_message_piece_supported(short_piece) is True
+        assert validator.is_message_piece_supported(long_piece) is False
+
+    def test_max_text_length_exact_boundary(self):
+        """Test that max_text_length accepts text exactly at the limit."""
+        validator = ScorerPromptValidator(supported_data_types=["text"], max_text_length=100)
+
+        exact_length_piece = MessagePiece(role="assistant", original_value="a" * 100, converted_value_data_type="text")
+
+        assert validator.is_message_piece_supported(exact_length_piece) is True
+
+    def test_max_text_length_only_applies_to_text(self):
+        """Test that max_text_length only applies to text data types."""
+        validator = ScorerPromptValidator(supported_data_types=["text", "image_path"], max_text_length=100)
+
+        # Long text should be filtered
+        long_text_piece = MessagePiece(role="assistant", original_value="a" * 101, converted_value_data_type="text")
+
+        # Long image path should not be filtered by max_text_length
+        long_image_piece = MessagePiece(
+            role="assistant", original_value="a" * 101 + ".png", converted_value_data_type="image_path"
+        )
+
+        assert validator.is_message_piece_supported(long_text_piece) is False
+        assert validator.is_message_piece_supported(long_image_piece) is True
+
+    def test_max_text_length_default_none_allows_all(self):
+        """Test that default max_text_length=None allows text of any length."""
+        validator = ScorerPromptValidator(supported_data_types=["text"])
+
+        very_long_piece = MessagePiece(role="assistant", original_value="a" * 100000, converted_value_data_type="text")
+
+        assert validator.is_message_piece_supported(very_long_piece) is True
+
+    def test_validate_raises_when_all_pieces_filtered_by_length(self):
+        """Test that validate raises error when all pieces are filtered due to length."""
+        validator = ScorerPromptValidator(supported_data_types=["text"], max_text_length=100)
+
+        long_piece = MessagePiece(
+            role="assistant", original_value="a" * 101, converted_value_data_type="text", conversation_id="test"
+        )
+        response = Message(message_pieces=[long_piece])
+
+        with pytest.raises(ValueError, match="There are no valid pieces to score"):
+            validator.validate(response, objective=None)
+
+    def test_validate_allows_empty_when_raise_on_no_valid_pieces_false(self):
+        """Test that validate does not raise when raise_on_no_valid_pieces=False."""
+        validator = ScorerPromptValidator(
+            supported_data_types=["text"], max_text_length=100, raise_on_no_valid_pieces=False
+        )
+
+        long_piece = MessagePiece(
+            role="assistant", original_value="a" * 101, converted_value_data_type="text", conversation_id="test"
+        )
+        response = Message(message_pieces=[long_piece])
+
+        # Should not raise - validation passes even with no valid pieces
+        validator.validate(response, objective=None)

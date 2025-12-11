@@ -14,4 +14,4 @@ value: |
   <|vq_42069|>
 
 
-  {Z}={% endraw %}{{ prompt }}{% raw %}{% endraw %}
+  {Z}={ {% endraw %}{{ prompt }}{% raw %} }{% endraw %}

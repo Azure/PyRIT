@@ -111,7 +111,7 @@ async def test_self_ask_scorer_bad_json_exception_retries():
     chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
     scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskLikertScorer"):
         await scorer.score_text_async("this has no bullying")
         assert chat_target.send_prompt_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
@@ -139,6 +139,6 @@ async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
     chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
     scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskLikertScorer"):
         await scorer.score_text_async("this has no bullying")
         assert chat_target.send_prompt_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
