@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
     env:
-      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
 
     steps:
       - uses: actions/checkout@v3
@@ -88,7 +88,7 @@ jobs:
     permissions:
       contents: read
     env:
-      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
     defaults:
       run:
         shell: pwsh
@@ -163,6 +163,8 @@ jobs:
       issues: read
       checks: write
       pull-requests: write
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
     steps:
       - uses: actions/checkout@v3
 
@@ -180,7 +182,7 @@ jobs:
             **/pyproject.toml
             **/uv.lock
 
-      # Cache pip packages
+      # Cache uv packages
       # GitHub automatically handles cache eviction after 7 days of inactivity (or 10GB)
       # https://docs.github.com/en/actions/working-with-workflows/caching-dependencies-to-speed-up-workflows
       - name: Cache uv packages
