@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/anaconda:3
+FROM --platform=linux/amd64 mcr.microsoft.com/devcontainers/anaconda:3
 
 SHELL ["/bin/bash", "-c"]
 
