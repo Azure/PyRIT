@@ -51,7 +51,7 @@ class TestInitializer(PyRITInitializer):
 
 
 class TestInitializePyrit:
-    """Tests for initialize_pyrit function - basic orchestration tests."""
+    """Tests for initialize_pyrit_async function - basic orchestration tests."""
 
     def setup_method(self) -> None:
         """Clear default values before each test."""
