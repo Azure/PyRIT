@@ -165,7 +165,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
-            uv sync --all-extras --dev
+            uv sync --extra dev --extra all --dev
           else
             uv sync --extra dev --dev
           fi
