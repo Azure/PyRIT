@@ -8,6 +8,7 @@ Authentication functionality for a variety of services.
 from pyrit.auth.authenticator import Authenticator
 from pyrit.auth.azure_auth import (
     AzureAuth,
+    TokenProviderCredential,
     get_azure_async_token_provider,
     get_azure_openai_auth,
     get_azure_token_provider,
@@ -19,6 +20,7 @@ __all__ = [
     "Authenticator",
     "AzureAuth",
     "AzureStorageAuth",
+    "TokenProviderCredential",
     "get_azure_token_provider",
     "get_azure_async_token_provider",
     "get_default_azure_scope",

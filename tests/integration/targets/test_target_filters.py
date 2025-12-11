@@ -18,13 +18,18 @@ from pyrit.prompt_target import (
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", "AZURE_OPENAI_GPT4O_STRICT_FILTER_KEY", ""),
+        (
+            "AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT",
+            "AZURE_OPENAI_GPT4O_STRICT_FILTER_KEY",
+            "AZURE_OPENAI_GPT4O_STRICT_FILTER_MODEL",
+        ),
     ],
 )
 async def test_azure_content_filters(sqlite_instance, endpoint, api_key, model_name):
     args = {
         "endpoint": os.getenv(endpoint),
         "api_key": os.getenv(api_key),
+        "model_name": os.getenv(model_name),
         "temperature": 0.0,
         "seed": 42,
     }

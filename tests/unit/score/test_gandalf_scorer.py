@@ -143,7 +143,7 @@ async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, sqlite_
     chat_target.send_prompt_async = AsyncMock(side_effect=[RuntimeError("Error"), response])
     scorer = GandalfScorer(level=level, chat_target=chat_target)
 
-    with pytest.raises(PyritException):
+    with pytest.raises(PyritException, match="Error in scorer GandalfScorer"):
         await scorer.score_async(response)
 
     assert chat_target.send_prompt_async.call_count == 1

@@ -121,7 +121,7 @@ async def test_refusal_scorer_bad_json_exception_retries(patch_central_database)
     chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskRefusalScorer"):
         await scorer.score_text_async("this has no bullying")
 
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
@@ -147,7 +147,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
 
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskRefusalScorer"):
         await scorer.score_text_async("this has no bullying")
 
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))

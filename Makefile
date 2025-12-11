@@ -5,6 +5,7 @@ PYMODULE:=pyrit
 TESTS:=tests
 UNIT_TESTS:=tests/unit
 INTEGRATION_TESTS:=tests/integration
+END_TO_END_TESTS:=tests/end_to_end
 
 all: pre-commit
 
@@ -31,6 +32,9 @@ unit-test-cov-xml:
 
 integration-test:
 	$(CMD) pytest $(INTEGRATION_TESTS) --cov=$(PYMODULE) $(INTEGRATION_TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
+
+end-to-end-test:
+	$(CMD) pytest $(END_TO_END_TESTS) -v --junitxml=junit/test-results.xml
 
 #clean:
 #	git clean -Xdf # Delete all files in .gitignore
