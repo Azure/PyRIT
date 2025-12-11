@@ -177,12 +177,7 @@ jobs:
 
       - name: Install PyRIT with uv
         shell: bash
-        run: |
-          if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
-           uv sync --all-extras --dev
-          else
-            uv sync  --only-dev 
-          fi
+        run: uv sync --all-extras --dev
 
       - name: Run tests
         # For example, using `pytest`
