@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
     env:
-      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
+      UV_CACHE_DIR_CUSTOM: ${{ github.workspace }}\.cache\uv
 
     steps:
       - uses: actions/checkout@v3
@@ -39,7 +39,7 @@ jobs:
       - name: Cache uv packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.UV_CACHE_DIR }}
+          path: ${{ env.UV_CACHE_DIR_CUSTOM }}
           key: ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
@@ -63,7 +63,7 @@ jobs:
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --extra dev --extra all --cache-dir ${{ env.UV_CACHE_DIR }}
+        run: uv sync --extra dev --extra all --cache-dir ${{ env.UV_CACHE_DIR_CUSTOM }}
 
       - name: disk space
         run: df -all -h
@@ -88,7 +88,7 @@ jobs:
     permissions:
       contents: read
     env:
-      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
+      UV_CACHE_DIR_CUSTOM: ${{ github.workspace }}\.cache\uv
     defaults:
       run:
         shell: pwsh
@@ -102,7 +102,7 @@ jobs:
       - name: Cache uv packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.UV_CACHE_DIR }}
+          path: ${{ env.UV_CACHE_DIR_CUSTOM }}
           key: ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
@@ -127,7 +127,7 @@ jobs:
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --extra dev --extra all  --cache-dir ${{ env.UV_CACHE_DIR }}
+        run: uv sync --extra dev --extra all  --cache-dir ${{ env.UV_CACHE_DIR_CUSTOM }}
 
       - name: disk space
         run: df -all -h
@@ -164,7 +164,7 @@ jobs:
       checks: write
       pull-requests: write
     env:
-      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
+      UV_CACHE_DIR_CUSTOM: ${{ github.workspace }}\.cache\uv
     steps:
       - uses: actions/checkout@v3
 
@@ -188,7 +188,7 @@ jobs:
       - name: Cache uv packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.UV_CACHE_DIR }}
+          path: ${{ env.UV_CACHE_DIR_CUSTOM }}
           key: ${{ runner.os }}-uv-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-uv-${{ matrix.python }}-${{ matrix.package_extras }}-
@@ -202,9 +202,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
-            uv sync --extra dev --extra all --cache-dir ${{ env.UV_CACHE_DIR }}
+            uv sync --extra dev --extra all --cache-dir ${{ env.UV_CACHE_DIR_CUSTOM }}
           else
-            uv sync --cache-dir ${{ env.UV_CACHE_DIR }} --only-dev 
+            uv sync --cache-dir ${{ env.UV_CACHE_DIR_CUSTOM }} --only-dev 
           fi
 
       - name: Run unit tests with code coverage
