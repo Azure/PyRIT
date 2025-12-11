@@ -22,6 +22,7 @@ from pyrit.prompt_target import OpenAIResponseTarget
 def response_target(patch_central_database):
     """Create a test OpenAIResponseTarget."""
     target = OpenAIResponseTarget(
+        model_name="gpt-4",
         endpoint="https://mock.azure.com",
         api_key="mock-key",
     )

@@ -25,7 +25,9 @@ async def test_inverter_scorer_validate(image_message_piece: MessagePiece):
 
     request = image_message_piece.to_message()
 
-    with pytest.raises(ValueError, match="There are no valid pieces to score"):
+    with pytest.raises(
+        RuntimeError, match="Error in scorer TrueFalseInverterScorer.*There are no valid pieces to score"
+    ):
         await scorer.score_async(request)
 
     os.remove(image_message_piece.converted_value)

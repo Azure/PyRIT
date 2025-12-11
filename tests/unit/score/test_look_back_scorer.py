@@ -73,7 +73,9 @@ async def test_score_async_conversation_not_found(patch_central_database):
     message.message_pieces = [message_piece]
 
     # Act & Assert
-    with pytest.raises(ValueError, match=f"Conversation with ID {nonexistent_conversation_id} not found in memory."):
+    with pytest.raises(
+        RuntimeError, match="Error in scorer LookBackScorer.*Conversation with ID .* not found in memory"
+    ):
         await scorer.score_async(message)
 
 

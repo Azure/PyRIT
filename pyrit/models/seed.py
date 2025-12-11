@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import abc
 import logging
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -31,8 +32,8 @@ class PartialUndefined(Undefined):
         return f"{{{{ {self._undefined_name} }}}}" if self._undefined_name else ""
 
     def __iter__(self):
-        """Prevent Jinja from evaluating loops by returning a placeholder string instead of an iterable."""
-        return self
+        """Return an empty iterator to prevent Jinja from trying to loop over undefined variables."""
+        return iter([])
 
     def __bool__(self):
         return True  # Ensures it doesn't evaluate to False
@@ -103,12 +104,16 @@ class Seed(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
-        jinja_template = Template(self.value, undefined=StrictUndefined)
+        template_identifier = self.name or "<unnamed template>"
 
         try:
+            jinja_template = Template(self.value, undefined=StrictUndefined)
             return jinja_template.render(**kwargs)
         except Exception as e:
-            raise ValueError(f"Error applying parameters: {str(e)}")
+            raise ValueError(
+                f"Error rendering template '{template_identifier}': {str(e)}. "
+                f"Template value preview: {self.value[:100]}..."
+            ) from e
 
     def render_template_value_silent(self, **kwargs) -> str:
         """
@@ -124,6 +129,19 @@ class Seed(YamlLoadable):
         Raises:
             ValueError: If parameters are missing or invalid in the template.
         """
+        # Check if the template contains Jinja2 control structures (for loops, if statements, etc.)
+        # If it does, and we don't have all required parameters, don't render it to preserve the structure
+
+        has_control_structures = bool(re.search(r"\{%[-\s]*(for|if|block|macro|call)", self.value))
+
+        if has_control_structures:
+            # Check if all parameters in control structures are provided
+            # Extract variable names from {% for var in collection %} patterns
+            for_vars = re.findall(r"\{%[-\s]*for\s+\w+\s+in\s+(\w+)", self.value)
+            if any(var not in kwargs for var in for_vars):
+                # Don't render if we're missing loop collection variables - preserve the template as-is
+                return self.value
+
         # Create a Jinja template with PartialUndefined placeholders
         env = Environment(loader=BaseLoader, undefined=PartialUndefined)  # type: ignore
         jinja_template = env.from_string(self.value)

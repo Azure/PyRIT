@@ -4,6 +4,24 @@
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
+from pyrit.prompt_converter.selective_text_converter import SelectiveTextConverter
+from pyrit.prompt_converter.text_selection_strategy import (
+    AllWordsSelectionStrategy,
+    IndexSelectionStrategy,
+    KeywordSelectionStrategy,
+    PositionSelectionStrategy,
+    ProportionSelectionStrategy,
+    RangeSelectionStrategy,
+    RegexSelectionStrategy,
+    TextSelectionStrategy,
+    TokenSelectionStrategy,
+    WordIndexSelectionStrategy,
+    WordKeywordSelectionStrategy,
+    WordPositionSelectionStrategy,
+    WordProportionSelectionStrategy,
+    WordRegexSelectionStrategy,
+    WordSelectionStrategy,
+)
 
 
 from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverter
@@ -45,6 +63,7 @@ from pyrit.prompt_converter.image_compression_converter import ImageCompressionC
 from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
+from pyrit.prompt_converter.math_obfuscation_converter import MathObfuscationConverter
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.nato_converter import NatoConverter
@@ -85,6 +104,7 @@ __all__ = [
     "AddImageTextConverter",
     "AddImageVideoConverter",
     "AddTextImageConverter",
+    "AllWordsSelectionStrategy",
     "AnsiAttackConverter",
     "AsciiArtConverter",
     "AsciiSmugglerConverter",
@@ -118,23 +138,31 @@ __all__ = [
     "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
     "ImageCompressionConverter",
+    "IndexSelectionStrategy",
     "InsertPunctuationConverter",
+    "KeywordSelectionStrategy",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MaliciousQuestionGeneratorConverter",
+    "MathObfuscationConverter",
     "MathPromptConverter",
     "MorseConverter",
     "NatoConverter",
     "NoiseConverter",
     "PDFConverter",
     "PersuasionConverter",
+    "PositionSelectionStrategy",
     "PromptConverter",
+    "ProportionSelectionStrategy",
     "QRCodeConverter",
     "ROT13Converter",
     "RandomCapitalLettersConverter",
     "RandomTranslationConverter",
+    "RangeSelectionStrategy",
+    "RegexSelectionStrategy",
     "RepeatTokenConverter",
     "SearchReplaceConverter",
+    "SelectiveTextConverter",
     "SneakyBitsSmugglerConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
@@ -142,6 +170,8 @@ __all__ = [
     "TemplateSegmentConverter",
     "TenseConverter",
     "TextJailbreakConverter",
+    "TextSelectionStrategy",
+    "TokenSelectionStrategy",
     "ToneConverter",
     "ToxicSentenceGeneratorConverter",
     "TranslationConverter",
@@ -152,7 +182,13 @@ __all__ = [
     "UrlConverter",
     "VariationConverter",
     "VariationSelectorSmugglerConverter",
+    "WordIndexSelectionStrategy",
+    "WordKeywordSelectionStrategy",
     "WordLevelConverter",
+    "WordPositionSelectionStrategy",
+    "WordProportionSelectionStrategy",
+    "WordRegexSelectionStrategy",
+    "WordSelectionStrategy",
     "ZalgoConverter",
     "ZeroWidthConverter",
 ]

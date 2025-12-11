@@ -7,13 +7,26 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.scenario import AtomicAttack, FoundryScenario, FoundryStrategy
 from pyrit.score import TrueFalseScorer
+
+
+@pytest.fixture
+def mock_memory_seeds():
+    """Create mock seed prompts that memory.get_seeds() would return."""
+    return [
+        SeedPrompt(value="test objective 1", data_type="text"),
+        SeedPrompt(value="test objective 2", data_type="text"),
+        SeedPrompt(value="test objective 3", data_type="text"),
+        SeedPrompt(value="test objective 4", data_type="text"),
+    ]
 
 
 @pytest.fixture
@@ -55,31 +68,36 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
-    async def test_init_with_single_strategy(self, mock_objective_target, mock_objective_scorer):
+    async def test_init_with_single_strategy(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with a single attack strategy."""
-        scenario = FoundryScenario(
-            objective_scorer=mock_objective_scorer,
-        )
+        with patch.object(
+            FoundryScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
+        ):
+            scenario = FoundryScenario(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.Base64],
-        )
-        assert scenario.atomic_attack_count > 0
-        assert scenario.name == "Foundry Scenario"
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.Base64],
+            )
+            assert scenario.atomic_attack_count > 0
+            assert scenario.name == "Foundry Scenario"
 
     @patch.dict(
         "os.environ",
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
-    async def test_init_with_multiple_strategies(self, mock_objective_target, mock_objective_scorer):
+    async def test_init_with_multiple_strategies(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with multiple attack strategies."""
         strategies = [
             FoundryStrategy.Base64,
@@ -87,28 +105,32 @@ class TestFoundryScenarioInitialization:
             FoundryStrategy.Leetspeak,
         ]
 
-        scenario = FoundryScenario(
-            objective_scorer=mock_objective_scorer,
-        )
+        with patch.object(
+            FoundryScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
+        ):
+            scenario = FoundryScenario(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=strategies,
-        )
-        assert scenario.atomic_attack_count >= len(strategies)
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=strategies,
+            )
+            assert scenario.atomic_attack_count >= len(strategies)
 
     @patch.dict(
         "os.environ",
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objectives."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         assert scenario._objectives == sample_objectives
@@ -118,6 +140,7 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_init_with_custom_adversarial_target(
@@ -127,7 +150,7 @@ class TestFoundryScenarioInitialization:
         scenario = FoundryScenario(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         assert scenario._adversarial_chat == mock_adversarial_target
@@ -137,22 +160,24 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objective scorer."""
         scenario = FoundryScenario(
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             objectives=sample_objectives,
         )
 
-        assert scenario._objective_scorer == mock_objective_scorer
+        assert scenario._attack_scoring_config.objective_scorer == mock_objective_scorer
 
     @patch.dict(
         "os.environ",
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -162,7 +187,7 @@ class TestFoundryScenarioInitialization:
 
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         assert scenario._memory_labels == {}
@@ -180,23 +205,43 @@ class TestFoundryScenarioInitialization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
             "AZURE_CONTENT_SAFETY_API_ENDPOINT": "https://test.content.azure.com/",
             "AZURE_CONTENT_SAFETY_API_KEY": "test-content-key",
         },
     )
-    def test_init_creates_default_scorer_when_not_provided(self, mock_composite, mock_objective_target):
+    def test_init_creates_default_scorer_when_not_provided(
+        self, mock_composite, mock_objective_target, mock_memory_seeds
+    ):
         """Test that initialization creates default scorer when not provided."""
         # Mock the composite scorer
         mock_composite_instance = MagicMock(spec=TrueFalseScorer)
         mock_composite.return_value = mock_composite_instance
 
-        scenario = FoundryScenario()
+        with patch.object(
+            FoundryScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
+        ):
+            scenario = FoundryScenario()
 
-        # Verify default scorer was created
-        mock_composite.assert_called_once()
+            # Verify default scorer was created
+            mock_composite.assert_called_once()
 
-        # Verify objectives were loaded from local dataset
-        assert len(scenario._objectives) == 4
+            # Verify objectives were loaded from memory
+            assert len(scenario._objectives) == 4
+
+    @patch.dict(
+        "os.environ",
+        {
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
+        },
+    )
+    def test_init_raises_exception_when_no_datasets_available(self, mock_objective_scorer):
+        """Test that initialization raises ValueError when datasets are not available in memory."""
+        # Don't mock _get_default_objectives, let it try to load from empty memory
+        with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
+            FoundryScenario(attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer))
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -208,6 +253,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -215,7 +261,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that EASY strategy expands to easy attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -230,6 +276,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -237,7 +284,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that MODERATE strategy expands to moderate attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -252,6 +299,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -261,7 +309,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that DIFFICULT strategy expands to difficult attack strategies."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -276,6 +324,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -285,7 +334,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that multiple difficulty levels expand correctly."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -300,6 +349,7 @@ class TestFoundryScenarioStrategyNormalization:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -309,7 +359,7 @@ class TestFoundryScenarioStrategyNormalization:
         """Test that specific strategies combined with difficulty levels work correctly."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -332,6 +382,7 @@ class TestFoundryScenarioAttackCreation:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -341,7 +392,7 @@ class TestFoundryScenarioAttackCreation:
         """Test creating an attack from a single-turn strategy."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -361,6 +412,7 @@ class TestFoundryScenarioAttackCreation:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -371,7 +423,7 @@ class TestFoundryScenarioAttackCreation:
         scenario = FoundryScenario(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -396,6 +448,7 @@ class TestFoundryScenarioGetAttack:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -405,7 +458,7 @@ class TestFoundryScenarioGetAttack:
         """Test creating a single-turn attack with converters."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -425,6 +478,7 @@ class TestFoundryScenarioGetAttack:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -435,7 +489,7 @@ class TestFoundryScenarioGetAttack:
         scenario = FoundryScenario(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -460,6 +514,7 @@ class TestFoundryScenarioAllStrategies:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.parametrize(
@@ -495,7 +550,7 @@ class TestFoundryScenarioAllStrategies:
         """Test that all single-turn strategies can create attack runs."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -513,6 +568,7 @@ class TestFoundryScenarioAllStrategies:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.parametrize(
@@ -535,7 +591,7 @@ class TestFoundryScenarioAllStrategies:
         scenario = FoundryScenario(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(
@@ -558,6 +614,7 @@ class TestFoundryScenarioProperties:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -569,7 +626,7 @@ class TestFoundryScenarioProperties:
 
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             include_baseline=False,
         )
 
@@ -590,13 +647,14 @@ class TestFoundryScenarioProperties:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that scenario version is properly set."""
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         assert scenario.version == 1
@@ -606,6 +664,7 @@ class TestFoundryScenarioProperties:
         {
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
     @pytest.mark.asyncio
@@ -621,7 +680,7 @@ class TestFoundryScenarioProperties:
 
         scenario = FoundryScenario(
             objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
+            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
         await scenario.initialize_async(

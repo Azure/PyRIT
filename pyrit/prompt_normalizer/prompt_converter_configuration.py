@@ -25,7 +25,7 @@ class PromptConverterConfiguration:
     @classmethod
     def from_converters(cls, *, converters: List[PromptConverter]) -> List["PromptConverterConfiguration"]:
         """
-        Converts a list of converters into a list of PromptConverterConfiguration objects.
+        Convert a list of converters into a list of PromptConverterConfiguration objects.
         Each converter gets its own configuration with default settings.
 
         Args:

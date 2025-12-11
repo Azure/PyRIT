@@ -3,7 +3,7 @@
 
 import logging
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -55,8 +55,7 @@ class TestURLWarnings:
         assert any("deployment in path" in log.message for log in conversion_warnings)
         assert any("Recommended format:" in log.message for log in conversion_warnings)
 
-    @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_completions_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+    def test_old_azure_completions_url_warns_unchanged(self, caplog, patch_central_database):
         """Test old Azure completions URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/text-davinci-003/completions?api-version=2024-02-15"
 
@@ -64,33 +63,25 @@ class TestURLWarnings:
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAICompletionTarget
 
-                kwargs = {
-                    "endpoint": old_url,
-                    "api_key": "test-key",
-                }
-                if explicit_model_name:
-                    kwargs["model_name"] = "text-davinci-003"
-
-                target = OpenAICompletionTarget(**kwargs)
+                target = OpenAICompletionTarget(
+                    endpoint=old_url,
+                    api_key="test-key",
+                    model_name="text-davinci-003",
+                )
 
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
 
-        # Model name should be text-davinci-003 either way
-        if explicit_model_name:
-            assert target._model_name == "text-davinci-003"
-        else:
-            # Without explicit model name, it should be extracted from URL
-            assert target._model_name == "text-davinci-003"
+        # Model name should be text-davinci-003
+        assert target._model_name == "text-davinci-003"
 
         # Check warning
         warning_logs = [record for record in caplog.records if record.levelno == logging.WARNING]
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
         assert len(conversion_warnings) >= 1
 
-    @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_images_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+    def test_old_azure_images_url_warns_unchanged(self, caplog, patch_central_database):
         """Test old Azure images URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/dall-e-3/images/generations?api-version=2024-02-15"
 
@@ -98,20 +89,17 @@ class TestURLWarnings:
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAIImageTarget
 
-                kwargs = {
-                    "endpoint": old_url,
-                    "api_key": "test-key",
-                }
-                if explicit_model_name:
-                    kwargs["model_name"] = "dall-e-3"
-
-                target = OpenAIImageTarget(**kwargs)
+                target = OpenAIImageTarget(
+                    endpoint=old_url,
+                    api_key="test-key",
+                    model_name="dall-e-3",
+                )
 
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
 
-        # Model name should be dall-e-3 either way
+        # Model name should be dall-e-3
         assert target._model_name == "dall-e-3"
 
         # Check warning
@@ -119,8 +107,7 @@ class TestURLWarnings:
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
         assert len(conversion_warnings) >= 1
 
-    @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_audio_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+    def test_old_azure_audio_url_warns_unchanged(self, caplog, patch_central_database):
         """Test old Azure audio/speech URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/tts-1/audio/speech?api-version=2024-02-15"
 
@@ -128,20 +115,17 @@ class TestURLWarnings:
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAITTSTarget
 
-                kwargs = {
-                    "endpoint": old_url,
-                    "api_key": "test-key",
-                }
-                if explicit_model_name:
-                    kwargs["model_name"] = "tts-1"
-
-                target = OpenAITTSTarget(**kwargs)
+                target = OpenAITTSTarget(
+                    endpoint=old_url,
+                    api_key="test-key",
+                    model_name="tts-1",
+                )
 
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
 
-        # Model name should be tts-1 either way
+        # Model name should be tts-1
         assert target._model_name == "tts-1"
 
         # Check warning
@@ -149,8 +133,7 @@ class TestURLWarnings:
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
         assert len(conversion_warnings) >= 1
 
-    @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_responses_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+    def test_old_azure_responses_url_warns_unchanged(self, caplog, patch_central_database):
         """Test old Azure responses URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/o1-preview/responses?api-version=2024-09-01"
 
@@ -158,20 +141,17 @@ class TestURLWarnings:
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAIResponseTarget
 
-                kwargs = {
-                    "endpoint": old_url,
-                    "api_key": "test-key",
-                }
-                if explicit_model_name:
-                    kwargs["model_name"] = "o1-preview"
-
-                target = OpenAIResponseTarget(**kwargs)
+                target = OpenAIResponseTarget(
+                    endpoint=old_url,
+                    api_key="test-key",
+                    model_name="o1-preview",
+                )
 
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
 
-        # Model name should be o1-preview either way
+        # Model name should be o1-preview
         assert target._model_name == "o1-preview"
 
         # Check warning
@@ -179,8 +159,7 @@ class TestURLWarnings:
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
         assert len(conversion_warnings) >= 1
 
-    @pytest.mark.parametrize("explicit_model_name", [True, False])
-    def test_old_azure_videos_url_warns_unchanged(self, explicit_model_name, caplog, patch_central_database):
+    def test_old_azure_videos_url_warns_unchanged(self, caplog, patch_central_database):
         """Test old Azure videos URL triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/sora-2/videos?api-version=2024-12-01"
 
@@ -188,20 +167,17 @@ class TestURLWarnings:
             with caplog.at_level(logging.WARNING):
                 from pyrit.prompt_target import OpenAIVideoTarget
 
-                kwargs = {
-                    "endpoint": old_url,
-                    "api_key": "test-key",
-                }
-                if explicit_model_name:
-                    kwargs["model_name"] = "sora-2"
-
-                target = OpenAIVideoTarget(**kwargs)
+                target = OpenAIVideoTarget(
+                    endpoint=old_url,
+                    api_key="test-key",
+                    model_name="sora-2",
+                )
 
         # Check that URL was NOT converted - kept as-is
         assert target._endpoint == old_url
         assert str(target._async_client.base_url).rstrip("/") == old_url.rstrip("/")
 
-        # Model name should be sora-2 either way (explicitly set or extracted from URL)
+        # Model name should be sora-2
         assert target._model_name == "sora-2"
 
         # Check warning
@@ -399,26 +375,20 @@ class TestURLWarnings:
         conversion_warnings = [log for log in warning_logs if "Old Azure URL format" in log.message]
         assert len(conversion_warnings) == 0
 
-    def test_old_azure_url_with_entra_auth_warns_unchanged(self, caplog, patch_central_database):
-        """Test old Azure URL with Entra auth triggers warning but remains unchanged."""
+    def test_old_azure_url_with_token_provider_warns_unchanged(self, caplog, patch_central_database):
+        """Test old Azure URL with token provider triggers warning but remains unchanged."""
         old_url = "https://test.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2024-02-15"
+
+        def mock_token_provider():
+            return "mock-token"
 
         with patch.dict(os.environ, {}, clear=True):
             with caplog.at_level(logging.WARNING):
-                with patch("pyrit.auth.azure_auth.get_default_scope") as mock_scope:
-                    with patch(
-                        "pyrit.auth.azure_auth.get_async_token_provider_from_default_azure_credential"
-                    ) as mock_provider:
-                        with patch("azure.identity.DefaultAzureCredential.get_token") as mock_get_token:
-                            mock_scope.return_value = "https://cognitiveservices.azure.com/.default"
-                            mock_provider.return_value = lambda: "mock-token"
-                            mock_get_token.return_value = MagicMock(token="mock-token", expires_on=9999999999)
-
-                            target = OpenAIChatTarget(
-                                model_name="gpt-4",
-                                endpoint=old_url,
-                                use_entra_auth=True,
-                            )
+                target = OpenAIChatTarget(
+                    model_name="gpt-4",
+                    endpoint=old_url,
+                    api_key=mock_token_provider,
+                )
 
         # Check URL was NOT converted - kept as-is
         assert target._endpoint == old_url
@@ -459,6 +429,7 @@ class TestURLWarnings:
                 OpenAIChatTarget(
                     endpoint=old_url,
                     api_key="test-key",
+                    model_name="my-custom-gpt4",
                 )
 
         # Check warning contains deployment name
