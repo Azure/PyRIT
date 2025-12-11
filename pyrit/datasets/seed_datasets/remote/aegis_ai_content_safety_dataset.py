@@ -6,8 +6,10 @@ from typing import List, Literal, Optional
 
 from datasets import load_dataset
 
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    _RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset, SeedPrompt
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import _RemoteDatasetLoader
 
 logger = logging.getLogger(__name__)
 
@@ -97,12 +99,15 @@ class _AegisContentSafetyDataset(_RemoteDatasetLoader):
         Args:
             harm_categories: List of harm categories to filter by. Defaults to None (all categories).
                 Only prompts with at least one matching category are included.
+
+        Raises:
+            ValueError: If any provided harm category is invalid.
         """
         self.harm_categories_filter = harm_categories
 
         # Validate harm categories if provided
         if harm_categories:
-            invalid_categories = set(harm_categories) - set(self.HARM_CATEGORIES)
+            invalid_categories = {cat for cat in harm_categories if cat not in self.HARM_CATEGORIES}
             if invalid_categories:
                 raise ValueError(
                     f"Invalid harm categories: {invalid_categories}. " f"Valid categories are: {self.HARM_CATEGORIES}"
