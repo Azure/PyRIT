@@ -26,24 +26,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
-
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
-
-      - name: Cache uv packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.UV_CACHE_DIR }}
-          key: ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
-            ${{ runner.os }}-uv-
 
       - name: Cache pre-commit environments
         uses: actions/cache@v3
@@ -88,8 +76,6 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
-    env:
-      UV_CACHE_DIR: ${{ github.workspace }}\.cache\uv
     defaults:
       run:
         shell: pwsh
@@ -99,15 +85,6 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PRE_COMMIT_PYTHON_VERSION }}
-
-      - name: Cache uv packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.UV_CACHE_DIR }}
-          key: ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-${{ env.PRE_COMMIT_PYTHON_VERSION }}-
-            ${{ runner.os }}-uv-
 
       - name: Cache pre-commit environments
         uses: actions/cache@v3
@@ -181,19 +158,6 @@ jobs:
             **/pyproject.toml
             **/uv.lock
 
-      # Cache uv packages
-      # GitHub automatically handles cache eviction after 7 days of inactivity (or 10GB)
-      # https://docs.github.com/en/actions/working-with-workflows/caching-dependencies-to-speed-up-workflows
-      - name: Cache uv packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.UV_CACHE_DIR }}
-          key: ${{ runner.os }}-uv-${{ matrix.python }}-${{ matrix.package_extras }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-${{ matrix.python }}-${{ matrix.package_extras }}-
-            ${{ runner.os }}-uv-${{ matrix.python }}-
-            ${{ runner.os }}-uv-
-
       # Install PyRIT with optional extras
       - name: Install PyRIT with uv
         # If the matrix extras is 'dev_all', then we install '.[dev,all]'
@@ -203,7 +167,7 @@ jobs:
           if [ "${{ matrix.package_extras }}" = "dev_all" ]; then
             uv sync --all-extras --dev
           else
-            uv sync --all-extras --dev
+            uv sync --dev
           fi
 
       - name: Run unit tests with code coverage
