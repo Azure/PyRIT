@@ -16,18 +16,18 @@ from typing import Any, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.datasets import TextJailBreak
+from pyrit.executor.attack import (
+    CrescendoAttack,
+    PromptSendingAttack,
+    RedTeamingAttack,
+    TreeOfAttacksWithPruningAttack,
+)
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.executor.attack import (
-    CrescendoAttack,
-    RedTeamingAttack,
-    PromptSendingAttack,
-    TreeOfAttacksWithPruningAttack
-)
 from pyrit.prompt_converter import (
     AnsiAttackConverter,
     AsciiArtConverter,
@@ -72,7 +72,6 @@ from pyrit.score import (
     TrueFalseCompositeScorer,
     TrueFalseInverterScorer,
     TrueFalseScoreAggregator,
-    TrueFalseScorer,
 )
 
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
@@ -275,7 +274,7 @@ class FoundryScenario(Scenario):
         self._attack_scoring_config = (
             attack_scoring_config if attack_scoring_config else self._get_default_scoring_config()
         )
-        
+
         objective_scorer = self._attack_scoring_config.objective_scorer
         if not objective_scorer:
             raise ValueError(
@@ -383,7 +382,7 @@ class FoundryScenario(Scenario):
                 attack_type = TreeOfAttacksWithPruningAttack
                 attack_kwargs = {"tree_width": 1}
             elif attacks[0] == FoundryStrategy.Tap:
-                attack_type = TreeOfAttacksWithPruningAttack 
+                attack_type = TreeOfAttacksWithPruningAttack
 
         converters: list[PromptConverter] = []
         for strategy in converters_strategies:

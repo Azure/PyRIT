@@ -170,7 +170,7 @@ class TestFoundryScenarioInitialization:
             objectives=sample_objectives,
         )
 
-        assert scenario._objective_scorer == mock_objective_scorer
+        assert scenario._attack_scoring_config.objective_scorer == mock_objective_scorer
 
     @patch.dict(
         "os.environ",
