@@ -85,9 +85,8 @@ jobs:
       cp $PyRIT_DIR/.env.local $NEW_DIR
       cp -r $PyRIT_DIR/doc $NEW_DIR
       cp -r $PyRIT_DIR/assets $NEW_DIR
-      cp -r $PyRIT_DIR/tests/integration $NEW_DIR/tests
+      cp -r $PyRIT_DIR/tests $NEW_DIR/tests
       cd $NEW_DIR
-      ls
     displayName: "Create and switch to new integration test directory"
   - task: AzureCLI@2
     displayName: "Authenticate with service principal, cache Cognitive Services access token, and run tests"
