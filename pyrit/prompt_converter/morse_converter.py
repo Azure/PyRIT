@@ -3,7 +3,7 @@
 
 import pathlib
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -40,7 +40,7 @@ class MorseConverter(PromptConverter):
 
         if self.append_description:
             prompt_template = SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "morse_description.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "morse_description.yaml"
             )
             output_text = prompt_template.render_template_value(
                 prompt=self._morse(prompt), example=self._morse(self.example)

@@ -10,6 +10,8 @@ from pyrit.models import AttackOutcome, AttackResult
 
 @dataclass
 class AttackStats:
+    """Statistics for attack analysis results."""
+
     success_rate: Optional[float]
     total_decided: int
     successes: int

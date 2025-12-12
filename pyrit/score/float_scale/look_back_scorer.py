@@ -7,7 +7,7 @@ from typing import Optional
 
 import yaml
 
-from pyrit.common.path import SCORER_CONFIG_PATH
+from pyrit.common.path import SCORER_LIKERT_PATH, SCORER_SCALES_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -19,11 +19,6 @@ logger = logging.getLogger(__name__)
 class LookBackScorer(FloatScaleScorer):
     """
     Create a score from analyzing the entire conversation and adds them to the database.
-
-    Parameters:
-        chat_target (PromptChatTarget): The chat target to use for scoring.
-        exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
-            Must be passed as a keyword argument.
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator()
@@ -35,13 +30,22 @@ class LookBackScorer(FloatScaleScorer):
         exclude_instruction_prompts: bool,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
+        """
+        Initialize the LookBackScorer.
+
+        Args:
+            chat_target (PromptChatTarget): The chat target to use for scoring.
+            exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
+                Must be passed as a keyword argument.
+            validator: Optional validator for the scorer.
+        """
         super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
 
         self.exclude_instruction_prompts = exclude_instruction_prompts
 
-        behavior_change_prompt_path = Path(SCORER_CONFIG_PATH, "scales", "behavior_change_system_prompt.yaml").resolve()
-        behavior_change_scale_path = Path(SCORER_CONFIG_PATH, "likert_scales", "behavior_change.yaml").resolve()
+        behavior_change_prompt_path = Path(SCORER_SCALES_PATH, "behavior_change_system_prompt.yaml").resolve()
+        behavior_change_scale_path = Path(SCORER_LIKERT_PATH, "behavior_change.yaml").resolve()
         behavior_change_scale = yaml.safe_load(behavior_change_scale_path.read_text(encoding="utf-8"))
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(behavior_change_prompt_path)
@@ -63,6 +67,9 @@ class LookBackScorer(FloatScaleScorer):
         Returns:
             list[Score]: A list containing a single Score object representing the detected
                 amount of behavior change throughout the conversation.
+
+        Raises:
+            ValueError: If the conversation ID is not found in memory.
         """
         # Retrieve conversation from provided MessagePiece
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)

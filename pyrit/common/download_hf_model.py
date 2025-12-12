@@ -13,7 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 def get_available_files(model_id: str, token: str):
-    """Fetches available files for a model from the Hugging Face repository."""
+    """
+    Fetch available files for a model from the Hugging Face repository.
+
+    Returns:
+        List of available file names.
+
+    Raises:
+        ValueError: If no files are found for the model.
+    """
     api = HfApi()
     try:
         model_info = api.model_info(model_id, token=token)
@@ -31,11 +39,8 @@ def get_available_files(model_id: str, token: str):
 
 async def download_specific_files(model_id: str, file_patterns: list, token: str, cache_dir: Path):
     """
-    Downloads specific files from a Hugging Face model repository.
+    Download specific files from a Hugging Face model repository.
     If file_patterns is None, downloads all files.
-
-    Returns:
-        List of URLs for the downloaded files.
     """
     os.makedirs(cache_dir, exist_ok=True)
 
@@ -60,7 +65,12 @@ async def download_specific_files(model_id: str, file_patterns: list, token: str
 
 
 async def download_chunk(url, headers, start, end, client):
-    """Download a chunk of the file with a specified byte range."""
+    """
+    Download a chunk of the file with a specified byte range.
+
+    Returns:
+        The content of the downloaded chunk.
+    """
     range_header = {"Range": f"bytes={start}-{end}", **headers}
     response = await client.get(url, headers=range_header)
     response.raise_for_status()

@@ -30,8 +30,8 @@ MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
 
 def _load_environment_files() -> None:
     """
-    Loads the base environment file from .env if it exists,
-    and then loads a single .env.local file if it exists, overriding previous values.
+    Load the base environment file from .env if it exists,
+    then load a single .env.local file if it exists, overriding previous values.
     """
     base_file_path = path.HOME_PATH / ".env"
     local_file_path = path.HOME_PATH / ".env.local"
@@ -137,7 +137,7 @@ def _load_initializers_from_scripts(
     return loaded_initializers
 
 
-def _execute_initializers(*, initializers: Sequence["PyRITInitializer"]) -> None:
+async def _execute_initializers_async(*, initializers: Sequence["PyRITInitializer"]) -> None:
     """
     Execute PyRITInitializer instances in execution order.
 
@@ -175,7 +175,7 @@ def _execute_initializers(*, initializers: Sequence["PyRITInitializer"]) -> None
             initializer.validate()
 
             # Then initialize with tracking to capture what was configured
-            initializer.initialize_with_tracking()
+            await initializer.initialize_with_tracking_async()
 
             logger.debug(f"Successfully executed initializer: {initializer.name}")
 
@@ -184,7 +184,7 @@ def _execute_initializers(*, initializers: Sequence["PyRITInitializer"]) -> None
             raise
 
 
-def initialize_pyrit(
+async def initialize_pyrit_async(
     memory_db_type: Union[MemoryDatabaseType, str],
     *,
     initialization_scripts: Optional[Sequence[Union[str, pathlib.Path]]] = None,
@@ -192,7 +192,7 @@ def initialize_pyrit(
     **memory_instance_kwargs: Any,
 ) -> None:
     """
-    Initializes PyRIT with the provided memory instance and loads environment files.
+    Initialize PyRIT with the provided memory instance and loads environment files.
 
     Args:
         memory_db_type (MemoryDatabaseType): The MemoryDatabaseType string literal which indicates the memory
@@ -203,6 +203,9 @@ def initialize_pyrit(
         initializers (Optional[Sequence[PyRITInitializer]]): Optional sequence of PyRITInitializer instances
             to execute directly. These provide type-safe, validated configuration with clear documentation.
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
+
+    Raises:
+        ValueError: If an unsupported memory_db_type is provided.
     """
     # Handle DuckDB deprecation before validation
     if memory_db_type == "DuckDB":
@@ -251,4 +254,4 @@ def initialize_pyrit(
 
     # Execute all initializers (sorted by execution_order)
     if all_initializers:
-        _execute_initializers(initializers=all_initializers)
+        await _execute_initializers_async(initializers=all_initializers)

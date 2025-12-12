@@ -32,7 +32,7 @@
 # %%
 import pathlib
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.executor.attack import (
     AttackConverterConfig,
     ConsoleAttackResultPrinter,
@@ -42,9 +42,9 @@ from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import TextTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 prompt_data = {
     "hiring_manager_name": "Jane Doe",
@@ -55,9 +55,7 @@ prompt_data = {
 }
 
 # Load the YAML template for the PDF generation
-template_path = (
-    pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "red_teaming_application_template.yaml"
-)
+template_path = pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "pdf_converters" / "red_teaming_application_template.yaml"
 if not template_path.exists():
     raise FileNotFoundError(f"Template file not found: {template_path}")
 
@@ -142,9 +140,9 @@ import requests
 
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # This file isn't copied to our pipeline
 url = "https://raw.githubusercontent.com/Azure/PyRIT/main/pyrit/datasets/prompt_converters/pdf_converters/fake_CV.pdf"

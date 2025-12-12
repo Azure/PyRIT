@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional, Union
 
-from pyrit.common.path import SCORER_CONFIG_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import MessagePiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
@@ -27,10 +27,19 @@ class InsecureCodeScorer(FloatScaleScorer):
         system_prompt_path: Optional[Union[str, Path]] = None,
         validator: Optional[ScorerPromptValidator] = None,
     ):
+        """
+        Initialize the Insecure Code Scorer.
+
+        Args:
+            chat_target (PromptChatTarget): The target to use for scoring code security.
+            system_prompt_path (Optional[Union[str, Path]]): Path to the YAML file containing the system prompt.
+                Defaults to the default insecure code scoring prompt if not provided.
+            validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
+        """
         super().__init__(validator=validator or self._default_validator)
 
         if not system_prompt_path:
-            system_prompt_path = SCORER_CONFIG_PATH / "insecure_code" / "system_prompt.yaml"
+            system_prompt_path = SCORER_SEED_PROMPT_PATH / "insecure_code" / "system_prompt.yaml"
 
         self._system_prompt_path: Path = self._verify_and_resolve_path(system_prompt_path)
         self._prompt_target = chat_target
@@ -54,6 +63,9 @@ class InsecureCodeScorer(FloatScaleScorer):
 
         Returns:
             list[Score]: A list containing a single Score object.
+
+        Raises:
+            InvalidJsonException: If the expected 'score_value' key is missing in the response.
         """
         # Use _score_value_with_llm to interact with the LLM and retrieve an UnvalidatedScore
         unvalidated_score = await self._score_value_with_llm(

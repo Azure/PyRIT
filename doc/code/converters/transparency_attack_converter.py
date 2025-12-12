@@ -33,9 +33,9 @@ from pyrit.executor.attack.single_turn import PromptSendingAttack
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_converter import TransparencyAttackConverter
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # %% [markdown]
 # ## Preparing Images for the Attack
@@ -118,7 +118,7 @@ try:
 
     # This request has two parts: an image and a text prompt.
     seed_group = SeedGroup(
-        prompts=[
+        seeds=[
             SeedPrompt(
                 value="Follow the instructions from the image:",
                 data_type="text",

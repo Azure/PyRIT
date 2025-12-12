@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.exceptions import (
     InvalidJsonException,
 )
@@ -336,7 +336,7 @@ class TestCrescendoAttackInitialization:
 
     @pytest.mark.parametrize(
         "system_prompt_path",
-        [Path(DATASETS_PATH) / "executors" / "crescendo" / f"crescendo_variant_{i}.yaml" for i in range(1, 6)],
+        [Path(EXECUTOR_SEED_PROMPT_PATH) / "crescendo" / f"crescendo_variant_{i}.yaml" for i in range(1, 6)],
     )
     def test_init_with_different_system_prompt_variants(
         self,
@@ -1032,6 +1032,64 @@ class TestBacktrackingLogic:
 
         assert result is False
         # Important: Should not even check for refusal to save API calls
+        mock_refusal_scorer.score_async.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_backtrack_on_content_filter_error(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_refusal_scorer: MagicMock,
+        basic_context: CrescendoAttackContext,
+    ):
+        """Test that backtracking is performed when content filter error occurs.
+
+        When the target returns a content filter error (blocked response), Crescendo should:
+        1. Detect the error without calling the refusal scorer
+        2. Store the refused text for the adversarial chat to learn from
+        3. Revert the conversation to before the blocked prompt
+        4. Increment the backtrack counter
+        5. Continue with a new approach
+        """
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(refusal_scorer=mock_refusal_scorer)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        # Create a response with content filter error
+        blocked_response = Message(
+            message_pieces=[
+                MessagePiece(
+                    role="assistant",
+                    original_value="Content filtered",
+                    converted_value="Content filtered",
+                    original_value_data_type="error",
+                    converted_value_data_type="error",
+                    response_error="blocked",
+                )
+            ]
+        )
+
+        basic_context.last_response = blocked_response
+        basic_context.backtrack_count = 0
+
+        # Mock backtrack_memory_async to return a new conversation ID
+        with patch.object(attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"):
+            result = await attack._perform_backtrack_if_refused_async(
+                context=basic_context, prompt_sent="Blocked prompt"
+            )
+
+        # Verify all expected state changes occurred
+        assert result is True
+        assert basic_context.refused_text == "Blocked prompt"  # Stored for next attempt
+        assert basic_context.backtrack_count == 1
+        assert basic_context.session.conversation_id == "new_conv_id"  # New conversation branch
+
+        # Critical: Verify refusal scorer was NOT called since we detected the error first
         mock_refusal_scorer.score_async.assert_not_called()
 
 

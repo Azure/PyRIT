@@ -6,7 +6,7 @@ from __future__ import annotations
 import pathlib
 from typing import Optional
 
-from pyrit.common.path import SCORER_CONFIG_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.models import MessagePiece, Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
@@ -39,7 +39,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
         """
-        Initializes the SelfAskQuestionAnswerScorer object.
+        Initialize the SelfAskQuestionAnswerScorer object.
 
         Args:
             chat_target (PromptChatTarget): The chat target to use for the scorer.
@@ -52,7 +52,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         true_false_question_path = self._verify_and_resolve_path(
             true_false_question_path
             if true_false_question_path
-            else SCORER_CONFIG_PATH / "true_false_question" / "question_answering.yaml"
+            else SCORER_SEED_PROMPT_PATH / "true_false_question" / "question_answering.yaml"
         )
         super().__init__(
             chat_target=chat_target,

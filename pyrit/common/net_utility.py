@@ -9,7 +9,12 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 
 def get_httpx_client(use_async: bool = False, debug: bool = False, **httpx_client_kwargs: Optional[Any]):
-    """Get the httpx client for making requests."""
+    """
+    Get the httpx client for making requests.
+
+    Returns:
+        httpx.Client or httpx.AsyncClient: The configured httpx client.
+    """
     client_class = httpx.AsyncClient if use_async else httpx.Client
     proxy = "http://localhost:8080" if debug else None
 
@@ -82,6 +87,9 @@ async def make_request_and_raise_if_error_async(
     1. In the endpoint_uri (e.g., "https://api.com/endpoint?api-version=2024-10-21")
     2. Via the extra_url_parameters dict
     3. Both (extra_url_parameters will be merged with URL query parameters, with extra_url_parameters taking precedence)
+
+    Returns:
+        httpx.Response: The response from the request.
     """
     headers = headers or {}
     request_body = request_body or {}

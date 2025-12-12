@@ -40,6 +40,9 @@ class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):
 
         Returns:
             list[ChatMessage]: The list of chat messages.
+
+        Raises:
+            ValueError: If the input content is invalid.
         """
         messages: list[ChatMessage] = []
         matches = list(re.finditer(r"<\|im_start\|>(.*?)<\|im_end\|>", content, re.DOTALL | re.MULTILINE))
