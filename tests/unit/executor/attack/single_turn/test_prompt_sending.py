@@ -176,7 +176,11 @@ class TestContextValidation:
     @pytest.mark.parametrize(
         "objective,conversation_id,expected_error",
         [
-            ("", str(uuid.uuid4()), "Attack objective must be provided and non-empty in the context"),
+            (
+                "",
+                "a6742ba7-3ce7-4db7-a0f5-769a0fb18c3c",
+                "Attack objective must be provided and non-empty in the context",
+            ),
         ],
     )
     def test_validate_context_raises_errors(self, mock_target, objective, conversation_id, expected_error):
@@ -195,7 +199,7 @@ class TestContextValidation:
         context = SingleTurnAttackContext(
             objective="Test objective",
             conversation_id=str(uuid.uuid4()),
-            seed_group=SeedGroup(prompts=[SeedPrompt(value="test", data_type="text")]),
+            seed_group=SeedGroup(seeds=[SeedPrompt(value="test", data_type="text")]),
             system_prompt="System prompt",
             metadata={"key": "value"},
         )
@@ -265,7 +269,7 @@ class TestPromptPreparation:
     """Tests for prompt preparation logic"""
 
     def test_get_prompt_group_uses_existing_seed_group(self, mock_target, basic_context):
-        existing_group = SeedGroup(prompts=[SeedPrompt(value="Existing prompt", data_type="text")])
+        existing_group = SeedGroup(seeds=[SeedPrompt(value="Existing prompt", data_type="text")])
         basic_context.seed_group = existing_group
 
         attack = PromptSendingAttack(objective_target=mock_target)
@@ -309,7 +313,7 @@ class TestPromptSending:
             ),
         )
 
-        prompt_group = SeedGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+        prompt_group = SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
         basic_context.memory_labels = {"test": "label"}
         mock_response = MagicMock()
         mock_prompt_normalizer.send_prompt_async.return_value = mock_response
@@ -332,7 +336,7 @@ class TestPromptSending:
     async def test_send_prompt_handles_none_response(self, mock_target, mock_prompt_normalizer, basic_context):
         attack = PromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
-        prompt_group = SeedGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+        prompt_group = SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
         mock_prompt_normalizer.send_prompt_async.return_value = None
 
         result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
@@ -368,6 +372,7 @@ class TestResponseEvaluation:
                 objective_scorer=mock_true_false_scorer,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
     @pytest.mark.asyncio
@@ -390,6 +395,7 @@ class TestResponseEvaluation:
                 objective_scorer=None,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
     @pytest.mark.asyncio
@@ -432,6 +438,7 @@ class TestResponseEvaluation:
                 objective_scorer=mock_true_false_scorer,
                 role_filter="assistant",
                 objective="Test objective",
+                skip_on_error_result=True,
             )
 
 
@@ -500,7 +507,7 @@ class TestAttackExecution:
 
         # Mock the internal methods
         attack._get_prompt_group = MagicMock(
-            return_value=SeedGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+            return_value=SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
         )
 
         # Setup side effects based on attempt_results
@@ -542,7 +549,7 @@ class TestAttackExecution:
 
         # Mock the internal methods
         attack._get_prompt_group = MagicMock(
-            return_value=SeedGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+            return_value=SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
         )
         attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
         attack._evaluate_response_async = AsyncMock(return_value=None)
@@ -576,7 +583,7 @@ class TestAttackExecution:
 
         # First attempt filtered, second succeeds
         attack._get_prompt_group = MagicMock(
-            return_value=SeedGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+            return_value=SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
         )
         attack._send_prompt_to_objective_target_async = AsyncMock(side_effect=[None, sample_response])
 
@@ -926,7 +933,7 @@ class TestAttackLifecycle:
         attack._teardown_async = AsyncMock()
 
         # Create test data
-        seed_group = SeedGroup(prompts=[SeedPrompt(value="test", data_type="text")])
+        seed_group = SeedGroup(seeds=[SeedPrompt(value="test", data_type="text")])
 
         result = await attack.execute_async(
             objective="Test objective",
@@ -968,7 +975,7 @@ class TestAttackLifecycle:
 
         # Create test data
         seed_group = SeedGroup(
-            prompts=[SeedPrompt(value="test", data_type="text"), SeedObjective(value="another test objective")],
+            seeds=[SeedPrompt(value="test", data_type="text"), SeedObjective(value="another test objective")],
         )
         with pytest.raises(ValueError, match="Attack can only specify one objective per turn."):
             await attack.execute_async(
@@ -1017,7 +1024,7 @@ class TestEdgeCasesAndErrorHandling:
 
         # Mock successful response
         attack._get_prompt_group = MagicMock(
-            return_value=SeedGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+            return_value=SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
         )
         attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
         attack._evaluate_response_async = AsyncMock(return_value=success_score)
@@ -1034,7 +1041,7 @@ class TestEdgeCasesAndErrorHandling:
         attack = PromptSendingAttack(objective_target=mock_target)
 
         # Set minimal prompt group with a single empty prompt
-        minimal_group = SeedGroup(prompts=[SeedPrompt(value="", data_type="text")])
+        minimal_group = SeedGroup(seeds=[SeedPrompt(value="", data_type="text")])
         basic_context.seed_group = minimal_group
 
         attack._get_prompt_group = MagicMock(return_value=minimal_group)
@@ -1096,7 +1103,7 @@ class TestEdgeCasesAndErrorHandling:
 
         # Mock the internal methods
         attack._get_prompt_group = MagicMock(
-            return_value=SeedGroup(prompts=[SeedPrompt(value="Test prompt", data_type="text")])
+            return_value=SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
         )
 
         # Setup to return response on first two attempts but fail scoring, succeed on third

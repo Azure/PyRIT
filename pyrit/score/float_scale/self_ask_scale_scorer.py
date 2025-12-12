@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 import yaml
 
-from pyrit.common.path import SCALES_PATH
+from pyrit.common.path import SCORER_SCALES_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -20,14 +20,18 @@ class SelfAskScaleScorer(FloatScaleScorer):
     """
 
     class ScalePaths(enum.Enum):
-        TREE_OF_ATTACKS_SCALE = Path(SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
-        TASK_ACHIEVED_SCALE = Path(SCALES_PATH, "task_achieved_scale.yaml").resolve()
-        CRITERIA_SCALE = Path(SCALES_PATH, "criteria_example_scale.yaml").resolve()
+        """Enum containing paths to numeric scale YAML configuration files."""
+
+        TREE_OF_ATTACKS_SCALE = Path(SCORER_SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
+        TASK_ACHIEVED_SCALE = Path(SCORER_SCALES_PATH, "task_achieved_scale.yaml").resolve()
+        CRITERIA_SCALE = Path(SCORER_SCALES_PATH, "criteria_example_scale.yaml").resolve()
 
     class SystemPaths(enum.Enum):
-        GENERAL_SYSTEM_PROMPT = Path(SCALES_PATH, "general_system_prompt.yaml").resolve()
-        RED_TEAMER_SYSTEM_PROMPT = Path(SCALES_PATH, "red_teamer_system_prompt.yaml").resolve()
-        CRITERIA_SYSTEM_PROMPT = Path(SCALES_PATH, "criteria_system_prompt.yaml").resolve()
+        """Enum containing paths to system prompt YAML configuration files."""
+
+        GENERAL_SYSTEM_PROMPT = Path(SCORER_SCALES_PATH, "general_system_prompt.yaml").resolve()
+        RED_TEAMER_SYSTEM_PROMPT = Path(SCORER_SCALES_PATH, "red_teamer_system_prompt.yaml").resolve()
+        CRITERIA_SYSTEM_PROMPT = Path(SCORER_SCALES_PATH, "criteria_system_prompt.yaml").resolve()
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
@@ -42,6 +46,17 @@ class SelfAskScaleScorer(FloatScaleScorer):
         system_prompt_path: Optional[Union[Path, str]] = None,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
+        """
+        Initialize the SelfAskScaleScorer.
+
+        Args:
+            chat_target (PromptChatTarget): The chat target to use for scoring.
+            scale_arguments_path (Optional[Union[Path, str]]): Path to the YAML file containing scale definitions.
+                Defaults to TREE_OF_ATTACKS_SCALE if not provided.
+            system_prompt_path (Optional[Union[Path, str]]): Path to the YAML file containing the system prompt.
+                Defaults to GENERAL_SYSTEM_PROMPT if not provided.
+            validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
+        """
         super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
 

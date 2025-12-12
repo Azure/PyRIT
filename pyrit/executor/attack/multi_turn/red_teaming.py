@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import RED_TEAM_EXECUTOR_PATH
+from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import (
     ConversationManager,
@@ -44,11 +44,13 @@ logger = logging.getLogger(__name__)
 
 
 class RTASystemPromptPaths(enum.Enum):
-    TEXT_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "text_generation.yaml").resolve()
-    IMAGE_GENERATION = Path(RED_TEAM_EXECUTOR_PATH, "image_generation.yaml").resolve()
-    NAIVE_CRESCENDO = Path(RED_TEAM_EXECUTOR_PATH, "naive_crescendo.yaml").resolve()
-    VIOLENT_DURIAN = Path(RED_TEAM_EXECUTOR_PATH, "violent_durian.yaml").resolve()
-    CRUCIBLE = Path(RED_TEAM_EXECUTOR_PATH, "crucible.yaml").resolve()
+    """Enum for predefined red teaming attack system prompt paths."""
+
+    TEXT_GENERATION = Path(EXECUTOR_RED_TEAM_PATH, "text_generation.yaml").resolve()
+    IMAGE_GENERATION = Path(EXECUTOR_RED_TEAM_PATH, "image_generation.yaml").resolve()
+    NAIVE_CRESCENDO = Path(EXECUTOR_RED_TEAM_PATH, "naive_crescendo.yaml").resolve()
+    VIOLENT_DURIAN = Path(EXECUTOR_RED_TEAM_PATH, "violent_durian.yaml").resolve()
+    CRUCIBLE = Path(EXECUTOR_RED_TEAM_PATH, "crucible.yaml").resolve()
 
 
 class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackResult]):
@@ -330,6 +332,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             str: The generated prompt to be sent to the adversarial chat.
+
+        Raises:
+            ValueError: If no response is received from the adversarial chat.
         """
         # If custom prompt provided, use it and clear it
         if context.custom_prompt:
@@ -347,7 +352,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         # Send the prompt to the adversarial chat and get the response
         logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
-        prompt_grp = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+        prompt_grp = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text")])
 
         response = await self._prompt_normalizer.send_prompt_async(
             seed_group=prompt_grp,
@@ -441,6 +446,10 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             str: The suitable feedback or error message to pass back to the adversarial chat.
+
+        Raises:
+            RuntimeError: If the target response indicates an error.
+            ValueError: If scoring is disabled or no scoring rationale is available.
         """
         if not context.last_response:
             return "No response available. Please continue."
@@ -484,12 +493,15 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         Returns:
             Message: The system's response to the prompt.
+
+        Raises:
+            ValueError: If no response is received from the target system.
         """
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 
         # Create a seed group from the prompt
         seed_prompt = SeedPrompt(value=prompt, data_type="text")
-        seed_group = SeedGroup(prompts=[seed_prompt])
+        seed_group = SeedGroup(seeds=[seed_prompt])
 
         # Send the prompt to the target
         response = await self._prompt_normalizer.send_prompt_async(
@@ -539,13 +551,14 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             return None
 
         # Use the built-in scorer method for objective scoring
-        # This method already handles error responses internally via skip_on_error=True
+        # This method already handles error responses internally via skip_on_error_result=True
         scoring_results = await Scorer.score_response_async(
             response=context.last_response,
             objective_scorer=self._objective_scorer,
             auxiliary_scorers=None,  # No auxiliary scorers for red teaming by default
             role_filter="assistant",
             objective=context.objective,
+            skip_on_error_result=True,
         )
         objective_scores = scoring_results["objective_scores"]
         return objective_scores[0] if objective_scores else None

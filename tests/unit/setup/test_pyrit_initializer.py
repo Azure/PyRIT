@@ -46,7 +46,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "Concrete initializer"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = ConcreteInitializer()
@@ -60,7 +60,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "Missing name"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         with pytest.raises(TypeError):
@@ -93,7 +93,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "Default order"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = DefaultOrder()
@@ -115,7 +115,7 @@ class TestPyRITInitializerBase:
             def execution_order(self) -> int:
                 return 5
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = CustomOrder()
@@ -133,7 +133,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "No env vars"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = NoEnvVars()
@@ -155,7 +155,7 @@ class TestPyRITInitializerBase:
             def required_env_vars(self):
                 return ["API_KEY", "ENDPOINT"]
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = WithEnvVars()
@@ -173,7 +173,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "Default validation"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = DefaultValidate()
@@ -195,7 +195,7 @@ class TestPyRITInitializerBase:
             def validate(self) -> None:
                 raise ValueError("Validation failed")
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = CustomValidate()
@@ -204,7 +204,7 @@ class TestPyRITInitializerBase:
 
 
 class TestInitializeWithTracking:
-    """Tests for initialize_with_tracking method."""
+    """Tests for initialize_with_tracking_async method."""
 
     def setup_method(self) -> None:
         """Clear default values before each test."""
@@ -218,8 +218,8 @@ class TestInitializeWithTracking:
         if hasattr(sys.modules["__main__"], "tracked_var"):
             delattr(sys.modules["__main__"], "tracked_var")
 
-    def test_initialize_with_tracking_calls_initialize(self):
-        """Test that initialize_with_tracking calls initialize method."""
+    async def test_initialize_with_tracking_calls_initialize(self):
+        """Test that initialize_with_tracking_async calls initialize method."""
         executed = False
 
         class TrackableInit(PyRITInitializer):
@@ -231,15 +231,15 @@ class TestInitializeWithTracking:
             def description(self) -> str:
                 return "Trackable init"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 nonlocal executed
                 executed = True
 
         init = TrackableInit()
-        init.initialize_with_tracking()
+        await init.initialize_with_tracking_async()
         assert executed
 
-    def test_initialize_with_tracking_captures_default_values(self):
+    async def test_initialize_with_tracking_captures_default_values(self):
         """Test that tracking captures default values."""
 
         class DummyClass:
@@ -255,11 +255,11 @@ class TestInitializeWithTracking:
             def description(self) -> str:
                 return "Tracking defaults"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 set_default_value(class_type=DummyClass, parameter_name="value", value="tracked")
 
         init = TrackingInit()
-        init.initialize_with_tracking()
+        await init.initialize_with_tracking_async()
 
         # Verify the default was actually set
         from pyrit.common.apply_defaults import get_global_default_values
@@ -267,7 +267,7 @@ class TestInitializeWithTracking:
         registry = get_global_default_values()
         assert len(registry._default_values) > 0
 
-    def test_initialize_with_tracking_captures_global_variables(self):
+    async def test_initialize_with_tracking_captures_global_variables(self):
         """Test that tracking captures global variables."""
 
         class GlobalVarInit(PyRITInitializer):
@@ -279,11 +279,11 @@ class TestInitializeWithTracking:
             def description(self) -> str:
                 return "Sets global var"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 set_global_variable(name="tracked_var", value="test_value")
 
         init = GlobalVarInit()
-        init.initialize_with_tracking()
+        await init.initialize_with_tracking_async()
 
         # Verify the global variable was set
         assert hasattr(sys.modules["__main__"], "tracked_var")
@@ -301,7 +301,7 @@ class TestGetInfo:
         """Clean up after each test."""
         reset_default_values()
 
-    def test_get_info_returns_dict(self):
+    async def test_get_info_returns_dict(self):
         """Test that get_info returns a dictionary."""
 
         class InfoInit(PyRITInitializer):
@@ -313,13 +313,13 @@ class TestGetInfo:
             def description(self) -> str:
                 return "For testing get_info"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
-        info = InfoInit.get_info()
+        info = await InfoInit.get_info_async()
         assert isinstance(info, dict)
 
-    def test_get_info_contains_basic_fields(self):
+    async def test_get_info_contains_basic_fields(self):
         """Test that get_info contains name, description, and class."""
 
         class BasicInfoInit(PyRITInitializer):
@@ -331,10 +331,10 @@ class TestGetInfo:
             def description(self) -> str:
                 return "Basic description"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
-        info = BasicInfoInit.get_info()
+        info = await BasicInfoInit.get_info_async()
         assert "name" in info
         assert "description" in info
         assert "class" in info
@@ -345,7 +345,7 @@ class TestGetInfo:
         assert info["class"] == "BasicInfoInit"
         assert info["execution_order"] == 1
 
-    def test_get_info_includes_required_env_vars_when_present(self):
+    async def test_get_info_includes_required_env_vars_when_present(self):
         """Test that get_info includes required_env_vars when defined."""
 
         class EnvVarsInit(PyRITInitializer):
@@ -361,14 +361,14 @@ class TestGetInfo:
             def required_env_vars(self):
                 return ["API_KEY"]
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
-        info = EnvVarsInit.get_info()
+        info = await EnvVarsInit.get_info_async()
         assert "required_env_vars" in info
         assert info["required_env_vars"] == ["API_KEY"]
 
-    def test_get_info_omits_required_env_vars_when_empty(self):
+    async def test_get_info_omits_required_env_vars_when_empty(self):
         """Test that get_info omits required_env_vars when empty."""
 
         class NoEnvVarsInit(PyRITInitializer):
@@ -380,14 +380,14 @@ class TestGetInfo:
             def description(self) -> str:
                 return "No env vars"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
-        info = NoEnvVarsInit.get_info()
+        info = await NoEnvVarsInit.get_info_async()
         # Should not have required_env_vars key if empty
         assert "required_env_vars" not in info
 
-    def test_get_info_is_class_method(self):
+    async def test_get_info_is_class_method(self):
         """Test that get_info can be called as a class method."""
 
         class ClassMethodInit(PyRITInitializer):
@@ -399,14 +399,14 @@ class TestGetInfo:
             def description(self) -> str:
                 return "For class method test"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         # Should work without creating an instance
-        info = ClassMethodInit.get_info()
+        info = await ClassMethodInit.get_info_async()
         assert info["name"] == "Class method"
 
-    def test_get_info_includes_default_values_info(self):
+    async def test_get_info_includes_default_values_info(self):
         """Test that get_info includes information about default values."""
 
         class DefaultsInit(PyRITInitializer):
@@ -418,10 +418,10 @@ class TestGetInfo:
             def description(self) -> str:
                 return "Sets defaults"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
-        info = DefaultsInit.get_info()
+        info = await DefaultsInit.get_info_async()
         # Should have default_values and global_variables keys
         assert "default_values" in info
         assert "global_variables" in info
@@ -448,7 +448,7 @@ class TestGetInfoTracking:
             if hasattr(sys.modules["__main__"], var):
                 delattr(sys.modules["__main__"], var)
 
-    def test_get_info_correctly_tracks_defaults_and_globals(self):
+    async def test_get_info_correctly_tracks_defaults_and_globals(self):
         """Test that get_info correctly tracks both default values and global variables."""
 
         class DummyTarget:
@@ -468,7 +468,7 @@ class TestGetInfoTracking:
             def description(self) -> str:
                 return "Sets both defaults and globals"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 # Set default values
                 set_default_value(class_type=DummyTarget, parameter_name="endpoint", value="custom_endpoint")
                 set_default_value(class_type=DummyConverter, parameter_name="target", value="custom_target")
@@ -477,7 +477,7 @@ class TestGetInfoTracking:
                 set_global_variable(name="test_global_var", value="test_value")
                 set_global_variable(name="test_converter_target", value="converter")
 
-        info = CompleteInit.get_info()
+        info = await CompleteInit.get_info_async()
 
         # Verify default_values tracking - should use "ClassName.parameter_name" format
         assert isinstance(info["default_values"], list)
@@ -491,7 +491,7 @@ class TestGetInfoTracking:
         assert "test_converter_target" in info["global_variables"]
         assert len(info["global_variables"]) == 2
 
-    def test_get_info_empty_when_nothing_set(self):
+    async def test_get_info_empty_when_nothing_set(self):
         """Test that get_info returns empty lists when initializer sets nothing."""
 
         class EmptyInit(PyRITInitializer):
@@ -503,10 +503,10 @@ class TestGetInfoTracking:
             def description(self) -> str:
                 return "Sets nothing"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass  # Don't set anything
 
-        info = EmptyInit.get_info()
+        info = await EmptyInit.get_info_async()
 
         # Should have empty lists, not error messages
         assert isinstance(info["default_values"], list)
@@ -517,7 +517,7 @@ class TestGetInfoTracking:
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestGetDynamicDefaultValuesInfo:
-    """Tests for get_dynamic_default_values_info method."""
+    """Tests for get_dynamic_default_values_info_async method."""
 
     def setup_method(self) -> None:
         """Clear default values before each test."""
@@ -527,7 +527,7 @@ class TestGetDynamicDefaultValuesInfo:
         """Clean up after each test."""
         reset_default_values()
 
-    def test_get_dynamic_info_returns_dict(self):
+    async def test_get_dynamic_info_returns_dict(self):
         """Test that method returns a dictionary."""
 
         class DynamicInit(PyRITInitializer):
@@ -539,14 +539,14 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "Dynamic info"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = DynamicInit()
-        info = init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
         assert isinstance(info, dict)
 
-    def test_get_dynamic_info_has_required_keys(self):
+    async def test_get_dynamic_info_has_required_keys(self):
         """Test that returned dict has required keys."""
 
         class KeysInit(PyRITInitializer):
@@ -558,15 +558,15 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "For keys test"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = KeysInit()
-        info = init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
         assert "default_values" in info
         assert "global_variables" in info
 
-    def test_get_dynamic_info_captures_defaults(self):
+    async def test_get_dynamic_info_captures_defaults(self):
         """Test that method captures default values set during init."""
 
         class DummyClass:
@@ -582,16 +582,16 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "Captures defaults"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 set_default_value(class_type=DummyClass, parameter_name="value", value="captured")
 
         init = DefaultsInit()
-        info = init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
 
         # Should capture that a default was set
         assert isinstance(info["default_values"], list)
 
-    def test_get_dynamic_info_captures_globals(self):
+    async def test_get_dynamic_info_captures_globals(self):
         """Test that method captures global variables."""
 
         class GlobalsInit(PyRITInitializer):
@@ -603,15 +603,15 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "Captures globals"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 set_global_variable(name="dynamic_test_var", value="captured")
 
         init = GlobalsInit()
-        info = init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
 
         assert isinstance(info["global_variables"], list)
 
-    def test_get_dynamic_info_restores_state(self):
+    async def test_get_dynamic_info_restores_state(self):
         """Test that method restores original state after sandbox run."""
 
         class DummyClass:
@@ -630,11 +630,11 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "Restores state"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 set_default_value(class_type=DummyClass, parameter_name="other_value", value="temporary")
 
         init = RestoringInit()
-        init.get_dynamic_default_values_info()
+        await init.get_dynamic_default_values_info_async()
 
         # Original default should still be there
         from pyrit.common.apply_defaults import get_global_default_values
@@ -645,9 +645,9 @@ class TestGetDynamicDefaultValuesInfo:
 
 
 class TestGetDynamicDefaultValuesInfoWithoutMemory:
-    """Tests for get_dynamic_default_values_info method without memory."""
+    """Tests for get_dynamic_default_values_info_async method without memory."""
 
-    def test_get_dynamic_info_without_memory_returns_message(self):
+    async def test_get_dynamic_info_without_memory_returns_message(self):
         """Test that method returns helpful message when memory not initialized."""
         from pyrit.memory import CentralMemory
 
@@ -663,12 +663,12 @@ class TestGetDynamicDefaultValuesInfoWithoutMemory:
             def description(self) -> str:
                 return "No memory initialized"
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         init = NoMemoryInit()
-        info = init.get_dynamic_default_values_info()
+        info = await init.get_dynamic_default_values_info_async()
 
         # Should return helpful messages
-        assert "initialize_pyrit()" in str(info["default_values"])
-        assert "initialize_pyrit()" in str(info["global_variables"])
+        assert "await initialize_pyrit_async()" in str(info["default_values"])
+        assert "await initialize_pyrit_async()" in str(info["global_variables"])

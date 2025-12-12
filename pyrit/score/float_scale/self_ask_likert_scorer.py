@@ -8,7 +8,7 @@ from typing import Dict, Optional, Union
 
 import yaml
 
-from pyrit.common.path import LIKERT_SCALES_PATH
+from pyrit.common.path import SCORER_LIKERT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -18,16 +18,19 @@ logger = logging.getLogger(__name__)
 
 
 class LikertScalePaths(enum.Enum):
-    CYBER_SCALE = Path(LIKERT_SCALES_PATH, "cyber.yaml").resolve()
-    FAIRNESS_BIAS_SCALE = Path(LIKERT_SCALES_PATH, "fairness_bias.yaml").resolve()
-    HARM_SCALE = Path(LIKERT_SCALES_PATH, "harm.yaml").resolve()
-    HATE_SPEECH_SCALE = Path(LIKERT_SCALES_PATH, "hate_speech.yaml").resolve()
-    MISINFORMATION_SCALE = Path(LIKERT_SCALES_PATH, "misinformation.yaml").resolve()
-    PERSUASION_SCALE = Path(LIKERT_SCALES_PATH, "persuasion.yaml").resolve()
-    PHISHING_SCALE = Path(LIKERT_SCALES_PATH, "phishing.yaml").resolve()
-    SEXUAL_SCALE = Path(LIKERT_SCALES_PATH, "sexual.yaml").resolve()
-    VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
-    DECEPTION_SCALE = Path(LIKERT_SCALES_PATH, "deception.yaml").resolve()
+    """Enum containing paths to Likert scale YAML configuration files."""
+
+    CYBER_SCALE = Path(SCORER_LIKERT_PATH, "cyber.yaml").resolve()
+    FAIRNESS_BIAS_SCALE = Path(SCORER_LIKERT_PATH, "fairness_bias.yaml").resolve()
+    HARM_SCALE = Path(SCORER_LIKERT_PATH, "harm.yaml").resolve()
+    HATE_SPEECH_SCALE = Path(SCORER_LIKERT_PATH, "hate_speech.yaml").resolve()
+    MISINFORMATION_SCALE = Path(SCORER_LIKERT_PATH, "misinformation.yaml").resolve()
+    PERSUASION_SCALE = Path(SCORER_LIKERT_PATH, "persuasion.yaml").resolve()
+    PHISHING_SCALE = Path(SCORER_LIKERT_PATH, "phishing.yaml").resolve()
+    SEXUAL_SCALE = Path(SCORER_LIKERT_PATH, "sexual.yaml").resolve()
+    VIOLENCE_SCALE = Path(SCORER_LIKERT_PATH, "violence.yaml").resolve()
+    DECEPTION_SCALE = Path(SCORER_LIKERT_PATH, "deception.yaml").resolve()
+    EXPLOITS_SCALE = Path(SCORER_LIKERT_PATH, "exploits.yaml").resolve()
 
 
 class SelfAskLikertScorer(FloatScaleScorer):
@@ -44,6 +47,14 @@ class SelfAskLikertScorer(FloatScaleScorer):
         likert_scale_path: Union[str, Path],
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
+        """
+        Initialize the SelfAskLikertScorer.
+
+        Args:
+            chat_target (PromptChatTarget): The chat target to use for scoring.
+            likert_scale_path (Union[str, Path]): Path to the YAML file containing the Likert scale definition.
+            validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
+        """
         super().__init__(validator=validator or self._default_validator)
 
         likert_scale_path = self._verify_and_resolve_path(likert_scale_path)
@@ -54,10 +65,13 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
     def set_likert_scale_system_prompt(self, likert_scale_path: Path):
         """
-        Sets the Likert scale to use for scoring.
+        Set the Likert scale to use for scoring.
 
         Args:
             likert_scale_path (Path): The path to the YAML file containing the Likert scale description.
+
+        Raises:
+            ValueError: If the Likert scale YAML file is improperly formatted.
         """
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
@@ -69,7 +83,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
         self._scoring_instructions_template = SeedPrompt.from_yaml_file(
-            LIKERT_SCALES_PATH / "likert_system_prompt.yaml"
+            SCORER_LIKERT_PATH / "likert_system_prompt.yaml"
         )
 
         self._system_prompt = self._scoring_instructions_template.render_template_value(
@@ -78,13 +92,16 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
     def _likert_scale_description_to_string(self, descriptions: list[Dict[str, str]]) -> str:
         """
-        Converts the Likert scales to a string representation to be put in a system prompt.
+        Convert the Likert scales to a string representation to be put in a system prompt.
 
         Args:
             descriptions: list[Dict[str, str]]: The Likert scale to use.
 
         Returns:
             str: The string representation of the Likert scale.
+
+        Raises:
+            ValueError: If the Likert scale YAML file is improperly formatted.
         """
         if not descriptions:
             raise ValueError("Improperly formatted Likert scale yaml file. No likert scale_descriptions provided")
@@ -106,17 +123,16 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Scores the given message_piece using "self-ask" for the chat target.
+        Score the given message_piece using "self-ask" for the chat target.
 
         Args:
             message_piece (MessagePiece): The message piece containing the text to be scored.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
-                Currently not supported for this scorer.
+            objective (Optional[str]): The objective for scoring context. Currently not supported for this scorer.
+                Defaults to None.
 
         Returns:
-            list[Score]: The message_piece scored.
-                         The category is configured from the likert_scale.
-                         The score_value is a value from [0,1] that is scaled from the likert scale.
+            list[Score]: The message_piece scored. The category is configured from the likert_scale.
+                The score_value is a value from [0,1] that is scaled from the likert scale.
         """
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,

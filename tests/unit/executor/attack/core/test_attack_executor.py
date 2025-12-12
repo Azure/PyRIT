@@ -76,9 +76,9 @@ def mock_multi_turn_attack_strategy():
 def sample_seed_groups():
     """Create sample seed groups for testing"""
     return [
-        SeedGroup(prompts=[SeedPrompt(value="First prompt", data_type="text")]),
-        SeedGroup(prompts=[SeedPrompt(value="Second prompt", data_type="text")]),
-        SeedGroup(prompts=[SeedPrompt(value="Third prompt", data_type="text")]),
+        SeedGroup(seeds=[SeedPrompt(value="First prompt", data_type="text")]),
+        SeedGroup(seeds=[SeedPrompt(value="Second prompt", data_type="text")]),
+        SeedGroup(seeds=[SeedPrompt(value="Third prompt", data_type="text")]),
     ]
 
 
@@ -813,7 +813,7 @@ class TestExecuteSingleTurnAttacksAsync:
     async def test_execute_single_turn_validates_seed_groups_length(self, mock_single_turn_attack_strategy):
         executor = AttackExecutor()
         objectives = ["Obj1", "Obj2"]
-        seed_groups = [SeedGroup(prompts=[SeedPrompt(value="prompt", data_type="text")])]
+        seed_groups = [SeedGroup(seeds=[SeedPrompt(value="prompt", data_type="text")])]
 
         with pytest.raises(ValueError, match="Number of seed_groups .* must match number of objectives"):
             await executor.execute_single_turn_attacks_async(

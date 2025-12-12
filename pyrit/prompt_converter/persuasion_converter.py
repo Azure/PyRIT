@@ -7,7 +7,7 @@ import pathlib
 import uuid
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -69,7 +69,7 @@ class PersuasionConverter(PromptConverter):
 
         try:
             prompt_template = SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "persuasion" / f"{persuasion_technique}.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "persuasion" / f"{persuasion_technique}.yaml"
             )
         except FileNotFoundError:
             raise ValueError(f"Persuasion technique '{persuasion_technique}' does not exist or is not supported.")
@@ -115,7 +115,7 @@ class PersuasionConverter(PromptConverter):
         """Sends the prompt to the converter target and processes the response."""
         response = await self.converter_target.send_prompt_async(message=request)
 
-        response_msg = response.get_value()
+        response_msg = response[0].get_value()
         response_msg = remove_markdown_json(response_msg)
 
         try:

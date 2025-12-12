@@ -186,7 +186,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             logger.debug(f"Prompt content: {prompt_text}")
 
             # Create seed group for this prompt
-            prompt_group = SeedGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+            prompt_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text")])
 
             # Send the prompt
             message = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
@@ -312,6 +312,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             objective_scorer=self._objective_scorer if self._objective_scorer else None,
             role_filter="assistant",
             objective=objective,
+            skip_on_error_result=True,
         )
 
         objective_scores = scoring_results["objective_scores"]
@@ -326,6 +327,9 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
     ) -> AttackResult:
         """
         Execute the attack strategy asynchronously with the provided parameters.
+
+        Returns:
+            AttackResult: The result of the attack execution.
         """
         # Validate parameters before creating context
         prompt_sequence = get_kwarg_param(

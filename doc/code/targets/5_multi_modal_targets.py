@@ -20,7 +20,7 @@
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %% [markdown]
-# ## Dall-e Target (Text --> Image)
+# ## Image Target (Text --> Image)
 #
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
@@ -30,17 +30,23 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIImageTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 objective = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 
-img_prompt_target = OpenAIDALLETarget()
-# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# target = OpenAIChatTarget(use_entra_auth=True)
+img_prompt_target = OpenAIImageTarget()
+# For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# from pyrit.auth import get_azure_openai_auth
+# endpoint = "https://your-endpoint.openai.azure.com"
+# target = OpenAIChatTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_openai_auth(endpoint),
+#     model_name="your-deployment-name"
+# )
 
 image_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
@@ -92,9 +98,9 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 
 # %% [markdown]
-# ## Sora Target (Text --> Video)
+# ## Video Target (Text --> Video)
 #
-# This example demonstrates how to use the Sora target to create a video from a text-based prompt.
+# This example demonstrates how to use the video target to create a video from a text-based prompt.
 
 from pyrit.executor.attack import (
     AttackExecutor,
@@ -102,7 +108,7 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.prompt_target import OpenAIChatTarget, OpenAISoraTarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIVideoTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskTrueFalseScorer,
@@ -110,16 +116,16 @@ from pyrit.score import (
     VideoFloatScaleScorer,
     VideoTrueFalseScorer,
 )
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 objectives = [
     "Video of a raccoon pirate eating flan at a cafe in Spain",
     "Video of a raccoon pirate eating a croissant at a cafe in France",
 ]
 
-sora_target = OpenAISoraTarget()
+video_target = OpenAIVideoTarget()
 objective_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
     true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
@@ -131,7 +137,7 @@ video_scorer = VideoTrueFalseScorer(
 )
 
 attack = PromptSendingAttack(
-    objective_target=sora_target,
+    objective_target=video_target,
     attack_scoring_config=AttackScoringConfig(
         objective_scorer=video_scorer,
         auxiliary_scorers=[VideoFloatScaleScorer(image_capable_scorer=AzureContentFilterScorer())],
@@ -158,9 +164,9 @@ from pyrit.executor.attack import SingleTurnAttackContext
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
@@ -180,7 +186,7 @@ image_path = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_arch
 # This is a single request with two parts, one image and one text
 
 seed_group = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(
             value="Describe this picture:",
             data_type="text",

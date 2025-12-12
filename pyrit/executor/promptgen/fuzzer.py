@@ -49,7 +49,7 @@ class _PromptNode:
         parent: Optional[_PromptNode] = None,
     ):
         """
-        Creates the PromptNode instance.
+        Create the PromptNode instance.
 
         Args:
             template (str): Prompt template.
@@ -622,6 +622,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
             converter_config (Optional[StrategyConverterConfig]): Configuration for prompt converters.
                 Defaults to None.
             scorer (Optional[Scorer]): Configuration for scoring responses. Defaults to None.
+            scoring_success_threshold (float): The score threshold to consider a jailbreak successful.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use. Defaults to None.
             frequency_weight (float): Constant that balances between high reward and selection frequency.
                 Defaults to 0.5.
@@ -704,6 +705,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         Raises:
             ValueError: If the context is invalid.
+            MissingPromptPlaceholderException: If a template is missing the required placeholder.
         """
         if not context.prompt_templates:
             raise ValueError("Prompt templates in context cannot be empty.")
@@ -722,7 +724,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
     async def _setup_async(self, *, context: FuzzerContext) -> None:
         """
-        Setup phase before executing prompt generation.
+        Set up the phase before executing prompt generation.
 
         Args:
             context (FuzzerContext): The context containing configuration.
@@ -750,6 +752,9 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         Returns:
             FuzzerResult: The result of the generation execution.
+
+        Raises:
+            MissingPromptPlaceholderException: If a template converter fails to preserve the placeholder.
         """
         self._logger.info("Starting fuzzer prompt generation")
         self._logger.info(
@@ -771,6 +776,9 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         Args:
             context (FuzzerContext): The generation context.
+
+        Raises:
+            MissingPromptPlaceholderException: If a template converter fails to preserve the placeholder.
         """
         # Select template using MCTS
         current_seed, path = self._select_template_with_mcts(context)
@@ -977,7 +985,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         for prompt in prompts:
             request = NormalizerRequest(
-                seed_group=SeedGroup(prompts=[SeedPrompt(value=prompt, data_type="text")]),
+                seed_group=SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")]),
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
             )
@@ -1155,20 +1163,7 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         max_query_limit: Optional[int] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
-    ) -> FuzzerResult:
-        """
-        Executes the Fuzzer generation strategy asynchronously.
-
-        Args:
-            prompts (List[str]): The list of prompts to use for generation.
-            prompt_templates (List[str]): The list of prompt templates to use.
-            max_query_limit (Optional[int]): The maximum number of queries to execute.
-            memory_labels (Optional[dict[str, str]]): Optional labels to apply to the prompts.
-
-        Returns:
-            FuzzerResult: The result of the asynchronous execution.
-        """
-        ...
+    ) -> FuzzerResult: ...
 
     @overload
     async def execute_async(
@@ -1181,7 +1176,17 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         **kwargs,
     ) -> FuzzerResult:
         """
-        Execute the Fuzzer generation strategy asynchronously with the provided parameters.
+        Execute the Fuzzer generation strategy asynchronously.
+
+        Args:
+            prompts (List[str]): The list of prompts to use for generation.
+            prompt_templates (List[str]): The list of prompt templates to use.
+            max_query_limit (Optional[int]): The maximum number of queries to execute.
+            memory_labels (Optional[dict[str, str]]): Optional labels to apply to the prompts.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            FuzzerResult: The result of the asynchronous execution.
         """
         # Validate parameters before creating context
         prompts = get_kwarg_param(kwargs=kwargs, param_name="prompts", expected_type=list)

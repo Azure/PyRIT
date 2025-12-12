@@ -50,6 +50,12 @@ class HarmHumanLabeledEntry(HumanLabeledEntry):
     harm_category: str
 
     def __post_init__(self):
+        """
+        Validate that all human scores are between 0.0 and 1.0 inclusive.
+
+        Raises:
+            ValueError: If any human score is not between 0.0 and 1.0 inclusive.
+        """
         if not all(score >= 0.0 and score <= 1.0 for score in self.human_scores):
             raise ValueError("All human scores must be between 0.0 and 1.0 inclusive.")
 
@@ -72,14 +78,6 @@ class HumanLabeledDataset:
     A class that represents a human-labeled dataset, including the entries and each of their corresponding
     human scores. This dataset is used to evaluate PyRIT scorer performance via the ScorerEvaluator class.
     HumanLabeledDatasets can be constructed from a CSV file.
-
-    Args:
-        name (str): The name of the human-labeled dataset. For datasets of uniform type, this is often the harm
-            category (e.g. hate_speech) or objective. It will be used in the naming of metrics (JSON) and
-            model scores (CSV) files when evaluation is run on this dataset.
-        entries (List[HumanLabeledEntry]): A list of HumanLabeledEntry objects representing the entries in the dataset.
-        metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or
-            OBJECTIVE.
     """
 
     def __init__(
@@ -89,6 +87,20 @@ class HumanLabeledDataset:
         entries: List[HumanLabeledEntry],
         metrics_type: MetricsType,
     ):
+        """
+        Initialize the HumanLabeledDataset.
+
+        Args:
+            name (str): The name of the human-labeled dataset. For datasets of uniform type, this is often the harm
+                category (e.g. hate_speech) or objective. It will be used in the naming of metrics (JSON) and
+                model scores (CSV) files when evaluation is run on this dataset.
+            entries (List[HumanLabeledEntry]): A list of entries in the dataset.
+            metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or
+                OBJECTIVE.
+
+        Raises:
+            ValueError: If the dataset name is an empty string.
+        """
         if not name:
             raise ValueError("Dataset name cannot be an empty string.")
 
@@ -105,9 +117,9 @@ class HumanLabeledDataset:
         *,
         csv_path: Union[str, Path],
         metrics_type: MetricsType,
-        assistant_response_col_name: str,
         human_label_col_names: List[str],
         objective_or_harm_col_name: str,
+        assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         dataset_name: Optional[str] = None,
     ) -> "HumanLabeledDataset":
@@ -119,6 +131,7 @@ class HumanLabeledDataset:
             metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or
                 OBJECTIVE.
             assistant_response_col_name (str): The name of the column containing the assistant responses.
+                Defaults to "assistant_response".
             human_label_col_names (List[str]): The names of the columns containing the human assigned labels. For
                 harm datasets, the CSV file should contain float scores between 0.0 and 1.0 for each response.
                 For objective datasets, the CSV file should contain a 0 or 1 for each response.
@@ -131,11 +144,19 @@ class HumanLabeledDataset:
 
         Returns:
             HumanLabeledDataset: The human-labeled dataset object.
+
+        Raises:
+            ValueError: If the CSV file does not exist.
         """
         if not os.path.exists(csv_path):
             raise ValueError(f"CSV file does not exist: {csv_path}")
 
-        eval_df = pd.read_csv(csv_path)
+        # Try UTF-8 first, fall back to latin-1 for files with special characters
+        try:
+            eval_df = pd.read_csv(csv_path, encoding="utf-8")
+        except UnicodeDecodeError:
+            eval_df = pd.read_csv(csv_path, encoding="latin-1")
+
         # cls._validate_fields
         cls._validate_columns(
             eval_df=eval_df,
@@ -255,6 +276,9 @@ class HumanLabeledDataset:
                 for each response.
             assistant_response_data_type_col_name (Optional[str]): The name of the column containing the data type
                 of the assistant responses.
+
+        Raises:
+            ValueError: If any required column is missing, contains NaN values, or if column names are not unique.
         """
         if len(eval_df.columns) != len(set(eval_df.columns)):
             raise ValueError("Column names in the dataset must be unique.")
@@ -285,6 +309,9 @@ class HumanLabeledDataset:
             human_scores (List): The human scores for the response.
             objective_or_harm: The objective or harm category for the response.
             data_type: The data type of the response (e.g., "text", "image", etc.).
+
+        Raises:
+            ValueError: If any field is invalid.
         """
         if not response_to_score or not str(response_to_score).strip():
             raise ValueError("One or more of the responses is empty. Ensure that the file contains " "valid responses.")

@@ -15,7 +15,7 @@
 # %% [markdown]
 # # 1. PyRIT Scan
 #
-# `pyrit_scan` allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/scenarios.ipynb) for strategies and [configuration](../setup/1_configuration.ipynb).
+# `pyrit_scan` allows you to run automated security testing and red teaming attacks against AI systems using [scenarios](../scenarios/0_scenarios.ipynb) for strategies and [configuration](../setup/1_configuration.ipynb).
 #
 # Note in this doc the ! prefaces all commands in the terminal so we can run in a Jupyter Notebook.
 #
@@ -120,12 +120,11 @@
 # You can define your own scenarios in initialization scripts. The CLI will automatically discover any `Scenario` subclasses and make them available:
 #
 
-from pyrit.common.apply_defaults import apply_defaults
-
 # %%
 # my_custom_scenarios.py
+from pyrit.common.apply_defaults import apply_defaults
 from pyrit.scenario import Scenario
-from pyrit.scenario.scenario_strategy import ScenarioStrategy
+from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
 
 
 class MyCustomStrategy(ScenarioStrategy):
@@ -154,7 +153,6 @@ class MyCustomScenario(Scenario):
             name="My Custom Scenario",
             version=1,
             strategy_class=MyCustomStrategy,
-            default_aggregate=MyCustomStrategy.ALL,
             scenario_result_id=scenario_result_id,
         )
         # ... your scenario-specific initialization code

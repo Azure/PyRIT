@@ -1,4 +1,4 @@
-# PyRIT Shell - Interactive Command Line
+# 2. PyRIT Shell - Interactive Command Line
 
 PyRIT Shell provides an interactive REPL (Read-Eval-Print Loop) for running AI red teaming scenarios with fast execution and session-based result tracking.
 
@@ -20,7 +20,7 @@ pyrit_shell --database InMemory
 pyrit_shell --log-level DEBUG
 
 # Load initializers at startup
-pyrit_shell --initializers openai_objective_target
+pyrit_shell --initializers openai_objective_target load_default_datasets
 
 # Load custom initialization scripts
 pyrit_shell --initialization-scripts ./my_config.py
@@ -48,32 +48,32 @@ The `run` command executes scenarios with the same options as `pyrit_scan`:
 ### Basic Usage
 
 ```bash
-pyrit> run foundry_scenario --initializers openai_objective_target
+pyrit> run foundry_scenario --initializers openai_objective_target load_default_datasets
 ```
 
 ### With Strategies
 
 ```bash
-pyrit> run encoding_scenario --initializers openai_objective_target --strategies base64 rot13
+pyrit> run garak.encoding_scenario --initializers openai_objective_target load_default_datasets --strategies base64 rot13
 
-pyrit> run foundry_scenario --initializers openai_objective_target -s jailbreak crescendo
+pyrit> run foundry_scenario --initializers openai_objective_target load_default_datasets -s jailbreak crescendo
 ```
 
 ### With Runtime Parameters
 
 ```bash
 # Set concurrency and retries
-pyrit> run foundry_scenario --initializers openai_objective_target --max-concurrency 10 --max-retries 3
+pyrit> run foundry_scenario --initializers openai_objective_target load_default_datasets --max-concurrency 10 --max-retries 3
 
 # Add memory labels for tracking
-pyrit> run encoding_scenario --initializers openai_objective_target --memory-labels '{\"experiment\":\"test1\",\"version\":\"v2\"}'
+pyrit> run garak.encoding_scenario --initializers openai_objective_target load_default_datasets --memory-labels '{"experiment":"test1","version":"v2"}'
 ```
 
 ### Override Defaults Per-Run
 
 ```bash
 # Override database and log level for this run only
-pyrit> run encoding_scenario --initializers openai_objective_target --database InMemory --log-level DEBUG
+pyrit> run garak.encoding_scenario --initializers openai_objective_target load_default_datasets --database InMemory --log-level DEBUG
 ```
 
 ### Run Command Options
@@ -114,9 +114,9 @@ pyrit> scenario-history
 
 Scenario Run History:
 ================================================================================
-1) foundry_scenario --initializers openai_objective_target --strategies base64
-2) encoding_scenario --initializers openai_objective_target --strategies rot13
-3) foundry_scenario --initializers openai_objective_target -s jailbreak
+1) foundry_scenario --initializers openai_objective_target load_default_datasets --strategies base64
+2) garak.encoding_scenario --initializers openai_objective_target load_default_datasets --strategies rot13
+3) foundry_scenario --initializers openai_objective_target load_default_datasets -s jailbreak
 ================================================================================
 
 Total runs: 3
@@ -130,13 +130,13 @@ The shell excels at interactive testing workflows:
 
 ```bash
 # Start shell with defaults
-pyrit_shell --database InMemory --initializers openai_objective_target
+pyrit_shell --database InMemory --initializers openai_objective_target load_default_datasets
 
 # Quick exploration
 pyrit> list-scenarios
-pyrit> run encoding_scenario --strategies base64
-pyrit> run encoding_scenario --strategies rot13
-pyrit> run encoding_scenario --strategies morse_code
+pyrit> run garak.encoding_scenario --strategies base64
+pyrit> run garak.encoding_scenario --strategies rot13
+pyrit> run garak.encoding_scenario --strategies morse_code
 
 # Review and compare
 pyrit> scenario-history
@@ -161,7 +161,7 @@ pyrit> print-scenario 2
 
 2. **Use short strategy aliases** with `-s`:
    ```bash
-   pyrit> run foundry_scenario --initializers openai_objective_target -s base64 rot13
+   pyrit> run foundry_scenario --initializers openai_objective_target load_default_datasets -s base64 rot13
    ```
 
 3. **Review history regularly** to track what you've tested:

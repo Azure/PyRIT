@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
 # ---
 
 # %% [markdown]
@@ -38,9 +38,9 @@ from pyrit.score import (
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
 )
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Configure the conversation objectives
 # Likely, these will originate in the database or a yaml file, but for this example we are just giving the string.
@@ -58,6 +58,7 @@ conversation_objectives = [
 objective_target = OpenAIChatTarget(
     endpoint=os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_GPT4O_KEY"],
+    model_name=os.environ["AZURE_OPENAI_GPT4O_MODEL"],
 )
 
 # Configure the labels you want to send
@@ -74,7 +75,7 @@ memory_labels = {"op_name": "new_op", "user_name": "roakey", "test_name": "cookb
 converter_target = OpenAIChatTarget(
     endpoint=os.environ["PLATFORM_OPENAI_CHAT_ENDPOINT"],
     api_key=os.environ["PLATFORM_OPENAI_CHAT_KEY"],
-    model_name="gpt-4o",
+    model_name=os.environ["PLATFORM_OPENAI_CHAT_MODEL"],
 )
 
 converters = [
@@ -102,8 +103,8 @@ for objective in conversation_objectives:
         attack_adversarial_config=adversarial_config,
         attack_converter_config=converter_config,
         attack_scoring_config=scoring_config,
-        max_turns=10,
-        max_backtracks=5,
+        max_turns=5,
+        max_backtracks=3,
     )
 
     result = await attack.execute_async(  # type: ignore
@@ -127,7 +128,7 @@ for objective in conversation_objectives:
 from typing import List
 
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackResult
+from pyrit.models.attack_result import AttackResult
 
 memory = CentralMemory.get_memory_instance()
 
@@ -137,6 +138,7 @@ memory = CentralMemory.get_memory_instance()
 new_objective_target = OpenAIChatTarget(
     endpoint=os.environ["AZURE_FOUNDRY_DEEPSEEK_ENDPOINT"],
     api_key=os.environ["AZURE_FOUNDRY_DEEPSEEK_KEY"],
+    model_name=os.environ["AZURE_FOUNDRY_DEEPSEEK_MODEL"],
 )
 
 # Configure your new attack.
@@ -156,7 +158,7 @@ new_attack = CrescendoAttack(
     attack_adversarial_config=adversarial_config,
     attack_scoring_config=scoring_config,
     attack_converter_config=converter_config,
-    max_turns=10,
+    max_turns=5,
     max_backtracks=2,
 )
 

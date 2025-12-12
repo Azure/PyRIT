@@ -20,9 +20,9 @@
 # %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, SkeletonKeyAttack
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Step 1: Instantiate the SkeletonKeyAttack (this will use a default skeleton key prompt from `skeleton_key.prompt`)
 attack = SkeletonKeyAttack(objective_target=OpenAIChatTarget())

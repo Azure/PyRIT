@@ -11,10 +11,10 @@ PyRIT setup involves three main components to get you started with security test
 For the fastest setup, use the `SimpleInitializer` which requires only basic OpenAI environment variables:
 
 ```python
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 ```
 
 This configuration allows you to run most PyRIT notebooks immediately.

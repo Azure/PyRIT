@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import pathlib
 import shutil
 import subprocess
@@ -10,7 +11,7 @@ import time
 import pytest
 import requests
 
-from pyrit.common.path import DATASETS_PATH, HOME_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH, HOME_PATH
 from pyrit.exceptions import PyritException
 from pyrit.executor.core import StrategyConverterConfig
 from pyrit.executor.workflow import XPIATestWorkflow
@@ -18,7 +19,7 @@ from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import HTTPXAPITarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-from pyrit.setup import SQLITE, initialize_pyrit
+from pyrit.setup import SQLITE, initialize_pyrit_async
 
 AI_RECRUITER_REPO = "https://github.com/KutalVolkan/ai_recruiter.git"
 AI_RECRUITER_COMMIT = "2e4a5b6"
@@ -26,7 +27,7 @@ FASTAPI_URL = "http://localhost:8000"
 MAX_WAIT_SECONDS = 300
 
 # Initialize PyRIT
-initialize_pyrit(memory_db_type=SQLITE)
+asyncio.run(initialize_pyrit_async(memory_db_type=SQLITE))
 
 
 async def evaluate_candidate_selection(final_result: str, expected_candidate: str) -> bool:
@@ -125,7 +126,7 @@ def ensure_ai_recruiter_running():
 @pytest.mark.asyncio
 async def test_ai_recruiter_workflow():
     # Define PDF Path
-    cv_pdf_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "Jonathon_Sanchez.pdf"
+    cv_pdf_path = pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "pdf_converters" / "Jonathon_Sanchez.pdf"
 
     # Expected best candidate name
     expected_best_candidate = f"Best Candidate: {cv_pdf_path.stem}"

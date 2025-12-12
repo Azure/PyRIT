@@ -67,7 +67,7 @@ class PromptShieldScorer(TrueFalseScorer):
 
         # The body of the Prompt Shield response
         target_response = await self._prompt_target.send_prompt_async(message=request)
-        response: str = target_response.get_value()
+        response: str = target_response[0].get_value()
 
         # Whether or not any of the documents or userPrompt got flagged as an attack
         result: bool = any(self._parse_response_to_boolean_list(response))
@@ -96,6 +96,9 @@ class PromptShieldScorer(TrueFalseScorer):
         """
         Remember that you can just access the metadata attribute to get the original Prompt Shield endpoint response,
         and then just call json.loads() on it to interact with it.
+
+        Returns:
+            list[bool]: A list of boolean values indicating whether an attack was detected.
         """
         response_json: dict = json.loads(response)
 

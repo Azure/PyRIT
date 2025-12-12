@@ -43,6 +43,7 @@ def _create_aggregator(
     *,
     result_func: FloatScaleOp,
     aggregate_description: str,
+    raise_on_empty: bool = False,
 ) -> FloatScaleAggregatorFunc:
     """
     Create a float-scale aggregator using a result function over float values.
@@ -51,6 +52,7 @@ def _create_aggregator(
         name (str): Name of the aggregator variant.
         result_func (FloatScaleOp): Function applied to the list of float values to compute the aggregation result.
         aggregate_description (str): Base description for the aggregated result.
+        raise_on_empty (bool): Whether to raise ValueError when no scores are provided. Defaults to False.
 
     Returns:
         FloatScaleAggregatorFunc: Aggregator function that reduces a sequence of float-scale Scores
@@ -65,6 +67,8 @@ def _create_aggregator(
 
         scores_list = list(scores)
         if not scores_list:
+            if raise_on_empty:
+                raise ValueError("No scores available for aggregation")
             # No scores; return a neutral result
             return [
                 ScoreAggregatorResult(
@@ -124,6 +128,27 @@ class FloatScaleScoreAggregator:
         "MIN",
         result_func=min,
         aggregate_description="Minimum value among constituent scorers in a MIN composite scorer.",
+    )
+
+    AVERAGE_RAISE_ON_EMPTY: FloatScaleAggregatorFunc = _create_aggregator(
+        "AVERAGE_RAISE_ON_EMPTY",
+        result_func=lambda xs: round(sum(xs) / len(xs), 10) if xs else 0.0,
+        aggregate_description="Average of constituent scorers in an AVERAGE composite scorer.",
+        raise_on_empty=True,
+    )
+
+    MAX_RAISE_ON_EMPTY: FloatScaleAggregatorFunc = _create_aggregator(
+        "MAX_RAISE_ON_EMPTY",
+        result_func=max,
+        aggregate_description="Maximum value among constituent scorers in a MAX composite scorer.",
+        raise_on_empty=True,
+    )
+
+    MIN_RAISE_ON_EMPTY: FloatScaleAggregatorFunc = _create_aggregator(
+        "MIN_RAISE_ON_EMPTY",
+        result_func=min,
+        aggregate_description="Minimum value among constituent scorers in a MIN composite scorer.",
+        raise_on_empty=True,
     )
 
 
