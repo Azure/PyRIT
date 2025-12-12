@@ -45,8 +45,6 @@ jobs:
   - script:
       wget -qO- https://astral.sh/uv/install.sh | sh
     name: install_uv
-  - bash: uv pip install --upgrade setuptools pip packaging
-    name: upgrade_pip_and_setuptools_before_installing_PyRIT
   - bash: sudo apt-get install python3-tk
     name: install_tkinter
   - bash: |
