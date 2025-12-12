@@ -13,7 +13,7 @@ from pyrit.executor.attack import (
     MultiTurnAttackContext,
     SingleTurnAttackContext,
 )
-from pyrit.models import AttackOutcome, AttackResult, SeedGroup, SeedPrompt
+from pyrit.models import AttackOutcome, AttackResult, Message, SeedGroup, SeedPrompt
 
 
 @pytest.fixture
@@ -73,12 +73,12 @@ def mock_multi_turn_attack_strategy():
 
 
 @pytest.fixture
-def sample_seed_groups():
-    """Create sample seed groups for testing"""
+def sample_messages():
+    """Create sample messages for testing"""
     return [
-        SeedGroup(seeds=[SeedPrompt(value="First prompt", data_type="text")]),
-        SeedGroup(seeds=[SeedPrompt(value="Second prompt", data_type="text")]),
-        SeedGroup(seeds=[SeedPrompt(value="Third prompt", data_type="text")]),
+        Message.from_prompt(prompt="First prompt", role="user"),
+        Message.from_prompt(prompt="Second prompt", role="user"),
+        Message.from_prompt(prompt="Third prompt", role="user"),
     ]
 
 
@@ -772,21 +772,21 @@ class TestExecuteSingleTurnAttacksAsync:
         assert mock_single_turn_attack_strategy.execute_async.call_count == len(multiple_objectives)
 
     @pytest.mark.asyncio
-    async def test_execute_single_turn_with_seed_groups(self, mock_single_turn_attack_strategy, sample_seed_groups):
+    async def test_execute_single_turn_with_seed_groups(self, mock_single_turn_attack_strategy, sample_messages):
         executor = AttackExecutor(max_concurrency=1)
         objectives = ["Obj1", "Obj2", "Obj3"]
 
         mock_single_turn_attack_strategy.execute_async.return_value = MagicMock()
-
+        
         await executor.execute_single_turn_attacks_async(
             attack=mock_single_turn_attack_strategy,
             objectives=objectives,
-            seed_groups=sample_seed_groups,
+            messages=sample_messages,
         )
 
-        # Verify execute_async was called with correct seed groups
+        # Verify execute_async was called with correct messages
         for i, call in enumerate(mock_single_turn_attack_strategy.execute_async.call_args_list):
-            assert call.kwargs["seed_group"] == sample_seed_groups[i]
+            assert call.kwargs["message"] == sample_messages[i]
 
     @pytest.mark.asyncio
     async def test_execute_single_turn_validates_context_type(self, mock_multi_turn_attack_strategy):
@@ -813,13 +813,13 @@ class TestExecuteSingleTurnAttacksAsync:
     async def test_execute_single_turn_validates_seed_groups_length(self, mock_single_turn_attack_strategy):
         executor = AttackExecutor()
         objectives = ["Obj1", "Obj2"]
-        seed_groups = [SeedGroup(seeds=[SeedPrompt(value="prompt", data_type="text")])]
+        messages = [Message.from_prompt(prompt="prompt", role="user")]
 
-        with pytest.raises(ValueError, match="Number of seed_groups .* must match number of objectives"):
+        with pytest.raises(ValueError, match="Number of messages .* must match number of objectives"):
             await executor.execute_single_turn_attacks_async(
                 attack=mock_single_turn_attack_strategy,
                 objectives=objectives,
-                seed_groups=seed_groups,
+                messages=messages,
             )
 
     @pytest.mark.asyncio
@@ -917,19 +917,23 @@ class TestExecuteMultiTurnAttacksAsync:
     async def test_execute_multi_turn_with_custom_prompts(self, mock_multi_turn_attack_strategy):
         executor = AttackExecutor(max_concurrency=1)
         objectives = ["Obj1", "Obj2", "Obj3"]
-        custom_prompts = ["Custom prompt 1", "Custom prompt 2", "Custom prompt 3"]
+        messages = [
+            Message.from_prompt(prompt="Custom prompt 1", role="user"),
+            Message.from_prompt(prompt="Custom prompt 2", role="user"),
+            Message.from_prompt(prompt="Custom prompt 3", role="user"),
+        ]
 
         mock_multi_turn_attack_strategy.execute_async.return_value = MagicMock()
 
         await executor.execute_multi_turn_attacks_async(
             attack=mock_multi_turn_attack_strategy,
             objectives=objectives,
-            custom_prompts=custom_prompts,
+            messages=messages,
         )
 
-        # Verify execute_async was called with correct custom prompts
+        # Verify execute_async was called with correct messages
         for i, call in enumerate(mock_multi_turn_attack_strategy.execute_async.call_args_list):
-            assert call.kwargs["custom_prompt"] == custom_prompts[i]
+            assert call.kwargs["message"] == messages[i]
 
     @pytest.mark.asyncio
     async def test_execute_multi_turn_validates_context_type(self, mock_single_turn_attack_strategy):
@@ -956,13 +960,13 @@ class TestExecuteMultiTurnAttacksAsync:
     async def test_execute_multi_turn_validates_custom_prompts_length(self, mock_multi_turn_attack_strategy):
         executor = AttackExecutor()
         objectives = ["Obj1", "Obj2"]
-        custom_prompts = ["Only one custom prompt"]
+        messages = [Message.from_prompt(prompt="Only one custom prompt", role="user")]
 
-        with pytest.raises(ValueError, match="Number of custom_prompts .* must match number of objectives"):
+        with pytest.raises(ValueError, match="Number of messages .* must match number of objectives"):
             await executor.execute_multi_turn_attacks_async(
                 attack=mock_multi_turn_attack_strategy,
                 objectives=objectives,
-                custom_prompts=custom_prompts,
+                messages=messages,
             )
 
     @pytest.mark.asyncio

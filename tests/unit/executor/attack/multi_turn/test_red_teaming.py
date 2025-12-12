@@ -403,21 +403,23 @@ class TestContextCreation:
 
                         mock_perform.side_effect = capture_context
 
-                        # Execute with custom prompt
+                        # Execute with custom message
+                        custom_message = Message.from_prompt(prompt="My custom prompt", role="user")
                         await attack.execute_async(
                             objective="Test objective",
-                            custom_prompt="My custom prompt",
+                            message=custom_message,
                         )
 
                         # Verify the captured context
                         assert captured_context is not None
-                        assert captured_context.custom_prompt == "My custom prompt"
+                        assert captured_context.message is not None
+                        assert captured_context.message.message_pieces[0].original_value == "My custom prompt"
 
     @pytest.mark.asyncio
-    async def test_execute_async_invalid_custom_prompt_type(
+    async def test_execute_async_invalid_message_type(
         self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
     ):
-        """Test that non-string custom prompt raises ValueError."""
+        """Test that non-Message message parameter raises TypeError."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -428,10 +430,10 @@ class TestContextCreation:
         )
 
         # Should raise TypeError during parameter validation
-        with pytest.raises(TypeError, match="Parameter 'custom_prompt' must be of type str"):
+        with pytest.raises(TypeError, match="Parameter 'message' must be of type Message"):
             await attack.execute_async(
                 objective="Test objective",
-                custom_prompt=123,  # Invalid type
+                message=123,  # Invalid type
             )
 
 
@@ -695,12 +697,12 @@ class TestPromptGeneration:
 
         first_prompt = "Custom first prompt"
         basic_context.executed_turns = 0
-        basic_context.custom_prompt = first_prompt
+        basic_context.message = Message.from_prompt(prompt=first_prompt, role="user")
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == first_prompt
-        assert basic_context.custom_prompt is None  # Should be cleared after use
+        assert basic_context.message is None  # Should be cleared after use
         # Should not call adversarial chat
         mock_prompt_normalizer.send_prompt_async.assert_not_called()
 
@@ -726,12 +728,12 @@ class TestPromptGeneration:
 
         custom_prompt = "Custom prompt at turn 1"
         basic_context.executed_turns = 1  # Not first turn
-        basic_context.custom_prompt = custom_prompt
+        basic_context.message = Message.from_prompt(prompt=custom_prompt, role="user")
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == custom_prompt
-        assert basic_context.custom_prompt is None  # Should be cleared after use
+        assert basic_context.message is None  # Should be cleared after use
         # Should not call adversarial chat
         mock_prompt_normalizer.send_prompt_async.assert_not_called()
 
@@ -757,7 +759,7 @@ class TestPromptGeneration:
         )
 
         basic_context.executed_turns = 1
-        basic_context.custom_prompt = None  # No custom prompt
+        basic_context.message = None  # No message
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
         # Mock build_adversarial_prompt
@@ -1135,6 +1137,48 @@ class TestResponseScoring:
 @pytest.mark.usefixtures("patch_central_database")
 class TestAttackExecution:
     """Tests for the main attack execution logic."""
+
+    @pytest.mark.asyncio
+    async def test_perform_attack_with_message_bypasses_adversarial_chat_on_first_turn(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_prompt_normalizer: MagicMock,
+        basic_context: MultiTurnAttackContext,
+        sample_response: Message,
+        success_score: Score,
+    ):
+        """Test that providing a message parameter bypasses adversarial chat generation on first turn."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=MagicMock(spec=TrueFalseScorer))
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            prompt_normalizer=mock_prompt_normalizer,
+        )
+
+        # Set message to bypass adversarial chat
+        custom_message = Message.from_prompt(prompt="Custom first turn message", role="user")
+        basic_context.message = custom_message
+
+        # Mock only objective target response (no adversarial chat should be called)
+        mock_prompt_normalizer.send_prompt_async.return_value = sample_response
+
+        with patch.object(attack, "_score_response_async", new_callable=AsyncMock, return_value=success_score):
+            result = await attack._perform_async(context=basic_context)
+
+        assert isinstance(result, AttackResult)
+        assert result.outcome == AttackOutcome.SUCCESS
+        assert result.executed_turns == 1
+        
+        # Verify adversarial chat was not called for first turn
+        # (only objective target should receive the custom message)
+        assert mock_prompt_normalizer.send_prompt_async.call_count == 1
+        
+        # Verify the message was cleared after use
+        assert basic_context.message is None
 
     @pytest.mark.parametrize(
         "scorer_type,score_value,threshold,expected_achieved",

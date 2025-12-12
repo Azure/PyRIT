@@ -171,18 +171,11 @@ class ContextComplianceAttack(PromptSendingAttack):
         # Update context with the prepended conversation
         context.prepended_conversation = prepended_conversation
 
-        # Create the affirmative seed group
-        affirmative_seed_prompt = SeedGroup(
-            seeds=[
-                SeedPrompt(
-                    value=self._affirmative_response,
-                    data_type="text",
-                )
-            ]
+        # Create the affirmative message
+        context.message = Message.from_prompt(
+            prompt=self._affirmative_response,
+            role="user",
         )
-
-        # Set the seed group in context
-        context.seed_group = affirmative_seed_prompt
 
         await super()._setup_async(context=context)
 

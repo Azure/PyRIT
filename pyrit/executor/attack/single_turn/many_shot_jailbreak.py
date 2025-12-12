@@ -11,7 +11,7 @@ from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn import SingleTurnAttackContext
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import AttackResult, SeedGroup, SeedPrompt
+from pyrit.models import AttackResult, SeedPrompt, Message
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 
@@ -112,8 +112,6 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         many_shot_prompt = self._template.render_template_value(prompt=context.objective, examples=self._examples)
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=many_shot_prompt, data_type="text")])
-
-        context.seed_group = seed_group
+        context.message = Message.from_prompt(prompt=many_shot_prompt, role="user")
 
         return await super()._perform_async(context=context)

@@ -232,9 +232,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         # update the turns based on prepend conversation
         context.executed_turns = conversation_state.turn_count
 
-        # update the custom prompt if provided
+        # update the custom message if provided
         if RedTeamingAttack._has_custom_prompt(state=conversation_state):
-            context.custom_prompt = conversation_state.last_user_message
+            context.message = Message.from_prompt(prompt=conversation_state.last_user_message, role="user")
 
         # get the last assistant message evaluation score if available
         score = self._retrieve_last_assistant_message_evaluation_score(state=conversation_state)
@@ -336,12 +336,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         Raises:
             ValueError: If no response is received from the adversarial chat.
         """
-        # If custom prompt provided, use it and clear it
-        if context.custom_prompt:
-            logger.debug("Using custom prompt")
-            prompt = context.custom_prompt
+        # If custom message provided, use it and bypass adversarial chat generation
+        if context.message:
+            logger.debug("Using custom message, bypassing adversarial chat")
+            prompt = context.message.message_pieces[0].converted_value
             # Clear to prevent reuse
-            context.custom_prompt = None
+            context.message = None
             return prompt
 
         # Generate prompt using adversarial chat
@@ -352,10 +352,10 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         # Send the prompt to the adversarial chat and get the response
         logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
-        prompt_grp = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text")])
+        prompt_message = Message.from_prompt(prompt=prompt_text, role="user")
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=prompt_grp,
+            message=prompt_message,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
@@ -499,13 +499,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         """
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 
-        # Create a seed group from the prompt
-        seed_prompt = SeedPrompt(value=prompt, data_type="text")
-        seed_group = SeedGroup(seeds=[seed_prompt])
+        # Create a message from the prompt
+        message = Message.from_prompt(prompt=prompt, role="user")
 
         # Send the prompt to the target
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,

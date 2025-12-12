@@ -283,7 +283,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         # Handle prepended conversation
         refused_text, objective_score = self._retrieve_refusal_text_and_objective_score(conversation_state)
-        context.custom_prompt = self._retrieve_custom_prompt_from_prepended_conversation(conversation_state)
+        custom_prompt_text = self._retrieve_custom_prompt_from_prepended_conversation(conversation_state)
+        if custom_prompt_text:
+            context.message = Message.from_prompt(prompt=custom_prompt_text, role="user")
         context.last_score = objective_score
 
         # Store refused text in context
@@ -736,7 +738,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         Generate the next prompt to be sent to the target during the Crescendo attack.
 
-        This method determines whether to use a custom prompt (for the first turn) or
+        This method determines whether to use a custom message (bypassing adversarial chat) or
         generate a new attack prompt using the adversarial chat based on previous feedback.
 
         Args:
@@ -745,11 +747,11 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Returns:
             str: The generated prompt to be sent to the target.
         """
-        # If custom prompt is set (from prepended conversation), use it
-        if context.custom_prompt:
-            self._logger.debug("Using custom prompt from prepended conversation")
-            prompt = context.custom_prompt
-            context.custom_prompt = None  # Clear for future turns
+        # If custom message is set, use it and bypass adversarial chat generation
+        if context.message:
+            self._logger.debug("Using custom message, bypassing adversarial chat")
+            prompt = context.message.message_pieces[0].converted_value
+            context.message = None  # Clear for future turns
             return prompt
 
         # Generate prompt using adversarial chat

@@ -12,8 +12,6 @@ from pyrit.exceptions import EmptyResponseException, PyritException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     Message,
-    MessagePiece,
-    SeedGroup,
     construct_response_from_request,
 )
 from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
@@ -44,7 +42,7 @@ class PromptNormalizer:
     async def send_prompt_async(
         self,
         *,
-        seed_group: SeedGroup,
+        message: Message,
         target: PromptTarget,
         conversation_id: Optional[str] = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
@@ -56,7 +54,7 @@ class PromptNormalizer:
         Send a single request to a target.
 
         Args:
-            seed_group (SeedGroup): The seed group to be sent.
+            message (Message): The message to be sent.
             target (PromptTarget): The target to which the prompt is sent.
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
             request_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
@@ -69,23 +67,29 @@ class PromptNormalizer:
 
         Raises:
             Exception: If an error occurs during the request processing.
-            ValueError: If the prompts in the SeedGroup are not part of the same sequence.
+            ValueError: If the message pieces are not part of the same sequence.
 
         Returns:
             Message: The response received from the target.
         """
-        # Validates that the SeedPrompts in the SeedGroup are part of the same sequence
-        if len(set(prompt.sequence for prompt in seed_group.prompts)) > 1:
-            raise ValueError("All SeedPrompts in the SeedGroup must have the same sequence.")
+        # Validates that the MessagePieces in the Message are part of the same sequence
+        if len(set(piece.sequence for piece in message.message_pieces)) > 1:
+            raise ValueError("All MessagePieces in the Message must have the same sequence.")
 
-        request = await self._build_message(
-            seed_group=seed_group,
-            conversation_id=conversation_id,
-            request_converter_configurations=request_converter_configurations,
-            target=target,
-            labels=labels,
-            attack_identifier=attack_identifier,
-        )
+        # Prepare the request by updating conversation ID, labels, and attack identifier
+        request = copy.deepcopy(message)
+        conversation_id = conversation_id if conversation_id else str(uuid4())
+        
+        for piece in request.message_pieces:
+            piece.conversation_id = conversation_id
+            if labels:
+                piece.labels = labels
+            piece.prompt_target_identifier = target.get_identifier()
+            if attack_identifier:
+                piece.attack_identifier = attack_identifier
+
+        # Apply request converters
+        await self.convert_values(converter_configurations=request_converter_configurations, message=request)
 
         await self._calc_hash(request=request)
 
@@ -166,14 +170,14 @@ class PromptNormalizer:
                 received for each prompt.
         """
         batch_items: List[List[Any]] = [
-            [request.seed_group for request in requests],
+            [request.message for request in requests],
             [request.request_converter_configurations for request in requests],
             [request.response_converter_configurations for request in requests],
             [request.conversation_id for request in requests],
         ]
 
         batch_item_keys = [
-            "seed_group",
+            "message",
             "request_converter_configurations",
             "response_converter_configurations",
             "conversation_id",
@@ -254,56 +258,7 @@ class PromptNormalizer:
         tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.message_pieces]
         await asyncio.gather(*tasks)
 
-    async def _build_message(
-        self,
-        *,
-        seed_group: SeedGroup,
-        conversation_id: str,
-        request_converter_configurations: list[PromptConverterConfiguration],
-        target: PromptTarget,
-        labels: dict[str, str],
-        attack_identifier: Optional[dict[str, str]] = None,
-    ) -> Message:
-        """
-        Build a message based on the given parameters.
 
-        Applies parameters and converters to the prompt text and puts all the pieces together.
-
-        Args:
-            seed_group (SeedGroup): The group of seed prompts to be used.
-            conversation_id (str): The ID of the conversation.
-            request_converter_configurations (list[PromptConverterConfiguration]): List of configurations for
-                request converters.
-            target (PromptTarget): The target for the prompt.
-            labels (dict[str, str]): A dictionary of labels associated with the prompt.
-            attack_identifier (Optional[dict[str, str]]): An optional dictionary for attack identifiers.
-
-        Returns:
-            Message: The message object.
-        """
-        entries = []
-
-        # All message pieces within Message needs to have same conversation ID.
-        conversation_id = conversation_id if conversation_id else str(uuid4())
-        for seed_prompt in seed_group.prompts:
-            message_piece = MessagePiece(
-                role=seed_prompt.role,
-                original_value=seed_prompt.value,
-                conversation_id=conversation_id,
-                sequence=seed_prompt.sequence,
-                labels=labels,
-                prompt_metadata=seed_prompt.metadata,
-                prompt_target_identifier=target.get_identifier(),
-                attack_identifier=attack_identifier,
-                original_value_data_type=seed_prompt.data_type,
-            )
-
-            entries.append(message_piece)
-
-        response = Message(message_pieces=entries)
-
-        await self.convert_values(converter_configurations=request_converter_configurations, message=response)
-        return response
 
     async def add_prepended_conversation_to_memory(
         self,

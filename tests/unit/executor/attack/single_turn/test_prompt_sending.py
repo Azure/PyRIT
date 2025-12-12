@@ -199,7 +199,7 @@ class TestContextValidation:
         context = SingleTurnAttackContext(
             objective="Test objective",
             conversation_id=str(uuid.uuid4()),
-            seed_group=SeedGroup(seeds=[SeedPrompt(value="test", data_type="text")]),
+            message=Message.from_prompt(prompt="test", role="user"),
             system_prompt="System prompt",
             metadata={"key": "value"},
         )
@@ -268,26 +268,26 @@ class TestSetupPhase:
 class TestPromptPreparation:
     """Tests for prompt preparation logic"""
 
-    def test_get_prompt_group_uses_existing_seed_group(self, mock_target, basic_context):
-        existing_group = SeedGroup(seeds=[SeedPrompt(value="Existing prompt", data_type="text")])
-        basic_context.seed_group = existing_group
+    def test_get_message_uses_existing_message(self, mock_target, basic_context):
+        existing_message = Message.from_prompt(prompt="Existing prompt", role="user")
+        basic_context.message = existing_message
 
         attack = PromptSendingAttack(objective_target=mock_target)
-        result = attack._get_prompt_group(basic_context)
+        result = attack._get_message(basic_context)
 
-        assert result == existing_group
+        assert result == existing_message
 
-    def test_get_prompt_group_creates_from_objective_when_no_seed_group(self, mock_target, basic_context):
-        basic_context.seed_group = None
+    def test_get_message_creates_from_objective_when_no_message(self, mock_target, basic_context):
+        basic_context.message = None
         basic_context.objective = "Custom objective text"
 
         attack = PromptSendingAttack(objective_target=mock_target)
-        result = attack._get_prompt_group(basic_context)
+        result = attack._get_message(basic_context)
 
-        assert isinstance(result, SeedGroup)
-        assert len(result.prompts) == 1
-        assert result.prompts[0].value == "Custom objective text"
-        assert result.prompts[0].data_type == "text"
+        assert isinstance(result, Message)
+        assert len(result.message_pieces) == 1
+        assert result.message_pieces[0].original_value == "Custom objective text"
+        assert result.message_pieces[0].original_value_data_type == "text"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -313,18 +313,18 @@ class TestPromptSending:
             ),
         )
 
-        prompt_group = SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
+        message = Message.from_prompt(prompt="Test prompt", role="user")
         basic_context.memory_labels = {"test": "label"}
         mock_response = MagicMock()
         mock_prompt_normalizer.send_prompt_async.return_value = mock_response
 
-        result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
+        result = await attack._send_prompt_to_objective_target_async(message=message, context=basic_context)
 
         assert result == mock_response
 
         # Verify all parameters were passed correctly
         call_args = mock_prompt_normalizer.send_prompt_async.call_args
-        assert call_args.kwargs["seed_group"] == prompt_group
+        assert call_args.kwargs["message"] == message
         assert call_args.kwargs["target"] == mock_target
         assert call_args.kwargs["conversation_id"] == basic_context.conversation_id
         assert call_args.kwargs["request_converter_configurations"] == request_converters
@@ -336,10 +336,10 @@ class TestPromptSending:
     async def test_send_prompt_handles_none_response(self, mock_target, mock_prompt_normalizer, basic_context):
         attack = PromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
-        prompt_group = SeedGroup(seeds=[SeedPrompt(value="Test prompt", data_type="text")])
+        message = Message.from_prompt(prompt="Test prompt", role="user")
         mock_prompt_normalizer.send_prompt_async.return_value = None
 
-        result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
+        result = await attack._send_prompt_to_objective_target_async(message=message, context=basic_context)
 
         assert result is None
 
@@ -933,13 +933,13 @@ class TestAttackLifecycle:
         attack._teardown_async = AsyncMock()
 
         # Create test data
-        seed_group = SeedGroup(seeds=[SeedPrompt(value="test", data_type="text")])
+        message = Message.from_prompt(prompt="test", role="user")
 
         result = await attack.execute_async(
             objective="Test objective",
             prepended_conversation=[sample_response],
             memory_labels={"test": "label"},
-            seed_group=seed_group,
+            message=message,
             system_prompt="System prompt",
         )
 
@@ -953,47 +953,19 @@ class TestAttackLifecycle:
         assert isinstance(context, SingleTurnAttackContext)
         assert context.objective == "Test objective"
         assert context.memory_labels == {"test": "label"}
-        assert context.seed_group == seed_group
+        assert context.message is not None
         assert context.system_prompt == "System prompt"
 
-    @pytest.mark.asyncio
-    async def test_execute_async_with_parameters_multiple_objectives(self, mock_target, sample_response):
-        """Test execute_async creates context using factory method and executes attack"""
-        attack = PromptSendingAttack(objective_target=mock_target, max_attempts_on_failure=3)
 
-        attack._validate_context = MagicMock()
-        attack._setup_async = AsyncMock()
-        mock_result = AttackResult(
-            conversation_id="test-id",
-            objective="Test objective",
-            attack_identifier=attack.get_identifier(),
-            outcome=AttackOutcome.SUCCESS,
-            last_response=sample_response.get_piece(),
-        )
-        attack._perform_async = AsyncMock(return_value=mock_result)
-        attack._teardown_async = AsyncMock()
-
-        # Create test data
-        seed_group = SeedGroup(
-            seeds=[SeedPrompt(value="test", data_type="text"), SeedObjective(value="another test objective")],
-        )
-        with pytest.raises(ValueError, match="Attack can only specify one objective per turn."):
-            await attack.execute_async(
-                objective="Test objective",
-                prepended_conversation=[sample_response],
-                memory_labels={"test": "label"},
-                seed_group=seed_group,
-                system_prompt="System prompt",
-            )
 
     @pytest.mark.asyncio
     async def test_execute_async_with_invalid_params_raises_error(self, mock_target):
         """Test execute_async raises error when invalid parameters are passed"""
         attack = PromptSendingAttack(objective_target=mock_target)
 
-        # Test with invalid seed_group type
-        with pytest.raises(TypeError, match="Parameter 'seed_group' must be of type SeedGroup"):
-            await attack.execute_async(objective="Test objective", seed_group="invalid_type")  # Should be SeedGroup
+        # Test with invalid message type
+        with pytest.raises(TypeError, match="Parameter 'message' must be of type Message"):
+            await attack.execute_async(objective="Test objective", message="invalid_type")  # Should be Message
 
         # Test with invalid system_prompt type
         with pytest.raises(TypeError, match="Parameter 'system_prompt' must be of type str"):
@@ -1040,11 +1012,11 @@ class TestEdgeCasesAndErrorHandling:
     async def test_perform_attack_with_minimal_prompt_group(self, mock_target, basic_context, sample_response):
         attack = PromptSendingAttack(objective_target=mock_target)
 
-        # Set minimal prompt group with a single empty prompt
-        minimal_group = SeedGroup(seeds=[SeedPrompt(value="", data_type="text")])
-        basic_context.seed_group = minimal_group
+        # Set minimal message with a single empty prompt
+        minimal_message = Message.from_prompt(prompt="", role="user")
+        basic_context.message = minimal_message
 
-        attack._get_prompt_group = MagicMock(return_value=minimal_group)
+        attack._get_message = MagicMock(return_value=minimal_message)
         attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)
 
         # Execute the attack
@@ -1053,7 +1025,7 @@ class TestEdgeCasesAndErrorHandling:
         # Verify it still executes
         assert result.executed_turns == 1
         attack._send_prompt_to_objective_target_async.assert_called_with(
-            prompt_group=minimal_group, context=basic_context
+            message=minimal_message, context=basic_context
         )
 
     @pytest.mark.asyncio

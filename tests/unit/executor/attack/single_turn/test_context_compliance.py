@@ -391,12 +391,12 @@ class TestContextComplianceAttackSetup:
                 with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock):
                     await attack._setup_async(context=basic_context)
 
-                    # Verify seed group was created
-                    assert basic_context.seed_group is not None
-                    assert isinstance(basic_context.seed_group, SeedGroup)
-                    assert len(basic_context.seed_group.prompts) == 1
-                    assert basic_context.seed_group.prompts[0].value == attack._affirmative_response
-                    assert basic_context.seed_group.prompts[0].data_type == "text"
+                    # Verify message was created
+                    assert basic_context.message is not None
+                    assert isinstance(basic_context.message, Message)
+                    assert len(basic_context.message.message_pieces) == 1
+                    assert basic_context.message.message_pieces[0].original_value == attack._affirmative_response
+                    assert basic_context.message.message_pieces[0].original_value_data_type == "text"
 
     @pytest.mark.asyncio
     async def test_setup_with_custom_affirmative_response(
@@ -428,7 +428,7 @@ class TestContextComplianceAttackSetup:
                     await attack._setup_async(context=basic_context)
 
                     # Verify custom response was used
-                    assert basic_context.seed_group.prompts[0].value == custom_response
+                    assert basic_context.message.message_pieces[0].original_value == custom_response
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -815,14 +815,14 @@ class TestContextComplianceAttackComponentIntegration:
                 with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock):
                     await attack._setup_async(context=basic_context)
 
-                    # Verify seed group was created correctly
-                    assert basic_context.seed_group is not None
-                    assert isinstance(basic_context.seed_group, SeedGroup)
-                    assert len(basic_context.seed_group.prompts) == 1
+                    # Verify message was created correctly
+                    assert basic_context.message is not None
+                    assert isinstance(basic_context.message, Message)
+                    assert len(basic_context.message.message_pieces) == 1
 
-                    seed_prompt = basic_context.seed_group.prompts[0]
-                    assert seed_prompt.value == attack._affirmative_response
-                    assert seed_prompt.data_type == "text"
+                    message_piece = basic_context.message.message_pieces[0]
+                    assert message_piece.original_value == attack._affirmative_response
+                    assert message_piece.original_value_data_type == "text"
 
 
 @pytest.mark.usefixtures("patch_central_database")

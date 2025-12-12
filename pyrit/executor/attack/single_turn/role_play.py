@@ -129,9 +129,9 @@ class RolePlayAttack(PromptSendingAttack):
         # This converts the user's objective into a role-play scenario
         rephrased_objective = await self._rephrase_objective_async(objective=context.objective)
 
-        # Set the rephrased objective as the seed_group
-        # This will be used by _get_prompt_group() to send the rephrased content to the target
-        context.seed_group = SeedGroup(seeds=[SeedPrompt(value=rephrased_objective, data_type="text")])
+        # Set the rephrased objective as the message
+        # This will be used by _get_message() to send the rephrased content to the target
+        context.message = Message.from_prompt(prompt=rephrased_objective, role="user")
 
         # Call parent setup which handles conversation ID generation, memory labels, etc.
         await super()._setup_async(context=context)
@@ -144,12 +144,12 @@ class RolePlayAttack(PromptSendingAttack):
             context (SingleTurnAttackContext): The attack context containing parameters and objective.
 
         Raises:
-            ValueError: If seed_group or prepended_conversation are provided by the user.
+            ValueError: If message or prepended_conversation are provided by the user.
         """
-        if context.seed_group is not None:
+        if context.message is not None:
             raise ValueError(
-                "RolePlayAttack does not accept a seed_group parameter. "
-                "The seed group is generated internally by rephrasing the objective."
+                "RolePlayAttack does not accept a message parameter. "
+                "The message is generated internally by rephrasing the objective."
             )
         if context.prepended_conversation:
             raise ValueError(

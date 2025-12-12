@@ -257,11 +257,11 @@ class TestManyShotJailbreakAttackExecution:
                 prompt=basic_context.objective, examples=sample_many_shot_examples[:100]
             )
 
-            # Verify the seed prompt was set correctly
-            assert basic_context.seed_group is not None
-            assert len(basic_context.seed_group.prompts) == 1
-            assert basic_context.seed_group.prompts[0].value == rendered_prompt
-            assert basic_context.seed_group.prompts[0].data_type == "text"
+            # Verify the message was set correctly
+            assert basic_context.message is not None
+            assert len(basic_context.message.message_pieces) == 1
+            assert basic_context.message.message_pieces[0].original_value == rendered_prompt
+            assert basic_context.message.message_pieces[0].original_value_data_type == "text"
 
             # Verify parent method was called
             mock_perform.assert_called_once_with(context=basic_context)
@@ -432,9 +432,9 @@ class TestManyShotJailbreakAttackWithConverters:
 
             result = await attack._perform_async(context=basic_context)
 
-            # Verify seed group was created
-            assert basic_context.seed_group is not None
-            assert len(basic_context.seed_group.prompts) == 1
+            # Verify message was created
+            assert basic_context.message is not None
+            assert len(basic_context.message.message_pieces) == 1
 
             # Verify parent method was called
             mock_perform.assert_called_once_with(context=basic_context)
