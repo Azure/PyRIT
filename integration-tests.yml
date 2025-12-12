@@ -71,7 +71,7 @@ jobs:
 
       echo "Microsoft ODBC Driver 18 installed successfully."
     displayName: 'Install ODBC Driver 18 for SQL Server'
-  - bash: uv sync --extra dev --extra all --dev
+  - bash: uv sync --extra dev --extra all
     name: install_PyRIT
   - bash: df -all -h
     name: disk_space_check
@@ -87,6 +87,7 @@ jobs:
       cp -r $PyRIT_DIR/assets $NEW_DIR
       cp -r $PyRIT_DIR/tests/integration $NEW_DIR/tests
       cd $NEW_DIR
+      ls
     displayName: "Create and switch to new integration test directory"
   - task: AzureCLI@2
     displayName: "Authenticate with service principal, cache Cognitive Services access token, and run tests"
