@@ -52,7 +52,7 @@ jobs:
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --all-extras --dev
+        run: uv sync --extra dev --extra all --dev
 
       - name: disk space
         run: df -all -h
@@ -105,7 +105,7 @@ jobs:
             **/uv.lock
 
       - name: Install dev extras
-        run: uv sync --all-extras --dev
+        run: uv sync --extra dev --extra all --dev
 
       - name: disk space
         run: df -all -h
