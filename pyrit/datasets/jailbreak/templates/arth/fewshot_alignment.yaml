@@ -4,7 +4,6 @@ description: Elaborate few-shot examples framed as alignment research data
 authors:
   - Arth Singh
 source: https://github.com/Arth-Singh/Arth-Jailbreak-Templates
-category: few_shot
 parameters:
   - prompt
 value: |

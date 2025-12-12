@@ -4,7 +4,6 @@ description: Multi-layer system prompt injection attempting to override safety
 authors:
   - Arth Singh
 source: https://github.com/Arth-Singh/Arth-Jailbreak-Templates
-category: technical
 parameters:
   - prompt
 value: |

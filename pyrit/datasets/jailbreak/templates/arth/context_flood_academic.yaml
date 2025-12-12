@@ -4,7 +4,6 @@ description: Long academic paper preamble to push safety instructions out of con
 authors:
   - Arth Singh
 source: https://github.com/Arth-Singh/Arth-Jailbreak-Templates
-category: context_overflow
 parameters:
   - prompt
 value: |
