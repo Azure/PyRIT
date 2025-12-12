@@ -465,6 +465,7 @@ API Reference
     AzureContentFilterScorer
     BatchScorer
     ContentClassifierPaths
+    ConversationHistoryScorer
     FloatScaleScorer
     FloatScaleThresholdScorer
     GandalfScorer
@@ -476,7 +477,6 @@ API Reference
     HumanLabeledEntry
     InsecureCodeScorer
     LikertScalePaths
-    LookBackScorer
     MarkdownInjectionScorer
     MetricsType
     ObjectiveHumanLabeledEntry
