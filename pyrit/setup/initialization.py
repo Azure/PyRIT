@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Sequence, Union, get_a
 
 import dotenv
 
-from pyrit.common import path
 from pyrit.common.apply_defaults import reset_default_values
 from pyrit.memory import (
     AzureSQLMemory,
@@ -28,13 +27,41 @@ AZURE_SQL = "AzureSQL"
 MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
 
 
+def _find_project_root() -> pathlib.Path:
+    """
+    Find the project root directory by searching upward from the current working directory.
+
+    Looks for indicators like .env, .git, pyproject.toml, or setup.py.
+    Falls back to the current working directory if no indicators are found.
+
+    Returns:
+        pathlib.Path: The project root directory.
+    """
+    current = pathlib.Path.cwd().resolve()
+
+    # Search upward for project root indicators
+    for parent in [current] + list(current.parents):
+        # Check for common project root indicators
+        if any((parent / indicator).exists() for indicator in [".env", ".git", "pyproject.toml", "setup.py"]):
+            return parent
+
+    # If no indicators found, return current working directory
+    return current
+
+
 def _load_environment_files() -> None:
     """
     Load the base environment file from .env if it exists,
     then load a single .env.local file if it exists, overriding previous values.
+
+    Searches for .env files starting from the project root (detected by searching
+    upward for .env, .git, pyproject.toml, or setup.py). This ensures that .env
+    files are found correctly even when running notebooks in subdirectories or
+    when PyRIT is installed as a package.
     """
-    base_file_path = path.HOME_PATH / ".env"
-    local_file_path = path.HOME_PATH / ".env.local"
+    project_root = _find_project_root()
+    base_file_path = project_root / ".env"
+    local_file_path = project_root / ".env.local"
 
     # Load the base .env file if it exists
     if base_file_path.exists():
