@@ -465,7 +465,7 @@ API Reference
     AzureContentFilterScorer
     BatchScorer
     ContentClassifierPaths
-    ConversationHistoryScorer
+    ConversationScorer
     FloatScaleScorer
     FloatScaleThresholdScorer
     GandalfScorer
