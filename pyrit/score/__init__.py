@@ -60,7 +60,6 @@ from pyrit.score.true_false.substring_scorer import SubStringScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
 from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 from pyrit.score.true_false.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer
-from pyrit.score.float_scale.look_back_scorer import LookBackScorer
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 from pyrit.score.true_false.question_answer_scorer import QuestionAnswerScorer
@@ -86,7 +85,6 @@ __all__ = [
     "HumanLabeledEntry",
     "InsecureCodeScorer",
     "LikertScalePaths",
-    "LookBackScorer",
     "MarkdownInjectionScorer",
     "MetricsType",
     "ObjectiveHumanLabeledEntry",
