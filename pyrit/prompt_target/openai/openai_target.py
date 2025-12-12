@@ -5,7 +5,7 @@ import json
 import logging
 import re
 from abc import abstractmethod
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional
 from urllib.parse import urlparse
 
 from openai import (
@@ -55,6 +55,7 @@ class OpenAITarget(PromptChatTarget):
         api_key: Optional[str | Callable[[], str | Awaitable[str]]] = None,
         headers: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
+        custom_metadata: Optional[Dict[str, Any]] = None,
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
         """
@@ -76,6 +77,8 @@ class OpenAITarget(PromptChatTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
+            custom_metadata (Dict[str, Any], Optional): Custom metadata to associate with the target for identifier
+                purposes.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
         """
@@ -100,7 +103,11 @@ class OpenAITarget(PromptChatTarget):
 
         # Initialize parent with endpoint and model_name
         PromptChatTarget.__init__(
-            self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value, model_name=self._model_name
+            self,
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint_value,
+            model_name=self._model_name,
+            custom_metadata=custom_metadata,
         )
 
         # API key is required - either from parameter or environment variable

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pyrit.analytics.text_matching import ExactTextMatching, TextMatching
 from pyrit.models import MessagePiece, Score
@@ -21,6 +21,7 @@ class SubStringScorer(TrueFalseScorer):
     Supports both exact substring matching and approximate matching.
     """
 
+    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
@@ -79,3 +80,11 @@ class SubStringScorer(TrueFalseScorer):
         ]
 
         return score
+
+    def _get_scorer_specific_params(self):
+        scorer_specific_params = super()._get_scorer_specific_params()
+        return {
+            **(scorer_specific_params or {}),
+            "substring": self._substring,
+            "text_matcher": self._text_matcher.__class__.__name__,
+        }

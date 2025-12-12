@@ -4,7 +4,7 @@
 import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from transformers import (
     AutoModelForCausalLM,
@@ -59,6 +59,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         torch_dtype: Optional["torch.dtype"] = None,
         attn_implementation: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
+        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initializes the HuggingFaceChatTarget.
@@ -79,10 +80,14 @@ class HuggingFaceChatTarget(PromptChatTarget):
             torch_dtype (Optional[torch.dtype]): Torch data type for model weights.
             attn_implementation (Optional[str]): Attention implementation type.
             max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
+            custom_metadata (Optional[Dict[str, Any]]): Custom metadata to associate with the target for identifier
+                purposes.
         """
         model_name = model_id if model_id else model_path if model_path else ""
 
-        super().__init__(max_requests_per_minute=max_requests_per_minute, model_name=model_name)
+        super().__init__(
+            max_requests_per_minute=max_requests_per_minute, model_name=model_name, custom_metadata=custom_metadata
+        )
 
         if not model_id and not model_path:
             raise ValueError("Either `model_id` or `model_path` must be provided.")

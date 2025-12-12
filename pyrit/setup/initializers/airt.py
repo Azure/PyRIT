@@ -153,6 +153,7 @@ class AIRTInitializer(PyRITInitializer):
             api_key=api_key,
             model_name=model_name,
             temperature=0.3,
+            custom_metadata={"safety": "unsafe"},
         )
 
         # Configure composite harm scorer
