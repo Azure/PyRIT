@@ -79,7 +79,7 @@ class PromptNormalizer:
         # Prepare the request by updating conversation ID, labels, and attack identifier
         request = copy.deepcopy(message)
         conversation_id = conversation_id if conversation_id else str(uuid4())
-        
+
         for piece in request.message_pieces:
             piece.conversation_id = conversation_id
             if labels:
@@ -257,8 +257,6 @@ class PromptNormalizer:
         """Add a request to the memory."""
         tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.message_pieces]
         await asyncio.gather(*tasks)
-
-
 
     async def add_prepended_conversation_to_memory(
         self,

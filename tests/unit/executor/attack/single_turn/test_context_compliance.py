@@ -18,7 +18,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     SeedDataset,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -545,11 +544,11 @@ class TestContextComplianceAttackExecution:
             assert call_args.kwargs["attack_identifier"] == attack.get_identifier()
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
-            # Verify seed group was created correctly
-            seed_group = call_args.kwargs["seed_group"]
-            assert isinstance(seed_group, SeedGroup)
-            assert len(seed_group.prompts) == 1
-            assert seed_group.prompts[0].data_type == "text"
+            # Verify message was created correctly (converted from seed group)
+            message = call_args.kwargs["message"]
+            assert isinstance(message, Message)
+            assert len(message.message_pieces) == 1
+            assert message.message_pieces[0].converted_value_data_type == "text"
 
             # Verify template was rendered
             mock_seed_dataset.seeds[0].render_template_value.assert_called_once_with(objective=basic_context.objective)

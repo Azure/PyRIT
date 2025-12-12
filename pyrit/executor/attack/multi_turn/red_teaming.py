@@ -33,7 +33,6 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer

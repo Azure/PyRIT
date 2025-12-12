@@ -249,8 +249,9 @@ class ContextComplianceAttack(PromptSendingAttack):
             ]
         )
 
+        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=decomposed.current_turn_message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
@@ -280,8 +281,9 @@ class ContextComplianceAttack(PromptSendingAttack):
             ]
         )
 
+        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=decomposed.current_turn_message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
@@ -309,8 +311,9 @@ class ContextComplianceAttack(PromptSendingAttack):
             ]
         )
 
+        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=decomposed.current_turn_message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,

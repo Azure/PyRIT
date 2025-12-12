@@ -1172,11 +1172,11 @@ class TestAttackExecution:
         assert isinstance(result, AttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 1
-        
+
         # Verify adversarial chat was not called for first turn
         # (only objective target should receive the custom message)
         assert mock_prompt_normalizer.send_prompt_async.call_count == 1
-        
+
         # Verify the message was cleared after use
         assert basic_context.message is None
 

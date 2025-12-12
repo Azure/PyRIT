@@ -17,7 +17,7 @@ def test_normalizer_request_validates_sequence():
         message=message,
         conversation_id=str(uuid.uuid4()),
     )
-    
+
     # Verify request was created successfully
     assert request.message == message
     assert len(request.message.message_pieces) == 1
@@ -26,6 +26,6 @@ def test_normalizer_request_validates_sequence():
 def test_normalizer_request_validates_empty_message():
     # Test that Message constructor itself validates non-empty message_pieces
     with pytest.raises(ValueError) as exc_info:
-        message = Message(message_pieces=[])
+        Message(message_pieces=[])
 
     assert "Message must have at least one message piece" in str(exc_info.value)

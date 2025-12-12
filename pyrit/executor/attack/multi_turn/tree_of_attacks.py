@@ -21,7 +21,6 @@ from pyrit.exceptions import (
 )
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
-    AttackContext,
     AttackConverterConfig,
     AttackScoringConfig,
     AttackStrategy,
@@ -36,7 +35,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer

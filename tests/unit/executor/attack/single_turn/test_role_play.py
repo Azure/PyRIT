@@ -20,8 +20,6 @@ from pyrit.models import (
     AttackResult,
     Message,
     Score,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration

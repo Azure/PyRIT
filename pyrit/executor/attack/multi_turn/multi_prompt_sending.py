@@ -280,8 +280,9 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
+        decomposed = prompt_group.to_attack_parameters()
         return await self._prompt_normalizer.send_prompt_async(
-            seed_group=prompt_group,
+            message=decomposed.current_turn_message,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,

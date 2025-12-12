@@ -3,7 +3,6 @@
 
 import os
 import tempfile
-import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -226,7 +225,7 @@ async def test_send_prompt_async_different_sequences(mock_memory_instance):
     piece2 = MessagePiece(role="user", original_value="test2", sequence=2, conversation_id=conv_id)
 
     with pytest.raises(ValueError, match="Inconsistent sequences within the same message entry"):
-        message = Message(message_pieces=[piece1, piece2])
+        Message(message_pieces=[piece1, piece2])
 
 
 @pytest.mark.asyncio
@@ -239,7 +238,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
     piece2.sequence = None  # type: ignore
 
     with pytest.raises(ValueError, match="Inconsistent sequences within the same message entry"):
-        message = Message(message_pieces=[piece1, piece2])
+        Message(message_pieces=[piece1, piece2])
 
 
 @pytest.mark.asyncio

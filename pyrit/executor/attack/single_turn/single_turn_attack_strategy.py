@@ -12,7 +12,7 @@ from typing import List, Optional, Union, overload
 from pyrit.common.logger import logger
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core import AttackContext, AttackStrategy
-from pyrit.models import AttackResult, Message, SeedGroup
+from pyrit.models import AttackResult, Message
 from pyrit.prompt_target import PromptTarget
 
 
@@ -95,7 +95,5 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         message = get_kwarg_param(kwargs=kwargs, param_name="message", expected_type=Message, required=False)
         objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str, required=False)
         system_prompt = get_kwarg_param(kwargs=kwargs, param_name="system_prompt", expected_type=str, required=False)
-        
-        return await super().execute_async(
-            **kwargs, message=message, system_prompt=system_prompt, objective=objective
-        )
+
+        return await super().execute_async(**kwargs, message=message, system_prompt=system_prompt, objective=objective)

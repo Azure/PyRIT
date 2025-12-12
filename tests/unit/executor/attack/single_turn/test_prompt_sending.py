@@ -22,7 +22,6 @@ from pyrit.models import (
     SeedGroup,
     SeedPrompt,
 )
-from pyrit.models.seed_objective import SeedObjective
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -956,8 +955,6 @@ class TestAttackLifecycle:
         assert context.message is not None
         assert context.system_prompt == "System prompt"
 
-
-
     @pytest.mark.asyncio
     async def test_execute_async_with_invalid_params_raises_error(self, mock_target):
         """Test execute_async raises error when invalid parameters are passed"""
@@ -1024,9 +1021,7 @@ class TestEdgeCasesAndErrorHandling:
 
         # Verify it still executes
         assert result.executed_turns == 1
-        attack._send_prompt_to_objective_target_async.assert_called_with(
-            message=minimal_message, context=basic_context
-        )
+        attack._send_prompt_to_objective_target_async.assert_called_with(message=minimal_message, context=basic_context)
 
     @pytest.mark.asyncio
     async def test_evaluate_response_handles_scorer_exception(

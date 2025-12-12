@@ -13,7 +13,7 @@ from pyrit.executor.attack import (
     MultiTurnAttackContext,
     SingleTurnAttackContext,
 )
-from pyrit.models import AttackOutcome, AttackResult, Message, SeedGroup, SeedPrompt
+from pyrit.models import AttackOutcome, AttackResult, Message
 
 
 @pytest.fixture
@@ -777,7 +777,7 @@ class TestExecuteSingleTurnAttacksAsync:
         objectives = ["Obj1", "Obj2", "Obj3"]
 
         mock_single_turn_attack_strategy.execute_async.return_value = MagicMock()
-        
+
         await executor.execute_single_turn_attacks_async(
             attack=mock_single_turn_attack_strategy,
             objectives=objectives,

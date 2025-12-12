@@ -507,8 +507,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
         seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
 
+        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=decomposed.current_turn_message,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
@@ -583,8 +584,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         # Send the generated prompt to the objective target
         self._logger.debug(f"Sending prompt to {objective_target_type}: {attack_prompt[:100]}...")
 
+        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=decomposed.current_turn_message,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,

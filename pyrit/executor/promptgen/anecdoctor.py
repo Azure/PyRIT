@@ -271,8 +271,9 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         )
 
         # Send to target model with configured converters
+        decomposed = prompt_group.to_attack_parameters()
         return await self._prompt_normalizer.send_prompt_async(
-            seed_group=prompt_group,
+            message=decomposed.current_turn_message,
             target=self._objective_target,
             conversation_id=context.conversation_id,
             request_converter_configurations=self._request_converters,
@@ -363,8 +364,9 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         )
 
         # Send to processing model with configured converters
+        decomposed = kg_prompt_group.to_attack_parameters()
         kg_response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=kg_prompt_group,
+            message=decomposed.current_turn_message,
             target=self._processing_model,
             conversation_id=kg_conversation_id,
             request_converter_configurations=self._request_converters,

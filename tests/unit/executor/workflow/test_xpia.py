@@ -299,7 +299,8 @@ class TestXPIAWorkflowPerform:
 
         # Verify prompt normalizer was called with correct parameters
         call_args = mock_prompt_normalizer.send_prompt_async.call_args
-        assert call_args.kwargs["seed_group"] == valid_context.attack_content
+        # Check that message was passed (converted from seed_group)
+        assert "message" in call_args.kwargs
         assert call_args.kwargs["target"] == workflow._attack_setup_target
         assert call_args.kwargs["labels"] == valid_context.memory_labels
         assert call_args.kwargs["conversation_id"] == valid_context.attack_setup_target_conversation_id

@@ -198,9 +198,10 @@ seed_group = SeedGroup(
     ]
 )
 
+decomposed = seed_group.to_attack_parameters()
 context = SingleTurnAttackContext(
     objective="Describe the picture",
-    seed_group=seed_group,
+    message=decomposed.current_turn_message,
 )
 
 attack = PromptSendingAttack(

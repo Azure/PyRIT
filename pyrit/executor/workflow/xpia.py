@@ -294,8 +294,9 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
             f'converter operations) "{attack_content_value}"',
         )
 
+        decomposed = context.attack_content.to_attack_parameters()
         setup_response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=context.attack_content,
+            message=decomposed.current_turn_message,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
             target=self._attack_setup_target,
@@ -527,8 +528,9 @@ class XPIATestWorkflow(XPIAWorkflow):
         async def process_async() -> str:
             # processing_prompt is validated to be non-None in _validate_context
             assert context.processing_prompt is not None
+            decomposed = context.processing_prompt.to_attack_parameters()
             response = await self._prompt_normalizer.send_prompt_async(
-                seed_group=context.processing_prompt,
+                message=decomposed.current_turn_message,
                 target=self._processing_target,
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,

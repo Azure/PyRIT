@@ -17,7 +17,6 @@ from pyrit.models import (
     AttackResult,
     Message,
     MessagePiece,
-    SeedPrompt,
 )
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
