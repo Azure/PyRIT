@@ -12,10 +12,10 @@ steps:
   # Component Governance does not support pyproject.toml yet.
   # For that reason, use toml-to-requirements to export the
   # dependencies into a requirements.txt file.
-  - script: uv pip install --upgrade setuptools
-    name: UpgradeSetuptools
+  - script: pip install --upgrade setuptools pip
+    name: UpgradePip
 
-  - script: uv pip install toml-to-requirements
+  - script: pip install toml-to-requirements
 
   - script: toml-to-req --toml-file pyproject.toml
 
