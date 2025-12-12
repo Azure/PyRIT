@@ -28,27 +28,37 @@ AZURE_SQL = "AzureSQL"
 MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
 
 
-def _load_environment_files() -> None:
+def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]]) -> None:
     """
-    Load the base environment file from .env if it exists,
-    then load a single .env.local file if it exists, overriding previous values.
+    Load environment files in the order they are provided.
+    Later files override values from earlier files.
     """
-    base_file_path = path.HOME_PATH / ".env"
-    local_file_path = path.HOME_PATH / ".env.local"
 
-    # Load the base .env file if it exists
-    if base_file_path.exists():
-        dotenv.load_dotenv(base_file_path, override=True, interpolate=True)
-        logger.info(f"Loaded {base_file_path}")
-    else:
-        dotenv.load_dotenv(verbose=True)
+    # Validate env_files exist if they were provided
+    if env_files is not None:
+        for env_file in env_files:
+            if not env_file.exists():
+                raise ValueError(f"Environment file not found: {env_file}")
 
-    # Load the .env.local file if it exists, to override base .env values
-    if local_file_path.exists():
-        dotenv.load_dotenv(local_file_path, override=True, interpolate=True)
-        logger.info(f"Loaded {local_file_path}")
-    else:
-        dotenv.load_dotenv(dotenv_path=dotenv.find_dotenv(".env.local"), override=True, verbose=True)
+    # By default load .env and .env.local from home directory of the package
+    if env_files is None:
+        default_files = []
+        base_file = path.HOME_PATH / ".env"
+        local_file = path.HOME_PATH / ".env.local"
+        
+        if base_file.exists():
+            default_files.append(base_file)
+        if local_file.exists():
+            default_files.append(local_file)
+        
+        env_files = default_files
+
+    for env_file in env_files:
+        if env_file.exists():
+            dotenv.load_dotenv(env_file, override=True, interpolate=True)
+            logger.info(f"Loaded {env_file}")
+        else:
+            logger.warning(f"Environment file not found: {env_file}")
 
 
 def _load_initializers_from_scripts(
@@ -189,6 +199,7 @@ async def initialize_pyrit_async(
     *,
     initialization_scripts: Optional[Sequence[Union[str, pathlib.Path]]] = None,
     initializers: Optional[Sequence["PyRITInitializer"]] = None,
+    env_files: Optional[Sequence[pathlib.Path]] = None,
     **memory_instance_kwargs: Any,
 ) -> None:
     """
@@ -202,23 +213,16 @@ async def initialize_pyrit_async(
             or an 'initializers' variable that returns/contains a list of PyRITInitializer instances.
         initializers (Optional[Sequence[PyRITInitializer]]): Optional sequence of PyRITInitializer instances
             to execute directly. These provide type-safe, validated configuration with clear documentation.
+        env_files (Optional[Sequence[pathlib.Path]]): Optional sequence of environment file paths to load
+            in order. If not provided, will load default .env and .env.local files from PyRIT home if they exist.
+            All paths must be valid pathlib.Path objects.
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
 
     Raises:
-        ValueError: If an unsupported memory_db_type is provided.
+        ValueError: If an unsupported memory_db_type is provided or if env_files contains non-existent files.
     """
-    # Handle DuckDB deprecation before validation
-    if memory_db_type == "DuckDB":
-        logger.warning(
-            "DuckDB is no longer supported and has been replaced by SQLite for better compatibility and performance. "
-            "Please update your code to use SQLite instead. "
-            "For migration guidance, see the SQLite Memory documentation at: "
-            "doc/code/memory/1_sqlite_memory.ipynb. "
-            "Using in-memory SQLite instead."
-        )
-        memory_db_type = IN_MEMORY
 
-    _load_environment_files()
+    _load_environment_files(env_files=env_files)
 
     # Reset all default values before executing initialization scripts
     # This ensures a clean state for each initialization
