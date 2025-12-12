@@ -149,6 +149,9 @@ pyrit_scan = "pyrit.cli.pyrit_scan:main"
 pyrit_shell = "pyrit.cli.pyrit_shell:main"
 
 [tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
 pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"

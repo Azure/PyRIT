@@ -10,7 +10,7 @@ import time
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from unit.mocks import MockPromptTarget
+from mocks import MockPromptTarget
 
 from pyrit.prompt_converter import TranslationConverter
 

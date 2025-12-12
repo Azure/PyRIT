@@ -50,6 +50,7 @@ RUN conda create -n pyrit-dev python=3.11 -y && \
 RUN mkdir -p /home/vscode/.cache/pre-commit \
  && mkdir -p /home/vscode/.vscode-server \
  && mkdir -p /home/vscode/.cache/pip \
+ && mkdir -p /home/vscode/.cache/uv \
  && mkdir -p /home/vscode/.cache/conda \
  && mkdir -p /home/vscode/.cache/pylance \
  && chown -R vscode:vscode /home/vscode/.cache /home/vscode/.vscode-server \
