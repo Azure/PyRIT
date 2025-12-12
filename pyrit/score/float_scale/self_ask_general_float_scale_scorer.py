@@ -15,29 +15,6 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
     """
     A general-purpose self-ask float-scale scorer that uses a chat target and a configurable
     system prompt and prompt format. The final score is normalized to [0, 1].
-
-    The target LLM must return JSON with at least the following keys:
-    - score_value: a numeric value in the model's native scale (e.g., 0-100)
-    - rationale: a short explanation
-
-    Optionally it can include description, metadata, and category. If category is not provided
-    in the response, the provided `category` argument will be applied.
-
-    Args:
-        chat_target (PromptChatTarget): The chat target used to score.
-        system_prompt_format_string (str): System prompt template with placeholders for
-            objective, prompt, and message_piece.
-        prompt_format_string (Optional[str]): User prompt template with the same placeholders.
-        category (Optional[str]): Category for the score.
-        min_value (int): Minimum of the model's native scale. Defaults to 0.
-        max_value (int): Maximum of the model's native scale. Defaults to 100.
-        validator (Optional[ScorerPromptValidator]): Custom validator. If omitted, a default
-            validator will be used requiring text input and an objective.
-        score_value_output_key (str): JSON key for the score value. Defaults to "score_value".
-        rationale_output_key (str): JSON key for the rationale. Defaults to "rationale".
-        description_output_key (str): JSON key for the description. Defaults to "description".
-        metadata_output_key (str): JSON key for the metadata. Defaults to "metadata".
-        category_output_key (str): JSON key for the category. Defaults to "category".
     """
 
     version: ClassVar[int] = 1
@@ -62,6 +39,36 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
     ) -> None:
+        """
+        Initialize the SelfAskGeneralFloatScaleScorer.
+
+        The target LLM must return JSON with at least the following keys:
+        - score_value: a numeric value in the model's native scale (e.g., 0-100)
+        - rationale: a short explanation
+
+        Optionally it can include description, metadata, and category. If category is not provided
+        in the response, the provided `category` argument will be applied.
+
+        Args:
+            chat_target (PromptChatTarget): The chat target used to score.
+            system_prompt_format_string (str): System prompt template with placeholders for
+                objective, prompt, and message_piece.
+            prompt_format_string (Optional[str]): User prompt template with the same placeholders.
+            category (Optional[str]): Category for the score.
+            min_value (int): Minimum of the model's native scale. Defaults to 0.
+            max_value (int): Maximum of the model's native scale. Defaults to 100.
+            validator (Optional[ScorerPromptValidator]): Custom validator. If omitted, a default
+                validator will be used requiring text input and an objective.
+            score_value_output_key (str): JSON key for the score value. Defaults to "score_value".
+            rationale_output_key (str): JSON key for the rationale. Defaults to "rationale".
+            description_output_key (str): JSON key for the description. Defaults to "description".
+            metadata_output_key (str): JSON key for the metadata. Defaults to "metadata".
+            category_output_key (str): JSON key for the category. Defaults to "category".
+
+        Raises:
+            ValueError: If system_prompt_format_string is not provided or empty.
+            ValueError: If min_value is greater than max_value.
+        """
         super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
         if not system_prompt_format_string:

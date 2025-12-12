@@ -6,90 +6,99 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.embedding import AzureTextEmbedding
+from pyrit.embedding import OpenAITextEmbedding
 
 
 def test_valid_init():
-    os.environ[AzureTextEmbedding.API_KEY_ENVIRONMENT_VARIABLE] = ""
-    completion = AzureTextEmbedding(api_key="xxxxx", endpoint="https://mock.azure.com/", deployment="gpt-4")
+    os.environ[OpenAITextEmbedding.API_KEY_ENVIRONMENT_VARIABLE] = ""
+    completion = OpenAITextEmbedding(api_key="xxxxx", endpoint="https://mock.azure.com/", model_name="gpt-4")
 
     assert completion is not None
 
 
 def test_valid_init_env():
-    os.environ[AzureTextEmbedding.API_KEY_ENVIRONMENT_VARIABLE] = "xxxxx"
-    os.environ[AzureTextEmbedding.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = "https://testcompletionendpoint"
-    os.environ[AzureTextEmbedding.DEPLOYMENT_ENVIRONMENT_VARIABLE] = "testcompletiondeployment"
+    os.environ[OpenAITextEmbedding.API_KEY_ENVIRONMENT_VARIABLE] = "xxxxx"
+    os.environ[OpenAITextEmbedding.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = "https://testcompletionendpoint"
+    os.environ[OpenAITextEmbedding.MODEL_ENVIRONMENT_VARIABLE] = "testcompletiondeployment"
 
-    completion = AzureTextEmbedding()
+    completion = OpenAITextEmbedding()
     assert completion is not None
 
 
 def test_invalid_key_raises():
-    os.environ[AzureTextEmbedding.API_KEY_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        AzureTextEmbedding(
-            api_key="",
-            endpoint="https://mock.azure.com/",
-            deployment="gpt-4",
-            api_version="some_version",
-        )
+    """Test that empty API key is accepted by constructor but would fail on use."""
+    os.environ[OpenAITextEmbedding.API_KEY_ENVIRONMENT_VARIABLE] = ""
+    # Empty string api_key is accepted by OpenAI constructor
+    # It will only fail when actually making a request
+    embedding = OpenAITextEmbedding(
+        api_key="",
+        endpoint="https://mock.azure.com/",
+        model_name="gpt-4",
+    )
+    assert embedding is not None
 
 
 def test_invalid_endpoint_raises():
-    os.environ[AzureTextEmbedding.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
+    os.environ[OpenAITextEmbedding.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
-        AzureTextEmbedding(
+        OpenAITextEmbedding(
             api_key="xxxxxx",
-            deployment="gpt-4",
-            api_version="some_version",
+            model_name="gpt-4",
         )
 
 
 def test_invalid_deployment_raises():
-    os.environ[AzureTextEmbedding.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
+    os.environ[OpenAITextEmbedding.MODEL_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
-        AzureTextEmbedding(
+        OpenAITextEmbedding(
             api_key="",
             endpoint="https://mock.azure.com/",
         )
 
 
-def test_use_entra_auth_true_with_api_key_raises_error():
-    """Test that use_entra_auth=True with api_key raises ValueError."""
-    os.environ[AzureTextEmbedding.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = "https://mock.azure.com/"
-    os.environ[AzureTextEmbedding.DEPLOYMENT_ENVIRONMENT_VARIABLE] = "text-embedding"
-
-    with pytest.raises(ValueError, match="If using Entra ID auth, please do not specify api_key"):
-        AzureTextEmbedding(api_key="some_key", use_entra_auth=True)
-
-
-@patch("pyrit.embedding.azure_text_embedding.AzureAuth")
-@patch("pyrit.embedding.azure_text_embedding.get_default_scope")
-@patch("pyrit.embedding.azure_text_embedding.AzureOpenAI")
-def test_use_entra_auth_default_false_uses_api_key(mock_azure_openai, mock_get_default_scope, mock_azure_auth):
-    """Test that default behavior (use_entra_auth=False) uses API key."""
-    mock_client = MagicMock()
-    mock_azure_openai.return_value = mock_client
+@patch("pyrit.embedding.openai_text_embedding.AsyncOpenAI")
+def test_default_uses_api_key_from_env(mock_async_openai):
+    """Test that default behavior uses API key from environment."""
+    mock_async_client = MagicMock()
+    mock_async_openai.return_value = mock_async_client
 
     # Set required environment variables
-    os.environ[AzureTextEmbedding.API_KEY_ENVIRONMENT_VARIABLE] = "env_api_key"
-    os.environ[AzureTextEmbedding.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = "https://mock.azure.com/"
-    os.environ[AzureTextEmbedding.DEPLOYMENT_ENVIRONMENT_VARIABLE] = "text-embedding"
+    os.environ[OpenAITextEmbedding.API_KEY_ENVIRONMENT_VARIABLE] = "env_api_key"
+    os.environ[OpenAITextEmbedding.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = "https://mock.azure.com/"
+    os.environ[OpenAITextEmbedding.MODEL_ENVIRONMENT_VARIABLE] = "text-embedding"
 
-    # Create instance without specifying use_entra_auth (should default to False)
-    embedding = AzureTextEmbedding()
+    # Create instance without specifying api_key
+    embedding = OpenAITextEmbedding()
 
-    # Verify Azure Auth was NOT used
-    mock_get_default_scope.assert_not_called()
-    mock_azure_auth.assert_not_called()
-
-    # Verify AzureOpenAI client was created with API key from environment
-    mock_azure_openai.assert_called_once_with(
+    # Verify async client was created with API key from environment
+    mock_async_openai.assert_called_once_with(
         api_key="env_api_key",
-        api_version="2024-02-01",
-        azure_endpoint="https://mock.azure.com/",
-        azure_deployment="text-embedding",
+        base_url="https://mock.azure.com/",
     )
 
-    assert embedding._client == mock_client
+    assert embedding._async_client == mock_async_client
+
+
+@patch("pyrit.embedding.openai_text_embedding.AsyncOpenAI")
+def test_callable_api_key_is_passed_to_client(mock_async_openai):
+    """Test that callable api_key (token provider) is passed through to async client."""
+    mock_async_client = MagicMock()
+    mock_async_openai.return_value = mock_async_client
+
+    def mock_token_provider():
+        return "mock-token"
+
+    # Set required environment variables
+    os.environ[OpenAITextEmbedding.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = "https://mock.azure.com/"
+    os.environ[OpenAITextEmbedding.MODEL_ENVIRONMENT_VARIABLE] = "text-embedding"
+
+    # Create instance with token provider
+    embedding = OpenAITextEmbedding(api_key=mock_token_provider)
+
+    # Verify async client was created with the callable
+    async_call_args = mock_async_openai.call_args
+    assert callable(async_call_args.kwargs["api_key"])
+    assert async_call_args.kwargs["api_key"]() == "mock-token"
+    assert async_call_args.kwargs["base_url"] == "https://mock.azure.com/"
+
+    assert embedding._async_client == mock_async_client

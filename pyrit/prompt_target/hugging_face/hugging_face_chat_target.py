@@ -244,7 +244,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     @limit_requests_per_minute
     @pyrit_target_retry
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Sends a normalized prompt asynchronously to the HuggingFace model.
         """
@@ -301,11 +301,12 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             model_identifier = self.model_id or self.model_path
 
-            return construct_response_from_request(
+            response = construct_response_from_request(
                 request=request,
                 response_text_pieces=[assistant_response],
                 prompt_metadata={"model_id": model_identifier},
             )
+            return [response]
 
         except Exception as e:
             logger.error(f"Error occurred during inference: {e}")

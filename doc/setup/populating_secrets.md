@@ -7,10 +7,10 @@ Before running PyRIT, you need to configure access to AI targets. This guide wil
 The simplest way to configure PyRIT requires just two environment variables and three lines of code:
 
 ```python
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 ```
 
 This sets up PyRIT with sensible defaults using in-memory storage. You just need to set two environment variables:
@@ -53,8 +53,8 @@ The simplest approach is using API keys as shown above. Most targets support thi
 For Azure resources, you can use Entra auth instead of API keys. This requires:
 
 1. Install Azure CLI for your OS:
-   - [Windows](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli)
-   - [Linux](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt)
+   - [Windows](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows)
+   - [Linux](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux)
    - [macOS](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-macos)
 
 2. Log in to Azure:

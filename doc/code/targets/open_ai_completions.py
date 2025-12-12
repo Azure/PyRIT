@@ -19,9 +19,9 @@
 # %%
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAICompletionTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Note that max_tokens will default to 16 for completions, so you may want to set the upper limit of allowed tokens for a longer response.
 target = OpenAICompletionTarget(max_tokens=2048)

@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 class RolePlayPaths(enum.Enum):
+    """Enum for predefined role-play scenario paths."""
+
     VIDEO_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "video_game.yaml"
     MOVIE_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "movie_script.yaml"
     TRIVIA_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "trivia_game.yaml"
@@ -67,7 +69,7 @@ class RolePlayAttack(PromptSendingAttack):
         max_attempts_on_failure: int = 0,
     ) -> None:
         """
-        Initializes the role-play attack strategy.
+        Initialize the role-play attack strategy.
 
         Args:
             objective_target (PromptTarget): The target system to attack.
@@ -114,7 +116,7 @@ class RolePlayAttack(PromptSendingAttack):
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
-        Sets up the attack by preparing conversation context with role-play start
+        Set up the attack by preparing conversation context with role-play start
         and converting the objective to role-play format.
 
         Args:
@@ -192,7 +194,7 @@ class RolePlayAttack(PromptSendingAttack):
 
     def _parse_role_play_definition(self, role_play_definition: SeedDataset):
         """
-        Parses and validates the role-play definition structure.
+        Parse and validate the role-play definition structure.
 
         Args:
             role_play_definition (SeedDataset): The role-play definition dataset to validate.

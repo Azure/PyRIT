@@ -28,6 +28,15 @@ class InsecureCodeScorer(FloatScaleScorer):
         system_prompt_path: Optional[Union[str, Path]] = None,
         validator: Optional[ScorerPromptValidator] = None,
     ):
+        """
+        Initialize the Insecure Code Scorer.
+
+        Args:
+            chat_target (PromptChatTarget): The target to use for scoring code security.
+            system_prompt_path (Optional[Union[str, Path]]): Path to the YAML file containing the system prompt.
+                Defaults to the default insecure code scoring prompt if not provided.
+            validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
+        """
         super().__init__(validator=validator or self._default_validator)
 
         if not system_prompt_path:
@@ -55,6 +64,9 @@ class InsecureCodeScorer(FloatScaleScorer):
 
         Returns:
             list[Score]: A list containing a single Score object.
+
+        Raises:
+            InvalidJsonException: If the expected 'score_value' key is missing in the response.
         """
         # Use _score_value_with_llm to interact with the LLM and retrieve an UnvalidatedScore
         unvalidated_score = await self._score_value_with_llm(

@@ -40,7 +40,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
         """
-        Initializes the SelfAskQuestionAnswerScorer object.
+        Initialize the SelfAskQuestionAnswerScorer object.
 
         Args:
             chat_target (PromptChatTarget): The chat target to use for the scorer.

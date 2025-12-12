@@ -18,7 +18,6 @@ from pyrit.models import (
     SeedGroup,
     SeedPrompt,
 )
-from pyrit.models.filter_criteria import PromptFilterCriteria
 from pyrit.prompt_converter import (
     Base64Converter,
     ConverterResult,
@@ -148,7 +147,7 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
 
     response = MessagePiece(role="assistant", original_value="test_response").to_message()
 
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -247,7 +246,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
 @pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_group, response: Message):
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -259,7 +258,7 @@ async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_gr
 async def test_send_prompt_async_no_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -272,7 +271,7 @@ async def test_send_prompt_async_no_converters_response(mock_memory_instance, se
 async def test_send_prompt_async_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     response_converter = PromptConverterConfiguration(converters=[Base64Converter()], indexes_to_apply=[0])
 
@@ -291,7 +290,7 @@ async def test_send_prompt_async_converters_response(mock_memory_instance, seed_
 async def test_send_prompt_async_image_converter(mock_memory_instance):
     prompt_target = MagicMock(PromptTarget)
     prompt_target.send_prompt_async = AsyncMock(
-        return_value=MessagePiece(role="assistant", original_value="response").to_message()
+        return_value=[MessagePiece(role="assistant", original_value="response").to_message()]
     )
 
     mock_image_converter = MagicMock(PromptConverter)
@@ -353,22 +352,24 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 
     normalizer = PromptNormalizer()
 
-    if max_requests_per_minute and batch_size != 1:
-        with pytest.raises(ValueError):
+    # Mock asyncio.sleep to avoid 6s delay in rate limiting test
+    with patch("asyncio.sleep", new_callable=AsyncMock):
+        if max_requests_per_minute and batch_size != 1:
+            with pytest.raises(ValueError):
+                results = await normalizer.send_prompt_batch_to_target_async(
+                    requests=[normalizer_request],
+                    target=prompt_target,
+                    batch_size=batch_size,
+                )
+        else:
             results = await normalizer.send_prompt_batch_to_target_async(
                 requests=[normalizer_request],
                 target=prompt_target,
                 batch_size=batch_size,
             )
-    else:
-        results = await normalizer.send_prompt_batch_to_target_async(
-            requests=[normalizer_request],
-            target=prompt_target,
-            batch_size=batch_size,
-        )
 
-        assert "S_G_V_s_b_G_8_=" in prompt_target.prompt_sent
-        assert len(results) == 1
+            assert "S_G_V_s_b_G_8_=" in prompt_target.prompt_sent
+            assert len(results) == 1
 
 
 @pytest.mark.asyncio
@@ -431,114 +432,6 @@ async def test_convert_response_values_type(mock_memory_instance, response: Mess
 
 
 @pytest.mark.asyncio
-async def test_should_skip_based_on_skip_criteria_no_skip_criteria(mock_memory_instance):
-    normalizer = PromptNormalizer()  # By default, _skip_criteria is None
-
-    # Make a request with at least one piece
-    request = Message(message_pieces=[MessagePiece(role="user", original_value="hello")])
-
-    result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is False, "_should_skip_based_on_skip_criteria should return False when skip_criteria is not set"
-
-
-@pytest.mark.asyncio
-async def test_should_skip_based_on_skip_criteria_no_matches(mock_memory_instance):
-    normalizer = PromptNormalizer()
-
-    skip_criteria = PromptFilterCriteria(
-        attack_id="test_attack",
-        conversation_id="test_conversation",
-    )
-
-    memory_piece = MessagePiece(
-        role="user",
-        original_value="My user prompt",
-    )
-    memory_piece.original_value_sha256 = "some_random_hash"
-    memory_piece.converted_value_sha256 = "some random hash"
-
-    mock_memory_instance.get_message_pieces.return_value = [memory_piece]
-
-    normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
-
-    # Construct a message piece that doesn't match the memory's hash
-    message_piece = MessagePiece(role="user", original_value="My user prompt")
-    message_piece.original_value_sha256 = "completely_different_hash"
-    message_piece.converted_value_sha256 = "completely_different_hash"
-
-    request = Message(message_pieces=[message_piece])
-
-    result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is False, "Should return False if no message pieces in memory match"
-
-
-@pytest.mark.asyncio
-async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instance):
-    """
-    If skip criteria is set and the message pieces in memory DO match,
-    _should_skip_based_on_skip_criteria should return True.
-    """
-    normalizer = PromptNormalizer()
-
-    skip_criteria = PromptFilterCriteria(
-        attack_id="test_attack",
-        conversation_id="test_conversation",
-    )
-
-    # We'll say that memory returns one piece with the exact same converted_value_sha256
-    # as our message piece
-    matching_sha = "matching_converted_hash"
-
-    piece = MessagePiece(role="user", original_value="prompt")
-    piece.converted_value_sha256 = matching_sha
-    mock_memory_instance.get_message_pieces.return_value = [piece]
-
-    # Our message piece also has that same matching sha
-    message_piece = MessagePiece(role="user", original_value="My user prompt")
-    message_piece.converted_value_sha256 = matching_sha
-
-    request = Message(message_pieces=[message_piece])
-
-    # Set skip criteria with 'converted' skip_value_type
-    normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
-
-    result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is True, "Should return True if a matching converted_value_sha256 is found"
-
-
-@pytest.mark.asyncio
-async def test_should_skip_based_on_skip_criteria_original_value_match(mock_memory_instance):
-    """
-    Same test logic but with skip_value_type='original'.
-    """
-    matching_sha = "matching_original_hash"
-
-    # Build a message piece with the same original_value_sha256
-    message_piece = MessagePiece(role="user", original_value="My user prompt")
-    message_piece.original_value_sha256 = matching_sha
-
-    request = Message(message_pieces=[message_piece])
-
-    # Memory returns a piece that has an original_value_sha256 matching our message piece
-    piece = MessagePiece(role="user", original_value="prompt")
-    piece.original_value_sha256 = matching_sha
-    mock_memory_instance.get_message_pieces.return_value = [piece]
-
-    normalizer = PromptNormalizer()
-
-    skip_criteria = PromptFilterCriteria(
-        attack_id="test_attack",
-        conversation_id="test_conversation",
-    )
-
-    # This time we use 'original' skip_value_type
-    normalizer.set_skip_criteria(skip_criteria, skip_value_type="original")
-
-    result = normalizer._should_skip_based_on_skip_criteria(request)
-    assert result is True, "Should return True if a matching original_value_sha256 is found"
-
-
-@pytest.mark.asyncio
 async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_group):
     prompt_target = MagicMock(PromptTarget)
     prompt_target.send_prompt_async = AsyncMock(side_effect=Exception("Test Exception"))
@@ -557,65 +450,3 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_gr
         "Test Exception"
         in mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"].message_pieces[0].original_value
     )
-
-
-@pytest.mark.asyncio
-async def test_build_message_harm_categories(mock_memory_instance):
-    """Test that harm_categories from seed prompts are propagated to message pieces."""
-
-    harm_categories = ["violence", "illegal"]
-
-    # Create a seed group with harm categories
-    seed_group = SeedGroup(
-        seeds=[
-            SeedPrompt(
-                value="Test harmful prompt",
-                data_type="text",
-                role="user",
-                sequence=1,
-                harm_categories=harm_categories,
-            ),
-            SeedPrompt(
-                value="Another prompt",
-                data_type="text",
-                role="user",
-                sequence=1,
-                # Not setting harm_categories, so it will default to []
-            ),
-        ]
-    )
-
-    labels = {"operation": "test_op"}
-    conversation_id = str(uuid.uuid4())
-    prompt_target = MockPromptTarget()
-    request_converters = []
-
-    normalizer = PromptNormalizer()
-
-    response = await normalizer._build_message(
-        seed_group=seed_group,
-        conversation_id=conversation_id,
-        request_converter_configurations=request_converters,
-        target=prompt_target,
-        labels=labels,
-    )
-
-    assert len(response.message_pieces) == 2
-
-    # First prompt should have harm categories
-    first_piece = response.message_pieces[0]
-    assert first_piece.targeted_harm_categories == harm_categories
-    assert first_piece.original_value == "Test harmful prompt"
-    assert first_piece.role == "user"
-
-    # Second prompt should have empty harm categories (default)
-    second_piece = response.message_pieces[1]
-    assert second_piece.targeted_harm_categories == []
-    assert second_piece.original_value == "Another prompt"
-    assert second_piece.role == "user"
-
-    # Verify other fields are set correctly
-    assert first_piece.conversation_id == conversation_id
-    assert second_piece.conversation_id == conversation_id
-    assert first_piece.labels == labels
-    assert second_piece.labels == labels

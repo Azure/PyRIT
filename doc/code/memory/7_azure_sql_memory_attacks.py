@@ -31,9 +31,9 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import AZURE_SQL, initialize_pyrit
+from pyrit.setup import AZURE_SQL, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=AZURE_SQL)
+await initialize_pyrit_async(memory_db_type=AZURE_SQL)  # type: ignore
 
 target = OpenAIChatTarget()
 
@@ -121,14 +121,15 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     RTASystemPromptPaths,
 )
-from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIImageTarget
 from pyrit.score import SelfAskTrueFalseScorer
 
 logging.basicConfig(level=logging.WARNING)
 
-img_prompt_target = OpenAIDALLETarget(
-    endpoint=os.environ.get("OPENAI_DALLE_ENDPOINT"),
-    api_key=os.environ.get("OPENAI_DALLE_API_KEY"),
+img_prompt_target = OpenAIImageTarget(
+    endpoint=os.environ.get("OPENAI_IMAGE_ENDPOINT"),
+    api_key=os.environ.get("OPENAI_IMAGE_API_KEY"),
+    model_name=os.environ.get("OPENAI_IMAGE_MODEL"),
 )
 red_teaming_llm = OpenAIChatTarget()
 scoring_target = OpenAIChatTarget()
@@ -172,9 +173,9 @@ from pyrit.executor.attack import (
 )
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import AZURE_SQL, initialize_pyrit
+from pyrit.setup import AZURE_SQL, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=AZURE_SQL)
+await initialize_pyrit_async(memory_db_type=AZURE_SQL)  # type: ignore
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
 
 image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"

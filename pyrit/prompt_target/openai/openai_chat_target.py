@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import logging
 from typing import Any, MutableSequence, Optional
 
@@ -9,7 +8,7 @@ from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
-    handle_bad_request_exception,
+    pyrit_target_retry,
 )
 from pyrit.models import (
     ChatMessage,
@@ -18,12 +17,17 @@ from pyrit.models import (
     MessagePiece,
     construct_response_from_request,
 )
-from pyrit.prompt_target.openai.openai_chat_target_base import OpenAIChatTargetBase
+from pyrit.prompt_target import (
+    OpenAITarget,
+    PromptChatTarget,
+    limit_requests_per_minute,
+)
+from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
 
 logger = logging.getLogger(__name__)
 
 
-class OpenAIChatTarget(OpenAIChatTargetBase):
+class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     """
     This class facilitates multimodal (image and text) input and text output generation.
 
@@ -74,14 +78,13 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         """
         Args:
             model_name (str, Optional): The name of the model.
+                If no value is provided, the OPENAI_CHAT_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
+            api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
+                or a callable that returns an access token. For Azure endpoints with Entra authentication,
+                pass a token provider from pyrit.auth (e.g., get_azure_openai_auth(endpoint)).
                 Defaults to the `OPENAI_CHAT_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
-            use_entra_auth (bool, Optional): When set to True, user authentication is used
-                instead of API Key. DefaultAzureCredential is taken for
-                https://cognitiveservices.azure.com/.default . Please run `az login` locally
-                to leverage user AuthN.
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -126,14 +129,18 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
             json.JSONDecodeError: If the response from the target is not valid JSON.
             Exception: If the request fails for any other reason.
         """
-        super().__init__(temperature=temperature, top_p=top_p, is_json_supported=is_json_supported, **kwargs)
+        super().__init__(**kwargs)
+
+        # Validate temperature and top_p
+        validate_temperature(temperature)
+        validate_top_p(top_p)
 
         if max_completion_tokens and max_tokens:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
 
-        chat_url_patterns = [r"/chat/completions"]
-        self._warn_if_irregular_endpoint(chat_url_patterns)
-
+        self._temperature = temperature
+        self._top_p = top_p
+        self._is_json_supported = is_json_supported
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
         self._frequency_penalty = frequency_penalty
@@ -142,10 +149,134 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
         self._n = n
         self._extra_body_parameters = extra_body_parameters
 
-    def _set_openai_env_configuration_vars(self) -> None:
+    def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+
+    def _get_target_api_paths(self) -> list[str]:
+        """Return API paths that should not be in the URL."""
+        return ["/chat/completions", "/v1/chat/completions"]
+
+    def _get_provider_examples(self) -> dict[str, str]:
+        """Return provider-specific example URLs."""
+        return {
+            ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
+            "api.openai.com": "https://api.openai.com/v1",
+            "api.anthropic.com": "https://api.anthropic.com/v1",
+            "generativelanguage.googleapis.com": "https://generativelanguage.googleapis.com/v1beta/openai",
+        }
+
+    @limit_requests_per_minute
+    @pyrit_target_retry
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously sends a message and handles the response within a managed conversation context.
+
+        Args:
+            message (Message): The message object.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+        """
+        self._validate_request(message=message)
+
+        message_piece: MessagePiece = message.message_pieces[0]
+
+        is_json_response = self.is_response_format_json(message_piece)
+
+        # Get conversation from memory and append the current message
+        conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
+        conversation.append(message)
+
+        logger.info(f"Sending the following prompt to the prompt target: {message}")
+
+        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+
+        # Use unified error handling - automatically detects ChatCompletion and validates
+        response = await self._handle_openai_request(
+            api_call=lambda: self._async_client.chat.completions.create(**body),
+            request=message,
+        )
+        return [response]
+
+    def _check_content_filter(self, response: Any) -> bool:
+        """
+        Check if a Chat Completions API response has finish_reason=content_filter.
+
+        Args:
+            response: A ChatCompletion object from the OpenAI SDK.
+
+        Returns:
+            True if content was filtered, False otherwise.
+        """
+        try:
+            if response.choices and response.choices[0].finish_reason == "content_filter":
+                return True
+        except (AttributeError, IndexError):
+            pass
+        return False
+
+    def _validate_response(self, response: Any, request: MessagePiece) -> Optional[Message]:
+        """
+        Validate a Chat Completions API response for errors.
+
+        Checks for:
+        - Missing choices
+        - Invalid finish_reason
+        - Empty content
+
+        Args:
+            response: The ChatCompletion response from OpenAI SDK.
+            request: The original request MessagePiece.
+
+        Returns:
+            None if valid, does not return Message for content filter (handled by _check_content_filter).
+
+        Raises:
+            PyritException: For unexpected response structures or finish reasons.
+            EmptyResponseException: When the API returns an empty response.
+        """
+        # Check for missing choices
+        if not response.choices:
+            raise PyritException(message="No choices returned in the completion response.")
+
+        choice = response.choices[0]
+        finish_reason = choice.finish_reason
+
+        # Check finish_reason (content_filter is handled by _check_content_filter)
+        if finish_reason not in ["stop", "length", "content_filter"]:
+            # finish_reason="stop" means API returned complete message
+            # "length" means API returned incomplete message due to max_tokens limit
+            raise PyritException(
+                message=f"Unknown finish_reason {finish_reason} from response: {response.model_dump_json()}"
+            )
+
+        # Check for empty content
+        content = choice.message.content or ""
+        if not content:
+            logger.error("The chat returned an empty response.")
+            raise EmptyResponseException(message="The chat returned an empty response.")
+
+        return None
+
+    async def _construct_message_from_response(self, response: Any, request: MessagePiece) -> Message:
+        """
+        Construct a Message from a ChatCompletion response.
+
+        Args:
+            response: The ChatCompletion response from OpenAI SDK.
+            request: The original request MessagePiece.
+
+        Returns:
+            Message: Constructed message with extracted content.
+        """
+        extracted_response = response.choices[0].message.content or ""
+        return construct_response_from_request(request=request, response_text_pieces=[extracted_response])
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return self._is_json_supported
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
@@ -269,40 +400,6 @@ class OpenAIChatTarget(OpenAIChatTargetBase):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
-
-    def _construct_message_from_openai_json(
-        self,
-        *,
-        open_ai_str_response: str,
-        message_piece: MessagePiece,
-    ) -> Message:
-
-        try:
-            response = json.loads(open_ai_str_response)
-        except json.JSONDecodeError as e:
-            raise PyritException(message=f"Failed to parse JSON response. Please check your endpoint: {e}")
-
-        finish_reason = response["choices"][0]["finish_reason"]
-        extracted_response: str = ""
-        # finish_reason="stop" means API returned complete message and
-        # "length" means API returned incomplete message due to max_tokens limit.
-        if finish_reason in ["stop", "length"]:
-            extracted_response = response["choices"][0]["message"]["content"]
-
-            # Handle empty response
-            if not extracted_response:
-                logger.log(logging.ERROR, "The chat returned an empty response.")
-                raise EmptyResponseException(message="The chat returned an empty response.")
-        elif finish_reason == "content_filter":
-            # Content filter with status 200 indicates that the model output was filtered
-            # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
-            return handle_bad_request_exception(
-                response_text=open_ai_str_response, request=message_piece, error_code=200, is_content_filter=True
-            )
-        else:
-            raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
-
-        return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
 
     def _validate_request(self, *, message: Message) -> None:
         """

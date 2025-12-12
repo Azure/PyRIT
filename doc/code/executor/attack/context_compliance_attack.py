@@ -46,14 +46,15 @@ from pyrit.prompt_converter import TranslationConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer, FloatScaleThresholdScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 objective_target = OpenAIChatTarget()
 adversarial_chat = OpenAIChatTarget(
-    endpoint=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"],
+    endpoint=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"],
+    model_name=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"],
 )
 
 scoring_config = AttackScoringConfig(

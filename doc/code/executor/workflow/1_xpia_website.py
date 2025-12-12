@@ -9,8 +9,6 @@
 #       jupytext_version: 1.17.3
 # ---
 
-import os
-
 # %% [markdown]
 # # 1. Cross-domain Prompt Injection Attack (XPIA) via a website
 #
@@ -20,6 +18,7 @@ import os
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 # %%
+import os
 from pathlib import Path
 
 from pyrit.datasets import TextJailBreak
@@ -53,22 +52,21 @@ xpia_prompt_group = SeedGroup(seeds=[xpia_prompt])
 import json
 
 import requests
-from openai import AzureOpenAI
+from openai import OpenAI
 from openai.types.responses import (
     FunctionToolParam,
     ResponseOutputMessage,
 )
 
-from pyrit.setup import SQLITE, initialize_pyrit
+from pyrit.setup import SQLITE, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=SQLITE)
+await initialize_pyrit_async(memory_db_type=SQLITE)  # type: ignore
 
 
 async def processing_callback() -> str:
-    client = AzureOpenAI(
-        api_version=os.environ["XPIA_OPENAI_API_VERSION"],
-        api_key=os.environ["XPIA_OPENAI_KEY"],
-        azure_endpoint=os.environ["XPIA_OPENAI_GPT4O_ENDPOINT"],
+    client = OpenAI(
+        api_key=os.environ["AZURE_OPENAI_GPT4O_KEY"],
+        base_url=os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"],
     )
 
     tools: list[FunctionToolParam] = [
@@ -94,7 +92,7 @@ async def processing_callback() -> str:
 
     # Create initial response with access to tools
     response = client.responses.create(
-        model=os.environ["XPIA_OPENAI_MODEL"],
+        model=os.environ["AZURE_OPENAI_GPT4O_MODEL"],
         input=input_messages,  # type: ignore[arg-type]
         tools=tools,  # type: ignore[arg-type]
     )
@@ -108,7 +106,7 @@ async def processing_callback() -> str:
         {"type": "function_call_output", "call_id": tool_call.call_id, "output": str(result)}  # type: ignore[typeddict-item,union-attr]
     )
     response = client.responses.create(
-        model=os.environ["XPIA_OPENAI_MODEL"],
+        model=os.environ["AZURE_OPENAI_GPT4O_MODEL"],
         input=input_messages,  # type: ignore[arg-type]
         tools=tools,  # type: ignore[arg-type]
     )

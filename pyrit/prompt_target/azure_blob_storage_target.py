@@ -143,7 +143,7 @@ class AzureBlobStorageTarget(PromptTarget):
         return container_url, blob_prefix
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
@@ -154,7 +154,7 @@ class AzureBlobStorageTarget(PromptTarget):
             normalizer_id (str): ID provided by the prompt normalizer.
 
         Returns:
-            blob_url (str): The Blob URL of the created blob within the provided storage container.
+            list[Message]: A list containing the response with the Blob URL.
         """
         self._validate_request(message=message)
         request = message.message_pieces[0]
@@ -173,7 +173,7 @@ class AzureBlobStorageTarget(PromptTarget):
             request=request, response_text_pieces=[blob_url], response_type="url"
         )
 
-        return response
+        return [response]
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

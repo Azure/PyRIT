@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,10 @@ class HuggingFaceEndpointTarget(PromptTarget):
             model_name=model_id,
             custom_metadata=custom_metadata,
         )
+
+        validate_temperature(temperature)
+        validate_top_p(top_p)
+
         self.hf_token = hf_token
         self.endpoint = endpoint
         self.model_id = model_id
@@ -61,7 +66,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self.top_p = top_p
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Sends a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
 
@@ -70,9 +75,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
             such as conversation ID and role.
 
         Returns:
-            Message: A response object containing generated text pieces as a list of `MessagePiece`
-                objects. Each `MessagePiece` includes the generated text and relevant information such as
-                conversation ID, role, and any additional response attributes.
+            list[Message]: A list containing the response object with generated text pieces.
 
         Raises:
             ValueError: If the response from the Hugging Face API is not successful.
@@ -116,7 +119,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
                 response_text_pieces=[response_message],
                 prompt_metadata={"model_id": self.model_id},
             )
-            return message
+            return [message]
 
         except Exception as e:
             logger.error(f"Error occurred during HTTP request to the Hugging Face endpoint: {e}")

@@ -76,7 +76,7 @@ class HTTPXAPITarget(HTTPTarget):
             raise ValueError(f"File uploads are not allowed with HTTP method: {self.method}")
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Override the parent's method to skip raw http_request usage,
         and do a standard "API mode" approach.
@@ -154,4 +154,4 @@ class HTTPXAPITarget(HTTPTarget):
             request=message_piece, response_text_pieces=[str(response_content)]
         )
 
-        return response_entry
+        return [response_entry]

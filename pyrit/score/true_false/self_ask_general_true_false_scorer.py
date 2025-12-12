@@ -19,29 +19,6 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
     """
     A general-purpose self-ask True/False scorer that uses a chat target and a configurable
     system prompt and prompt format.
-
-    The target LLM must return JSON with at least the following keys:
-    - score_value: a string of either "true" or "false"
-    - rationale: a short explanation
-
-    Optionally it can include description, metadata, and category. If category is not provided
-    in the response, the provided `category` argument will be applied.
-
-    Args:
-        chat_target (PromptChatTarget): The chat target used to score.
-        system_prompt_format_string (str): System prompt template with placeholders for
-            objective, task (alias of objective), prompt, and message_piece.
-        prompt_format_string (Optional[str]): User prompt template with the same placeholders.
-        category (Optional[str]): Category for the score.
-        validator (Optional[ScorerPromptValidator]): Custom validator. If omitted, a default
-            validator will be used requiring text input and an objective.
-        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
-            TrueFalseScoreAggregator.OR.
-        score_value_output_key (str): JSON key for the score value. Defaults to "score_value".
-        rationale_output_key (str): JSON key for the rationale. Defaults to "rationale".
-        description_output_key (str): JSON key for the description. Defaults to "description".
-        metadata_output_key (str): JSON key for the metadata. Defaults to "metadata".
-        category_output_key (str): JSON key for the category. Defaults to "category".
     """
 
     version: ClassVar[int] = 1
@@ -65,6 +42,35 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
     ) -> None:
+        """
+        Initialize the SelfAskGeneralTrueFalseScorer.
+
+        The target LLM must return JSON with at least the following keys:
+        - score_value: a string of either "true" or "false"
+        - rationale: a short explanation
+
+        Optionally it can include description, metadata, and category. If category is not provided
+        in the response, the provided `category` argument will be applied.
+
+        Args:
+            chat_target (PromptChatTarget): The chat target used to score.
+            system_prompt_format_string (str): System prompt template with placeholders for
+                objective, task (alias of objective), prompt, and message_piece.
+            prompt_format_string (Optional[str]): User prompt template with the same placeholders.
+            category (Optional[str]): Category for the score.
+            validator (Optional[ScorerPromptValidator]): Custom validator. If omitted, a default
+                validator will be used requiring text input and an objective.
+            score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
+                TrueFalseScoreAggregator.OR.
+            score_value_output_key (str): JSON key for the score value. Defaults to "score_value".
+            rationale_output_key (str): JSON key for the rationale. Defaults to "rationale".
+            description_output_key (str): JSON key for the description. Defaults to "description".
+            metadata_output_key (str): JSON key for the metadata. Defaults to "metadata".
+            category_output_key (str): JSON key for the category. Defaults to "category".
+
+        Raises:
+            ValueError: If system_prompt_format_string is not provided or empty.
+        """
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = chat_target
         if not system_prompt_format_string:

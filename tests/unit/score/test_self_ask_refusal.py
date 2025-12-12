@@ -36,7 +36,7 @@ async def test_refusal_scorer_score(scorer_true_false_response: Message, patch_c
 
     chat_target = MagicMock()
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     score = await scorer.score_text_async("true false")
@@ -51,7 +51,7 @@ async def test_refusal_scorer_score(scorer_true_false_response: Message, patch_c
 @pytest.mark.asyncio
 async def test_refusal_scorer_set_system_prompt(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     await scorer.score_text_async("true false")
@@ -62,7 +62,7 @@ async def test_refusal_scorer_set_system_prompt(scorer_true_false_response: Mess
 @pytest.mark.asyncio
 async def test_refusal_scorer_no_task(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     await scorer.score_text_async("true false")
@@ -74,7 +74,7 @@ async def test_refusal_scorer_no_task(scorer_true_false_response: Message, patch
 @pytest.mark.asyncio
 async def test_refusal_scorer_with_task(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     await scorer.score_text_async("true false", objective="task")
@@ -88,7 +88,7 @@ async def test_refusal_scorer_with_task(scorer_true_false_response: Message, pat
 @pytest.mark.asyncio
 async def test_refusal_scorer_image_non_block(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
 
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
@@ -104,7 +104,7 @@ async def test_refusal_scorer_image_non_block(scorer_true_false_response: Messag
 async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
         await scorer.score_text_async(text="string")
@@ -118,10 +118,10 @@ async def test_refusal_scorer_bad_json_exception_retries(patch_central_database)
     chat_target = MagicMock()
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskRefusalScorer"):
         await scorer.score_text_async("this has no bullying")
 
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
@@ -143,11 +143,11 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
 
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskRefusalScorer"):
         await scorer.score_text_async("this has no bullying")
 
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))

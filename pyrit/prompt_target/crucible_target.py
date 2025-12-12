@@ -53,7 +53,7 @@ class CrucibleTarget(PromptTarget):
         )
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         self._validate_request(message=message)
         request = message.message_pieces[0]
 
@@ -70,7 +70,7 @@ class CrucibleTarget(PromptTarget):
             else:
                 raise
 
-        return response_entry
+        return [response_entry]
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

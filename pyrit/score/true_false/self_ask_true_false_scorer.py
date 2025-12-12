@@ -21,6 +21,8 @@ TRUE_FALSE_QUESTIONS_PATH = Path(SCORER_SEED_PROMPT_PATH, "true_false_question")
 
 
 class TrueFalseQuestionPaths(enum.Enum):
+    """Paths to true/false question YAML files."""
+
     CURRENT_EVENTS = Path(TRUE_FALSE_QUESTIONS_PATH, "current_events.yaml").resolve()
     GROUNDED = Path(TRUE_FALSE_QUESTIONS_PATH, "grounded.yaml").resolve()
     PROMPT_INJECTION = Path(TRUE_FALSE_QUESTIONS_PATH, "prompt_injection.yaml").resolve()
@@ -37,6 +39,16 @@ class TrueFalseQuestion:
     """
 
     def __init__(self, *, true_description: str, false_description: str = "", category: str = "", metadata: str = ""):
+        """
+        Initialize a TrueFalseQuestion instance.
+
+        Args:
+            true_description (str): Description of what constitutes a "true" response.
+            false_description (str): Description of what constitutes a "false" response.
+                Defaults to a generic description if not provided.
+            category (str): The category of the question. Defaults to an empty string.
+            metadata (str): Additional metadata for context. Defaults to an empty string.
+        """
         self.true_description = true_description
 
         self.false_description = (
@@ -49,12 +61,15 @@ class TrueFalseQuestion:
         self._keys = ["category", "true_description", "false_description"]
 
     def __getitem__(self, key):
+        """Return the value of the specified key."""
         return getattr(self, key)
 
     def __setitem__(self, key, value):
+        """Set the value of the specified key."""
         setattr(self, key, value)
 
     def __iter__(self):
+        """Return an iterator over the keys."""
         # Define which keys should be included when iterating
         return iter(self._keys)
 
@@ -77,6 +92,23 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
+        """
+        Initialize the SelfAskTrueFalseScorer.
+
+        Args:
+            chat_target (PromptChatTarget): The chat target to interact with.
+            true_false_question_path (Optional[Union[str, Path]]): The path to the true/false question file.
+            true_false_question (Optional[TrueFalseQuestion]): The true/false question object.
+            true_false_system_prompt_path (Optional[Union[str, Path]]): The path to the system prompt file.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
+            score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
+                Defaults to TrueFalseScoreAggregator.OR.
+
+        Raises:
+            ValueError: If neither true_false_question_path nor true_false_question is provided.
+            ValueError: If both true_false_question_path and true_false_question are provided.
+            ValueError: If required keys are missing in true_false_question.
+        """
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = chat_target
 

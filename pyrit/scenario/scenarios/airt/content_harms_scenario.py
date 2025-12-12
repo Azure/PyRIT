@@ -2,11 +2,9 @@
 # Licensed under the MIT license.
 
 import os
-import pathlib
 from typing import Dict, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (
     AttackScoringConfig,
     AttackStrategy,
@@ -16,7 +14,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     RolePlayPaths,
 )
-from pyrit.models import SeedDataset, SeedGroup, SeedObjective, SeedPrompt
+from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -87,6 +85,19 @@ class ContentHarmsScenario(Scenario):
         """
         return ContentHarmsStrategy.ALL
 
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+        """Return a list of dataset names required by this scenario."""
+        return [
+            "airt_hate",
+            "airt_fairness",
+            "airt_violence",
+            "airt_sexual",
+            "airt_harassment",
+            "airt_misinformation",
+            "airt_leakage",
+        ]
+
     @apply_defaults
     def __init__(
         self,
@@ -126,9 +137,7 @@ class ContentHarmsScenario(Scenario):
         )
         self._objectives_by_harm = objectives_by_harm
 
-    def _get_objectives_by_harm(
-        self, objectives_by_harm: Optional[Dict[str, Sequence[SeedGroup]]] = None
-    ) -> Dict[str, Sequence[SeedGroup]]:
+    def _get_objectives_by_harm(self) -> Dict[str, Sequence[SeedGroup]]:
         """
         Retrieve SeedGroups for each harm strategy. If objectives_by_harm is provided for a given harm strategy,
         use that directly.
@@ -143,20 +152,23 @@ class ContentHarmsScenario(Scenario):
             self._scenario_composites, strategy_type=ContentHarmsStrategy
         )
         for harm_strategy in selected_harms:
-            if objectives_by_harm and harm_strategy in objectives_by_harm:
-                seeds_by_strategy[harm_strategy] = objectives_by_harm[harm_strategy]
-            else:
-                harm_dataset_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "harms"
-                strategy_seed_dataset = SeedDataset.from_yaml_file(harm_dataset_path / f"{harm_strategy}.prompt")
-                seeds_by_strategy[harm_strategy] = SeedDataset.group_seed_prompts_by_prompt_group_id(
-                    strategy_seed_dataset.seeds
-                )
+            seeds = self._memory.get_seed_groups(
+                is_objective=True,
+                harm_categories=harm_strategy,
+                dataset_name_pattern="airt_%",
+            )
+            seeds_by_strategy[harm_strategy] = seeds
+
+            if not seeds_by_strategy[harm_strategy]:
+                self._raise_dataset_exception()
+
         return seeds_by_strategy
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
@@ -164,9 +176,9 @@ class ContentHarmsScenario(Scenario):
         return TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
                     api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name="gpt-4o",
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                     temperature=0.9,
                     custom_metadata={"safety": "unsafe"},
                 )
@@ -184,7 +196,7 @@ class ContentHarmsScenario(Scenario):
         selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
             self._scenario_composites, strategy_type=ContentHarmsStrategy
         )
-        merged_objectives_by_harm = self._get_objectives_by_harm(self._objectives_by_harm)
+        merged_objectives_by_harm = self._get_objectives_by_harm()
         for strategy in selected_harms:
             atomic_attacks.extend(
                 self._get_strategy_attacks(strategy=strategy, seed_groups=merged_objectives_by_harm[strategy])

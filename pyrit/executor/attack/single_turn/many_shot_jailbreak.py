@@ -4,9 +4,10 @@
 import logging
 from typing import Optional
 
+import requests
+
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
-from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn import SingleTurnAttackContext
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -17,9 +18,22 @@ from pyrit.prompt_target import PromptTarget
 logger = logging.getLogger(__name__)
 
 
+def fetch_many_shot_jailbreaking_dataset() -> list[dict[str, str]]:
+    """
+    Fetch many-shot jailbreaking dataset from a specified source.
+
+    Returns:
+        list[dict[str, str]]: A list of many-shot jailbreaking examples.
+    """
+    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json"
+    response = requests.get(source)
+    response.raise_for_status()
+    return response.json()
+
+
 class ManyShotJailbreakAttack(PromptSendingAttack):
     """
-    This attack implements implements the Many Shot Jailbreak method as discussed in research found here:
+    Implement the Many Shot Jailbreak method as discussed in research found here:
     https://www.anthropic.com/research/many-shot-jailbreaking.
 
     Prepends the seed prompt with a faux dialogue between a human and an AI, using examples from a dataset
@@ -49,6 +63,9 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
                 Shot Jailbreaking dataset. Defaults to the first 100.
             many_shot_examples (list[dict[str, str]], Optional): The many shot jailbreaking examples to use.
                 If not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.
+
+        Raises:
+            ValueError: If many_shot_examples is empty.
         """
         super().__init__(
             objective_target=objective_target,

@@ -18,13 +18,6 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     Create scores from manual human input using Gradio and adds them to the database.
 
     In the future this will not be a TrueFalseScorer. However, it is all that is supported currently.
-
-    Args:
-        open_browser (bool): If True, the scorer will open the Gradio interface in a browser
-            instead of opening it in PyWebview. Defaults to False.
-        validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
-        score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
-            TrueFalseScoreAggregator.OR.
     """
 
     version: ClassVar[int] = 1
@@ -37,6 +30,16 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
+        """
+        Initialize the HumanInTheLoopScorerGradio.
+
+        Args:
+            open_browser (bool): If True, the scorer will open the Gradio interface in a browser
+                instead of opening it in PyWebview. Defaults to False.
+            validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
+            score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
+                TrueFalseScoreAggregator.OR.
+        """
         # Import here to avoid importing rpyc in the main module that might not be installed
         from pyrit.ui.rpc import AppRPCServer
 
@@ -54,6 +57,9 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
 
         Returns:
             list[Score]: A list containing a single Score object based on human evaluation.
+
+        Raises:
+            asyncio.CancelledError: If the scoring operation is cancelled.
         """
         try:
             score = await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
@@ -80,4 +86,5 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         return [score]
 
     def __del__(self):
+        """Stop the RPC server when the scorer is deleted."""
         self._rpc_server.stop()

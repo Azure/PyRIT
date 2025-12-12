@@ -22,9 +22,21 @@ class FloatScaleScorer(Scorer):
     version: ClassVar[int] = 1
 
     def __init__(self, *, validator) -> None:
+        """
+        Initialize the FloatScaleScorer.
+
+        Args:
+            validator: A validator object used to validate scores.
+        """
         super().__init__(validator=validator)
 
     def validate_return_scores(self, scores: list[Score]):
+        """
+        Validate that the returned scores are within the valid range [0, 1].
+
+        Raises:
+            ValueError: If any score is not between 0 and 1.
+        """
         for score in scores:
             if not (0 <= score.get_value() <= 1):
                 raise ValueError("FloatScaleScorer score value must be between 0 and 1.")

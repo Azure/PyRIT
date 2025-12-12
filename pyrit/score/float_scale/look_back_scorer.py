@@ -19,11 +19,6 @@ logger = logging.getLogger(__name__)
 class LookBackScorer(FloatScaleScorer):
     """
     Create a score from analyzing the entire conversation and adds them to the database.
-
-    Parameters:
-        chat_target (PromptChatTarget): The chat target to use for scoring.
-        exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
-            Must be passed as a keyword argument.
     """
 
     version: ClassVar[int] = 1
@@ -36,6 +31,15 @@ class LookBackScorer(FloatScaleScorer):
         exclude_instruction_prompts: bool,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
+        """
+        Initialize the LookBackScorer.
+
+        Args:
+            chat_target (PromptChatTarget): The chat target to use for scoring.
+            exclude_instruction_prompts (bool): If True, excludes instruction prompts from the conversation.
+                Must be passed as a keyword argument.
+            validator: Optional validator for the scorer.
+        """
         super().__init__(validator=validator or self._default_validator)
         self._prompt_target = chat_target
 
@@ -64,6 +68,9 @@ class LookBackScorer(FloatScaleScorer):
         Returns:
             list[Score]: A list containing a single Score object representing the detected
                 amount of behavior change throughout the conversation.
+
+        Raises:
+            ValueError: If the conversation ID is not found in memory.
         """
         # Retrieve conversation from provided MessagePiece
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)

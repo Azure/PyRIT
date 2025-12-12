@@ -22,6 +22,9 @@ class TrueFalseInverterScorer(TrueFalseScorer):
             scorer (TrueFalseScorer): The underlying true/false scorer whose results will be inverted.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
                 Note: This parameter is present for signature compatibility but is not used.
+
+        Raises:
+            ValueError: If the scorer is not an instance of TrueFalseScorer.
         """
         super().__init__(validator=ScorerPromptValidator())
 
@@ -73,7 +76,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
-        True False Inverter scorers do not support piecewise scoring.
+        Indicate that True False Inverter scorers do not support piecewise scoring.
 
         Args:
             message_piece (MessagePiece): Unused.
@@ -86,7 +89,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
     def _get_sub_identifier(self):
         """
-        Returns the identifier of the underlying true/false scorer.
+        Return the identifier of the underlying true/false scorer.
 
         Returns:
             dict: The identifier dictionary of the wrapped scorer.

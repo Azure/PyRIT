@@ -6,6 +6,9 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapConverter
+from pyrit.prompt_converter.text_selection_strategy import (
+    WordProportionSelectionStrategy,
+)
 
 
 # Test that the converter produces the expected number of outputs
@@ -21,7 +24,9 @@ async def test_char_swap_converter_output_count():
 # Test that words longer than 3 characters are being perturbed
 @pytest.mark.asyncio
 async def test_char_swap_converter_word_perturbation():
-    converter = CharSwapConverter(max_iterations=1, proportion=1)
+    converter = CharSwapConverter(
+        max_iterations=1, word_selection_strategy=WordProportionSelectionStrategy(proportion=1.0)
+    )
     prompt = "Testing"
     with patch("random.randint", return_value=1):  # Force swap at position 1
         result = await converter.convert_async(prompt=prompt)
@@ -36,7 +41,9 @@ async def test_char_swap_converter_word_perturbation():
 )
 @pytest.mark.asyncio
 async def test_char_swap_converter_short_words(prompt):
-    converter = CharSwapConverter(max_iterations=1, proportion=1)
+    converter = CharSwapConverter(
+        max_iterations=1, word_selection_strategy=WordProportionSelectionStrategy(proportion=1.0)
+    )
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
     # Since all words are <= 3 letters, output should be the same as input
@@ -46,7 +53,9 @@ async def test_char_swap_converter_short_words(prompt):
 # Test that punctuation is not perturbed
 @pytest.mark.asyncio
 async def test_char_swap_converter_punctuation():
-    converter = CharSwapConverter(max_iterations=1, proportion=1)
+    converter = CharSwapConverter(
+        max_iterations=1, word_selection_strategy=WordProportionSelectionStrategy(proportion=1.0)
+    )
     prompt = "Hello, world!"
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
@@ -72,7 +81,9 @@ async def test_char_swap_converter_zero_iterations():
 
 @pytest.mark.asyncio
 async def test_char_swap_converter_sample_ratio_other_than_1():
-    converter = CharSwapConverter(max_iterations=1, proportion=0.5)
+    converter = CharSwapConverter(
+        max_iterations=1, word_selection_strategy=WordProportionSelectionStrategy(proportion=0.5)
+    )
     prompt = "Testing word swap ratio"
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
@@ -82,7 +93,9 @@ async def test_char_swap_converter_sample_ratio_other_than_1():
 # Test that swapping is happening randomly
 @pytest.mark.asyncio
 async def test_char_swap_converter_random_swapping():
-    converter = CharSwapConverter(max_iterations=1, proportion=1)
+    converter = CharSwapConverter(
+        max_iterations=1, word_selection_strategy=WordProportionSelectionStrategy(proportion=1.0)
+    )
     prompt = "Character swapping test"
 
     with patch(

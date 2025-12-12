@@ -70,7 +70,7 @@ class PlaywrightTarget(PromptTarget):
         self._page = page
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         self._validate_request(message=message)
         if not self._page:
             raise RuntimeError(
@@ -86,7 +86,7 @@ class PlaywrightTarget(PromptTarget):
         # but the interaction function can process all pieces.
         request_piece = message.message_pieces[0]
         response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[text])
-        return response_entry
+        return [response_entry]
 
     def _validate_request(self, *, message: Message) -> None:
         if not message.message_pieces:
