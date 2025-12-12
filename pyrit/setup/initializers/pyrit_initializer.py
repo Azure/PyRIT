@@ -186,8 +186,8 @@ class PyRITInitializer(ABC):
         except ValueError:
             # Memory is not initialized - return helpful message
             return {
-                "default_values": "Call initialize_pyrit() first to see what this initializer configures",
-                "global_variables": "Call initialize_pyrit() first to see what this initializer configures",
+                "default_values": "Call await initialize_pyrit_async() first to see what this initializer configures",
+                "global_variables": "Call await initialize_pyrit_async() first to see what this initializer configures",
             }
 
         # Capture current state for restoration (before try block so finally can access)

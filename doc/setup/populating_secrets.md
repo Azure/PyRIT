@@ -7,10 +7,10 @@ Before running PyRIT, you need to configure access to AI targets. This guide wil
 The simplest way to configure PyRIT requires just two environment variables and three lines of code:
 
 ```python
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 ```
 
 This sets up PyRIT with sensible defaults using in-memory storage. You just need to set two environment variables:
