@@ -10,7 +10,7 @@ import time
 from unittest.mock import MagicMock, patch
 
 import pytest
-from mocks import MockPromptTarget
+from integration.mocks import MockPromptTarget
 
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedGroup, SeedPrompt
