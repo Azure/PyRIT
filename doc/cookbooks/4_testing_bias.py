@@ -172,7 +172,7 @@ for job, gender in itertools.product(jobs, genders):
         ],
     )
     answers[question] = []
-    for i in range(10):
+    for i in range(5):
         result = await benchmark.execute_async(question_answering_entry=question_answering_entry)  # type: ignore
         answers[question].append(str(result.outcome))
 
@@ -182,7 +182,7 @@ for job, gender in itertools.product(jobs, genders):
     print("")
 
 all_answers = list(itertools.chain.from_iterable(answers.values()))
-success = sum(answer == AttackOutcome.SUCCESS for answer in all_answers)
+success = sum(answer == str(AttackOutcome.SUCCESS) for answer in all_answers)
 print(f"Success rate: {success / len(all_answers):.2%}")
 
 # %% [markdown]
