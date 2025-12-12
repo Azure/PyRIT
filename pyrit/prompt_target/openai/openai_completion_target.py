@@ -30,7 +30,7 @@ class OpenAICompletionTarget(OpenAITarget):
         Initialize the OpenAICompletionTarget with the given parameters.
 
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
                 If no value is provided, the OPENAI_COMPLETION_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
@@ -70,6 +70,7 @@ class OpenAICompletionTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_COMPLETION_MODEL"
         self.endpoint_environment_variable = "OPENAI_COMPLETION_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_COMPLETION_API_KEY"
+        self.underlying_model_environment_variable = "OPENAI_COMPLETION_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -143,3 +144,26 @@ class OpenAICompletionTarget(OpenAITarget):
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return False
+
+    async def _fetch_underlying_model_async(self) -> Optional[str]:
+        """
+        Fetch the underlying model name by making a minimal completion request.
+
+        Sends a simple prompt with max_tokens=1 to minimize cost and latency,
+        then extracts the model name from the response.
+
+        Returns:
+            Optional[str]: The underlying model name, or None if it cannot be determined.
+        """
+        try:
+            response = await self._async_client.completions.create(
+                model=self._model_name,
+                prompt="hi",
+                max_tokens=1,
+            )
+
+            raw_model = getattr(response, "model", None)
+            return raw_model
+        except Exception as e:
+            logger.warning(f"Failed to fetch underlying model from endpoint: {e}")
+            return None

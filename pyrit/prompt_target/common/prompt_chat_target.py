@@ -25,8 +25,14 @@ class PromptChatTarget(PromptTarget):
         max_requests_per_minute: Optional[int] = None,
         endpoint: str = "",
         model_name: str = "",
+        underlying_model: Optional[str] = None,
     ) -> None:
-        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
+        super().__init__(
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint,
+            model_name=model_name,
+            underlying_model=underlying_model,
+        )
 
     def set_system_prompt(
         self,
