@@ -32,8 +32,14 @@ def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]]) -> None
     """
     Load environment files in the order they are provided.
     Later files override values from earlier files.
-    """
 
+    Args:
+        env_files: Optional sequence of environment file paths. If None, loads default
+            .env and .env.local from PyRIT home directory (only if they exist).
+
+    Raises:
+        ValueError: If any provided env_files do not exist.
+    """
     # Validate env_files exist if they were provided
     if env_files is not None:
         for env_file in env_files:
@@ -45,12 +51,12 @@ def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]]) -> None
         default_files = []
         base_file = path.HOME_PATH / ".env"
         local_file = path.HOME_PATH / ".env.local"
-        
+
         if base_file.exists():
             default_files.append(base_file)
         if local_file.exists():
             default_files.append(local_file)
-        
+
         env_files = default_files
 
     for env_file in env_files:
@@ -221,7 +227,6 @@ async def initialize_pyrit_async(
     Raises:
         ValueError: If an unsupported memory_db_type is provided or if env_files contains non-existent files.
     """
-
     _load_environment_files(env_files=env_files)
 
     # Reset all default values before executing initialization scripts

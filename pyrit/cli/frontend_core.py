@@ -716,7 +716,8 @@ async def print_initializers_list_async(*, context: FrontendCore, discovery_path
 ARG_HELP = {
     "initializers": "Built-in initializer names to run before the scenario (e.g., openai_objective_target)",
     "initialization_scripts": "Paths to custom Python initialization scripts to run before the scenario",
-    "env_files": "Paths to environment files to load in order (e.g., .env.production .env.local). Later files override earlier ones.",
+    "env_files": "Paths to environment files to load in order (e.g., .env.production .env.local). Later files "
+        "override earlier ones.",
     "scenario_strategies": "List of strategy names to run (e.g., base64 rot13)",
     "max_concurrency": "Maximum number of concurrent attack executions (must be >= 1)",
     "max_retries": "Maximum number of automatic retries on exception (must be >= 0)",
