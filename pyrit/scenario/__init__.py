@@ -9,12 +9,12 @@ from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.scenario.scenarios import (
     CyberScenario,
     CyberStrategy,
-    ScamScenario,
-    ScamStrategy,
     EncodingScenario,
     EncodingStrategy,
     FoundryStrategy,
     FoundryScenario,
+    ScamScenario,
+    ScamStrategy,
     ContentHarmsStrategy,
     ContentHarmsScenario,
 )

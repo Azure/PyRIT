@@ -14,7 +14,7 @@ from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.single_turn.role_play import RolePlayAttack
 from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
-from pyrit.scenarios import ScamScenario, ScamStrategy
+from pyrit.scenario import ScamScenario, ScamStrategy
 from pyrit.score.true_false.self_ask_true_false_scorer import SelfAskTrueFalseScorer
 
 
@@ -66,8 +66,8 @@ def sample_objectives() -> List[str]:
 
 
 @pytest.fixture
-def roleplay_strategy() -> ScamStrategy:
-    return ScamStrategy.ROLE_PLAY
+def impersonation_strategy() -> ScamStrategy:
+    return ScamStrategy.IMPERSONATION
 
 
 FIXTURES = ["patch_central_database", "mock_runtime_env"]
@@ -153,7 +153,7 @@ class TestScamScenarioAttackGeneration:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: SelfAskTrueFalseScorer,
-        roleplay_strategy: ScamStrategy,
+        impersonation_strategy: ScamStrategy,
         sample_objectives: List[str],
     ) -> None:
         scenario = ScamScenario(
@@ -161,7 +161,9 @@ class TestScamScenarioAttackGeneration:
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=[roleplay_strategy])
+        await scenario.initialize_async(
+            objective_target=mock_objective_target, scenario_strategies=[impersonation_strategy]
+        )
         atomic_attacks = await scenario._get_atomic_attacks_async()
         for run in atomic_attacks:
             assert isinstance(run._attack, RolePlayAttack)

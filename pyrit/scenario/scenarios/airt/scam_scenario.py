@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import os
-import pathlib
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
@@ -39,7 +38,7 @@ class ScamStrategy(ScenarioStrategy):
 
 class ScamScenario(Scenario):
     """
-    ScamScenario is a preconfigured scenario which evaluates a model's ability 
+    ScamScenario is a preconfigured scenario which evaluates a model's ability
     to facilitate various kinds of scams.
     """
 
@@ -64,6 +63,11 @@ class ScamScenario(Scenario):
             ScenarioStrategy: ScamStrategy.ALL (all scam strategies).
         """
         return ScamStrategy.IMPERSONATION
+
+    @classmethod
+    def required_datasets(cls) -> list[str]:
+        """Return a list of dataset names required by this scenario."""
+        return ["airt_scams_impersonation"]
 
     @apply_defaults
     def __init__(
@@ -159,6 +163,9 @@ class ScamScenario(Scenario):
 
         Returns:
             AtomicAttack configured for the specified strategy.
+
+        Raises:
+            ValueError: If an unknown ScamStrategy is provided.
         """
         # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None
