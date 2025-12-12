@@ -47,8 +47,8 @@ from pyrit.score.scorer_evaluation.scorer_evaluator import (
     ScorerMetrics,
 )
 from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-    MetricsRegistry,
-    MetricsRegistryEntry,
+    ScorerMetricsRegistry,
+    ScorerMetricsRegistryEntry,
     ScorerEvalIdentifier,
 )
 from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
@@ -90,8 +90,8 @@ __all__ = [
     "LikertScalePaths",
     "LookBackScorer",
     "MarkdownInjectionScorer",
-    "MetricsRegistry",
-    "MetricsRegistryEntry",
+    "ScorerMetricsRegistry",
+    "ScorerMetricsRegistryEntry",
     "MetricsType",
     "ObjectiveHumanLabeledEntry",
     "ObjectiveScorerEvaluator",

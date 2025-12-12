@@ -250,15 +250,15 @@ class Scorer(abc.ABC):
             registry_type (Optional[RegistryType]): The type of registry to query (HARM or OBJECTIVE).
 
         Returns:
-            List[MetricsRegistryEntry]: A list of registry entries matching the filters,
+            List[ScorerMetricsRegistryEntry]: A list of registry entries matching the filters,
                 ordered by accuracy from highest to lowest.
         """
         from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-            MetricsRegistry,
             ScorerEvalIdentifier,
+            ScorerMetricsRegistry,
         )
 
-        registry = MetricsRegistry()
+        registry = ScorerMetricsRegistry()
         eval_identifier = ScorerEvalIdentifier(**self.get_identifier())
         metrics = registry.get_scorer_registry_metrics_by_identifier(
             scorer_identifier=eval_identifier, registry_type=registry_type

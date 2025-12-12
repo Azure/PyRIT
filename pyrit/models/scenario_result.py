@@ -151,10 +151,10 @@ class ScenarioResult:
             ScorerMetrics: The evaluation metrics object.
         """
         from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-            MetricsRegistry,
             ScorerEvalIdentifier,
+            ScorerMetricsRegistry,
         )
 
         eval_identifier = ScorerEvalIdentifier(**self.objective_scorer_identifier)
-        registry = MetricsRegistry()
+        registry = ScorerMetricsRegistry()
         return registry.get_scorer_registry_metrics_by_identifier(eval_identifier, registry_type=registry_type)

@@ -26,9 +26,9 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
 )
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-    MetricsRegistry,
     RegistryType,
     ScorerEvalIdentifier,
+    ScorerMetricsRegistry,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
@@ -215,7 +215,7 @@ class ScorerEvaluator(abc.ABC):
             dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
                 file name. This is used to inform the name of the metrics file and model scoring results CSV to save
                 in the 'scorer_evals' directory.
-            add_to_registry (bool): Whether to add the metrics to the MetricsRegistry. Defaults to False. This should
+            add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This should
                 only be True when running evaluations on official consolidated datasets.
 
         Returns:
@@ -241,7 +241,7 @@ class ScorerEvaluator(abc.ABC):
             save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
                 in a CSV file. Defaults to True.
             csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
-            add_to_registry (bool): Whether to add the metrics to the MetricsRegistry. Defaults to False. This should
+            add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This should
                 only be True when running evaluations on official consolidated datasets.
 
         Returns:
@@ -415,7 +415,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
             csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
-            add_to_registry (bool): Whether to add the metrics to the MetricsRegistry. Defaults to False. This should
+            add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This should
                 only be True when running evaluations on official consolidated datasets.
 
         Returns:
@@ -686,7 +686,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
             csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to. Defaults to None.
-            add_to_registry (bool): Whether to add the metrics to the MetricsRegistry. Defaults to False. This should
+            add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This should
                 only be True when running evaluations on official consolidated datasets.
 
         Returns:
@@ -749,7 +749,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
 
         if add_to_registry:
             try:
-                registry = MetricsRegistry()
+                registry = ScorerMetricsRegistry()
                 scorer_identifier = ScorerEvalIdentifier(**self.scorer.get_identifier())
                 registry.add_entry(
                     scorer_identifier=scorer_identifier,

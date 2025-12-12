@@ -29,7 +29,7 @@ class RegistryType(Enum):
 
 
 @dataclass
-class MetricsRegistryEntry:
+class ScorerMetricsRegistryEntry:
     """
     A class that combines a ScorerEvalIdentifier with its evaluation metrics.
 
@@ -116,7 +116,7 @@ class ScorerEvalIdentifier:
         print(f"  PyRIT Version: {self.pyrit_version}")
 
 
-class MetricsRegistry(metaclass=Singleton):
+class ScorerMetricsRegistry(metaclass=Singleton):
     """
     Registry for storing and retrieving scorer evaluation metrics.
 
@@ -278,9 +278,9 @@ class MetricsRegistry(metaclass=Singleton):
         # Metrics threshold filters
         accuracy_threshold: Optional[float] = None,
         mean_absolute_error_threshold: Optional[float] = None,
-    ) -> List[MetricsRegistryEntry]:
+    ) -> List[ScorerMetricsRegistryEntry]:
         """
-        Retrieves a list of MetricsRegistryEntry objects based on the specified filters.
+        Retrieves a list of ScorerMetricsRegistryEntry objects based on the specified filters.
         Results are ordered by accuracy from highest to lowest.
 
         Args:
@@ -302,7 +302,7 @@ class MetricsRegistry(metaclass=Singleton):
             mean_absolute_error_threshold (Optional[float]): Maximum mean absolute error threshold for metrics. Defaults to None.
 
         Returns:
-            List[MetricsRegistryEntry]: A list of MetricsRegistryEntry objects that match the specified filters,
+            List[ScorerMetricsRegistryEntry]: A list of ScorerMetricsRegistryEntry objects that match the specified filters,
                 ordered by accuracy from highest to lowest.
         """
         # Import here to avoid circular import
@@ -322,7 +322,7 @@ class MetricsRegistry(metaclass=Singleton):
         elif registry_type == RegistryType.OBJECTIVE:
             entries = self.objective_entries
 
-        filtered_entries: List[MetricsRegistryEntry] = []
+        filtered_entries: List[ScorerMetricsRegistryEntry] = []
 
         for entry in entries:
             # Basic field filters
@@ -384,7 +384,7 @@ class MetricsRegistry(metaclass=Singleton):
             else:
                 metrics = HarmScorerMetrics(**metrics_dict)
 
-            metrics_entry = MetricsRegistryEntry(
+            metrics_entry = ScorerMetricsRegistryEntry(
                 scorer_identifier=scorer_identifier, metrics=metrics, dataset_version=entry.get("dataset_version")
             )
             filtered_entries.append(metrics_entry)
