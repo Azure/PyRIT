@@ -6,18 +6,17 @@ import pathlib
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import DATASETS_PATH, SCORER_CONFIG_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.single_turn.role_play import RolePlayAttack, RolePlayPaths
-from pyrit.models import SeedDataset
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
-from pyrit.scenarios.atomic_attack import AtomicAttack
-from pyrit.scenarios.scenario import Scenario
-from pyrit.scenarios.scenario_strategy import (
+from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.scenario import Scenario
+from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
@@ -28,19 +27,20 @@ from pyrit.score.true_false.self_ask_true_false_scorer import (
 
 class ScamStrategy(ScenarioStrategy):
     """
-    Strategies for the Scam Scenario.
+    Strategies for the Scam (Impersonation) Scenario.
     """
 
     ALL = ("all", {"all"})
 
-    # Types of scam strategies
-    ROLE_PLAY = ("role_play", {"role_play"})
+    # The impersonation scam strategy involves creating scripts that could be used in communication
+    # with the scam target where the scammer impersonates a trusted entity to deceive the target.
+    IMPERSONATION = ("impersonation", {"impersonation"})
 
 
 class ScamScenario(Scenario):
     """
-    ScamScenario is a preconfigured scenario which currently evaluates a model's
-    ability to generate persuasive scam scripts for various scam types.
+    ScamScenario is a preconfigured scenario which evaluates a model's ability 
+    to facilitate various kinds of scams.
     """
 
     version: int = 1
@@ -63,7 +63,7 @@ class ScamScenario(Scenario):
         Returns:
             ScenarioStrategy: ScamStrategy.ALL (all scam strategies).
         """
-        return ScamStrategy.ALL
+        return ScamStrategy.IMPERSONATION
 
     @apply_defaults
     def __init__(
@@ -93,10 +93,11 @@ class ScamScenario(Scenario):
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
-        self._adversarial_config = AttackAdversarialConfig(target=adversarial_chat)
 
-        self._adversarial_chat = adversarial_chat or self._get_default_adversarial_target()
-        self._objectives = objectives if objectives else self._get_default_dataset()
+        self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
+        self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
+
+        self._objectives = objectives if objectives else self._get_default_objectives()
 
         super().__init__(
             name="Scam Scenario",
@@ -116,7 +117,7 @@ class ScamScenario(Scenario):
         """
         scam_script_evaluator = SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(),
-            true_false_question_path=SCORER_CONFIG_PATH / "true_false_question" / "scam_scripts.yaml",
+            true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "scams_impersonation.yaml",
         )
 
         return scam_script_evaluator
@@ -129,22 +130,25 @@ class ScamScenario(Scenario):
             OpenAIChatTarget: Target that supplies the persuasion script rephrasing.
         """
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
-    def _get_default_dataset(self) -> List[str]:
+    def _get_default_objectives(self) -> List[str]:
         """
-        Load the default scam seed prompts.
+        Load the default scam (impersonation) seed prompts.
 
         Returns:
-            List[str]: Prompts from the scam seed dataset.
+            List[str]: Prompts from the seed dataset.
         """
-        seed_prompts: List[str] = []
-        scam_path = pathlib.Path(DATASETS_PATH) / "seed_prompts" / "scams.prompt"
-        seed_prompts.extend(SeedDataset.from_yaml_file(scam_path).get_values())
-        return seed_prompts
+        seed_objectives = self._memory.get_seeds(dataset_name="airt_scams_impersonation", is_objective=True)
+
+        if not seed_objectives:
+            self._raise_dataset_exception()
+
+        return [seed.value for seed in seed_objectives]
 
     async def _get_atomic_attack_from_strategy_async(self, strategy: str) -> AtomicAttack:
         """
