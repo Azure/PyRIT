@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Probing for copyright violations with FirstLetterConverter and PlagiarismScorer
+# # 3. Probing for copyright violations with FirstLetterConverter and PlagiarismScorer
 #
 # This notebook demonstrates how to:
 # 1. Use the `FirstLetterConverter` to encode copyrighted text as a sequence of first letters
