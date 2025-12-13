@@ -214,9 +214,13 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         Returns:
             AttackResult: attack_result
         """
+        if not context.generated_seed_group:
+            raise ValueError("Seed group must be generated before running experiment")
+        
+        decomposed = context.generated_seed_group.to_attack_parameters()
         attack_result = await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
-            seed_group=context.generated_seed_group,
+            message=decomposed.current_turn_message,
             prepended_conversation=context.prepended_conversation,
             memory_labels=context.memory_labels,
         )

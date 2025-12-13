@@ -174,12 +174,12 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # 6) After retries are exhausted, compile the final response and score
         # 7) Return an AttackResult object that captures the outcome of the attack
 
-        # Prepare the prompt
-        message = self._get_message(context)
-
         # Execute with retries
         for attempt in range(self._max_attempts_on_failure + 1):
             self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
+
+            # Prepare a fresh message for each attempt to avoid duplicate ID errors in database
+            message = self._get_message(context)
 
             # Send the prompt
             response = await self._send_prompt_to_objective_target_async(message=message, context=context)
@@ -271,13 +271,14 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         Args:
             context (SingleTurnAttackContext): The attack context containing the objective
-                and optionally a pre-configured message.
+                and optionally a pre-configured message template.
 
         Returns:
             Message: The message to be used in the attack.
         """
         if context.message:
-            return context.message
+            # Deep copy the message to preserve all fields, then assign new IDs
+            return context.message.duplicate_message()
 
         return Message.from_prompt(prompt=context.objective, role="user")
 

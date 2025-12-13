@@ -2,7 +2,10 @@
 # Licensed under the MIT license.
 
 from __future__ import annotations
+from datetime import datetime
 
+import copy
+import uuid
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.common.utils import combine_dict
@@ -145,6 +148,28 @@ class Message:
     @classmethod
     def from_system_prompt(cls, system_prompt: str) -> Message:
         return cls.from_prompt(prompt=system_prompt, role="system")
+
+    def duplicate_message(self) -> Message:
+        """
+        Create a deep copy of this message with new IDs and timestamp for all message pieces.
+
+        This is useful when you need to reuse a message template but want fresh IDs
+        to avoid database conflicts (e.g., during retry attempts).
+
+        The original_prompt_id is intentionally kept the same to track the origin.
+        Generates a new timestamp to reflect when the duplicate is created.
+
+        Returns:
+            Message: A new Message with deep-copied message pieces, new IDs, and fresh timestamp.
+        """
+        
+        new_pieces = copy.deepcopy(self.message_pieces)
+        new_timestamp = datetime.now()
+        for piece in new_pieces:
+            piece.id = uuid.uuid4()
+            piece.timestamp = new_timestamp
+            # original_prompt_id intentionally kept the same to track the origin
+        return Message(message_pieces=new_pieces)
 
 
 def group_conversation_message_pieces_by_sequence(

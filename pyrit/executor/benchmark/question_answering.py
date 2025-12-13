@@ -185,9 +185,13 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             AttackResult: The result of the benchmark execution.
         """
         # Execute the attack using PromptSendingAttack
+        if not context.generated_seed_group:
+            raise ValueError("Seed group must be generated before executing benchmark")
+        
+        decomposed = context.generated_seed_group.to_attack_parameters()
         return await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
-            seed_group=context.generated_seed_group,
+            message=decomposed.current_turn_message,
             prepended_conversation=context.prepended_conversation,
             memory_labels=context.memory_labels,
         )

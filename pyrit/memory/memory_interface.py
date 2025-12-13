@@ -564,6 +564,35 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve prompts with error {e}")
             raise
 
+    def _duplicate_conversation(
+        self, *, messages: Sequence[Message], new_attack_id: Optional[str] = None
+    ) -> tuple[str, Sequence[MessagePiece]]:
+        """
+        Helper method to duplicate messages with new conversation ID and optional attack ID.
+
+        Args:
+            messages (Sequence[Message]): The messages to duplicate.
+            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
+                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
+
+        Returns:
+            tuple[str, Sequence[MessagePiece]]: The new conversation ID and the duplicated message pieces.
+        """
+        new_conversation_id = str(uuid.uuid4())
+        
+        all_pieces = []
+        for message in messages:
+            duplicated_message = message.duplicate_message()
+            
+            for piece in duplicated_message.message_pieces:
+                if new_attack_id:
+                    piece.attack_identifier["id"] = new_attack_id
+                piece.conversation_id = new_conversation_id
+            
+            all_pieces.extend(duplicated_message.message_pieces)
+
+        return new_conversation_id, all_pieces
+
     def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
         """
         Duplicate a conversation for reuse.
@@ -579,25 +608,10 @@ class MemoryInterface(abc.ABC):
 
         Returns:
             The uuid for the new conversation.
-
-        Raises:
-            ValueError: If the new attack ID is the same as the existing attack ID.
         """
-        new_conversation_id = str(uuid.uuid4())
-        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
-        for piece in message_pieces:
-            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
-            piece.id = uuid.uuid4()
-            if piece.attack_identifier["id"] == new_attack_id:
-                raise ValueError("The new attack ID must be different from the existing attack ID.")
-
-            if new_attack_id:
-                piece.attack_identifier["id"] = new_attack_id
-
-            piece.conversation_id = new_conversation_id
-
-        self.add_message_pieces_to_memory(message_pieces=message_pieces)
+        messages = self.get_conversation(conversation_id=conversation_id)
+        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages, new_attack_id=new_attack_id)
+        self.add_message_pieces_to_memory(message_pieces=all_pieces)
         return new_conversation_id
 
     def duplicate_conversation_excluding_last_turn(
@@ -617,37 +631,31 @@ class MemoryInterface(abc.ABC):
         Returns:
             The uuid for the new conversation.
         """
-        new_conversation_id = str(uuid.uuid4())
-        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
+        messages = self.get_conversation(conversation_id=conversation_id)
 
         # remove the final turn from the conversation
-        if len(message_pieces) == 0:
-            return new_conversation_id
+        if len(messages) == 0:
+            return str(uuid.uuid4())
 
-        last_prompt = max(message_pieces, key=lambda x: x.sequence)
+        last_message = messages[-1]
 
         length_of_sequence_to_remove = 0
 
-        if last_prompt.role == "system" or last_prompt.role == "user":
+        if last_message.role == "system" or last_message.role == "user":
             length_of_sequence_to_remove = 1
         else:
             length_of_sequence_to_remove = 2
 
-        message_pieces = [
-            message_piece
-            for message_piece in message_pieces
-            if message_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
+        messages_to_duplicate = [
+            message
+            for message in messages
+            if message.sequence <= last_message.sequence - length_of_sequence_to_remove
         ]
 
-        for piece in message_pieces:
-            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
-            piece.id = uuid.uuid4()
-            if new_attack_id:
-                piece.attack_identifier["id"] = new_attack_id
-            piece.conversation_id = new_conversation_id
-
-        self.add_message_pieces_to_memory(message_pieces=message_pieces)
+        new_conversation_id, all_pieces = self._duplicate_conversation(
+            messages=messages_to_duplicate, new_attack_id=new_attack_id
+        )
+        self.add_message_pieces_to_memory(message_pieces=all_pieces)
 
         return new_conversation_id
 
