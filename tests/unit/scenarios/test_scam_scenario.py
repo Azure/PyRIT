@@ -17,7 +17,6 @@ from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario import ScamScenario, ScamStrategy
 from pyrit.score import SelfAskTrueFalseScorer
 
-
 SEED_DATASETS_PATH = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
 SEED_PROMPT_LIST = list(SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "scams_impersonation.prompt").get_values())
 
@@ -105,7 +104,7 @@ class TestScamScenarioInitialization:
         *,
         mock_objective_scorer: SelfAskTrueFalseScorer,
         scam_prompts: List[str],
-        mock_memory_seeds: List[SeedObjective]
+        mock_memory_seeds: List[SeedObjective],
     ) -> None:
         with patch.object(ScamScenario, "_get_default_objectives", return_value=scam_prompts):
             scenario = ScamScenario(objective_scorer=mock_objective_scorer)
@@ -123,10 +122,7 @@ class TestScamScenarioInitialization:
             assert scenario._objective_scorer_identifier
 
     def test_init_with_custom_scorer(
-        self,
-        *,
-        mock_objective_scorer: SelfAskTrueFalseScorer,
-        mock_memory_seeds: list[SeedObjective]
+        self, *, mock_objective_scorer: SelfAskTrueFalseScorer, mock_memory_seeds: list[SeedObjective]
     ) -> None:
         """Test initialization with custom scorer."""
         scorer = MagicMock(spec=SelfAskTrueFalseScorer)
@@ -138,10 +134,7 @@ class TestScamScenarioInitialization:
             assert isinstance(scenario._scorer_config, AttackScoringConfig)
 
     def test_init_default_adversarial_chat(
-        self,
-        *,
-        mock_objective_scorer: SelfAskTrueFalseScorer,
-        mock_memory_seeds: list[SeedObjective]
+        self, *, mock_objective_scorer: SelfAskTrueFalseScorer, mock_memory_seeds: list[SeedObjective]
     ) -> None:
         with patch.object(
             ScamScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
@@ -152,10 +145,7 @@ class TestScamScenarioInitialization:
             assert scenario._adversarial_chat._temperature == 1.2
 
     def test_init_with_adversarial_chat(
-        self,
-        *,
-        mock_objective_scorer: SelfAskTrueFalseScorer,
-        mock_memory_seeds: list[SeedObjective]
+        self, *, mock_objective_scorer: SelfAskTrueFalseScorer, mock_memory_seeds: list[SeedObjective]
     ) -> None:
         adversarial_chat = MagicMock(OpenAIChatTarget)
         adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
@@ -269,7 +259,7 @@ class TestScamScenarioLifecycle:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: SelfAskTrueFalseScorer,
-        mock_memory_seeds: List[SeedObjective]
+        mock_memory_seeds: List[SeedObjective],
     ) -> None:
         """Test initialization with custom max_concurrency."""
         with patch.object(
@@ -285,7 +275,7 @@ class TestScamScenarioLifecycle:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: SelfAskTrueFalseScorer,
-        mock_memory_seeds: List[SeedObjective]
+        mock_memory_seeds: List[SeedObjective],
     ) -> None:
         """Test initialization with memory labels."""
         memory_labels = {"type": "scam", "category": "scenario"}
@@ -321,10 +311,7 @@ class TestScamScenarioProperties:
 
     @pytest.mark.asyncio
     async def test_no_target_duplication_async(
-        self,
-        *,
-        mock_objective_target: PromptTarget,
-        mock_memory_seeds: List[SeedObjective]
+        self, *, mock_objective_target: PromptTarget, mock_memory_seeds: List[SeedObjective]
     ) -> None:
         """Test that all three targets (adversarial, object, scorer) are distinct."""
         with patch.object(

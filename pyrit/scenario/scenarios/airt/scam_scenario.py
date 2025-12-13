@@ -6,11 +6,11 @@ from typing import List, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
+from pyrit.executor.attack import RolePlayAttack, RolePlayPaths
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
 )
-from pyrit.executor.attack import RolePlayAttack, RolePlayPaths
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
