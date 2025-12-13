@@ -668,7 +668,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Access memory through the conversation manager's memory instance
         new_conversation_id = self._memory.duplicate_conversation_excluding_last_turn(
-            new_attack_id=self.get_identifier()["id"],
             conversation_id=conversation_id,
         )
         self._logger.debug(f"Backtracked conversation from {conversation_id} to {new_conversation_id}")

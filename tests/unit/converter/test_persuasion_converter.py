@@ -86,7 +86,8 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
 
         with pytest.raises(InvalidJsonException):
             await prompt_persuasion.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+            # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+            assert mock_create.call_count == 2
 
 
 def test_persuasion_converter_input_supported():

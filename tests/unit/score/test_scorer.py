@@ -159,7 +159,8 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
             objective="task",
         )
 
-    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+    # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+    assert chat_target.send_prompt_async.call_count == 2
 
 
 @pytest.mark.asyncio

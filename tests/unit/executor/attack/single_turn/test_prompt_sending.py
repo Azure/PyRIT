@@ -274,7 +274,11 @@ class TestPromptPreparation:
         attack = PromptSendingAttack(objective_target=mock_target)
         result = attack._get_message(basic_context)
 
-        assert result == existing_message
+        # _get_message returns a duplicate of the message with new IDs
+        assert result.message_pieces[0].id != existing_message.message_pieces[0].id
+        # But content should match
+        assert result.message_pieces[0].original_value == existing_message.message_pieces[0].original_value
+        assert result.message_pieces[0].role == existing_message.message_pieces[0].role
 
     def test_get_message_creates_from_objective_when_no_message(self, mock_target, basic_context):
         basic_context.message = None

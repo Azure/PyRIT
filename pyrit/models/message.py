@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 from __future__ import annotations
-from datetime import datetime
 
 import copy
 import uuid
+from datetime import datetime
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.common.utils import combine_dict
@@ -162,7 +162,6 @@ class Message:
         Returns:
             Message: A new Message with deep-copied message pieces, new IDs, and fresh timestamp.
         """
-        
         new_pieces = copy.deepcopy(self.message_pieces)
         new_timestamp = datetime.now()
         for piece in new_pieces:

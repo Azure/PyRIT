@@ -213,10 +213,13 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
 
         Returns:
             AttackResult: attack_result
+
+        Raises:
+            ValueError: If seed group has not been generated before running experiment.
         """
         if not context.generated_seed_group:
             raise ValueError("Seed group must be generated before running experiment")
-        
+
         decomposed = context.generated_seed_group.to_attack_parameters()
         attack_result = await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,

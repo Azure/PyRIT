@@ -183,11 +183,14 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
 
         Returns:
             AttackResult: The result of the benchmark execution.
+
+        Raises:
+            ValueError: If seed group has not been generated before execution.
         """
         # Execute the attack using PromptSendingAttack
         if not context.generated_seed_group:
             raise ValueError("Seed group must be generated before executing benchmark")
-        
+
         decomposed = context.generated_seed_group.to_attack_parameters()
         return await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,

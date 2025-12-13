@@ -3,7 +3,6 @@
 
 import abc
 import atexit
-import copy
 import logging
 import uuid
 import weakref
@@ -565,57 +564,51 @@ class MemoryInterface(abc.ABC):
             raise
 
     def _duplicate_conversation(
-        self, *, messages: Sequence[Message], new_attack_id: Optional[str] = None
+        self, *, messages: Sequence[Message]
     ) -> tuple[str, Sequence[MessagePiece]]:
         """
-        Helper method to duplicate messages with new conversation ID and optional attack ID.
+        Duplicate messages with new conversation ID.
 
         Args:
             messages (Sequence[Message]): The messages to duplicate.
-            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
-                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
 
         Returns:
             tuple[str, Sequence[MessagePiece]]: The new conversation ID and the duplicated message pieces.
         """
         new_conversation_id = str(uuid.uuid4())
-        
-        all_pieces = []
+
+        all_pieces: list[MessagePiece] = []
         for message in messages:
             duplicated_message = message.duplicate_message()
-            
+
             for piece in duplicated_message.message_pieces:
-                if new_attack_id:
-                    piece.attack_identifier["id"] = new_attack_id
                 piece.conversation_id = new_conversation_id
-            
+
             all_pieces.extend(duplicated_message.message_pieces)
 
         return new_conversation_id, all_pieces
 
-    def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
+    def duplicate_conversation(self, *, conversation_id: str) -> str:
         """
         Duplicate a conversation for reuse.
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
-        One cannot continue both branches with the same attack and conversation IDs since that would corrupt
-        the memory. Instead, one needs to duplicate the conversation and continue with the new attack ID.
+        One cannot continue both branches with the same conversation ID since that would corrupt
+        the memory. Instead, one needs to duplicate the conversation and continue with the new conversation ID.
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
-                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
 
         Returns:
             The uuid for the new conversation.
         """
         messages = self.get_conversation(conversation_id=conversation_id)
-        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages, new_attack_id=new_attack_id)
+        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages)
         self.add_message_pieces_to_memory(message_pieces=all_pieces)
         return new_conversation_id
 
     def duplicate_conversation_excluding_last_turn(
-        self, *, conversation_id: str, new_attack_id: Optional[str] = None
+        self, *, conversation_id: str
     ) -> str:
         """
         Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
@@ -625,8 +618,6 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
-                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
 
         Returns:
             The uuid for the new conversation.
@@ -647,13 +638,11 @@ class MemoryInterface(abc.ABC):
             length_of_sequence_to_remove = 2
 
         messages_to_duplicate = [
-            message
-            for message in messages
-            if message.sequence <= last_message.sequence - length_of_sequence_to_remove
+            message for message in messages if message.sequence <= last_message.sequence - length_of_sequence_to_remove
         ]
 
         new_conversation_id, all_pieces = self._duplicate_conversation(
-            messages=messages_to_duplicate, new_attack_id=new_attack_id
+            messages=messages_to_duplicate
         )
         self.add_message_pieces_to_memory(message_pieces=all_pieces)
 
