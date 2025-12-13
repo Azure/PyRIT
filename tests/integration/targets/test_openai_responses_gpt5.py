@@ -101,8 +101,11 @@ async def test_openai_responses_gpt5_json_schema(sqlite_instance, gpt5_args):
 
     response = await target.send_prompt_async(message=user_piece.to_message())
 
-    response_content = response.get_value(1)
-    response_json = json.loads(response_content)
+    assert len(response) == 1
+    assert len(response[0].message_pieces) == 2
+    response_piece = response[0].message_pieces[1]
+    assert response_piece.role == "assistant"
+    response_json = json.loads(response_piece.converted_value)
     jsonschema.validate(instance=response_json, schema=cat_schema)
 
 
@@ -134,7 +137,9 @@ async def test_openai_responses_gpt5_json_object(sqlite_instance, gpt5_args):
     )
     response = await target.send_prompt_async(message=user_piece.to_message())
 
-    response_content = response.get_value(1)
-    response_json = json.loads(response_content)
-    assert response_json is not None
+    assert len(response) == 1
+    assert len(response[0].message_pieces) == 2
+    response_piece = response[0].message_pieces[1]
+    assert response_piece.role == "assistant"
+    _ = json.loads(response_piece.converted_value)
     # Can't assert more, since the failure could be due to a bad generation by the model
