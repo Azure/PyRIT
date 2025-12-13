@@ -123,6 +123,7 @@ class TestPyRITShell:
     def test_do_run_basic_scenario(
         self,
         mock_parse_args: MagicMock,
+        _mock_run_scenario: AsyncMock,
         mock_asyncio_run: MagicMock,
     ):
         """Test do_run with basic scenario."""
