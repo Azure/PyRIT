@@ -90,7 +90,6 @@ class RolePlayAttack(PromptSendingAttack):
         super().__init__(
             objective_target=objective_target,
             attack_converter_config=attack_converter_config,
-            apply_converters_to_prepended_conversation=False,
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,

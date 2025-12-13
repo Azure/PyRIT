@@ -10,8 +10,8 @@ from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
 )
+from pyrit.executor.attack import RolePlayAttack, RolePlayPaths
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.executor.attack.single_turn.role_play import RolePlayAttack, RolePlayPaths
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -101,8 +101,7 @@ class ScamScenario(Scenario):
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
-        self._objectives = objectives if objectives else self._get_default_objectives()
-
+        # Call super().__init__() first to initialize self._memory
         super().__init__(
             name="Scam Scenario",
             version=self.version,
@@ -111,6 +110,9 @@ class ScamScenario(Scenario):
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
+
+        # Now we can safely access self._memory
+        self._objectives = objectives if objectives else self._get_default_objectives()
 
     def _get_default_objective_scorer(self) -> SelfAskTrueFalseScorer:
         """
@@ -171,7 +173,7 @@ class ScamScenario(Scenario):
         assert self._objective_target is not None
         attack_strategy: Optional[AttackStrategy] = None
 
-        if strategy == "role_play":
+        if strategy == "impersonation":
             attack_strategy = RolePlayAttack(
                 objective_target=self._objective_target,
                 adversarial_chat=self._adversarial_chat,
