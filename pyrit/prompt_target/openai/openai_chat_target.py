@@ -406,39 +406,6 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _construct_message_from_openai_json(
-        self,
-        *,
-        open_ai_str_response: str,
-        message_piece: MessagePiece,
-    ) -> Message:
-        try:
-            response = json.loads(open_ai_str_response)
-        except json.JSONDecodeError as e:
-            raise PyritException(message=f"Failed to parse JSON response. Please check your endpoint: {e}")
-
-        finish_reason = response["choices"][0]["finish_reason"]
-        extracted_response: str = ""
-        # finish_reason="stop" means API returned complete message and
-        # "length" means API returned incomplete message due to max_tokens limit.
-        if finish_reason in ["stop", "length"]:
-            extracted_response = response["choices"][0]["message"]["content"]
-
-            # Handle empty response
-            if not extracted_response:
-                logger.log(logging.ERROR, "The chat returned an empty response.")
-                raise EmptyResponseException(message="The chat returned an empty response.")
-        elif finish_reason == "content_filter":
-            # Content filter with status 200 indicates that the model output was filtered
-            # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
-            return handle_bad_request_exception(
-                response_text=open_ai_str_response, request=message_piece, error_code=200, is_content_filter=True
-            )
-        else:
-            raise PyritException(message=f"Unknown finish_reason {finish_reason} from response: {response}")
-
-        return construct_response_from_request(request=message_piece, response_text_pieces=[extracted_response])
-
     def _validate_request(self, *, message: Message) -> None:
         """
         Validates the structure and content of a message for compatibility of this target.
