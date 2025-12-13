@@ -314,13 +314,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         return input_items
 
-    def _translate_roles(self, conversation: List[Dict[str, Any]]) -> None:
-        # The "system" role is mapped to "developer" in the OpenAI Response API.
-        for request in conversation:
-            if request.get("role") == "system":
-                request["role"] = "developer"
-        return
-
     async def _construct_request_body(
         self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
     ) -> dict:
