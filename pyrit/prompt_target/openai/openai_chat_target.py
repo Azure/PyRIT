@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import logging
 from typing import Any, Dict, MutableSequence, Optional
 
@@ -9,7 +8,6 @@ from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     PyritException,
-    handle_bad_request_exception,
     pyrit_target_retry,
 )
 from pyrit.models import (
