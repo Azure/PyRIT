@@ -8,6 +8,7 @@ from typing import Any, Dict, MutableSequence, Optional
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
+    handle_bad_request_exception,
     PyritException,
     pyrit_target_retry,
 )
