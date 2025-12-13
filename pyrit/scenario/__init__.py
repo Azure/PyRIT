@@ -13,6 +13,8 @@ from pyrit.scenario.scenarios import (
     EncodingStrategy,
     FoundryStrategy,
     FoundryScenario,
+    ScamScenario,
+    ScamStrategy,
     ContentHarmsStrategy,
     ContentHarmsScenario,
 )
@@ -27,6 +29,8 @@ __all__ = [
     "EncodingStrategy",
     "FoundryStrategy",
     "FoundryScenario",
+    "ScamScenario",
+    "ScamStrategy",
     "Scenario",
     "ScenarioCompositeStrategy",
     "ScenarioStrategy",
