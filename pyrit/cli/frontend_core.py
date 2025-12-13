@@ -77,6 +77,7 @@ class FrontendCore:
         database: str = SQLITE,
         initialization_scripts: Optional[list[Path]] = None,
         initializer_names: Optional[list[str]] = None,
+        env_files: Optional[list[Path]] = None,
         log_level: str = "WARNING",
     ):
         """
@@ -86,6 +87,7 @@ class FrontendCore:
             database: Database type (InMemory, SQLite, or AzureSQL).
             initialization_scripts: Optional list of initialization script paths.
             initializer_names: Optional list of built-in initializer names to run.
+            env_files: Optional list of environment file paths to load in order.
             log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Defaults to WARNING.
 
         Raises:
@@ -95,6 +97,7 @@ class FrontendCore:
         self._database = validate_database(database=database)
         self._initialization_scripts = initialization_scripts
         self._initializer_names = initializer_names
+        self._env_files = env_files
         self._log_level = validate_log_level(log_level=log_level)
 
         # Lazy-loaded registries
@@ -119,6 +122,7 @@ class FrontendCore:
             memory_db_type=self._database,
             initialization_scripts=None,
             initializers=None,
+            env_files=self._env_files,
         )
 
         # Load registries
@@ -259,6 +263,7 @@ async def run_scenario_async(
         memory_db_type=context._database,
         initialization_scripts=context._initialization_scripts,
         initializers=initializer_instances,
+        env_files=context._env_files,
     )
 
     # Get scenario class
@@ -557,6 +562,46 @@ def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], A
     return wrapper
 
 
+def resolve_initialization_scripts(script_paths: list[str]) -> list[Path]:
+    """
+    Resolve initialization script paths.
+
+    Args:
+        script_paths: List of script path strings.
+
+    Returns:
+        List of resolved Path objects.
+
+    Raises:
+        FileNotFoundError: If a script path does not exist.
+    """
+    from pyrit.cli.initializer_registry import InitializerRegistry
+
+    return InitializerRegistry.resolve_script_paths(script_paths=script_paths)
+
+
+def resolve_env_files(*, env_file_paths: list[str]) -> list[Path]:
+    """
+    Resolve environment file paths to absolute Path objects.
+
+    Args:
+        env_file_paths: List of environment file path strings.
+
+    Returns:
+        List of resolved Path objects.
+
+    Raises:
+        ValueError: If any path does not exist.
+    """
+    resolved_paths = []
+    for path_str in env_file_paths:
+        path = Path(path_str).resolve()
+        if not path.exists():
+            raise ValueError(f"Environment file not found: {path}")
+        resolved_paths.append(path)
+    return resolved_paths
+
+
 # Argparse-compatible validators
 #
 # These wrappers adapt our core validators (which use keyword-only parameters and raise
@@ -573,6 +618,7 @@ validate_database_argparse = _argparse_validator(validate_database)
 validate_log_level_argparse = _argparse_validator(validate_log_level)
 positive_int = _argparse_validator(lambda v: validate_integer(v, min_value=1))
 non_negative_int = _argparse_validator(lambda v: validate_integer(v, min_value=0))
+resolve_env_files_argparse = _argparse_validator(resolve_env_files)
 
 
 def parse_memory_labels(json_string: str) -> dict[str, str]:
@@ -602,24 +648,6 @@ def parse_memory_labels(json_string: str) -> dict[str, str]:
             raise ValueError(f"All label keys and values must be strings. Got: {key}={value}")
 
     return labels
-
-
-def resolve_initialization_scripts(script_paths: list[str]) -> list[Path]:
-    """
-    Resolve initialization script paths.
-
-    Args:
-        script_paths: List of script path strings.
-
-    Returns:
-        List of resolved Path objects.
-
-    Raises:
-        FileNotFoundError: If a script path does not exist.
-    """
-    from pyrit.cli.initializer_registry import InitializerRegistry
-
-    return InitializerRegistry.resolve_script_paths(script_paths=script_paths)
 
 
 def get_default_initializer_discovery_path() -> Path:
@@ -688,6 +716,8 @@ async def print_initializers_list_async(*, context: FrontendCore, discovery_path
 ARG_HELP = {
     "initializers": "Built-in initializer names to run before the scenario (e.g., openai_objective_target)",
     "initialization_scripts": "Paths to custom Python initialization scripts to run before the scenario",
+    "env_files": "Paths to environment files to load in order (e.g., .env.production .env.local). Later files "
+    "override earlier ones.",
     "scenario_strategies": "List of strategy names to run (e.g., base64 rot13)",
     "max_concurrency": "Maximum number of concurrent attack executions (must be >= 1)",
     "max_retries": "Maximum number of automatic retries on exception (must be >= 0)",
@@ -728,6 +758,7 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
         "scenario_name": parts[0],
         "initializers": None,
         "initialization_scripts": None,
+        "env_files": None,
         "scenario_strategies": None,
         "max_concurrency": None,
         "max_retries": None,
@@ -751,6 +782,13 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             i += 1
             while i < len(parts) and not parts[i].startswith("--"):
                 result["initialization_scripts"].append(parts[i])
+                i += 1
+        elif parts[i] == "--env-files":
+            # Collect env file paths until next flag
+            result["env_files"] = []
+            i += 1
+            while i < len(parts) and not parts[i].startswith("--"):
+                result["env_files"].append(parts[i])
                 i += 1
         elif parts[i] in ("--strategies", "-s"):
             # Collect strategies until next flag
