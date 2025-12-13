@@ -465,7 +465,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
-        is_json_response = self.is_response_format_json(message_piece)
+        json_config = JsonResponseConfig(enabled=False)
+        if message.message_pieces:
+            last_piece = message.message_pieces[-1]
+            json_config = self.get_json_response_config(message_piece=last_piece)
 
         # Get full conversation history from memory and append the current message
         conversation: MutableSequence[Message] = self._memory.get_conversation(
@@ -482,7 +485,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         while True:
             logger.info(f"Sending conversation with {len(conversation)} messages to the prompt target")
 
-            body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+            body = await self._construct_request_body(conversation=conversation, json_config=json_config)
 
             # Use unified error handling - automatically detects Response and validates
             result = await self._handle_openai_request(
