@@ -110,9 +110,6 @@ class AzureMLChatTarget(PromptChatTarget):
         Args:
             endpoint_uri_environment_variable (str, optional): The environment variable name for the endpoint uri.
             api_key_environment_variable (str, optional): The environment variable name for the api key.
-
-        Returns:
-            None
         """
         self.endpoint_uri_environment_variable = endpoint_uri_environment_variable or "AZURE_ML_MANAGED_ENDPOINT"
         self.api_key_environment_variable = api_key_environment_variable or "AZURE_ML_KEY"
@@ -130,9 +127,6 @@ class AzureMLChatTarget(PromptChatTarget):
         Args:
             endpoint (str, optional): The endpoint uri for the deployed Azure ML model.
             api_key (str, optional): The API key for accessing the Azure ML endpoint.
-
-        Returns:
-            None
         """
         self._endpoint = default_values.get_required_value(
             env_var_name=self.endpoint_uri_environment_variable, passed_value=endpoint
