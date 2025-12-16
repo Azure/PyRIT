@@ -659,11 +659,13 @@ class TestPromptGeneration:
             attack_adversarial_config=adversarial_config,
         )
 
-        basic_context.message = Message.from_prompt(prompt="Custom prompt", role="user")
+        custom_message = Message.from_prompt(prompt="Custom prompt", role="user")
+        basic_context.message = custom_message
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
-        assert result == "Custom prompt"
+        assert result is custom_message  # Should return the same Message object
+        assert result.get_value() == "Custom prompt"
         assert basic_context.message is None  # Should be cleared
 
     @pytest.mark.asyncio
@@ -701,7 +703,8 @@ class TestPromptGeneration:
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
-        assert result == "Attack prompt"
+        assert isinstance(result, Message)
+        assert result.get_value() == "Attack prompt"
         mock_prompt_normalizer.send_prompt_async.assert_called_once()
 
     @pytest.mark.asyncio
@@ -831,6 +834,49 @@ class TestPromptGeneration:
             # Should not raise
             result = attack._parse_adversarial_response(response_json)
             assert isinstance(result, str)
+
+    @pytest.mark.asyncio
+    async def test_custom_message_is_sent_to_target(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_prompt_normalizer: MagicMock,
+        basic_context: CrescendoAttackContext,
+    ):
+        """Test that when a custom message is passed, it is the exact message sent to the target."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            prompt_normalizer=mock_prompt_normalizer,
+        )
+
+        # Create a custom message
+        custom_message = Message.from_prompt(prompt="My custom attack prompt", role="user")
+
+        # Mock response from target
+        target_response = Message(
+            message_pieces=[
+                MessagePiece(
+                    role="assistant",
+                    original_value="Target response",
+                    converted_value="Target response",
+                )
+            ]
+        )
+        mock_prompt_normalizer.send_prompt_async.return_value = target_response
+
+        # Send the custom message to the target
+        result = await attack._send_prompt_to_objective_target_async(
+            attack_message=custom_message,
+            context=basic_context,
+        )
+
+        # Verify the exact message object was passed to send_prompt_async
+        call_args = mock_prompt_normalizer.send_prompt_async.call_args
+        assert call_args.kwargs["message"] is custom_message
+        assert result is target_response
 
 
 @pytest.mark.usefixtures("patch_central_database")
