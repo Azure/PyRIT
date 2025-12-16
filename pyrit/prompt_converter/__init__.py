@@ -3,7 +3,6 @@
 
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
-from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 from pyrit.prompt_converter.selective_text_converter import SelectiveTextConverter
 from pyrit.prompt_converter.text_selection_strategy import (
     AllWordsSelectionStrategy,
@@ -50,14 +49,6 @@ from pyrit.prompt_converter.ecoji_converter import EcojiConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
 from pyrit.prompt_converter.first_letter_converter import FirstLetterConverter
 from pyrit.prompt_converter.flip_converter import FlipConverter
-from pyrit.prompt_converter.fuzzer_converter import (
-    FuzzerConverter,
-    FuzzerCrossOverConverter,
-    FuzzerExpandConverter,
-    FuzzerRephraseConverter,
-    FuzzerShortenConverter,
-    FuzzerSimilarConverter,
-)
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.image_compression_converter import ImageCompressionConverter
 from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
@@ -130,12 +121,6 @@ __all__ = [
     "EmojiConverter",
     "FirstLetterConverter",
     "FlipConverter",
-    "FuzzerConverter",
-    "FuzzerCrossOverConverter",
-    "FuzzerExpandConverter",
-    "FuzzerRephraseConverter",
-    "FuzzerShortenConverter",
-    "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
     "ImageCompressionConverter",
     "IndexSelectionStrategy",
@@ -184,7 +169,6 @@ __all__ = [
     "VariationSelectorSmugglerConverter",
     "WordIndexSelectionStrategy",
     "WordKeywordSelectionStrategy",
-    "WordLevelConverter",
     "WordPositionSelectionStrategy",
     "WordProportionSelectionStrategy",
     "WordRegexSelectionStrategy",

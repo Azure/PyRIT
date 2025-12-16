@@ -23,15 +23,16 @@
 # %%
 
 from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
-from pyrit.executor.promptgen import FuzzerGenerator, FuzzerResultPrinter
-from pyrit.models import SeedPrompt
-from pyrit.prompt_converter import (
+from pyrit.executor.promptgen.fuzzer import (
     FuzzerCrossOverConverter,
     FuzzerExpandConverter,
+    FuzzerGenerator,
     FuzzerRephraseConverter,
+    FuzzerResultPrinter,
     FuzzerShortenConverter,
     FuzzerSimilarConverter,
 )
+from pyrit.models import SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async

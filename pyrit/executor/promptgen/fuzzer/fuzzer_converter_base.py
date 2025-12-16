@@ -40,7 +40,7 @@ class FuzzerConverter(PromptConverter):
         prompt_template: SeedPrompt,
     ):
         """
-        Initializes the converter with the specified chat target and prompt template.
+        Initialize the converter with the specified chat target and prompt template.
 
         Args:
             converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt.
@@ -56,12 +56,12 @@ class FuzzerConverter(PromptConverter):
         self.template_label = "TEMPLATE"
 
     def update(self, **kwargs) -> None:
-        """Updates the converter with new parameters."""
+        """Update the converter with new parameters."""
         pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt into the target format supported by the converter.
+        Convert the given prompt into the target format supported by the converter.
 
         Args:
             prompt (str): The prompt to be converted.
@@ -109,7 +109,18 @@ class FuzzerConverter(PromptConverter):
 
     @pyrit_json_retry
     async def send_prompt_async(self, request):
-        """Sends the message to the converter target and processes the response."""
+        """
+        Send the message to the converter target and process the response.
+
+        Args:
+            request: The message request to send.
+
+        Returns:
+            str: The output from the parsed JSON response.
+
+        Raises:
+            InvalidJsonException: If the response is not valid JSON or missing required keys.
+        """
         response = await self.converter_target.send_prompt_async(message=request)
 
         response_msg = response[0].get_value()
@@ -125,7 +136,19 @@ class FuzzerConverter(PromptConverter):
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
+        """
+        Check if the input type is supported.
+
+        Returns:
+            bool: True if input type is text, False otherwise.
+        """
         return input_type == "text"
 
     def output_supported(self, output_type: PromptDataType) -> bool:
+        """
+        Check if the output type is supported.
+
+        Returns:
+            bool: True if output type is text, False otherwise.
+        """
         return output_type == "text"
