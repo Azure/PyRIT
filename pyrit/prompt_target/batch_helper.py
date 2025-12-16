@@ -15,6 +15,8 @@ def _get_chunks(*args, batch_size: int):
         *args: Arguments to chunk; each argument should be a list
         batch_size (int): Batch size
 
+    Yields:
+        list: Lists of chunked items.
     """
     if len(args) == 0:
         raise ValueError("No arguments provided to chunk.")
