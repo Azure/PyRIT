@@ -527,7 +527,7 @@ class OpenAITarget(PromptChatTarget):
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:
         """
-        Sets deployment_environment_variable, endpoint_environment_variable,
+        Set deployment_environment_variable, endpoint_environment_variable,
         and api_key_environment_variable which are read from .env file.
         """
         raise NotImplementedError

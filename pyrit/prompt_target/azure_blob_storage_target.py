@@ -69,7 +69,7 @@ class AzureBlobStorageTarget(PromptTarget):
 
     async def _create_container_client_async(self) -> None:
         """
-        Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
+        Create an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
         for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication.
         """
@@ -127,7 +127,7 @@ class AzureBlobStorageTarget(PromptTarget):
                 raise
 
     def _parse_url(self):
-        """Parses the Azure Storage Blob URL to extract components."""
+        """Parse the Azure Storage Blob URL to extract components."""
         parsed_url = urlparse(self._container_url)
         path_parts = parsed_url.path.split("/")
         container_name = path_parts[1]

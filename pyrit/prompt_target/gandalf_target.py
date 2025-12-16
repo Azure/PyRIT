@@ -72,7 +72,7 @@ class GandalfTarget(PromptTarget):
 
     async def check_password(self, password: str) -> bool:
         """
-        Checks if the password is correct.
+        Check if the password is correct.
 
         True means the password is correct, False means it is not
         """

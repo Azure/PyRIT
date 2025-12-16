@@ -37,7 +37,7 @@ class PromptChatTarget(PromptTarget):
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
-        Sets the system prompt for the prompt target. May be overridden by subclasses.
+        Set the system prompt for the prompt target. May be overridden by subclasses.
         """
         messages = self._memory.get_conversation(conversation_id=conversation_id)
 
@@ -68,7 +68,7 @@ class PromptChatTarget(PromptTarget):
 
     def is_response_format_json(self, message_piece: MessagePiece) -> bool:
         """
-        Checks if the response format is JSON and ensures the target supports it.
+        Check if the response format is JSON and ensure the target supports it.
 
         Args:
             message_piece: A MessagePiece object with a `prompt_metadata` dictionary that may

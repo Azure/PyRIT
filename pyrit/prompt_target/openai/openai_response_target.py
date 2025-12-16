@@ -78,7 +78,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         **kwargs,
     ):
         """
-        Initializes the OpenAIResponseTarget with the provided parameters.
+        Initialize the OpenAIResponseTarget with the provided parameters.
 
         Args:
             custom_functions: Mapping of user-defined function names (e.g., "my_func").
@@ -489,7 +489,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         return responses_to_return
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """Check if the target supports JSON as a response format."""
         return True
 
     def _parse_response_output_section(
@@ -596,7 +596,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the structure and content of a message for compatibility of this target.
+        Validate the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.

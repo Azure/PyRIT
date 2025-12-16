@@ -44,12 +44,12 @@ class AzureMLChatTarget(PromptChatTarget):
         **param_kwargs,
     ) -> None:
         """
-        Initializes an instance of the AzureMLChatTarget class. This class works with most chat completion
-        Instruct models deployed on Azure AI Machine Learning Studio endpoints
+        Initialize an instance of the AzureMLChatTarget class.
+        
+        This class works with most chat completion Instruct models deployed on Azure AI Machine Learning Studio endpoints
         (including but not limited to: mistralai-Mixtral-8x7B-Instruct-v01, mistralai-Mistral-7B-Instruct-v01,
         Phi-3.5-MoE-instruct, Phi-3-mini-4k-instruct, Llama-3.2-3B-Instruct, and Meta-Llama-3.1-8B-Instruct).
-        Please create or adjust environment variables (endpoint and key) as needed for the
-        model you are using.
+        Please create or adjust environment variables (endpoint and key) as needed for the model you are using.
 
         Args:
             endpoint (str, Optional): The endpoint URL for the deployed Azure ML model.
@@ -101,7 +101,7 @@ class AzureMLChatTarget(PromptChatTarget):
         api_key_environment_variable: Optional[str] = None,
     ) -> None:
         """
-        Sets the environment configuration variable names from which to pull the endpoint uri and the api key
+        Set the environment configuration variable names from which to pull the endpoint uri and the api key
         to access the deployed Azure ML model. Use this function to set the environment variable names to
         however they are named in the .env file and pull the corresponding endpoint uri and api key.
         This is the recommended way to pass in a uri and key to access the model endpoint.
@@ -120,7 +120,7 @@ class AzureMLChatTarget(PromptChatTarget):
 
     def _initialize_vars(self, endpoint: Optional[str] = None, api_key: Optional[str] = None) -> None:
         """
-        Sets the endpoint and key for accessing the Azure ML model. Use this function to manually
+        Set the endpoint and key for accessing the Azure ML model. Use this function to manually
         pass in your own endpoint uri and api key. Defaults to the values in the .env file for the variables
         stored in self.endpoint_uri_environment_variable and self.api_key_environment_variable (which default to
         "AZURE_ML_MANAGED_ENDPOINT" and "AZURE_ML_KEY" respectively). It is recommended to set these variables
@@ -150,7 +150,7 @@ class AzureMLChatTarget(PromptChatTarget):
         **param_kwargs,
     ) -> None:
         """
-        Sets the model parameters for generating responses, offering the option to add additional ones not
+        Set the model parameters for generating responses, offering the option to add additional ones not
         explicitly listed.
         """
         self._max_new_tokens = max_new_tokens or self._max_new_tokens
@@ -233,7 +233,7 @@ class AzureMLChatTarget(PromptChatTarget):
         self,
         messages: list[ChatMessage],
     ) -> dict:
-        """Constructs the HTTP request body for the AML online endpoint."""
+        """Construct the HTTP request body for the AML online endpoint."""
         squashed_messages = self.chat_message_normalizer.normalize(messages)
         messages_dict = [message.model_dump() for message in squashed_messages]
 
@@ -281,5 +281,5 @@ class AzureMLChatTarget(PromptChatTarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """Check if the target supports JSON as a response format."""
         return False

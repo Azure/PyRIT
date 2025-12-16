@@ -39,7 +39,7 @@ class PromptTarget(abc.ABC, Identifier):
     @abc.abstractmethod
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
-        Sends a normalized prompt async to the prompt target.
+        Send a normalized prompt async to the prompt target.
 
         Returns:
             list[Message]: A list of message responses. Most targets return a single message,
@@ -49,7 +49,7 @@ class PromptTarget(abc.ABC, Identifier):
     @abc.abstractmethod
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the provided message.
+        Validate the provided message.
         """
 
     def set_model_name(self, *, model_name: str) -> None:

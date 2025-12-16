@@ -95,8 +95,8 @@ class PromptShieldTarget(PromptTarget):
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
-        Parses the text in message to separate the userPrompt and documents contents,
-        then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
+        Parse the text in message to separate the userPrompt and documents contents,
+        then send an HTTP request to the endpoint and obtain a response in JSON. For more info, visit
         https://learn.microsoft.com/en-us/azure/ai-services/content-safety/quickstart-jailbreak.
         """
         self._validate_request(message=message)
@@ -155,7 +155,7 @@ class PromptShieldTarget(PromptTarget):
 
     def _validate_response(self, request_body: dict, response_body: dict) -> None:
         """
-        Ensures that every field sent to the Prompt Shield was analyzed.
+        Ensure that every field sent to the Prompt Shield was analyzed.
         """
         user_prompt_sent: str | None = request_body.get("userPrompt")
         documents_sent: list[str] | None = request_body.get("documents")
@@ -171,7 +171,7 @@ class PromptShieldTarget(PromptTarget):
 
     def _input_parser(self, input_str: str) -> dict[str, Any]:
         """
-        Parses the input given to the target to extract the two fields sent to
+        Parse the input given to the target to extract the two fields sent to
         Prompt Shield: userPrompt: str, and documents: list[str].
         """
         match self._force_entry_field:
@@ -196,9 +196,7 @@ class PromptShieldTarget(PromptTarget):
                 return {"userPrompt": user_prompt, "documents": documents if documents else []}
 
     def _add_auth_param_to_headers(self, headers: dict) -> None:
-        """
-        Adds the API key or token to the headers.
-        """
+        """Add the API key or token to the headers."""
         if self._api_key:
             # If callable, call it to get the token
             if callable(self._api_key):

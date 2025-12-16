@@ -156,5 +156,5 @@ class OpenAITTSTarget(OpenAITarget):
             )
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """Check if the target supports JSON as a response format."""
         return False

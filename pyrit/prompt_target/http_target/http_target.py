@@ -95,7 +95,7 @@ class HTTPTarget(PromptTarget):
 
     def _inject_prompt_into_request(self, request: MessagePiece) -> str:
         """
-        Adds the prompt into the URL if the prompt_regex_string is found in the
+        Add the prompt into the URL if the prompt_regex_string is found in the
         http_request.
         """
         re_pattern = re.compile(self.prompt_regex_string)
@@ -162,7 +162,7 @@ class HTTPTarget(PromptTarget):
 
     def parse_raw_http_request(self, http_request: str) -> tuple[Dict[str, str], RequestBody, str, str, str]:
         """
-        Parses the HTTP request string into a dictionary of headers.
+        Parse the HTTP request string into a dictionary of headers.
 
         Parameters:
             http_request: the header parameters as a request str with

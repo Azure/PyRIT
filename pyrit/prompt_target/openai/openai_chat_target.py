@@ -275,12 +275,12 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         return construct_response_from_request(request=request, response_text_pieces=[extracted_response])
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """Check if the target supports JSON as a response format."""
         return self._is_json_supported
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries.
+        Build chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -295,10 +295,10 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
         """
-        Checks if the message piece is in text message format.
+        Check if the message piece is in text message format.
 
         Args:
-            conversation list[Message]: The conversation
+            conversation (list[Message]): The conversation
 
         Returns:
             bool: True if the message piece is in text message format, False otherwise.
@@ -312,7 +312,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries. This is needed because many
+        Build chat messages based on message entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted).
 
         Args:
@@ -340,7 +340,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     async def _build_chat_messages_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries.
+        Build chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -403,7 +403,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the structure and content of a message for compatibility of this target.
+        Validate the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.

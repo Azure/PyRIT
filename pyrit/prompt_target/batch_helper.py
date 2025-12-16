@@ -9,7 +9,7 @@ from pyrit.prompt_target import PromptTarget
 
 def _get_chunks(*args, batch_size: int):
     """
-    Helper function utilized during prompt batching to chunk based off of size.
+    Split provided lists into chunks of specified batch size.
 
     Args:
         *args: Arguments to chunk; each argument should be a list
@@ -27,8 +27,7 @@ def _get_chunks(*args, batch_size: int):
 
 def _validate_rate_limit_parameters(prompt_target: Optional[PromptTarget], batch_size: int):
     """
-    Helper function to validate the constraints between Rate Limit (Requests Per Minute)
-        and batch size.
+    Validate the constraints between Rate Limit (Requests Per Minute) and batch size.
 
     Args:
         prompt_target (PromptTarget): Target to validate
@@ -52,7 +51,7 @@ async def batch_task_async(
     **task_kwargs,
 ):
     """
-    Performs provided task in batches and validates parameters using helpers.
+    Perform provided task in batches and validate parameters using helpers.
 
     Args:
         prompt_target(PromptTarget): Target to validate

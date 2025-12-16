@@ -166,7 +166,7 @@ class RealtimeTarget(OpenAITarget):
 
     def _get_openai_client(self):
         """
-        Creates or returns the AsyncOpenAI client configured for Realtime API.
+        Create or return the AsyncOpenAI client configured for Realtime API.
         Uses the Azure GA approach with websocket_base_url.
         """
         if self._realtime_client is None:
@@ -188,8 +188,7 @@ class RealtimeTarget(OpenAITarget):
 
     async def connect(self, conversation_id: str):
         """
-        Connects to Realtime API using AsyncOpenAI client.
-        Returns the realtime connection.
+        Connect to Realtime API using AsyncOpenAI client and return the realtime connection.
         """
         logger.info(f"Connecting to Realtime API: {self._endpoint}")
 
@@ -201,7 +200,7 @@ class RealtimeTarget(OpenAITarget):
 
     def _set_system_prompt_and_config_vars(self, system_prompt: str):
         """
-        Creates session configuration for OpenAI client.
+        Create session configuration for OpenAI client.
         Uses the Azure GA format with nested audio config.
         """
         session_config = {
@@ -234,7 +233,7 @@ class RealtimeTarget(OpenAITarget):
 
     async def send_config(self, conversation_id: str):
         """
-        Sends the session configuration using OpenAI client.
+        Send the session configuration using OpenAI client.
 
         Args:
             conversation_id (str): Conversation ID
@@ -249,7 +248,7 @@ class RealtimeTarget(OpenAITarget):
 
     def _get_system_prompt_from_conversation(self, *, conversation_id: str) -> str:
         """
-        Retrieves the system prompt from conversation history.
+        Retrieve the system prompt from conversation history.
 
         Args:
             conversation_id (str): The conversation ID
@@ -320,7 +319,7 @@ class RealtimeTarget(OpenAITarget):
         output_filename: Optional[str] = None,
     ) -> str:
         """
-        Saves audio bytes to a WAV file.
+        Save audio bytes to a WAV file.
 
         Args:
             audio_bytes (bytes): Audio bytes to save.
@@ -383,7 +382,7 @@ class RealtimeTarget(OpenAITarget):
 
     async def send_response_create(self, conversation_id: str):
         """
-        Sends response.create using OpenAI client.
+        Send response.create using OpenAI client.
 
         Args:
             conversation_id (str): Conversation ID
@@ -593,7 +592,7 @@ class RealtimeTarget(OpenAITarget):
 
     async def send_text_async(self, text: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
         """
-        Sends text prompt using OpenAI Realtime API client.
+        Send text prompt using OpenAI Realtime API client.
 
         Args:
             text: prompt to send.
@@ -709,7 +708,7 @@ class RealtimeTarget(OpenAITarget):
 
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the structure and content of a message for compatibility of this target.
+        Validate the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.
@@ -728,5 +727,5 @@ class RealtimeTarget(OpenAITarget):
             raise ValueError(f"This target only supports text and audio_path prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """Check if the target supports JSON as a response format."""
         return False

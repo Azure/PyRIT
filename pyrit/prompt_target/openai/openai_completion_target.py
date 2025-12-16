@@ -141,5 +141,5 @@ class OpenAICompletionTarget(OpenAITarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """Check if the target supports JSON as a response format."""
         return False
