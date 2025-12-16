@@ -581,7 +581,6 @@ API Reference
     FoundryScenario
     Scenario
     ScenarioStrategy
-    ScenarioResult
 
 :py:mod:`pyrit.setup`
 =====================
