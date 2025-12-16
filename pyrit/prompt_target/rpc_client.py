@@ -16,7 +16,7 @@ DEFAULT_PORT = 18812
 
 class RPCClientStoppedException(RPCAppException):
     """
-    This exception is thrown when the RPC client is stopped.
+    Thrown when the RPC client is stopped.
     """
 
     def __init__(self):

@@ -58,7 +58,7 @@ class MessagePieceType(str, Enum):
 
 class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     """
-    This class enables communication with endpoints that support the OpenAI Response API.
+    Enables communication with endpoints that support the OpenAI Response API.
 
     This works with models such as o1, o3, and o4-mini.
     Depending on the endpoint this allows for a variety of inputs, outputs, and tool calls.

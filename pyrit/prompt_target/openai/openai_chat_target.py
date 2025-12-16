@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     """
-    This class facilitates multimodal (image and text) input and text output generation.
+    Facilitates multimodal (image and text) input and text output generation.
 
     This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
 
