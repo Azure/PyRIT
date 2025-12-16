@@ -475,6 +475,114 @@ def test_duplicate_memory_preserves_attack_id(sqlite_instance: MemoryInterface):
     assert attack1.get_identifier()["id"] in attack_ids
 
 
+def test_duplicate_conversation_creates_new_ids(sqlite_instance: MemoryInterface):
+    """Test that duplicated conversation has new piece IDs."""
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    conversation_id = "test-conv-123"
+    original_piece = MessagePiece(
+        role="user",
+        original_value="original prompt text",
+        converted_value="Hello",
+        conversation_id=conversation_id,
+        sequence=1,
+        attack_identifier=attack1.get_identifier(),
+    )
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[original_piece])
+
+    new_conversation_id = sqlite_instance.duplicate_conversation(
+        conversation_id=conversation_id,
+    )
+
+    original_pieces = sqlite_instance.get_message_pieces(conversation_id=conversation_id)
+    new_pieces = sqlite_instance.get_message_pieces(conversation_id=new_conversation_id)
+
+    assert len(original_pieces) == 1
+    assert len(new_pieces) == 1
+
+    # IDs should be different
+    assert original_pieces[0].id != new_pieces[0].id
+
+    # Content should be preserved
+    assert original_pieces[0].original_value == new_pieces[0].original_value
+    assert original_pieces[0].converted_value == new_pieces[0].converted_value
+
+
+def test_duplicate_conversation_preserves_original_prompt_id(sqlite_instance: MemoryInterface):
+    """Test that duplicated conversation preserves original_prompt_id for tracing."""
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    conversation_id = "test-conv-456"
+    original_piece = MessagePiece(
+        role="user",
+        original_value="traceable prompt",
+        conversation_id=conversation_id,
+        sequence=1,
+        attack_identifier=attack1.get_identifier(),
+    )
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[original_piece])
+    original_prompt_id = original_piece.original_prompt_id
+
+    new_conversation_id = sqlite_instance.duplicate_conversation(
+        conversation_id=conversation_id,
+    )
+
+    new_pieces = sqlite_instance.get_message_pieces(conversation_id=new_conversation_id)
+
+    # original_prompt_id should be preserved for tracing
+    assert new_pieces[0].original_prompt_id == original_prompt_id
+
+
+def test_duplicate_conversation_with_multiple_pieces(sqlite_instance: MemoryInterface):
+    """Test that duplicating a multi-piece conversation works correctly."""
+    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    conversation_id = "multi-piece-conv"
+
+    pieces = [
+        MessagePiece(
+            role="user",
+            original_value="user message 1",
+            conversation_id=conversation_id,
+            sequence=1,
+            attack_identifier=attack1.get_identifier(),
+        ),
+        MessagePiece(
+            role="assistant",
+            original_value="assistant response 1",
+            conversation_id=conversation_id,
+            sequence=2,
+            attack_identifier=attack1.get_identifier(),
+        ),
+        MessagePiece(
+            role="user",
+            original_value="user message 2",
+            conversation_id=conversation_id,
+            sequence=3,
+            attack_identifier=attack1.get_identifier(),
+        ),
+    ]
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+    new_conversation_id = sqlite_instance.duplicate_conversation(
+        conversation_id=conversation_id,
+    )
+
+    original_pieces = sqlite_instance.get_message_pieces(conversation_id=conversation_id)
+    new_pieces = sqlite_instance.get_message_pieces(conversation_id=new_conversation_id)
+
+    assert len(new_pieces) == 3
+
+    # All pieces should have unique IDs
+    all_ids = {p.id for p in original_pieces} | {p.id for p in new_pieces}
+    assert len(all_ids) == 6
+
+    # Sequences and roles should be preserved
+    for orig, new in zip(
+        sorted(original_pieces, key=lambda p: p.sequence), sorted(new_pieces, key=lambda p: p.sequence)
+    ):
+        assert orig.sequence == new.sequence
+        assert orig.role == new.role
+        assert orig.original_value == new.original_value
+
+
 def test_add_message_pieces_to_memory_calls_validate(sqlite_instance: MemoryInterface):
     message = MagicMock(Message)
     message.message_pieces = [MagicMock(MessagePiece)]

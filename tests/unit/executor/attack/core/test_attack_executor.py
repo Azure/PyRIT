@@ -1129,3 +1129,75 @@ class TestValidateAttackBatchParameters:
         executor._validate_attack_batch_parameters(
             objectives=objectives, optional_list=None, prepended_conversations=None
         )
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestConcurrentMessageHandling:
+    """Tests for concurrent handling of messages across multiple attacks"""
+
+    @pytest.mark.asyncio
+    async def test_concurrent_attacks_with_shared_message_template(self, mock_single_turn_attack_strategy):
+        """Test that concurrent attacks with the same message template don't interfere."""
+        executor = AttackExecutor(max_concurrency=3)
+        objectives = ["Obj1", "Obj2", "Obj3"]
+
+        # Create a shared message template (simulating reuse scenario)
+        shared_message = Message.from_prompt(prompt="Shared template", role="user")
+        messages = [shared_message, shared_message, shared_message]
+
+        mock_single_turn_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_single_turn_attacks_async(
+            attack=mock_single_turn_attack_strategy,
+            objectives=objectives,
+            messages=messages,
+        )
+
+        # Verify all three calls were made with the same message reference
+        assert mock_single_turn_attack_strategy.execute_async.call_count == 3
+
+        # Each call should have received the shared message
+        # (the attack itself is responsible for duplicating if needed)
+        for call in mock_single_turn_attack_strategy.execute_async.call_args_list:
+            assert call.kwargs["message"] == shared_message
+
+    @pytest.mark.asyncio
+    async def test_concurrent_attacks_with_unique_messages(self, mock_single_turn_attack_strategy, sample_messages):
+        """Test that concurrent attacks with unique messages are handled correctly."""
+        executor = AttackExecutor(max_concurrency=3)
+        objectives = ["Obj1", "Obj2", "Obj3"]
+
+        mock_single_turn_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_single_turn_attacks_async(
+            attack=mock_single_turn_attack_strategy,
+            objectives=objectives,
+            messages=sample_messages,
+        )
+
+        # Verify each attack got its unique message
+        for i, call in enumerate(mock_single_turn_attack_strategy.execute_async.call_args_list):
+            assert call.kwargs["message"] == sample_messages[i]
+
+    @pytest.mark.asyncio
+    async def test_multi_turn_concurrent_attacks_with_messages(self, mock_multi_turn_attack_strategy):
+        """Test that concurrent multi-turn attacks handle messages correctly."""
+        executor = AttackExecutor(max_concurrency=2)
+        objectives = ["Obj1", "Obj2"]
+        messages = [
+            Message.from_prompt(prompt="Custom prompt 1", role="user"),
+            Message.from_prompt(prompt="Custom prompt 2", role="user"),
+        ]
+
+        mock_multi_turn_attack_strategy.execute_async.return_value = MagicMock()
+
+        await executor.execute_multi_turn_attacks_async(
+            attack=mock_multi_turn_attack_strategy,
+            objectives=objectives,
+            messages=messages,
+        )
+
+        # Verify each attack got its correct message
+        assert mock_multi_turn_attack_strategy.execute_async.call_count == 2
+        for i, call in enumerate(mock_multi_turn_attack_strategy.execute_async.call_args_list):
+            assert call.kwargs["message"] == messages[i]

@@ -68,3 +68,110 @@ def test_get_all_values_returns_all_converted_strings(message_pieces: list[Messa
     flattened = Message.get_all_values([response_one, response_two])
 
     assert flattened == ["First piece", "Second piece", "Third piece"]
+
+
+class TestMessageDuplication:
+    """Tests for the Message.duplicate_message() method."""
+
+    def test_duplicate_message_creates_new_ids(self, message: Message) -> None:
+        """Test that duplicate_message creates new IDs for all pieces."""
+        original_ids = [piece.id for piece in message.message_pieces]
+
+        duplicated = message.duplicate_message()
+
+        duplicated_ids = [piece.id for piece in duplicated.message_pieces]
+
+        # Verify new IDs are different from original
+        for orig_id, dup_id in zip(original_ids, duplicated_ids):
+            assert orig_id != dup_id
+
+        # Verify duplicated IDs are unique
+        assert len(set(duplicated_ids)) == len(duplicated_ids)
+
+    def test_duplicate_message_preserves_content(self, message: Message) -> None:
+        """Test that duplicate_message preserves all content fields."""
+        duplicated = message.duplicate_message()
+
+        for orig_piece, dup_piece in zip(message.message_pieces, duplicated.message_pieces):
+            assert orig_piece.original_value == dup_piece.original_value
+            assert orig_piece.converted_value == dup_piece.converted_value
+            assert orig_piece.role == dup_piece.role
+            assert orig_piece.conversation_id == dup_piece.conversation_id
+            assert orig_piece.sequence == dup_piece.sequence
+
+    def test_duplicate_message_preserves_original_prompt_id(self, message: Message) -> None:
+        """Test that duplicate_message preserves original_prompt_id for tracing."""
+        duplicated = message.duplicate_message()
+
+        for orig_piece, dup_piece in zip(message.message_pieces, duplicated.message_pieces):
+            assert orig_piece.original_prompt_id == dup_piece.original_prompt_id
+
+    def test_duplicate_message_creates_new_timestamp(self, message: Message) -> None:
+        """Test that duplicate_message creates new timestamps."""
+        import time
+
+        original_timestamps = [piece.timestamp for piece in message.message_pieces]
+
+        time.sleep(0.01)  # Small delay to ensure different timestamp
+        duplicated = message.duplicate_message()
+
+        for dup_piece in duplicated.message_pieces:
+            # Verify timestamp is newer than all original timestamps
+            for orig_ts in original_timestamps:
+                assert dup_piece.timestamp >= orig_ts
+
+    def test_duplicate_message_is_deep_copy(self, message: Message) -> None:
+        """Test that duplicate_message creates a deep copy (modifications don't affect original)."""
+        duplicated = message.duplicate_message()
+
+        # Modify the duplicated message
+        duplicated.message_pieces[0].original_value = "Modified value"
+
+        # Verify original is unchanged
+        assert message.message_pieces[0].original_value == "First piece"
+
+    def test_duplicate_message_multiple_times(self, message: Message) -> None:
+        """Test that duplicating multiple times creates unique IDs each time."""
+        dup1 = message.duplicate_message()
+        dup2 = message.duplicate_message()
+
+        dup1_ids = {piece.id for piece in dup1.message_pieces}
+        dup2_ids = {piece.id for piece in dup2.message_pieces}
+
+        # Verify no overlap between duplicates
+        assert dup1_ids.isdisjoint(dup2_ids)
+
+
+class TestMessageFromPrompt:
+    """Tests for the Message.from_prompt() class method."""
+
+    def test_from_prompt_creates_user_message(self) -> None:
+        """Test that from_prompt creates a valid user message."""
+        message = Message.from_prompt(prompt="Hello world", role="user")
+
+        assert len(message.message_pieces) == 1
+        assert message.message_pieces[0].original_value == "Hello world"
+        assert message.message_pieces[0].converted_value == "Hello world"
+        assert message.message_pieces[0].role == "user"
+
+    def test_from_prompt_creates_assistant_message(self) -> None:
+        """Test that from_prompt creates a valid assistant message."""
+        message = Message.from_prompt(prompt="Response text", role="assistant")
+
+        assert len(message.message_pieces) == 1
+        assert message.message_pieces[0].role == "assistant"
+
+    def test_from_system_prompt_creates_system_message(self) -> None:
+        """Test that from_system_prompt creates a valid system message."""
+        message = Message.from_system_prompt(system_prompt="You are a helpful assistant")
+
+        assert len(message.message_pieces) == 1
+        assert message.message_pieces[0].role == "system"
+        assert message.message_pieces[0].original_value == "You are a helpful assistant"
+
+    def test_from_prompt_with_empty_string(self) -> None:
+        """Test that from_prompt works with empty string."""
+        message = Message.from_prompt(prompt="", role="user")
+
+        assert len(message.message_pieces) == 1
+        assert message.message_pieces[0].original_value == ""

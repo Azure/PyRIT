@@ -563,9 +563,7 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve prompts with error {e}")
             raise
 
-    def _duplicate_conversation(
-        self, *, messages: Sequence[Message]
-    ) -> tuple[str, Sequence[MessagePiece]]:
+    def _duplicate_conversation(self, *, messages: Sequence[Message]) -> tuple[str, Sequence[MessagePiece]]:
         """
         Duplicate messages with new conversation ID.
 
@@ -607,9 +605,7 @@ class MemoryInterface(abc.ABC):
         self.add_message_pieces_to_memory(message_pieces=all_pieces)
         return new_conversation_id
 
-    def duplicate_conversation_excluding_last_turn(
-        self, *, conversation_id: str
-    ) -> str:
+    def duplicate_conversation_excluding_last_turn(self, *, conversation_id: str) -> str:
         """
         Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
         user request (e.g. if there is half a turn, it just removes that half).
@@ -641,9 +637,7 @@ class MemoryInterface(abc.ABC):
             message for message in messages if message.sequence <= last_message.sequence - length_of_sequence_to_remove
         ]
 
-        new_conversation_id, all_pieces = self._duplicate_conversation(
-            messages=messages_to_duplicate
-        )
+        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages_to_duplicate)
         self.add_message_pieces_to_memory(message_pieces=all_pieces)
 
         return new_conversation_id

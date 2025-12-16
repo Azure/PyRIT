@@ -292,6 +292,69 @@ class TestPromptPreparation:
         assert result.message_pieces[0].original_value == "Custom objective text"
         assert result.message_pieces[0].original_value_data_type == "text"
 
+    def test_get_message_preserves_original_prompt_id(self, mock_target, basic_context):
+        """Test that duplicate_message preserves original_prompt_id for tracing."""
+        existing_message = Message.from_prompt(prompt="Track this prompt", role="user")
+        original_prompt_id = existing_message.message_pieces[0].original_prompt_id
+        basic_context.message = existing_message
+
+        attack = PromptSendingAttack(objective_target=mock_target)
+        result = attack._get_message(basic_context)
+
+        # original_prompt_id should be preserved for tracing
+        assert result.message_pieces[0].original_prompt_id == original_prompt_id
+
+    def test_get_message_creates_unique_ids_each_call(self, mock_target, basic_context):
+        """Test that each call to _get_message creates unique IDs (important for retries)."""
+        existing_message = Message.from_prompt(prompt="Retry prompt", role="user")
+        basic_context.message = existing_message
+
+        attack = PromptSendingAttack(objective_target=mock_target)
+
+        # Get message multiple times (simulating retry scenario)
+        result1 = attack._get_message(basic_context)
+        result2 = attack._get_message(basic_context)
+        result3 = attack._get_message(basic_context)
+
+        # All should have unique IDs
+        ids = {
+            result1.message_pieces[0].id,
+            result2.message_pieces[0].id,
+            result3.message_pieces[0].id,
+        }
+        assert len(ids) == 3
+
+    def test_get_message_with_multi_piece_message(self, mock_target, basic_context):
+        """Test that multi-piece messages are properly duplicated."""
+        piece1 = MessagePiece(
+            role="user",
+            original_value="Text part",
+            converted_value="Text part",
+            conversation_id="test-conv",
+            sequence=1,
+        )
+        piece2 = MessagePiece(
+            role="user",
+            original_value="Image part",
+            converted_value="base64data",
+            original_value_data_type="image_path",
+            conversation_id="test-conv",
+            sequence=1,
+        )
+        multi_piece_message = Message(message_pieces=[piece1, piece2])
+        basic_context.message = multi_piece_message
+
+        attack = PromptSendingAttack(objective_target=mock_target)
+        result = attack._get_message(basic_context)
+
+        # Both pieces should be duplicated with new IDs
+        assert len(result.message_pieces) == 2
+        assert result.message_pieces[0].id != piece1.id
+        assert result.message_pieces[1].id != piece2.id
+        # Content preserved
+        assert result.message_pieces[0].original_value == "Text part"
+        assert result.message_pieces[1].original_value == "Image part"
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestPromptSending:
