@@ -52,10 +52,13 @@ class OpenAICompletionTarget(OpenAITarget):
             presence_penalty (float, Optional): Number between -2.0 and 2.0. Positive values penalize new
                 tokens based on whether they appear in the text so far, increasing the model's likelihood to
                 talk about new topics.
+            frequency_penalty (float, Optional): Number between -2.0 and 2.0. Positive values penalize new
+                tokens based on their existing frequency in the text so far, decreasing the model's likelihood to
+                repeat the same line verbatim.
             n (int, Optional): How many completions to generate for each prompt.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                `httpx.AsyncClient()` constructor.
-                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
+            *args: Variable length argument list passed to the parent class.
+            **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
+                For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
         """
         super().__init__(*args, **kwargs)
 

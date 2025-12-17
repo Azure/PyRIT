@@ -55,7 +55,18 @@ class AzureBlobStorageTarget(PromptTarget):
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
+        """
+        Initialize the Azure Blob Storage target.
 
+        Args:
+            container_url (str, Optional): The Azure Storage container URL.
+                Defaults to the AZURE_STORAGE_ACCOUNT_CONTAINER_URL environment variable.
+            sas_token (str, Optional): The SAS token for authentication.
+                Defaults to the AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable.
+            blob_content_type (SupportedContentType): The content type for blobs.
+                Defaults to PLAIN_TEXT.
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+        """
         self._blob_content_type: str = blob_content_type.value
 
         self._container_url: str = default_values.get_required_value(

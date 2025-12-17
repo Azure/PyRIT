@@ -48,6 +48,22 @@ class HTTPTarget(PromptTarget):
         model_name: str = "",
         **httpx_client_kwargs: Any,
     ) -> None:
+        """
+        Initialize the HTTPTarget.
+
+        Args:
+            http_request (str): The raw HTTP request string.
+            prompt_regex_string (str): Regex string to match prompt location. Defaults to "{PROMPT}".
+            use_tls (bool): Whether to use TLS. Defaults to True.
+            callback_function (Callable, Optional): Function to parse HTTP response.
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+            client (httpx.AsyncClient, Optional): Pre-configured httpx client.
+            model_name (str): The model name. Defaults to empty string.
+            **httpx_client_kwargs: Additional keyword arguments for httpx.AsyncClient.
+
+        Raises:
+            ValueError: If both client and httpx_client_kwargs are provided.
+        """
         # Initialize attributes needed by parse_raw_http_request before calling it
         self._client = client
         self.use_tls = use_tls

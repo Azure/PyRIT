@@ -20,11 +20,18 @@ class RPCClientStoppedException(RPCAppException):
     """
 
     def __init__(self):
+        """Initialize the RPCClientStoppedException."""
         super().__init__("RPC client is stopped.")
 
 
 class RPCClient:
     def __init__(self, callback_disconnected: Optional[Callable] = None):
+        """
+        Initialize the RPC client.
+
+        Args:
+            callback_disconnected (Callable, Optional): Callback function to invoke when disconnected.
+        """
         self._c = None  # type: Optional[rpyc.Connection]
         self._bgsrv = None  # type: Optional[rpyc.BgServingThread]
 

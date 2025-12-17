@@ -99,6 +99,18 @@ class PlaywrightCopilotTarget(PromptTarget):
     LOGIN_REQUIRED_HEADER: str = "Sign in for the full experience"
 
     def __init__(self, *, page: "Page", copilot_type: CopilotType = CopilotType.CONSUMER) -> None:
+        """
+        Initialize the Playwright Copilot target.
+
+        Args:
+            page (Page): The Playwright page object for browser interaction.
+            copilot_type (CopilotType): The type of Copilot to interact with.
+                Defaults to CopilotType.CONSUMER.
+
+        Raises:
+            RuntimeError: If the Playwright page is not initialized.
+            ValueError: If the page URL doesn't match the specified copilot_type.
+        """
         super().__init__()
         self._page = page
         self._type = copilot_type

@@ -1,6 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""
+Prompt targets for PyRIT.
+
+This package contains various target implementations for sending prompts to different services and APIs.
+"""
+
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute

@@ -107,9 +107,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 an unknown function or does not output a function; if False, return a structured error so we can
                 wrap it as function_call_output and let the model potentially recover
                 (e.g., pick another tool or ask for clarification).
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
-                For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
+            **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
+                For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
 
         Raises:
             PyritException: If the temperature or top_p values are out of bounds.

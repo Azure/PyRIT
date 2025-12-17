@@ -27,6 +27,15 @@ class PromptTarget(abc.ABC, Identifier):
         endpoint: str = "",
         model_name: str = "",
     ) -> None:
+        """
+        Initialize the PromptTarget.
+
+        Args:
+            verbose (bool): Enable verbose logging. Defaults to False.
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+            endpoint (str): The endpoint URL. Defaults to empty string.
+            model_name (str): The model name. Defaults to empty string.
+        """
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._max_requests_per_minute = max_requests_per_minute

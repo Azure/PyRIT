@@ -115,9 +115,8 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                `httpx.AsyncClient()` constructor.
-                For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
+            **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
+                For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
 
         Raises:
             PyritException: If the temperature or top_p values are out of bounds.

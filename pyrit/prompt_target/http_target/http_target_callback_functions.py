@@ -41,6 +41,17 @@ def get_http_target_json_response_callback_function(key: str) -> Callable:
 
 
 def get_http_target_regex_matching_callback_function(key: str, url: str = None) -> Callable:
+    """
+    Get a callback function that parses HTTP responses using regex matching.
+
+    Args:
+        key (str): The regex pattern to use for parsing the response.
+        url (str, Optional): The original URL to prepend to matches if needed.
+
+    Returns:
+        Callable: A function that parses responses using the provided regex pattern.
+    """
+
     def parse_using_regex(response: requests.Response) -> str:
         """
         Parse text outputs using regex.

@@ -26,6 +26,14 @@ class PromptChatTarget(PromptTarget):
         endpoint: str = "",
         model_name: str = "",
     ) -> None:
+        """
+        Initialize the PromptChatTarget.
+
+        Args:
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+            endpoint (str): The endpoint URL. Defaults to empty string.
+            model_name (str): The model name. Defaults to empty string.
+        """
         super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
 
     def set_system_prompt(

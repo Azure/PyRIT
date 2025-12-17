@@ -25,6 +25,12 @@ class TextTarget(PromptTarget):
         *,
         text_stream: IO[str] = sys.stdout,
     ) -> None:
+        """
+        Initialize the TextTarget.
+
+        Args:
+            text_stream (IO[str]): The text stream to write prompts to. Defaults to sys.stdout.
+        """
         super().__init__()
         self._text_stream = text_stream
 
