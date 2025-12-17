@@ -27,7 +27,7 @@
 #
 # This conversation is sent to the `objective_target`.
 #
-# Before you begin, ensure you have the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/1a_install_conda.md).
+# Before you begin, ensure you have the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/1a_install_uv.md).
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 

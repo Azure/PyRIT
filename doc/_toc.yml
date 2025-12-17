@@ -8,7 +8,7 @@ chapters:
     - file: cookbooks/3_copyright_violations
     - file: cookbooks/4_testing_bias
     - file: cookbooks/5_psychosocial_harms
-  - file: setup/1a_install_conda
+  - file: setup/1a_install_uv
     sections:
     - file: setup/1b_install_docker
     - file: setup/jupyter_setup
@@ -16,9 +16,8 @@ chapters:
     - file: setup/use_azure_sql_db
   - file: contributing/README
     sections:
-    - file: contributing/1a_install_conda
+    - file: contributing/1a_install_uv
     - file: contributing/1b_install_devcontainers
-    - file: contributing/1c_install_uv
     - file: contributing/2_git
     - file: contributing/3_incorporating_research
     - file: contributing/4_style_guide
