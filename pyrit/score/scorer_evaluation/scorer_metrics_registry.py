@@ -42,10 +42,57 @@ class ScorerMetricsEntry(NamedTuple):
     metrics: "ScorerMetrics"
     """The evaluation metrics (accuracy, precision, recall, etc.)"""
 
+    def print_summary(self) -> None:
+        """Print a user-friendly summary of the scorer configuration and metrics."""
+        from dataclasses import asdict
+
+        print("=" * 60)
+        print("Scorer Configuration:")
+        print(f"  Type: {self.scorer_identifier.get('__type__', 'Unknown')}")
+        print(f"  Version: {self.scorer_identifier.get('version', 'Unknown')}")
+
+        # Model info
+        model_info = self.scorer_identifier.get("model_info")
+        if model_info:
+            model_name = model_info.get("model_name", "Unknown")
+            target_type = model_info.get("__type__", "Unknown")
+            print(f"  Model: {model_name} ({target_type})")
+
+        # Dataset version
+        dataset_version = self.scorer_identifier.get("dataset_version")
+        if dataset_version:
+            print(f"  Dataset Version: {dataset_version}")
+
+        # System prompt (truncated)
+        system_prompt = self.scorer_identifier.get("system_prompt_template")
+        if system_prompt:
+            truncated = system_prompt[:80] + "..." if len(system_prompt) > 80 else system_prompt
+            print(f"  System Prompt: {truncated}")
+
+        # Sub-identifiers (just show count/types)
+        sub_id = self.scorer_identifier.get("sub_identifier")
+        if sub_id:
+            if isinstance(sub_id, list):
+                types = [s.get("__type__", "Unknown") for s in sub_id if isinstance(s, dict)]
+                print(f"  Sub-scorers: {', '.join(types)}")
+            elif isinstance(sub_id, dict):
+                print(f"  Sub-scorer: {sub_id.get('__type__', 'Unknown')}")
+
+        # Metrics
+        print("\nMetrics:")
+        metrics_dict = asdict(self.metrics)
+        for key, value in metrics_dict.items():
+            if value is not None:
+                if isinstance(value, float):
+                    print(f"  {key}: {value:.4f}")
+                else:
+                    print(f"  {key}: {value}")
+        print("=" * 60)
+
 
 class ScorerMetricsRegistry(metaclass=Singleton):
     """
-    Registry for storing and retrieving scorer evaluation metrics.
+    Registry for storing and retrieving official scorer evaluation metrics.
 
     This class implements the singleton pattern to prevent race conditions
     when multiple instances try to modify the registry file.

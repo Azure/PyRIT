@@ -688,7 +688,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
             csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to. Defaults to None.
             add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This
-                shouldonly be True when running evaluations on official consolidated datasets.
+                should only be True when running evaluations on official consolidated datasets.
 
         Returns:
             ObjectiveScorerMetrics: The metrics for the objective scorer.

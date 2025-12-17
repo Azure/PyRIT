@@ -83,24 +83,3 @@ class ScorerIdentifier:
             "scorer_specific_params": self.scorer_specific_params,
             "pyrit_version": self.pyrit_version,
         }
-
-    def print_summary(self) -> None:
-        """Print a summary of the configuration."""
-        print("ScorerIdentifier Summary:")
-        print(f"  Type: {self.type}")
-        print(f"  Version: {self.version}")
-        print(f"  Sub Identifier: {self.sub_identifier}")
-        print(f"  Model Info: {self.model_info}")
-        print(f"  Score Aggregator: {self.score_aggregator}")
-        if self.system_prompt_template and len(self.system_prompt_template) > 100:
-            prompt_display = self.system_prompt_template[:100] + "..."
-        else:
-            prompt_display = self.system_prompt_template
-        print(f"  System Prompt Template: {prompt_display}")
-        if self.user_prompt_template and len(self.user_prompt_template) > 100:
-            user_prompt_display = self.user_prompt_template[:100] + "..."
-        else:
-            user_prompt_display = self.user_prompt_template
-        print(f"  User Prompt Template: {user_prompt_display}")
-        print(f"  Scorer Specific Params: {self.scorer_specific_params}")
-        print(f"  PyRIT Version: {self.pyrit_version}")
