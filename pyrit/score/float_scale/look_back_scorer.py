@@ -41,8 +41,8 @@ class LookBackScorer(FloatScaleScorer):
             validator: Optional validator for the scorer.
         """
         super().__init__(validator=validator or self._default_validator)
-        self._prompt_target = chat_target
 
+        self._prompt_target = chat_target
         self.exclude_instruction_prompts = exclude_instruction_prompts
 
         behavior_change_prompt_path = Path(SCORER_SCALES_PATH, "behavior_change_system_prompt.yaml").resolve()
@@ -53,6 +53,16 @@ class LookBackScorer(FloatScaleScorer):
 
         self._system_prompt = scoring_instructions_template.render_template_value(
             step_description=behavior_change_scale
+        )
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt,
+            prompt_target=self._prompt_target,
+            scorer_specific_params={
+                "exclude_instruction_prompts": self.exclude_instruction_prompts,
+            },
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -111,10 +121,3 @@ class LookBackScorer(FloatScaleScorer):
             "LookBackScorer:", score.score_value, score.score_value_description, "Rationale: ", score.score_rationale
         )
         return [score]
-
-    def _get_scorer_specific_params(self):
-        scorer_specific_params = super()._get_scorer_specific_params()
-        return {
-            **(scorer_specific_params or {}),
-            "exclude_instruction_prompts": self.exclude_instruction_prompts,
-        }

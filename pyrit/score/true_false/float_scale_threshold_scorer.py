@@ -38,15 +38,25 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         Raises:
             ValueError: If the threshold is not between 0 and 1.
         """
+        if threshold <= 0 or threshold >= 1:
+            raise ValueError("The threshold must be between 0 and 1")
+
+        super().__init__(validator=ScorerPromptValidator())
+
         self._scorer = scorer
         self._threshold = threshold
         self._float_scale_aggregator = float_scale_aggregator
 
-        # Validation is used by sub-scorers
-        super().__init__(validator=ScorerPromptValidator())
-
-        if threshold <= 0 or threshold >= 1:
-            raise ValueError("The threshold must be between 0 and 1")
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            sub_scorers=[self._scorer],
+            score_aggregator=self._score_aggregator.__name__,
+            scorer_specific_params={
+                "threshold": self._threshold,
+                "float_scale_aggregator": self._float_scale_aggregator.__name__,
+            },
+        )
 
     async def _score_async(
         self,
@@ -140,21 +150,4 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         Raises:
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
-        raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-
-    def _get_sub_identifier(self):
-        """
-        Return the identifier of the underlying float scale scorer.
-
-        Returns:
-            dict: The identifier dictionary of the wrapped scorer.
-        """
-        return self._scorer.get_identifier()
-
-    def _get_scorer_specific_params(self):
-        scorer_specific_params = super()._get_scorer_specific_params()
-        return {
-            **(scorer_specific_params or {}),
-            "threshold": self._threshold,
-            "float_scale_aggregator": self._float_scale_aggregator.__name__,
-        }
+        raise NotImplementedError("FloatScaleThresholdScorer does not support piecewise scoring.")

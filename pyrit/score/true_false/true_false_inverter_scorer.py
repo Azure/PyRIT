@@ -26,11 +26,18 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         Raises:
             ValueError: If the scorer is not an instance of TrueFalseScorer.
         """
-        super().__init__(validator=ScorerPromptValidator())
-
         if not isinstance(scorer, TrueFalseScorer):
             raise ValueError("The scorer must be a true false scorer")
         self._scorer = scorer
+
+        super().__init__(validator=ScorerPromptValidator())
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            sub_scorers=[self._scorer],
+            score_aggregator=self._score_aggregator.__name__,
+        )
 
     async def _score_async(
         self,
@@ -85,13 +92,4 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         Raises:
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
-        raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-
-    def _get_sub_identifier(self):
-        """
-        Return the identifier of the underlying true/false scorer.
-
-        Returns:
-            dict: The identifier dictionary of the wrapped scorer.
-        """
-        return self._scorer.get_identifier()
+        raise NotImplementedError("TrueFalseInverterScorer does not support piecewise scoring.")

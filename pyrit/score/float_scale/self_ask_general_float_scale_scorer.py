@@ -69,10 +69,15 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
             ValueError: If system_prompt_format_string is not provided or empty.
             ValueError: If min_value is greater than max_value.
         """
-        super().__init__(validator=validator or self._default_validator)
-        self._prompt_target = chat_target
         if not system_prompt_format_string:
             raise ValueError("system_prompt_format_string must be provided and non-empty.")
+
+        if min_value > max_value:
+            raise ValueError("min_value must be less than or equal to max_value")
+
+        super().__init__(validator=validator or self._default_validator)
+
+        self._prompt_target = chat_target
         self._system_prompt_format_string = system_prompt_format_string
         self._prompt_format_string = prompt_format_string
 
@@ -87,6 +92,18 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         self._description_output_key = description_output_key
         self._metadata_output_key = metadata_output_key
         self._category_output_key = category_output_key
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt_format_string,
+            user_prompt_template=self._prompt_format_string,
+            prompt_target=self._prompt_target,
+            scorer_specific_params={
+                "min_value": self._min_value,
+                "max_value": self._max_value,
+            },
+        )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -139,12 +156,3 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
             score_type="float_scale",
         )
         return [score]
-
-    def _get_scorer_specific_params(self):
-        scorer_specific_params = super()._get_scorer_specific_params()
-        return {
-            **(scorer_specific_params or {}),
-            "prompt_format_string": self._prompt_format_string,
-            "min_value": self._min_value,
-            "max_value": self._max_value,
-        }

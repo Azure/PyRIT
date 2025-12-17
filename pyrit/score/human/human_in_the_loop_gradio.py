@@ -47,6 +47,12 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         self._rpc_server = AppRPCServer(open_browser=open_browser)
         self._rpc_server.start()
 
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            score_aggregator=self._score_aggregator.__name__,
+        )
+
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score a message piece using human input through Gradio interface.

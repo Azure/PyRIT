@@ -76,8 +76,6 @@ class AzureContentFilterScorer(FloatScaleScorer):
         Raises:
             ValueError: If neither API key nor endpoint is provided, or if both are missing.
         """
-        super().__init__(validator=validator or self._default_validator)
-
         if harm_categories:
             self._score_categories = [category.value for category in harm_categories]
         else:
@@ -103,6 +101,16 @@ class AzureContentFilterScorer(FloatScaleScorer):
                 self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint and api_key")
+
+        super().__init__(validator=validator or self._default_validator)
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            scorer_specific_params={
+                "score_categories": self._score_categories,
+            }
+        )
 
     def _get_chunks(self, text: str) -> list[str]:
         """
@@ -232,10 +240,3 @@ class AzureContentFilterScorer(FloatScaleScorer):
         )
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
-
-    def _get_scorer_specific_params(self):
-        scorer_specific_params = super()._get_scorer_specific_params()
-        return {
-            **(scorer_specific_params or {}),
-            "harm_categories": self._score_categories,
-        }

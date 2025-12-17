@@ -72,6 +72,16 @@ class PromptTarget(abc.ABC, Identifier):
         self._memory.dispose_engine()
 
     def get_identifier(self) -> Dict[str, Any]:
+        """
+        Get an identifier dictionary for this prompt target.
+
+        This includes essential attributes needed for scorer evaluation and registry tracking.
+        Subclasses should override this method to include additional relevant attributes
+        (e.g., temperature, top_p) when available.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing identification attributes.
+        """
         public_attributes: Dict[str, Any] = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
@@ -81,22 +91,9 @@ class PromptTarget(abc.ABC, Identifier):
             public_attributes["model_name"] = self._model_name
         if self._custom_metadata:
             public_attributes["custom_metadata"] = self._custom_metadata
+        # Include temperature and top_p if available (set by subclasses)
+        if hasattr(self, "_temperature") and self._temperature is not None:
+            public_attributes["temperature"] = self._temperature
+        if hasattr(self, "_top_p") and self._top_p is not None:
+            public_attributes["top_p"] = self._top_p
         return public_attributes
-
-    def get_eval_identifier(self) -> Dict[str, Any]:
-        """
-        Get an identifier for scorer evaluation purposes.
-
-        This method returns only the essential attributes needed for scorer evaluation
-        and registry tracking.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing identification attributes for scorer evaluation purposes.
-        """
-        eval_identifier = self.get_identifier()
-        if "__module__" in eval_identifier:
-            del eval_identifier["__module__"]
-        if "endpoint" in eval_identifier:
-            del eval_identifier["endpoint"]
-
-        return eval_identifier

@@ -7,6 +7,7 @@ from typing import ClassVar, Dict, Optional, Union
 
 import yaml
 
+from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_CONTENT_CLASSIFIERS_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -56,24 +57,33 @@ class SelfAskCategoryScorer(TrueFalseScorer):
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
-        content_classifier_path = self._verify_and_resolve_path(content_classifier_path)
 
         self._prompt_target = chat_target
+
+        content_classifier_path = verify_and_resolve_path(content_classifier_path)
 
         category_file_contents = yaml.safe_load(content_classifier_path.read_text(encoding="utf-8"))
 
         self._no_category_found_category = category_file_contents["no_category_found"]
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
 
-        content_classifier_system_prompt = self._verify_and_resolve_path(
+        content_classifier_system_prompt_path = verify_and_resolve_path(
             SCORER_CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
 
-        scoring_instructions_template = SeedPrompt.from_yaml_file(content_classifier_system_prompt)
+        scoring_instructions_template = SeedPrompt.from_yaml_file(content_classifier_system_prompt_path)
 
         self._system_prompt = scoring_instructions_template.render_template_value(
             categories=categories_as_string,
             no_category_found=self._no_category_found_category,
+        )
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt,
+            prompt_target=self._prompt_target,
+            score_aggregator=self._score_aggregator.__name__,
         )
 
     def _content_classifier_to_string(self, categories: list[Dict[str, str]]) -> str:

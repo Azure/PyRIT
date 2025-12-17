@@ -454,6 +454,31 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
     assert metrics.accuracy_standard_error == 0.0
 
 
+@pytest.mark.asyncio
+async def test_run_evaluation_async_objective_add_to_registry(mock_objective_scorer):
+    """Test that add_to_registry=True calls ScorerMetricsRegistry.add_entry."""
+    responses = [
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
+    ]
+    entry = ObjectiveHumanLabeledEntry(responses, [True], "Test objective")
+    mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry])
+    mock_objective_scorer.score_prompts_with_tasks_batch_async = AsyncMock(
+        return_value=[MagicMock(get_value=lambda: True)]
+    )
+    mock_objective_scorer.scorer_identifier = MagicMock()
+    evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
+
+    with patch("pyrit.score.scorer_evaluation.scorer_evaluator.ScorerMetricsRegistry") as mock_registry_cls:
+        mock_registry = MagicMock()
+        mock_registry_cls.return_value = mock_registry
+
+        await evaluator.run_evaluation_async(
+            labeled_dataset=mock_dataset, num_scorer_trials=1, save_results=False, add_to_registry=True
+        )
+
+        mock_registry.add_entry.assert_called_once()
+
+
 def test_compute_objective_metrics_perfect_agreement(mock_objective_scorer):
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
     # 2 responses, 3 human scores each, all agree (all 1s), model also all 1s

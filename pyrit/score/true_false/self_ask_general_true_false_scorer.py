@@ -71,10 +71,12 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         Raises:
             ValueError: If system_prompt_format_string is not provided or empty.
         """
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
-        self._prompt_target = chat_target
         if not system_prompt_format_string:
             raise ValueError("system_prompt_format_string must be provided and non-empty.")
+
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+
+        self._prompt_target = chat_target
         self._system_prompt_format_string = system_prompt_format_string
         self._prompt_format_string = prompt_format_string
 
@@ -84,6 +86,15 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         self._description_output_key = description_output_key
         self._metadata_output_key = metadata_output_key
         self._category_output_key = category_output_key
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt_format_string,
+            user_prompt_template=self._prompt_format_string,
+            prompt_target=self._prompt_target,
+            score_aggregator=self._score_aggregator.__name__,
+        )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -131,10 +142,3 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
 
         score = unvalidated.to_score(score_value=unvalidated.raw_score_value, score_type="true_false")
         return [score]
-
-    def _get_scorer_specific_params(self):
-        scorer_specific_params = super()._get_scorer_specific_params()
-        return {
-            **(scorer_specific_params or {}),
-            "prompt_format_string": self._prompt_format_string,
-        }

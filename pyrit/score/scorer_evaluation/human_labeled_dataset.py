@@ -91,6 +91,7 @@ class HumanLabeledDataset:
             entries (List[HumanLabeledEntry]): A list of entries in the dataset.
             metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or
                 OBJECTIVE.
+            version (str): The version of the human-labeled dataset. Defaults to "1.0".
 
         Raises:
             ValueError: If the dataset name is an empty string.
@@ -117,11 +118,12 @@ class HumanLabeledDataset:
         assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        version: Optional[str] = "1.0",
     ) -> "HumanLabeledDataset":
         """
         Load a human-labeled dataset from a CSV file. This only allows for single turn scored text responses.
         You can optionally include a # comment line at the top of the CSV file to specify the dataset version
-        (e.g. # version=1.0).
+        (using # version=x.y).
 
         Args:
             csv_path (Union[str, Path]): The path to the CSV file.
@@ -138,6 +140,8 @@ class HumanLabeledDataset:
                 the assistant responses. If not specified, it is assumed that the responses are text.
             dataset_name: (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
                 file name.
+            version (str, Optional): The version of the dataset. If not provided, it will be inferred from the CSV
+                file if a version comment line "#version=" is present, otherwise it defaults to "1.0".
 
         Returns:
             HumanLabeledDataset: The human-labeled dataset object.
@@ -148,11 +152,13 @@ class HumanLabeledDataset:
         if not os.path.exists(csv_path):
             raise ValueError(f"CSV file does not exist: {csv_path}")
         # Read the first line to check for version info
-        version = "1.0"
-        with open(csv_path, "r", encoding="utf-8") as f:
-            first_line = f.readline().strip()
-            if first_line.startswith("#") and "version=" in first_line:
-                version = first_line.split("=", 1)[1].strip()
+        if not version:
+            with open(csv_path, "r", encoding="utf-8") as f:
+                first_line = f.readline().strip()
+                if first_line.startswith("#") and "version=" in first_line:
+                    # Extract version, handling trailing commas from CSV format (e.g., "# version=1.0,,,,")
+                    version_part = first_line.split("=", 1)[1].strip()
+                    version = version_part.split(",")[0].strip()
 
         # Try UTF-8 first, fall back to latin-1 for files with special characters
         try:

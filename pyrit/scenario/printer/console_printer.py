@@ -198,7 +198,55 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
                 self._print_scorer_info(sub_identifier, indent_level=indent_level + 2)
 
     def _print_registry_metrics(self, result: ScenarioResult) -> None:
-        print(result.get_scorer_evaluation_metrics())  # make prettier
+        """
+        Print scorer evaluation metrics from the registry if available.
+
+        Args:
+            result (ScenarioResult): The scenario result containing scorer info.
+        """
+        metrics = result.get_scorer_evaluation_metrics()
+        if metrics is None:
+            self._print_colored(
+                f"{self._indent * 2}• Scorer Performance Metrics: "
+                f"Official evaluation has not been run yet for this "
+                f"specific configuration",
+                Fore.YELLOW,
+            )
+            return
+
+        print()
+        self._print_colored(f"{self._indent}📉 Scorer Performance Metrics", Style.BRIGHT)
+
+        # Check for objective metrics (accuracy-based)
+        if hasattr(metrics, "accuracy"):
+            self._print_colored(f"{self._indent * 2}• Accuracy: {metrics.accuracy:.2%}", Fore.GREEN)
+            if hasattr(metrics, "accuracy_standard_error") and metrics.accuracy_standard_error is not None:
+                self._print_colored(
+                    f"{self._indent * 2}• Accuracy Std Error: ±{metrics.accuracy_standard_error:.4f}", Fore.CYAN
+                )
+            if hasattr(metrics, "f1_score") and metrics.f1_score is not None:
+                self._print_colored(f"{self._indent * 2}• F1 Score: {metrics.f1_score:.4f}", Fore.CYAN)
+            if hasattr(metrics, "precision") and metrics.precision is not None:
+                self._print_colored(f"{self._indent * 2}• Precision: {metrics.precision:.4f}", Fore.CYAN)
+            if hasattr(metrics, "recall") and metrics.recall is not None:
+                self._print_colored(f"{self._indent * 2}• Recall: {metrics.recall:.4f}", Fore.CYAN)
+
+        # Check for harm metrics (MAE-based)
+        elif hasattr(metrics, "mean_absolute_error"):
+            self._print_colored(
+                f"{self._indent * 2}• Mean Absolute Error: {metrics.mean_absolute_error:.4f}", Fore.GREEN
+            )
+            if hasattr(metrics, "mae_standard_error") and metrics.mae_standard_error is not None:
+                self._print_colored(f"{self._indent * 2}• MAE Std Error: ±{metrics.mae_standard_error:.4f}", Fore.CYAN)
+            if hasattr(metrics, "krippendorff_alpha_combined") and metrics.krippendorff_alpha_combined is not None:
+                self._print_colored(
+                    f"{self._indent * 2}• Krippendorff Alpha (Combined): {metrics.krippendorff_alpha_combined:.4f}",
+                    Fore.CYAN,
+                )
+            if hasattr(metrics, "krippendorff_alpha_model") and metrics.krippendorff_alpha_model is not None:
+                self._print_colored(
+                    f"{self._indent * 2}• Krippendorff Alpha (Model): {metrics.krippendorff_alpha_model:.4f}", Fore.CYAN
+                )
 
     def _get_rate_color(self, rate: int) -> str:
         """

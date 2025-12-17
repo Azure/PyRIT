@@ -148,13 +148,20 @@ class ScenarioResult:
         Get the evaluation metrics for the scenario's scorer from the scorer evaluation registry.
 
         Returns:
-            ScorerMetrics: The evaluation metrics object.
+            ScorerMetrics: The evaluation metrics object, or None if not found.
         """
+        # import here to avoid circular imports
         from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-            ScorerEvalIdentifier,
             ScorerMetricsRegistry,
         )
 
-        eval_identifier = ScorerEvalIdentifier(**self.objective_scorer_identifier)
+        # Use the stored hash directly for lookup (avoids needing to reconstruct ScorerIdentifier)
+        scorer_hash = self.objective_scorer_identifier.get("hash")
+        if not scorer_hash:
+            return None
+
         registry = ScorerMetricsRegistry()
-        return registry.get_scorer_registry_metrics_by_identifier(eval_identifier, registry_type=registry_type)
+        entries = registry.get_metrics_registry_entries(registry_type=registry_type, hash=scorer_hash)
+        if entries:
+            return entries[0].metrics
+        return None

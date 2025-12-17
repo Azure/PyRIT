@@ -7,6 +7,7 @@ from typing import ClassVar, Optional, Union
 
 import yaml
 
+from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_SCALES_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -60,6 +61,7 @@ class SelfAskScaleScorer(FloatScaleScorer):
             validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
         """
         super().__init__(validator=validator or self._default_validator)
+
         self._prompt_target = chat_target
 
         if not system_prompt_path:
@@ -68,8 +70,8 @@ class SelfAskScaleScorer(FloatScaleScorer):
         if not scale_arguments_path:
             scale_arguments_path = self.ScalePaths.TREE_OF_ATTACKS_SCALE.value
 
-        system_prompt_path = self._verify_and_resolve_path(system_prompt_path)
-        scale_arguments_path = self._verify_and_resolve_path(scale_arguments_path)
+        system_prompt_path = verify_and_resolve_path(system_prompt_path)
+        scale_arguments_path = verify_and_resolve_path(scale_arguments_path)
 
         scale_args = yaml.safe_load(scale_arguments_path.read_text(encoding="utf-8"))
 
@@ -82,6 +84,13 @@ class SelfAskScaleScorer(FloatScaleScorer):
         scoring_instructions_template = SeedPrompt.from_yaml_file(system_prompt_path)
 
         self._system_prompt = scoring_instructions_template.render_template_value(**scale_args)
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt,
+            prompt_target=self._prompt_target,
+        )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """

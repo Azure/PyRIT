@@ -4,17 +4,17 @@
 
 import json
 import threading
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional
 
-import pyrit
 from pyrit.common.path import (
     SCORER_EVALS_HARM_PATH,
     SCORER_EVALS_OBJECTIVE_PATH,
 )
 from pyrit.common.singleton import Singleton
+from pyrit.score.scorer_identifier import ScorerIdentifier
 
 # Forward declaration for ScorerMetrics (imported from scorer_evaluator)
 if TYPE_CHECKING:
@@ -28,92 +28,19 @@ class RegistryType(Enum):
     OBJECTIVE = "objective"
 
 
-@dataclass
-class ScorerMetricsRegistryEntry:
+class ScorerMetricsEntry(NamedTuple):
     """
-    A class that combines a ScorerEvalIdentifier with its evaluation metrics.
+    A lightweight container pairing a scorer's configuration with its evaluation metrics.
 
-    This provides a clean interface for working with scorer evaluation results
-    and encapsulates both the configuration and performance data.
+    This allows callers to know which specific scorer configuration produced each set of metrics
+    when filtering returns multiple results.
     """
 
-    scorer_identifier: "ScorerEvalIdentifier"
+    scorer_identifier: Dict[str, Any]
+    """The scorer configuration (type, version, prompts, model_info, etc.)"""
+
     metrics: "ScorerMetrics"
-    dataset_version: str
-
-    def get_accuracy(self) -> Optional[float]:
-        """Get the accuracy metric if available."""
-        return getattr(self.metrics, "accuracy", None)
-
-    def get_mean_absolute_error(self) -> Optional[float]:
-        """Get the mean absolute error metric if available."""
-        return getattr(self.metrics, "mean_absolute_error", None)
-
-    def print_summary(self) -> None:
-        """Print a summary of the metrics."""
-        self.scorer_identifier.print_summary()
-        print("Metrics Summary:")
-        print(json.dumps(asdict(self.metrics), indent=2))
-
-
-@dataclass(frozen=True)
-class ScorerEvalIdentifier:
-    """
-    Configuration class for Scorers.
-
-    This class encapsulates the modifiable parameters that can be used to create a complete scoring configuration.
-    These parameters can be modified, and configurations can be compared to each other via scorer evaluations.
-    """
-
-    type: str
-    version: int
-    system_prompt: Optional[str] = None
-    sub_identifier: Optional[Union[Dict, List[Dict]]] = None
-    model_info: Optional[Dict] = None
-    scorer_specific_params: Optional[Dict] = None
-    pyrit_version: str = pyrit.__version__
-
-    def compute_hash(self) -> str:
-        """
-        Compute a hash representing the current configuration.
-
-        Returns:
-            str: A hash string representing the configuration.
-        """
-        import hashlib
-
-        # Create a dictionary with all configuration parameters
-        config_dict = {
-            "type": self.type,
-            "version": self.version,
-            "sub_identifier": self.sub_identifier,
-            "model_info": self.model_info,
-            "system_prompt": self.system_prompt,
-            "scorer_specific_params": self.scorer_specific_params,
-            "pyrit_version": self.pyrit_version,
-        }
-
-        # Sort keys to ensure deterministic ordering and encode as JSON
-        config_json = json.dumps(config_dict, sort_keys=True, separators=(",", ":"))
-
-        hasher = hashlib.sha256()
-        hasher.update(config_json.encode("utf-8"))
-        return hasher.hexdigest()
-
-    def print_summary(self) -> None:
-        """Print a summary of the configuration."""
-        print("ScorerEvalIdentifier Summary:")
-        print(f"  Type: {self.type}")
-        print(f"  Version: {self.version}")
-        print(f"  Sub Identifier: {self.sub_identifier}")
-        print(f"  Model Info: {self.model_info}")
-        if self.system_prompt and len(self.system_prompt) > 100:
-            prompt_display = self.system_prompt[:100] + "..."
-        else:
-            prompt_display = self.system_prompt
-        print(f"  System Prompt: {prompt_display}")
-        print(f"  Scorer Specific Params: {self.scorer_specific_params}")
-        print(f"  PyRIT Version: {self.pyrit_version}")
+    """The evaluation metrics (accuracy, precision, recall, etc.)"""
 
 
 class ScorerMetricsRegistry(metaclass=Singleton):
@@ -209,7 +136,7 @@ class ScorerMetricsRegistry(metaclass=Singleton):
     def add_entry(
         self,
         *,
-        scorer_identifier: ScorerEvalIdentifier,
+        scorer_identifier: ScorerIdentifier,
         metrics: "ScorerMetrics",
         registry_type: RegistryType,
         dataset_version: str,
@@ -218,23 +145,16 @@ class ScorerMetricsRegistry(metaclass=Singleton):
         Add an entry to the specified registry with thread safety.
 
         Args:
-            scorer_identifier (ScorerEvalIdentifier): The identifier of the scorer configuration.
+            scorer_identifier (ScorerIdentifier): The identifier of the scorer configuration.
             metrics (ScorerMetrics): The evaluation metrics to store.
             registry_type (RegistryType): The type of registry to add the entry to.
             dataset_version (str): The version of the dataset used for evaluation.
         """
-        entry = {
-            "hash": scorer_identifier.compute_hash(),
-            "type": scorer_identifier.type,
-            "version": scorer_identifier.version,
-            "system_prompt": scorer_identifier.system_prompt,
-            "sub_identifier": scorer_identifier.sub_identifier,
-            "model_info": scorer_identifier.model_info,
-            "scorer_specific_params": scorer_identifier.scorer_specific_params,
-            "pyrit_version": scorer_identifier.pyrit_version,
-            "dataset_version": dataset_version,
-            "metrics": asdict(metrics),
-        }
+        # Use to_compact_dict() for consistent serialization with __type__ and compacted prompts
+        entry = scorer_identifier.to_compact_dict()
+        entry["hash"] = scorer_identifier.compute_hash()
+        entry["dataset_version"] = dataset_version
+        entry["metrics"] = asdict(metrics)
 
         file_path = self._get_file_path(registry_type)
         file_lock = self._get_file_lock(registry_type)
@@ -247,12 +167,22 @@ class ScorerMetricsRegistry(metaclass=Singleton):
                 f.write(json.dumps(entry) + "\n")
 
     def get_scorer_registry_metrics_by_identifier(
-        self, scorer_identifier: ScorerEvalIdentifier, registry_type: Optional[RegistryType] = None
+        self, scorer_identifier: ScorerIdentifier, registry_type: Optional[RegistryType] = None
     ) -> Optional["ScorerMetrics"]:
+        """
+        Get the evaluation metrics for a specific scorer identifier.
+
+        Args:
+            scorer_identifier (ScorerIdentifier): The identifier of the scorer configuration.
+            registry_type (Optional[RegistryType]): The type of registry to search. If None, searches both.
+
+        Returns:
+            Optional[ScorerMetrics]: The evaluation metrics if found, else None.
+        """
         hash = scorer_identifier.compute_hash()
-        entry = self.get_metrics_registry_entries(registry_type=registry_type, hash=hash)
-        if len(entry):
-            return entry[0].metrics
+        entries = self.get_metrics_registry_entries(registry_type=registry_type, hash=hash)
+        if len(entries):
+            return entries[0].metrics
         return None
 
     def get_metrics_registry_entries(
@@ -269,8 +199,8 @@ class ScorerMetricsRegistry(metaclass=Singleton):
         model_top_p: Optional[float] = None,
         target_name: Optional[str] = None,
         target_metadata: Optional[Dict] = None,
-        # System prompt filter
-        system_prompt: Optional[str] = None,
+        # System prompt template filter
+        system_prompt_template: Optional[str] = None,
         # Scorer specific params filter
         scorer_specific_params: Optional[Dict] = None,
         # General filters
@@ -278,10 +208,12 @@ class ScorerMetricsRegistry(metaclass=Singleton):
         # Metrics threshold filters
         accuracy_threshold: Optional[float] = None,
         mean_absolute_error_threshold: Optional[float] = None,
-    ) -> List[ScorerMetricsRegistryEntry]:
+    ) -> List[ScorerMetricsEntry]:
         """
-        Retrieves a list of ScorerMetricsRegistryEntry objects based on the specified filters.
-        Results are ordered by accuracy from highest to lowest.
+        Retrieve a list of ScorerMetricsEntry objects based on the specified filters.
+        Each entry contains the scorer configuration and its evaluation metrics.
+        Results are ordered by accuracy (highest to lowest) for OBJECTIVE registry,
+        or by mean absolute error (lowest to highest) for HARM registry.
 
         Args:
             registry_type (Optional[RegistryType]): The type of registry to query.
@@ -295,15 +227,15 @@ class ScorerMetricsRegistry(metaclass=Singleton):
             model_top_p (Optional[float]): The model top_p in model_info to filter by. Defaults to None.
             target_name (Optional[str]): The target name in model_info to filter by. Defaults to None.
             target_metadata (Optional[Dict]): The target metadata in model_info to filter by. Defaults to None.
-            system_prompt (Optional[str]): The system prompt to filter by. Defaults to None.
+            system_prompt_template (Optional[str]): The system prompt template to filter by. Defaults to None.
             scorer_specific_params (Optional[Dict]): The scorer specific parameters to filter by. Defaults to None.
             pyrit_version (Optional[str]): The PyRIT version to filter by. Defaults to None.
             accuracy_threshold (Optional[float]): Minimum accuracy threshold for metrics. Defaults to None.
-            mean_absolute_error_threshold (Optional[float]): Maximum mean absolute error threshold for metrics. Defaults to None.
+            mean_absolute_error_threshold (Optional[float]): Maximum mean absolute error threshold for metrics.
+                Defaults to None.
 
         Returns:
-            List[ScorerMetricsRegistryEntry]: A list of ScorerMetricsRegistryEntry objects that match the specified filters,
-                ordered by accuracy from highest to lowest.
+            List[ScorerMetricsEntry]: A list of (scorer_identifier, metrics) pairs that match the filters.
         """
         # Import here to avoid circular import
         from pyrit.score.scorer_evaluation.scorer_evaluator import (
@@ -322,13 +254,13 @@ class ScorerMetricsRegistry(metaclass=Singleton):
         elif registry_type == RegistryType.OBJECTIVE:
             entries = self.objective_entries
 
-        filtered_entries: List[ScorerMetricsRegistryEntry] = []
+        filtered_entries: List[ScorerMetricsEntry] = []
 
         for entry in entries:
             # Basic field filters
             if hash and entry.get("hash") != hash:
                 continue
-            if type and entry.get("type") != type:
+            if type and entry.get("__type__") != type:
                 continue
             if version and entry.get("version") != version:
                 continue
@@ -336,7 +268,7 @@ class ScorerMetricsRegistry(metaclass=Singleton):
                 continue
             if pyrit_version and entry.get("pyrit_version") != pyrit_version:
                 continue
-            if system_prompt and entry.get("system_prompt") != system_prompt:
+            if system_prompt_template and entry.get("system_prompt_template") != system_prompt_template:
                 continue
             if scorer_specific_params and entry.get("scorer_specific_params") != scorer_specific_params:
                 continue
@@ -355,46 +287,32 @@ class ScorerMetricsRegistry(metaclass=Singleton):
                 continue
 
             # Metrics threshold filters
-            metrics = entry.get("metrics", {})
-            if accuracy_threshold is not None and metrics.get("accuracy", 0) < accuracy_threshold:
+            metrics_dict = entry.get("metrics", {})
+            if accuracy_threshold is not None and metrics_dict.get("accuracy", 0) < accuracy_threshold:
                 continue
             if (
                 mean_absolute_error_threshold is not None
-                and metrics.get("mean_absolute_error", float("inf")) > mean_absolute_error_threshold
+                and metrics_dict.get("mean_absolute_error", float("inf")) > mean_absolute_error_threshold
             ):
                 continue
 
             # If we made it here, the entry passes all filters
-            scorer_identifier = ScorerEvalIdentifier(
-                type=entry.get("type"),
-                version=entry.get("version"),
-                sub_identifier=entry.get("sub_identifier", []),
-                model_info=entry.get("model_info"),
-                system_prompt=entry.get("system_prompt"),
-                scorer_specific_params=entry.get("scorer_specific_params"),
-                pyrit_version=entry.get("pyrit_version"),
-            )
+            # Build scorer_identifier dict (everything except metrics)
+            scorer_identifier = {k: v for k, v in entry.items() if k != "metrics"}
 
             # Reconstruct the appropriate ScorerMetrics object from stored dict
-            metrics_dict = entry.get("metrics", {})
-
-            # Determine metrics type based on available fields
+            metrics: "ScorerMetrics"
             if "accuracy" in metrics_dict:
                 metrics = ObjectiveScorerMetrics(**metrics_dict)
             else:
                 metrics = HarmScorerMetrics(**metrics_dict)
 
-            metrics_entry = ScorerMetricsRegistryEntry(
-                scorer_identifier=scorer_identifier, metrics=metrics, dataset_version=entry.get("dataset_version")
-            )
-            filtered_entries.append(metrics_entry)
+            filtered_entries.append(ScorerMetricsEntry(scorer_identifier=scorer_identifier, metrics=metrics))
 
-        # Sort filtered entries by accuracy (highest to lowest)
+        # Sort filtered entries
         if registry_type == RegistryType.OBJECTIVE:
-            filtered_entries.sort(key=lambda entry: entry.get_accuracy() or 0.0, reverse=True)
+            filtered_entries.sort(key=lambda e: getattr(e.metrics, "accuracy", 0.0), reverse=True)
         elif registry_type == RegistryType.HARM:
-            filtered_entries.sort(
-                key=lambda entry: entry.get_mean_absolute_error() or float("inf"),
-            )
+            filtered_entries.sort(key=lambda e: getattr(e.metrics, "mean_absolute_error", float("inf")))
 
         return filtered_entries

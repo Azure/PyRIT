@@ -9,7 +9,6 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -22,6 +21,7 @@ from typing import (
     cast,
 )
 
+import pyrit
 from pyrit.exceptions import (
     InvalidJsonException,
     PyritException,
@@ -41,6 +41,7 @@ from pyrit.models import (
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 if TYPE_CHECKING:
@@ -60,6 +61,8 @@ class Scorer(abc.ABC):
     """The version of the scorer implementation. This should only be incremented when
     the fundamental behavior of the scorer changes, which may impact scores."""
 
+    _scorer_identifier: Optional[ScorerIdentifier] = None
+
     def __init__(self, *, validator: ScorerPromptValidator):
         """
         Initialize the Scorer.
@@ -69,30 +72,81 @@ class Scorer(abc.ABC):
         """
         self._validator = validator
 
+    @abstractmethod
+    def _build_scorer_identifier(self) -> None:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Subclasses must implement this method to call `_set_scorer_identifier()` with their
+        specific parameters (system_prompt_template, sub_scorers, scorer_specific_params, prompt_target).
+
+        This method is called at the end of __init__ to construct the scorer's identity.
+        """
+        raise NotImplementedError("Subclasses must implement _build_scorer_identifier")
+
+    def _set_scorer_identifier(
+        self,
+        *,
+        system_prompt_template: Optional[str] = None,
+        user_prompt_template: Optional[str] = None,
+        sub_scorers: Optional[Sequence["Scorer"]] = None,
+        score_aggregator: Optional[str] = None,
+        scorer_specific_params: Optional[Dict[str, Any]] = None,
+        prompt_target: Optional[PromptTarget] = None,
+    ) -> None:
+        """
+        Construct the scorer evaluation identifier.
+
+        Args:
+            system_prompt_template (Optional[str]): The system prompt template used by this scorer. Defaults to None.
+            user_prompt_template (Optional[str]): The user prompt template used by this scorer. Defaults to None.
+            sub_scorers (Optional[Sequence[Scorer]]): List of sub-scorers for composite scorers. Defaults to None.
+            score_aggregator (Optional[str]): The name of the score aggregator function. Defaults to None.
+            scorer_specific_params (Optional[Dict[str, Any]]): Additional scorer-specific parameters.
+                Defaults to None.
+            prompt_target (Optional[PromptTarget]): The prompt target used by this scorer. Defaults to None.
+        """
+        # Build sub_identifier from sub_scorers
+        sub_identifier: Optional[List[ScorerIdentifier]] = None
+        if sub_scorers:
+            sub_identifier = [scorer.scorer_identifier for scorer in sub_scorers]
+        # Extract model_info from prompt_target
+        model_info: Optional[Dict[str, Any]] = None
+        if prompt_target:
+            target_id = prompt_target.get_identifier()
+            # Extract standard fields for scorer evaluation
+            model_info = {}
+            for key in ["__type__", "model_name", "temperature", "top_p", "custom_metadata"]:
+                if key in target_id:
+                    model_info[key] = target_id[key]
+
+        self._scorer_identifier = ScorerIdentifier(
+            type=self.__class__.__name__,
+            version=self.version,
+            system_prompt_template=system_prompt_template,
+            user_prompt_template=user_prompt_template,
+            sub_identifier=sub_identifier,
+            model_info=model_info,
+            score_aggregator=score_aggregator,
+            scorer_specific_params=scorer_specific_params,
+            pyrit_version=pyrit.__version__,
+        )
+
+    @property
+    def scorer_identifier(self) -> ScorerIdentifier:
+        """
+        Get the scorer identifier. Built lazily on first access.
+
+        Returns:
+            ScorerIdentifier: The identifier containing all configuration parameters.
+        """
+        if self._scorer_identifier is None:
+            self._build_scorer_identifier()
+        return self._scorer_identifier  # type: ignore[return-value]
+
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
-
-    def _verify_and_resolve_path(self, path: Union[str, Path]) -> Path:
-        """
-        Verify that a path passed to a Scorer on its creation is valid before beginning the scoring logic.
-
-        Args:
-            path (Union[str, Path]): A pathlike argument passed to the Scorer.
-
-        Returns:
-            Path: The resolved Path object.
-
-        Raises:
-            ValueError: If the path is not a string or Path object, or if the path does not exist.
-        """
-        if not isinstance(path, (str, Path)):
-            raise ValueError(f"Path must be a string or Path object. Got type(path): {type(path).__name__}")
-
-        path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
-        if not path_obj.exists():
-            raise ValueError(f"Path not found: {str(path_obj)}")
-        return path_obj
 
     async def score_async(
         self,
@@ -250,18 +304,15 @@ class Scorer(abc.ABC):
             registry_type (Optional[RegistryType]): The type of registry to query (HARM or OBJECTIVE).
 
         Returns:
-            List[ScorerMetricsRegistryEntry]: A list of registry entries matching the filters,
-                ordered by accuracy from highest to lowest.
+            Optional[ScorerMetrics]: The metrics for this scorer configuration, or None if not found.
         """
         from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-            ScorerEvalIdentifier,
             ScorerMetricsRegistry,
         )
 
         registry = ScorerMetricsRegistry()
-        eval_identifier = ScorerEvalIdentifier(**self.get_identifier())
         metrics = registry.get_scorer_registry_metrics_by_identifier(
-            scorer_identifier=eval_identifier, registry_type=registry_type
+            scorer_identifier=self.scorer_identifier, registry_type=registry_type
         )
         return metrics
 
@@ -422,70 +473,21 @@ class Scorer(abc.ABC):
         normalized_value = (value - min_value) / (max_value - min_value)
         return normalized_value
 
-    def get_identifier(self):
+    def get_identifier(self) -> Dict[str, Any]:
         """
-        Get an identifier dictionary for the scorer.
+        Get an identifier dictionary for the scorer for database storage.
+
+        Large fields (system_prompt_template, user_prompt_template) are shortened for compact storage.
+        The hash is computed via scorer_identifier.compute_hash() which uses the same
+        shortening logic to ensure consistency.
 
         Returns:
-            dict: The identifier dictionary containing class type, module, and sub-identifiers.
+            dict: The identifier dictionary containing class type, version, configuration, and hash.
         """
-        return {
-            "type": self.__class__.__name__,
-            "version": self.version,
-            "system_prompt": self._get_system_prompt(),
-            "sub_identifier": self._get_sub_identifier(),
-            "model_info": self._get_model_info(),
-            "scorer_specific_params": self._get_scorer_specific_params(),
-        }
-
-    def _get_sub_identifier(self) -> Optional[Union[Dict, List[Dict]]]:
-        """
-        Get the sub-identifier for composite scorers.
-
-        Override this method in subclasses that wrap other scorers.
-
-        Returns:
-            None, dict, or list[dict]: The sub-identifier(s) of wrapped scorer(s), or None for non-composite scorers.
-        """
-        return None
-
-    def _get_system_prompt(self) -> Optional[str]:
-        """
-        Returns system prompt text if applicable.
-
-        Returns:
-            str: The system prompt text.
-        """
-        target_attrs = ["_system_prompt", "_system_prompt_with_objective", "_system_prompt_format_string"]
-
-        for attr_name in target_attrs:
-            if hasattr(self, attr_name):
-                return getattr(self, attr_name)
-        return None
-
-    def _get_model_info(self) -> Optional[Dict[str, Any]]:
-        """
-        Returns model information from the prompt target if available.
-
-        Returns:
-            Optional[Dict[str, Any]]: A dictionary containing model information, or None if not applicable.
-        """
-        prompt_target = getattr(self, "_prompt_target", None)
-
-        if prompt_target and hasattr(prompt_target, "get_eval_identifier"):
-            return prompt_target.get_eval_identifier()
-
-        return None
-
-    def _get_scorer_specific_params(self) -> Optional[Dict[str, Any]]:
-        """
-        Returns additional scorer-specific parameters if applicable.
-        Override this method in subclasses to provide specific parameters.
-
-        Returns:
-            Optional[Dict[str, Union[str, int]]]: A dictionary containing additional parameters, or None if not applicable.
-        """
-        return None
+        sid = self.scorer_identifier
+        result = sid.to_compact_dict()
+        result["hash"] = sid.compute_hash()
+        return result
 
     @pyrit_json_retry
     async def _score_value_with_llm(

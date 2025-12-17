@@ -41,10 +41,6 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             ValueError: If no scorers are provided.
             ValueError: If any provided scorer is not a TrueFalseScorer.
         """
-        # Initialize base with the selected aggregator used by TrueFalseScorer logic
-        # Validation is used by sub-scorers
-        super().__init__(score_aggregator=aggregator, validator=ScorerPromptValidator())
-
         if not scorers:
             raise ValueError("At least one scorer must be provided.")
 
@@ -52,7 +48,16 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             if not isinstance(scorer, TrueFalseScorer):
                 raise ValueError("All scorers must be true_false scorers.")
 
+        super().__init__(score_aggregator=aggregator, validator=ScorerPromptValidator())
+
         self._scorers = scorers
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            sub_scorers=self._scorers,
+            score_aggregator=self._score_aggregator.__name__,
+        )
 
     async def _score_async(
         self,
@@ -126,12 +131,3 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-
-    def _get_sub_identifier(self):
-        """
-        Return the identifiers of all constituent scorers.
-
-        Returns:
-            list[dict]: A list of identifier dictionaries from all wrapped scorers.
-        """
-        return [scorer.get_identifier() for scorer in self._scorers]

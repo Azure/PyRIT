@@ -5,9 +5,35 @@ import hashlib
 import logging
 import math
 import random
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 logger = logging.getLogger(__name__)
+
+
+def verify_and_resolve_path(path: Union[str, Path]) -> Path:
+    """
+    Verify that a path is valid and resolve it to an absolute path.
+
+    This utility function can be used anywhere path validation is needed,
+    such as in scorers, converters, or other components that accept file paths.
+
+    Args:
+        path (Union[str, Path]): A path as a string or Path object.
+
+    Returns:
+        Path: The resolved absolute Path object.
+
+    Raises:
+        ValueError: If the path is not a string or Path object, or if the path does not exist.
+    """
+    if not isinstance(path, (str, Path)):
+        raise ValueError(f"Path must be a string or Path object. Got type: {type(path).__name__}")
+
+    path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
+    if not path_obj.exists():
+        raise ValueError(f"Path not found: {str(path_obj)}")
+    return path_obj
 
 
 def combine_dict(existing_dict: Optional[dict] = None, new_dict: Optional[dict] = None) -> dict:

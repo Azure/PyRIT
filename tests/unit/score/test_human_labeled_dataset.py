@@ -52,6 +52,18 @@ def test_human_labeled_dataset_init_harm_type(sample_responses):
     assert isinstance(dataset.entries[0], HarmHumanLabeledEntry)
 
 
+def test_human_labeled_dataset_version_default(sample_responses):
+    entry = HarmHumanLabeledEntry(sample_responses, [0.1], "hate_speech")
+    dataset = HumanLabeledDataset(name="test", entries=[entry], metrics_type=MetricsType.HARM)
+    assert dataset.version == "1.0"
+
+
+def test_human_labeled_dataset_version_custom(sample_responses):
+    entry = HarmHumanLabeledEntry(sample_responses, [0.1], "hate_speech")
+    dataset = HumanLabeledDataset(name="test", entries=[entry], metrics_type=MetricsType.HARM, version="2.5")
+    assert dataset.version == "2.5"
+
+
 def test_human_labeled_dataset_init_objective_type(sample_responses):
     entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
     dataset = HumanLabeledDataset(name="sample_objective", entries=[entry], metrics_type=MetricsType.OBJECTIVE)
@@ -246,3 +258,20 @@ def test_human_labeled_dataset_from_csv_with_data_type_col(tmp_path):
     )
     assert isinstance(dataset, HumanLabeledDataset)
     assert dataset.entries[0].conversation[0].message_pieces[0].original_value_data_type == "text"
+
+
+def test_human_labeled_dataset_from_csv_version_from_comment(tmp_path):
+    csv_file = tmp_path / "versioned.csv"
+    # Write CSV with version comment line
+    with open(csv_file, "w") as f:
+        f.write("# version=2.3\n")
+        f.write("assistant_response,label1,harm_category\n")
+        f.write("response1,0.5,hate_speech\n")
+    dataset = HumanLabeledDataset.from_csv(
+        csv_path=str(csv_file),
+        metrics_type=MetricsType.HARM,
+        human_label_col_names=["label1"],
+        objective_or_harm_col_name="harm_category",
+        version=None,
+    )
+    assert dataset.version == "2.3"
