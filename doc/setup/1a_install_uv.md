@@ -17,7 +17,7 @@ If you want to get started quickly without setting up a Python environment, use 
 - Want a consistent, isolated environment
 - Plan to use JupyterLab for interactive work
 
-### Option 2: Local Installation with Pip/Conda
+### Option 2: Local Installation with Pip/uv
 
 For a traditional Python installation on your local machine, follow the instructions below.
 
@@ -30,18 +30,11 @@ For a traditional Python installation on your local machine, follow the instruct
 ## Local Installation Instructions
 
 To install PyRIT using pip, make sure you have Python 3.10, 3.11, 3.12, or 3.13 installed using `python --version`.
-Alternatively, create a conda environment as follows
+Alternatively, create an environment from the root directory as follows
 
 ```
-conda create -y -n <environment-name> python=3.11
-```
+uv sync
 
-followed by `conda activate <environment-name>`
-
-Once the environment with the correct Python version is set up, run
-
-```
-pip install pyrit
 ```
 
 Next, check out our [docs](../index.md) and run the notebooks in your environment!
@@ -53,7 +46,7 @@ Notebooks and your PyRIT installation must be on the same version. This pip inst
 
 1. **Check your installed version:**
    ```bash
-   pip freeze | grep pyrit
+   uv pip freeze | grep pyrit
    ```
 
    Or in Python:
