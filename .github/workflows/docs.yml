@@ -54,6 +54,8 @@ jobs:
     - name: Build the book
       run: |
         make docs-build
+    - name: verify packages
+      run: uv pip list
     # Upload the book's HTML as an artifact
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
