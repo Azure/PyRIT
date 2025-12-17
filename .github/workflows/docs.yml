@@ -32,15 +32,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # Cache pip packages for faster installs
-    - name: Cache pip packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/uv
-        key: ${{ runner.os }}-uv-${{ hashFiles('pyproject.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-uv-
-
     # Install dependencies
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
@@ -52,6 +43,7 @@ jobs:
       with:
         # Install a specific version of uv.
         version: "0.9.17"
+        enable-cache: true
         cache-dependency-glob: |
           **/pyproject.toml
           **/uv.lock
