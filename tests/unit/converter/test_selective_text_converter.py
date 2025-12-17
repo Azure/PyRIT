@@ -5,6 +5,7 @@ import pytest
 
 from pyrit.prompt_converter import (
     Base64Converter,
+    LeetspeakConverter,
     ROT13Converter,
     SelectiveTextConverter,
 )
@@ -15,6 +16,8 @@ from pyrit.prompt_converter.text_selection_strategy import (
     ProportionSelectionStrategy,
     RangeSelectionStrategy,
     RegexSelectionStrategy,
+    WordIndexSelectionStrategy,
+    WordProportionSelectionStrategy,
 )
 
 
@@ -239,3 +242,33 @@ class TestSelectiveTextConverter:
         result = await converter.convert_async(prompt="Hello", input_type="text")
         assert result.output_text == "Uryyb"
         assert result.output_type == "text"
+
+    async def test_initialization_word_level_strategy_with_word_level_converter_raises(self):
+        """Test that using a word-level selection strategy with a WordLevelConverter
+        that has a non-default word_selection_strategy raises ValueError."""
+        with pytest.raises(ValueError, match="Cannot use a WordSelectionStrategy"):
+            SelectiveTextConverter(
+                converter=LeetspeakConverter(word_selection_strategy=WordProportionSelectionStrategy(proportion=0.5)),
+                selection_strategy=WordIndexSelectionStrategy(indices=[0, 1]),
+            )
+
+    async def test_initialization_word_level_strategy_with_default_word_level_converter_allowed(self):
+        """Test that using a word-level selection strategy with a WordLevelConverter
+        that has the default (AllWordsSelectionStrategy) is allowed."""
+        # This should NOT raise - LeetspeakConverter with no explicit strategy uses AllWordsSelectionStrategy
+        converter = SelectiveTextConverter(
+            converter=LeetspeakConverter(),
+            selection_strategy=WordIndexSelectionStrategy(indices=[0]),
+        )
+        assert converter is not None
+
+    async def test_initialization_char_level_strategy_with_word_level_converter_allowed(self):
+        """Test that using a character-level selection strategy with a WordLevelConverter
+        that has a non-default word_selection_strategy is allowed (this is meaningful)."""
+        # This should NOT raise - character-level strategy passes a substring to the converter,
+        # so the converter's word selection strategy can meaningfully operate on it
+        converter = SelectiveTextConverter(
+            converter=LeetspeakConverter(word_selection_strategy=WordProportionSelectionStrategy(proportion=0.5)),
+            selection_strategy=IndexSelectionStrategy(start=0, end=20),
+        )
+        assert converter is not None
