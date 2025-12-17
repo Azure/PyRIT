@@ -327,6 +327,9 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
     ) -> AttackResult:
         """
         Execute the attack strategy asynchronously with the provided parameters.
+
+        Returns:
+            AttackResult: The result of the attack execution.
         """
         # Validate parameters before creating context
         prompt_sequence = get_kwarg_param(

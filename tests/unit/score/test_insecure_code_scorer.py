@@ -66,7 +66,7 @@ async def test_insecure_code_scorer_invalid_json(mock_chat_target):
         ):
             message = MessagePiece(role="user", original_value="sample code").to_message()
 
-            with pytest.raises(InvalidJsonException, match="Invalid JSON"):
+            with pytest.raises(InvalidJsonException, match="Error in scorer InsecureCodeScorer.*Invalid JSON"):
                 await scorer.score_async(message)
 
             # Ensure memory functions were not called

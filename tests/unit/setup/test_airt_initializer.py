@@ -37,8 +37,10 @@ class TestAIRTInitializerInitialize:
         # Set up required env vars for AIRT
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"] = "https://test-converter.openai.azure.com"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"] = "test_converter_key"
+        os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"] = "gpt-4"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2"] = "https://test-scorer.openai.azure.com"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"] = "test_scorer_key"
+        os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2"] = "gpt-4"
         os.environ["AZURE_CONTENT_SAFETY_API_ENDPOINT"] = "https://test-safety.cognitiveservices.azure.com"
         os.environ["AZURE_CONTENT_SAFETY_API_KEY"] = "test_safety_key"
         # Clean up globals
@@ -58,8 +60,10 @@ class TestAIRTInitializerInitialize:
         for var in [
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2",
             "AZURE_CONTENT_SAFETY_API_ENDPOINT",
             "AZURE_CONTENT_SAFETY_API_KEY",
         ]:
@@ -75,18 +79,20 @@ class TestAIRTInitializerInitialize:
             if hasattr(sys.modules["__main__"], attr):
                 delattr(sys.modules["__main__"], attr)
 
-    def test_initialize_runs_without_error(self):
+    @pytest.mark.asyncio
+    async def test_initialize_runs_without_error(self):
         """Test that initialize runs without errors."""
         init = AIRTInitializer()
         # Should not raise any errors
-        init.initialize()
+        await init.initialize_async()
 
-    def test_get_info_after_initialize_has_populated_data(self):
-        """Test that get_info() returns populated data after initialization."""
+    @pytest.mark.asyncio
+    async def test_get_info_after_initialize_has_populated_data(self):
+        """Test that get_info_async() returns populated data after initialization."""
         init = AIRTInitializer()
-        init.initialize()
+        await init.initialize_async()
 
-        info = AIRTInitializer.get_info()
+        info = await AIRTInitializer.get_info_async()
 
         # Verify basic structure
         assert isinstance(info, dict)
@@ -145,9 +151,9 @@ class TestAIRTInitializerInitialize:
 class TestAIRTInitializerGetInfo:
     """Tests for AIRTInitializer.get_info method - basic functionality."""
 
-    def test_get_info_returns_expected_structure(self):
-        """Test that get_info returns expected structure."""
-        info = AIRTInitializer.get_info()
+    async def test_get_info_returns_expected_structure(self):
+        """Test that get_info_async returns expected structure."""
+        info = await AIRTInitializer.get_info_async()
 
         assert isinstance(info, dict)
         assert info["name"] == "AIRT Default Configuration"
@@ -160,9 +166,9 @@ class TestAIRTInitializerGetInfo:
         assert "AZURE_CONTENT_SAFETY_API_ENDPOINT" in info["required_env_vars"]
         assert "AZURE_CONTENT_SAFETY_API_KEY" in info["required_env_vars"]
 
-    def test_get_info_includes_description(self):
-        """Test that get_info includes the description field."""
-        info = AIRTInitializer.get_info()
+    async def test_get_info_includes_description(self):
+        """Test that get_info_async includes the description field."""
+        info = await AIRTInitializer.get_info_async()
 
         assert "description" in info
         assert isinstance(info["description"], str)

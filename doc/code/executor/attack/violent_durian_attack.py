@@ -30,9 +30,9 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
@@ -94,6 +94,7 @@ initial_prompt = (
 adversary_llm = OpenAIChatTarget(
     endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
 )
 adversarial_config = AttackAdversarialConfig(
     target=adversary_llm,
@@ -105,6 +106,7 @@ adversarial_config = AttackAdversarialConfig(
 target_llm = OpenAIChatTarget(
     endpoint=os.environ.get("AZURE_OPENAI_GPT4_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_GPT4_CHAT_KEY"),
+    model_name=os.environ.get("AZURE_OPENAI_GPT4_CHAT_MODEL"),
 )
 
 # Set up the scorer for evaluating if the target LLM adopts the criminal persona

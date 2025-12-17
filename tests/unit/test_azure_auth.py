@@ -10,9 +10,9 @@ import pytest
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
 from pyrit.auth.azure_auth import (
     AzureAuth,
+    get_azure_token_provider,
     get_speech_config,
     get_speech_config_from_default_azure_credential,
-    get_token_provider_from_default_azure_credential,
 )
 
 curr_epoch_time = int(time.time())
@@ -57,7 +57,7 @@ def test_refresh_expiration():
         assert mock_get_token.call_count == 2
 
 
-def test_get_token_provider_from_default_azure_credential_get_token():
+def test_get_azure_token_provider_get_token():
     with (
         patch("azure.identity.DefaultAzureCredential.get_token") as mock_default_cred,
         patch(
@@ -66,11 +66,11 @@ def test_get_token_provider_from_default_azure_credential_get_token():
         ),
     ):
         mock_default_cred.return_value = MagicMock(token=mock_token, expires_on=curr_epoch_time)
-        token_provider = get_token_provider_from_default_azure_credential(scope="https://mocked_endpoint.azure.com")
+        token_provider = get_azure_token_provider(scope="https://mocked_endpoint.azure.com")
         assert token_provider() == mock_token
 
 
-def test_get_token_provider_from_default_azure_credential_get_token_info():
+def test_get_azure_token_provider_get_token_info():
     with (
         patch("azure.identity.DefaultAzureCredential.get_token_info") as mock_default_cred,
         patch(
@@ -79,7 +79,7 @@ def test_get_token_provider_from_default_azure_credential_get_token_info():
         ),
     ):
         mock_default_cred.return_value = MagicMock(token=mock_token, expires_on=curr_epoch_time)
-        token_provider = get_token_provider_from_default_azure_credential(scope="https://mocked_endpoint.azure.com")
+        token_provider = get_azure_token_provider(scope="https://mocked_endpoint.azure.com")
         assert token_provider() == mock_token
 
 

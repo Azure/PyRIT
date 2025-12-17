@@ -5,7 +5,11 @@ import binascii
 
 import pytest
 
-from pyrit.prompt_converter import BinAsciiConverter
+from pyrit.prompt_converter import (
+    BinAsciiConverter,
+    WordIndexSelectionStrategy,
+    WordProportionSelectionStrategy,
+)
 
 
 class TestBinAsciiConverterHex:
@@ -31,7 +35,10 @@ class TestBinAsciiConverterHex:
     @pytest.mark.asyncio
     async def test_hex_with_indices(self) -> None:
         """Test hex encoding with specific indices."""
-        converter = BinAsciiConverter(encoding_func="hex", indices=[0])
+
+        converter = BinAsciiConverter(
+            encoding_func="hex", word_selection_strategy=WordIndexSelectionStrategy(indices=[0])
+        )
 
         result = await converter.convert_async(prompt="hello world")
         expected = "68656C6C6F world"
@@ -72,7 +79,10 @@ class TestBinAsciiConverterHex:
     @pytest.mark.asyncio
     async def test_hex_with_proportion(self) -> None:
         """Test hex encoding with proportion selection."""
-        converter = BinAsciiConverter(encoding_func="hex", proportion=0.5)
+
+        converter = BinAsciiConverter(
+            encoding_func="hex", word_selection_strategy=WordProportionSelectionStrategy(proportion=0.5)
+        )
 
         result = await converter.convert_async(prompt="one two three four")
 
@@ -99,7 +109,9 @@ class TestBinAsciiConverterQuotedPrintable:
     @pytest.mark.asyncio
     async def test_qp_with_indices(self) -> None:
         """Test quoted-printable encoding with specific indices."""
-        converter = BinAsciiConverter(encoding_func="quoted-printable", indices=[0])
+        converter = BinAsciiConverter(
+            encoding_func="quoted-printable", word_selection_strategy=WordIndexSelectionStrategy(indices=[0])
+        )
 
         result = await converter.convert_async(prompt="hello world")
         hello_qp = binascii.b2a_qp(b"hello").decode("ascii")
@@ -134,7 +146,9 @@ class TestBinAsciiConverterUUencode:
     @pytest.mark.asyncio
     async def test_uuencode_with_indices(self) -> None:
         """Test UUencode encoding with specific indices."""
-        converter = BinAsciiConverter(encoding_func="UUencode", indices=[0])
+        converter = BinAsciiConverter(
+            encoding_func="UUencode", word_selection_strategy=WordIndexSelectionStrategy(indices=[0])
+        )
 
         result = await converter.convert_async(prompt="hello world")
 

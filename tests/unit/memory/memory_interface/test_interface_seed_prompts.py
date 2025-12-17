@@ -136,6 +136,63 @@ async def test_get_seeds_with_dataset_name_filter(sqlite_instance: MemoryInterfa
 
 
 @pytest.mark.asyncio
+async def test_get_seeds_with_dataset_name_pattern_startswith(sqlite_instance: MemoryInterface):
+    seed_prompts = [
+        SeedPrompt(value="prompt1", dataset_name="harm_category_1", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="harm_category_2", data_type="text"),
+        SeedPrompt(value="prompt3", dataset_name="other_dataset", data_type="text"),
+    ]
+    await sqlite_instance.add_seeds_to_memory_async(seeds=seed_prompts, added_by="test")
+
+    result = sqlite_instance.get_seeds(dataset_name_pattern="harm%")
+    assert len(result) == 2
+    assert all(seed.dataset_name.startswith("harm") for seed in result)
+
+
+@pytest.mark.asyncio
+async def test_get_seeds_with_dataset_name_pattern_contains(sqlite_instance: MemoryInterface):
+    seed_prompts = [
+        SeedPrompt(value="prompt1", dataset_name="test_harm_dataset", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="another_harm_set", data_type="text"),
+        SeedPrompt(value="prompt3", dataset_name="unrelated_dataset", data_type="text"),
+    ]
+    await sqlite_instance.add_seeds_to_memory_async(seeds=seed_prompts, added_by="test")
+
+    result = sqlite_instance.get_seeds(dataset_name_pattern="%harm%")
+    assert len(result) == 2
+    assert all("harm" in seed.dataset_name for seed in result)
+
+
+@pytest.mark.asyncio
+async def test_get_seeds_with_dataset_name_pattern_endswith(sqlite_instance: MemoryInterface):
+    seed_prompts = [
+        SeedPrompt(value="prompt1", dataset_name="dataset_test", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="another_test", data_type="text"),
+        SeedPrompt(value="prompt3", dataset_name="test_other", data_type="text"),
+    ]
+    await sqlite_instance.add_seeds_to_memory_async(seeds=seed_prompts, added_by="test")
+
+    result = sqlite_instance.get_seeds(dataset_name_pattern="%test")
+    assert len(result) == 2
+    assert all(seed.dataset_name.endswith("test") for seed in result)
+
+
+@pytest.mark.asyncio
+async def test_get_seeds_dataset_name_takes_precedence_over_pattern(sqlite_instance: MemoryInterface):
+    """Test that dataset_name exact match takes precedence over pattern matching"""
+    seed_prompts = [
+        SeedPrompt(value="prompt1", dataset_name="harm_exact", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="harm_other", data_type="text"),
+    ]
+    await sqlite_instance.add_seeds_to_memory_async(seeds=seed_prompts, added_by="test")
+
+    # When both are provided, exact match should be used
+    result = sqlite_instance.get_seeds(dataset_name="harm_exact", dataset_name_pattern="harm%")
+    assert len(result) == 1
+    assert result[0].dataset_name == "harm_exact"
+
+
+@pytest.mark.asyncio
 async def test_get_seeds_with_added_by_filter(sqlite_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
@@ -724,6 +781,117 @@ async def test_get_seed_groups_with_dataset_name(sqlite_instance: MemoryInterfac
     groups = sqlite_instance.get_seed_groups(dataset_name=dataset_name)
     assert len(groups) == 1
     assert groups[0].prompts[0].dataset_name == dataset_name
+
+
+@pytest.mark.asyncio
+async def test_get_seed_groups_with_dataset_name_pattern_startswith(sqlite_instance: MemoryInterface):
+    groups_to_add = [
+        SeedGroup(
+            seeds=[
+                SeedPrompt(
+                    value="Test prompt 1",
+                    dataset_name="harm_category_1",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
+                )
+            ]
+        ),
+        SeedGroup(
+            seeds=[
+                SeedPrompt(
+                    value="Test prompt 2",
+                    dataset_name="harm_category_2",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
+                )
+            ]
+        ),
+        SeedGroup(
+            seeds=[
+                SeedPrompt(
+                    value="Test prompt 3", dataset_name="other_dataset", added_by="tester", data_type="text", sequence=0
+                )
+            ]
+        ),
+    ]
+    await sqlite_instance.add_seed_groups_to_memory(prompt_groups=groups_to_add)
+
+    groups = sqlite_instance.get_seed_groups(dataset_name_pattern="harm%")
+    assert len(groups) == 2
+    assert all(group.prompts[0].dataset_name.startswith("harm") for group in groups)
+
+
+@pytest.mark.asyncio
+async def test_get_seed_groups_with_dataset_name_pattern_contains(sqlite_instance: MemoryInterface):
+    groups_to_add = [
+        SeedGroup(
+            seeds=[
+                SeedPrompt(
+                    value="Test prompt 1",
+                    dataset_name="test_harm_dataset",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
+                )
+            ]
+        ),
+        SeedGroup(
+            seeds=[
+                SeedPrompt(
+                    value="Test prompt 2",
+                    dataset_name="another_harm_set",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
+                )
+            ]
+        ),
+        SeedGroup(
+            seeds=[
+                SeedPrompt(
+                    value="Test prompt 3",
+                    dataset_name="unrelated_dataset",
+                    added_by="tester",
+                    data_type="text",
+                    sequence=0,
+                )
+            ]
+        ),
+    ]
+    await sqlite_instance.add_seed_groups_to_memory(prompt_groups=groups_to_add)
+
+    groups = sqlite_instance.get_seed_groups(dataset_name_pattern="%harm%")
+    assert len(groups) == 2
+    assert all("harm" in group.prompts[0].dataset_name for group in groups)
+
+
+@pytest.mark.asyncio
+async def test_get_seed_groups_dataset_name_takes_precedence_over_pattern(sqlite_instance: MemoryInterface):
+    """Test that dataset_name exact match takes precedence over pattern matching"""
+    groups_to_add = [
+        SeedGroup(
+            seeds=[
+                SeedPrompt(
+                    value="Test prompt 1", dataset_name="harm_exact", added_by="tester", data_type="text", sequence=0
+                )
+            ]
+        ),
+        SeedGroup(
+            seeds=[
+                SeedPrompt(
+                    value="Test prompt 2", dataset_name="harm_other", added_by="tester", data_type="text", sequence=0
+                )
+            ]
+        ),
+    ]
+    await sqlite_instance.add_seed_groups_to_memory(prompt_groups=groups_to_add)
+
+    # When both are provided, exact match should be used
+    groups = sqlite_instance.get_seed_groups(dataset_name="harm_exact", dataset_name_pattern="harm%")
+    assert len(groups) == 1
+    assert groups[0].prompts[0].dataset_name == "harm_exact"
 
 
 @pytest.mark.asyncio

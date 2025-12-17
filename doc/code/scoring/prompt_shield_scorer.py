@@ -47,13 +47,18 @@ from pyrit.executor.attack import (
 from pyrit.memory import CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget, PromptShieldTarget
 from pyrit.score import BatchScorer, PromptShieldScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 pst = PromptShieldTarget()
-# For an Azure Content Safety endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# target = PromptShieldTarget(use_entra_auth=True)
+# For Azure Content Safety with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
+# from pyrit.auth import get_azure_token_provider
+# endpoint = "https://your-endpoint.cognitiveservices.azure.com"
+# pst = PromptShieldTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+# )
 
 scorer = PromptShieldScorer(prompt_shield_target=pst)
 

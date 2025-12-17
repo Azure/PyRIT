@@ -52,7 +52,7 @@ class MockInitializer(PyRITInitializer):
         """Get execution order."""
         return self._mock_execution_order
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         """Mock initialization."""
         pass
 
@@ -402,7 +402,7 @@ class TestInitializerRegistry:
             def execution_order(self) -> int:
                 return 50
 
-            def initialize(self) -> None:
+            async def initialize_async(self) -> None:
                 pass
 
         # Clear any auto-discovered initializers to ensure clean test

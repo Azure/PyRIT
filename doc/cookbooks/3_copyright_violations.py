@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Probing for copyright violations with FirstLetterConverter and PlagiarismScorer
+# # 3. Probing for copyright violations with FirstLetterConverter and PlagiarismScorer
 #
 # This notebook demonstrates how to:
 # 1. Use the `FirstLetterConverter` to encode copyrighted text as a sequence of first letters
@@ -31,9 +31,9 @@ from pyrit.executor.attack import (
 from pyrit.prompt_converter import FirstLetterConverter
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import PlagiarismMetric, PlagiarismScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # %% [markdown]
 # ## Convert Text Using FirstLetterConverter

@@ -139,8 +139,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    AzureTextEmbedding
-    OpenAiTextEmbedding
+    OpenAITextEmbedding
 
 :py:mod:`pyrit.exceptions`
 ==========================
@@ -363,6 +362,7 @@ API Reference
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
+    MathObfuscationConverter
     MathPromptConverter
     MorseConverter
     NoiseConverter
@@ -465,6 +465,7 @@ API Reference
     AzureContentFilterScorer
     BatchScorer
     ContentClassifierPaths
+    ConversationScorer
     FloatScaleScorer
     FloatScaleThresholdScorer
     GandalfScorer
@@ -476,7 +477,6 @@ API Reference
     HumanLabeledEntry
     InsecureCodeScorer
     LikertScalePaths
-    LookBackScorer
     MarkdownInjectionScorer
     MetricsType
     ObjectiveHumanLabeledEntry
@@ -537,7 +537,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    initialize_pyrit
+    initialize_pyrit_async
     AZURE_SQL
     SQLITE
     IN_MEMORY
@@ -556,3 +556,5 @@ API Reference
     PyRITInitializer
     AIRTInitializer
     SimpleInitializer
+    LoadDefaultDatasets
+    ScenarioObjectiveListInitializer

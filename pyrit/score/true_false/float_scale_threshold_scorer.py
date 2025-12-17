@@ -32,6 +32,9 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             threshold (float): The threshold value between 0 and 1. Scores >= threshold are True, otherwise False.
             float_scale_aggregator (FloatScaleAggregatorFunc): The aggregator function to use for combining
                 multiple float scale scores. Defaults to FloatScaleScoreAggregator.MAX.
+
+        Raises:
+            ValueError: If the threshold is not between 0 and 1.
         """
         self._scorer = scorer
         self._threshold = threshold
@@ -40,8 +43,8 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         # Validation is used by sub-scorers
         super().__init__(validator=ScorerPromptValidator())
 
-        if threshold <= 0 or threshold >= 1:
-            raise ValueError("The threshold must be between 0 and 1")
+        if threshold <= 0 or threshold > 1:
+            raise ValueError("The threshold must be between 0 (exclusive) and 1 (inclusive).")
 
     async def _score_async(
         self,
@@ -68,34 +71,60 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             role_filter=role_filter,
         )
 
-        # Aggregator now returns a list of results
+        # Aggregator handles 0-many scores and returns exactly one result (or raises if configured)
         aggregate_results = self._float_scale_aggregator(scores)
-        # For threshold scoring, we expect a single aggregated result
         aggregate_score = aggregate_results[0]
-
-        score = scores[0]
-        score.score_type = "true_false"
-
         aggregate_value = aggregate_score.value
 
-        score.score_value = str(aggregate_value >= self._threshold)
+        # Calculate threshold result
+        threshold_result = aggregate_value >= self._threshold
         if aggregate_value > self._threshold:
             comparison_symbol = ">"
         elif aggregate_value < self._threshold:
             comparison_symbol = "<"
         else:
             comparison_symbol = "="
+
         scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
-        score.score_rationale = (
-            f"based on {scorer_type}\n"
-            f"Normalized scale score: {aggregate_value} {comparison_symbol} threshold {self._threshold}\n"
-            f"Rationale for scale score: {score.score_rationale}"
-        )
 
-        score.score_value_description = aggregate_score.description
+        # If we have scores, modify the first one; otherwise create a new score
+        if scores:
+            score = scores[0]
+            score.score_type = "true_false"
+            score.score_value = str(threshold_result)
+            score.score_rationale = (
+                f"based on {scorer_type}\n"
+                f"Normalized scale score: {aggregate_value} {comparison_symbol} threshold {self._threshold}\n"
+                f"Rationale for scale score: {score.score_rationale}"
+            )
+            score.score_value_description = aggregate_score.description
+            score.id = uuid.uuid4()
+            score.scorer_class_identifier = self.get_identifier()
+        else:
+            # Create new score from aggregator result (all pieces were filtered out)
+            # Use the first message piece's id if available, otherwise generate a new UUID
+            piece_id = (
+                message.message_pieces[0].id
+                if message.message_pieces and message.message_pieces[0].id
+                else uuid.uuid4()
+            )
 
-        score.id = uuid.uuid4()
-        score.scorer_class_identifier = self.get_identifier()
+            score = Score(
+                score_type="true_false",
+                score_value=str(threshold_result),
+                score_value_description=aggregate_score.description,
+                score_rationale=(
+                    f"based on {scorer_type}\n"
+                    f"Normalized scale score: {aggregate_value} {comparison_symbol} threshold {self._threshold}\n"
+                    f"{aggregate_score.rationale}"
+                ),
+                score_category=aggregate_score.category,
+                score_metadata=aggregate_score.metadata,
+                scorer_class_identifier=self.get_identifier(),
+                message_piece_id=piece_id,
+                objective=objective,
+            )
+
         return [score]
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -113,7 +142,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
 
     def _get_sub_identifier(self):
         """
-        Returns the identifier of the underlying float scale scorer.
+        Return the identifier of the underlying float scale scorer.
 
         Returns:
             dict: The identifier dictionary of the wrapped scorer.

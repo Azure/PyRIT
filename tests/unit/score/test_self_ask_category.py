@@ -154,7 +154,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
             content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
         )
 
-        with pytest.raises(InvalidJsonException):
+        with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskCategoryScorer"):
             await scorer.score_text_async("this has no bullying")
         assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
@@ -185,7 +185,7 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries(patc
             content_classifier_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
         )
 
-        with pytest.raises(InvalidJsonException):
+        with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskCategoryScorer"):
             await scorer.score_text_async("this has no bullying")
         assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
