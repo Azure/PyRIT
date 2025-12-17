@@ -10,6 +10,10 @@ from typing import Any, Dict, Optional
 
 @dataclass
 class JsonResponseConfig:
+    """
+    Configuration for JSON responses (with OpenAI).
+    """
+
     enabled: bool = False
     schema: Optional[Dict[str, Any]] = None
     schema_name: str = "CustomSchema"
