@@ -331,6 +331,7 @@ API Reference
     AttackOutcome
     AttackResult
     DecomposedSeedGroup
+    JsonResponseConfig
     Message
     MessagePiece
     PromptDataType
