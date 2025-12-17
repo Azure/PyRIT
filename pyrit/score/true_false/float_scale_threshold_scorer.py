@@ -47,6 +47,12 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         self._threshold = threshold
         self._float_scale_aggregator = float_scale_aggregator
 
+        # Validation is used by sub-scorers
+        super().__init__(validator=ScorerPromptValidator())
+
+        if threshold <= 0 or threshold >= 1:
+            raise ValueError("The threshold must be between 0 and 1")
+
     def _build_scorer_identifier(self) -> None:
         """Build the scorer evaluation identifier for this scorer."""
         self._set_scorer_identifier(
