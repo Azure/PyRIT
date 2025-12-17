@@ -79,6 +79,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
             torch_dtype (Optional[torch.dtype]): Torch data type for model weights.
             attn_implementation (Optional[str]): Attention implementation type.
             max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
+
+        Raises:
+            ValueError: If neither or both of `model_id` and `model_path` are provided.
+            RuntimeError: If torch cannot be imported or if CUDA is requested but not available.
         """
         model_name = model_id if model_id else model_path if model_path else ""
 
@@ -247,6 +251,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         Returns:
             list[Message]: A list containing the response object with generated text pieces.
+
+        Raises:
+            EmptyResponseException: If the model generates an empty response.
+            Exception: If any error occurs during inference.
         """
         # Load the model and tokenizer using the encapsulated method
         await self.load_model_and_tokenizer_task
@@ -318,6 +326,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         Returns:
             dict: Tokenized inputs ready for the model.
+
+        Raises:
+            ValueError: If the tokenizer does not have a chat template.
         """
         # Check if the tokenizer has a chat template
         if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
@@ -341,7 +352,13 @@ class HuggingFaceChatTarget(PromptChatTarget):
             raise ValueError(error_message)
 
     def _validate_request(self, *, message: Message) -> None:
-        """Validate the provided message."""
+        """
+        Validate the provided message.
+        
+        Raises:
+            ValueError: If the message does not contain exactly one text piece.
+            ValueError: If the message piece is not of type text.
+        """
         n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
@@ -353,7 +370,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
     def is_json_response_supported(self) -> bool:
         """
         Check if the target supports JSON as a response format.
-        
+
         Returns:
             bool: True if JSON response is supported, False otherwise.
         """

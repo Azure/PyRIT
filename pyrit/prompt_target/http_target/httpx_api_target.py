@@ -46,6 +46,10 @@ class HTTPXAPITarget(HTTPTarget):
     ) -> None:
         """
         Force the parent 'HTTPTarget' to skip raw http_request logic by setting http_request=None.
+
+        Raises:
+            ValueError: If the HTTP method is invalid.
+            ValueError: If file uploads are attempted with an HTTP method that does not support them.
         """
         super().__init__(
             http_request="",
@@ -84,6 +88,12 @@ class HTTPXAPITarget(HTTPTarget):
 
         Returns:
             list[Message]: A list containing the response object with generated text pieces.
+
+        Raises:
+            ValueError: If no `http_url` is provided.
+            httpx.TimeoutException: If the request times out.
+            httpx.RequestError: If the request fails.
+            FileNotFoundError: If the specified file to upload is not found.
         """
         self._validate_request(message=message)
         message_piece: MessagePiece = message.message_pieces[0]

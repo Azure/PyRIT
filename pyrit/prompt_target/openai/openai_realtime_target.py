@@ -414,6 +414,7 @@ class RealtimeTarget(OpenAITarget):
             RealtimeTargetResult with audio data and transcripts
 
         Raises:
+            asyncio.TimeoutError: If waiting for events times out.
             ConnectionError: If connection is not valid
             RuntimeError: If server returns an error
         """
@@ -609,6 +610,9 @@ class RealtimeTarget(OpenAITarget):
         
         Returns:
             Tuple[str, RealtimeTargetResult]: Path to saved audio file and the RealtimeTargetResult
+        
+        Raises:
+            RuntimeError: If no audio is received from the server.
         """
         connection = self._get_connection(conversation_id=conversation_id)
 
@@ -660,6 +664,10 @@ class RealtimeTarget(OpenAITarget):
         
         Returns:
             Tuple[str, RealtimeTargetResult]: Path to saved audio file and the RealtimeTargetResult
+        
+        Raises:
+            Exception: If sending audio fails.
+            RuntimeError: If no audio is received from the server.
         """
         connection = self._get_connection(conversation_id=conversation_id)
 

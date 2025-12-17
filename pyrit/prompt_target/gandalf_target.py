@@ -76,6 +76,9 @@ class GandalfTarget(PromptTarget):
 
         Returns:
             bool: True if the password is correct, False otherwise.
+
+        Raises:
+            ValueError: If the chat returned an empty response.
         """
         payload: dict[str, object] = {
             "defender": self._defender,

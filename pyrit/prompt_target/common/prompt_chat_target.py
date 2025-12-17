@@ -38,6 +38,9 @@ class PromptChatTarget(PromptTarget):
     ) -> None:
         """
         Set the system prompt for the prompt target. May be overridden by subclasses.
+
+        Raises:
+            RuntimeError: If the conversation already exists.
         """
         messages = self._memory.get_conversation(conversation_id=conversation_id)
 

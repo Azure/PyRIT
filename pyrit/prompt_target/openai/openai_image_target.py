@@ -138,6 +138,10 @@ class OpenAIImageTarget(OpenAITarget):
 
         Returns:
             Message: Constructed message with image path.
+        
+        Raises:
+            EmptyResponseException: If the image generation returned an empty response
+                or if the model returned a URL instead of base64.
 
         Note:
             PyRIT expects base64-encoded images. Some models (like dall-e) return URLs by default,

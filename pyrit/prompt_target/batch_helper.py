@@ -17,6 +17,9 @@ def _get_chunks(*args, batch_size: int):
 
     Yields:
         list: Lists of chunked items.
+
+    Raises:
+        ValueError: When no arguments are provided or when arguments have different lengths.
     """
     if len(args) == 0:
         raise ValueError("No arguments provided to chunk.")
@@ -65,6 +68,10 @@ async def batch_task_async(
 
     Returns:
         responses(list): List of results from the batched function
+    
+    Raises:
+        ValueError: When no items to batch are provided.
+        ValueError: When number of lists of items to batch does not match number of task arguments.
     """
     responses = []
 

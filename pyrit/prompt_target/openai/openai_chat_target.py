@@ -325,6 +325,10 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             list[dict]: The list of constructed chat messages.
+        
+        Raises:
+            ValueError: If any message does not have exactly one text piece.
+            ValueError: If any message piece is not of type text.
         """
         chat_messages: list[dict] = []
         for message in conversation:
@@ -352,6 +356,10 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             list[dict]: The list of constructed chat messages.
+        
+        Raises:
+            ValueError: If any message does not have a role.
+            ValueError: If any message piece has an unsupported data type.
         """
         chat_messages: list[dict] = []
         for message in conversation:

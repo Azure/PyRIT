@@ -513,6 +513,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             A MessagePiece for this section, or None to skip.
+        
+        Raises:
+            EmptyResponseException: If the section content is empty or invalid.
+            ValueError: If the section type is unsupported.
         """
         section_type = section.type
         piece_type: PromptDataType = "text"  # Default, always set!
@@ -649,6 +653,11 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             A dict payload (will be serialized and sent as function_call_output).
             If fail_on_missing_function=False and a function is missing or no function is not called, returns:
             {"error": "function_not_found", "missing_function": "<name>", "available_functions": [...]}
+        
+        Raises:
+            ValueError: If the function call section is missing a 'name' field.
+            ValueError: If the function arguments are malformed.
+            KeyError: If the function name is not registered in custom_functions.
         """
         name = tool_call_section.get("name")
         if not name:

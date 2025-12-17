@@ -159,6 +159,9 @@ class PromptShieldTarget(PromptTarget):
     def _validate_response(self, request_body: dict, response_body: dict) -> None:
         """
         Ensure that every field sent to the Prompt Shield was analyzed.
+
+        Raises:
+            ValueError: If any field sent was not analyzed.
         """
         user_prompt_sent: str | None = request_body.get("userPrompt")
         documents_sent: list[str] | None = request_body.get("documents")

@@ -365,7 +365,10 @@ class OpenAITarget(PromptChatTarget):
 
         Raises:
             RateLimitException: For 429 rate limit errors.
-            Various OpenAI SDK exceptions: For non-recoverable errors.
+            APIStatusError: For other API status errors.
+            APITimeoutError: For transient infrastructure errors.
+            APIConnectionError: For transient infrastructure errors.
+            AuthenticationError: For authentication failures.
         """
         try:
             # Execute the API call

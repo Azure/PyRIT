@@ -180,6 +180,9 @@ class HTTPTarget(PromptTarget):
             url (str): string with URL
             http_method (str): method (ie GET vs POST)
             http_version (str): HTTP version to use
+
+        Raises:
+            ValueError: If the HTTP request line is invalid.
         """
         headers_dict: Dict[str, str] = {}
         if self._client:

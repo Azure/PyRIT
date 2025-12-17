@@ -201,7 +201,8 @@ class AzureMLChatTarget(PromptChatTarget):
             messages (list[ChatMessage]): The chat messages objects containing the role and content.
 
         Raises:
-            Exception: For any errors during the process.
+            EmptyResponseException: If the response from the chat is empty.
+            Exception: For any other errors during the process.
 
         Returns:
             str: The generated response message.
