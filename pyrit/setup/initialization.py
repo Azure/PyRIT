@@ -42,29 +42,33 @@ def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]]) -> None
     """
     # Validate env_files exist if they were provided
     if env_files is not None:
+        logger.info(f"Loading custom environment files: {[str(f) for f in env_files]}")
         for env_file in env_files:
             if not env_file.exists():
                 raise ValueError(f"Environment file not found: {env_file}")
 
     # By default load .env and .env.local from home directory of the package
     if env_files is None:
+        logger.info(f"Checking for default environment files in: {path.CONFIGURATION_DIRECTORY_PATH}")
         default_files = []
-        base_file = path.HOME_PATH / ".env"
-        local_file = path.HOME_PATH / ".env.local"
+        base_file = path.CONFIGURATION_DIRECTORY_PATH / ".env"
+        local_file = path.CONFIGURATION_DIRECTORY_PATH / ".env.local"
 
         if base_file.exists():
             default_files.append(base_file)
         if local_file.exists():
             default_files.append(local_file)
 
+        if default_files:
+            logger.info(f"Found default environment files: {[str(f) for f in default_files]}")
+        else:
+            logger.info("No default environment files found. Using system environment variables only.")
+
         env_files = default_files
 
     for env_file in env_files:
-        if env_file.exists():
-            dotenv.load_dotenv(env_file, override=True, interpolate=True)
-            logger.info(f"Loaded {env_file}")
-        else:
-            logger.warning(f"Environment file not found: {env_file}")
+        dotenv.load_dotenv(env_file, override=True, interpolate=True)
+        logger.info(f"Loaded environment file: {env_file}")
 
 
 def _load_initializers_from_scripts(

@@ -115,8 +115,8 @@ class TestLoadEnvironmentFiles:
 
     @pytest.mark.asyncio
     @mock.patch("pyrit.setup.initialization.dotenv.load_dotenv")
-    @mock.patch("pyrit.setup.initialization.path.HOME_PATH")
-    async def test_loads_default_env_files_when_none_provided(self, mock_home_path, mock_load_dotenv):
+    @mock.patch("pyrit.setup.initialization.path.CONFIGURATION_DIRECTORY_PATH")
+    async def test_loads_default_env_files_when_none_provided(self, mock_config_path, mock_load_dotenv):
         """Test that default .env and .env.local files are loaded when env_files is None."""
         # Create temporary directory and files
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -128,8 +128,8 @@ class TestLoadEnvironmentFiles:
             env_file.write_text("VAR1=value1")
             env_local_file.write_text("VAR2=value2")
 
-            # Mock HOME_PATH to point to our temp directory
-            mock_home_path.__truediv__ = lambda self, other: temp_path / other
+            # Mock CONFIGURATION_DIRECTORY_PATH to point to our temp directory
+            mock_config_path.__truediv__ = lambda self, other: temp_path / other
 
             # Call the function with None (default behavior)
             _load_environment_files(env_files=None)
@@ -142,8 +142,8 @@ class TestLoadEnvironmentFiles:
 
     @pytest.mark.asyncio
     @mock.patch("pyrit.setup.initialization.dotenv.load_dotenv")
-    @mock.patch("pyrit.setup.initialization.path.HOME_PATH")
-    async def test_only_loads_existing_default_files(self, mock_home_path, mock_load_dotenv):
+    @mock.patch("pyrit.setup.initialization.path.CONFIGURATION_DIRECTORY_PATH")
+    async def test_only_loads_existing_default_files(self, mock_config_path, mock_load_dotenv):
         """Test that only existing default files are loaded."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = pathlib.Path(temp_dir)
@@ -152,7 +152,7 @@ class TestLoadEnvironmentFiles:
             # Only create .env, not .env.local
             env_file.write_text("VAR1=value1")
 
-            mock_home_path.__truediv__ = lambda self, other: temp_path / other
+            mock_config_path.__truediv__ = lambda self, other: temp_path / other
 
             _load_environment_files(env_files=None)
 
