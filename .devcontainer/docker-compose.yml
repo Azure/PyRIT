@@ -10,11 +10,10 @@ services:
           memory: "16G"
     volumes:
       - ..:/workspace:delegated
-      - pyrit-env:/opt/conda/envs/pyrit-dev:cached
+      - pyrit-env:/opt/venv:cached
       - pip-cache:/home/vscode/.cache/pip:cached
       - uv-cache:/home/vscode/.cache/uv:cached
       - precommit-cache:/home/vscode/.cache/pre-commit:cached
-      - conda-cache:/home/vscode/.cache/conda:cached
       - mypy-cache:/workspace/.mypy_cache:cached
       - pylance-cache:/home/vscode/.cache/pylance:cached
     network_mode: "host"
@@ -28,6 +27,5 @@ volumes:
   pip-cache:
   uv-cache:
   precommit-cache:
-  conda-cache:
   mypy-cache:
   pylance-cache:

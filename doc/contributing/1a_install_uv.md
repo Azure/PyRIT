@@ -2,6 +2,24 @@
 
 This guide covers setting up a PyRIT development environment using [uv](https://github.com/astral-sh/uv), a fast Python package installer and resolver, on Windows.
 
+
+## Choose Your Setup Approach
+
+You can set up PyRIT for development in one of two ways:
+
+1. **Local Installation with UV/Python** (this page) - Install PyRIT in editable mode on your machine
+2. **[DevContainers in VS Code](./1b_install_devcontainers.md)** - Use a pre-configured Docker container with VS Code
+
+```{note}
+**Development Version:** Contributor installations use the **latest development code** from the `main` branch, not a stable release. The notebooks in your cloned repository will match your code version. This documentation website also shows the main branch version.
+```
+
+## Overview
+
+To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/1a_install_conda.md).
+
+However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets, attacks, converters, core, etc. code needs to be modified. This section walks through how to install PyRIT as a contributor.
+
 ## Why uv?
 
 - **Much faster** than pip (10-100x faster dependency resolution)
@@ -51,6 +69,10 @@ This command will:
 - Install PyRIT in editable mode
 - Install all dependencies including dev tools (pytest, black, ruff, etc.)
 - Create a `uv.lock` file for reproducible builds
+
+
+If you are having problems getting pip to install, try this link for details here: [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
+
 
 3. Verify Installation
 
@@ -170,6 +192,11 @@ uv run mypy pyrit/
 uv run pre-commit install
 uv run pre-commit run --all-files
 ```
+
+## Populating Secrets
+
+See [this](../setup/populating_secrets.md) for more details on populating secrets.
+
 
 ## Troubleshooting
 

@@ -33,6 +33,7 @@ def get_sqlite_memory() -> Generator[SQLiteMemory, None, None]:
     yield sqlite_memory
     sqlite_memory.dispose_engine()
 
+
 class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
