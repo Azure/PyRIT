@@ -83,7 +83,7 @@ class HTTPTarget(PromptTarget):
             prompt_regex_string: the placeholder for the prompt
             callback_function: function to parse HTTP response
             max_requests_per_minute: Optional rate limiting
-        
+
         Returns:
             HTTPTarget: an instance of HTTPTarget
         """

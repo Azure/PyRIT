@@ -354,7 +354,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
     def _validate_request(self, *, message: Message) -> None:
         """
         Validate the provided message.
-        
+
         Raises:
             ValueError: If the message does not contain exactly one text piece.
             ValueError: If the message piece is not of type text.

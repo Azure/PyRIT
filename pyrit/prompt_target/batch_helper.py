@@ -68,7 +68,7 @@ async def batch_task_async(
 
     Returns:
         responses(list): List of results from the batched function
-    
+
     Raises:
         ValueError: When no items to batch are provided.
         ValueError: When number of lists of items to batch does not match number of task arguments.

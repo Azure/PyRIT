@@ -138,7 +138,7 @@ class OpenAIImageTarget(OpenAITarget):
 
         Returns:
             Message: Constructed message with image path.
-        
+
         Raises:
             EmptyResponseException: If the image generation returned an empty response
                 or if the model returned a URL instead of base64.
@@ -192,7 +192,7 @@ class OpenAIImageTarget(OpenAITarget):
     def is_json_response_supported(self) -> bool:
         """
         Check if the target supports JSON as a response format.
-        
+
         Returns:
             bool: True if JSON response is supported, False otherwise.
         """

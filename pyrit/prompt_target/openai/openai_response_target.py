@@ -494,7 +494,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     def is_json_response_supported(self) -> bool:
         """
         Check if the target supports JSON as a response format.
-        
+
         Returns:
             bool: True if JSON response is supported, False otherwise.
         """
@@ -513,7 +513,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             A MessagePiece for this section, or None to skip.
-        
+
         Raises:
             EmptyResponseException: If the section content is empty or invalid.
             ValueError: If the section type is unsupported.
@@ -653,7 +653,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             A dict payload (will be serialized and sent as function_call_output).
             If fail_on_missing_function=False and a function is missing or no function is not called, returns:
             {"error": "function_not_found", "missing_function": "<name>", "available_functions": [...]}
-        
+
         Raises:
             ValueError: If the function call section is missing a 'name' field.
             ValueError: If the function arguments are malformed.

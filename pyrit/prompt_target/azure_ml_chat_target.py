@@ -44,11 +44,10 @@ class AzureMLChatTarget(PromptChatTarget):
         **param_kwargs,
     ) -> None:
         """
-        Initialize an instance of the AzureMLChatTarget class.
-
-        This class works with most chat completion Instruct models deployed on Azure AI Machine Learning Studio endpoints
-        (including but not limited to: mistralai-Mixtral-8x7B-Instruct-v01, mistralai-Mistral-7B-Instruct-v01,
-        Phi-3.5-MoE-instruct, Phi-3-mini-4k-instruct, Llama-3.2-3B-Instruct, and Meta-Llama-3.1-8B-Instruct).
+        Initialize an instance of the AzureMLChatTarget class. This class works with most chat completion
+        Instruct models deployed on Azure AI Machine Learning Studio endpoints (including but not limited to:
+        mistralai-Mixtral-8x7B-Instruct-v01, mistralai-Mistral-7B-Instruct-v01, Phi-3.5-MoE-instruct,
+        Phi-3-mini-4k-instruct, Llama-3.2-3B-Instruct, and Meta-Llama-3.1-8B-Instruct).
         Please create or adjust environment variables (endpoint and key) as needed for the model you are using.
 
         Args:

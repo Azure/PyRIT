@@ -277,7 +277,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     def is_json_response_supported(self) -> bool:
         """
         Check if the target supports JSON as a response format.
-        
+
         Returns:
             bool: True if JSON response is supported, False otherwise.
         """
@@ -325,7 +325,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             list[dict]: The list of constructed chat messages.
-        
+
         Raises:
             ValueError: If any message does not have exactly one text piece.
             ValueError: If any message piece is not of type text.
@@ -356,7 +356,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             list[dict]: The list of constructed chat messages.
-        
+
         Raises:
             ValueError: If any message does not have a role.
             ValueError: If any message piece has an unsupported data type.

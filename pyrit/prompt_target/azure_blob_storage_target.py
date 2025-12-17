@@ -129,7 +129,7 @@ class AzureBlobStorageTarget(PromptTarget):
     def _parse_url(self) -> tuple[str, str]:
         """
         Parse the Azure Storage Blob URL to extract components.
-        
+
         Returns:
             tuple: A tuple containing the container URL and blob prefix.
         """
