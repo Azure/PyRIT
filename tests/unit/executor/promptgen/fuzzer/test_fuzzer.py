@@ -11,19 +11,17 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.promptgen.fuzzer import (
     FuzzerContext,
+    FuzzerConverter,
+    FuzzerExpandConverter,
     FuzzerGenerator,
     FuzzerResult,
-    _PromptNode,
+    FuzzerShortenConverter,
 )
+from pyrit.executor.promptgen.fuzzer.fuzzer import _PromptNode
 from pyrit.models import (
     Score,
     SeedDataset,
     SeedPrompt,
-)
-from pyrit.prompt_converter import (
-    FuzzerConverter,
-    FuzzerExpandConverter,
-    FuzzerShortenConverter,
 )
 from pyrit.score import (
     FloatScaleScorer,
