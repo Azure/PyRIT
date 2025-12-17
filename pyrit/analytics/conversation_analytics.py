@@ -3,9 +3,11 @@
 
 import numpy as np
 
-from sklearn.metrics.pairwise import cosine_similarity
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import ConversationMessageWithSimilarity, EmbeddingMessageWithSimilarity
+from pyrit.memory.memory_models import (
+    ConversationMessageWithSimilarity,
+    EmbeddingMessageWithSimilarity,
+)
 
 
 class ConversationAnalytics:
@@ -16,7 +18,7 @@ class ConversationAnalytics:
 
     def __init__(self, *, memory_interface: MemoryInterface):
         """
-        Initializes the ConversationAnalytics with a memory interface for data access.
+        Initialize the ConversationAnalytics with a memory interface for data access.
 
         Args:
             memory_interface (MemoryInterface): An instance of MemoryInterface for accessing conversation data.
@@ -27,7 +29,7 @@ class ConversationAnalytics:
         self, *, chat_message_content: str
     ) -> list[ConversationMessageWithSimilarity]:
         """
-        Retrieves chat messages that have the same converted content
+        Retrieve chat messages that have the same converted content.
 
         Args:
             chat_message_content (str): The content of the chat message to find similar messages for.
@@ -36,7 +38,7 @@ class ConversationAnalytics:
             list[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on content.
         """
-        all_memories = self.memory_interface.get_all_prompt_pieces()
+        all_memories = self.memory_interface.get_message_pieces()
         similar_messages = []
 
         for memory in all_memories:
@@ -56,7 +58,7 @@ class ConversationAnalytics:
         self, *, chat_message_embedding: list[float], threshold: float = 0.8
     ) -> list[EmbeddingMessageWithSimilarity]:
         """
-        Retrieves chat messages that are similar to the given embedding based on cosine similarity.
+        Retrieve chat messages that are similar to the given embedding based on cosine similarity.
 
         Args:
             chat_message_embedding (List[float]): The embedding of the chat message to find similar messages for.
@@ -66,18 +68,17 @@ class ConversationAnalytics:
             List[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on embedding similarity.
         """
-
         all_embdedding_memory = self.memory_interface.get_all_embeddings()
         similar_messages = []
 
-        target_embedding = np.array(chat_message_embedding).reshape(1, -1)
+        target_embedding = np.array(chat_message_embedding).reshape(-1)
 
         for memory in all_embdedding_memory:
             if not hasattr(memory, "embedding") or memory.embedding is None:
                 continue
 
-            memory_embedding = np.array(memory.embedding).reshape((1, -1))
-            similarity_score = cosine_similarity(target_embedding, memory_embedding)[0][0]
+            memory_embedding = np.array(memory.embedding).reshape(-1)
+            similarity_score = cosine_similarity(target_embedding, memory_embedding)
 
             if similarity_score >= threshold:
                 similar_messages.append(
@@ -87,3 +88,17 @@ class ConversationAnalytics:
                 )
 
         return similar_messages
+
+
+def cosine_similarity(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """
+    Calculate the cosine similarity between two vectors.
+
+    Args:
+        a (np.ndarray): The first vector.
+        b (np.ndarray): The second vector.
+
+    Returns:
+        np.ndarray: The cosine similarity between the two vectors.
+    """
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))

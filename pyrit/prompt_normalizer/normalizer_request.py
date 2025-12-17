@@ -1,73 +1,59 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
-from pyrit.memory import MemoryInterface
-from pyrit.models import data_serializer_factory, PromptDataType
-from pyrit.prompt_converter import PromptConverter
+from dataclasses import dataclass
+from typing import Optional
+
+from pyrit.models import SeedGroup
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 
 
-class NormalizerRequestPiece(abc.ABC):
-    _memory: MemoryInterface
+@dataclass
+class NormalizerRequest:
+    """
+    Represents a single request sent to normalizer.
+    """
+
+    seed_group: SeedGroup
+    request_converter_configurations: list[PromptConverterConfiguration]
+    response_converter_configurations: list[PromptConverterConfiguration]
+    conversation_id: str | None
 
     def __init__(
         self,
         *,
-        prompt_converters: list[PromptConverter],
-        prompt_text: str,
-        prompt_data_type: PromptDataType,
-        metadata: str = None,
-    ) -> None:
+        seed_group: SeedGroup,
+        request_converter_configurations: list[PromptConverterConfiguration] = [],
+        response_converter_configurations: list[PromptConverterConfiguration] = [],
+        conversation_id: Optional[str] = None,
+    ):
         """
-        Represents a piece of a normalizer request.
-
-        It represents the minimum unit of data that must be converted before sending to a target.
-        A piece of text, with a type, that is run through a series of converters and may contain metadata.
+        Initialize a normalizer request.
 
         Args:
-            prompt_converters (list[PromptConverter]): A list of PromptConverter objects.
-            prompt_text (str): The prompt text.
-            prompt_data_type (PromptDataType): The data type of the prompt.
-            metadata (str, optional): Additional metadata. Defaults to None.
+            seed_group (SeedGroup): The group of seed prompts to be normalized.
+            request_converter_configurations (list[PromptConverterConfiguration]): Configurations for converting
+                the request. Defaults to an empty list.
+            response_converter_configurations (list[PromptConverterConfiguration]): Configurations for converting
+                the response. Defaults to an empty list.
+            conversation_id (Optional[str]): The ID of the conversation. Defaults to None.
+        """
+        self.seed_group = seed_group
+        self.request_converter_configurations = request_converter_configurations
+        self.response_converter_configurations = response_converter_configurations
+        self.conversation_id = conversation_id
+
+    def validate(self) -> None:
+        """
+        Validate the normalizer request.
 
         Raises:
-            ValueError: If prompt_converters is not a non-empty list of PromptConverter objects.
-            ValueError: If prompt_text is not a string.
+            ValueError: If the seed group is empty or prompts have different sequences.
         """
+        if not self.seed_group or len(self.seed_group.prompts) < 1:
+            raise ValueError("Seed group must be provided.")
 
-        self.prompt_converters = prompt_converters
-        self.prompt_text = prompt_text
-        self.prompt_data_type = prompt_data_type
-        self.metadata = metadata
-
-        self.validate()
-
-    def validate(self):
-        """
-        Validates the NormalizerRequestPiece.
-
-        Raises:
-            ValueError: If doesn't validate
-        """
-        if not self.prompt_text:
-            raise ValueError("prompt_text must be a str")
-
-        if not isinstance(self.prompt_converters, list) or not all(
-            isinstance(converter, PromptConverter) for converter in self.prompt_converters
-        ):
-            raise ValueError("prompt_converters must be a PromptConverter List")
-
-        # this validates the media exists, if needed
-        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_text)
-
-
-class NormalizerRequest:
-    def __init__(self, request_pieces: list[NormalizerRequestPiece]):
-        self.request_pieces = request_pieces
-
-    def validate(self):
-        if not self.request_pieces or len(self.request_pieces) == 0:
-            raise ValueError("request_pieces must be a list of NormalizerRequestPiece objects")
-
-        for piece in self.request_pieces:
-            piece.validate()
+        if not self.seed_group.is_single_request():
+            raise ValueError("Sequence must be equal for every piece of a single normalizer request.")

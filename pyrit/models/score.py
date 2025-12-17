@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from datetime import datetime
-from typing import Dict, Literal, Optional, get_args
 import uuid
-
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List, Literal, Optional, Union, get_args
 
 ScoreType = Literal["true_false", "float_scale"]
 
@@ -22,45 +22,49 @@ class Score:
     # The type of the scorer; e.g. "true_false" or "float_scale"
     score_type: ScoreType
 
-    # The type of the harms category (e.g. "hate" or "violence")
-    score_category: str
+    # The harms categories (e.g. ["hate", "violence"]) – can be multiple
+    score_category: Optional[List[str]]
 
     # Extra data the scorer provides around the rationale of the score
     score_rationale: str
 
-    # Custom metadata a scorer might use. This is left undefined other than for the
-    # specific scorer that uses it.
-    score_metadata: str
+    # Custom metadata a scorer might use. This can vary by scorer.
+    score_metadata: Optional[Dict[str, Union[str, int]]]
 
-    # The identifier of the scorer class, including relavent information
+    # The identifier of the scorer class, including relevant information
     # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
     scorer_class_identifier: Dict[str, str]
 
-    # This is the prompt_request_response_id that the score is scoring
+    # This is the ID of the MessagePiece that the score is scoring
     # Note a scorer can generate an additional request. This is NOT that, but
-    # the request associated with what we're scoring.
-    prompt_request_response_id: uuid.UUID | str
+    # the ID associated with what we're scoring.
+    message_piece_id: uuid.UUID | str
 
     # Timestamp of when the score was created
     timestamp: datetime
 
+    # The task based on which the text is scored (the original attacker model's objective).
+    task: str
+
     def __init__(
         self,
         *,
-        id: Optional[uuid.UUID] = None,
+        id: Optional[uuid.UUID | str] = None,
         score_value: str,
         score_value_description: str,
         score_type: ScoreType,
-        score_category: str,
+        score_category: Optional[List[str]] = None,
         score_rationale: str,
-        score_metadata: str,
-        scorer_class_identifier: Dict[str, str] = None,
-        prompt_request_response_id: str | uuid.UUID,
-        date_time: Optional[datetime] = datetime.now(),
+        score_metadata: Optional[Dict[str, Union[str, int]]],
+        message_piece_id: str | uuid.UUID,
+        scorer_class_identifier: Optional[Dict[str, str]] = None,
+        timestamp: Optional[datetime] = None,
+        objective: Optional[str] = None,
     ):
         self.id = id if id else uuid.uuid4()
+        self.timestamp = timestamp if timestamp else datetime.now()
 
-        self._validate(score_type, score_value)
+        self.validate(score_type, score_value)
 
         self.score_value = score_value
         self.score_value_description = score_value_description
@@ -72,9 +76,9 @@ class Score:
         self.score_category = score_category
         self.score_rationale = score_rationale
         self.score_metadata = score_metadata
-        self.scorer_class_identifier = scorer_class_identifier
-        self.prompt_request_response_id = prompt_request_response_id
-        self.date_time = date_time
+        self.scorer_class_identifier = scorer_class_identifier or {}
+        self.message_piece_id = message_piece_id
+        self.objective = objective
 
     def get_value(self):
         """
@@ -98,12 +102,7 @@ class Score:
 
         raise ValueError(f"Unknown scorer type: {self.score_type}")
 
-    def __str__(self):
-        if self.scorer_class_identifier:
-            return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
-        return f": {self.score_category}: {self.score_value}"
-
-    def _validate(self, scorer_type, score_value):
+    def validate(self, scorer_type, score_value):
         if scorer_type == "true_false" and str(score_value).lower() not in ["true", "false"]:
             raise ValueError(f"True False scorers must have a score value of 'true' or 'false' not {score_value}")
         elif scorer_type == "float_scale":
@@ -113,3 +112,62 @@ class Score:
                     raise ValueError(f"Float scale scorers must have a score value between 0 and 1. Got {score_value}")
             except ValueError:
                 raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}")
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "score_value": self.score_value,
+            "score_value_description": self.score_value_description,
+            "score_type": self.score_type,
+            "score_category": self.score_category,
+            "score_rationale": self.score_rationale,
+            "score_metadata": self.score_metadata,
+            "scorer_class_identifier": self.scorer_class_identifier,
+            "message_piece_id": str(self.message_piece_id),
+            "timestamp": self.timestamp.isoformat(),
+            "objective": self.objective,
+        }
+
+    def __str__(self):
+        category_str = f": {', '.join(self.score_category) if self.score_category else ''}"
+        if self.scorer_class_identifier:
+            return f"{self.scorer_class_identifier['__type__']}{category_str}: {self.score_value}"
+        return f"{category_str}: {self.score_value}"
+
+    __repr__ = __str__
+
+
+@dataclass
+class UnvalidatedScore:
+    """
+    Score is an object that validates all the fields. However, we need a common
+    data class that can be used to store the raw score value before it is normalized and validated.
+    """
+
+    # The raw score value; has no scale. E.g. in likert could be 1-5
+    raw_score_value: str
+
+    score_value_description: str
+    score_category: Optional[List[str]]
+    score_rationale: str
+    score_metadata: Optional[Dict[str, Union[str, int]]]
+    scorer_class_identifier: Dict[str, str]
+    message_piece_id: uuid.UUID | str
+    objective: Optional[str]
+    id: Optional[uuid.UUID | str] = None
+    timestamp: Optional[datetime] = None
+
+    def to_score(self, *, score_value: str, score_type: ScoreType):
+        return Score(
+            id=self.id,
+            score_value=score_value,
+            score_value_description=self.score_value_description,
+            score_type=score_type,
+            score_category=self.score_category,
+            score_rationale=self.score_rationale,
+            score_metadata=self.score_metadata,
+            scorer_class_identifier=self.scorer_class_identifier,
+            message_piece_id=self.message_piece_id,
+            timestamp=self.timestamp,
+            objective=self.objective,
+        )

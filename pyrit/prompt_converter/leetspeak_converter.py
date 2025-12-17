@@ -2,17 +2,37 @@
 # Licensed under the MIT license.
 
 import random
-import asyncio
+from typing import Optional
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter.text_selection_strategy import WordSelectionStrategy
+from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
-class LeetspeakConverter(PromptConverter):
-    """Converts a string to a leetspeak version"""
+class LeetspeakConverter(WordLevelConverter):
+    """
+    Converts a string to a leetspeak version.
+    """
 
-    def __init__(self) -> None:
-        self.leet_substitutions = {
+    def __init__(
+        self,
+        *,
+        deterministic: bool = True,
+        custom_substitutions: Optional[dict] = None,
+        word_selection_strategy: Optional[WordSelectionStrategy] = None,
+    ):
+        """
+        Initializes the converter with optional deterministic mode and custom substitutions.
+
+        Args:
+            deterministic (bool): If True, use the first substitution for each character.
+                If False, randomly choose a substitution for each character.
+            custom_substitutions (Optional[dict]): A dictionary of custom substitutions to override the defaults.
+            word_selection_strategy (Optional[WordSelectionStrategy]): Strategy for selecting which words to convert.
+                If None, all words will be converted.
+        """
+        super().__init__(word_selection_strategy=word_selection_strategy)
+
+        default_substitutions = {
             "a": ["4", "@", "/\\", "@", "^", "/-\\"],
             "b": ["8", "6", "13", "|3", "/3", "!3"],
             "c": ["(", "[", "<", "{"],
@@ -26,22 +46,22 @@ class LeetspeakConverter(PromptConverter):
             "z": ["2"],
         }
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Simple converter to generate leatspeak version of a prompt.
-        Since there are multiple character variations, this is non-deterministic.
-        """
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
+        # Use custom substitutions if provided, otherwise default to the standard ones
+        self._leet_substitutions = custom_substitutions if custom_substitutions else default_substitutions
+        self._deterministic = deterministic
 
-        converted_prompt = []
-        for char in prompt:
-            if char.lower() in self.leet_substitutions:
-                converted_prompt.append(random.choice(self.leet_substitutions.get(char.lower(), char)))
+    async def convert_word_async(self, word: str) -> str:
+        converted_word = []
+        for char in word:
+            lower_char = char.lower()
+            if lower_char in self._leet_substitutions:
+                if self._deterministic:
+                    # Use the first substitution for deterministic mode
+                    converted_word.append(self._leet_substitutions[lower_char][0])
+                else:
+                    # Randomly select a substitution for each character
+                    converted_word.append(random.choice(self._leet_substitutions[lower_char]))
             else:
-                converted_prompt.append(char)
-        await asyncio.sleep(0)
-        return ConverterResult(output_text="".join(converted_prompt), output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
+                # If character not in substitutions, keep it as is
+                converted_word.append(char)
+        return "".join(converted_word)

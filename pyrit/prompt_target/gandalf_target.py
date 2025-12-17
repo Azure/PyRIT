@@ -1,16 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import enum
+import json
 import logging
+from typing import Optional
 
 from pyrit.common import net_utility
-from pyrit.memory import DuckDBMemory, MemoryInterface
-from pyrit.models import PromptRequestResponse
-from pyrit.prompt_target import PromptTarget
-
+from pyrit.models import Message, construct_response_from_request
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -34,44 +32,47 @@ class GandalfTarget(PromptTarget):
         self,
         *,
         level: GandalfLevel,
-        memory: MemoryInterface = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        self._memory = memory if memory else DuckDBMemory()
+        """
+        Initialize the Gandalf target.
 
-        self._endpoint = "https://gandalf.lakera.ai/api/send-message"
+        Args:
+            level (GandalfLevel): The Gandalf level to target.
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
+        """
+        endpoint = "https://gandalf-api.lakera.ai/api/send-message"
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
+
         self._defender = level.value
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
+    @limit_requests_per_minute
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
         response = await self._complete_text_async(request.converted_value)
 
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[response])
+        response_entry = construct_response_from_request(request=request, response_text_pieces=[response])
 
-        return response_entry
+        return [response_entry]
 
-    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) != 1:
-            raise ValueError("This target only supports a single prompt request piece.")
+    def _validate_request(self, *, message: Message) -> None:
+        n_pieces = len(message.message_pieces)
+        if n_pieces != 1:
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        if prompt_request.request_pieces[0].converted_value_data_type != "text":
-            raise ValueError("This target only supports text prompt input.")
+        piece_type = message.message_pieces[0].converted_value_data_type
+        if piece_type != "text":
+            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     async def check_password(self, password: str) -> bool:
         """
-        Checks if the password is correct
+        Checks if the password is correct.
 
         True means the password is correct, False means it is not
         """
@@ -103,5 +104,7 @@ class GandalfTarget(PromptTarget):
         if not resp.text:
             raise ValueError("The chat returned an empty response.")
 
-        logger.info(f'Received the following response from the prompt target "{resp.text}"')
-        return resp.text
+        answer = json.loads(resp.text)["answer"]
+
+        logger.info(f'Received the following response from the prompt target "{answer}"')
+        return answer

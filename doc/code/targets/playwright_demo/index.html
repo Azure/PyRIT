@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot Demo</title>
+    <style>
+        /* Styles for the chat interface */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+        #chat-container {
+            width: 500px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        #chat-box {
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        .user-message {
+            text-align: right;
+            color: blue;
+        }
+        .bot-message {
+            text-align: left;
+            color: green;
+        }
+        #message-form {
+            display: flex;
+        }
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #send-button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <h2>Chat with a Cowboy 🤠</h2>
+    <div id="chat-box">
+    </div>
+    <form id="message-form">
+        <input type="text" id="message-input" name="message" placeholder="Type your message here..." autocomplete="off">
+        <button type="submit" id="send-button">Send</button>
+    </form>
+</div>
+
+<script>
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const chatBox = document.getElementById('chat-box');
+    const messageHistory = [];
+
+
+    messageForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const message = messageInput.value.trim();
+        if (message === '') return;
+
+        messageHistory.push({ role: 'user', content: message });
+
+
+        // Display user's message
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.classList.add('message', 'user-message');
+        userMessageDiv.textContent = message;
+        chatBox.appendChild(userMessageDiv);
+
+        // Scroll to the bottom
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Send message to the server
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/send_message');
+        xhr.setRequestHeader('Content-Type', 'application/json');
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                const jsonResponse = JSON.parse(xhr.responseText);
+
+                messageHistory.push({ role: 'assistant', content: jsonResponse.bot_message });
+
+                // Display bot's message
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.classList.add('message', 'bot-message');
+                botMessageDiv.textContent = jsonResponse.bot_message;
+                chatBox.appendChild(botMessageDiv);
+
+                // Scroll to the bottom
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } else {
+                console.error('Error:', xhr.responseText);
+            }
+        };
+
+        xhr.send(JSON.stringify({ messages: messageHistory }));
+
+        // Clear the input field
+        messageInput.value = '';
+    });
+</script>
+
+</body>
+</html>

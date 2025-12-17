@@ -1,6 +1,8 @@
 # PyRIT-specific configs
 submodules/
 results/
+dbdata/
+eval/
 default_memory.json.memory
 
 # Byte-compiled / optimized / DLL files
@@ -74,7 +76,12 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
+doc/apiref/
+apidoc/myst/
+apidoc/html/
+apidoc/_autosummary/
+node_modules/
 
 # PyBuilder
 .pybuilder/
@@ -118,12 +125,16 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+# env-operator and env-test, if you downloaded them as-is
+env-operator
+env-test
 
 # Spyder project settings
 .spyderproject
@@ -163,5 +174,27 @@ cython_debug/
 doc/generate_docs/cache/*
 !doc/generate_docs/cache/.gitkeep
 
+# Jupyterbook build files
+doc/_build/
+doc/_autosummary/
+
 # ignore all VSCode settings
 .vscode/*
+.vscode
+
+# ignore jetbrains IDE settings
+.idea/
+
+# Ignore DS_STORE files
+**/.DS_Store
+
+# Ignore data directory in Docker folder
+/docker/data/
+/docker/data/*
+
+# Ignore notebooks directory in Docker folder
+/docker/notebooks/
+/docker/notebooks/*
+
+# Custom user instructions
+.github/instructions/user-custom.instructions.md

@@ -1,0 +1,17 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+env/
+venv/
+.ipynb_checkpoints
+.DS_Store
+dist/
+build/
+*.egg-info
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/.pytest_cache/
+**/.mypy_cache/

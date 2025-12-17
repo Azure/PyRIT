@@ -3,6 +3,9 @@
 CMD:=python -m
 PYMODULE:=pyrit
 TESTS:=tests
+UNIT_TESTS:=tests/unit
+INTEGRATION_TESTS:=tests/integration
+END_TO_END_TESTS:=tests/end_to_end
 
 all: pre-commit
 
@@ -11,16 +14,27 @@ pre-commit:
 	pre-commit run --all-files
 
 mypy:
-	$(CMD) mypy $(PYMODULE) $(TESTS)
+	$(CMD) mypy $(PYMODULE) $(UNIT_TESTS)
 
-test:
-	$(CMD) pytest --cov=$(PYMODULE) $(TESTS)
+docs-build:
+	jb build -W -v ./doc
+	python ./build_scripts/generate_rss.py
 
-test-cov-html:
-	$(CMD) pytest --cov=$(PYMODULE) $(TESTS) --cov-report html
+# Because of import time, "auto" seemed to actually go slower than just using 4 processes
+unit-test:
+	$(CMD) pytest -n 4 --dist=loadfile --cov=$(PYMODULE) $(UNIT_TESTS)
 
-test-cov-xml:
-	$(CMD) pytest --cov=$(PYMODULE) $(TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
+unit-test-cov-html:
+	$(CMD) pytest -n 4 --dist=loadfile --cov=$(PYMODULE) $(UNIT_TESTS) --cov-report html
+
+unit-test-cov-xml:
+	$(CMD) pytest -n 4 --dist=loadfile --cov=$(PYMODULE) $(UNIT_TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
+
+integration-test:
+	$(CMD) pytest $(INTEGRATION_TESTS) --cov=$(PYMODULE) $(INTEGRATION_TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
+
+end-to-end-test:
+	$(CMD) pytest $(END_TO_END_TESTS) -v --junitxml=junit/test-results.xml
 
 #clean:
 #	git clean -Xdf # Delete all files in .gitignore

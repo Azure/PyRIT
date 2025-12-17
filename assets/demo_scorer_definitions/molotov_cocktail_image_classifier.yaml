@@ -1,0 +1,3 @@
+category: illegal_molotov_cocktail
+true_description: "Image contains a person creating a Molotov cocktail or components that look like a Molotov cocktail."
+false_description: "Image does not contain a person creating or holding a Molotov cocktail or any components that look like a Molotov cocktail."

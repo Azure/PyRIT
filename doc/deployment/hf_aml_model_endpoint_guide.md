@@ -4,8 +4,9 @@
 This document serves as a comprehensive guide for interacting with Hugging Face's Large Language Models (LLMs) deployed on Azure Machine Learning (AZURE_ML) managed online endpoints. It's intended to help users with the necessary information to effectively communicate with these models, detailing the request body and response details.
 
 ## Models
-- [mistralai/Mixtral-8x7B-Instruct-v0.1](#mistralaimixtral-8x7b-instruct-v01)
+- [mistralai/Mixtral-8x7B-Instruct-v0.1](mistralai_mixtral_8x7b_instruct_v0_1)
 
+(mistralai_mixtral_8x7b_instruct_v0_1)=
 ## mistralai/Mixtral-8x7B-Instruct-v0.1
 ### Overview
 For detailed information about the `Mixtral-8x7B-Instruct-v0.1` model, including its capabilities, use cases, and technical specifications, please visit the model's page on Hugging Face:

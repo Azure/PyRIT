@@ -1,12 +1,22 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
+
 # %% [markdown]
-# ## Deploying Hugging Face Models into Azure ML Managed Online Endpoint
+# # Deploying Hugging Face Models into Azure ML Managed Online Endpoint
 #
 # This notebook demonstrates the process of deploying registered models in Azure ML workspace
 # to an AZURE ML managed online endpoint for real-time inference.
 #
 # [Learn more about Azure ML Managed Online Endpoints](https://learn.microsoft.com/en-us/azure/machine-learning/concept-endpoints-online?view=azureml-api-2)
 #
-# ### Prerequisites
+# ## Prerequisites
 # - An Azure account with an active subscription. [Create one for free](https://azure.microsoft.com/free/).
 # - An Azure ML workspace set up. [Learn how to set up a workspace](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-workspace?view=azureml-api-2&tabs=python).
 # - Install the Azure ML client library for Python with pip.
@@ -14,17 +24,15 @@
 #      pip install azure-ai-ml
 #      pip install azure-identity
 #   ```
-# - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/setup_azure.md)
+# - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the markdown file provided [here](../setup/populating_secrets.md)
 # - A Hugging Face model should be present in the AZURE ML model catalog. If it is missing, execute the [notebook](./download_and_register_hf_model_aml.ipynb) to download and register the Hugging Face model in the AZURE ML registry.
 
 # %% [markdown]
-# ### Load Environment Variables
+# ## Load Environment Variables
 #
 # Load necessary environment variables from an `.env` file.
 #
-# ### Environment Variables
-#
-# For ex., to download the Hugging Face model `cognitivecomputations/Wizard-Vicuna-13B-Uncensored` into your Azure environment, below are the environment variables that needs to be set in `.env` file:
+# For example, to download the Hugging Face model `cognitivecomputations/Wizard-Vicuna-13B-Uncensored` into your Azure environment, below are the environment variables that needs to be set in `.env` file:
 #
 # 1. **AZURE_SUBSCRIPTION_ID**
 #    - Obtain your Azure Subscription ID, essential for accessing Azure services.
@@ -40,9 +48,9 @@
 #
 # 5. **AZURE_ML_MODEL_NAME_TO_DEPLOY**
 #    - If the model is listed in the AZURE ML Hugging Face model catalog, then supply the model name as shown in the following image.
-#    <br> <img src="./../../assets/aml_hf_model.png" alt="aml_hf_model.png" height="400"/> <br>
+#    <br> <img src="./../../assets/aml_hf_model.png" alt="AML Hugging Face model" height="400"/> <br>
 #    - If you intend to deploy the model from the AZURE ML workspace model registry, then use the model name as shown in the subsequent image.
-#    <br> <img src="./../../assets/aml_ws_model.png" alt="aml_ws_model.png" height="400"/> <br>
+#    <br> <img src="./../../assets/aml_ws_model.png" alt="AML Workspace model" height="400"/> <br>
 # 6. **AZURE_ML_MODEL_VERSION_TO_DEPLOY**
 #    - You can find the details of the model version in the images from previous step associated with the respective model.
 #
@@ -60,11 +68,11 @@
 #
 
 # %%
-
-from dotenv import load_dotenv
 import os
 import random
 import string
+
+from dotenv import load_dotenv
 
 # Load the environment variables from the .env file
 load_dotenv()
@@ -93,16 +101,16 @@ print(f"Request timeout in millis: {request_timeout_ms}")
 print(f"Liveness probe initial delay in secs: {liveness_probe_initial_delay}")
 
 # %% [markdown]
-# ### Configure Credentials
+# ## Configure Credentials
 #
 # Set up the `DefaultAzureCredential` for seamless authentication with Azure services. This method should handle most authentication scenarios. If you encounter issues, refer to the [Azure Identity documentation](https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity?view=azure-python) for alternative credentials.
 #
-
 # %%
-from azure.ai.ml import MLClient
-from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential
-from azure.core.exceptions import ResourceNotFoundError
 from typing import Union
+
+from azure.ai.ml import MLClient
+from azure.core.exceptions import ResourceNotFoundError
+from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential
 
 try:
     credential: Union[DefaultAzureCredential, InteractiveBrowserCredential] = DefaultAzureCredential()
@@ -169,7 +177,7 @@ def get_updated_endpoint_name(endpoint_name):
     Generates a unique string based on the Azure ML endpoint name.
 
     This function takes the first 26 characters of the given endpoint name and appends
-    a 5-character random alphanumeric string with hypen to ensure uniqueness.
+    a 5-character random alphanumeric string with hyphen to ensure uniqueness.
     """
     # Take the first 26 characters of the endpoint name
     base_name = endpoint_name[:26]
@@ -196,7 +204,12 @@ print(f"Endpoint name: {endpoint_name}")
 # Authentication mode: The authentication method for the endpoint. Choose between key-based authentication and Azure Machine Learning token-based authentication. A key doesn't expire, but a token does expire.
 
 # %%
-from azure.ai.ml.entities import ManagedOnlineEndpoint, ManagedOnlineDeployment, OnlineRequestSettings, ProbeSettings
+from azure.ai.ml.entities import (
+    ManagedOnlineDeployment,
+    ManagedOnlineEndpoint,
+    OnlineRequestSettings,
+    ProbeSettings,
+)
 
 # create an online endpoint
 endpoint = ManagedOnlineEndpoint(
@@ -208,8 +221,7 @@ workspace_ml_client.begin_create_or_update(endpoint).wait()
 # **Add deployment to an Azure ML endpoint created above**
 #
 # Please be aware that deploying, particularly larger models, may take some time. Once the deployment is finished, the provisioning state will be marked as 'Succeeded', as illustrated in the image below.
-# ![image.png](attachment:image.png)
-# <br> <img src="./../../assets/aml_endpoint_deployment.png" alt="aml_endpoint_deployment.png" height="400"/> <br>
+# <br> <img src="./../../assets/aml_endpoint_deployment.png" alt="AML Endpoint Deployment" height="400"/> <br>
 
 # %%
 # create a deployment

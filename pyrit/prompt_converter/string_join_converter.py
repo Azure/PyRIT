@@ -1,34 +1,33 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
+from typing import Optional
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter.text_selection_strategy import WordSelectionStrategy
+from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
-class StringJoinConverter(PromptConverter):
+class StringJoinConverter(WordLevelConverter):
+    """
+    Converts text by joining its characters with the specified join value.
+    """
 
-    def __init__(self, *, join_value="-"):
-        self.join_value = join_value
-
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    def __init__(
+        self,
+        *,
+        join_value="-",
+        word_selection_strategy: Optional[WordSelectionStrategy] = None,
+    ):
         """
-        Simple converter that uses str join for letters between. E.g. with a `-`
-        it converts a prompt of `test` to `t-e-s-t`
-
-        This can sometimes bypass LLM logic
+        Initializes the converter with the specified join value and selection strategy.
 
         Args:
-            prompt (str): The prompt to be converted.
-
-        Returns:
-            list[str]: The converted prompts.
+            join_value (str): The string used to join characters of each word.
+            word_selection_strategy (Optional[WordSelectionStrategy]): Strategy for selecting which words to convert.
+                If None, all words will be converted.
         """
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
-        await asyncio.sleep(0)
-        return ConverterResult(output_text=self.join_value.join(prompt), output_type="text")
+        super().__init__(word_selection_strategy=word_selection_strategy)
+        self.join_value = join_value
 
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
+    async def convert_word_async(self, word: str) -> str:
+        return self.join_value.join(word)

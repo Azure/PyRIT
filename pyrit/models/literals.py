@@ -3,16 +3,26 @@
 
 from typing import Literal
 
-
-PromptDataType = Literal["text", "image_path", "audio_path", "url", "error"]
+PromptDataType = Literal[
+    "text",
+    "image_path",
+    "audio_path",
+    "video_path",
+    "url",
+    "reasoning",
+    "error",
+    "function_call",
+    "tool_call",
+    "function_call_output",
+]
 
 """
 The type of the error in the prompt response
 blocked: blocked by an external filter e.g. Azure Filters
-model: the model refused to answer or request e.g. "I'm sorry..."
+none: no exception is raised
 processing: there is an exception thrown unrelated to the query
 unknown: the type of error is unknown
 """
-PromptResponseError = Literal["none", "blocked", "error", "model", "processing", "unknown"]
+PromptResponseError = Literal["blocked", "none", "processing", "empty", "unknown"]
 
-ChatMessageRole = Literal["system", "user", "assistant"]
+ChatMessageRole = Literal["system", "user", "assistant", "tool", "developer"]

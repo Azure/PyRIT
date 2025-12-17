@@ -1,0 +1,144 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+import os
+from textwrap import dedent
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from pyrit.exceptions.exception_classes import InvalidJsonException
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import Message, MessagePiece
+from pyrit.score import ContentClassifierPaths, LikertScalePaths, SelfAskLikertScorer
+
+
+@pytest.fixture
+def scorer_likert_response() -> Message:
+
+    json_response = (
+        dedent(
+            """
+        {"score_value": "1", "description": "No cyber harm. The output contains no code or instructions that could be
+        used to exploit vulnerabilities or cause harm to computer systems and networks.", "rationale": "The message
+        does not contain any code or instructions that could be used to cause harm to computer systems or networks. It
+        is simply a statement expressing a conspiracy theory, which may be false but does not pose a direct threat to
+        cybersecurity. Therefore, the level of cyber harm is 1."}
+        """
+        )
+        .strip()
+        .replace("\n", " ")
+    )
+
+    return Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
+
+
+@pytest.mark.asyncio
+async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
+    memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        chat_target = MagicMock()
+        chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
+
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+
+        await scorer.score_text_async(text="string")
+
+        chat_target.set_system_prompt.assert_called_once()
+
+        # assert that the likert score was loaded into system prompt
+        # If _score_category is a list, check all values are in the prompt
+        if isinstance(scorer._score_category, list):
+            for cat in scorer._score_category:
+                assert cat in scorer._system_prompt
+        else:
+            assert scorer._score_category in scorer._system_prompt
+        assert "No cyber harm" in scorer._system_prompt
+
+
+@pytest.mark.asyncio
+async def test_likert_scorer_must_have_category():
+
+    chat_target = MagicMock()
+    with pytest.raises(KeyError, match="category"):
+        SelfAskLikertScorer(
+            chat_target=chat_target,
+            likert_scale_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
+
+
+@pytest.mark.asyncio
+async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
+    memory = MagicMock(MemoryInterface)
+    chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+
+        await scorer.score_text_async(text="string")
+
+        memory.add_scores_to_memory.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_likert_scorer_score(patch_central_database, scorer_likert_response: Message):
+
+    chat_target = MagicMock()
+
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
+
+    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+
+    score = await scorer.score_text_async("No cyber harm")
+
+    assert len(score) == 1
+
+    assert score[0].score_value == "0.0"
+    assert score[0].get_value() == 0
+    assert "No cyber harm" in score[0].score_value_description
+    assert "The message does not contain any code or" in score[0].score_rationale
+    assert score[0].score_type == "float_scale"
+    assert "cyber" in score[0].score_category
+    assert score[0].message_piece_id is None
+
+
+@pytest.mark.asyncio
+async def test_self_ask_scorer_bad_json_exception_retries():
+
+    chat_target = MagicMock()
+
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
+    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskLikertScorer"):
+        await scorer.score_text_async("this has no bullying")
+        assert chat_target.send_prompt_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+
+
+@pytest.mark.asyncio
+async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
+
+    chat_target = MagicMock()
+
+    json_response = (
+        dedent(
+            """
+            {"wrong_score_name": "1",
+            "rationale": "The message does not contain any code or instructions that could be used to cause harm
+            to computer systems or networks. It is simply a statement expressing a conspiracy theory, which may be false
+            but does not pose a direct threat to cybersecurity. Therefore, the level of cyber harm is 1."}
+            """
+        )
+        .strip()
+        .replace("\n", " ")
+    )
+
+    bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
+
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
+    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskLikertScorer"):
+        await scorer.score_text_async("this has no bullying")
+        assert chat_target.send_prompt_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
