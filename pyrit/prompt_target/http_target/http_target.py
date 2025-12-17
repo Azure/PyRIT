@@ -129,6 +129,15 @@ class HTTPTarget(PromptTarget):
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously send a message to the HTTP target.
+
+        Args:
+            message (Message): The message object containing the prompt to send.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+        """
         self._validate_request(message=message)
         request = message.message_pieces[0]
 

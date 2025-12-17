@@ -278,7 +278,18 @@ class RealtimeTarget(OpenAITarget):
     @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously send a message to the OpenAI realtime target.
 
+        Args:
+            message (Message): The message object containing the prompt to send.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+        
+        Raises:
+            ValueError: If the message piece type is unsupported.
+        """
         conversation_id = message.message_pieces[0].conversation_id
         if conversation_id not in self._existing_conversation:
             connection = await self.connect(conversation_id=conversation_id)

@@ -35,7 +35,15 @@ class TextTarget(PromptTarget):
         self._text_stream = text_stream
 
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously write a message to the text stream.
 
+        Args:
+            message (Message): The message object to write to the stream.
+
+        Returns:
+            list[Message]: An empty list (no response expected).
+        """
         self._validate_request(message=message)
 
         self._text_stream.write(f"{str(message)}\n")
@@ -44,7 +52,15 @@ class TextTarget(PromptTarget):
         return []
 
     def import_scores_from_csv(self, csv_file_path: Path) -> list[MessagePiece]:
+        """
+        Import message pieces and their scores from a CSV file.
 
+        Args:
+            csv_file_path (Path): The path to the CSV file containing scores.
+
+        Returns:
+            list[MessagePiece]: A list of message pieces imported from the CSV.
+        """
         message_pieces = []
 
         with open(csv_file_path, newline="") as csvfile:

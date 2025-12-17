@@ -77,6 +77,12 @@ class PromptTarget(abc.ABC, Identifier):
         self._memory.dispose_engine()
 
     def get_identifier(self) -> dict:
+        """
+        Get the identifier dictionary for the prompt target.
+
+        Returns:
+            dict: Dictionary containing the target's type, module, endpoint, and model name.
+        """
         public_attributes = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
