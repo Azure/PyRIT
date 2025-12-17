@@ -168,6 +168,9 @@ class RealtimeTarget(OpenAITarget):
         """
         Create or return the AsyncOpenAI client configured for Realtime API.
         Uses the Azure GA approach with websocket_base_url.
+
+        Returns:
+            AsyncOpenAI: Configured AsyncOpenAI client for Realtime API.
         """
         if self._realtime_client is None:
             # Convert https:// to wss:// for websocket connections if needed
@@ -189,6 +192,9 @@ class RealtimeTarget(OpenAITarget):
     async def connect(self, conversation_id: str):
         """
         Connect to Realtime API using AsyncOpenAI client and return the realtime connection.
+
+        Returns:
+            The Realtime API connection.
         """
         logger.info(f"Connecting to Realtime API: {self._endpoint}")
 
@@ -202,6 +208,9 @@ class RealtimeTarget(OpenAITarget):
         """
         Create session configuration for OpenAI client.
         Uses the Azure GA format with nested audio config.
+
+        Returns:
+            dict: Session configuration dictionary.
         """
         session_config = {
             "type": "realtime",
@@ -597,6 +606,9 @@ class RealtimeTarget(OpenAITarget):
         Args:
             text: prompt to send.
             conversation_id: conversation ID
+        
+        Returns:
+            Tuple[str, RealtimeTargetResult]: Path to saved audio file and the RealtimeTargetResult
         """
         connection = self._get_connection(conversation_id=conversation_id)
 
@@ -645,6 +657,9 @@ class RealtimeTarget(OpenAITarget):
         Args:
             filename (str): The path to the audio file.
             conversation_id (str): Conversation ID
+        
+        Returns:
+            Tuple[str, RealtimeTargetResult]: Path to saved audio file and the RealtimeTargetResult
         """
         connection = self._get_connection(conversation_id=conversation_id)
 
@@ -727,5 +742,10 @@ class RealtimeTarget(OpenAITarget):
             raise ValueError(f"This target only supports text and audio_path prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Check if the target supports JSON as a response format."""
+        """
+        Check if the target supports JSON as a response format.
+        
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return False

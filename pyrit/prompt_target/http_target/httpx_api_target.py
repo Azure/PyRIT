@@ -81,6 +81,9 @@ class HTTPXAPITarget(HTTPTarget):
 
         - If file_path is set or we can deduce it from the message piece, we upload a file.
         - Otherwise, we send normal requests with JSON or form_data (if provided).
+
+        Returns:
+            list[Message]: A list containing the response object with generated text pieces.
         """
         self._validate_request(message=message)
         message_piece: MessagePiece = message.message_pieces[0]

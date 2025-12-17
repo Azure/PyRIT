@@ -126,8 +126,13 @@ class AzureBlobStorageTarget(PromptTarget):
                 logger.exception(msg=f"An unexpected error occurred: {exc}")
                 raise
 
-    def _parse_url(self):
-        """Parse the Azure Storage Blob URL to extract components."""
+    def _parse_url(self) -> tuple[str, str]:
+        """
+        Parse the Azure Storage Blob URL to extract components.
+        
+        Returns:
+            tuple: A tuple containing the container URL and blob prefix.
+        """
         parsed_url = urlparse(self._container_url)
         path_parts = parsed_url.path.split("/")
         container_name = path_parts[1]

@@ -140,7 +140,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
     def is_model_id_valid(self) -> bool:
         """
         Check if the HuggingFace model ID is valid.
-        :return: True if valid, False otherwise.
+
+        Returns:
+            bool: True if valid, False otherwise.
         """
         try:
             # Attempt to load the configuration of the model
@@ -242,6 +244,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Send a normalized prompt asynchronously to the HuggingFace model.
+
+        Returns:
+            list[Message]: A list containing the response object with generated text pieces.
         """
         # Load the model and tokenizer using the encapsulated method
         await self.load_model_and_tokenizer_task
@@ -310,6 +315,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
     def _apply_chat_template(self, messages):
         """
         Apply the chat template to the input messages and tokenize them.
+
+        Returns:
+            dict: Tokenized inputs ready for the model.
         """
         # Check if the tokenizer has a chat template
         if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
@@ -343,7 +351,12 @@ class HuggingFaceChatTarget(PromptChatTarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Check if the target supports JSON as a response format."""
+        """
+        Check if the target supports JSON as a response format.
+        
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return False
 
     @classmethod

@@ -83,6 +83,9 @@ class HTTPTarget(PromptTarget):
             prompt_regex_string: the placeholder for the prompt
             callback_function: function to parse HTTP response
             max_requests_per_minute: Optional rate limiting
+        
+        Returns:
+            HTTPTarget: an instance of HTTPTarget
         """
         instance = cls(
             http_request=http_request,
@@ -97,6 +100,9 @@ class HTTPTarget(PromptTarget):
         """
         Add the prompt into the URL if the prompt_regex_string is found in the
         http_request.
+
+        Returns:
+            str: the http request with the prompt added in
         """
         re_pattern = re.compile(self.prompt_regex_string)
         if re.search(self.prompt_regex_string, self.http_request):

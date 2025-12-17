@@ -74,7 +74,8 @@ class GandalfTarget(PromptTarget):
         """
         Check if the password is correct.
 
-        True means the password is correct, False means it is not
+        Returns:
+            bool: True if the password is correct, False otherwise.
         """
         payload: dict[str, object] = {
             "defender": self._defender,

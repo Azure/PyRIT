@@ -137,5 +137,10 @@ class HuggingFaceEndpointTarget(PromptTarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Check if the target supports JSON as a response format."""
+        """
+        Check if the target supports JSON as a response format.
+        
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return False

@@ -275,7 +275,12 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         return construct_response_from_request(request=request, response_text_pieces=[extracted_response])
 
     def is_json_response_supported(self) -> bool:
-        """Check if the target supports JSON as a response format."""
+        """
+        Check if the target supports JSON as a response format.
+        
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return self._is_json_supported
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:

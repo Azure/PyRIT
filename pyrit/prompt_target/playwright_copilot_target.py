@@ -115,7 +115,12 @@ class PlaywrightCopilotTarget(PromptTarget):
             raise ValueError("The provided page URL does not indicate M365 Copilot, but the type is set to m365.")
 
     def _get_selectors(self) -> CopilotSelectors:
-        """Get the appropriate selectors for the current Copilot type."""
+        """
+        Get the appropriate selectors for the current Copilot type.
+        
+        Returns:
+            CopilotSelectors: The selectors for the Copilot interface.
+        """
         if self._type == CopilotType.CONSUMER:
             return CopilotSelectors(
                 input_selector="#userInput",
@@ -189,7 +194,13 @@ class PlaywrightCopilotTarget(PromptTarget):
         return [response_entry]
 
     async def _interact_with_copilot_async(self, message: Message) -> Union[str, List[Tuple[str, PromptDataType]]]:
-        """Interact with Microsoft Copilot interface to send multimodal prompts."""
+        """
+        Interact with Microsoft Copilot interface to send multimodal prompts.
+        
+        Returns:
+            Union[str, List[Tuple[str, PromptDataType]]]: The response content from Copilot,
+                either as a single text string or a list of (data, data_type) tuples.
+        """
         selectors = self._get_selectors()
 
         # Handle multimodal input - process all pieces in the request
@@ -204,7 +215,13 @@ class PlaywrightCopilotTarget(PromptTarget):
     async def _wait_for_response_async(
         self, selectors: CopilotSelectors
     ) -> Union[str, List[Tuple[str, PromptDataType]]]:
-        """Wait for Copilot's response and extract the text and/or images."""
+        """
+        Wait for Copilot's response and extract the text and/or images.
+        
+        Returns:
+            Union[str, List[Tuple[str, PromptDataType]]]: The response content from Copilot,
+                either as a single text string or a list of (data, data_type) tuples.
+        """
         # Count current AI messages and message groups before sending
         initial_ai_messages = await self._page.eval_on_selector_all(
             selectors.ai_messages_selector, "elements => elements.length"

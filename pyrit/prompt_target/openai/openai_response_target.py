@@ -319,6 +319,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         NOTE: The Responses API uses top-level `response_format` for JSON,
         not `text.format` from the old Chat Completions style.
+
+        Returns:
+            dict: The request body to send to the Responses API.
         """
         input_items = await self._build_input_for_multi_modal_async(conversation)
 
@@ -489,7 +492,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         return responses_to_return
 
     def is_json_response_supported(self) -> bool:
-        """Check if the target supports JSON as a response format."""
+        """
+        Check if the target supports JSON as a response format.
+        
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return True
 
     def _parse_response_output_section(
@@ -618,6 +626,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         """
         Return the last tool-call section in assistant messages, or None.
         Looks for a piece whose value parses as JSON with a 'type' key matching function_call.
+
+        Returns:
+            The tool-call section dict, or None if not found.
         """
         for piece in reversed(reply.message_pieces):
             if piece.role == "assistant":

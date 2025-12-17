@@ -45,7 +45,7 @@ class AzureMLChatTarget(PromptChatTarget):
     ) -> None:
         """
         Initialize an instance of the AzureMLChatTarget class.
-        
+
         This class works with most chat completion Instruct models deployed on Azure AI Machine Learning Studio endpoints
         (including but not limited to: mistralai-Mixtral-8x7B-Instruct-v01, mistralai-Mistral-7B-Instruct-v01,
         Phi-3.5-MoE-instruct, Phi-3-mini-4k-instruct, Llama-3.2-3B-Instruct, and Meta-Llama-3.1-8B-Instruct).
@@ -227,7 +227,12 @@ class AzureMLChatTarget(PromptChatTarget):
         self,
         messages: list[ChatMessage],
     ) -> dict:
-        """Construct the HTTP request body for the AML online endpoint."""
+        """
+        Construct the HTTP request body for the AML online endpoint.
+
+        Returns:
+            dict: The constructed HTTP request body.
+        """
         squashed_messages = self.chat_message_normalizer.normalize(messages)
         messages_dict = [message.model_dump() for message in squashed_messages]
 
@@ -275,5 +280,10 @@ class AzureMLChatTarget(PromptChatTarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Check if the target supports JSON as a response format."""
+        """
+        Check if the target supports JSON as a response format.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return False
