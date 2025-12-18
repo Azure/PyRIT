@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import base64
-from typing import Awaitable, Callable, ClassVar, Optional
+from typing import Awaitable, Callable, Optional
 
 from azure.ai.contentsafety import ContentSafetyClient
 from azure.ai.contentsafety.models import (
@@ -41,7 +41,6 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     MAX_TEXT_LENGTH = 10000  # Azure Content Safety API limit
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )

@@ -143,11 +143,3 @@ class OpenAICompletionTarget(OpenAITarget):
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return False
-
-    def get_identifier(self):
-        public_attributes = super().get_identifier()
-        if self._temperature:
-            public_attributes["temperature"] = self._temperature
-        if self._top_p:
-            public_attributes["top_p"] = self._top_p
-        return public_attributes

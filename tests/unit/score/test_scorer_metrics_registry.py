@@ -70,9 +70,8 @@ def sample_scorer_identifier():
     """Sample ScorerIdentifier for testing."""
     return ScorerIdentifier(
         type="TestScorer",
-        version=1,
         system_prompt_template="Test system prompt",
-        model_info={"model_name": "gpt-4", "temperature": 0.7},
+        target_info={"model_name": "gpt-4", "temperature": 0.7},
     )
 
 
@@ -81,7 +80,7 @@ class TestScorerMetricsEntry:
 
     def test_scorer_metrics_entry_creation(self, sample_objective_metrics):
         """Test creating a ScorerMetricsEntry."""
-        scorer_id = {"__type__": "TestScorer", "version": 1}
+        scorer_id = {"__type__": "TestScorer"}
         entry = ScorerMetricsEntry(
             scorer_identifier=scorer_id,
             metrics=sample_objective_metrics,
@@ -92,7 +91,7 @@ class TestScorerMetricsEntry:
 
     def test_scorer_metrics_entry_unpacking(self, sample_objective_metrics):
         """Test unpacking a ScorerMetricsEntry."""
-        scorer_id = {"__type__": "TestScorer", "version": 1}
+        scorer_id = {"__type__": "TestScorer"}
         entry = ScorerMetricsEntry(
             scorer_identifier=scorer_id,
             metrics=sample_objective_metrics,
@@ -125,7 +124,6 @@ class TestScorerMetricsRegistryAddEntry:
             assert len(lines) == 1
             entry = json.loads(lines[0])
             assert entry["__type__"] == "TestScorer"
-            assert entry["version"] == 1
             assert entry["dataset_version"] == "v1.0"
             assert "hash" in entry
             assert entry["metrics"]["accuracy"] == 0.85
@@ -159,7 +157,6 @@ class TestScorerMetricsRegistryAddEntry:
         long_prompt = "X" * 200
         scorer_identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template=long_prompt,
         )
 
@@ -181,7 +178,7 @@ class TestScorerMetricsRegistryAddEntry:
         registry = ScorerMetricsRegistry()
 
         for i in range(3):
-            scorer_id = ScorerIdentifier(type=f"Scorer{i}", version=1)
+            scorer_id = ScorerIdentifier(type=f"Scorer{i}")
             registry.add_entry(
                 scorer_identifier=scorer_id,
                 metrics=sample_objective_metrics,
@@ -227,7 +224,7 @@ class TestScorerMetricsRegistryGetEntries:
 
         # Add entries with different types
         for scorer_type in ["ScorerA", "ScorerB", "ScorerA"]:
-            scorer_id = ScorerIdentifier(type=scorer_type, version=1)
+            scorer_id = ScorerIdentifier(type=scorer_type)
             registry.add_entry(
                 scorer_identifier=scorer_id,
                 metrics=sample_objective_metrics,
@@ -245,28 +242,6 @@ class TestScorerMetricsRegistryGetEntries:
         for entry in entries:
             assert entry.scorer_identifier["__type__"] == "ScorerA"
 
-    def test_get_entries_by_version(self, temp_registry_files, sample_objective_metrics):
-        """Test retrieving entries by version."""
-        ScorerMetricsRegistry._instances = {}
-        registry = ScorerMetricsRegistry()
-
-        # Add entries with different versions
-        for version in [1, 2, 1]:
-            scorer_id = ScorerIdentifier(type="TestScorer", version=version)
-            registry.add_entry(
-                scorer_identifier=scorer_id,
-                metrics=sample_objective_metrics,
-                registry_type=RegistryType.OBJECTIVE,
-                dataset_version="v1.0",
-            )
-
-        entries = registry.get_metrics_registry_entries(
-            registry_type=RegistryType.OBJECTIVE,
-            version=1,
-        )
-
-        assert len(entries) == 2
-
     def test_get_entries_by_model_name(self, temp_registry_files, sample_objective_metrics):
         """Test retrieving entries by model name."""
         ScorerMetricsRegistry._instances = {}
@@ -276,8 +251,7 @@ class TestScorerMetricsRegistryGetEntries:
         for model_name in ["gpt-4", "gpt-3.5", "gpt-4"]:
             scorer_id = ScorerIdentifier(
                 type="TestScorer",
-                version=1,
-                model_info={"model_name": model_name},
+                target_info={"model_name": model_name},
             )
             registry.add_entry(
                 scorer_identifier=scorer_id,
@@ -300,7 +274,7 @@ class TestScorerMetricsRegistryGetEntries:
 
         # Add entries with different accuracies
         for accuracy in [0.7, 0.8, 0.9]:
-            scorer_id = ScorerIdentifier(type=f"Scorer{int(accuracy*10)}", version=1)
+            scorer_id = ScorerIdentifier(type=f"Scorer{int(accuracy*10)}")
             metrics = ObjectiveScorerMetrics(
                 accuracy=accuracy,
                 accuracy_standard_error=0.02,
@@ -331,7 +305,7 @@ class TestScorerMetricsRegistryGetEntries:
 
         # Add entries in random accuracy order
         for accuracy in [0.7, 0.9, 0.8]:
-            scorer_id = ScorerIdentifier(type=f"Scorer{int(accuracy*10)}", version=1)
+            scorer_id = ScorerIdentifier(type=f"Scorer{int(accuracy*10)}")
             metrics = ObjectiveScorerMetrics(
                 accuracy=accuracy,
                 accuracy_standard_error=0.02,
@@ -363,7 +337,7 @@ class TestScorerMetricsRegistryGetEntries:
 
         # Add entries in random MAE order
         for mae in [0.3, 0.1, 0.2]:
-            scorer_id = ScorerIdentifier(type=f"Scorer{int(mae*10)}", version=1)
+            scorer_id = ScorerIdentifier(type=f"Scorer{int(mae*10)}")
             metrics = HarmScorerMetrics(
                 mean_absolute_error=mae,
                 mae_standard_error=0.02,
@@ -469,9 +443,8 @@ class TestScorerMetricsRegistryHashConsistency:
 
         scorer_identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template="A" * 150,  # Long prompt to test hashing
-            model_info={"model_name": "gpt-4"},
+            target_info={"model_name": "gpt-4"},
         )
 
         # Store the expected hash before adding
@@ -503,7 +476,6 @@ class TestScorerMetricsRegistryHashConsistency:
         long_prompt = "This is a long prompt " * 20
         scorer_identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template=long_prompt,
         )
 

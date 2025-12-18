@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -11,8 +11,6 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 class TrueFalseInverterScorer(TrueFalseScorer):
     """A scorer that inverts a true false score."""
-
-    version: ClassVar[int] = 1
 
     def __init__(self, *, scorer: TrueFalseScorer, validator: Optional[ScorerPromptValidator] = None) -> None:
         """

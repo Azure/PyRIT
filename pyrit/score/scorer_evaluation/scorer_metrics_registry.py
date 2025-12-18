@@ -37,7 +37,7 @@ class ScorerMetricsEntry(NamedTuple):
     """
 
     scorer_identifier: Dict[str, Any]
-    """The scorer configuration (type, version, prompts, model_info, etc.)"""
+    """The scorer configuration (type, version, prompts, target_info, etc.)"""
 
     metrics: "ScorerMetrics"
     """The evaluation metrics (accuracy, precision, recall, etc.)"""
@@ -49,14 +49,13 @@ class ScorerMetricsEntry(NamedTuple):
         print("=" * 60)
         print("Scorer Configuration:")
         print(f"  Type: {self.scorer_identifier.get('__type__', 'Unknown')}")
-        print(f"  Version: {self.scorer_identifier.get('version', 'Unknown')}")
 
-        # Model info
-        model_info = self.scorer_identifier.get("model_info")
-        if model_info:
-            model_name = model_info.get("model_name", "Unknown")
-            target_type = model_info.get("__type__", "Unknown")
-            print(f"  Model: {model_name} ({target_type})")
+        # Target info
+        target_info = self.scorer_identifier.get("target_info")
+        if target_info:
+            model_name = target_info.get("model_name", "Unknown")
+            target_type = target_info.get("__type__", "Unknown")
+            print(f"  Target: {model_name} ({target_type})")
 
         # Dataset version
         dataset_version = self.scorer_identifier.get("dataset_version")
@@ -197,9 +196,8 @@ class ScorerMetricsRegistry(metaclass=Singleton):
             registry_type (RegistryType): The type of registry to add the entry to.
             dataset_version (str): The version of the dataset used for evaluation.
         """
-        # Use to_compact_dict() for consistent serialization with __type__ and compacted prompts
+        # Use to_compact_dict() for consistent serialization with __type__, compacted prompts, and hash
         entry = scorer_identifier.to_compact_dict()
-        entry["hash"] = scorer_identifier.compute_hash()
         entry["dataset_version"] = dataset_version
         entry["metrics"] = asdict(metrics)
 
@@ -238,7 +236,6 @@ class ScorerMetricsRegistry(metaclass=Singleton):
         registry_type: Optional[RegistryType] = None,
         hash: Optional[str] = None,
         type: Optional[str] = None,
-        version: Optional[int] = None,
         dataset_version: Optional[str] = None,
         # Model info filters
         model_name: Optional[str] = None,
@@ -267,13 +264,12 @@ class ScorerMetricsRegistry(metaclass=Singleton):
                 If None, searches both registries.
             hash (Optional[str]): The hash to filter by. Defaults to None.
             type (Optional[str]): The scorer type to filter by. Defaults to None.
-            version (Optional[int]): The version to filter by. Defaults to None.
             dataset_version (Optional[str]): The dataset version to filter by. Defaults to None.
-            model_name (Optional[str]): The model name in model_info to filter by. Defaults to None.
-            model_temperature (Optional[float]): The model temperature in model_info to filter by. Defaults to None.
-            model_top_p (Optional[float]): The model top_p in model_info to filter by. Defaults to None.
-            target_name (Optional[str]): The target name in model_info to filter by. Defaults to None.
-            target_metadata (Optional[Dict]): The target metadata in model_info to filter by. Defaults to None.
+            model_name (Optional[str]): The model name in target_info to filter by. Defaults to None.
+            model_temperature (Optional[float]): The model temperature in target_info to filter by. Defaults to None.
+            model_top_p (Optional[float]): The model top_p in target_info to filter by. Defaults to None.
+            target_name (Optional[str]): The target name in target_info to filter by. Defaults to None.
+            target_metadata (Optional[Dict]): The target metadata in target_info to filter by. Defaults to None.
             system_prompt_template (Optional[str]): The system prompt template to filter by. Defaults to None.
             scorer_specific_params (Optional[Dict]): The scorer specific parameters to filter by. Defaults to None.
             pyrit_version (Optional[str]): The PyRIT version to filter by. Defaults to None.
@@ -309,8 +305,6 @@ class ScorerMetricsRegistry(metaclass=Singleton):
                 continue
             if type and entry.get("__type__") != type:
                 continue
-            if version and entry.get("version") != version:
-                continue
             if dataset_version and entry.get("dataset_version") != dataset_version:
                 continue
             if pyrit_version and entry.get("pyrit_version") != pyrit_version:
@@ -320,17 +314,17 @@ class ScorerMetricsRegistry(metaclass=Singleton):
             if scorer_specific_params and entry.get("scorer_specific_params") != scorer_specific_params:
                 continue
 
-            # Nested model_info filters
-            model_info = entry.get("model_info", {})
-            if model_name and model_info.get("model_name") != model_name:
+            # Nested target_info filters
+            target_info = entry.get("target_info", {})
+            if model_name and target_info.get("model_name") != model_name:
                 continue
-            if model_temperature is not None and model_info.get("temperature") != model_temperature:
+            if model_temperature is not None and target_info.get("temperature") != model_temperature:
                 continue
-            if model_top_p is not None and model_info.get("top_p") != model_top_p:
+            if model_top_p is not None and target_info.get("top_p") != model_top_p:
                 continue
-            if target_name and model_info.get("target_name") != target_name:
+            if target_name and target_info.get("target_name") != target_name:
                 continue
-            if target_metadata and model_info.get("custom_metadata") != target_metadata:
+            if target_metadata and target_info.get("custom_metadata") != target_metadata:
                 continue
 
             # Metrics threshold filters

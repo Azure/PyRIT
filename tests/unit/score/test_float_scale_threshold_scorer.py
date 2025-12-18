@@ -32,7 +32,6 @@ def create_mock_float_scorer(score_value: float):
     # Add mock scorer_identifier
     mock_identifier = ScorerIdentifier(
         type="MockScorer",
-        version=1,
     )
     type(scorer).scorer_identifier = PropertyMock(return_value=mock_identifier)
     return scorer
@@ -105,7 +104,7 @@ async def test_float_scale_threshold_scorer_returns_single_score_with_multi_cate
     )
     scorer.get_identifier = MagicMock(return_value={"__type__": "MockScorer", "__module__": "test.mock"})
     # Add mock scorer_identifier
-    mock_identifier = ScorerIdentifier(type="MockScorer", version=1)
+    mock_identifier = ScorerIdentifier(type="MockScorer")
     type(scorer).scorer_identifier = PropertyMock(return_value=mock_identifier)
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
@@ -140,7 +139,7 @@ async def test_float_scale_threshold_scorer_handles_empty_scores():
     scorer.score_async = AsyncMock(return_value=[])
     scorer.get_identifier = MagicMock(return_value={"__type__": "MockScorer", "__module__": "test.mock"})
     # Add mock scorer_identifier
-    mock_identifier = ScorerIdentifier(type="MockScorer", version=1)
+    mock_identifier = ScorerIdentifier(type="MockScorer")
     type(scorer).scorer_identifier = PropertyMock(return_value=mock_identifier)
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
@@ -176,7 +175,7 @@ async def test_float_scale_threshold_scorer_with_raise_on_empty_aggregator():
     scorer.score_async = AsyncMock(return_value=[])
     scorer.get_identifier = MagicMock(return_value={"__type__": "MockScorer", "__module__": "test.mock"})
     # Add mock scorer_identifier
-    mock_identifier = ScorerIdentifier(type="MockScorer", version=1)
+    mock_identifier = ScorerIdentifier(type="MockScorer")
     type(scorer).scorer_identifier = PropertyMock(return_value=mock_identifier)
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):

@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import hashlib
-import json
 
 from pyrit.score.scorer_identifier import ScorerIdentifier
 
@@ -12,37 +11,34 @@ class TestScorerIdentifierBasic:
 
     def test_scorer_identifier_creation_minimal(self):
         """Test creating a ScorerIdentifier with only required fields."""
-        identifier = ScorerIdentifier(type="TestScorer", version=1)
+        identifier = ScorerIdentifier(type="TestScorer")
 
         assert identifier.type == "TestScorer"
-        assert identifier.version == 1
         assert identifier.system_prompt_template is None
         assert identifier.user_prompt_template is None
         assert identifier.sub_identifier is None
-        assert identifier.model_info is None
+        assert identifier.target_info is None
         assert identifier.score_aggregator is None
         assert identifier.scorer_specific_params is None
 
     def test_scorer_identifier_creation_all_fields(self):
         """Test creating a ScorerIdentifier with all fields."""
-        sub_id = ScorerIdentifier(type="SubScorer", version=1)
+        sub_id = ScorerIdentifier(type="SubScorer")
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=2,
             system_prompt_template="System prompt",
             user_prompt_template="User prompt",
             sub_identifier=[sub_id],
-            model_info={"model_name": "gpt-4", "temperature": 0.7},
+            target_info={"model_name": "gpt-4", "temperature": 0.7},
             score_aggregator="mean",
             scorer_specific_params={"param1": "value1"},
         )
 
         assert identifier.type == "TestScorer"
-        assert identifier.version == 2
         assert identifier.system_prompt_template == "System prompt"
         assert identifier.user_prompt_template == "User prompt"
         assert len(identifier.sub_identifier) == 1
-        assert identifier.model_info["model_name"] == "gpt-4"
+        assert identifier.target_info["model_name"] == "gpt-4"
         assert identifier.score_aggregator == "mean"
         assert identifier.scorer_specific_params["param1"] == "value1"
 
@@ -54,12 +50,10 @@ class TestScorerIdentifierHash:
         """Test that compute_hash returns the same value for identical configurations."""
         identifier1 = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template="Test prompt",
         )
         identifier2 = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template="Test prompt",
         )
 
@@ -72,9 +66,9 @@ class TestScorerIdentifierHash:
 
     def test_compute_hash_different_for_different_configs(self):
         """Test that different configurations produce different hashes."""
-        identifier1 = ScorerIdentifier(type="TestScorer", version=1)
-        identifier2 = ScorerIdentifier(type="TestScorer", version=2)
-        identifier3 = ScorerIdentifier(type="OtherScorer", version=1)
+        identifier1 = ScorerIdentifier(type="TestScorer")
+        identifier2 = ScorerIdentifier(type="TestScorer", system_prompt_template="prompt")
+        identifier3 = ScorerIdentifier(type="OtherScorer")
 
         hash1 = identifier1.compute_hash()
         hash2 = identifier2.compute_hash()
@@ -86,18 +80,18 @@ class TestScorerIdentifierHash:
 
     def test_compute_hash_includes_all_fields(self):
         """Test that hash changes when any field changes."""
-        base = ScorerIdentifier(type="TestScorer", version=1)
-        with_prompt = ScorerIdentifier(type="TestScorer", version=1, system_prompt_template="prompt")
-        with_model_info = ScorerIdentifier(type="TestScorer", version=1, model_info={"model_name": "gpt-4"})
-        with_aggregator = ScorerIdentifier(type="TestScorer", version=1, score_aggregator="mean")
+        base = ScorerIdentifier(type="TestScorer")
+        with_prompt = ScorerIdentifier(type="TestScorer", system_prompt_template="prompt")
+        with_target_info = ScorerIdentifier(type="TestScorer", target_info={"model_name": "gpt-4"})
+        with_aggregator = ScorerIdentifier(type="TestScorer", score_aggregator="mean")
 
         base_hash = base.compute_hash()
         prompt_hash = with_prompt.compute_hash()
-        model_hash = with_model_info.compute_hash()
+        target_hash = with_target_info.compute_hash()
         aggregator_hash = with_aggregator.compute_hash()
 
         # All should be different
-        hashes = [base_hash, prompt_hash, model_hash, aggregator_hash]
+        hashes = [base_hash, prompt_hash, target_hash, aggregator_hash]
         assert len(set(hashes)) == 4, "All hashes should be unique"
 
 
@@ -106,22 +100,24 @@ class TestScorerIdentifierCompactDict:
 
     def test_to_compact_dict_basic(self):
         """Test basic to_compact_dict output."""
-        identifier = ScorerIdentifier(type="TestScorer", version=1)
+        identifier = ScorerIdentifier(type="TestScorer")
 
         result = identifier.to_compact_dict()
 
         assert result["__type__"] == "TestScorer"
-        assert result["version"] == 1
         assert result["system_prompt_template"] is None
         assert result["user_prompt_template"] is None
         assert result["sub_identifier"] is None
-        assert result["model_info"] is None
+        assert result["target_info"] is None
         assert result["score_aggregator"] is None
         assert result["scorer_specific_params"] is None
+        assert "hash" in result
+        assert isinstance(result["hash"], str)
+        assert len(result["hash"]) == 64  # SHA256 hex digest length
 
     def test_to_compact_dict_uses_type_key(self):
         """Test that __type__ key is used (not 'type')."""
-        identifier = ScorerIdentifier(type="TestScorer", version=1)
+        identifier = ScorerIdentifier(type="TestScorer")
 
         result = identifier.to_compact_dict()
 
@@ -133,7 +129,6 @@ class TestScorerIdentifierCompactDict:
         short_prompt = "A" * 100  # Exactly 100 characters
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template=short_prompt,
             user_prompt_template=short_prompt,
         )
@@ -150,7 +145,6 @@ class TestScorerIdentifierCompactDict:
 
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template=long_prompt,
             user_prompt_template=long_prompt,
         )
@@ -166,7 +160,6 @@ class TestScorerIdentifierCompactDict:
 
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template=very_long_prompt,
         )
 
@@ -181,13 +174,11 @@ class TestScorerIdentifierCompactDict:
 
         sub_identifier = ScorerIdentifier(
             type="SubScorer",
-            version=1,
             system_prompt_template=long_prompt,
         )
 
         identifier = ScorerIdentifier(
             type="ParentScorer",
-            version=1,
             sub_identifier=[sub_identifier],
         )
 
@@ -200,12 +191,11 @@ class TestScorerIdentifierCompactDict:
 
     def test_to_compact_dict_multiple_sub_identifiers(self):
         """Test compacting multiple sub_identifiers."""
-        sub1 = ScorerIdentifier(type="SubScorer1", version=1)
-        sub2 = ScorerIdentifier(type="SubScorer2", version=2)
+        sub1 = ScorerIdentifier(type="SubScorer1")
+        sub2 = ScorerIdentifier(type="SubScorer2")
 
         identifier = ScorerIdentifier(
             type="ParentScorer",
-            version=1,
             sub_identifier=[sub1, sub2],
         )
 
@@ -217,9 +207,9 @@ class TestScorerIdentifierCompactDict:
 
     def test_to_compact_dict_nested_sub_identifiers(self):
         """Test deeply nested sub_identifiers."""
-        innermost = ScorerIdentifier(type="Innermost", version=1)
-        middle = ScorerIdentifier(type="Middle", version=1, sub_identifier=[innermost])
-        outer = ScorerIdentifier(type="Outer", version=1, sub_identifier=[middle])
+        innermost = ScorerIdentifier(type="Innermost")
+        middle = ScorerIdentifier(type="Middle", sub_identifier=[innermost])
+        outer = ScorerIdentifier(type="Outer", sub_identifier=[middle])
 
         result = outer.to_compact_dict()
 
@@ -230,34 +220,28 @@ class TestScorerIdentifierCompactDict:
 class TestScorerIdentifierHashConsistency:
     """Test that hash and to_compact_dict are consistent."""
 
-    def test_hash_uses_compact_dict(self):
-        """Test that compute_hash uses to_compact_dict internally."""
+    def test_hash_included_in_compact_dict(self):
+        """Test that to_compact_dict includes the computed hash."""
         long_prompt = "B" * 200
 
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template=long_prompt,
         )
 
-        # Compute hash directly
-        computed_hash = identifier.compute_hash()
-
-        # Manually compute what the hash should be
         compact_dict = identifier.to_compact_dict()
-        config_json = json.dumps(compact_dict, sort_keys=True, separators=(",", ":"))
-        expected_hash = hashlib.sha256(config_json.encode("utf-8")).hexdigest()
 
-        assert computed_hash == expected_hash
+        # Hash should be included in compact_dict
+        assert "hash" in compact_dict
+        assert compact_dict["hash"] == identifier.compute_hash()
 
     def test_hash_consistent_with_stored_format(self):
-        """Test that hash computed from a scorer matches hash computed from stored format."""
+        """Test that hash computed from a scorer matches hash in stored format."""
         # This simulates what happens when we store and retrieve from registry
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             system_prompt_template="A" * 150,  # Long prompt that gets hashed
-            model_info={"model_name": "gpt-4"},
+            target_info={"model_name": "gpt-4"},
         )
 
         # Original hash
@@ -266,18 +250,13 @@ class TestScorerIdentifierHashConsistency:
         # Simulate stored format (what registry stores)
         stored_format = identifier.to_compact_dict()
 
-        # When we load back, we should be able to verify the hash
-        # by re-hashing the stored format (minus the hash field itself)
-        reconstructed_json = json.dumps(stored_format, sort_keys=True, separators=(",", ":"))
-        reconstructed_hash = hashlib.sha256(reconstructed_json.encode("utf-8")).hexdigest()
-
-        assert original_hash == reconstructed_hash
+        # The stored format should include the hash
+        assert stored_format["hash"] == original_hash
 
     def test_hash_stable_across_calls(self):
         """Test that multiple calls to compute_hash return the same value."""
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             scorer_specific_params={"key": "value"},
         )
 
@@ -291,21 +270,21 @@ class TestScorerIdentifierWithSubIdentifiers:
 
     def test_sub_identifier_affects_hash(self):
         """Test that sub_identifier differences affect the hash."""
-        sub1 = ScorerIdentifier(type="SubScorer", version=1)
-        sub2 = ScorerIdentifier(type="SubScorer", version=2)
+        sub1 = ScorerIdentifier(type="SubScorer")
+        sub2 = ScorerIdentifier(type="SubScorer", system_prompt_template="different")
 
-        parent1 = ScorerIdentifier(type="Parent", version=1, sub_identifier=[sub1])
-        parent2 = ScorerIdentifier(type="Parent", version=1, sub_identifier=[sub2])
+        parent1 = ScorerIdentifier(type="Parent", sub_identifier=[sub1])
+        parent2 = ScorerIdentifier(type="Parent", sub_identifier=[sub2])
 
         assert parent1.compute_hash() != parent2.compute_hash()
 
     def test_sub_identifier_order_affects_hash(self):
         """Test that sub_identifier order affects the hash."""
-        sub_a = ScorerIdentifier(type="ScorerA", version=1)
-        sub_b = ScorerIdentifier(type="ScorerB", version=1)
+        sub_a = ScorerIdentifier(type="ScorerA")
+        sub_b = ScorerIdentifier(type="ScorerB")
 
-        parent1 = ScorerIdentifier(type="Parent", version=1, sub_identifier=[sub_a, sub_b])
-        parent2 = ScorerIdentifier(type="Parent", version=1, sub_identifier=[sub_b, sub_a])
+        parent1 = ScorerIdentifier(type="Parent", sub_identifier=[sub_a, sub_b])
+        parent2 = ScorerIdentifier(type="Parent", sub_identifier=[sub_b, sub_a])
 
         assert parent1.compute_hash() != parent2.compute_hash()
 
@@ -317,7 +296,6 @@ class TestScorerIdentifierScoreAggregator:
         """Test that score_aggregator appears in compact dict."""
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             score_aggregator="majority_vote",
         )
 
@@ -327,9 +305,9 @@ class TestScorerIdentifierScoreAggregator:
 
     def test_score_aggregator_affects_hash(self):
         """Test that score_aggregator affects the hash."""
-        id1 = ScorerIdentifier(type="TestScorer", version=1, score_aggregator="mean")
-        id2 = ScorerIdentifier(type="TestScorer", version=1, score_aggregator="max")
-        id3 = ScorerIdentifier(type="TestScorer", version=1)
+        id1 = ScorerIdentifier(type="TestScorer", score_aggregator="mean")
+        id2 = ScorerIdentifier(type="TestScorer", score_aggregator="max")
+        id3 = ScorerIdentifier(type="TestScorer")
 
         hash1 = id1.compute_hash()
         hash2 = id2.compute_hash()
@@ -347,7 +325,7 @@ class TestScorerIdentifierPyritVersion:
         """Test that pyrit_version is set by default."""
         import pyrit
 
-        identifier = ScorerIdentifier(type="TestScorer", version=1)
+        identifier = ScorerIdentifier(type="TestScorer")
 
         assert identifier.pyrit_version == pyrit.__version__
 
@@ -355,7 +333,7 @@ class TestScorerIdentifierPyritVersion:
         """Test that pyrit_version appears in compact dict."""
         import pyrit
 
-        identifier = ScorerIdentifier(type="TestScorer", version=1)
+        identifier = ScorerIdentifier(type="TestScorer")
         result = identifier.to_compact_dict()
 
         assert result["pyrit_version"] == pyrit.__version__
@@ -364,7 +342,6 @@ class TestScorerIdentifierPyritVersion:
         """Test that pyrit_version can be explicitly set."""
         identifier = ScorerIdentifier(
             type="TestScorer",
-            version=1,
             pyrit_version="0.0.1-test",
         )
 

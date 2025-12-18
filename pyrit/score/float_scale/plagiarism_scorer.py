@@ -3,7 +3,7 @@
 
 import re
 from enum import Enum
-from typing import ClassVar, List, Optional
+from typing import List, Optional
 
 import numpy as np
 
@@ -31,7 +31,6 @@ class PlagiarismScorer(FloatScaleScorer):
     3. Word-level n-gram Jaccard similarity
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
@@ -189,7 +188,3 @@ class PlagiarismScorer(FloatScaleScorer):
                 message_piece_id=message_piece.id,
             )
         ]
-
-    def _get_scorer_specific_params(self):
-        scorer_specific_params = super()._get_scorer_specific_params()
-        return {**(scorer_specific_params or {}), "metric": self.metric.value, "n": self.n}

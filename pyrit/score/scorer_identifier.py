@@ -19,28 +19,30 @@ class ScorerIdentifier:
     """
 
     type: str
-    version: int
     system_prompt_template: Optional[str] = None
     user_prompt_template: Optional[str] = None
     sub_identifier: Optional[List["ScorerIdentifier"]] = None
-    model_info: Optional[Dict[str, Any]] = None
+    target_info: Optional[Dict[str, Any]] = None
     score_aggregator: Optional[str] = None
     scorer_specific_params: Optional[Dict[str, Any]] = None
     pyrit_version: str = pyrit.__version__
 
-    def compute_hash(self) -> str:
+    def compute_hash(self, hashable_dict: Optional[Dict[str, Any]] = None) -> str:
         """
         Compute a hash representing the current configuration.
 
-        Uses to_compact_dict() to get the compacted representation, then hashes it.
+        Args:
+            hashable_dict: Pre-computed hashable dict to avoid recomputation.
+                If None, _to_hashable_dict() will be called.
 
         Returns:
             str: A hash string representing the configuration.
         """
-        config_dict = self.to_compact_dict()
+        if hashable_dict is None:
+            hashable_dict = self._to_hashable_dict()
 
         # Sort keys to ensure deterministic ordering and encode as JSON
-        config_json = json.dumps(config_dict, sort_keys=True, separators=(",", ":"))
+        config_json = json.dumps(hashable_dict, sort_keys=True, separators=(",", ":"))
 
         hasher = hashlib.sha256()
         hasher.update(config_json.encode("utf-8"))
@@ -52,10 +54,24 @@ class ScorerIdentifier:
 
         Long prompts (>100 characters) are hashed to sha256:{hash[:16]} format.
         Nested sub_identifiers are recursively compacted.
-        Uses __type__ key for consistency with PyRIT conventions.
+        Includes the computed hash of the configuration.
 
         Returns:
-            Dict[str, Any]: A compact dictionary representation.
+            Dict[str, Any]: A compact dictionary representation with hash.
+        """
+        result = self._to_hashable_dict()
+        result["hash"] = self.compute_hash(hashable_dict=result)
+        return result
+
+    def _to_hashable_dict(self) -> Dict[str, Any]:
+        """
+        Convert to a dictionary suitable for hashing (without the hash field).
+
+        Long prompts (>100 characters) are hashed to sha256:{hash[:16]} format.
+        Nested sub_identifiers are recursively compacted.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation without hash.
         """
         # Hash system_prompt_template if longer than 100 characters
         sys_prompt = self.system_prompt_template
@@ -67,18 +83,17 @@ class ScorerIdentifier:
         if user_prompt and len(user_prompt) > 100:
             user_prompt = f"sha256:{hashlib.sha256(user_prompt.encode()).hexdigest()[:16]}"
 
-        # Recursively compact sub_identifiers
+        # Recursively compact sub_identifiers (without hash for consistent hashing)
         sub_id_serialized: Any = None
         if self.sub_identifier is not None:
-            sub_id_serialized = [si.to_compact_dict() for si in self.sub_identifier]
+            sub_id_serialized = [si._to_hashable_dict() for si in self.sub_identifier]
 
         return {
             "__type__": self.type,
-            "version": self.version,
             "system_prompt_template": sys_prompt,
             "user_prompt_template": user_prompt,
             "sub_identifier": sub_id_serialized,
-            "model_info": self.model_info,
+            "target_info": self.target_info,
             "score_aggregator": self.score_aggregator,
             "scorer_specific_params": self.scorer_specific_params,
             "pyrit_version": self.pyrit_version,

@@ -125,8 +125,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         # Set the default parameters for the model generation
         self.max_new_tokens = max_new_tokens
-        self.temperature = temperature
-        self.top_p = top_p
+        self._temperature = temperature
+        self._top_p = top_p
         self.skip_special_tokens = skip_special_tokens
 
         if self.use_cuda and not torch.cuda.is_available():
@@ -280,8 +280,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 max_new_tokens=self.max_new_tokens,
-                temperature=self.temperature,
-                top_p=self.top_p,
+                temperature=self._temperature,
+                top_p=self._top_p,
             )
 
             logger.info(f"Generated IDs: {generated_ids}")  # Log the generated IDs

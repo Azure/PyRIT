@@ -702,11 +702,3 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             prompt_target_identifier=reference_piece.prompt_target_identifier,
             attack_identifier=reference_piece.attack_identifier,
         )
-
-    def get_identifier(self):
-        public_attributes = super().get_identifier()
-        if self._temperature:
-            public_attributes["temperature"] = self._temperature
-        if self._top_p:
-            public_attributes["top_p"] = self._top_p
-        return public_attributes

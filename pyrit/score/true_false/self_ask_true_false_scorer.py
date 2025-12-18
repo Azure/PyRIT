@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import ClassVar, Optional, Union
+from typing import Optional, Union
 
 import yaml
 
@@ -78,7 +78,6 @@ class TrueFalseQuestion:
 class SelfAskTrueFalseScorer(TrueFalseScorer):
     """A class that represents a self-ask true/false for scoring."""
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )

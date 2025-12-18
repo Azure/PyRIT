@@ -3,7 +3,7 @@
 
 import uuid
 from textwrap import dedent
-from typing import ClassVar, Optional
+from typing import Optional
 
 import requests
 from openai import BadRequestError
@@ -28,7 +28,6 @@ class GandalfScorer(TrueFalseScorer):
     if the password is correct. Returns True if the password was successfully extracted.
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(

@@ -4,7 +4,7 @@
 import json
 import logging
 import uuid
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.models import Message, MessagePiece, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
@@ -24,7 +24,6 @@ class PromptShieldScorer(TrueFalseScorer):
     """
 
     scorer_type: ScoreType
-    version: ClassVar[int] = 1
     _conversation_id: str
     _prompt_shield_target: PromptShieldTarget
 

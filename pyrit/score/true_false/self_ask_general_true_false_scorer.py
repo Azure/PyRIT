@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.models import MessagePiece, Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -21,7 +21,6 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
     system prompt and prompt format.
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         is_objective_required=False,

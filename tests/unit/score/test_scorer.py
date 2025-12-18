@@ -1134,15 +1134,6 @@ def test_mock_scorer_get_identifier_includes_hash():
     assert len(identifier["hash"]) == 64  # SHA256 hex digest length
 
 
-def test_mock_scorer_get_identifier_includes_version():
-    """Test that get_identifier includes version."""
-    scorer = MockScorer()
-    identifier = scorer.get_identifier()
-
-    assert "version" in identifier
-    assert isinstance(identifier["version"], int)
-
-
 def test_mock_scorer_get_identifier_deterministic():
     """Test that get_identifier returns the same values for the same scorer."""
     scorer = MockScorer()
@@ -1195,4 +1186,3 @@ def test_mock_float_scorer_get_identifier():
 
     assert identifier["__type__"] == "MockFloatScorer"
     assert "hash" in identifier
-    assert "version" in identifier

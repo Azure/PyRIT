@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.models import Message, Score
 from pyrit.score.scorer import Scorer
@@ -20,8 +20,6 @@ class TrueFalseScorer(Scorer):
     whether the response meets a specific criterion. Multiple pieces in a request response
     are aggregated using a TrueFalseAggregatorFunc function (default: TrueFalseScoreAggregator.OR).
     """
-
-    version: ClassVar[int] = 1
 
     def __init__(
         self,

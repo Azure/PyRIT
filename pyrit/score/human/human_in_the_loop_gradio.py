@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -20,7 +20,6 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     In the future this will not be a TrueFalseScorer. However, it is all that is supported currently.
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(

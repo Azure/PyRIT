@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -18,8 +18,6 @@ class QuestionAnswerScorer(TrueFalseScorer):
     """
     A class that represents a question answering scorer.
     """
-
-    version: ClassVar[int] = 1
 
     CORRECT_ANSWER_MATCHING_PATTERNS = ["{correct_answer_index}:", "{correct_answer}"]
 

@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
@@ -16,8 +16,6 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 class FloatScaleThresholdScorer(TrueFalseScorer):
     """A scorer that applies a threshold to a float scale score to make it a true/false score."""
-
-    version: ClassVar[int] = 1
 
     def __init__(
         self,

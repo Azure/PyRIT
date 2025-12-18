@@ -4,7 +4,7 @@
 import enum
 import logging
 from pathlib import Path
-from typing import ClassVar, Dict, Optional, Union
+from typing import Dict, Optional, Union
 
 import yaml
 
@@ -39,7 +39,6 @@ class SelfAskLikertScorer(FloatScaleScorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
@@ -98,23 +97,6 @@ class SelfAskLikertScorer(FloatScaleScorer):
         self._system_prompt = self._scoring_instructions_template.render_template_value(
             likert_scale=likert_scale_str, category=self._score_category
         )
-
-    def set_likert_scale_system_prompt(self, likert_scale_path: Path):
-        """
-        Public method to set the Likert scale to use for scoring.
-
-        Args:
-            likert_scale_path (Path): The path to the YAML file containing the Likert scale description.
-
-        Raises:
-            ValueError: If the Likert scale YAML file is improperly formatted.
-
-        Note:
-            This method also rebuilds the scorer identifier to reflect the new system prompt.
-        """
-        self._set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
-        # Rebuild the scorer identifier with the new system prompt
-        self._build_scorer_identifier()
 
     def _likert_scale_description_to_string(self, descriptions: list[Dict[str, str]]) -> str:
         """

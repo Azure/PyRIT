@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -22,7 +22,6 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
     meaning if any frame meets the objective, the entire video is scored as True).
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
 
     def __init__(

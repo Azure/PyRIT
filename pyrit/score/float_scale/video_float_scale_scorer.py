@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import ClassVar, List, Optional
+from typing import List, Optional
 
 from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
@@ -29,7 +29,6 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
     use FloatScaleScoreAggregator.MAX, FloatScaleScorerAllCategories.MAX, etc.
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
 
     def __init__(

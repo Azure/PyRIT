@@ -12,7 +12,6 @@ from abc import abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Dict,
     List,
     Optional,
@@ -57,9 +56,6 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
-    version: ClassVar[int] = 1
-    """The version of the scorer implementation. This should only be incremented when
-    the fundamental behavior of the scorer changes, which may impact scores."""
 
     _scorer_identifier: Optional[ScorerIdentifier] = None
 
@@ -110,23 +106,22 @@ class Scorer(abc.ABC):
         sub_identifier: Optional[List[ScorerIdentifier]] = None
         if sub_scorers:
             sub_identifier = [scorer.scorer_identifier for scorer in sub_scorers]
-        # Extract model_info from prompt_target
-        model_info: Optional[Dict[str, Any]] = None
+        # Extract target_info from prompt_target
+        target_info: Optional[Dict[str, Any]] = None
         if prompt_target:
             target_id = prompt_target.get_identifier()
             # Extract standard fields for scorer evaluation
-            model_info = {}
+            target_info = {}
             for key in ["__type__", "model_name", "temperature", "top_p", "custom_metadata"]:
                 if key in target_id:
-                    model_info[key] = target_id[key]
+                    target_info[key] = target_id[key]
 
         self._scorer_identifier = ScorerIdentifier(
             type=self.__class__.__name__,
-            version=self.version,
             system_prompt_template=system_prompt_template,
             user_prompt_template=user_prompt_template,
             sub_identifier=sub_identifier,
-            model_info=model_info,
+            target_info=target_info,
             score_aggregator=score_aggregator,
             scorer_specific_params=scorer_specific_params,
             pyrit_version=pyrit.__version__,
@@ -478,16 +473,12 @@ class Scorer(abc.ABC):
         Get an identifier dictionary for the scorer for database storage.
 
         Large fields (system_prompt_template, user_prompt_template) are shortened for compact storage.
-        The hash is computed via scorer_identifier.compute_hash() which uses the same
-        shortening logic to ensure consistency.
+        Includes the computed hash of the configuration.
 
         Returns:
-            dict: The identifier dictionary containing class type, version, configuration, and hash.
+            dict: The identifier dictionary containing configuration details and hash.
         """
-        sid = self.scorer_identifier
-        result = sid.to_compact_dict()
-        result["hash"] = sid.compute_hash()
-        return result
+        return self.scorer_identifier.to_compact_dict()
 
     @pyrit_json_retry
     async def _score_value_with_llm(

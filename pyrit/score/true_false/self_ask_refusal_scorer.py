@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
@@ -31,7 +31,6 @@ class SelfAskRefusalScorer(TrueFalseScorer):
     evaluating whether AI systems are appropriately refusing harmful requests.
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator()
 
     def __init__(

@@ -62,8 +62,8 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self.endpoint = endpoint
         self.model_id = model_id
         self.max_tokens = max_tokens
-        self.temperature = temperature
-        self.top_p = top_p
+        self._temperature = temperature
+        self._top_p = top_p
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
@@ -88,8 +88,8 @@ class HuggingFaceEndpointTarget(PromptTarget):
             "inputs": request.converted_value,
             "parameters": {
                 "max_tokens": self.max_tokens,
-                "temperature": self.temperature,
-                "top_p": self.top_p,
+                "temperature": self._temperature,
+                "top_p": self._top_p,
             },
         }
 
@@ -146,11 +146,3 @@ class HuggingFaceEndpointTarget(PromptTarget):
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return False
-
-    def get_identifier(self) -> dict:
-        public_attributes = super().get_identifier()
-        if self.temperature:
-            public_attributes["temperature"] = self.temperature
-        if self.top_p:
-            public_attributes["top_p"] = self.top_p
-        return public_attributes

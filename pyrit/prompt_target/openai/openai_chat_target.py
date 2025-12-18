@@ -419,11 +419,3 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
-
-    def get_identifier(self):
-        public_attributes = super().get_identifier()
-        if self._temperature:
-            public_attributes["temperature"] = self._temperature
-        if self._top_p:
-            public_attributes["top_p"] = self._top_p
-        return public_attributes

@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from typing import ClassVar, Optional, Union
+from typing import Optional, Union
 
 from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
@@ -19,7 +19,6 @@ class InsecureCodeScorer(FloatScaleScorer):
     Configuration is loaded from a YAML file for dynamic prompts and instructions.
     """
 
-    version: ClassVar[int] = 1
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
