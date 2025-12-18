@@ -83,7 +83,7 @@ class PlaywrightTarget(PromptTarget):
 
         Returns:
             list[Message]: A list containing the response from the prompt target.
-        
+
         Raises:
             RuntimeError: If the Playwright page is not initialized or if an error occurs during interaction.
         """

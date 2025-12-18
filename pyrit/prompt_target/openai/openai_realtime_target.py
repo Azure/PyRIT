@@ -292,7 +292,7 @@ class RealtimeTarget(OpenAITarget):
 
         Returns:
             list[Message]: A list containing the response from the prompt target.
-        
+
         Raises:
             ValueError: If the message piece type is unsupported.
         """
