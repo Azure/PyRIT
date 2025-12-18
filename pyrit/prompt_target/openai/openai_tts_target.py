@@ -22,6 +22,7 @@ TTSResponseFormat = Literal["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", 
 
 
 class OpenAITTSTarget(OpenAITarget):
+    """A prompt target for OpenAI Text-to-Speech (TTS) endpoints."""
 
     def __init__(
         self,

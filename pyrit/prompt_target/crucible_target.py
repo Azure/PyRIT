@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 class CrucibleTarget(PromptTarget):
+    """A prompt target for the Crucible service."""
+
     API_KEY_ENVIRONMENT_VARIABLE: str = "CRUCIBLE_API_KEY"
 
     def __init__(

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAICompletionTarget(OpenAITarget):
+    """A prompt target for OpenAI completion endpoints."""
 
     def __init__(
         self,

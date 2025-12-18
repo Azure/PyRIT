@@ -51,6 +51,15 @@ class RealtimeTargetResult:
 
 
 class RealtimeTarget(OpenAITarget):
+    """
+    A prompt target for Azure OpenAI Realtime API.
+
+    This class enables real-time audio communication with OpenAI models, supporting
+    voice input and output with configurable voice options.
+
+    Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
+    and https://platform.openai.com/docs/guides/realtime-websocket
+    """
 
     def __init__(
         self,
@@ -60,10 +69,7 @@ class RealtimeTarget(OpenAITarget):
         **kwargs,
     ) -> None:
         """
-        RealtimeTarget class for Azure OpenAI Realtime API.
-
-        Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
-        and https://platform.openai.com/docs/guides/realtime-websocket
+        Initialize the Realtime target with specified parameters.
 
         Args:
             model_name (str, Optional): The name of the model.

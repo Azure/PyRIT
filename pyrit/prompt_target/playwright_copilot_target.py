@@ -27,6 +27,8 @@ else:
 
 
 class CopilotType(Enum):
+    """Enumeration of Copilot interface types."""
+
     CONSUMER = "consumer"
     M365 = "m365"
 

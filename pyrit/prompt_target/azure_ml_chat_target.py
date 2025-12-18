@@ -26,6 +26,16 @@ logger = logging.getLogger(__name__)
 
 
 class AzureMLChatTarget(PromptChatTarget):
+    """
+    A prompt target for Azure Machine Learning chat endpoints.
+
+    This class works with most chat completion Instruct models deployed on Azure AI Machine Learning
+    Studio endpoints (including but not limited to: mistralai-Mixtral-8x7B-Instruct-v01,
+    mistralai-Mistral-7B-Instruct-v01, Phi-3.5-MoE-instruct, Phi-3-mini-4k-instruct,
+    Llama-3.2-3B-Instruct, and Meta-Llama-3.1-8B-Instruct).
+
+    Please create or adjust environment variables (endpoint and key) as needed for the model you are using.
+    """
 
     endpoint_uri_environment_variable: str = "AZURE_ML_MANAGED_ENDPOINT"
     api_key_environment_variable: str = "AZURE_ML_KEY"
@@ -44,11 +54,7 @@ class AzureMLChatTarget(PromptChatTarget):
         **param_kwargs,
     ) -> None:
         """
-        Initialize an instance of the AzureMLChatTarget class. This class works with most chat completion
-        Instruct models deployed on Azure AI Machine Learning Studio endpoints (including but not limited to:
-        mistralai-Mixtral-8x7B-Instruct-v01, mistralai-Mistral-7B-Instruct-v01, Phi-3.5-MoE-instruct,
-        Phi-3-mini-4k-instruct, Llama-3.2-3B-Instruct, and Meta-Llama-3.1-8B-Instruct).
-        Please create or adjust environment variables (endpoint and key) as needed for the model you are using.
+        Initialize an instance of the AzureMLChatTarget class.
 
         Args:
             endpoint (str, Optional): The endpoint URL for the deployed Azure ML model.
@@ -163,7 +169,7 @@ class AzureMLChatTarget(PromptChatTarget):
 
         Returns:
             list[Message]: A list containing the response from the prompt target.
-        
+
         Raises:
             EmptyResponseException: If the response from the chat is empty.
             RateLimitException: If the target rate limit is exceeded.

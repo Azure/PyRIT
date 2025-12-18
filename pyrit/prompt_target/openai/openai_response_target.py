@@ -42,6 +42,8 @@ ToolExecutor = Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
 
 
 class MessagePieceType(str, Enum):
+    """Enumeration of different types of message pieces."""
+
     MESSAGE = "message"
     REASONING = "reasoning"
     IMAGE_GENERATION_CALL = "image_generation_call"

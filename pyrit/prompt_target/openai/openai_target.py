@@ -38,6 +38,15 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAITarget(PromptChatTarget):
+    """
+    Abstract base class for OpenAI-based prompt targets.
+
+    This class provides common functionality for interacting with Azure and non-Azure OpenAI
+    endpoints, handling authentication, rate limiting, and request/response processing.
+
+    Read more about the various models here:
+    https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
+    """
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
@@ -58,11 +67,7 @@ class OpenAITarget(PromptChatTarget):
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
         """
-        Abstract class that initializes an Azure or non-Azure OpenAI chat target.
-
-        Read more about the various models here:
-        https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
-
+        Initialize an instance of OpenAITarget.
 
         Args:
             model_name (str, Optional): The name of the model.

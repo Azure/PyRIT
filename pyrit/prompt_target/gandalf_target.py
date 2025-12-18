@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class GandalfLevel(enum.Enum):
+    """
+    Enumeration of Gandalf challenge levels.
+
+    Each level represents a different difficulty of the Gandalf security challenge,
+    from baseline to the most advanced levels.
+    """
+
     LEVEL_1 = "baseline"
     LEVEL_2 = "do-not-tell"
     LEVEL_3 = "do-not-tell-and-block"
@@ -27,6 +34,7 @@ class GandalfLevel(enum.Enum):
 
 
 class GandalfTarget(PromptTarget):
+    """A prompt target for the Gandalf security challenge."""
 
     def __init__(
         self,

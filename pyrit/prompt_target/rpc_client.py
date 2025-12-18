@@ -25,6 +25,13 @@ class RPCClientStoppedException(RPCAppException):
 
 
 class RPCClient:
+    """
+    RPC client for remote procedure calls.
+
+    This class provides functionality for establishing and maintaining RPC connections,
+    handling message exchange, and managing connection lifecycle.
+    """
+
     def __init__(self, callback_disconnected: Optional[Callable] = None):
         """
         Initialize the RPC client.
