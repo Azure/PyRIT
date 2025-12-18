@@ -18,7 +18,7 @@ mypy:
 
 docs-build:
 	uv run jb build -W -v ./doc
-	python ./build_scripts/generate_rss.py
+	uv run python ./build_scripts/generate_rss.py
 
 # Because of import time, "auto" seemed to actually go slower than just using 4 processes
 unit-test:
