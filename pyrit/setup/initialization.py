@@ -45,13 +45,13 @@ def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]], *, sile
     # Validate env_files exist if they were provided
     if env_files is not None:
         if not silent:
-            print(f"Loading custom environment files: {[str(f) for f in env_files]}")
+            _print_msg(f"Loading custom environment files: {[str(f) for f in env_files]}", quiet=silent, log=True)
         for env_file in env_files:
             if not env_file.exists():
                 raise ValueError(f"Environment file not found: {env_file}")
 
     # By default load .env and .env.local from home directory of the package
-    if env_files is None:
+    else:
         default_files = []
         base_file = path.CONFIGURATION_DIRECTORY_PATH / ".env"
         local_file = path.CONFIGURATION_DIRECTORY_PATH / ".env.local"
@@ -63,17 +63,37 @@ def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]], *, sile
 
         if not silent:
             if default_files:
-                print(f"Found default environment files: {[str(f) for f in default_files]}")
+                _print_msg(
+                    f"Found default environment files: {[str(f) for f in default_files]}", quiet=silent, log=True
+                )
             else:
-                print("No default environment files found. Using system environment variables only.")
+                _print_msg(
+                    "No default environment files found. Using system environment variables only.",
+                    quiet=silent,
+                    log=True,
+                )
 
         env_files = default_files
 
     for env_file in env_files:
         dotenv.load_dotenv(env_file, override=True, interpolate=True)
-        logger.info(f"Loaded environment file: {env_file}")
         if not silent:
-            print(f"Loaded environment file: {env_file}")
+            _print_msg(f"Loaded environment file: {env_file}", quiet=silent, log=True)
+
+
+def _print_msg(message: str, quiet: bool, log: bool) -> None:
+    """
+    Print a standard initialization message unless quiet is True.
+
+    Args:
+        message (str): The message to print and/or log.
+        quiet (bool): If True, suppresses the initialization message.
+        log (bool): If True, logs the message using the logger.
+    """
+    if not quiet:
+        print(message)
+    if log:
+        logger.info(message)
 
 
 def _load_initializers_from_scripts(
