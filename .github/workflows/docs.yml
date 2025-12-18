@@ -49,7 +49,7 @@ jobs:
           **/uv.lock
 
     - name: Install PyRIT with uv
-      run: uv sync --extra dev
+      run: uv sync --extra dev --extra all
 
     # Build the book
     - name: Build the book
