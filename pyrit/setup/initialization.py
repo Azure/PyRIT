@@ -28,7 +28,7 @@ AZURE_SQL = "AzureSQL"
 MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
 
 
-def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]]) -> None:
+def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]], *, silent: bool = False) -> None:
     """
     Load environment files in the order they are provided.
     Later files override values from earlier files.
@@ -36,20 +36,22 @@ def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]]) -> None
     Args:
         env_files: Optional sequence of environment file paths. If None, loads default
             .env and .env.local from PyRIT home directory (only if they exist).
+        silent: If True, suppresses print statements about environment file loading.
+            Defaults to False.
 
     Raises:
         ValueError: If any provided env_files do not exist.
     """
     # Validate env_files exist if they were provided
     if env_files is not None:
-        logger.info(f"Loading custom environment files: {[str(f) for f in env_files]}")
+        if not silent:
+            print(f"Loading custom environment files: {[str(f) for f in env_files]}")
         for env_file in env_files:
             if not env_file.exists():
                 raise ValueError(f"Environment file not found: {env_file}")
 
     # By default load .env and .env.local from home directory of the package
     if env_files is None:
-        logger.info(f"Checking for default environment files in: {path.CONFIGURATION_DIRECTORY_PATH}")
         default_files = []
         base_file = path.CONFIGURATION_DIRECTORY_PATH / ".env"
         local_file = path.CONFIGURATION_DIRECTORY_PATH / ".env.local"
@@ -59,16 +61,19 @@ def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]]) -> None
         if local_file.exists():
             default_files.append(local_file)
 
-        if default_files:
-            logger.info(f"Found default environment files: {[str(f) for f in default_files]}")
-        else:
-            logger.info("No default environment files found. Using system environment variables only.")
+        if not silent:
+            if default_files:
+                print(f"Found default environment files: {[str(f) for f in default_files]}")
+            else:
+                print("No default environment files found. Using system environment variables only.")
 
         env_files = default_files
 
     for env_file in env_files:
         dotenv.load_dotenv(env_file, override=True, interpolate=True)
         logger.info(f"Loaded environment file: {env_file}")
+        if not silent:
+            print(f"Loaded environment file: {env_file}")
 
 
 def _load_initializers_from_scripts(
@@ -210,6 +215,7 @@ async def initialize_pyrit_async(
     initialization_scripts: Optional[Sequence[Union[str, pathlib.Path]]] = None,
     initializers: Optional[Sequence["PyRITInitializer"]] = None,
     env_files: Optional[Sequence[pathlib.Path]] = None,
+    silent: bool = False,
     **memory_instance_kwargs: Any,
 ) -> None:
     """
@@ -226,12 +232,14 @@ async def initialize_pyrit_async(
         env_files (Optional[Sequence[pathlib.Path]]): Optional sequence of environment file paths to load
             in order. If not provided, will load default .env and .env.local files from PyRIT home if they exist.
             All paths must be valid pathlib.Path objects.
+        silent (bool): If True, suppresses print statements about environment file loading.
+            Defaults to False.
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
 
     Raises:
         ValueError: If an unsupported memory_db_type is provided or if env_files contains non-existent files.
     """
-    _load_environment_files(env_files=env_files)
+    _load_environment_files(env_files=env_files, silent=silent)
 
     # Reset all default values before executing initialization scripts
     # This ensures a clean state for each initialization
