@@ -6,6 +6,7 @@ import re
 import pytest
 from unit.mocks import MockPromptTarget
 
+from pyrit.executor.promptgen.fuzzer import FuzzerConverter
 from pyrit.memory import CentralMemory, SQLiteMemory
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import (
@@ -28,7 +29,6 @@ from pyrit.prompt_converter import (
     DiacriticConverter,
     EmojiConverter,
     FlipConverter,
-    FuzzerConverter,
     HumanInTheLoopConverter,
     LeetspeakConverter,
     LLMGenericTextConverter,
