@@ -50,12 +50,12 @@ jobs:
 
     - name: Install PyRIT with uv
       run: uv sync --extra dev
+    - name: re-install feedgen
+      run: uv pip install feedgen
     # Build the book
     - name: Build the book
       run: |
         make docs-build
-    - name: verify packages
-      run: uv pip list
     # Upload the book's HTML as an artifact
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
