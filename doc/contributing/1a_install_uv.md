@@ -24,7 +24,7 @@ However, there are many reasons to install as a contributor. Yes, of course, if 
 
 - **Much faster** than pip (10-100x faster dependency resolution)
 - **Simpler** than conda/mamba for pure Python projects
-- **Native Windows support** - no WSL required
+- **Native Windows support** - no WSL required, although if using a devcontainer, WSL is recommended
 - **Automatic virtual environment management**
 - **Compatible with existing pyproject.toml**
 
@@ -66,7 +66,7 @@ uv sync --extra dev
 This command will:
 - Create a `.venv` directory with a virtual environment
 - Install Python 3.12 if not already available
-- Install PyRIT in editable mode
+- Install PyRIT in editable mode; `uv sync` by default installs in editable mode so no extra flag is necessary
 - Install all dependencies including dev tools (pytest, black, ruff, etc.)
 - Create a `uv.lock` file for reproducible builds
 
