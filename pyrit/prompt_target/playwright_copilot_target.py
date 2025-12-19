@@ -6,7 +6,7 @@ import logging
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Tuple, Union
 
 from pyrit.models import (
     Message,
@@ -58,8 +58,6 @@ class PlaywrightCopilotTarget(PromptTarget):
     Parameters:
         page (Page): The Playwright page object to use for interaction.
         copilot_type (CopilotType): The type of Copilot interface (Consumer or M365).
-        custom_metadata (Dict[str, Any], Optional): Custom metadata to associate with the target for identifier
-            purposes.
     """
 
     # Constants for timeouts and retry logic
@@ -100,14 +98,8 @@ class PlaywrightCopilotTarget(PromptTarget):
     # Login requirement message
     LOGIN_REQUIRED_HEADER: str = "Sign in for the full experience"
 
-    def __init__(
-        self,
-        *,
-        page: "Page",
-        copilot_type: CopilotType = CopilotType.CONSUMER,
-        custom_metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        super().__init__(custom_metadata=custom_metadata)
+    def __init__(self, *, page: "Page", copilot_type: CopilotType = CopilotType.CONSUMER) -> None:
+        super().__init__()
         self._page = page
         self._type = copilot_type
 

@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from httpx import HTTPStatusError
 
@@ -27,7 +27,6 @@ class CrucibleTarget(PromptTarget):
         endpoint: str,
         api_key: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the Crucible target.
@@ -39,14 +38,8 @@ class CrucibleTarget(PromptTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            custom_metadata (Optional[Dict[str, Any]]): Custom metadata to associate with the target for
-                identifier purposes.
         """
-        super().__init__(
-            max_requests_per_minute=max_requests_per_minute,
-            endpoint=endpoint,
-            custom_metadata=custom_metadata,
-        )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
 
         self._api_key: str = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key

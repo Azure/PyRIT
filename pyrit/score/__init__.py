@@ -47,10 +47,6 @@ from pyrit.score.scorer_evaluation.scorer_evaluator import (
     ScorerEvaluator,
     ScorerMetrics,
 )
-from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-    ScorerMetricsEntry,
-    ScorerMetricsRegistry,
-)
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
@@ -91,8 +87,6 @@ __all__ = [
     "InsecureCodeScorer",
     "LikertScalePaths",
     "MarkdownInjectionScorer",
-    "ScorerMetricsEntry",
-    "ScorerMetricsRegistry",
     "MetricsType",
     "ObjectiveHumanLabeledEntry",
     "ObjectiveScorerEvaluator",

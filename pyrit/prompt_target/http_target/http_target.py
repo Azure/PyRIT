@@ -34,8 +34,6 @@ class HTTPTarget(PromptTarget):
         use_tls: (bool): whether to use TLS or not. Default is True
         callback_function (function): function to parse HTTP response.
             These are the customizable functions which determine how to parse the output
-        custom_metadata (Dict[str, Any], Optional): Custom metadata to associate with the target for identifier
-            purposes.
         httpx_client_kwargs: (dict): additional keyword arguments to pass to the HTTP client
     """
 
@@ -48,7 +46,6 @@ class HTTPTarget(PromptTarget):
         max_requests_per_minute: Optional[int] = None,
         client: Optional[httpx.AsyncClient] = None,
         model_name: str = "",
-        custom_metadata: Optional[Dict[str, Any]] = None,
         **httpx_client_kwargs: Any,
     ) -> None:
         # Initialize attributes needed by parse_raw_http_request before calling it
@@ -59,12 +56,7 @@ class HTTPTarget(PromptTarget):
         # This will fail early if the http_request is malformed
         _, _, endpoint, _, _ = self.parse_raw_http_request(http_request)
 
-        super().__init__(
-            max_requests_per_minute=max_requests_per_minute,
-            endpoint=endpoint,
-            model_name=model_name,
-            custom_metadata=custom_metadata,
-        )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string

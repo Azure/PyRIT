@@ -34,13 +34,9 @@ class TrueFalseScorer(Scorer):
             validator (ScorerPromptValidator): Custom validator.
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
-
-        Note:
-            Subclasses should call super().__init__() at the END of their __init__ methods,
-            after setting all attributes needed for _build_scorer_identifier().
         """
-        self._score_aggregator = score_aggregator
         super().__init__(validator=validator)
+        self._score_aggregator = score_aggregator
 
     def validate_return_scores(self, scores: list[Score]):
         """

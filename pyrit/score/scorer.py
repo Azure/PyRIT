@@ -44,8 +44,7 @@ from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 if TYPE_CHECKING:
-    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
-    from pyrit.score.scorer_evaluation.scorer_metrics_registry import RegistryType
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +111,7 @@ class Scorer(abc.ABC):
             target_id = prompt_target.get_identifier()
             # Extract standard fields for scorer evaluation
             target_info = {}
-            for key in ["__type__", "model_name", "temperature", "top_p", "custom_metadata"]:
+            for key in ["__type__", "model_name", "temperature", "top_p"]:
                 if key in target_id:
                     target_info[key] = target_id[key]
 
@@ -289,35 +288,13 @@ class Scorer(abc.ABC):
         scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
         return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
 
-    def get_scorer_metrics_from_registry(
-        self, registry_type: Optional["RegistryType"] = None
-    ) -> Optional["ScorerMetrics"]:
-        """
-        Get scorer metrics from the registry based on this specific scorer configuration.
-
-        Args:
-            registry_type (Optional[RegistryType]): The type of registry to query (HARM or OBJECTIVE).
-
-        Returns:
-            Optional[ScorerMetrics]: The metrics for this scorer configuration, or None if not found.
-        """
-        from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-            ScorerMetricsRegistry,
-        )
-
-        registry = ScorerMetricsRegistry()
-        metrics = registry.get_scorer_registry_metrics_by_identifier(
-            scorer_identifier=self.scorer_identifier, registry_type=registry_type
-        )
-        return metrics
-
     async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given text based on the task using the chat target.
 
         Args:
             text (str): The text to be scored.
-            objective (str): The task based on which the text should be scored
+            objective (Optional[str]): The task based on which the text should be scored
 
         Returns:
             list[Score]: A list of Score objects representing the results.

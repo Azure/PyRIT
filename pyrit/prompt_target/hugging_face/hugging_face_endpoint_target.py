@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.models import Message, construct_response_from_request
@@ -30,7 +30,6 @@ class HuggingFaceEndpointTarget(PromptTarget):
         top_p: float = 1.0,
         max_requests_per_minute: Optional[int] = None,
         verbose: bool = False,
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
@@ -44,15 +43,12 @@ class HuggingFaceEndpointTarget(PromptTarget):
             top_p (float, Optional): The cumulative probability for nucleus sampling. Defaults to 1.0.
             max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
             verbose (bool, Optional): Flag to enable verbose logging. Defaults to False.
-            custom_metadata (Optional[Dict[str, Any]]): Custom metadata to associate with the target for identifier
-                purposes.
         """
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
             verbose=verbose,
             endpoint=endpoint,
             model_name=model_id,
-            custom_metadata=custom_metadata,
         )
 
         validate_temperature(temperature)

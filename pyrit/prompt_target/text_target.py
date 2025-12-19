@@ -5,7 +5,7 @@ import csv
 import json
 import sys
 from pathlib import Path
-from typing import IO, Any, Dict, Optional
+from typing import IO
 
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptTarget
@@ -24,9 +24,8 @@ class TextTarget(PromptTarget):
         self,
         *,
         text_stream: IO[str] = sys.stdout,
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        super().__init__(custom_metadata=custom_metadata)
+        super().__init__()
         self._text_stream = text_stream
 
     async def send_prompt_async(self, *, message: Message) -> list[Message]:

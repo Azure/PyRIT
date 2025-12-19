@@ -3,7 +3,7 @@
 
 import logging
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Optional
 from urllib.parse import urlparse
 
 from azure.core.exceptions import ClientAuthenticationError
@@ -42,8 +42,6 @@ class AzureBlobStorageTarget(PromptTarget):
         max_requests_per_minute (int, Optional): Number of requests the target can handle per
             minute before hitting a rate limit. The number of requests sent to the target
             will be capped at the value provided.
-        custom_metadata (Dict[str, Any], Optional): Custom metadata to associate with the target for identifier
-            purposes.
     """
 
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"
@@ -56,7 +54,6 @@ class AzureBlobStorageTarget(PromptTarget):
         sas_token: Optional[str] = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
         max_requests_per_minute: Optional[int] = None,
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
 
         self._blob_content_type: str = blob_content_type.value
@@ -68,11 +65,7 @@ class AzureBlobStorageTarget(PromptTarget):
         self._sas_token = sas_token
         self._client_async: AsyncContainerClient = None
 
-        super().__init__(
-            endpoint=self._container_url,
-            max_requests_per_minute=max_requests_per_minute,
-            custom_metadata=custom_metadata,
-        )
+        super().__init__(endpoint=self._container_url, max_requests_per_minute=max_requests_per_minute)
 
     async def _create_container_client_async(self) -> None:
         """

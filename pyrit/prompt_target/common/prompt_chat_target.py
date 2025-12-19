@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from pyrit.models import MessagePiece
 from pyrit.prompt_target import PromptTarget
@@ -25,14 +25,8 @@ class PromptChatTarget(PromptTarget):
         max_requests_per_minute: Optional[int] = None,
         endpoint: str = "",
         model_name: str = "",
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        super().__init__(
-            max_requests_per_minute=max_requests_per_minute,
-            endpoint=endpoint,
-            model_name=model_name,
-            custom_metadata=custom_metadata,
-        )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
 
     def set_system_prompt(
         self,
