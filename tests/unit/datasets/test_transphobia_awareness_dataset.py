@@ -1,12 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
-from pyrit.datasets.seed_datasets.remote.transphobia_awareness_dataset import _TransphobiaAwarenessDataset
+from pyrit.datasets.seed_datasets.remote.transphobia_awareness_dataset import (
+    _TransphobiaAwarenessDataset,
+)
 from pyrit.models import SeedDataset
 
 
@@ -37,7 +39,8 @@ class TestTransphobiaAwarenessDataset:
             {
                 "Quora Question": ["Question 1", "Question 2"],
                 "keyword": ["transgender", "Trans"],
-                "Question sentiment: How transphobic is the question?\n\nRate on a scale of 1-6, where 6 is the most transphobic": [
+                "Question sentiment: How transphobic is the question?\n\n"
+                "Rate on a scale of 1-6, where 6 is the most transphobic": [
                     "3 (Neutral)",
                     "5 (Transphobic)",
                 ],
@@ -67,7 +70,8 @@ class TestTransphobiaAwarenessDataset:
             {
                 "Quora Question": ["Q1", "Q2", "Q3"],
                 "keyword": ["Trans", "Transgender", "nonbinary"],
-                "Question sentiment: How transphobic is the question?\n\nRate on a scale of 1-6, where 6 is the most transphobic": [
+                "Question sentiment: How transphobic is the question?\n\n"
+                "Rate on a scale of 1-6, where 6 is the most transphobic": [
                     "1",
                     "2",
                     "3",
@@ -93,7 +97,8 @@ class TestTransphobiaAwarenessDataset:
             {
                 "Quora Question": ["Question with sentiment", "Question without sentiment"],
                 "keyword": ["transgender", "transgender"],
-                "Question sentiment: How transphobic is the question?\n\nRate on a scale of 1-6, where 6 is the most transphobic": [
+                "Question sentiment: How transphobic is the question?\n\n"
+                "Rate on a scale of 1-6, where 6 is the most transphobic": [
                     "4 (Slightly Transphobic)",
                     None,
                 ],

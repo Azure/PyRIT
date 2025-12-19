@@ -6,7 +6,9 @@ from typing import Any
 
 import pandas as pd
 
-from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import _RemoteDatasetLoader
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    _RemoteDatasetLoader,
+)
 from pyrit.models import SeedDataset, SeedPrompt
 
 logger = logging.getLogger(__name__)
