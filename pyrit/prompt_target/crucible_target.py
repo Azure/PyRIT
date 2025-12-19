@@ -59,7 +59,6 @@ class CrucibleTarget(PromptTarget):
             list[Message]: A list containing the response from the prompt target.
 
         Raises:
-            EmptyResponseException: If the response from the target is empty.
             HTTPStatusError: For any other HTTP errors during the process.
         """
         self._validate_request(message=message)
