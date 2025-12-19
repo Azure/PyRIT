@@ -1,6 +1,6 @@
-# 1. Local Installation with Conda/Python
+# Local Installation with Conda/Python
 
-### Prerequisite software
+## Prerequisite software
 
 This is a list of the prerequisites needed to run this library.
 
@@ -13,7 +13,7 @@ This is a list of the prerequisites needed to run this library.
 
 Note: PyRIT requires Python version 3.10, 3.11, 3.12, or 3.13. If using Conda, you'll set the environment to use this version. If running PyRIT outside of a python environment, make sure you have this version installed.
 
-### Installation with conda
+## Installation with conda
 
 This is a guide for how to install PyRIT into a `conda` environment.
 
@@ -76,7 +76,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    If you are having problems getting pip to install, try this link for details here: [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
 
 
-### Local Environment Setup
+## Local Environment Setup
 
 PyRIT is compatible with Windows, Linux, and MacOS.
 
