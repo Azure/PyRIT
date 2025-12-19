@@ -26,6 +26,14 @@ class PromptChatTarget(PromptTarget):
         endpoint: str = "",
         model_name: str = "",
     ) -> None:
+        """
+        Initialize the PromptChatTarget.
+
+        Args:
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+            endpoint (str): The endpoint URL. Defaults to empty string.
+            model_name (str): The model name. Defaults to empty string.
+        """
         super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
 
     def set_system_prompt(
@@ -37,7 +45,10 @@ class PromptChatTarget(PromptTarget):
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
-        Sets the system prompt for the prompt target. May be overridden by subclasses.
+        Set the system prompt for the prompt target. May be overridden by subclasses.
+
+        Raises:
+            RuntimeError: If the conversation already exists.
         """
         messages = self._memory.get_conversation(conversation_id=conversation_id)
 
@@ -68,7 +79,7 @@ class PromptChatTarget(PromptTarget):
 
     def is_response_format_json(self, message_piece: MessagePiece) -> bool:
         """
-        Checks if the response format is JSON and ensures the target supports it.
+        Check if the response format is JSON and ensure the target supports it.
 
         Args:
             message_piece: A MessagePiece object with a `prompt_metadata` dictionary that may

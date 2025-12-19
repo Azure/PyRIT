@@ -61,7 +61,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
-        Initializes the HuggingFaceChatTarget.
+        Initialize the HuggingFaceChatTarget.
 
         Args:
             model_id (Optional[str]): The Hugging Face model ID. Either model_id or model_path must be provided.
@@ -79,6 +79,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
             torch_dtype (Optional[torch.dtype]): Torch data type for model weights.
             attn_implementation (Optional[str]): Attention implementation type.
             max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
+
+        Raises:
+            ValueError: If neither or both of `model_id` and `model_path` are provided.
+            RuntimeError: If torch cannot be imported or if CUDA is requested but not available.
         """
         model_name = model_id if model_id else model_path if model_path else ""
 
@@ -131,7 +135,11 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     def _load_from_path(self, path: str, **kwargs):
         """
-        Helper function to load the model and tokenizer from a given path.
+        Load the model and tokenizer from a given path.
+
+        Args:
+            path: The path to load the model and tokenizer from.
+            **kwargs: Additional keyword arguments to pass to the model loader.
         """
         logger.info(f"Loading model and tokenizer from path: {path}...")
         self.tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=self.trust_remote_code)
@@ -140,7 +148,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
     def is_model_id_valid(self) -> bool:
         """
         Check if the HuggingFace model ID is valid.
-        :return: True if valid, False otherwise.
+
+        Returns:
+            bool: True if valid, False otherwise.
         """
         try:
             # Attempt to load the configuration of the model
@@ -152,7 +162,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     async def load_model_and_tokenizer(self):
         """
-        Loads the model and tokenizer, downloading if necessary.
+        Load the model and tokenizer, download if necessary.
 
         Downloads the model to the HF_MODELS_DIR folder if it does not exist,
         then loads it from there.
@@ -241,7 +251,14 @@ class HuggingFaceChatTarget(PromptChatTarget):
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
-        Sends a normalized prompt asynchronously to the HuggingFace model.
+        Send a normalized prompt asynchronously to the HuggingFace model.
+
+        Returns:
+            list[Message]: A list containing the response object with generated text pieces.
+
+        Raises:
+            EmptyResponseException: If the model generates an empty response.
+            Exception: If any error occurs during inference.
         """
         # Load the model and tokenizer using the encapsulated method
         await self.load_model_and_tokenizer_task
@@ -309,7 +326,16 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     def _apply_chat_template(self, messages):
         """
-        A private method to apply the chat template to the input messages and tokenize them.
+        Apply the chat template to the input messages and tokenize them.
+
+        Args:
+            messages: The input messages to apply the chat template to.
+
+        Returns:
+            dict: Tokenized inputs ready for the model.
+
+        Raises:
+            ValueError: If the tokenizer does not have a chat template.
         """
         # Check if the tokenizer has a chat template
         if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
@@ -334,7 +360,14 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the provided message.
+        Validate the provided message.
+
+        Args:
+            message: The message to validate.
+
+        Raises:
+            ValueError: If the message does not contain exactly one text piece.
+            ValueError: If the message piece is not of type text.
         """
         n_pieces = len(message.message_pieces)
         if n_pieces != 1:
@@ -345,12 +378,17 @@ class HuggingFaceChatTarget(PromptChatTarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """
+        Check if the target supports JSON as a response format.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return False
 
     @classmethod
     def enable_cache(cls):
-        """Enables the class-level cache."""
+        """Enable the class-level cache."""
         cls._cache_enabled = True
         logger.info("Class-level cache enabled.")
 
