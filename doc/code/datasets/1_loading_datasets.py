@@ -47,9 +47,9 @@ for dataset in datasets:
 
 # %%
 from pyrit.memory import CentralMemory
-from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit
+from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 memory = CentralMemory().get_memory_instance()
 await memory.add_seed_datasets_to_memory_async(datasets=datasets, added_by="pyrit")  # type: ignore

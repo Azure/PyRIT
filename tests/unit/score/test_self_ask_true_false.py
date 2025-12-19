@@ -93,7 +93,7 @@ async def test_self_ask_scorer_bad_json_exception_retries(patch_central_database
         chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
     )
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskTrueFalseScorer"):
         await scorer.score_text_async("this has no bullying")
 
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
@@ -120,7 +120,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
         chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
     )
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskTrueFalseScorer"):
         await scorer.score_text_async("this has no bullying")
 
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))

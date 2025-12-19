@@ -31,7 +31,7 @@ class OpenAIVideoTarget(OpenAITarget):
 
     Supported durations: 4, 8, or 12 seconds
 
-    Default: model="sora-2", resolution="1280x720", duration=4 seconds
+    Default: resolution="1280x720", duration=4 seconds
     """
 
     SUPPORTED_RESOLUTIONS = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
@@ -49,13 +49,13 @@ class OpenAIVideoTarget(OpenAITarget):
 
         Args:
             model_name (str, Optional): The video model to use (e.g., "sora-2", "sora-2-pro").
-                Defaults to "sora-2".
+                If no value is provided, the OPENAI_VIDEO_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str, Optional): The API key for accessing the service.
+            api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
+                or a callable that returns an access token. For Azure endpoints with Entra authentication,
+                pass a token provider from pyrit.auth (e.g., get_azure_openai_auth(endpoint)).
                 Uses OPENAI_VIDEO_KEY environment variable by default.
             headers (str, Optional): Extra headers of the endpoint (JSON).
-            use_entra_auth (bool, Optional): When set to True, user authentication is used
-                instead of API Key.
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit.
             resolution_dimensions (str, Optional): Resolution dimensions for the video in WIDTHxHEIGHT format.

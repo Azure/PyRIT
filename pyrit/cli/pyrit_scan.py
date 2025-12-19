@@ -31,15 +31,15 @@ Examples:
   pyrit_scan --list-initializers
 
   # Run a scenario with built-in initializers
-  pyrit_scan foundry_scenario --initializers openai_objective_target
+  pyrit_scan foundry_scenario --initializers openai_objective_target load_default_datasets
 
   # Run with custom initialization scripts
-  pyrit_scan encoding_scenario --initialization-scripts ./my_config.py
+  pyrit_scan garak.encoding_scenario --initialization-scripts ./my_config.py
 
-  # Run specific strategies
-  pyrit_scan encoding_scenario --initializers openai_objective_target --strategies base64 rot13
+  # Run specific strategies or options
+  pyrit scan foundry_scenario --strategies base64 rot13 --initializers openai_objective_target
   pyrit_scan foundry_scenario --initializers openai_objective_target --max-concurrency 10 --max-retries 3
-  pyrit_scan encoding_scenario --initializers openai_objective_target --memory-labels '{"run_id":"test123"}'
+  pyrit_scan garak.encoding_scenario --initializers openai_objective_target --memory-labels '{"run_id":"test123"}'
 """,
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -158,14 +158,14 @@ def main(args=None) -> int:
             log_level=parsed_args.log_level,
         )
 
-        return frontend_core.print_scenarios_list(context=context)
+        return asyncio.run(frontend_core.print_scenarios_list_async(context=context))
 
     if parsed_args.list_initializers:
         # Discover from scenarios directory
         scenarios_path = frontend_core.get_default_initializer_discovery_path()
 
         context = frontend_core.FrontendCore(log_level=parsed_args.log_level)
-        return frontend_core.print_initializers_list(context=context, discovery_path=scenarios_path)
+        return asyncio.run(frontend_core.print_initializers_list_async(context=context, discovery_path=scenarios_path))
 
     # Verify scenario was provided
     if not parsed_args.scenario_name:

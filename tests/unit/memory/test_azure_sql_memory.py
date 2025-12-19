@@ -111,9 +111,9 @@ def test_disable_embedding(memory_interface: AzureSQLMemory):
 
 
 def test_default_enable_embedding(memory_interface: AzureSQLMemory):
-    os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = "mock_key"
-    os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = "embedding"
-    os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"] = "deployment"
+    os.environ["OPENAI_EMBEDDING_KEY"] = "mock_key"
+    os.environ["OPENAI_EMBEDDING_ENDPOINT"] = "embedding"
+    os.environ["OPENAI_EMBEDDING_MODEL"] = "deployment"
 
     memory_interface.enable_embedding()
 
@@ -123,9 +123,9 @@ def test_default_enable_embedding(memory_interface: AzureSQLMemory):
 
 
 def test_default_embedding_raises(memory_interface: AzureSQLMemory):
-    os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = ""
-    os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = ""
-    os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"] = ""
+    os.environ["OPENAI_EMBEDDING_KEY"] = ""
+    os.environ["OPENAI_EMBEDDING_ENDPOINT"] = ""
+    os.environ["OPENAI_EMBEDDING_MODEL"] = ""
 
     with pytest.raises(ValueError):
         memory_interface.enable_embedding()

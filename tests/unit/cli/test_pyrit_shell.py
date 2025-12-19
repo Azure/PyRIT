@@ -6,7 +6,7 @@ Unit tests for the pyrit_shell CLI module.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.cli import pyrit_shell
 
@@ -19,7 +19,7 @@ class TestPyRITShell:
         mock_context = MagicMock()
         mock_context._database = "SQLite"
         mock_context._log_level = "WARNING"
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -29,12 +29,12 @@ class TestPyRITShell:
         assert shell._scenario_history == []
         # Initialize is called in a background thread, so we need to wait for it
         shell._init_complete.wait(timeout=2)
-        mock_context.initialize.assert_called_once()
+        mock_context.initialize_async.assert_called_once()
 
     def test_prompt_and_intro(self):
         """Test shell prompt and intro are set."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -42,22 +42,22 @@ class TestPyRITShell:
         assert shell.intro is not None
         assert "Interactive Shell" in str(shell.intro)
 
-    @patch("pyrit.cli.frontend_core.print_scenarios_list")
-    def test_do_list_scenarios(self, mock_print_scenarios: MagicMock):
+    @patch("pyrit.cli.frontend_core.print_scenarios_list_async", new_callable=AsyncMock)
+    def test_do_list_scenarios(self, mock_print_scenarios: AsyncMock):
         """Test do_list_scenarios command."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_list_scenarios("")
 
         mock_print_scenarios.assert_called_once_with(context=mock_context)
 
-    @patch("pyrit.cli.frontend_core.print_scenarios_list")
-    def test_do_list_scenarios_with_exception(self, mock_print_scenarios: MagicMock, capsys):
+    @patch("pyrit.cli.frontend_core.print_scenarios_list_async", new_callable=AsyncMock)
+    def test_do_list_scenarios_with_exception(self, mock_print_scenarios: AsyncMock, capsys):
         """Test do_list_scenarios handles exceptions."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
         mock_print_scenarios.side_effect = ValueError("Test error")
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
@@ -66,22 +66,25 @@ class TestPyRITShell:
         captured = capsys.readouterr()
         assert "Error listing scenarios" in captured.out
 
-    @patch("pyrit.cli.frontend_core.print_initializers_list")
-    def test_do_list_initializers(self, mock_print_initializers: MagicMock):
+    @patch("pyrit.cli.frontend_core.get_default_initializer_discovery_path")
+    @patch("pyrit.cli.frontend_core.print_initializers_list_async", new_callable=AsyncMock)
+    def test_do_list_initializers(self, mock_print_initializers: AsyncMock, mock_get_path: MagicMock):
         """Test do_list_initializers command."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
+        mock_path = Path("/test/path")
+        mock_get_path.return_value = mock_path
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_list_initializers("")
 
-        mock_print_initializers.assert_called_once_with(context=mock_context, discovery_path=None)
+        mock_print_initializers.assert_called_once_with(context=mock_context, discovery_path=mock_path)
 
-    @patch("pyrit.cli.frontend_core.print_initializers_list")
-    def test_do_list_initializers_with_path(self, mock_print_initializers: MagicMock):
+    @patch("pyrit.cli.frontend_core.print_initializers_list_async", new_callable=AsyncMock)
+    def test_do_list_initializers_with_path(self, mock_print_initializers: AsyncMock):
         """Test do_list_initializers with custom path."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_list_initializers("/custom/path")
@@ -90,11 +93,11 @@ class TestPyRITShell:
         call_kwargs = mock_print_initializers.call_args[1]
         assert isinstance(call_kwargs["discovery_path"], Path)
 
-    @patch("pyrit.cli.frontend_core.print_initializers_list")
-    def test_do_list_initializers_with_exception(self, mock_print_initializers: MagicMock, capsys):
+    @patch("pyrit.cli.frontend_core.print_initializers_list_async", new_callable=AsyncMock)
+    def test_do_list_initializers_with_exception(self, mock_print_initializers: AsyncMock, capsys):
         """Test do_list_initializers handles exceptions."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
         mock_print_initializers.side_effect = ValueError("Test error")
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
@@ -106,7 +109,7 @@ class TestPyRITShell:
     def test_do_run_empty_line(self, capsys):
         """Test do_run with empty line."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_run("")
@@ -115,12 +118,12 @@ class TestPyRITShell:
         assert "Specify a scenario name" in captured.out
 
     @patch("pyrit.cli.pyrit_shell.asyncio.run")
-    @patch("pyrit.cli.frontend_core.run_scenario_async")
+    @patch("pyrit.cli.frontend_core.run_scenario_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.parse_run_arguments")
     def test_do_run_basic_scenario(
         self,
         mock_parse_args: MagicMock,
-        mock_run_scenario: MagicMock,
+        mock_run_scenario: AsyncMock,
         mock_asyncio_run: MagicMock,
     ):
         """Test do_run with basic scenario."""
@@ -129,7 +132,7 @@ class TestPyRITShell:
         mock_context._log_level = "WARNING"
         mock_context._scenario_registry = MagicMock()
         mock_context._initializer_registry = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         mock_parse_args.return_value = {
             "scenario_name": "test_scenario",
@@ -144,13 +147,14 @@ class TestPyRITShell:
         }
 
         mock_result = MagicMock()
-        mock_asyncio_run.return_value = mock_result
+        # First call is background init, second call is the actual test
+        mock_asyncio_run.side_effect = [None, mock_result]
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_run("test_scenario --initializers test_init")
 
         mock_parse_args.assert_called_once()
-        mock_asyncio_run.assert_called_once()
+        assert mock_asyncio_run.call_count == 2
 
         # Verify result was stored in history
         assert len(shell._scenario_history) == 1
@@ -161,7 +165,7 @@ class TestPyRITShell:
     def test_do_run_parse_error(self, mock_parse_args: MagicMock, capsys):
         """Test do_run with parse error."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
         mock_parse_args.side_effect = ValueError("Parse error")
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
@@ -171,14 +175,14 @@ class TestPyRITShell:
         assert "Error: Parse error" in captured.out
 
     @patch("pyrit.cli.pyrit_shell.asyncio.run")
-    @patch("pyrit.cli.frontend_core.run_scenario_async")
+    @patch("pyrit.cli.frontend_core.run_scenario_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.parse_run_arguments")
     @patch("pyrit.cli.frontend_core.resolve_initialization_scripts")
     def test_do_run_with_initialization_scripts(
         self,
         mock_resolve_scripts: MagicMock,
         mock_parse_args: MagicMock,
-        mock_run_scenario: MagicMock,
+        mock_run_scenario: AsyncMock,
         mock_asyncio_run: MagicMock,
     ):
         """Test do_run with initialization scripts."""
@@ -187,7 +191,7 @@ class TestPyRITShell:
         mock_context._log_level = "WARNING"
         mock_context._scenario_registry = MagicMock()
         mock_context._initializer_registry = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         mock_parse_args.return_value = {
             "scenario_name": "test_scenario",
@@ -202,13 +206,14 @@ class TestPyRITShell:
         }
 
         mock_resolve_scripts.return_value = [Path("/test/script.py")]
-        mock_asyncio_run.return_value = MagicMock()
+        # First call is background init, second call is the actual test
+        mock_asyncio_run.side_effect = [None, MagicMock()]
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_run("test_scenario --initialization-scripts script.py")
 
         mock_resolve_scripts.assert_called_once_with(script_paths=["script.py"])
-        mock_asyncio_run.assert_called_once()
+        assert mock_asyncio_run.call_count == 2
 
     @patch("pyrit.cli.frontend_core.parse_run_arguments")
     @patch("pyrit.cli.frontend_core.resolve_initialization_scripts")
@@ -220,7 +225,7 @@ class TestPyRITShell:
     ):
         """Test do_run with missing initialization script."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         mock_parse_args.return_value = {
             "scenario_name": "test_scenario",
@@ -255,7 +260,7 @@ class TestPyRITShell:
         mock_context._log_level = "WARNING"
         mock_context._scenario_registry = MagicMock()
         mock_context._initializer_registry = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         mock_parse_args.return_value = {
             "scenario_name": "test_scenario",
@@ -269,7 +274,8 @@ class TestPyRITShell:
             "log_level": None,
         }
 
-        mock_asyncio_run.return_value = MagicMock()
+        # First call is background init, second call is the actual test
+        mock_asyncio_run.side_effect = [None, MagicMock()]
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -294,7 +300,7 @@ class TestPyRITShell:
         mock_context._log_level = "WARNING"
         mock_context._scenario_registry = MagicMock()
         mock_context._initializer_registry = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         mock_parse_args.return_value = {
             "scenario_name": "test_scenario",
@@ -308,7 +314,8 @@ class TestPyRITShell:
             "log_level": None,
         }
 
-        mock_asyncio_run.side_effect = ValueError("Test error")
+        # First call succeeds (background init), second call raises error (the actual test)
+        mock_asyncio_run.side_effect = [None, ValueError("Test error")]
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_run("test_scenario --initializers test_init")
@@ -319,7 +326,7 @@ class TestPyRITShell:
     def test_do_scenario_history_empty(self, capsys):
         """Test do_scenario_history with no history."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_scenario_history("")
@@ -330,7 +337,7 @@ class TestPyRITShell:
     def test_do_scenario_history_with_runs(self, capsys):
         """Test do_scenario_history with scenario runs."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell._scenario_history = [
@@ -349,7 +356,7 @@ class TestPyRITShell:
     def test_do_print_scenario_empty(self, capsys):
         """Test do_print_scenario with no history."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.do_print_scenario("")
@@ -367,7 +374,7 @@ class TestPyRITShell:
     ):
         """Test do_print_scenario without argument prints all."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
         mock_printer = MagicMock()
         mock_printer_class.return_value = mock_printer
 
@@ -381,7 +388,8 @@ class TestPyRITShell:
 
         captured = capsys.readouterr()
         assert "Printing all scenario results" in captured.out
-        assert mock_asyncio_run.call_count == 2
+        # 1 background init + 2 print calls
+        assert mock_asyncio_run.call_count == 3
 
     @patch("pyrit.cli.pyrit_shell.asyncio.run")
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
@@ -393,7 +401,7 @@ class TestPyRITShell:
     ):
         """Test do_print_scenario with specific scenario number."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
         mock_printer = MagicMock()
         mock_printer_class.return_value = mock_printer
 
@@ -407,12 +415,13 @@ class TestPyRITShell:
 
         captured = capsys.readouterr()
         assert "Scenario Run #1" in captured.out
-        assert mock_asyncio_run.call_count == 1
+        # 1 background init + 1 print call
+        assert mock_asyncio_run.call_count == 2
 
     def test_do_print_scenario_invalid_number(self, capsys):
         """Test do_print_scenario with invalid scenario number."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell._scenario_history = [
@@ -427,7 +436,7 @@ class TestPyRITShell:
     def test_do_print_scenario_non_integer(self, capsys):
         """Test do_print_scenario with non-integer argument."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell._scenario_history = [
@@ -442,7 +451,7 @@ class TestPyRITShell:
     def test_do_help_without_arg(self, capsys):
         """Test do_help without argument."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -455,7 +464,7 @@ class TestPyRITShell:
     def test_do_help_with_arg(self):
         """Test do_help with specific command."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -466,7 +475,7 @@ class TestPyRITShell:
     def test_do_exit(self, capsys):
         """Test do_exit command."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         result = shell.do_exit("")
@@ -478,7 +487,7 @@ class TestPyRITShell:
     def test_do_quit_alias(self):
         """Test do_quit is alias for do_exit."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -487,7 +496,7 @@ class TestPyRITShell:
     def test_do_q_alias(self):
         """Test do_q is alias for do_exit."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -496,7 +505,7 @@ class TestPyRITShell:
     def test_do_eof_alias(self):
         """Test do_EOF is alias for do_exit."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -506,7 +515,7 @@ class TestPyRITShell:
     def test_do_clear_windows(self, mock_system: MagicMock):
         """Test do_clear on Windows."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -518,7 +527,7 @@ class TestPyRITShell:
     def test_do_clear_unix(self, mock_system: MagicMock):
         """Test do_clear on Unix."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -529,7 +538,7 @@ class TestPyRITShell:
     def test_emptyline(self):
         """Test emptyline doesn't repeat last command."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         result = shell.emptyline()
@@ -539,7 +548,7 @@ class TestPyRITShell:
     def test_default_with_hyphen_to_underscore(self):
         """Test default converts hyphens to underscores."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -553,7 +562,7 @@ class TestPyRITShell:
     def test_default_unknown_command(self, capsys):
         """Test default with unknown command."""
         mock_context = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
         shell.default("unknown_command")
@@ -668,7 +677,7 @@ class TestPyRITShellRunCommand:
         mock_context._log_level = "WARNING"
         mock_context._scenario_registry = MagicMock()
         mock_context._initializer_registry = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         mock_parse_args.return_value = {
             "scenario_name": "test_scenario",
@@ -682,7 +691,8 @@ class TestPyRITShellRunCommand:
             "log_level": "DEBUG",
         }
 
-        mock_asyncio_run.return_value = MagicMock()
+        # First call is background init, second call is the actual test
+        mock_asyncio_run.side_effect = [None, MagicMock()]
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
@@ -692,7 +702,7 @@ class TestPyRITShellRunCommand:
 
                 # Verify run_scenario_async was called with correct args
                 # (it's called via asyncio.run, so check the mock_asyncio_run call)
-                assert mock_asyncio_run.call_count == 1
+                assert mock_asyncio_run.call_count == 2
 
     @patch("pyrit.cli.pyrit_shell.asyncio.run")
     @patch("pyrit.cli.frontend_core.parse_run_arguments")
@@ -707,7 +717,7 @@ class TestPyRITShellRunCommand:
         mock_context._log_level = "WARNING"
         mock_context._scenario_registry = MagicMock()
         mock_context._initializer_registry = MagicMock()
-        mock_context.initialize = MagicMock()
+        mock_context.initialize_async = AsyncMock()
 
         mock_parse_args.return_value = {
             "scenario_name": "test_scenario",
@@ -723,7 +733,8 @@ class TestPyRITShellRunCommand:
 
         mock_result1 = MagicMock()
         mock_result2 = MagicMock()
-        mock_asyncio_run.side_effect = [mock_result1, mock_result2]
+        # First call is background init, then two actual test calls
+        mock_asyncio_run.side_effect = [None, mock_result1, mock_result2]
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 

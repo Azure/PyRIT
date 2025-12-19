@@ -14,7 +14,6 @@ import asyncio
 import cmd
 import sys
 import threading
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -53,34 +52,34 @@ class PyRITShell(cmd.Cmd):
     """
 
     intro = """
-╔════════════════════════════════════════════════════════════════════════╗
-║                                                                        ║
-║             ██████╗ ██╗   ██╗██████╗ ██╗████████╗                      ║
-║             ██╔══██╗╚██╗ ██╔╝██╔══██╗██║╚══██╔══╝                      ║
-║             ██████╔╝ ╚████╔╝ ██████╔╝██║   ██║                         ║
-║             ██╔═══╝   ╚██╔╝  ██╔══██╗██║   ██║                         ║
-║             ██║        ██║   ██║  ██║██║   ██║                         ║
-║             ╚═╝        ╚═╝   ╚═╝  ╚═╝╚═╝   ╚═╝                         ║
-║                                                                        ║
-║              Python Risk Identification Tool                           ║
-║                    Interactive Shell                                   ║
-║                                                                        ║
-╠════════════════════════════════════════════════════════════════════════╣
-║                                                                        ║
-║  Commands:                                                             ║
-║    • list-scenarios        - See all available scenarios               ║
-║    • list-initializers     - See all available initializers            ║
-║    • run <scenario> [opts] - Execute a security scenario               ║
-║    • scenario-history      - View your session history                 ║
-║    • print-scenario [N]    - Display detailed results                  ║
-║    • help [command]        - Get help on any command                   ║
-║    • exit                  - Quit the shell                            ║
-║                                                                        ║
-║  Quick Start:                                                          ║
-║    pyrit> list-scenarios                                               ║
-║    pyrit> run foundry_scenario --initializers openai_objective_target  ║
-║                                                                        ║
-╚════════════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                              ║
+║                       ██████╗ ██╗   ██╗██████╗ ██╗████████╗                                  ║
+║                       ██╔══██╗╚██╗ ██╔╝██╔══██╗██║╚══██╔══╝                                  ║
+║                       ██████╔╝ ╚████╔╝ ██████╔╝██║   ██║                                     ║
+║                       ██╔═══╝   ╚██╔╝  ██╔══██╗██║   ██║                                     ║
+║                       ██║        ██║   ██║  ██║██║   ██║                                     ║
+║                       ╚═╝        ╚═╝   ╚═╝  ╚═╝╚═╝   ╚═╝                                     ║
+║                                                                                              ║
+║                          Python Risk Identification Tool                                     ║
+║                                Interactive Shell                                             ║
+║                                                                                              ║
+╠══════════════════════════════════════════════════════════════════════════════════════════════╣
+║                                                                                              ║
+║  Commands:                                                                                   ║
+║    • list-scenarios        - See all available scenarios                                     ║
+║    • list-initializers     - See all available initializers                                  ║
+║    • run <scenario> [opts] - Execute a security scenario                                     ║
+║    • scenario-history      - View your session history                                       ║
+║    • print-scenario [N]    - Display detailed results                                        ║
+║    • help [command]        - Get help on any command                                         ║
+║    • exit                  - Quit the shell                                                  ║
+║                                                                                              ║
+║  Quick Start:                                                                                ║
+║    pyrit> list-scenarios                                                                     ║
+║    pyrit> run foundry_scenario --initializers openai_objective_target load_default_datasets  ║
+║                                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════╝
 """
     prompt = "pyrit> "
 
@@ -109,9 +108,9 @@ class PyRITShell(cmd.Cmd):
 
     def _background_init(self):
         """Initialize PyRIT modules in the background. This dramatically speeds up shell startup."""
-        print("Loading PyRIT modules...")
-        sys.stdout.flush()
-        self.context.initialize()
+        import asyncio
+
+        asyncio.run(self.context.initialize_async())
         self._init_complete.set()
 
     def _ensure_initialized(self):
@@ -125,7 +124,7 @@ class PyRITShell(cmd.Cmd):
         """List all available scenarios."""
         self._ensure_initialized()
         try:
-            frontend_core.print_scenarios_list(context=self.context)
+            asyncio.run(frontend_core.print_scenarios_list_async(context=self.context))
         except Exception as e:
             print(f"Error listing scenarios: {e}")
 
@@ -133,9 +132,11 @@ class PyRITShell(cmd.Cmd):
         """List all available initializers."""
         self._ensure_initialized()
         try:
-            # Parse optional path argument
-            discovery_path = Path(arg.strip()) if arg.strip() else None
-            frontend_core.print_initializers_list(context=self.context, discovery_path=discovery_path)
+            # Discover from scenarios directory by default (same as scan)
+            discovery_path = frontend_core.get_default_initializer_discovery_path()
+            asyncio.run(
+                frontend_core.print_initializers_list_async(context=self.context, discovery_path=discovery_path)
+            )
         except Exception as e:
             print(f"Error listing initializers: {e}")
 
@@ -157,12 +158,12 @@ class PyRITShell(cmd.Cmd):
             --log-level <level>             Override default log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
         Examples:
-            run encoding_scenario --initializers openai_objective_target
-            run encoding_scenario --initializers custom_target --strategies base64 rot13
-            run foundry_scenario --initializers openai_objective_target --max-concurrency 10 --max-retries 3
-            run encoding_scenario --initializers custom_target --memory-labels '{"run_id":"test123","env":"dev"}'
-            run foundry_scenario --initializers openai_objective_target -s jailbreak crescendo
-            run encoding_scenario --initializers openai_objective_target --database InMemory --log-level DEBUG
+            run garak.encoding_scenario --initializers openai_objective_target load_default_datasets
+            run garak.encoding_scenario --initializers custom_target load_default_datasets --strategies base64 rot13
+            run foundry_scenario --initializers openai_objective_target load_default_datasets --max-concurrency 10 --max-retries 3
+            run garak.encoding_scenario --initializers custom_target load_default_datasets --memory-labels '{"run_id":"test123","env":"dev"}'
+            run foundry_scenario --initializers openai_objective_target load_default_datasets -s jailbreak crescendo
+            run garak.encoding_scenario --initializers openai_objective_target load_default_datasets --database InMemory --log-level DEBUG
             run foundry_scenario --initialization-scripts ./my_custom_init.py -s all
 
         Note:
@@ -191,7 +192,7 @@ class PyRITShell(cmd.Cmd):
                 f"  --log-level <level>             Override default log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
             )
             print("\nExample:")
-            print("  run foundry_scenario --initializers openai_objective_target")
+            print("  run foundry_scenario --initializers openai_objective_target load_default_datasets")
             print("\nType 'help run' for more details and examples")
             return
 
@@ -346,7 +347,7 @@ class PyRITShell(cmd.Cmd):
             print("  --initializers <name> [<name> ...]  (REQUIRED)")
             print(f"      {frontend_core.ARG_HELP['initializers']}")
             print("      Every scenario requires at least one initializer")
-            print("      Example: run foundry_scenario --initializers openai_objective_target")
+            print("      Example: run foundry_scenario --initializers openai_objective_target load_default_datasets")
             print()
             print("  --initialization-scripts <path> [<path> ...]  (Alternative to --initializers)")
             print(f"      {frontend_core.ARG_HELP['initialization_scripts']}")
@@ -354,7 +355,7 @@ class PyRITShell(cmd.Cmd):
             print()
             print("  --strategies, -s <s1> [<s2> ...]")
             print(f"      {frontend_core.ARG_HELP['scenario_strategies']}")
-            print("      Example: run encoding_scenario --strategies base64 rot13")
+            print("      Example: run garak.encoding_scenario --strategies base64 rot13")
             print()
             print("  --max-concurrency <N>")
             print(f"      {frontend_core.ARG_HELP['max_concurrency']}")

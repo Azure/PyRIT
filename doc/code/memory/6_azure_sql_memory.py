@@ -40,9 +40,9 @@
 
 # %%
 from pyrit.memory import CentralMemory
-from pyrit.setup import AZURE_SQL, initialize_pyrit
+from pyrit.setup import AZURE_SQL, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=AZURE_SQL)
+await initialize_pyrit_async(memory_db_type=AZURE_SQL)  # type: ignore
 
 memory = CentralMemory.get_memory_instance()
 memory.print_schema()  # type: ignore

@@ -40,9 +40,9 @@ from pyrit.executor.attack import (
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import CopilotType, OpenAIChatTarget, PlaywrightCopilotTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit
+from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # %% [markdown]
 # ## Connecting to an Existing Browser Session
