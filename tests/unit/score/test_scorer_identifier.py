@@ -348,3 +348,258 @@ class TestScorerIdentifierPyritVersion:
         assert identifier.pyrit_version == "0.0.1-test"
         result = identifier.to_compact_dict()
         assert result["pyrit_version"] == "0.0.1-test"
+
+
+class TestScorerSubclassIdentifiers:
+    """Test that scorer subclasses correctly build their identifiers."""
+
+    def test_true_false_composite_scorer_identifier(self, patch_central_database):
+        """Test TrueFalseCompositeScorer builds identifier with sub-scorers and aggregator."""
+        from unittest.mock import MagicMock
+
+        from pyrit.score import (
+            TrueFalseCompositeScorer,
+            TrueFalseScoreAggregator,
+            TrueFalseScorer,
+        )
+
+        # Create mock sub-scorers
+        mock_scorer1 = MagicMock(spec=TrueFalseScorer)
+        mock_scorer1.scorer_identifier = ScorerIdentifier(type="MockScorer1")
+
+        mock_scorer2 = MagicMock(spec=TrueFalseScorer)
+        mock_scorer2.scorer_identifier = ScorerIdentifier(type="MockScorer2")
+
+        # Create composite scorer
+        composite = TrueFalseCompositeScorer(
+            aggregator=TrueFalseScoreAggregator.AND,
+            scorers=[mock_scorer1, mock_scorer2],
+        )
+
+        identifier = composite.scorer_identifier
+
+        assert identifier.type == "TrueFalseCompositeScorer"
+        assert identifier.score_aggregator == "AND_"
+        assert identifier.sub_identifier is not None
+        assert len(identifier.sub_identifier) == 2
+        assert identifier.sub_identifier[0].type == "MockScorer1"
+        assert identifier.sub_identifier[1].type == "MockScorer2"
+        # No system prompt or target for composite scorer
+        assert identifier.system_prompt_template is None
+        assert identifier.target_info is None
+
+    def test_float_scale_threshold_scorer_identifier(self, patch_central_database):
+        """Test FloatScaleThresholdScorer builds identifier with sub-scorer and threshold."""
+        from unittest.mock import MagicMock, PropertyMock
+
+        from pyrit.score import FloatScaleScoreAggregator, FloatScaleThresholdScorer
+
+        # Create mock float scale scorer
+        mock_scorer = MagicMock()
+        mock_scorer.scorer_identifier = ScorerIdentifier(type="MockFloatScorer")
+        type(mock_scorer).scorer_identifier = PropertyMock(return_value=ScorerIdentifier(type="MockFloatScorer"))
+
+        threshold_scorer = FloatScaleThresholdScorer(
+            scorer=mock_scorer,
+            threshold=0.7,
+            float_scale_aggregator=FloatScaleScoreAggregator.MAX,
+        )
+
+        identifier = threshold_scorer.scorer_identifier
+
+        assert identifier.type == "FloatScaleThresholdScorer"
+        assert identifier.sub_identifier is not None
+        assert len(identifier.sub_identifier) == 1
+        assert identifier.sub_identifier[0].type == "MockFloatScorer"
+        assert identifier.scorer_specific_params is not None
+        assert identifier.scorer_specific_params["threshold"] == 0.7
+        assert identifier.scorer_specific_params["float_scale_aggregator"] == "MAX_"
+
+    def test_self_ask_true_false_scorer_identifier(self, patch_central_database):
+        """Test SelfAskTrueFalseScorer builds identifier with system prompt and target."""
+        from unittest.mock import MagicMock
+
+        from pyrit.prompt_target import PromptChatTarget
+        from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+
+        # Create mock chat target
+        mock_target = MagicMock(spec=PromptChatTarget)
+        mock_target.get_identifier.return_value = {
+            "__type__": "MockChatTarget",
+            "model_name": "gpt-4",
+            "temperature": 0.7,
+            "top_p": 0.9,
+        }
+
+        scorer = SelfAskTrueFalseScorer(
+            chat_target=mock_target,
+            true_false_question=TrueFalseQuestion(
+                true_description="Response contains harmful content",
+                false_description="Response is safe",
+                category="harm",
+            ),
+        )
+
+        identifier = scorer.scorer_identifier
+
+        assert identifier.type == "SelfAskTrueFalseScorer"
+        assert identifier.system_prompt_template is not None
+        assert "harmful content" in identifier.system_prompt_template
+        assert identifier.target_info is not None
+        assert identifier.target_info["__type__"] == "MockChatTarget"
+        assert identifier.target_info["model_name"] == "gpt-4"
+        assert identifier.target_info["temperature"] == 0.7
+        assert identifier.score_aggregator == "OR_"  # Default aggregator
+
+    def test_scorer_identifier_hash_changes_with_threshold(self, patch_central_database):
+        """Test that changing threshold produces different hash."""
+        from unittest.mock import MagicMock, PropertyMock
+
+        from pyrit.score import FloatScaleThresholdScorer
+
+        mock_scorer = MagicMock()
+        type(mock_scorer).scorer_identifier = PropertyMock(return_value=ScorerIdentifier(type="MockFloatScorer"))
+
+        scorer1 = FloatScaleThresholdScorer(scorer=mock_scorer, threshold=0.5)
+        scorer2 = FloatScaleThresholdScorer(scorer=mock_scorer, threshold=0.7)
+
+        hash1 = scorer1.scorer_identifier.compute_hash()
+        hash2 = scorer2.scorer_identifier.compute_hash()
+
+        assert hash1 != hash2
+
+    def test_scorer_identifier_hash_changes_with_aggregator(self, patch_central_database):
+        """Test that changing aggregator produces different hash."""
+        from unittest.mock import MagicMock
+
+        from pyrit.score import (
+            TrueFalseCompositeScorer,
+            TrueFalseScoreAggregator,
+            TrueFalseScorer,
+        )
+
+        mock_scorer = MagicMock(spec=TrueFalseScorer)
+        mock_scorer.scorer_identifier = ScorerIdentifier(type="MockScorer")
+
+        composite_and = TrueFalseCompositeScorer(
+            aggregator=TrueFalseScoreAggregator.AND,
+            scorers=[mock_scorer],
+        )
+        composite_or = TrueFalseCompositeScorer(
+            aggregator=TrueFalseScoreAggregator.OR,
+            scorers=[mock_scorer],
+        )
+
+        hash_and = composite_and.scorer_identifier.compute_hash()
+        hash_or = composite_or.scorer_identifier.compute_hash()
+
+        assert hash_and != hash_or
+
+    def test_scorer_identifier_hash_changes_with_sub_scorers(self, patch_central_database):
+        """Test that changing sub-scorers produces different hash."""
+        from unittest.mock import MagicMock
+
+        from pyrit.score import (
+            TrueFalseCompositeScorer,
+            TrueFalseScoreAggregator,
+            TrueFalseScorer,
+        )
+
+        mock_scorer1 = MagicMock(spec=TrueFalseScorer)
+        mock_scorer1.scorer_identifier = ScorerIdentifier(type="MockScorer1")
+
+        mock_scorer2 = MagicMock(spec=TrueFalseScorer)
+        mock_scorer2.scorer_identifier = ScorerIdentifier(type="MockScorer2")
+
+        composite1 = TrueFalseCompositeScorer(
+            aggregator=TrueFalseScoreAggregator.AND,
+            scorers=[mock_scorer1],
+        )
+        composite2 = TrueFalseCompositeScorer(
+            aggregator=TrueFalseScoreAggregator.AND,
+            scorers=[mock_scorer1, mock_scorer2],
+        )
+
+        hash1 = composite1.scorer_identifier.compute_hash()
+        hash2 = composite2.scorer_identifier.compute_hash()
+
+        assert hash1 != hash2
+
+    def test_scorer_identifier_hash_changes_with_target_model(self, patch_central_database):
+        """Test that changing target model produces different hash."""
+        from unittest.mock import MagicMock
+
+        from pyrit.prompt_target import PromptChatTarget
+        from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
+
+        question = TrueFalseQuestion(
+            true_description="Test true",
+            false_description="Test false",
+            category="test",
+        )
+
+        mock_target1 = MagicMock(spec=PromptChatTarget)
+        mock_target1.get_identifier.return_value = {
+            "__type__": "MockChatTarget",
+            "model_name": "gpt-4",
+            "temperature": 0.7,
+        }
+
+        mock_target2 = MagicMock(spec=PromptChatTarget)
+        mock_target2.get_identifier.return_value = {
+            "__type__": "MockChatTarget",
+            "model_name": "gpt-3.5-turbo",
+            "temperature": 0.7,
+        }
+
+        scorer1 = SelfAskTrueFalseScorer(chat_target=mock_target1, true_false_question=question)
+        scorer2 = SelfAskTrueFalseScorer(chat_target=mock_target2, true_false_question=question)
+
+        hash1 = scorer1.scorer_identifier.compute_hash()
+        hash2 = scorer2.scorer_identifier.compute_hash()
+
+        assert hash1 != hash2
+
+    def test_scorer_identifier_same_config_same_hash(self, patch_central_database):
+        """Test that identical configurations produce the same hash."""
+        from unittest.mock import MagicMock, PropertyMock
+
+        from pyrit.score import FloatScaleThresholdScorer
+
+        mock_scorer = MagicMock()
+        type(mock_scorer).scorer_identifier = PropertyMock(return_value=ScorerIdentifier(type="MockFloatScorer"))
+
+        scorer1 = FloatScaleThresholdScorer(scorer=mock_scorer, threshold=0.5)
+        scorer2 = FloatScaleThresholdScorer(scorer=mock_scorer, threshold=0.5)
+
+        hash1 = scorer1.scorer_identifier.compute_hash()
+        hash2 = scorer2.scorer_identifier.compute_hash()
+
+        assert hash1 == hash2
+
+    def test_scorer_get_identifier_returns_compact_dict(self, patch_central_database):
+        """Test that scorer.get_identifier() returns compact dict with hash."""
+        from unittest.mock import MagicMock
+
+        from pyrit.score import (
+            TrueFalseCompositeScorer,
+            TrueFalseScoreAggregator,
+            TrueFalseScorer,
+        )
+
+        mock_scorer = MagicMock(spec=TrueFalseScorer)
+        mock_scorer.scorer_identifier = ScorerIdentifier(type="MockScorer")
+
+        composite = TrueFalseCompositeScorer(
+            aggregator=TrueFalseScoreAggregator.AND,
+            scorers=[mock_scorer],
+        )
+
+        identifier_dict = composite.get_identifier()
+
+        assert "__type__" in identifier_dict
+        assert identifier_dict["__type__"] == "TrueFalseCompositeScorer"
+        assert "hash" in identifier_dict
+        assert len(identifier_dict["hash"]) == 64  # SHA256 hex digest
+        assert "score_aggregator" in identifier_dict
+        assert identifier_dict["score_aggregator"] == "AND_"

@@ -10,7 +10,6 @@ import logging
 import uuid
 from abc import abstractmethod
 from typing import (
-    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -43,9 +42,6 @@ from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
-if TYPE_CHECKING:
-    pass
-
 logger = logging.getLogger(__name__)
 
 
@@ -74,10 +70,24 @@ class Scorer(abc.ABC):
 
         Subclasses must implement this method to call `_set_scorer_identifier()` with their
         specific parameters (system_prompt_template, sub_scorers, scorer_specific_params, prompt_target).
-
-        This method is called at the end of __init__ to construct the scorer's identity.
         """
         raise NotImplementedError("Subclasses must implement _build_scorer_identifier")
+
+    @property
+    def scorer_identifier(self) -> ScorerIdentifier:
+        """
+        Get the scorer identifier. Built lazily on first access.
+
+        Returns:
+            ScorerIdentifier: The identifier containing all configuration parameters.
+        """
+        if self._scorer_identifier is None:
+            self._build_scorer_identifier()
+        return self._scorer_identifier  # type: ignore[return-value]
+
+    @property
+    def _memory(self) -> MemoryInterface:
+        return CentralMemory.get_memory_instance()
 
     def _set_scorer_identifier(
         self,
@@ -125,22 +135,6 @@ class Scorer(abc.ABC):
             scorer_specific_params=scorer_specific_params,
             pyrit_version=pyrit.__version__,
         )
-
-    @property
-    def scorer_identifier(self) -> ScorerIdentifier:
-        """
-        Get the scorer identifier. Built lazily on first access.
-
-        Returns:
-            ScorerIdentifier: The identifier containing all configuration parameters.
-        """
-        if self._scorer_identifier is None:
-            self._build_scorer_identifier()
-        return self._scorer_identifier  # type: ignore[return-value]
-
-    @property
-    def _memory(self) -> MemoryInterface:
-        return CentralMemory.get_memory_instance()
 
     async def score_async(
         self,

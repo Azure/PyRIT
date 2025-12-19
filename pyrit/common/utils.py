@@ -25,14 +25,15 @@ def verify_and_resolve_path(path: Union[str, Path]) -> Path:
         Path: The resolved absolute Path object.
 
     Raises:
-        ValueError: If the path is not a string or Path object, or if the path does not exist.
+        ValueError: If the path is not a string or Path object.
+        FileNotFoundError: If the path does not exist.
     """
     if not isinstance(path, (str, Path)):
         raise ValueError(f"Path must be a string or Path object. Got type: {type(path).__name__}")
 
     path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
     if not path_obj.exists():
-        raise ValueError(f"Path not found: {str(path_obj)}")
+        raise FileNotFoundError(f"Path not found: {str(path_obj)}")
     return path_obj
 
 
