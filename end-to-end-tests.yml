@@ -44,8 +44,9 @@ jobs:
   - bash: |
       cp build_scripts/env_local_integration_test .env.local
     displayName: "Create .env.local from example"
-  - bash: pip install --upgrade setuptools pip packaging
-    name: upgrade_pip_and_setuptools_before_installing_PyRIT
+  - script:
+      wget -qO- https://astral.sh/uv/install.sh | sh
+    name: install_uv
   - bash: sudo apt-get install python3-tk
     name: install_tkinter
   - bash: |
@@ -72,7 +73,7 @@ jobs:
 
       echo "Microsoft ODBC Driver 18 installed successfully."
     displayName: 'Install ODBC Driver 18 for SQL Server'
-  - bash: pip install .[dev,all] -v --no-cache-dir
+  - bash: uv sync --extra dev --extra all
     name: install_PyRIT
   - bash: df -all -h
     name: disk_space_check

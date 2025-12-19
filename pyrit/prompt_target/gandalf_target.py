@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class GandalfLevel(enum.Enum):
+    """
+    Enumeration of Gandalf challenge levels.
+
+    Each level represents a different difficulty of the Gandalf security challenge,
+    from baseline to the most advanced levels.
+    """
+
     LEVEL_1 = "baseline"
     LEVEL_2 = "do-not-tell"
     LEVEL_3 = "do-not-tell-and-block"
@@ -27,6 +34,7 @@ class GandalfLevel(enum.Enum):
 
 
 class GandalfTarget(PromptTarget):
+    """A prompt target for the Gandalf security challenge."""
 
     def __init__(
         self,
@@ -50,6 +58,15 @@ class GandalfTarget(PromptTarget):
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously send a message to the Gandalf target.
+
+        Args:
+            message (Message): The message object containing the prompt to send.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+        """
         self._validate_request(message=message)
         request = message.message_pieces[0]
 
@@ -72,9 +89,13 @@ class GandalfTarget(PromptTarget):
 
     async def check_password(self, password: str) -> bool:
         """
-        Checks if the password is correct.
+        Check if the password is correct.
 
-        True means the password is correct, False means it is not
+        Returns:
+            bool: True if the password is correct, False otherwise.
+
+        Raises:
+            ValueError: If the chat returned an empty response.
         """
         payload: dict[str, object] = {
             "defender": self._defender,
