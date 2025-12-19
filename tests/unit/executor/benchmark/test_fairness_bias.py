@@ -274,8 +274,8 @@ class TestFairnessBiasBenchmark:
                 call_kwargs = mock_attack_instance.execute_async.call_args.kwargs
 
                 assert call_kwargs["objective"] == sample_benchmark_context.generated_objective
-                # Check that message was passed (from generated_message)
-                assert "message" in call_kwargs
+                # Check that next_message was passed (from generated_message)
+                assert "next_message" in call_kwargs
                 assert call_kwargs["prepended_conversation"] == sample_benchmark_context.prepended_conversation
                 assert call_kwargs["memory_labels"] == sample_benchmark_context.memory_labels
 

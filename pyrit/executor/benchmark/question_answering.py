@@ -189,7 +189,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
 
         return await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
-            message=context.generated_message,
+            next_message=context.generated_message,
             prepended_conversation=context.prepended_conversation,
             memory_labels=context.memory_labels,
         )

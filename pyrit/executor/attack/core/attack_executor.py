@@ -277,7 +277,7 @@ class AttackExecutor:
                 return await attack.execute_async(
                     objective=objective,
                     prepended_conversation=prepended_conversation,
-                    message=message,
+                    next_message=message,
                     memory_labels=memory_labels or {},
                     **attack_params,
                 )
@@ -376,7 +376,7 @@ class AttackExecutor:
                 return await attack.execute_async(
                     objective=objective,
                     prepended_conversation=prepended_conversation,
-                    message=message,
+                    next_message=message,
                     memory_labels=memory_labels or {},
                     **attack_params,
                 )

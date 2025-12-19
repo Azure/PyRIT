@@ -784,9 +784,10 @@ class TestExecuteSingleTurnAttacksAsync:
             messages=sample_messages,
         )
 
-        # Verify execute_async was called with correct messages
+        # Verify execute_async was called with correct parameter name and values
         for i, call in enumerate(mock_single_turn_attack_strategy.execute_async.call_args_list):
-            assert call.kwargs["message"] == sample_messages[i]
+            assert "next_message" in call.kwargs
+            assert call.kwargs["next_message"] == sample_messages[i]
 
     @pytest.mark.asyncio
     async def test_execute_single_turn_validates_context_type(self, mock_multi_turn_attack_strategy):
@@ -931,9 +932,10 @@ class TestExecuteMultiTurnAttacksAsync:
             messages=messages,
         )
 
-        # Verify execute_async was called with correct messages
+        # Verify execute_async was called with correct parameter name and values
         for i, call in enumerate(mock_multi_turn_attack_strategy.execute_async.call_args_list):
-            assert call.kwargs["message"] == messages[i]
+            assert "next_message" in call.kwargs
+            assert call.kwargs["next_message"] == messages[i]
 
     @pytest.mark.asyncio
     async def test_execute_multi_turn_validates_context_type(self, mock_single_turn_attack_strategy):
@@ -1159,7 +1161,8 @@ class TestConcurrentMessageHandling:
         # Each call should have received the shared message
         # (the attack itself is responsible for duplicating if needed)
         for call in mock_single_turn_attack_strategy.execute_async.call_args_list:
-            assert call.kwargs["message"] == shared_message
+            assert "next_message" in call.kwargs
+            assert call.kwargs["next_message"] == shared_message
 
     @pytest.mark.asyncio
     async def test_concurrent_attacks_with_unique_messages(self, mock_single_turn_attack_strategy, sample_messages):
@@ -1177,7 +1180,8 @@ class TestConcurrentMessageHandling:
 
         # Verify each attack got its unique message
         for i, call in enumerate(mock_single_turn_attack_strategy.execute_async.call_args_list):
-            assert call.kwargs["message"] == sample_messages[i]
+            assert "next_message" in call.kwargs
+            assert call.kwargs["next_message"] == sample_messages[i]
 
     @pytest.mark.asyncio
     async def test_multi_turn_concurrent_attacks_with_messages(self, mock_multi_turn_attack_strategy):
@@ -1200,4 +1204,5 @@ class TestConcurrentMessageHandling:
         # Verify each attack got its correct message
         assert mock_multi_turn_attack_strategy.execute_async.call_count == 2
         for i, call in enumerate(mock_multi_turn_attack_strategy.execute_async.call_args_list):
-            assert call.kwargs["message"] == messages[i]
+            assert "next_message" in call.kwargs
+            assert call.kwargs["next_message"] == messages[i]
