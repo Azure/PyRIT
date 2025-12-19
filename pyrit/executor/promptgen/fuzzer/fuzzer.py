@@ -23,6 +23,7 @@ from pyrit.executor.promptgen.core.prompt_generator_strategy import (
     PromptGeneratorStrategyContext,
     PromptGeneratorStrategyResult,
 )
+from pyrit.executor.promptgen.fuzzer.fuzzer_converter_base import FuzzerConverter
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -30,7 +31,6 @@ from pyrit.models import (
     SeedGroup,
     SeedPrompt,
 )
-from pyrit.prompt_converter import FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import FloatScaleThresholdScorer, Scorer, SelfAskScaleScorer
