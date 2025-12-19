@@ -27,6 +27,8 @@ else:
 
 
 class CopilotType(Enum):
+    """Enumeration of Copilot interface types."""
+
     CONSUMER = "consumer"
     M365 = "m365"
 
@@ -99,6 +101,18 @@ class PlaywrightCopilotTarget(PromptTarget):
     LOGIN_REQUIRED_HEADER: str = "Sign in for the full experience"
 
     def __init__(self, *, page: "Page", copilot_type: CopilotType = CopilotType.CONSUMER) -> None:
+        """
+        Initialize the Playwright Copilot target.
+
+        Args:
+            page (Page): The Playwright page object for browser interaction.
+            copilot_type (CopilotType): The type of Copilot to interact with.
+                Defaults to CopilotType.CONSUMER.
+
+        Raises:
+            RuntimeError: If the Playwright page is not initialized.
+            ValueError: If the page URL doesn't match the specified copilot_type.
+        """
         super().__init__()
         self._page = page
         self._type = copilot_type
@@ -115,7 +129,12 @@ class PlaywrightCopilotTarget(PromptTarget):
             raise ValueError("The provided page URL does not indicate M365 Copilot, but the type is set to m365.")
 
     def _get_selectors(self) -> CopilotSelectors:
-        """Get the appropriate selectors for the current Copilot type."""
+        """
+        Get the appropriate selectors for the current Copilot type.
+
+        Returns:
+            CopilotSelectors: The selectors for the Copilot interface.
+        """
         if self._type == CopilotType.CONSUMER:
             return CopilotSelectors(
                 input_selector="#userInput",
@@ -150,6 +169,9 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         Returns:
             list[Message]: A list containing the response from Copilot.
+
+        Raises:
+            RuntimeError: If an error occurs during interaction.
         """
         self._validate_request(message=message)
 
@@ -189,7 +211,16 @@ class PlaywrightCopilotTarget(PromptTarget):
         return [response_entry]
 
     async def _interact_with_copilot_async(self, message: Message) -> Union[str, List[Tuple[str, PromptDataType]]]:
-        """Interact with Microsoft Copilot interface to send multimodal prompts."""
+        """
+        Interact with Microsoft Copilot interface to send multimodal prompts.
+
+        Args:
+            message: The message containing text and/or image pieces to send.
+
+        Returns:
+            Union[str, List[Tuple[str, PromptDataType]]]: The response content from Copilot,
+                either as a single text string or a list of (data, data_type) tuples.
+        """
         selectors = self._get_selectors()
 
         # Handle multimodal input - process all pieces in the request
@@ -204,7 +235,19 @@ class PlaywrightCopilotTarget(PromptTarget):
     async def _wait_for_response_async(
         self, selectors: CopilotSelectors
     ) -> Union[str, List[Tuple[str, PromptDataType]]]:
-        """Wait for Copilot's response and extract the text and/or images."""
+        """
+        Wait for Copilot's response and extract the text and/or images.
+
+        Args:
+            selectors (CopilotSelectors): The selectors for the Copilot interface.
+
+        Returns:
+            Union[str, List[Tuple[str, PromptDataType]]]: The response content from Copilot,
+                either as a single text string or a list of (data, data_type) tuples.
+
+        Raises:
+            TimeoutError: If waiting for the AI response times out.
+        """
         # Count current AI messages and message groups before sending
         initial_ai_messages = await self._page.eval_on_selector_all(
             selectors.ai_messages_selector, "elements => elements.length"
@@ -706,13 +749,24 @@ class PlaywrightCopilotTarget(PromptTarget):
             return await self._extract_fallback_text_async(ai_message_groups=ai_message_groups)
 
     async def _send_text_async(self, *, text: str, input_selector: str) -> None:
-        """Send text input to Copilot interface."""
+        """
+        Send text input to Copilot interface.
+
+        Args:
+            text: The text to send.
+            input_selector: The CSS selector for the input field.
+        """
         # For M365 Copilot's contenteditable span, use type() instead of fill()
         await self._page.locator(input_selector).click()  # Focus first
         await self._page.locator(input_selector).type(text)
 
     async def _upload_image_async(self, image_path: str) -> None:
-        """Handle image upload through Copilot's dropdown interface."""
+        """
+        Handle image upload through Copilot's dropdown interface.
+
+        Args:
+            image_path: The file path of the image to upload.
+        """
         selectors = self._get_selectors()
 
         # First, click the button to open the dropdown with retry logic
@@ -732,7 +786,15 @@ class PlaywrightCopilotTarget(PromptTarget):
         await self._check_login_requirement_async()
 
     async def _click_dropdown_button_async(self, selector: str) -> None:
-        """Click the dropdown button with retry logic."""
+        """
+        Click the dropdown button with retry logic.
+
+        Args:
+            selector: The CSS selector for the dropdown button.
+
+        Raises:
+            RuntimeError: If the button cannot be found or clicked.
+        """
         add_content_button = self._page.locator(selector)
 
         # First, wait for the button to potentially appear
@@ -768,7 +830,12 @@ class PlaywrightCopilotTarget(PromptTarget):
         await add_content_button.click()
 
     async def _check_login_requirement_async(self) -> None:
-        """Check if login is required for Consumer Copilot features."""
+        """
+        Check if login is required for Consumer Copilot features.
+
+        Raises:
+            RuntimeError: If login is required to access advanced features.
+        """
         # In Consumer Copilot we can't submit pictures which will surface by prompting for login
         sign_in_header_count = await self._page.locator(f'h1:has-text("{self.LOGIN_REQUIRED_HEADER}")').count()
         sign_in_header_present = sign_in_header_count > 0
@@ -776,7 +843,16 @@ class PlaywrightCopilotTarget(PromptTarget):
             raise RuntimeError("Login required to access advanced features in Consumer Copilot.")
 
     def _validate_request(self, *, message: Message) -> None:
-        """Validate that the message is compatible with Copilot."""
+        """
+        Validate that the message is compatible with Copilot.
+
+        Args:
+            message: The message to validate.
+
+        Raises:
+            ValueError: If the message has no pieces.
+            ValueError: If any piece has an unsupported data type.
+        """
         if not message.message_pieces:
             raise ValueError("This target requires at least one message piece.")
 

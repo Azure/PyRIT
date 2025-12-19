@@ -12,12 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 class PromptTarget(abc.ABC, Identifier):
+    """
+    Abstract base class for prompt targets.
+
+    A prompt target is a destination where prompts can be sent to interact with various services,
+    models, or APIs. This class defines the interface that all prompt targets must implement.
+    """
+
     _memory: MemoryInterface
 
-    """
-    A list of PromptConverters that are supported by the prompt target.
-    An empty list implies that the prompt target supports all converters.
-    """
+    #: A list of PromptConverters that are supported by the prompt target.
+    #: An empty list implies that the prompt target supports all converters.
     supported_converters: list
 
     def __init__(
@@ -27,6 +32,15 @@ class PromptTarget(abc.ABC, Identifier):
         endpoint: str = "",
         model_name: str = "",
     ) -> None:
+        """
+        Initialize the PromptTarget.
+
+        Args:
+            verbose (bool): Enable verbose logging. Defaults to False.
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+            endpoint (str): The endpoint URL. Defaults to empty string.
+            model_name (str): The model name. Defaults to empty string.
+        """
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._max_requests_per_minute = max_requests_per_minute
@@ -39,7 +53,7 @@ class PromptTarget(abc.ABC, Identifier):
     @abc.abstractmethod
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
-        Sends a normalized prompt async to the prompt target.
+        Send a normalized prompt async to the prompt target.
 
         Returns:
             list[Message]: A list of message responses. Most targets return a single message,
@@ -49,7 +63,10 @@ class PromptTarget(abc.ABC, Identifier):
     @abc.abstractmethod
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the provided message.
+        Validate the provided message.
+
+        Args:
+            message: The message to validate.
         """
 
     def set_model_name(self, *, model_name: str) -> None:
