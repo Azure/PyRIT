@@ -41,7 +41,7 @@ class OpenAITarget(PromptChatTarget):
     """
     Abstract base class for OpenAI-based prompt targets.
 
-    This class provides common functionality for interacting with Azure and non-Azure OpenAI
+    This class provides common functionality for interacting with OpenAI API
     endpoints, handling authentication, rate limiting, and request/response processing.
 
     Read more about the various models here:
