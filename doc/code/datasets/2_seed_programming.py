@@ -59,7 +59,7 @@ attack = PromptSendingAttack(objective_target=target)
 result = await attack.execute_async(  # type: ignore
     objective=attack_data.objective,
     prepended_conversation=attack_data.prepended_conversation,
-    message=attack_data.current_turn_message,
+    next_message=attack_data.current_turn_message,
 )
 
 printer = ConsoleAttackResultPrinter()
