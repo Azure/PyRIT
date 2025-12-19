@@ -141,8 +141,14 @@ class Message:
         return message_pieces
 
     @classmethod
-    def from_prompt(cls, *, prompt: str, role: ChatMessageRole) -> Message:
-        piece = MessagePiece(original_value=prompt, role=role)
+    def from_prompt(
+        cls,
+        *,
+        prompt: str,
+        role: ChatMessageRole,
+        prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
+    ) -> Message:
+        piece = MessagePiece(original_value=prompt, role=role, prompt_metadata=prompt_metadata)
         return cls(message_pieces=[piece])
 
     @classmethod

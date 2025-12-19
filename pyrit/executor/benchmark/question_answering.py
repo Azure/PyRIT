@@ -19,8 +19,6 @@ from pyrit.models import (
     AttackResult,
     Message,
     QuestionAnsweringEntry,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -46,8 +44,8 @@ class QuestionAnsweringBenchmarkContext(StrategyContext):
     generated_objective: str = field(default_factory=str)
     # The generated question prompt for the benchmark
     generated_question_prompt: str = field(default_factory=str)
-    # The generated seed group for the benchmark
-    generated_seed_group: Optional[SeedGroup] = None
+    # The generated message for the benchmark
+    generated_message: Optional[Message] = None
 
 
 class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, AttackResult]):
@@ -169,8 +167,8 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         # Format the question prompt for the target
         context.generated_question_prompt = self._format_question_prompt(entry)
 
-        # Create the seed prompt with metadata
-        context.generated_seed_group = self._create_seed_group(
+        # Create the message with metadata
+        context.generated_message = self._create_message(
             entry=entry, question_prompt=context.generated_question_prompt
         )
 
@@ -185,16 +183,15 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
             AttackResult: The result of the benchmark execution.
 
         Raises:
-            ValueError: If seed group has not been generated before execution.
+            ValueError: If message has not been generated before execution.
         """
         # Execute the attack using PromptSendingAttack
-        if not context.generated_seed_group:
-            raise ValueError("Seed group must be generated before executing benchmark")
+        if not context.generated_message:
+            raise ValueError("Message must be generated before executing benchmark")
 
-        decomposed = context.generated_seed_group.to_attack_parameters()
         return await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
-            message=decomposed.current_turn_message,
+            message=context.generated_message,
             prepended_conversation=context.prepended_conversation,
             memory_labels=context.memory_labels,
         )
@@ -231,27 +228,25 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
 
         return options_text.rstrip()  # Remove trailing newline
 
-    def _create_seed_group(self, *, entry: QuestionAnsweringEntry, question_prompt: str) -> SeedGroup:
+    def _create_message(self, *, entry: QuestionAnsweringEntry, question_prompt: str) -> Message:
         """
-        Create a seed group with the formatted question and metadata.
+        Create a message with the formatted question and metadata.
 
         Args:
             entry (QuestionAnsweringEntry): The question answering entry.
             question_prompt (str): The formatted question prompt.
 
         Returns:
-            SeedGroup: The seed group for execution.
+            Message: The message for execution with metadata for scoring.
         """
-        seed_prompt = SeedPrompt(
-            value=question_prompt,
-            data_type="text",
-            metadata={
+        return Message.from_prompt(
+            prompt=question_prompt,
+            role="user",
+            prompt_metadata={
                 "correct_answer_index": str(entry.correct_answer),
                 "correct_answer": str(entry.get_correct_answer_text()),
             },
         )
-
-        return SeedGroup(seeds=[seed_prompt])
 
     async def _teardown_async(self, *, context: QuestionAnsweringBenchmarkContext) -> None:
         """

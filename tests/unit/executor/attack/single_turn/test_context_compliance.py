@@ -794,10 +794,10 @@ class TestContextComplianceAttackComponentIntegration:
     """Test integration with attack components."""
 
     @pytest.mark.asyncio
-    async def test_seed_group_creation(
+    async def test_message_creation(
         self, mock_objective_target, mock_attack_adversarial_config, mock_seed_dataset, basic_context
     ):
-        """Test proper creation and usage of SeedGroup objects."""
+        """Test proper creation and usage of Message objects."""
         with patch(
             "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
             return_value=mock_seed_dataset,

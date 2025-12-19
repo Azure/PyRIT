@@ -38,7 +38,6 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -505,11 +504,14 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Set JSON format in metadata
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
+        message = Message.from_prompt(
+            prompt=prompt_text,
+            role="user",
+            prompt_metadata=prompt_metadata,
+        )
 
-        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            message=decomposed.current_turn_message,
+            message=message,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),

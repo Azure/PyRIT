@@ -22,8 +22,6 @@ from pyrit.models import (
     AttackResult,
     Message,
     Score,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -36,8 +34,8 @@ logger = logging.getLogger(__name__)
 class MultiPromptSendingAttackContext(MultiTurnAttackContext):
     """Context for the MultiPromptSending attack strategy."""
 
-    # Predefined prompt sequence to send to the target
-    prompt_sequence: List[str] = field(default_factory=list)
+    # Predefined messages to send to the target
+    messages: List[Message] = field(default_factory=list)
 
 
 class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackContext, AttackResult]):
@@ -131,11 +129,8 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         if not context.objective or context.objective.isspace():
             raise ValueError("Attack objective must be provided and non-empty in the context")
 
-        if not context.prompt_sequence or len(context.prompt_sequence) == 0:
-            raise ValueError("Prompt sequence must be provided and non-empty in the context")
-
-        if bool(list(filter(lambda x: not x or str.isspace(x), context.prompt_sequence))):
-            raise ValueError("Prompt sequence must not contain empty prompts")
+        if not context.messages or len(context.messages) == 0:
+            raise ValueError("Messages must be provided and non-empty in the context")
 
     async def _setup_async(self, *, context: MultiPromptSendingAttackContext) -> None:
         """
@@ -181,25 +176,23 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         response = None
         score = None
 
-        for prompt_index, prompt_text in enumerate(context.prompt_sequence):
-            logger.info(f"Processing prompt {prompt_index + 1}/{len(context.prompt_sequence)}")
-            logger.debug(f"Prompt content: {prompt_text}")
+        for message_index, current_message in enumerate(context.messages):
+            logger.info(f"Processing message {message_index + 1}/{len(context.messages)}")
 
-            # Create seed group for this prompt
-            prompt_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text")])
-
-            # Send the prompt
-            message = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
+            # Send the message directly
+            response_message = await self._send_prompt_to_objective_target_async(
+                current_message=current_message, context=context
+            )
 
             # Update context with latest response (may be None if sending failed)
-            if message:
-                response = message
+            if response_message:
+                response = response_message
                 context.last_response = response
                 context.executed_turns += 1
-                self._logger.debug(f"Successfully sent prompt {prompt_index + 1}")
+                self._logger.debug(f"Successfully sent message {message_index + 1}")
             else:
                 response = None
-                self._logger.warning(f"Failed to send prompt {prompt_index + 1}, terminating")
+                self._logger.warning(f"Failed to send message {message_index + 1}, terminating")
                 break
 
         # Score the last response including auxiliary and objective scoring
@@ -267,22 +260,21 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         pass
 
     async def _send_prompt_to_objective_target_async(
-        self, *, prompt_group: SeedGroup, context: MultiPromptSendingAttackContext
+        self, *, current_message: Message, context: MultiPromptSendingAttackContext
     ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
         Args:
-            prompt_group (SeedGroup): The seed group to send.
+            current_message (Message): The message to send.
             context (MultiPromptSendingAttackContext): The attack context containing parameters and labels.
 
         Returns:
             Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
-        decomposed = prompt_group.to_attack_parameters()
         return await self._prompt_normalizer.send_prompt_async(
-            message=decomposed.current_turn_message,
+            message=current_message,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,
@@ -333,8 +325,8 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             AttackResult: The result of the attack execution.
         """
         # Validate parameters before creating context
-        prompt_sequence = get_kwarg_param(
-            kwargs=kwargs, param_name="prompt_sequence", expected_type=list, required=True
+        messages = get_kwarg_param(
+            kwargs=kwargs, param_name="messages", expected_type=list, required=True
         )
 
-        return await super().execute_async(**kwargs, prompt_sequence=prompt_sequence)
+        return await super().execute_async(**kwargs, messages=messages)

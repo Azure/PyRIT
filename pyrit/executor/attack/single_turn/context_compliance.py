@@ -20,8 +20,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     SeedDataset,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -240,18 +238,13 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The objective rephrased as a benign question.
         """
-        seed_group = SeedGroup(
-            seeds=[
-                SeedPrompt(
-                    value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
-                    data_type="text",
-                )
-            ]
+        message = Message.from_prompt(
+            prompt=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
+            role="user",
         )
 
-        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            message=decomposed.current_turn_message,
+            message=message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
@@ -272,18 +265,13 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The answer to the benign question.
         """
-        seed_group = SeedGroup(
-            seeds=[
-                SeedPrompt(
-                    value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
-                    data_type="text",
-                )
-            ]
+        message = Message.from_prompt(
+            prompt=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
+            role="user",
         )
 
-        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            message=decomposed.current_turn_message,
+            message=message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
@@ -302,18 +290,13 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The objective rephrased as a question.
         """
-        seed_group = SeedGroup(
-            seeds=[
-                SeedPrompt(
-                    value=self._rephrase_objective_to_question.render_template_value(objective=objective),
-                    data_type="text",
-                )
-            ]
+        message = Message.from_prompt(
+            prompt=self._rephrase_objective_to_question.render_template_value(objective=objective),
+            role="user",
         )
 
-        decomposed = seed_group.to_attack_parameters()
         response = await self._prompt_normalizer.send_prompt_async(
-            message=decomposed.current_turn_message,
+            message=message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
