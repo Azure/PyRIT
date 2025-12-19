@@ -4,7 +4,8 @@
 """
 Prompt targets for PyRIT.
 
-Target implementations for sending prompts to different services and APIs.
+Target implementations for interacting with different services and APIs,
+for example sending prompts or transferring content (uploads).
 """
 
 from pyrit.prompt_target.common.prompt_target import PromptTarget
