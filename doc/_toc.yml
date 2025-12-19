@@ -11,6 +11,7 @@ chapters:
   - file: setup/1a_install_uv
     sections:
     - file: setup/1b_install_docker
+    - file: setup/1c_install_conda
     - file: setup/jupyter_setup
     - file: setup/populating_secrets
     - file: setup/use_azure_sql_db
@@ -18,6 +19,7 @@ chapters:
     sections:
     - file: contributing/1a_install_uv
     - file: contributing/1b_install_devcontainers
+    - file: contributing/1c_install_conda
     - file: contributing/2_git
     - file: contributing/3_incorporating_research
     - file: contributing/4_style_guide

@@ -1,23 +1,4 @@
-# Install PyRIT Library
-
-## Choose Your Installation Method
-
-PyRIT offers three installation options for users:
-
-### Option 1: Docker (Recommended for Quick Start)
-
-If you want to get started quickly without setting up a Python environment, use our pre-configured Docker container. See the [Docker Installation Guide](./1b_install_docker.md) for complete instructions for running PyRIT in Docker with JupyterLab
-- Pre-installed PyRIT with all dependencies
-- No Python environment setup required
-- Works on Windows, macOS, and Linux
-
-**Use Docker if you:**
-- Want to get started immediately
-- Prefer not to manage Python environments
-- Want a consistent, isolated environment
-- Plan to use JupyterLab for interactive work
-
-### Option 2: Local Installation with Pip/uv
+# Install PyRIT with Conda
 
 For a traditional Python installation on your local machine, follow the instructions below.
 
@@ -30,23 +11,30 @@ For a traditional Python installation on your local machine, follow the instruct
 ## Local Installation Instructions
 
 To install PyRIT using pip, make sure you have Python 3.10, 3.11, 3.12, or 3.13 installed using `python --version`.
-Alternatively, create an environment from the root directory as follows
+Alternatively, create a conda environment as follows
 
 ```
-uv sync
+conda create -y -n <environment-name> python=3.11
+```
 
+followed by `conda activate <environment-name>`
+
+Once the environment with the correct Python version is set up, run
+
+```
+pip install pyrit
 ```
 
 Next, check out our [docs](../index.md) and run the notebooks in your environment!
 
-{important}
+```{important}
 **Matching Notebooks to Your Version:**
 
 Notebooks and your PyRIT installation must be on the same version. This pip installation gives you the **latest stable release** from PyPI.
 
 1. **Check your installed version:**
    ```bash
-   uv pip freeze | grep pyrit
+   pip freeze | grep pyrit
    ```
 
    Or in Python:
@@ -60,8 +48,4 @@ Notebooks and your PyRIT installation must be on the same version. This pip inst
    - The automatically cloned notebooks from the `main` branch may not match your installed version
    - This website documentation shows the latest development version (`main` branch).
 
-4. **If you installed from source:** The notebooks in your cloned repository will already match your code version.
-
-### Option 3: Local Installation with Pip/Conda
-
-We highly recommend using Option 2, but if you would prefer to use conda, See the [Conda Installation Guide](./1c_install_conda.md) for complete instructions for running PyRIT in a conda environment
+3. **If you installed from source:** The notebooks in your cloned repository will already match your code version.

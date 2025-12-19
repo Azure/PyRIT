@@ -10,7 +10,7 @@ services:
           memory: "16G"
     volumes:
       - ..:/workspace:delegated
-      - pyrit-env:/opt/venv:cached
+      - pyrit-env:/workspace/.venv:cached
       - pip-cache:/home/vscode/.cache/pip:cached
       - uv-cache:/home/vscode/.cache/uv:cached
       - precommit-cache:/home/vscode/.cache/pre-commit:cached
