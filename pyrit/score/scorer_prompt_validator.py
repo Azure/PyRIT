@@ -7,6 +7,13 @@ from pyrit.models import ChatMessageRole, Message, MessagePiece, PromptDataType
 
 
 class ScorerPromptValidator:
+    """
+    Validates message pieces and scorer configurations.
+
+    This class provides validation for scorer inputs, ensuring that message pieces meet
+    required criteria such as data types, roles, and metadata requirements.
+    """
+
     def __init__(
         self,
         *,
@@ -17,6 +24,22 @@ class ScorerPromptValidator:
         enforce_all_pieces_valid: Optional[bool] = False,
         is_objective_required=False,
     ):
+        """
+        Initialize the ScorerPromptValidator.
+
+        Args:
+            supported_data_types (Optional[Sequence[PromptDataType]]): Data types that the scorer supports.
+                Defaults to all data types if not provided.
+            required_metadata (Optional[Sequence[str]]): Metadata keys that must be present in message pieces.
+                Defaults to empty list.
+            supported_roles (Optional[Sequence[ChatMessageRole]]): Message roles that the scorer supports.
+                Defaults to all roles if not provided.
+            max_pieces_in_response (Optional[int]): Maximum number of pieces allowed in a response.
+                Defaults to None (no limit).
+            enforce_all_pieces_valid (Optional[bool]): Whether all pieces must be valid or just at least one.
+                Defaults to False.
+            is_objective_required (bool): Whether an objective must be provided for scoring. Defaults to False.
+        """
         if supported_data_types:
             self._supported_data_types = supported_data_types
         else:
@@ -35,6 +58,16 @@ class ScorerPromptValidator:
         self._is_objective_required = is_objective_required
 
     def validate(self, message: Message, objective: str | None) -> None:
+        """
+        Validate a message and objective against configured requirements.
+
+        Args:
+            message (Message): The message to validate.
+            objective (str | None): The objective string, if required.
+
+        Raises:
+            ValueError: If validation fails due to unsupported pieces, exceeding max pieces, or missing objective.
+        """
         valid_pieces_count = 0
         for piece in message.message_pieces:
             if self.is_message_piece_supported(piece):
@@ -68,6 +101,15 @@ class ScorerPromptValidator:
             raise ValueError("Objective is required but not provided.")
 
     def is_message_piece_supported(self, message_piece: MessagePiece) -> bool:
+        """
+        Check if a message piece is supported by this validator.
+
+        Args:
+            message_piece (MessagePiece): The message piece to check.
+
+        Returns:
+            bool: True if the message piece meets all validation criteria, False otherwise.
+        """
         if message_piece.converted_value_data_type not in self._supported_data_types:
             return False
 

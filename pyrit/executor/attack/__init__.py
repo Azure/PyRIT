@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""Attack executor module."""
+
 from pyrit.executor.attack.core import (
     AttackStrategy,
     AttackContext,

@@ -92,7 +92,7 @@ initial_prompt = (
 )
 
 adversary_llm = OpenAIChatTarget(
-    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT"),
+    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
 )
 adversarial_config = AttackAdversarialConfig(

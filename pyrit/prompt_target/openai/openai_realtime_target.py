@@ -3,15 +3,18 @@
 
 import asyncio
 import base64
-import json
 import logging
+import re
 import wave
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Tuple
-from urllib.parse import urlencode
+from typing import Any, List, Literal, Optional, Tuple
 
-import websockets
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from openai import AsyncOpenAI
 
+from pyrit.exceptions import (
+    pyrit_target_retry,
+)
 from pyrit.exceptions.exception_classes import ServerErrorException
 from pyrit.models import (
     Message,
@@ -43,9 +46,9 @@ class RealtimeTargetResult:
         Flattens the list of transcripts into a single string.
 
         Returns:
-            A single string containing all transcripts, separated by newlines.
+            A single string containing all transcripts concatenated together.
         """
-        return "\n".join(self.transcripts)
+        return "".join(self.transcripts)
 
 
 class RealtimeTarget(OpenAITarget):
@@ -53,7 +56,6 @@ class RealtimeTarget(OpenAITarget):
     def __init__(
         self,
         *,
-        system_prompt: Optional[str] = None,
         voice: Optional[RealTimeVoice] = None,
         existing_convo: Optional[dict] = None,
         **kwargs,
@@ -66,9 +68,11 @@ class RealtimeTarget(OpenAITarget):
 
         Args:
             model_name (str, Optional): The name of the model.
+                Defaults to `OPENAI_REALTIME_MODEL` environment variable.
             endpoint (str, Optional): The target URL for the OpenAI service.
+                Defaults to the `OPENAI_REALTIME_ENDPOINT` environment variable.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the `OPENAI_CHAT_KEY` environment variable.
+                Defaults to the `OPENAI_REALTIME_API_KEY` environment variable.
             headers (str, Optional): Headers of the endpoint (JSON).
             use_entra_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
@@ -77,7 +81,6 @@ class RealtimeTarget(OpenAITarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            system_prompt (str, Optional): The system prompt to use. Defaults to "You are a helpful AI assistant".
             voice (literal str, Optional): The voice to use. Defaults to None.
                 the only supported voices by the AzureOpenAI Realtime API are "alloy", "echo", and "shimmer".
             existing_convo (dict[str, websockets.WebSocketClientProtocol], Optional): Existing conversations.
@@ -87,122 +90,226 @@ class RealtimeTarget(OpenAITarget):
         """
         super().__init__(**kwargs)
 
-        self.system_prompt = system_prompt or "You are a helpful AI assistant"
         self.voice = voice
         self._existing_conversation = existing_convo if existing_convo is not None else {}
+        self._realtime_client = None
 
     def _set_openai_env_configuration_vars(self):
         self.model_name_environment_variable = "OPENAI_REALTIME_MODEL"
-        self.endpoint_environment_variable = "AZURE_OPENAI_REALTIME_ENDPOINT"
+        self.endpoint_environment_variable = "OPENAI_REALTIME_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_REALTIME_API_KEY"
 
-    async def connect(self):
-        """
-        Connects to Realtime API Target using websockets.
-        Returns the WebSocket connection.
-        """
-        logger.info(f"Connecting to WebSocket: {self._endpoint}")
+    def _get_target_api_paths(self) -> list[str]:
+        """Return API paths that should not be in the URL."""
+        return ["/realtime", "/v1/realtime"]
 
-        query_params = {
-            "deployment": self._model_name,
-            "OpenAI-Beta": "realtime=v1",
+    def _get_provider_examples(self) -> dict[str, str]:
+        """Return provider-specific example URLs."""
+        return {
+            ".openai.azure.com": "wss://{resource}.openai.azure.com/openai/v1",
+            "api.openai.com": "wss://api.openai.com/v1",
         }
 
-        self._add_auth_param_to_query_params(query_params)
-
-        # Check if endpoint already has query parameters
-        separator = "&" if "?" in self._endpoint else "?"
-        url = f"{self._endpoint}{separator}{urlencode(query_params)}"
-        websocket = await websockets.connect(url)
-        logger.info("Successfully connected to AzureOpenAI Realtime API")
-        return websocket
-
-    def _add_auth_param_to_query_params(self, query_params: dict) -> None:
+    def _validate_url_for_target(self, endpoint_url: str) -> None:
         """
-        Adds the authentication parameter to the query parameters. This is how
-        Realtime API works, it doesn't use the headers for auth.
+        Validate URL for Realtime API with websocket-specific checks.
 
         Args:
-            query_params (dict): The query parameters.
+            endpoint_url: The endpoint URL to validate.
         """
-        if self._api_key:
-            query_params["api-key"] = self._api_key
+        # Convert https to wss for validation (this is expected for websockets)
+        check_url = endpoint_url.replace("https://", "wss://") if endpoint_url.startswith("https://") else endpoint_url
 
-        if self._azure_auth:
-            query_params["Authorization"] = f"Bearer {self._azure_auth.refresh_token()}"
+        # Check for proper scheme
+        if not check_url.startswith("wss://"):
+            logger.warning(
+                f"Realtime endpoint should use 'wss://' or 'https://' scheme, got: {endpoint_url}. "
+                "The endpoint may not work correctly."
+            )
+            return
 
-    def _set_system_prompt_and_config_vars(self):
+        # Call parent validation with the wss URL
+        super()._validate_url_for_target(check_url)
 
+    def _warn_if_irregular_endpoint(self, endpoint: str) -> None:
+        """
+        Warns if the endpoint URL does not match expected patterns.
+
+        Args:
+            endpoint: The endpoint URL to validate
+        """
+        # Expected patterns for realtime endpoints:
+        # Azure old format: wss://resource.openai.azure.com/openai/realtime?api-version=...
+        # Azure new format: wss://resource.openai.azure.com/openai/v1
+        # Platform OpenAI: wss://api.openai.com/v1
+        # Also accept https:// versions that will be converted to wss://
+
+        # Check for proper scheme (wss:// or https://)
+        if not endpoint.startswith(("wss://", "https://")):
+            logger.warning(
+                f"Realtime endpoint should start with 'wss://' or 'https://', got: {endpoint}. "
+                "This may cause connection issues."
+            )
+            return
+
+        # Pattern for Azure endpoints
+        azure_pattern = re.compile(
+            r"^(wss|https)://[a-zA-Z0-9\-]+\.openai\.azure\.com/"
+            r"(openai/(deployments/[^/]+/)?realtime(\?api-version=[^/]+)?|openai/v1|v1)$"
+        )
+
+        # Pattern for Platform OpenAI
+        platform_pattern = re.compile(r"^(wss|https)://api\.openai\.com/(v1(/realtime)?|realtime)$")
+
+        if not azure_pattern.match(endpoint) and not platform_pattern.match(endpoint):
+            logger.warning(
+                f"Realtime endpoint URL does not match expected Azure or Platform OpenAI patterns: {endpoint}. "
+                "Expected formats: 'wss://resource.openai.azure.com/openai/v1' or 'wss://api.openai.com/v1'"
+            )
+
+    def _get_openai_client(self):
+        """
+        Creates or returns the AsyncOpenAI client configured for Realtime API.
+        Uses the Azure GA approach with websocket_base_url.
+        """
+        if self._realtime_client is None:
+            # Convert https:// to wss:// for websocket connections if needed
+            websocket_base_url = (
+                self._endpoint.replace("https://", "wss://")
+                if self._endpoint.startswith("https://")
+                else self._endpoint
+            )
+
+            logger.info(f"Creating realtime client with websocket_base_url: {websocket_base_url}")
+
+            # Get authentication token
+            if self._azure_auth:
+                # Use Entra ID authentication
+                credential = DefaultAzureCredential()
+                token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
+                token = token_provider()
+                api_key_value = token
+            else:
+                # Use API key authentication
+                api_key_value = self._api_key
+
+            self._realtime_client = AsyncOpenAI(
+                websocket_base_url=websocket_base_url,
+                api_key=api_key_value,
+            )
+
+        return self._realtime_client
+
+    async def connect(self, conversation_id: str):
+        """
+        Connects to Realtime API using AsyncOpenAI client.
+        Returns the realtime connection.
+        """
+        logger.info(f"Connecting to Realtime API: {self._endpoint}")
+
+        client = self._get_openai_client()
+        connection = await client.realtime.connect(model=self._model_name).__aenter__()
+
+        logger.info("Successfully connected to AzureOpenAI Realtime API")
+        return connection
+
+    def _set_system_prompt_and_config_vars(self, system_prompt: str):
+        """
+        Creates session configuration for OpenAI client.
+        Uses the Azure GA format with nested audio config.
+        """
         session_config = {
-            "modalities": ["audio", "text"],
-            "instructions": self.system_prompt,
-            "input_audio_format": "pcm16",
-            "output_audio_format": "pcm16",
-            "turn_detection": None,
+            "type": "realtime",
+            "instructions": system_prompt,
+            "output_modalities": ["audio"],  # Use only audio modality
+            "audio": {
+                "input": {
+                    "transcription": {
+                        "model": "whisper-1",
+                    },
+                    "format": {
+                        "type": "audio/pcm",
+                        "rate": 24000,
+                    },
+                },
+                "output": {
+                    "format": {
+                        "type": "audio/pcm",
+                        "rate": 24000,
+                    }
+                },
+            },
         }
 
         if self.voice:
-            session_config["voice"] = self.voice
+            session_config["audio"]["output"]["voice"] = self.voice  # type: ignore[index]
 
         return session_config
 
-    async def send_event(self, event: dict, conversation_id: str):
-        """
-        Sends an event to the WebSocket server.
-
-        Args:
-            event (dict): Event to send in dictionary format.
-            conversation_id (str): Conversation ID
-        """
-        websocket = self._get_websocket(conversation_id=conversation_id)
-        await websocket.send(json.dumps(event))
-        logger.debug(f"Event sent - type: {event['type']}")
-
     async def send_config(self, conversation_id: str):
         """
-        Sends the session configuration to the WebSocket server.
+        Sends the session configuration using OpenAI client.
 
         Args:
             conversation_id (str): Conversation ID
         """
-        config_variables = self._set_system_prompt_and_config_vars()
+        # Extract system prompt from conversation history
+        system_prompt = self._get_system_prompt_from_conversation(conversation_id=conversation_id)
+        config_variables = self._set_system_prompt_and_config_vars(system_prompt=system_prompt)
 
-        await self.send_event(
-            event={"type": "session.update", "session": config_variables}, conversation_id=conversation_id
-        )
-        logger.info("Session set up")
+        connection = self._get_connection(conversation_id=conversation_id)
+        await connection.session.update(session=config_variables)
+        logger.info("Session configuration sent")
+
+    def _get_system_prompt_from_conversation(self, *, conversation_id: str) -> str:
+        """
+        Retrieves the system prompt from conversation history.
+
+        Args:
+            conversation_id (str): The conversation ID
+
+        Returns:
+            str: The system prompt from conversation history, or a default if none found
+        """
+        conversation = self._memory.get_conversation(conversation_id=conversation_id)
+
+        # Look for a system message at the beginning of the conversation
+        if conversation and len(conversation) > 0:
+            first_message = conversation[0]
+            if first_message.message_pieces and first_message.message_pieces[0].role == "system":
+                return first_message.message_pieces[0].converted_value
+
+        # Return default system prompt if none found in conversation
+        return "You are a helpful AI assistant"
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, message: Message) -> Message:
+    @pyrit_target_retry
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
 
-        convo_id = message.message_pieces[0].conversation_id
-        if convo_id not in self._existing_conversation:
-            websocket = await self.connect()
-            self._existing_conversation[convo_id] = websocket
+        conversation_id = message.message_pieces[0].conversation_id
+        if conversation_id not in self._existing_conversation:
+            connection = await self.connect(conversation_id=conversation_id)
+            self._existing_conversation[conversation_id] = connection
 
-            self.set_system_prompt(
-                system_prompt=self.system_prompt,
-                conversation_id=convo_id,
-                attack_identifier=self.get_identifier(),
-            )
-
-        websocket = self._existing_conversation[convo_id]
+            # Only send config when creating a new connection
+            await self.send_config(conversation_id=conversation_id)
+            # Give the server a moment to process the session update
+            await asyncio.sleep(0.5)
 
         self._validate_request(message=message)
 
-        await self.send_config(conversation_id=convo_id)
         request = message.message_pieces[0]
         response_type = request.converted_value_data_type
 
         # Order of messages sent varies based on the data format of the prompt
         if response_type == "audio_path":
             output_audio_path, result = await self.send_audio_async(
-                filename=request.converted_value, conversation_id=convo_id
+                filename=request.converted_value, conversation_id=conversation_id
             )
 
         elif response_type == "text":
             output_audio_path, result = await self.send_text_async(
-                text=request.converted_value, conversation_id=convo_id
+                text=request.converted_value, conversation_id=conversation_id
             )
         else:
             raise ValueError(f"Unsupported response type: {response_type}")
@@ -216,7 +323,7 @@ class RealtimeTarget(OpenAITarget):
         ).message_pieces[0]
 
         response_entry = Message(message_pieces=[text_response_piece, audio_response_piece])
-        return response_entry
+        return [response_entry]
 
     async def save_audio(
         self,
@@ -253,88 +360,171 @@ class RealtimeTarget(OpenAITarget):
 
     async def cleanup_target(self):
         """
-        Disconnects from the WebSocket server to clean up, cleaning up all existing conversations.
+        Disconnects from the Realtime API connections.
         """
-        for conversation_id, websocket in self._existing_conversation.items():
-            if websocket:
-                await websocket.close()
-                logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
+        for conversation_id, connection in list(self._existing_conversation.items()):
+            if connection:
+                try:
+                    await connection.close()
+                    logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
+                except Exception as e:
+                    logger.warning(f"Error closing connection for {conversation_id}: {e}")
         self._existing_conversation = {}
+
+        if self._realtime_client:
+            try:
+                await self._realtime_client.close()
+            except Exception as e:
+                logger.warning(f"Error closing realtime client: {e}")
+            self._realtime_client = None
 
     async def cleanup_conversation(self, conversation_id: str):
         """
-        Disconnects from the WebSocket server for a specific conversation.
+        Disconnects from the Realtime API for a specific conversation.
 
         Args:
             conversation_id (str): The conversation ID to disconnect from.
 
         """
-        websocket = self._existing_conversation.get(conversation_id)
-        if websocket:
-            await websocket.close()
-            logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
+        connection = self._existing_conversation.get(conversation_id)
+        if connection:
+            try:
+                await connection.close()
+                logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
+            except Exception as e:
+                logger.warning(f"Error closing connection for {conversation_id}: {e}")
             del self._existing_conversation[conversation_id]
 
     async def send_response_create(self, conversation_id: str):
         """
-        Sends response.create message to the WebSocket server.
+        Sends response.create using OpenAI client.
 
         Args:
             conversation_id (str): Conversation ID
         """
-        await self.send_event(event={"type": "response.create"}, conversation_id=conversation_id)
+        connection = self._get_connection(conversation_id=conversation_id)
+        await connection.response.create()
 
     async def receive_events(self, conversation_id: str) -> RealtimeTargetResult:
         """
-        Continuously receive events from the WebSocket server.
+        Continuously receive events from the OpenAI Realtime API connection.
+
+        Uses a robust "soft-finish" strategy to handle cases where response.done
+        may not arrive. After receiving audio.done, waits for a grace period
+        before soft-finishing if no response.done arrives.
 
         Args:
             conversation_id: conversation ID
 
         Returns:
-            List[Union[bytes, str]]: Collection of conversation messages with audio data
-            at index 0 (bytes) and transcript at index 1 (str) if available
+            RealtimeTargetResult with audio data and transcripts
 
         Raises:
-            ConnectionError: If WebSocket connection is not valid
-            ValueError: If received event doesn't match expected structure
+            ConnectionError: If connection is not valid
+            RuntimeError: If server returns an error
         """
-        websocket = self._get_websocket(conversation_id=conversation_id)
+        connection = self._get_connection(conversation_id=conversation_id)
 
         result = RealtimeTargetResult()
+        audio_done_received = False
+        GRACE_PERIOD_SEC = 1.0  # Wait 1 second after audio.done before soft-finishing
 
         try:
-            async for message in websocket:
-                event = json.loads(message)
-                serialized_event = json.dumps(event, indent=2)
-                msg_response_type = event.get("type")
+            # Create event iterator
+            event_iter = connection.__aiter__()
 
-                if not msg_response_type:
-                    logger.warning(f"Received event without type field: {serialized_event}")
-                    continue
+            while True:
+                # If we've seen audio.done, wait with a short timeout for response.done
+                # Otherwise, wait indefinitely for events
+                timeout = GRACE_PERIOD_SEC if audio_done_received else None
 
-                logger.debug(f"Processing event type: {msg_response_type}")
+                try:
+                    event = await asyncio.wait_for(event_iter.__anext__(), timeout=timeout)
+                except asyncio.TimeoutError:
+                    # Soft-finish: audio.done was received but no response.done after grace period
+                    if audio_done_received:
+                        logger.warning(
+                            f"Soft-finishing: No response.done {GRACE_PERIOD_SEC}s after audio.done. "
+                            f"Audio bytes: {len(result.audio_bytes)}"
+                        )
+                        break
+                    # Should not happen if timeout is None, but re-raise if it does
+                    raise
+                except StopAsyncIteration:
+                    # Connection closed normally
+                    logger.debug("Event stream ended")
+                    break
+                except Exception as conn_err:
+                    # Handle websockets connection errors as soft-finish if we have audio
+                    if "ConnectionClosed" in str(type(conn_err).__name__) and result.audio_bytes:
+                        logger.warning(
+                            f"Connection closed without response.done (likely API issue). "
+                            f"Audio bytes received: {len(result.audio_bytes)}. Soft-finishing."
+                        )
+                        break
+                    # Re-raise if not a connection close or no audio received
+                    raise
 
-                if msg_response_type == "response.done":
-                    RealtimeTarget._handle_response_done_event(event=event, result=result)
+                event_type = event.type
+                logger.debug(f"Processing event type: {event_type}")
+
+                if event_type == "response.done":
+                    self._handle_response_done_event(event=event, result=result)
+                    logger.debug("Received response.done - finishing normally")
                     break
 
-                elif msg_response_type == "error":
-                    logger.error(f"Received 'error' event: {serialized_event}")
-                    break
+                elif event_type == "error":
+                    error_message = event.error.message if hasattr(event.error, "message") else str(event.error)
+                    error_type = event.error.type if hasattr(event.error, "type") else "unknown"
+                    logger.error(f"Received 'error' event: [{error_type}] {error_message}")
+                    raise RuntimeError(f"Server error: [{error_type}] {error_message}")
 
-                elif msg_response_type == "response.audio.delta":
-                    audio_data = RealtimeTarget._handle_audio_delta_event(event=event)
+                elif event_type in ["response.audio.delta", "response.output_audio.delta"]:
+                    audio_data = base64.b64decode(event.delta)
                     result.audio_bytes += audio_data
+                    logger.debug(f"Decoded {len(audio_data)} bytes of audio data")
 
-                elif msg_response_type == "response.audio.done":
-                    logger.debug(f"Processing 'audio.done' event: {serialized_event}")
+                elif event_type in ["response.audio.done", "response.output_audio.done"]:
+                    logger.debug(f"Received audio.done - will soft-finish in {GRACE_PERIOD_SEC}s if no response.done")
+                    audio_done_received = True
+
+                elif event_type in ["response.audio_transcript.delta", "response.output_audio_transcript.delta"]:
+                    # Capture transcript deltas as they arrive (needed when response.done never comes)
+                    if hasattr(event, "delta") and event.delta:
+                        result.transcripts.append(event.delta)
+                        logger.debug(f"Captured transcript delta: {event.delta[:50]}...")
+
+                elif event_type in ["response.output_text.done"]:
+                    logger.debug("Received text.done")
+
+                # Handle lifecycle events that we can safely log
+                elif event_type in [
+                    "session.created",
+                    "session.updated",
+                    "conversation.created",
+                    "conversation.item.created",
+                    "conversation.item.added",
+                    "conversation.item.done",
+                    "input_audio_buffer.committed",
+                    "input_audio_buffer.speech_started",
+                    "input_audio_buffer.speech_stopped",
+                    "conversation.item.input_audio_transcription.completed",
+                    "response.created",
+                    "response.output_item.added",
+                    "response.output_item.created",
+                    "response.output_item.done",
+                    "response.content_part.added",
+                    "response.content_part.done",
+                    "response.audio_transcript.done",
+                    "response.output_audio_transcript.done",
+                    "response.output_text.delta",
+                    "rate_limits.updated",
+                ]:
+                    logger.debug(f"Lifecycle event '{event_type}'")
 
                 else:
-                    logger.debug(f"Unhandled event type '{msg_response_type}' for event {serialized_event}")
+                    logger.debug(f"Unhandled event type '{event_type}'")
 
-        except websockets.ConnectionClosed as e:
-            logger.error(f"WebSocket connection closed for conversation {conversation_id}: {e}")
         except Exception as e:
             logger.error(f"An unexpected error occurred for conversation {conversation_id}: {e}")
             raise
@@ -345,141 +535,135 @@ class RealtimeTarget(OpenAITarget):
         )
         return result
 
-    def _get_websocket(self, *, conversation_id: str):
+    def _get_connection(self, *, conversation_id: str):
         """
-        Get and validate the WebSocket connection for a conversation.
+        Get and validate the Realtime API connection for a conversation.
 
         Args:
             conversation_id: The conversation ID
 
         Returns:
-            The WebSocket connection
+            The Realtime API connection
 
         Raises:
-            ConnectionError: If WebSocket connection is not established
+            ConnectionError: If connection is not established
         """
-        websocket = self._existing_conversation.get(conversation_id)
-        if websocket is None:
-            raise ConnectionError(f"WebSocket connection is not established for conversation {conversation_id}")
-        return websocket
+        connection = self._existing_conversation.get(conversation_id)
+        if connection is None:
+            raise ConnectionError(f"Realtime API connection is not established for conversation {conversation_id}")
+        return connection
 
     @staticmethod
-    def _handle_response_done_event(*, event: dict, result: RealtimeTargetResult) -> None:
+    def _handle_response_done_event(*, event: Any, result: RealtimeTargetResult) -> None:
         """
-        Process a response.done event and extract the transcript.
+        Process a response.done event from OpenAI client.
 
         Args:
-            event: The event data
-            conversation_messages: List to add the transcript to
+            event: The event object from OpenAI client
+            result: RealtimeTargetResult to update
 
         Raises:
             ValueError: If event structure doesn't match expectations
+            ServerErrorException: If response status is failed
+
+        Note:
+            We no longer extract transcripts here since we capture them from
+            transcript.delta events. This avoids duplicates and supports soft-finish
+            when response.done never arrives.
         """
-        logger.debug(f"Processing 'response.done' event: {json.dumps(event, indent=2)}")
+        logger.debug("Processing 'response.done' event")
 
-        if "response" not in event:
-            raise ValueError("Missing 'response' field in response.done event")
-
-        response = event["response"]
+        response = event.response
 
         # Check for failed status
-        status = response.get("status")
+        status = response.status
         if status == "failed":
             error_details = RealtimeTarget._extract_error_details(response=response)
             raise ServerErrorException(message=error_details)
 
-        if "output" not in response:
-            raise ValueError("Missing 'output' field in response")
-
-        output = response["output"]
-        if not output or not isinstance(output, list):
-            raise ValueError(f"Empty or invalid 'output' array in response: {output}")
-
-        content = output[0].get("content")
-        if not content or not isinstance(content, list) or len(content) == 0:
-            raise ValueError(f"Missing or invalid 'content' in: {output[0]}")
-
-        if "transcript" not in content[0]:
-            raise ValueError(f"Missing 'transcript' in: {content[0]}")
-
-        transcript = content[0]["transcript"]
-        result.transcripts.append(transcript)
-        logger.debug(f"Added transcript to conversation messages: {transcript[:50]}...")
+        # We used to extract transcript here, but now we collect it from delta events
+        # to support soft-finish when response.done doesn't arrive
+        logger.debug(f"Response completed successfully with {len(result.transcripts)} transcript fragments")
 
     @staticmethod
-    def _extract_error_details(*, response: dict) -> str:
+    def _extract_error_details(*, response: Any) -> str:
         """
         Extract error details from a failed response.
 
         Args:
-            response: The response data
+            response: The response object from OpenAI client
 
         Returns:
             A formatted error message
         """
-        status_details = response.get("status_details", {})
-        error = status_details.get("error", {})
-        error_type = error.get("type", "unknown")
-        error_message = error.get("message", "No error message provided")
-        return f"[{error_type}] {error_message}"
-
-    @staticmethod
-    def _handle_audio_delta_event(*, event: dict) -> bytes:
-        """
-        Process a response.audio.delta event and extract audio data.
-
-        Args:
-            event: The event data
-
-        Returns:
-            Decoded audio data as bytes
-        """
-        logger.debug(f"Processing audio.delta event: {json.dumps(event, indent=2)}")
-
-        if "delta" not in event:
-            raise ValueError("Missing 'delta' field in audio delta event")
-
-        audio_data = base64.b64decode(event["delta"])
-        logger.debug(f"Decoded {len(audio_data)} bytes of audio data")
-        return audio_data
+        if hasattr(response, "status_details") and response.status_details:
+            status_details = response.status_details
+            if hasattr(status_details, "error") and status_details.error:
+                error = status_details.error
+                error_type = error.type if hasattr(error, "type") else "unknown"
+                error_message = error.message if hasattr(error, "message") else "No error message provided"
+                return f"[{error_type}] {error_message}"
+        return "Unknown error occurred"
 
     async def send_text_async(self, text: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
         """
-        Sends text prompt to the WebSocket server.
+        Sends text prompt using OpenAI Realtime API client.
 
         Args:
             text: prompt to send.
             conversation_id: conversation ID
         """
-        await self.send_response_create(conversation_id=conversation_id)
+        connection = self._get_connection(conversation_id=conversation_id)
 
-        # Listen for responses
+        # Start listening for responses
         receive_tasks = asyncio.create_task(self.receive_events(conversation_id=conversation_id))
 
         logger.info(f"Sending text message: {text}")
-        event = {
-            "type": "conversation.item.create",
-            "item": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": text}]},
-        }
-        await self.send_event(event=event, conversation_id=conversation_id)
 
-        result = await asyncio.wait_for(receive_tasks, timeout=30.0)  # Wait for all responses to be received
+        # Send conversation item
+        await connection.conversation.item.create(
+            item={
+                "type": "message",
+                "role": "user",
+                "content": [{"type": "input_text", "text": text}],
+            }
+        )
+
+        # Request response from model
+        await self.send_response_create(conversation_id=conversation_id)
+
+        # Wait for response - receive_events has its own soft-finish logic
+        result = await receive_tasks
 
         if not result.audio_bytes:
             raise RuntimeError("No audio received from the server.")
 
-        output_audio_path = await self.save_audio(audio_bytes=result.audio_bytes)
+        # Close and recreate connection to avoid websockets library state issues with fragmented frames
+        # This prevents "cannot reset() while queue isn't empty" errors in multi-turn conversations
+        await self.cleanup_conversation(conversation_id=conversation_id)
+        new_connection = await self.connect(conversation_id=conversation_id)
+        self._existing_conversation[conversation_id] = new_connection
+
+        # Send session configuration to new connection
+        system_prompt = self._get_system_prompt_from_conversation(conversation_id=conversation_id)
+        session_config = self._set_system_prompt_and_config_vars(system_prompt=system_prompt)
+        await new_connection.session.update(session=session_config)
+
+        # Azure GA uses 24000 Hz sample rate
+        output_audio_path = await self.save_audio(audio_bytes=result.audio_bytes, sample_rate=24000)
         return output_audio_path, result
 
     async def send_audio_async(self, filename: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
         """
-        Send an audio message to the WebSocket server.
+        Send an audio message using OpenAI Realtime API client.
 
         Args:
             filename (str): The path to the audio file.
+            conversation_id (str): Conversation ID
         """
-        with wave.open(filename, "rb") as wav_file:
+        connection = self._get_connection(conversation_id=conversation_id)
 
+        with wave.open(filename, "rb") as wav_file:
             # Read WAV parameters
             num_channels = wav_file.getnchannels()
             sample_width = wav_file.getsampwidth()  # Should be 2 bytes for PCM16
@@ -493,26 +677,49 @@ class RealtimeTarget(OpenAITarget):
         try:
             audio_base64 = base64.b64encode(audio_content).decode("utf-8")
 
-            event = {"type": "input_audio_buffer.append", "audio": audio_base64}
-
-            # await asyncio.sleep(0.1)
-            await self.send_event(event=event, conversation_id=conversation_id)
+            # Use conversation.item.create with input_audio (like Azure sample)
+            logger.info(f"Sending audio message via conversation.item.create with {len(audio_base64)} bytes")
+            await connection.conversation.item.create(
+                item={
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_audio", "audio": audio_base64}],
+                }
+            )
 
         except Exception as e:
             logger.error(f"Error sending audio: {e}")
             raise
 
-        event = {"type": "input_audio_buffer.commit"}
-        await asyncio.sleep(0.1)
-        await self.send_event(event, conversation_id=conversation_id)
-        await self.send_response_create(conversation_id=conversation_id)  # Sends response.create message
+        logger.debug("Sending response.create")
+        await self.send_response_create(conversation_id=conversation_id)
 
-        result = await asyncio.wait_for(receive_tasks, timeout=30.0)
+        logger.debug("Waiting for response events...")
+        # Wait for response - receive_events has its own soft-finish logic
+        result = await receive_tasks
         if not result.audio_bytes:
             raise RuntimeError("No audio received from the server.")
 
+        # Close and recreate connection to avoid websockets library state issues with fragmented frames
+        # This prevents "cannot reset() while queue isn't empty" errors in multi-turn conversations
+        await self.cleanup_conversation(conversation_id=conversation_id)
+        new_connection = await self.connect(conversation_id=conversation_id)
+        self._existing_conversation[conversation_id] = new_connection
+
+        # Send session configuration to new connection
+        system_prompt = self._get_system_prompt_from_conversation(conversation_id=conversation_id)
+        session_config = self._set_system_prompt_and_config_vars(system_prompt=system_prompt)
+        await new_connection.session.update(session=session_config)
+
         output_audio_path = await self.save_audio(result.audio_bytes, num_channels, sample_width, frame_rate)
         return output_audio_path, result
+
+    async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
+        """
+        Not used in RealtimeTarget - message construction handled by receive_events.
+        This implementation exists to satisfy the abstract base class requirement.
+        """
+        raise NotImplementedError("RealtimeTarget uses receive_events for message construction")
 
     def _validate_request(self, *, message: Message) -> None:
         """

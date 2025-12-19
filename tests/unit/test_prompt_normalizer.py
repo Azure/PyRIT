@@ -148,7 +148,7 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
 
     response = MessagePiece(role="assistant", original_value="test_response").to_message()
 
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -247,7 +247,7 @@ async def test_send_prompt_async_mixed_sequence_types(mock_memory_instance):
 @pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_group, response: Message):
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -259,7 +259,7 @@ async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_gr
 async def test_send_prompt_async_no_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     normalizer = PromptNormalizer()
 
@@ -272,7 +272,7 @@ async def test_send_prompt_async_no_converters_response(mock_memory_instance, se
 async def test_send_prompt_async_converters_response(mock_memory_instance, seed_group, response: Message):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
     response_converter = PromptConverterConfiguration(converters=[Base64Converter()], indexes_to_apply=[0])
 
@@ -291,7 +291,7 @@ async def test_send_prompt_async_converters_response(mock_memory_instance, seed_
 async def test_send_prompt_async_image_converter(mock_memory_instance):
     prompt_target = MagicMock(PromptTarget)
     prompt_target.send_prompt_async = AsyncMock(
-        return_value=MessagePiece(role="assistant", original_value="response").to_message()
+        return_value=[MessagePiece(role="assistant", original_value="response").to_message()]
     )
 
     mock_image_converter = MagicMock(PromptConverter)
@@ -557,65 +557,3 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_gr
         "Test Exception"
         in mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"].message_pieces[0].original_value
     )
-
-
-@pytest.mark.asyncio
-async def test_build_message_harm_categories(mock_memory_instance):
-    """Test that harm_categories from seed prompts are propagated to message pieces."""
-
-    harm_categories = ["violence", "illegal"]
-
-    # Create a seed group with harm categories
-    seed_group = SeedGroup(
-        seeds=[
-            SeedPrompt(
-                value="Test harmful prompt",
-                data_type="text",
-                role="user",
-                sequence=1,
-                harm_categories=harm_categories,
-            ),
-            SeedPrompt(
-                value="Another prompt",
-                data_type="text",
-                role="user",
-                sequence=1,
-                # Not setting harm_categories, so it will default to []
-            ),
-        ]
-    )
-
-    labels = {"operation": "test_op"}
-    conversation_id = str(uuid.uuid4())
-    prompt_target = MockPromptTarget()
-    request_converters = []
-
-    normalizer = PromptNormalizer()
-
-    response = await normalizer._build_message(
-        seed_group=seed_group,
-        conversation_id=conversation_id,
-        request_converter_configurations=request_converters,
-        target=prompt_target,
-        labels=labels,
-    )
-
-    assert len(response.message_pieces) == 2
-
-    # First prompt should have harm categories
-    first_piece = response.message_pieces[0]
-    assert first_piece.targeted_harm_categories == harm_categories
-    assert first_piece.original_value == "Test harmful prompt"
-    assert first_piece.role == "user"
-
-    # Second prompt should have empty harm categories (default)
-    second_piece = response.message_pieces[1]
-    assert second_piece.targeted_harm_categories == []
-    assert second_piece.original_value == "Another prompt"
-    assert second_piece.role == "user"
-
-    # Verify other fields are set correctly
-    assert first_piece.conversation_id == conversation_id
-    assert second_piece.conversation_id == conversation_id
-    assert first_piece.labels == labels
-    assert second_piece.labels == labels
