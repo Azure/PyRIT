@@ -156,7 +156,7 @@ async def run_multimodal(page: Page) -> None:
     )
     decomposed = seed_group.to_attack_parameters()
     attack_context = SingleTurnAttackContext(
-        message=decomposed.current_turn_message,
+        next_message=decomposed.current_turn_message,
         objective=objective,
     )
 

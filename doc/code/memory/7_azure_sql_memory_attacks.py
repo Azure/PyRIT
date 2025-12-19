@@ -205,7 +205,7 @@ attack = PromptSendingAttack(objective_target=azure_openai_gpt4o_chat_target)
 decomposed = seed_group.to_attack_parameters()
 attack_context = SingleTurnAttackContext(
     objective="Describe the picture in detail",
-    message=decomposed.current_turn_message,
+    next_message=decomposed.current_turn_message,
 )
 
 result = await attack.execute_with_context_async(context=attack_context)  # type: ignore

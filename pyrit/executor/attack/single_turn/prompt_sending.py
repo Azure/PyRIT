@@ -276,9 +276,9 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         Returns:
             Message: The message to be used in the attack.
         """
-        if context.message:
+        if context.next_message:
             # Deep copy the message to preserve all fields, then assign new IDs
-            return context.message.duplicate_message()
+            return context.next_message.duplicate_message()
 
         return Message.from_prompt(prompt=context.objective, role="user")
 

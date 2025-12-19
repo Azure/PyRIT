@@ -233,7 +233,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         # update the custom message if provided
         if RedTeamingAttack._has_custom_prompt(state=conversation_state):
-            context.message = Message.from_prompt(prompt=conversation_state.last_user_message, role="user")
+            context.next_message = Message.from_prompt(prompt=conversation_state.last_user_message, role="user")
 
         # get the last assistant message evaluation score if available
         score = self._retrieve_last_assistant_message_evaluation_score(state=conversation_state)
@@ -336,11 +336,11 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             ValueError: If no response is received from the adversarial chat.
         """
         # If custom message provided, use it and bypass adversarial chat generation
-        if context.message:
+        if context.next_message:
             logger.debug("Using custom message, bypassing adversarial chat")
-            prompt = context.message.message_pieces[0].converted_value
+            prompt = context.next_message.message_pieces[0].converted_value
             # Clear to prevent reuse
-            context.message = None
+            context.next_message = None
             return prompt
 
         # Generate prompt using adversarial chat

@@ -194,10 +194,10 @@ class TestFlipAttackExecution:
             result = await flip_attack._perform_async(context=basic_context)
 
             # Verify the message was set correctly
-            assert basic_context.message is not None
-            assert len(basic_context.message.message_pieces) == 1
-            assert basic_context.message.message_pieces[0].original_value == expected_prompt
-            assert basic_context.message.message_pieces[0].original_value_data_type == "text"
+            assert basic_context.next_message is not None
+            assert len(basic_context.next_message.message_pieces) == 1
+            assert basic_context.next_message.message_pieces[0].original_value == expected_prompt
+            assert basic_context.next_message.message_pieces[0].original_value_data_type == "text"
 
             # Verify parent method was called
             mock_perform.assert_called_once_with(context=basic_context)

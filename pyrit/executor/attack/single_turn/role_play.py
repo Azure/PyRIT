@@ -129,7 +129,7 @@ class RolePlayAttack(PromptSendingAttack):
 
         # Set the rephrased objective as the message
         # This will be used by _get_message() to send the rephrased content to the target
-        context.message = Message.from_prompt(prompt=rephrased_objective, role="user")
+        context.next_message = Message.from_prompt(prompt=rephrased_objective, role="user")
 
         # Call parent setup which handles conversation ID generation, memory labels, etc.
         await super()._setup_async(context=context)
@@ -144,9 +144,9 @@ class RolePlayAttack(PromptSendingAttack):
         Raises:
             ValueError: If message or prepended_conversation are provided by the user.
         """
-        if context.message is not None:
+        if context.next_message is not None:
             raise ValueError(
-                "RolePlayAttack does not accept a message parameter. "
+                "RolePlayAttack does not accept a next_message parameter. "
                 "The message is generated internally by rephrasing the objective."
             )
         if context.prepended_conversation:

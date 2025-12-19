@@ -109,16 +109,8 @@ class TestXPIAWorkflowValidation:
         """Test that validation fails when message has multiple pieces."""
         multiple_pieces_message = Message(
             message_pieces=[
-                MessagePiece(
-                    role="user",
-                    original_value="First",
-                    conversation_id="conv1"
-                ),
-                MessagePiece(
-                    role="user",
-                    original_value="Second",
-                    conversation_id="conv1"
-                ),
+                MessagePiece(role="user", original_value="First", conversation_id="conv1"),
+                MessagePiece(role="user", original_value="Second", conversation_id="conv1"),
             ],
         )
         context = XPIAContext(attack_content=multiple_pieces_message, processing_callback=mock_processing_callback)
@@ -132,7 +124,13 @@ class TestXPIAWorkflowValidation:
         """Test that validation fails when message piece is not text type."""
         non_text_message = Message(
             message_pieces=[
-                MessagePiece(role="user", converted_value="image.jpg", original_value="image.jpg", converted_value_data_type="image_path", original_value_data_type="image_path"),
+                MessagePiece(
+                    role="user",
+                    converted_value="image.jpg",
+                    original_value="image.jpg",
+                    converted_value_data_type="image_path",
+                    original_value_data_type="image_path",
+                ),
             ],
         )
         context = XPIAContext(attack_content=non_text_message, processing_callback=mock_processing_callback)

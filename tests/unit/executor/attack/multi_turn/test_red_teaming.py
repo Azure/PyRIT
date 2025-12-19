@@ -407,13 +407,13 @@ class TestContextCreation:
                         custom_message = Message.from_prompt(prompt="My custom prompt", role="user")
                         await attack.execute_async(
                             objective="Test objective",
-                            message=custom_message,
+                            next_message=custom_message,
                         )
 
                         # Verify the captured context
                         assert captured_context is not None
-                        assert captured_context.message is not None
-                        assert captured_context.message.message_pieces[0].original_value == "My custom prompt"
+                        assert captured_context.next_message is not None
+                        assert captured_context.next_message.message_pieces[0].original_value == "My custom prompt"
 
     @pytest.mark.asyncio
     async def test_execute_async_invalid_message_type(
@@ -430,10 +430,10 @@ class TestContextCreation:
         )
 
         # Should raise TypeError during parameter validation
-        with pytest.raises(TypeError, match="Parameter 'message' must be of type Message"):
+        with pytest.raises(TypeError, match="Parameter 'next_message' must be of type Message"):
             await attack.execute_async(
                 objective="Test objective",
-                message=123,  # Invalid type
+                next_message=123,  # Invalid type
             )
 
 
@@ -697,12 +697,12 @@ class TestPromptGeneration:
 
         first_prompt = "Custom first prompt"
         basic_context.executed_turns = 0
-        basic_context.message = Message.from_prompt(prompt=first_prompt, role="user")
+        basic_context.next_message = Message.from_prompt(prompt=first_prompt, role="user")
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == first_prompt
-        assert basic_context.message is None  # Should be cleared after use
+        assert basic_context.next_message is None  # Should be cleared after use
         # Should not call adversarial chat
         mock_prompt_normalizer.send_prompt_async.assert_not_called()
 
@@ -728,12 +728,12 @@ class TestPromptGeneration:
 
         custom_prompt = "Custom prompt at turn 1"
         basic_context.executed_turns = 1  # Not first turn
-        basic_context.message = Message.from_prompt(prompt=custom_prompt, role="user")
+        basic_context.next_message = Message.from_prompt(prompt=custom_prompt, role="user")
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result == custom_prompt
-        assert basic_context.message is None  # Should be cleared after use
+        assert basic_context.next_message is None  # Should be cleared after use
         # Should not call adversarial chat
         mock_prompt_normalizer.send_prompt_async.assert_not_called()
 
@@ -759,7 +759,7 @@ class TestPromptGeneration:
         )
 
         basic_context.executed_turns = 1
-        basic_context.message = None  # No message
+        basic_context.next_message = None  # No message
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
         # Mock build_adversarial_prompt
@@ -1161,7 +1161,7 @@ class TestAttackExecution:
 
         # Set message to bypass adversarial chat
         custom_message = Message.from_prompt(prompt="Custom first turn message", role="user")
-        basic_context.message = custom_message
+        basic_context.next_message = custom_message
 
         # Mock only objective target response (no adversarial chat should be called)
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
@@ -1178,7 +1178,7 @@ class TestAttackExecution:
         assert mock_prompt_normalizer.send_prompt_async.call_count == 1
 
         # Verify the message was cleared after use
-        assert basic_context.message is None
+        assert basic_context.next_message is None
 
     @pytest.mark.asyncio
     async def test_perform_attack_with_multi_piece_message_uses_first_piece(
@@ -1217,7 +1217,7 @@ class TestAttackExecution:
             sequence=1,
         )
         multi_piece_message = Message(message_pieces=[piece1, piece2])
-        basic_context.message = multi_piece_message
+        basic_context.next_message = multi_piece_message
 
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 

@@ -24,7 +24,7 @@ class SingleTurnAttackContext(AttackContext):
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # Optional message to send to the objective target (overrides objective if provided)
-    message: Optional[Message] = None
+    next_message: Optional[Message] = None
 
     # System prompt for chat-based targets
     system_prompt: Optional[str] = None
@@ -63,7 +63,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         *,
         objective: str,
         prepended_conversation: Optional[List[Message]] = None,
-        message: Optional[Message] = None,
+        next_message: Optional[Message] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
     ) -> AttackResult: ...
@@ -84,7 +84,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         Args:
             objective (str): The objective of the attack.
             prepended_conversation (Optional[List[Message]]): Conversation to prepend.
-            message (Optional[Message]): Optional message to send to the objective target.
+            next_message (Optional[Message]): Optional message to send to the objective target.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.
 
@@ -92,8 +92,10 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
             AttackResult: The result of the attack execution.
         """
         # Validate parameters before creating context
-        message = get_kwarg_param(kwargs=kwargs, param_name="message", expected_type=Message, required=False)
+        next_message = get_kwarg_param(kwargs=kwargs, param_name="next_message", expected_type=Message, required=False)
         objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str, required=False)
         system_prompt = get_kwarg_param(kwargs=kwargs, param_name="system_prompt", expected_type=str, required=False)
 
-        return await super().execute_async(**kwargs, message=message, system_prompt=system_prompt, objective=objective)
+        return await super().execute_async(
+            **kwargs, next_message=next_message, system_prompt=system_prompt, objective=objective
+        )

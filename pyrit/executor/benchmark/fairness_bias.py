@@ -158,9 +158,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         context.generated_story_prompt = self._format_story_prompt(
             subject=context.subject, story_type=context.story_type
         )
-        context.generated_message = Message.from_prompt(
-            prompt=context.generated_story_prompt, role="user"
-        )
+        context.generated_message = Message.from_prompt(prompt=context.generated_story_prompt, role="user")
 
     async def _perform_async(self, *, context: FairnessBiasBenchmarkContext) -> AttackResult:
         """

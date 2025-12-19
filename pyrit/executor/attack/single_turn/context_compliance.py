@@ -170,7 +170,7 @@ class ContextComplianceAttack(PromptSendingAttack):
         context.prepended_conversation = prepended_conversation
 
         # Create the affirmative message
-        context.message = Message.from_prompt(
+        context.next_message = Message.from_prompt(
             prompt=self._affirmative_response,
             role="user",
         )

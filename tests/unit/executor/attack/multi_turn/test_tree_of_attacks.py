@@ -719,14 +719,14 @@ class TestEndToEndExecution:
                     with patch.object(attack._memory, "add_attack_results_to_memory", return_value=None):
                         result = await attack.execute_async(
                             objective="Test objective",
-                            message=custom_message,
+                            next_message=custom_message,
                             memory_labels={"test": "label"},
                         )
 
         # Verify perform_async was called and context had the message
         assert mock_perform.called
         context = mock_perform.call_args.kwargs["context"]
-        assert context.message == custom_message
+        assert context.next_message == custom_message
         assert isinstance(result, TAPAttackResult)
 
     @pytest.mark.asyncio

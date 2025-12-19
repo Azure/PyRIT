@@ -636,8 +636,8 @@ class TestSetupPhase:
         with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
-        assert basic_context.message is not None
-        assert basic_context.message.get_value() == "Custom prepended prompt"
+        assert basic_context.next_message is not None
+        assert basic_context.next_message.get_value() == "Custom prepended prompt"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -660,13 +660,13 @@ class TestPromptGeneration:
         )
 
         custom_message = Message.from_prompt(prompt="Custom prompt", role="user")
-        basic_context.message = custom_message
+        basic_context.next_message = custom_message
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
         assert result is custom_message  # Should return the same Message object
         assert result.get_value() == "Custom prompt"
-        assert basic_context.message is None  # Should be cleared
+        assert basic_context.next_message is None  # Should be cleared
 
     @pytest.mark.asyncio
     async def test_generate_next_prompt_calls_adversarial_chat(
@@ -698,7 +698,7 @@ class TestPromptGeneration:
         )
         mock_prompt_normalizer.send_prompt_async.return_value = response
 
-        basic_context.message = None
+        basic_context.next_message = None
         basic_context.refused_text = "Previous refused text"
 
         result = await attack._generate_next_prompt_async(context=basic_context)
@@ -1166,7 +1166,7 @@ class TestAttackExecution:
 
         # Set message to bypass adversarial chat
         custom_message = Message.from_prompt(prompt="Custom first turn message", role="user")
-        basic_context.message = custom_message
+        basic_context.next_message = custom_message
 
         # Mock only objective target response (no adversarial chat should be called)
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
@@ -1188,7 +1188,7 @@ class TestAttackExecution:
         assert mock_prompt_normalizer.send_prompt_async.call_count == 1
 
         # Verify the message was cleared after use
-        assert basic_context.message is None
+        assert basic_context.next_message is None
 
     @pytest.mark.asyncio
     async def test_perform_attack_with_multi_piece_message_uses_first_piece(
@@ -1226,7 +1226,7 @@ class TestAttackExecution:
             sequence=1,
         )
         multi_piece_message = Message(message_pieces=[piece1, piece2])
-        basic_context.message = multi_piece_message
+        basic_context.next_message = multi_piece_message
 
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
@@ -1520,10 +1520,10 @@ class TestContextCreation:
             objective="Test objective",
             prepended_conversation=[],
             memory_labels={},
-            message=message,
+            next_message=message,
         )
 
-        assert context.message == message
+        assert context.next_message == message
 
     def test_create_context_with_prepended_conversation(
         self,
@@ -1656,7 +1656,7 @@ class TestAttackLifecycle:
             result = await attack.execute_async(
                 objective="Test objective",
                 memory_labels={"test": "label"},
-                message=message,
+                next_message=message,
             )
 
         assert isinstance(result, CrescendoAttackResult)

@@ -168,9 +168,7 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         context.generated_question_prompt = self._format_question_prompt(entry)
 
         # Create the message with metadata
-        context.generated_message = self._create_message(
-            entry=entry, question_prompt=context.generated_question_prompt
-        )
+        context.generated_message = self._create_message(entry=entry, question_prompt=context.generated_question_prompt)
 
     async def _perform_async(self, *, context: QuestionAnsweringBenchmarkContext) -> AttackResult:
         """

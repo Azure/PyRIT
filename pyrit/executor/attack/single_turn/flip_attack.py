@@ -115,6 +115,6 @@ class FlipAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         initial_prompt = "TASK is '⟪" + context.objective.replace("'", "") + "⟫'"
-        context.message = Message.from_prompt(prompt=initial_prompt, role="user")
+        context.next_message = Message.from_prompt(prompt=initial_prompt, role="user")
 
         return await super()._perform_async(context=context)

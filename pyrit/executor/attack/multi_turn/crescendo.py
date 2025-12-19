@@ -284,7 +284,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         refused_text, objective_score = self._retrieve_refusal_text_and_objective_score(conversation_state)
         custom_prompt_text = self._retrieve_custom_prompt_from_prepended_conversation(conversation_state)
         if custom_prompt_text:
-            context.message = Message.from_prompt(prompt=custom_prompt_text, role="user")
+            context.next_message = Message.from_prompt(prompt=custom_prompt_text, role="user")
         context.last_score = objective_score
 
         # Store refused text in context
@@ -750,10 +750,10 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             Message: The generated message to be sent to the target.
         """
         # If custom message is set, use it and bypass adversarial chat generation
-        if context.message:
+        if context.next_message:
             self._logger.debug("Using custom message, bypassing adversarial chat")
-            message = context.message
-            context.message = None  # Clear for future turns
+            message = context.next_message
+            context.next_message = None  # Clear for future turns
             return message
 
         # Generate prompt using adversarial chat

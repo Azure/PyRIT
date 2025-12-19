@@ -301,10 +301,10 @@ class TestRolePlayAttackContextValidation:
     """Tests for context validation in RolePlayAttack"""
 
     def test_validate_context_rejects_seed_group(self, role_play_attack, basic_context):
-        """Test that validation rejects message parameter"""
-        basic_context.message = Message.from_prompt(prompt="test", role="user")
+        """Test that validation rejects next_message parameter"""
+        basic_context.next_message = Message.from_prompt(prompt="test", role="user")
 
-        with pytest.raises(ValueError, match="does not accept a message parameter"):
+        with pytest.raises(ValueError, match="does not accept a next_message parameter"):
             role_play_attack._validate_context(context=basic_context)
 
     def test_validate_context_rejects_prepended_conversation(self, role_play_attack, basic_context):
@@ -376,10 +376,10 @@ class TestRolePlayAttackSetup:
         mock_convert.assert_called_once_with(prompt=basic_context.objective, input_type="text")
 
         # Verify message was created with rephrased objective
-        assert basic_context.message is not None
-        assert len(basic_context.message.message_pieces) == 1
-        assert basic_context.message.message_pieces[0].original_value == rephrased_text
-        assert basic_context.message.message_pieces[0].original_value_data_type == "text"
+        assert basic_context.next_message is not None
+        assert len(basic_context.next_message.message_pieces) == 1
+        assert basic_context.next_message.message_pieces[0].original_value == rephrased_text
+        assert basic_context.next_message.message_pieces[0].original_value_data_type == "text"
 
     @pytest.mark.asyncio
     async def test_setup_calls_parent_setup(self, role_play_attack, basic_context):

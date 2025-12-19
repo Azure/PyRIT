@@ -198,7 +198,7 @@ class TestContextValidation:
         context = SingleTurnAttackContext(
             objective="Test objective",
             conversation_id=str(uuid.uuid4()),
-            message=Message.from_prompt(prompt="test", role="user"),
+            next_message=Message.from_prompt(prompt="test", role="user"),
             system_prompt="System prompt",
             metadata={"key": "value"},
         )
@@ -269,7 +269,7 @@ class TestPromptPreparation:
 
     def test_get_message_uses_existing_message(self, mock_target, basic_context):
         existing_message = Message.from_prompt(prompt="Existing prompt", role="user")
-        basic_context.message = existing_message
+        basic_context.next_message = existing_message
 
         attack = PromptSendingAttack(objective_target=mock_target)
         result = attack._get_message(basic_context)
@@ -281,7 +281,7 @@ class TestPromptPreparation:
         assert result.message_pieces[0].role == existing_message.message_pieces[0].role
 
     def test_get_message_creates_from_objective_when_no_message(self, mock_target, basic_context):
-        basic_context.message = None
+        basic_context.next_message = None
         basic_context.objective = "Custom objective text"
 
         attack = PromptSendingAttack(objective_target=mock_target)
@@ -296,7 +296,7 @@ class TestPromptPreparation:
         """Test that duplicate_message preserves original_prompt_id for tracing."""
         existing_message = Message.from_prompt(prompt="Track this prompt", role="user")
         original_prompt_id = existing_message.message_pieces[0].original_prompt_id
-        basic_context.message = existing_message
+        basic_context.next_message = existing_message
 
         attack = PromptSendingAttack(objective_target=mock_target)
         result = attack._get_message(basic_context)
@@ -307,7 +307,7 @@ class TestPromptPreparation:
     def test_get_message_creates_unique_ids_each_call(self, mock_target, basic_context):
         """Test that each call to _get_message creates unique IDs (important for retries)."""
         existing_message = Message.from_prompt(prompt="Retry prompt", role="user")
-        basic_context.message = existing_message
+        basic_context.next_message = existing_message
 
         attack = PromptSendingAttack(objective_target=mock_target)
 
@@ -342,7 +342,7 @@ class TestPromptPreparation:
             sequence=1,
         )
         multi_piece_message = Message(message_pieces=[piece1, piece2])
-        basic_context.message = multi_piece_message
+        basic_context.next_message = multi_piece_message
 
         attack = PromptSendingAttack(objective_target=mock_target)
         result = attack._get_message(basic_context)
@@ -1005,7 +1005,7 @@ class TestAttackLifecycle:
             objective="Test objective",
             prepended_conversation=[sample_response],
             memory_labels={"test": "label"},
-            message=message,
+            next_message=message,
             system_prompt="System prompt",
         )
 
@@ -1019,7 +1019,7 @@ class TestAttackLifecycle:
         assert isinstance(context, SingleTurnAttackContext)
         assert context.objective == "Test objective"
         assert context.memory_labels == {"test": "label"}
-        assert context.message is not None
+        assert context.next_message is not None
         assert context.system_prompt == "System prompt"
 
     @pytest.mark.asyncio
@@ -1028,8 +1028,8 @@ class TestAttackLifecycle:
         attack = PromptSendingAttack(objective_target=mock_target)
 
         # Test with invalid message type
-        with pytest.raises(TypeError, match="Parameter 'message' must be of type Message"):
-            await attack.execute_async(objective="Test objective", message="invalid_type")  # Should be Message
+        with pytest.raises(TypeError, match="Parameter 'next_message' must be of type Message"):
+            await attack.execute_async(objective="Test objective", next_message="invalid_type")  # Should be Message
 
         # Test with invalid system_prompt type
         with pytest.raises(TypeError, match="Parameter 'system_prompt' must be of type str"):
@@ -1078,7 +1078,7 @@ class TestEdgeCasesAndErrorHandling:
 
         # Set minimal message with a single empty prompt
         minimal_message = Message.from_prompt(prompt="", role="user")
-        basic_context.message = minimal_message
+        basic_context.next_message = minimal_message
 
         attack._get_message = MagicMock(return_value=minimal_message)
         attack._send_prompt_to_objective_target_async = AsyncMock(return_value=sample_response)

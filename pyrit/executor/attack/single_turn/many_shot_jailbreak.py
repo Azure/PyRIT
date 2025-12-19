@@ -112,6 +112,6 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         many_shot_prompt = self._template.render_template_value(prompt=context.objective, examples=self._examples)
-        context.message = Message.from_prompt(prompt=many_shot_prompt, role="user")
+        context.next_message = Message.from_prompt(prompt=many_shot_prompt, role="user")
 
         return await super()._perform_async(context=context)

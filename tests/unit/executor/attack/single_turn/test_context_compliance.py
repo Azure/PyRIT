@@ -391,11 +391,11 @@ class TestContextComplianceAttackSetup:
                     await attack._setup_async(context=basic_context)
 
                     # Verify message was created
-                    assert basic_context.message is not None
-                    assert isinstance(basic_context.message, Message)
-                    assert len(basic_context.message.message_pieces) == 1
-                    assert basic_context.message.message_pieces[0].original_value == attack._affirmative_response
-                    assert basic_context.message.message_pieces[0].original_value_data_type == "text"
+                    assert basic_context.next_message is not None
+                    assert isinstance(basic_context.next_message, Message)
+                    assert len(basic_context.next_message.message_pieces) == 1
+                    assert basic_context.next_message.message_pieces[0].original_value == attack._affirmative_response
+                    assert basic_context.next_message.message_pieces[0].original_value_data_type == "text"
 
     @pytest.mark.asyncio
     async def test_setup_with_custom_affirmative_response(
@@ -427,7 +427,7 @@ class TestContextComplianceAttackSetup:
                     await attack._setup_async(context=basic_context)
 
                     # Verify custom response was used
-                    assert basic_context.message.message_pieces[0].original_value == custom_response
+                    assert basic_context.next_message.message_pieces[0].original_value == custom_response
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -815,11 +815,11 @@ class TestContextComplianceAttackComponentIntegration:
                     await attack._setup_async(context=basic_context)
 
                     # Verify message was created correctly
-                    assert basic_context.message is not None
-                    assert isinstance(basic_context.message, Message)
-                    assert len(basic_context.message.message_pieces) == 1
+                    assert basic_context.next_message is not None
+                    assert isinstance(basic_context.next_message, Message)
+                    assert len(basic_context.next_message.message_pieces) == 1
 
-                    message_piece = basic_context.message.message_pieces[0]
+                    message_piece = basic_context.next_message.message_pieces[0]
                     assert message_piece.original_value == attack._affirmative_response
                     assert message_piece.original_value_data_type == "text"
 

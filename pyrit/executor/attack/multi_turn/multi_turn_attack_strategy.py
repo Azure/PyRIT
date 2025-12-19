@@ -53,7 +53,7 @@ class MultiTurnAttackContext(AttackContext):
     last_score: Optional[Score] = None
 
     # Optional message that overrides the default prompt for the next turn
-    message: Optional[Message] = None
+    next_message: Optional[Message] = None
 
 
 class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, AttackStrategyResultT], ABC):
@@ -86,7 +86,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         *,
         objective: str,
         prepended_conversation: Optional[List[Message]] = None,
-        message: Optional[Message] = None,
+        next_message: Optional[Message] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
     ) -> AttackStrategyResultT: ...
@@ -107,7 +107,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         Args:
             objective (str): The objective of the attack.
             prepended_conversation (Optional[List[Message]]): Conversation to prepend.
-            message (Optional[Message]): Optional message to send to the objective target.
+            next_message (Optional[Message]): Optional message to send to the objective target.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
             **kwargs: Additional parameters for the attack.
 
@@ -115,6 +115,6 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
             AttackStrategyResultT: The result of the attack execution.
         """
         # Validate parameters before creating context
-        message = get_kwarg_param(kwargs=kwargs, param_name="message", expected_type=Message, required=False)
+        next_message = get_kwarg_param(kwargs=kwargs, param_name="next_message", expected_type=Message, required=False)
 
-        return await super().execute_async(**kwargs, message=message)
+        return await super().execute_async(**kwargs, next_message=next_message)

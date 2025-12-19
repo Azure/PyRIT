@@ -325,8 +325,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             AttackResult: The result of the attack execution.
         """
         # Validate parameters before creating context
-        messages = get_kwarg_param(
-            kwargs=kwargs, param_name="messages", expected_type=list, required=True
-        )
+        messages = get_kwarg_param(kwargs=kwargs, param_name="messages", expected_type=list, required=True)
 
         return await super().execute_async(**kwargs, messages=messages)

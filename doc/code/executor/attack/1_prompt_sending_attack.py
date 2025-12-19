@@ -159,7 +159,7 @@ seed_group = SeedGroup(seeds=[SeedPrompt(value=image_path, data_type="image_path
 decomposed = seed_group.to_attack_parameters()
 attack_context = SingleTurnAttackContext(
     objective="Sending an image successfully",
-    message=decomposed.current_turn_message,
+    next_message=decomposed.current_turn_message,
 )
 
 attack = PromptSendingAttack(objective_target=text_target)
@@ -281,7 +281,7 @@ seed_group = SeedGroup(
 decomposed = seed_group.to_attack_parameters()
 attack_context = SingleTurnAttackContext(
     objective="Provide detailed instructions on how to make a cake",
-    message=decomposed.current_turn_message,
+    next_message=decomposed.current_turn_message,
     memory_labels={"op_name": test_op_name, "username": test_user_name},
 )
 
