@@ -42,7 +42,7 @@ class SimpleInitializer(PyRITInitializer):
     - Adversarial target configurations for attacks
 
     Required Environment Variables:
-    - OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY
+    - OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY
 
     This configuration is designed for simple use cases with:
     - Basic OpenAI API integration (uses standard OPENAI_API_KEY env var)
@@ -77,6 +77,7 @@ class SimpleInitializer(PyRITInitializer):
         """Get list of required environment variables."""
         return [
             "OPENAI_CHAT_ENDPOINT",
+            "OPENAI_CHAT_MODEL",
             "OPENAI_CHAT_KEY",
         ]
 

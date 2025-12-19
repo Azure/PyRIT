@@ -24,7 +24,7 @@
 # This section goes into each of these steps. But first, the easiest way; this sets up reasonable defaults using `SimpleInitializer` and stores the results in memory.
 
 # %%
-# Set OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY environment variables before running this code
+# Set OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY environment variables before running this code
 # E.g. you can put it in .env
 
 from pyrit.setup import initialize_pyrit_async
@@ -39,7 +39,7 @@ await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInit
 #
 # The recommended step to setup PyRIT is that it needs access to secrets and endpoints. These can be loaded in environment variables or put in a `.env` file. See `.env_example` for how this file is formatted.
 #
-# Each target has default environment variables to look for. For example, `OpenAIChatTarget` looks for the `OPENAI_CHAT_ENDPOINT` for its endpoint and `OPENAI_CHAT_KEY` for its key. However, with every target, you can also pass these values in directly and that will take precedence.
+# Each target has default environment variables to look for. For example, `OpenAIChatTarget` looks for the `OPENAI_CHAT_ENDPOINT` for its endpoint, `OPENAI_CHAT_MODEL` for its model name, and `OPENAI_CHAT_KEY` for its key. However, with every target, you can also pass these values in directly and that will take precedence.
 
 # %%
 import os
@@ -135,7 +135,7 @@ await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInit
 await initialize_pyrit_async(memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"])  # type: ignore
 
 
-# SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY configured
+# SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY configured
 # It is meant to only require these two env vars to be configured
 # It can easily be swapped for another PyRITInitializer, like AIRTInitializer which is better but requires more env configuration
 # get_info_async() is a class method that shows how this initializer configures defaults and what global variables it sets
