@@ -47,7 +47,7 @@ if [ ! -f "$HASH_FILE" ] || [ "$(cat $HASH_FILE)" != "$CURRENT_HASH" ]; then
 
     # Install dependencies
     uv sync --extra dev --extra all
-    uv pip install ipykernel
+    uv add ipykernel
 
     # Save the new hash
     echo "$CURRENT_HASH" > "$HASH_FILE"

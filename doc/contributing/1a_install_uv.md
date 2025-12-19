@@ -80,7 +80,7 @@ If you are having problems getting pip to install, try this link for details her
 uv pip show pyrit
 ```
 
-You should see output showing PyRIT version 0.10.0.dev0 and your Python dependencies.
+You should see output showing the most recent PyRIT version and your Python dependencies.
 
 ## VS Code Integration
 
