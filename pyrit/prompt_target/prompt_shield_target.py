@@ -160,6 +160,10 @@ class PromptShieldTarget(PromptTarget):
         """
         Ensure that every field sent to the Prompt Shield was analyzed.
 
+        Args:
+            request_body: The request body sent to Prompt Shield.
+            response_body: The response body received from Prompt Shield.
+
         Raises:
             ValueError: If any field sent was not analyzed.
         """
@@ -179,6 +183,9 @@ class PromptShieldTarget(PromptTarget):
         """
         Parse the input given to the target to extract the two fields sent to
         Prompt Shield: userPrompt: str, and documents: list[str].
+
+        Args:
+            input_str: The input string to parse.
 
         Returns:
             dict[str, Any]: A dictionary with 'userPrompt' and 'documents' keys.
@@ -205,7 +212,12 @@ class PromptShieldTarget(PromptTarget):
                 return {"userPrompt": user_prompt, "documents": documents if documents else []}
 
     def _add_auth_param_to_headers(self, headers: dict) -> None:
-        """Add the API key or token to the headers."""
+        """
+        Add the API key or token to the headers.
+
+        Args:
+            headers: The headers dictionary to add authentication to.
+        """
         if self._api_key:
             # If callable, call it to get the token
             if callable(self._api_key):

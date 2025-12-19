@@ -321,6 +321,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         NOTE: The Responses API uses top-level `response_format` for JSON,
         not `text.format` from the old Chat Completions style.
 
+        Args:
+            conversation: The full conversation history.
+            is_json_response: Whether the response should be formatted as JSON.
+
         Returns:
             dict: The request body to send to the Responses API.
         """
@@ -632,6 +636,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         Return the last tool-call section in assistant messages, or None.
         Looks for a piece whose value parses as JSON with a 'type' key matching function_call.
 
+        Args:
+            reply: The message to search for tool calls.
+
         Returns:
             The tool-call section dict, or None if not found.
         """
@@ -649,6 +656,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     async def _execute_call_section(self, tool_call_section: dict[str, Any]) -> dict[str, Any]:
         """
         Execute a function_call from the custom_functions registry.
+
+        Args:
+            tool_call_section: The function_call section dict.
 
         Returns:
             A dict payload (will be serialized and sent as function_call_output).

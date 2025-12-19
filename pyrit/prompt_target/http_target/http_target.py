@@ -117,6 +117,9 @@ class HTTPTarget(PromptTarget):
         Add the prompt into the URL if the prompt_regex_string is found in the
         http_request.
 
+        Args:
+            request: The message piece containing the prompt to inject.
+
         Returns:
             str: the http request with the prompt added in
         """

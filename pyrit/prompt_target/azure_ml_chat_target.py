@@ -151,6 +151,13 @@ class AzureMLChatTarget(PromptChatTarget):
         """
         Set the model parameters for generating responses, offering the option to add additional ones not
         explicitly listed.
+
+        Args:
+            max_new_tokens: Maximum number of new tokens to generate.
+            temperature: Sampling temperature for response generation.
+            top_p: Nucleus sampling parameter.
+            repetition_penalty: Penalty for repeating tokens.
+            **param_kwargs: Additional model parameters.
         """
         self._max_new_tokens = max_new_tokens or self._max_new_tokens
         self._temperature = temperature or self._temperature
@@ -248,6 +255,9 @@ class AzureMLChatTarget(PromptChatTarget):
     ) -> dict:
         """
         Construct the HTTP request body for the AML online endpoint.
+
+        Args:
+            messages: List of chat messages to include in the request body.
 
         Returns:
             dict: The constructed HTTP request body.

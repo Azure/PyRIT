@@ -64,6 +64,9 @@ class PromptTarget(abc.ABC, Identifier):
     def _validate_request(self, *, message: Message) -> None:
         """
         Validate the provided message.
+
+        Args:
+            message: The message to validate.
         """
 
     def set_model_name(self, *, model_name: str) -> None:

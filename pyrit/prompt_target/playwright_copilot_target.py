@@ -214,6 +214,9 @@ class PlaywrightCopilotTarget(PromptTarget):
         """
         Interact with Microsoft Copilot interface to send multimodal prompts.
 
+        Args:
+            message: The message containing text and/or image pieces to send.
+
         Returns:
             Union[str, List[Tuple[str, PromptDataType]]]: The response content from Copilot,
                 either as a single text string or a list of (data, data_type) tuples.
@@ -234,6 +237,9 @@ class PlaywrightCopilotTarget(PromptTarget):
     ) -> Union[str, List[Tuple[str, PromptDataType]]]:
         """
         Wait for Copilot's response and extract the text and/or images.
+
+        Args:
+            selectors (CopilotSelectors): The selectors for the Copilot interface.
 
         Returns:
             Union[str, List[Tuple[str, PromptDataType]]]: The response content from Copilot,
@@ -743,13 +749,24 @@ class PlaywrightCopilotTarget(PromptTarget):
             return await self._extract_fallback_text_async(ai_message_groups=ai_message_groups)
 
     async def _send_text_async(self, *, text: str, input_selector: str) -> None:
-        """Send text input to Copilot interface."""
+        """
+        Send text input to Copilot interface.
+
+        Args:
+            text: The text to send.
+            input_selector: The CSS selector for the input field.
+        """
         # For M365 Copilot's contenteditable span, use type() instead of fill()
         await self._page.locator(input_selector).click()  # Focus first
         await self._page.locator(input_selector).type(text)
 
     async def _upload_image_async(self, image_path: str) -> None:
-        """Handle image upload through Copilot's dropdown interface."""
+        """
+        Handle image upload through Copilot's dropdown interface.
+
+        Args:
+            image_path: The file path of the image to upload.
+        """
         selectors = self._get_selectors()
 
         # First, click the button to open the dropdown with retry logic
@@ -771,6 +788,9 @@ class PlaywrightCopilotTarget(PromptTarget):
     async def _click_dropdown_button_async(self, selector: str) -> None:
         """
         Click the dropdown button with retry logic.
+
+        Args:
+            selector: The CSS selector for the dropdown button.
 
         Raises:
             RuntimeError: If the button cannot be found or clicked.
@@ -825,6 +845,9 @@ class PlaywrightCopilotTarget(PromptTarget):
     def _validate_request(self, *, message: Message) -> None:
         """
         Validate that the message is compatible with Copilot.
+
+        Args:
+            message: The message to validate.
 
         Raises:
             ValueError: If the message has no pieces.

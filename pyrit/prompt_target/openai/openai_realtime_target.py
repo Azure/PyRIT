@@ -214,6 +214,9 @@ class RealtimeTarget(OpenAITarget):
         Create session configuration for OpenAI client.
         Uses the Azure GA format with nested audio config.
 
+        Args:
+            system_prompt: The system prompt to use in the session configuration.
+
         Returns:
             dict: Session configuration dictionary.
         """

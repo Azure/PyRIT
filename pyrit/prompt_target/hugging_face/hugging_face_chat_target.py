@@ -136,6 +136,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
     def _load_from_path(self, path: str, **kwargs):
         """
         Load the model and tokenizer from a given path.
+
+        Args:
+            path: The path to load the model and tokenizer from.
+            **kwargs: Additional keyword arguments to pass to the model loader.
         """
         logger.info(f"Loading model and tokenizer from path: {path}...")
         self.tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=self.trust_remote_code)
@@ -324,6 +328,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
         """
         Apply the chat template to the input messages and tokenize them.
 
+        Args:
+            messages: The input messages to apply the chat template to.
+
         Returns:
             dict: Tokenized inputs ready for the model.
 
@@ -354,6 +361,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
     def _validate_request(self, *, message: Message) -> None:
         """
         Validate the provided message.
+
+        Args:
+            message: The message to validate.
 
         Raises:
             ValueError: If the message does not contain exactly one text piece.
