@@ -19,7 +19,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
-    SeedGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -238,12 +237,12 @@ class TestSkeletonKeyPromptSending:
         assert call_args.kwargs["target"] == mock_target
         assert call_args.kwargs["conversation_id"] == basic_context.conversation_id
 
-        # Check that skeleton key prompt was included in seed group
-        seed_group = call_args.kwargs["seed_group"]
-        assert isinstance(seed_group, SeedGroup)
-        assert len(seed_group.prompts) == 1
-        assert seed_group.prompts[0].value == "Test skeleton key"
-        assert seed_group.prompts[0].data_type == "text"
+        # Check that skeleton key prompt was included in message
+        message = call_args.kwargs["message"]
+        assert isinstance(message, Message)
+        assert len(message.message_pieces) == 1
+        assert message.message_pieces[0].original_value == "Test skeleton key"
+        assert message.message_pieces[0].original_value_data_type == "text"
 
     @pytest.mark.asyncio
     async def test_send_skeleton_key_prompt_filtered_response(self, mock_target, mock_prompt_normalizer, basic_context):

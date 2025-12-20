@@ -38,7 +38,6 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -283,7 +282,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         # Handle prepended conversation
         refused_text, objective_score = self._retrieve_refusal_text_and_objective_score(conversation_state)
-        context.custom_prompt = self._retrieve_custom_prompt_from_prepended_conversation(conversation_state)
+        custom_prompt_text = self._retrieve_custom_prompt_from_prepended_conversation(conversation_state)
+        if custom_prompt_text:
+            context.next_message = Message.from_prompt(prompt=custom_prompt_text, role="user")
         context.last_score = objective_score
 
         # Store refused text in context
@@ -342,21 +343,21 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             self._logger.info(f"Executing turn {context.executed_turns + 1}/{self._max_turns}")
 
             # Determine what to send next
-            prompt_to_send = await self._generate_next_prompt_async(context=context)
+            message_to_send = await self._generate_next_prompt_async(context=context)
 
             # Clear refused text after it's been used
             context.refused_text = None
 
             # Send the generated prompt to the objective target
             context.last_response = await self._send_prompt_to_objective_target_async(
-                attack_prompt=prompt_to_send,
+                attack_message=message_to_send,
                 context=context,
             )
 
             # Check for refusal and backtrack if needed
             backtracked = await self._perform_backtrack_if_refused_async(
                 context=context,
-                prompt_sent=prompt_to_send,
+                prompt_sent=message_to_send.get_value(),
             )
 
             if backtracked:
@@ -503,10 +504,14 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Set JSON format in metadata
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
+        message = Message.from_prompt(
+            prompt=prompt_text,
+            role="user",
+            prompt_metadata=prompt_metadata,
+        )
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
@@ -559,14 +564,14 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
     async def _send_prompt_to_objective_target_async(
         self,
         *,
-        attack_prompt: str,
+        attack_message: Message,
         context: CrescendoAttackContext,
     ) -> Message:
         """
-        Send the attack prompt to the objective target.
+        Send the attack message to the objective target.
 
         Args:
-            attack_prompt (str): The prompt to send.
+            attack_message (Message): The message to send.
             context (CrescendoAttackContext): The attack context.
 
         Returns:
@@ -575,14 +580,14 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Raises:
             ValueError: If no response is received from the objective target.
         """
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=attack_prompt, data_type="text")])
         objective_target_type = self._objective_target.get_identifier()["__type__"]
 
         # Send the generated prompt to the objective target
-        self._logger.debug(f"Sending prompt to {objective_target_type}: {attack_prompt[:100]}...")
+        prompt_preview = attack_message.get_value()[:100] if attack_message.get_value() else ""
+        self._logger.debug(f"Sending prompt to {objective_target_type}: {prompt_preview}...")
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=attack_message,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,
@@ -664,7 +669,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         # Access memory through the conversation manager's memory instance
         new_conversation_id = self._memory.duplicate_conversation_excluding_last_turn(
-            new_attack_id=self.get_identifier()["id"],
             conversation_id=conversation_id,
         )
         self._logger.debug(f"Backtracked conversation from {conversation_id} to {new_conversation_id}")
@@ -732,32 +736,33 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         self._adversarial_chat_system_prompt_template = sp
 
-    async def _generate_next_prompt_async(self, context: CrescendoAttackContext) -> str:
+    async def _generate_next_prompt_async(self, context: CrescendoAttackContext) -> Message:
         """
         Generate the next prompt to be sent to the target during the Crescendo attack.
 
-        This method determines whether to use a custom prompt (for the first turn) or
+        This method determines whether to use a custom message (bypassing adversarial chat) or
         generate a new attack prompt using the adversarial chat based on previous feedback.
 
         Args:
             context (CrescendoAttackContext): The attack context containing the current state and configuration.
 
         Returns:
-            str: The generated prompt to be sent to the target.
+            Message: The generated message to be sent to the target.
         """
-        # If custom prompt is set (from prepended conversation), use it
-        if context.custom_prompt:
-            self._logger.debug("Using custom prompt from prepended conversation")
-            prompt = context.custom_prompt
-            context.custom_prompt = None  # Clear for future turns
-            return prompt
+        # If custom message is set, use it and bypass adversarial chat generation
+        if context.next_message:
+            self._logger.debug("Using custom message, bypassing adversarial chat")
+            message = context.next_message
+            context.next_message = None  # Clear for future turns
+            return message
 
         # Generate prompt using adversarial chat
         self._logger.debug("Generating new attack prompt using adversarial chat")
-        return await self._get_attack_prompt_async(
+        prompt_text = await self._get_attack_prompt_async(
             context=context,
             refused_text=context.refused_text or "",
         )
+        return Message.from_prompt(prompt=prompt_text, role="user")
 
     async def _perform_backtrack_if_refused_async(
         self,

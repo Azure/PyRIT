@@ -94,10 +94,10 @@ This should print
 ## 5. Test Built Package
 
 This step is crucial to ensure that the new package works out of the box.
-Create a new conda environment with `conda create -n release-test-vx.y.z python=3.11 -y`
-and install the built wheel file `pip install dist/pyrit-x.y.z-py3-none-any.whl[all,dev]`.
+Create a new environment with `uv venv --python 3.11`
+and install the built wheel file `uv pip install dist/pyrit-x.y.z-py3-none-any.whl[all,dev]`.
 
-Once the package is successfully installed in the new conda environment, run `pip show pyrit`. Ensure that the version matches the release `vx.y.z` and that the package is found under the site-packages directory of the environment, like `..\anaconda3\envs\release-test-vx.y.z\Lib\site-packages`.
+Once the package is successfully installed in the new environment, run `uv pip show pyrit`. Ensure that the version matches the release `vx.y.z` and that the package is found under the site-packages directory of the environment, like `..\venv\Lib\site-packages`.
 
 Make sure to set up the Jupyter kernel as described in our [Jupyter setup](../setup/jupyter_setup.md) guide.
 
@@ -127,7 +127,7 @@ git push origin releases/vx.y.z
 git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct commit
 ```
 
-Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them. If you reuse the same conda environment, it is best to `pip uninstall pyrit` to force the reinstall.
+Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them. If you reuse the same environment, it is best to `uv pip uninstall pyrit` to force the reinstall.
 
 ## 6. Publish to PyPI
 
@@ -137,7 +137,7 @@ Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
 Note: Before publishing to PyPI, have your API token for scope 'Project: pyrit' handy. You can create one by going to the Settings in the pyrit project and "Create a token for pyrit" under API tokens. This token will be used to publish the release.
 
 ```bash
-pip install twine
+uv pip install twine
 twine upload dist/* # this should be the same as dist/pyrit-x.y.z-py3-none-any.whl
 ```
 

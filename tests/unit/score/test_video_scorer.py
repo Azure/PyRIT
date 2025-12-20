@@ -63,9 +63,13 @@ class MockTrueFalseScorer(TrueFalseScorer):
     """Mock TrueFalseScorer for testing"""
 
     def __init__(self, return_value: bool = True):
+        self.return_value = return_value
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
         super().__init__(validator=validator)
-        self.return_value = return_value
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this mock scorer."""
+        self._set_scorer_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -86,9 +90,13 @@ class MockFloatScaleScorer(FloatScaleScorer):
     """Mock FloatScaleScorer for testing"""
 
     def __init__(self, return_value: float = 0.8):
+        self.return_value = return_value
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
         super().__init__(validator=validator)
-        self.return_value = return_value
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this mock scorer."""
+        self._set_scorer_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
