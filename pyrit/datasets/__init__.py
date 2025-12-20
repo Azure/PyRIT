@@ -11,7 +11,6 @@ from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvid
 from pyrit.datasets.seed_datasets import local, remote  # noqa: F401
 
 __all__ = [
-    "fetch_anthropic_evals_dataset",
     "SeedDatasetProvider",
     "TextJailBreak",
 ]
