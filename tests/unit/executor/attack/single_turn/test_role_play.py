@@ -18,7 +18,6 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    Message,
     Score,
 )
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
@@ -297,29 +296,23 @@ class TestRolePlayAttack:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestRolePlayAttackContextValidation:
-    """Tests for context validation in RolePlayAttack"""
+class TestRolePlayAttackExcludedContextParameters:
+    """Tests for excluded context parameters in RolePlayAttack"""
 
-    def test_validate_context_rejects_seed_group(self, role_play_attack, basic_context):
-        """Test that validation rejects next_message parameter"""
-        basic_context.next_message = Message.from_prompt(prompt="test", role="user")
+    def test_excluded_context_parameters_returns_frozenset(self, role_play_attack):
+        """Test that _excluded_context_parameters returns a frozenset"""
+        excluded = role_play_attack._excluded_context_parameters
+        assert isinstance(excluded, frozenset)
 
-        with pytest.raises(ValueError, match="does not accept a next_message parameter"):
-            role_play_attack._validate_context(context=basic_context)
+    def test_excluded_context_parameters_includes_next_message(self, role_play_attack):
+        """Test that next_message is in excluded parameters"""
+        excluded = role_play_attack._excluded_context_parameters
+        assert "next_message" in excluded
 
-    def test_validate_context_rejects_prepended_conversation(self, role_play_attack, basic_context):
-        """Test that validation rejects prepended_conversation parameter"""
-        basic_context.prepended_conversation = [
-            Message.from_prompt(prompt="test", role="user"),
-        ]
-
-        with pytest.raises(ValueError, match="does not accept prepended_conversation parameter"):
-            role_play_attack._validate_context(context=basic_context)
-
-    def test_validate_context_accepts_valid_context(self, role_play_attack, basic_context):
-        """Test that validation accepts valid context without seed_group or prepended_conversation"""
-        # Should not raise any exception
-        role_play_attack._validate_context(context=basic_context)
+    def test_excluded_context_parameters_includes_prepended_conversation(self, role_play_attack):
+        """Test that prepended_conversation is in excluded parameters"""
+        excluded = role_play_attack._excluded_context_parameters
+        assert "prepended_conversation" in excluded
 
 
 @pytest.mark.usefixtures("patch_central_database")

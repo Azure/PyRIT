@@ -94,25 +94,13 @@ class SkeletonKeyAttack(PromptSendingAttack):
 
         return SeedDataset.from_yaml_file(self.DEFAULT_SKELETON_KEY_PROMPT_PATH).prompts[0].value
 
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+    @property
+    def _excluded_context_parameters(self) -> frozenset[str]:
         """
-        Validate the context for the skeleton key attack.
-        This attack does not support prepended conversations, so it raises an error if one exists.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context to validate.
-
-        Raises:
-            ValueError: If the context has a prepended conversation.
+        SkeletonKeyAttack does not support prepended conversations
+        as it manages its own conversation flow with the skeleton key prompt.
         """
-        # Call parent validation first
-        super()._validate_context(context=context)
-
-        if context.prepended_conversation:
-            raise ValueError(
-                "Skeleton key attack does not support prepended conversations. "
-                "Please clear the prepended conversation before starting the attack."
-            )
+        return frozenset({"prepended_conversation"})
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """

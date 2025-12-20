@@ -825,40 +825,25 @@ class TestContextComplianceAttackComponentIntegration:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestContextComplianceAttackContextValidation:
-    """Test context compliance attack context validation functionality."""
+class TestContextComplianceAttackExcludedContextParameters:
+    """Test context compliance attack excluded context parameters functionality."""
 
-    def test_validate_context_raises_error_with_prepended_conversation(
-        self, mock_objective_target, mock_attack_adversarial_config, basic_context
-    ):
-        """Test that context validation raises ValueError when prepended conversations exist."""
+    def test_excluded_context_parameters_returns_frozenset(self, mock_objective_target, mock_attack_adversarial_config):
+        """Test that _excluded_context_parameters returns a frozenset."""
         attack = ContextComplianceAttack(
             objective_target=mock_objective_target, attack_adversarial_config=mock_attack_adversarial_config
         )
 
-        # Add some prepended conversation to context
-        mock_response = MagicMock()
-        basic_context.prepended_conversation = [mock_response]
+        excluded = attack._excluded_context_parameters
+        assert isinstance(excluded, frozenset)
 
-        # Verify that ValueError is raised
-        with pytest.raises(ValueError, match="This attack does not support prepended conversations"):
-            attack._validate_context(context=basic_context)
-
-    def test_validate_context_succeeds_when_no_prepended_conversation(
-        self, mock_objective_target, mock_attack_adversarial_config, basic_context
+    def test_excluded_context_parameters_includes_prepended_conversation(
+        self, mock_objective_target, mock_attack_adversarial_config
     ):
-        """Test that context validation succeeds when no prepended conversation exists."""
+        """Test that prepended_conversation is in excluded parameters."""
         attack = ContextComplianceAttack(
             objective_target=mock_objective_target, attack_adversarial_config=mock_attack_adversarial_config
         )
 
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
-
-        # Mock the parent _validate_context method
-        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
-            # Should not raise any exception
-            attack._validate_context(context=basic_context)
-
-            # Verify parent validation was called
-            mock_parent_validate.assert_called_once_with(context=basic_context)
+        excluded = attack._excluded_context_parameters
+        assert "prepended_conversation" in excluded

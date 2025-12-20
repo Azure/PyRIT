@@ -25,7 +25,7 @@ class SeedGroup(YamlLoadable):
     All prompts in the group should share the same `prompt_group_id`.
     """
 
-    seeds: Sequence[Seed]
+    seeds: List[Seed]
 
     def __init__(
         self,

@@ -467,61 +467,19 @@ class TestSkeletonKeyAttackParameterValidation:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestSkeletonKeyAttackContextValidation:
-    """Test skeleton key attack context validation functionality."""
+class TestSkeletonKeyAttackExcludedContextParameters:
+    """Test skeleton key attack excluded context parameters functionality."""
 
-    def test_validate_context_raises_error_with_prepended_conversation(self, mock_target, basic_context):
-        """Test that context validation raises ValueError when prepended conversations exist."""
+    def test_excluded_context_parameters_returns_frozenset(self, mock_target):
+        """Test that _excluded_context_parameters returns a frozenset."""
         attack = SkeletonKeyAttack(objective_target=mock_target)
 
-        # Add some prepended conversation to context
-        mock_response = MagicMock()
-        basic_context.prepended_conversation = [mock_response]
+        excluded = attack._excluded_context_parameters
+        assert isinstance(excluded, frozenset)
 
-        # Verify that ValueError is raised
-        with pytest.raises(ValueError, match="Skeleton key attack does not support prepended conversations"):
-            attack._validate_context(context=basic_context)
-
-    def test_validate_context_succeeds_when_no_prepended_conversation(self, mock_target, basic_context):
-        """Test that context validation succeeds when no prepended conversation exists."""
+    def test_excluded_context_parameters_includes_prepended_conversation(self, mock_target):
+        """Test that prepended_conversation is in excluded parameters."""
         attack = SkeletonKeyAttack(objective_target=mock_target)
 
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
-
-        # Mock the parent _validate_context method
-        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
-            # Should not raise any exception
-            attack._validate_context(context=basic_context)
-
-            # Verify parent validation was called
-            mock_parent_validate.assert_called_once_with(context=basic_context)
-
-    def test_validate_context_calls_parent_validation(self, mock_target, basic_context):
-        """Test that validate_context properly calls parent validation method."""
-        attack = SkeletonKeyAttack(objective_target=mock_target)
-
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
-
-        # Mock the parent _validate_context method
-        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
-            attack._validate_context(context=basic_context)
-
-            # Verify parent validation was called with the correct context
-            mock_parent_validate.assert_called_once_with(context=basic_context)
-
-    def test_validate_context_parent_validation_errors_propagate(self, mock_target, basic_context):
-        """Test that parent validation errors are properly propagated."""
-        attack = SkeletonKeyAttack(objective_target=mock_target)
-
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
-
-        # Mock the parent _validate_context method to raise an error
-        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
-            mock_parent_validate.side_effect = ValueError("Parent validation error")
-
-            # Verify that parent validation error is propagated
-            with pytest.raises(ValueError, match="Parent validation error"):
-                attack._validate_context(context=basic_context)
+        excluded = attack._excluded_context_parameters
+        assert "prepended_conversation" in excluded

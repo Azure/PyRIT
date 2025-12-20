@@ -15,8 +15,6 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    Message,
-    MessagePiece,
     SeedPrompt,
 )
 from pyrit.prompt_converter import Base64Converter
@@ -172,46 +170,36 @@ class TestManyShotJailbreakAttackInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestManyShotJailbreakAttackValidation:
-    """Tests for context validation"""
+class TestManyShotJailbreakAttackExcludedContextParameters:
+    """Tests for excluded context parameters"""
 
     @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.SeedPrompt.from_yaml_file")
     @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.fetch_many_shot_jailbreaking_dataset")
-    def test_validate_context_raises_error_with_prepended_conversation(
+    def test_excluded_context_parameters_returns_frozenset(
         self, mock_fetch_dataset, mock_from_yaml, mock_objective_target, mock_template, sample_many_shot_examples
     ):
-        """Test that validation fails if prepended conversation is provided"""
+        """Test that _excluded_context_parameters returns a frozenset."""
         mock_from_yaml.return_value = mock_template
         mock_fetch_dataset.return_value = sample_many_shot_examples
 
         attack = ManyShotJailbreakAttack(objective_target=mock_objective_target)
 
-        context = SingleTurnAttackContext(
-            objective="Test objective", conversation_id=str(uuid.uuid4()), prepended_conversation=[MagicMock()]
-        )
-
-        with pytest.raises(ValueError, match="ManyShotJailbreakAttack does not support prepended conversations"):
-            attack._validate_context(context=context)
+        excluded = attack._excluded_context_parameters
+        assert isinstance(excluded, frozenset)
 
     @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.SeedPrompt.from_yaml_file")
     @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.fetch_many_shot_jailbreaking_dataset")
-    def test_validate_context_passes_without_prepended_conversation(
-        self,
-        mock_fetch_dataset,
-        mock_from_yaml,
-        mock_objective_target,
-        mock_template,
-        sample_many_shot_examples,
-        basic_context,
+    def test_excluded_context_parameters_includes_prepended_conversation(
+        self, mock_fetch_dataset, mock_from_yaml, mock_objective_target, mock_template, sample_many_shot_examples
     ):
-        """Test that validation passes when no prepended conversation is provided"""
+        """Test that prepended_conversation is in excluded parameters."""
         mock_from_yaml.return_value = mock_template
         mock_fetch_dataset.return_value = sample_many_shot_examples
 
         attack = ManyShotJailbreakAttack(objective_target=mock_objective_target)
 
-        # Should not raise any exception
-        attack._validate_context(context=basic_context)
+        excluded = attack._excluded_context_parameters
+        assert "prepended_conversation" in excluded
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -346,44 +334,6 @@ class TestManyShotJailbreakAttackLifecycle:
         attack._setup_async.assert_called_once_with(context=basic_context)
         attack._perform_async.assert_called_once_with(context=basic_context)
         attack._teardown_async.assert_called_once_with(context=basic_context)
-
-    @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.SeedPrompt.from_yaml_file")
-    @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.fetch_many_shot_jailbreaking_dataset")
-    @pytest.mark.asyncio
-    async def test_execute_async_validation_failure_prevents_execution(
-        self,
-        mock_fetch_dataset,
-        mock_from_yaml,
-        mock_objective_target,
-        mock_template,
-        sample_many_shot_examples,
-        basic_context,
-    ):
-        """Test that validation failure prevents attack execution"""
-        mock_from_yaml.return_value = mock_template
-        mock_fetch_dataset.return_value = sample_many_shot_examples
-
-        attack = ManyShotJailbreakAttack(objective_target=mock_objective_target)
-
-        # Context with prepended conversation (not allowed)
-        basic_context.prepended_conversation = [
-            Message(message_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")])
-        ]
-
-        attack._setup_async = AsyncMock()
-        attack._perform_async = AsyncMock()
-        attack._teardown_async = AsyncMock()
-
-        with pytest.raises(ValueError) as exc_info:
-            await attack.execute_with_context_async(context=basic_context)
-
-        # Verify error details
-        assert "Strategy context validation failed for ManyShotJailbreakAttack" in str(exc_info.value)
-
-        # Verify other methods weren't called
-        attack._setup_async.assert_not_called()
-        attack._perform_async.assert_not_called()
-        attack._teardown_async.assert_not_called()
 
 
 @pytest.mark.usefixtures("patch_central_database")

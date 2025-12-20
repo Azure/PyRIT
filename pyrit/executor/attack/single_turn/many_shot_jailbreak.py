@@ -87,19 +87,13 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
         if not self._examples:
             raise ValueError("Many shot examples must be provided.")
 
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+    @property
+    def _excluded_context_parameters(self) -> frozenset[str]:
         """
-        Validate the context before executing the attack.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context containing parameters and objective.
-
-        Raises:
-            ValueError: If the context is invalid.
+        ManyShotJailbreakAttack does not support prepended conversations
+        as it constructs its own prompt format with examples.
         """
-        if context.prepended_conversation:
-            raise ValueError("ManyShotJailbreakAttack does not support prepended conversations.")
-        super()._validate_context(context=context)
+        return frozenset({"prepended_conversation"})
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """

@@ -148,7 +148,8 @@ class AttackExecutor:
         Filter parameters to only those accepted by the attack's context type.
 
         Uses the attack strategy's accepted_context_parameters property to determine
-        what parameters are accepted. This prevents passing unsupported parameters
+        what parameters are accepted. This property already excludes parameters that
+        the strategy explicitly rejects via _excluded_context_parameters.
 
         Args:
             attack: The attack strategy to check parameters against.

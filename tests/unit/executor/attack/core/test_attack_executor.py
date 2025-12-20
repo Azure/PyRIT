@@ -1420,3 +1420,151 @@ class TestStrategyContextTypeValidation:
         assert "objective" in accepted
         assert "memory_labels" in accepted
         assert "prepended_conversation" in accepted
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestExcludedContextParameters:
+    """Tests for _excluded_context_parameters integration with accepted_context_parameters."""
+
+    def test_accepted_context_parameters_excludes_strategy_excluded_parameters(self):
+        """Test that accepted_context_parameters automatically excludes _excluded_context_parameters."""
+        from pyrit.executor.core.strategy import Strategy
+
+        class TestStrategy(Strategy):
+            def _validate_context(self, *, context):
+                pass
+
+            async def _setup_async(self, *, context):
+                pass
+
+            async def _perform_async(self, *, context):
+                return None
+
+            async def _teardown_async(self, *, context):
+                pass
+
+            @property
+            def _excluded_context_parameters(self) -> frozenset[str]:
+                return frozenset({"next_message", "prepended_conversation"})
+
+        strategy = TestStrategy(context_type=SingleTurnAttackContext)
+        accepted = strategy.accepted_context_parameters
+
+        # These should be excluded
+        assert "next_message" not in accepted
+        assert "prepended_conversation" not in accepted
+        # These should still be accepted
+        assert "objective" in accepted
+        assert "memory_labels" in accepted
+
+    def test_filter_params_excludes_strategy_excluded_parameters(self):
+        """Test that parameters excluded by the strategy are filtered out by AttackExecutor."""
+        from pyrit.executor.core.strategy import Strategy
+
+        class TestStrategy(Strategy):
+            def _validate_context(self, *, context):
+                pass
+
+            async def _setup_async(self, *, context):
+                pass
+
+            async def _perform_async(self, *, context):
+                return None
+
+            async def _teardown_async(self, *, context):
+                pass
+
+            @property
+            def _excluded_context_parameters(self) -> frozenset[str]:
+                return frozenset({"next_message", "prepended_conversation"})
+
+        executor = AttackExecutor(max_concurrency=1)
+        strategy = TestStrategy(context_type=SingleTurnAttackContext)
+
+        params = {
+            "objective": "Test objective",
+            "memory_labels": {"key": "value"},
+            "next_message": MagicMock(),  # Should be excluded
+            "prepended_conversation": [MagicMock()],  # Should be excluded
+        }
+
+        filtered = executor._filter_params_for_attack(
+            attack=strategy,
+            params=params,
+            strict_param_matching=False,
+        )
+
+        assert "objective" in filtered
+        assert "memory_labels" in filtered
+        assert "next_message" not in filtered
+        assert "prepended_conversation" not in filtered
+
+    def test_filter_params_empty_excluded_set_does_not_affect_filtering(self):
+        """Test that an empty _excluded_context_parameters doesn't affect normal filtering."""
+        executor = AttackExecutor(max_concurrency=1)
+
+        mock_attack = MagicMock(spec=AttackStrategy)
+        mock_attack.accepted_context_parameters = {"objective", "memory_labels", "next_message"}
+
+        params = {
+            "objective": "Test objective",
+            "next_message": MagicMock(),
+        }
+
+        filtered = executor._filter_params_for_attack(
+            attack=mock_attack,
+            params=params,
+            strict_param_matching=False,
+        )
+
+        assert "objective" in filtered
+        assert "next_message" in filtered
+
+    def test_strategy_base_excluded_context_parameters_returns_empty_frozenset(self):
+        """Test that the base Strategy class returns an empty frozenset for _excluded_context_parameters."""
+        from pyrit.executor.core.strategy import Strategy
+
+        class TestStrategy(Strategy):
+            def _validate_context(self, *, context):
+                pass
+
+            async def _setup_async(self, *, context):
+                pass
+
+            async def _perform_async(self, *, context):
+                return None
+
+            async def _teardown_async(self, *, context):
+                pass
+
+        strategy = TestStrategy(context_type=SingleTurnAttackContext)
+        excluded = strategy._excluded_context_parameters
+
+        assert excluded == frozenset()
+        assert isinstance(excluded, frozenset)
+
+    def test_strategy_accepted_parameters_includes_all_fields_when_no_exclusions(self):
+        """Test that accepted_context_parameters includes all dataclass fields when nothing is excluded."""
+        from pyrit.executor.core.strategy import Strategy
+
+        class TestStrategy(Strategy):
+            def _validate_context(self, *, context):
+                pass
+
+            async def _setup_async(self, *, context):
+                pass
+
+            async def _perform_async(self, *, context):
+                return None
+
+            async def _teardown_async(self, *, context):
+                pass
+
+        strategy = TestStrategy(context_type=SingleTurnAttackContext)
+        accepted = strategy.accepted_context_parameters
+
+        # All SingleTurnAttackContext fields should be present
+        assert "next_message" in accepted
+        assert "prepended_conversation" in accepted
+        assert "objective" in accepted
+        assert "memory_labels" in accepted

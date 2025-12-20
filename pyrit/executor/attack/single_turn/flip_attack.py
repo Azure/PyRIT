@@ -68,19 +68,12 @@ class FlipAttack(PromptSendingAttack):
 
         self._system_prompt = Message.from_system_prompt(system_prompt=system_prompt)
 
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+    @property
+    def _excluded_context_parameters(self) -> frozenset[str]:
         """
-        Validate the context before executing the attack.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context containing parameters and objective.
-
-        Raises:
-            ValueError: If the context is invalid.
+        FlipAttack generates prepended_conversation internally from its system prompt.
         """
-        if context.prepended_conversation:
-            raise ValueError("FlipAttack does not support prepended conversations as it uses its own system prompt.")
-        super()._validate_context(context=context)
+        return frozenset({"prepended_conversation"})
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
