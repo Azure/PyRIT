@@ -13,7 +13,7 @@ import pytest
 from integration.mocks import MockPromptTarget
 
 from pyrit.memory import CentralMemory
-from pyrit.models import SeedGroup, SeedPrompt
+from pyrit.models import Message, SeedGroup, SeedPrompt
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -58,8 +58,9 @@ async def test_rate_limiting_with_real_delay(mock_memory_instance, seed_group):
         converters=[Base64Converter(), StringJoinConverter(join_value="_")]
     )
 
+    message = Message.from_prompt(prompt=seed_group.prompts[0].value, role="user")
     normalizer_request = NormalizerRequest(
-        seed_group=seed_group,
+        message=message,
         request_converter_configurations=[request_converters],
     )
 

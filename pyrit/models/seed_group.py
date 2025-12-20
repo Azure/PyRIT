@@ -35,8 +35,8 @@ class DecomposedSeedGroup:
     # Messages representing prior conversation turns (excludes the current/last turn)
     prepended_conversation: Optional[List["Message"]] = None
 
-    # SeedGroup containing only SeedPrompts from the last turn
-    current_turn_seed_group: Optional["SeedGroup"] = None
+    # Message containing the current turn (converted from SeedPrompts)
+    current_turn_message: Optional["Message"] = None
 
 
 class SeedGroup(YamlLoadable):
@@ -201,7 +201,7 @@ class SeedGroup(YamlLoadable):
         This method extracts:
         - objective: The string value from SeedObjective (if present)
         - prepended_conversation: Messages from all sequences except the last turn
-        - current_turn_seed_group: A new SeedGroup containing only the last turn's prompts
+        - current_turn_message: A Message containing only the last turn's prompts
 
         Args:
             raise_on_missing_objective: If True, raises ValueError when no objective is present.
@@ -234,13 +234,15 @@ class SeedGroup(YamlLoadable):
             if prepended_prompts:
                 result.prepended_conversation = self._prompts_to_messages(prepended_prompts)
 
-            # Create current_turn_seed_group from last sequence only
+            # Create current_turn_message from last sequence only
             current_turn_prompts = [p for p in self.prompts if p.sequence == last_sequence]
             if current_turn_prompts:
-                result.current_turn_seed_group = SeedGroup(seeds=current_turn_prompts)
+                messages = self._prompts_to_messages(current_turn_prompts)
+                result.current_turn_message = messages[0] if messages else None
         elif len(unique_sequences) == 1:
-            # Single turn - everything goes to current_turn_seed_group
-            result.current_turn_seed_group = SeedGroup(seeds=list(self.prompts))
+            # Single turn - everything goes to current_turn_message
+            messages = self._prompts_to_messages(list(self.prompts))
+            result.current_turn_message = messages[0] if messages else None
 
         return result
 

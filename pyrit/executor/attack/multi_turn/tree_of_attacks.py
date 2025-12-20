@@ -21,11 +21,11 @@ from pyrit.exceptions import (
 )
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
-    AttackContext,
     AttackConverterConfig,
     AttackScoringConfig,
     AttackStrategy,
 )
+from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -35,7 +35,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -51,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class TAPAttackContext(AttackContext):
+class TAPAttackContext(MultiTurnAttackContext):
     """
     Context for the Tree of Attacks with Pruning (TAP) attack strategy.
 
@@ -397,12 +396,12 @@ class _TreeOfAttacksNode:
         Side Effects:
             - Sets self.last_response to the target's response text
         """
-        # Create seed group from the generated prompt
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")])
+        # Create message from the generated prompt
+        message = Message.from_prompt(prompt=prompt, role="user")
 
         # Send prompt with configured converters
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
             conversation_id=self.objective_target_conversation_id,
@@ -782,12 +781,12 @@ class _TreeOfAttacksNode:
                 attack prompt.
         """
         # Configure for JSON response
-        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
+        message = Message.from_prompt(prompt=prompt_text, role="user")
+        message.message_pieces[0].prompt_metadata = {"response_format": "json"}
 
         # Send and get response
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             conversation_id=self.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             labels=self._memory_labels,
