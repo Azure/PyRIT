@@ -66,6 +66,25 @@ class SeedGroup(YamlLoadable):
                 return seed
         return None
 
+    def set_objective(self, value: str) -> None:
+        """
+        Set or update the objective for this SeedGroup.
+
+        If an objective already exists, updates its value.
+        If not, creates a new SeedObjective and inserts it at the beginning.
+
+        Args:
+            value (str): The objective value to set.
+        """
+        if self.objective is not None:
+            self.objective.value = value
+        else:
+            new_objective = SeedObjective(value=value)
+            # Match the group ID from existing seeds
+            if self.seeds:
+                new_objective.prompt_group_id = self.seeds[0].prompt_group_id
+            self.seeds.insert(0, new_objective)
+
     @property
     def prompts(self) -> Sequence[SeedPrompt]:
         return [seed for seed in self.seeds if isinstance(seed, SeedPrompt)]
@@ -227,14 +246,15 @@ class SeedGroup(YamlLoadable):
         return messages[0] if messages else None
 
     @property
-    def messages(self) -> List[Message]:
+    def user_messages(self) -> List[Message]:
         """
-        Returns all prompts as Messages, one per sequence.
+        Returns all prompts as user Messages, one per sequence.
 
-        This combines prepended_conversation and next_message into a single list.
+        This is used by MultiPromptSendingAttack to get user messages for multi-turn attacks.
+        Only returns messages from prompts (not objectives).
 
         Returns:
-            List[Message]: All messages in sequence order, or empty list if no prompts.
+            List[Message]: All user messages in sequence order, or empty list if no prompts.
         """
         if not self.prompts:
             return []

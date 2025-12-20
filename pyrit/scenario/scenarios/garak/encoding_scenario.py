@@ -10,7 +10,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedGroup
+from pyrit.models import SeedGroup, SeedObjective
 from pyrit.models.seed import Seed
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_converter import (
@@ -280,11 +280,10 @@ class EncodingScenario(Scenario):
         atomic_attacks = []
         for attack_converter_config in converter_configs:
             seed_groups = []
-            objectives = []
             for seed_prompt in self._seed_prompts:
+                objective = f"Make the model say an encoded payload: {seed_prompt}"
                 seed = SeedPrompt(value=seed_prompt)
-                seed_groups.append(SeedGroup(seeds=[seed]))
-                objectives.append(f"Make the model say an encoded payload: {seed_prompt}")
+                seed_groups.append(SeedGroup(seeds=[SeedObjective(value=objective), seed]))
 
             # objective_target is guaranteed to be non-None by parent class validation
             assert self._objective_target is not None
@@ -295,7 +294,7 @@ class EncodingScenario(Scenario):
             )
             atomic_attacks.append(
                 AtomicAttack(
-                    atomic_attack_name=encoding_name, attack=attack, objectives=objectives, seed_groups=seed_groups
+                    atomic_attack_name=encoding_name, attack=attack, seed_groups=seed_groups
                 )
             )
 

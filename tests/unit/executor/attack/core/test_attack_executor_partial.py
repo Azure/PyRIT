@@ -52,10 +52,10 @@ def create_attack_result(objective: str, outcome: AttackOutcome = AttackOutcome.
 class TestPartialExecutionWithFailures:
     """Tests for AttackExecutor returning partial results when some objectives fail."""
 
-    async def test_execute_multi_objective_returns_partial_on_some_failures(
+    async def test_execute_attack_returns_partial_on_some_failures(
         self, mock_attack_strategy, sample_objectives
     ):
-        """Test that execute_multi_objective_attack_async returns AttackExecutorResult
+        """Test that execute_attack_async returns AttackExecutorResult
         when some objectives fail and return_partial_on_failure=True."""
 
         # Set up mock to succeed for first 3, fail for last 2
@@ -68,7 +68,7 @@ class TestPartialExecutionWithFailures:
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=5)
-        result = await executor.execute_multi_objective_attack_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=sample_objectives,
             return_partial_on_failure=True,
@@ -96,10 +96,10 @@ class TestPartialExecutionWithFailures:
         assert result.has_incomplete is True
         assert result.all_completed is False
 
-    async def test_execute_multi_objective_returns_partial_result_on_all_success(
+    async def test_execute_attack_returns_partial_result_on_all_success(
         self, mock_attack_strategy, sample_objectives
     ):
-        """Test that execute_multi_objective_attack_async returns AttackExecutorResult
+        """Test that execute_attack_async returns AttackExecutorResult
         even when all objectives succeed, with no incomplete objectives."""
 
         # Set up mock to succeed for all
@@ -110,7 +110,7 @@ class TestPartialExecutionWithFailures:
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=5)
-        result = await executor.execute_multi_objective_attack_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=sample_objectives,
             return_partial_on_failure=True,
@@ -134,8 +134,8 @@ class TestPartialExecutionWithFailures:
         assert isinstance(result[0], AttackResult)
         assert result[0].objective in sample_objectives
 
-    async def test_execute_multi_objective_raises_on_failure_by_default(self, mock_attack_strategy, sample_objectives):
-        """Test that execute_multi_objective_attack_async raises exception by default
+    async def test_execute_attack_raises_on_failure_by_default(self, mock_attack_strategy, sample_objectives):
+        """Test that execute_attack_async raises exception by default
         (return_partial_on_failure=False by default)."""
 
         # Set up mock to fail for one objective
@@ -151,15 +151,15 @@ class TestPartialExecutionWithFailures:
 
         # Default behavior should raise
         with pytest.raises(ValueError, match="Failed to execute objective3"):
-            await executor.execute_multi_objective_attack_async(
+            await executor.execute_attack_async(
                 attack=mock_attack_strategy,
                 objectives=sample_objectives,
             )
 
-    async def test_execute_multi_objective_raises_on_failure_when_explicit_false(
+    async def test_execute_attack_raises_on_failure_when_explicit_false(
         self, mock_attack_strategy, sample_objectives
     ):
-        """Test that execute_multi_objective_attack_async raises exception when
+        """Test that execute_attack_async raises exception when
         return_partial_on_failure=False is explicitly set."""
 
         # Set up mock to fail for one objective
@@ -174,27 +174,27 @@ class TestPartialExecutionWithFailures:
         executor = AttackExecutor(max_concurrency=5)
 
         with pytest.raises(ValueError, match="Failed to execute objective3"):
-            await executor.execute_multi_objective_attack_async(
+            await executor.execute_attack_async(
                 attack=mock_attack_strategy,
                 objectives=sample_objectives,
                 return_partial_on_failure=False,
             )
 
-    async def test_execute_single_turn_returns_partial_on_some_failures(self, mock_attack_strategy, sample_objectives):
-        """Test that execute_single_turn_attacks_async returns AttackExecutorResult
-        when some objectives fail."""
+    async def test_execute_attack_returns_partial_on_some_failures_scenario2(self, mock_attack_strategy, sample_objectives):
+        """Test that execute_attack_async returns AttackExecutorResult
+        when some objectives fail (scenario with first 2 succeeding)."""
 
         # Set up mock to succeed for first 2, fail for rest
         async def mock_execute(objective, **kwargs):
             await asyncio.sleep(0.01)
             if objective not in ["objective1", "objective2"]:
-                raise RuntimeError(f"Single turn failed: {objective}")
+                raise RuntimeError(f"Attack failed: {objective}")
             return create_attack_result(objective)
 
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=3)
-        result = await executor.execute_single_turn_attacks_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=sample_objectives,
             return_partial_on_failure=True,
@@ -206,21 +206,21 @@ class TestPartialExecutionWithFailures:
         assert len(result.incomplete_objectives) == 3
         assert result.has_incomplete is True
 
-    async def test_execute_multi_turn_returns_partial_on_some_failures(self, mock_attack_strategy, sample_objectives):
-        """Test that execute_multi_turn_attacks_async returns AttackExecutorResult
-        when some objectives fail."""
+    async def test_execute_attack_returns_partial_on_middle_failures(self, mock_attack_strategy, sample_objectives):
+        """Test that execute_attack_async returns AttackExecutorResult
+        when middle objectives fail."""
 
         # Set up mock to fail for middle objectives
         async def mock_execute(objective, **kwargs):
             await asyncio.sleep(0.01)
             if objective in ["objective2", "objective3"]:
-                raise ConnectionError(f"Multi turn connection failed: {objective}")
+                raise ConnectionError(f"Connection failed: {objective}")
             return create_attack_result(objective)
 
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=2)
-        result = await executor.execute_multi_turn_attacks_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=sample_objectives,
             return_partial_on_failure=True,
@@ -253,7 +253,7 @@ class TestPartialExecutionWithFailures:
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=5)
-        result = await executor.execute_multi_objective_attack_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=sample_objectives,
             return_partial_on_failure=True,
@@ -287,7 +287,7 @@ class TestPartialExecutionWithFailures:
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=4)
-        result = await executor.execute_multi_objective_attack_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=objectives,
             return_partial_on_failure=True,
@@ -318,7 +318,7 @@ class TestPartialExecutionResultMethods:
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=5)
-        result = await executor.execute_multi_objective_attack_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=["objective1", "objective2", "objective3"],
             return_partial_on_failure=True,
@@ -338,7 +338,7 @@ class TestPartialExecutionResultMethods:
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=5)
-        result = await executor.execute_multi_objective_attack_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=["objective1", "objective2"],
             return_partial_on_failure=True,
@@ -359,7 +359,7 @@ class TestPartialExecutionResultMethods:
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=5)
-        result = await executor.execute_multi_objective_attack_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=["objective1", "objective2"],
             return_partial_on_failure=True,
@@ -379,7 +379,7 @@ class TestPartialExecutionResultMethods:
         mock_attack_strategy.execute_async = mock_execute
 
         executor = AttackExecutor(max_concurrency=5)
-        result = await executor.execute_multi_objective_attack_async(
+        result = await executor.execute_attack_async(
             attack=mock_attack_strategy,
             objectives=["objective1", "objective2"],
             return_partial_on_failure=True,

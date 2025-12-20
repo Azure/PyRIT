@@ -13,6 +13,7 @@ from pyrit.executor.attack.core.attack_config import (
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -97,6 +98,7 @@ class CyberScenario(Scenario):
             adversarial_chat (Optional[PromptChatTarget]): Adversarial chat for the red teaming attack, corresponding
                 to CyberStrategy.MultiTurn. If not provided, defaults to an OpenAI chat target.
             objectives (Optional[List[str]]): List of objectives to test for cyber harms, e.g. malware generation.
+                If not provided, defaults to objectives from the airt_malware dataset.
             objective_scorer (Optional[SelfAskTrueFalseScorer]): Objective scorer for malware detection. If not
                 provided, defaults to a SelfAskScorer using the malware.yaml file under the scorer config store for
                 malware detection
@@ -129,7 +131,11 @@ class CyberScenario(Scenario):
             scenario_result_id=scenario_result_id,
         )
 
-        self._objectives = objectives if objectives else self._get_default_objectives()
+        # Convert objectives to seed_groups if provided, otherwise load from dataset
+        if objectives:
+            self._seed_groups = [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
+        else:
+            self._seed_groups = self._get_default_seed_groups()
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
@@ -179,21 +185,21 @@ class CyberScenario(Scenario):
             temperature=1.2,
         )
 
-    def _get_default_objectives(self) -> list[str]:
+    def _get_default_seed_groups(self) -> List[SeedGroup]:
         """
-        Get the default seed prompts for malware tests.
+        Get the default seed groups for malware tests.
 
         This dataset includes a set of exploits that represent cybersecurity harms.
 
         Returns:
-            list[str]: List of objectives to be encoded and tested.
+            List[SeedGroup]: List of seed groups with objectives to be tested.
         """
-        seed_objectives = self._memory.get_seeds(dataset_name="airt_malware", is_objective=True)
+        seed_groups = self._memory.get_seed_groups(dataset_name="airt_malware", is_objective=True)
 
-        if not seed_objectives:
+        if not seed_groups:
             self._raise_dataset_exception()
 
-        return [seed.value for seed in seed_objectives]
+        return list(seed_groups)
 
     async def _get_atomic_attack_from_strategy_async(self, strategy: str) -> AtomicAttack:
         """
@@ -228,7 +234,7 @@ class CyberScenario(Scenario):
         return AtomicAttack(
             atomic_attack_name=f"cyber_{strategy}",
             attack=attack_strategy,
-            objectives=self._objectives,
+            seed_groups=self._seed_groups,
             memory_labels=self._memory_labels,
         )
 
