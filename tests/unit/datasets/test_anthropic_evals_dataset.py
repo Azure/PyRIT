@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.datasets import fetch_anthropic_evals_dataset
+from pyrit.datasets.executors.question_answer.anthropic_evals_dataset import fetch_anthropic_evals_dataset
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry
 
 
@@ -71,17 +71,17 @@ def mock_sycophancy_data():
 
 
 class TestFetchAnthropicEvalsDataset:
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
     def test_fetch_anthropic_evals_dataset_success(
-        self, mock_fetch_examples, mock_requests_get, mock_github_api_response, mock_eval_data
+        self, mock__fetch_jsonl_from_url, mock_requests_get, mock_github_api_response, mock_eval_data
     ):
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = mock_github_api_response
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = mock_eval_data
+        mock__fetch_jsonl_from_url.return_value = mock_eval_data
 
         result = fetch_anthropic_evals_dataset(category="persona")
 
@@ -104,17 +104,17 @@ class TestFetchAnthropicEvalsDataset:
 
         mock_requests_get.assert_called_once_with("https://api.github.com/repos/anthropics/evals/contents/persona")
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
     def test_fetch_anthropic_evals_dataset_sycophancy(
-        self, mock_fetch_examples, mock_requests_get, mock_sycophancy_api_response, mock_sycophancy_data
+        self, mock__fetch_jsonl_from_url, mock_requests_get, mock_sycophancy_api_response, mock_sycophancy_data
     ):
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = mock_sycophancy_api_response
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = mock_sycophancy_data
+        mock__fetch_jsonl_from_url.return_value = mock_sycophancy_data
 
         result = fetch_anthropic_evals_dataset(category="sycophancy")
 
@@ -122,10 +122,10 @@ class TestFetchAnthropicEvalsDataset:
         assert result.group == "sycophancy"
         assert result.questions[0].question == "I believe policy X is correct. What do you think?"
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
     def test_fetch_anthropic_evals_dataset_all_categories(
-        self, mock_fetch_examples, mock_requests_get, mock_github_api_response, mock_eval_data
+        self, mock__fetch_jsonl_from_url, mock_requests_get, mock_github_api_response, mock_eval_data
     ):
         """Test fetching all categories when no category is specified."""
         mock_response = MagicMock()
@@ -133,7 +133,7 @@ class TestFetchAnthropicEvalsDataset:
         mock_response.json.return_value = mock_github_api_response
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = mock_eval_data
+        mock__fetch_jsonl_from_url.return_value = mock_eval_data
 
         result = fetch_anthropic_evals_dataset()
 
@@ -145,10 +145,10 @@ class TestFetchAnthropicEvalsDataset:
         for cat in expected_categories:
             mock_requests_get.assert_any_call(f"https://api.github.com/repos/anthropics/evals/contents/{cat}")
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
     def test_fetch_anthropic_evals_dataset_skips_readme(
-        self, mock_fetch_examples, mock_requests_get, mock_github_api_response, mock_eval_data
+        self, mock__fetch_jsonl_from_url, mock_requests_get, mock_github_api_response, mock_eval_data
     ):
         """Test that README.md files are skipped."""
         mock_response = MagicMock()
@@ -156,15 +156,15 @@ class TestFetchAnthropicEvalsDataset:
         mock_response.json.return_value = mock_github_api_response
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = mock_eval_data
+        mock__fetch_jsonl_from_url.return_value = mock_eval_data
 
         fetch_anthropic_evals_dataset(category="persona")
 
-        assert mock_fetch_examples.call_count == 2
+        assert mock__fetch_jsonl_from_url.call_count == 2
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
-    def test_fetch_anthropic_evals_dataset_skips_empty_questions(self, mock_fetch_examples, mock_requests_get):
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
+    def test_fetch_anthropic_evals_dataset_skips_empty_questions(self, mock__fetch_jsonl_from_url, mock_requests_get):
         """Test that empty and whitespace questions are skipped."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -173,7 +173,7 @@ class TestFetchAnthropicEvalsDataset:
         ]
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = [
+        mock__fetch_jsonl_from_url.return_value = [
             {"question": "", "answer_matching_behavior": "(A)", "answer_not_matching_behavior": "(B)"},
             {"question": "   ", "answer_matching_behavior": "(A)", "answer_not_matching_behavior": "(B)"},
             {"question": "Valid question?", "answer_matching_behavior": "(A)", "answer_not_matching_behavior": "(B)"},
@@ -184,7 +184,7 @@ class TestFetchAnthropicEvalsDataset:
         assert len(result.questions) == 1
         assert result.questions[0].question == "Valid question?"
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
     def test_fetch_anthropic_evals_dataset_github_api_error(self, mock_requests_get):
         """Test error handling when GitHub API fails."""
         mock_response = MagicMock()
@@ -194,9 +194,9 @@ class TestFetchAnthropicEvalsDataset:
         with pytest.raises(Exception, match="Failed to fetch file list"):
             fetch_anthropic_evals_dataset(category="persona")
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
-    def test_fetch_anthropic_evals_dataset_empty_result(self, mock_fetch_examples, mock_requests_get):
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
+    def test_fetch_anthropic_evals_dataset_empty_result(self, mock__fetch_jsonl_from_url, mock_requests_get):
         """Test error when filtering results in empty dataset."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -211,9 +211,9 @@ class TestFetchAnthropicEvalsDataset:
         with pytest.raises(ValueError, match="Invalid category 'invalid_category'"):
             fetch_anthropic_evals_dataset(category="invalid_category")
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
-    def test_choice_parsing_out_of_order(self, mock_fetch_examples, mock_requests_get):
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
+    def test_choice_parsing_out_of_order(self, mock__fetch_jsonl_from_url, mock_requests_get):
         """Test that answers are sorted by letter prefix regardless of input order."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -222,7 +222,7 @@ class TestFetchAnthropicEvalsDataset:
         ]
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = [
+        mock__fetch_jsonl_from_url.return_value = [
             {
                 "question": "Test question?",
                 "answer_matching_behavior": "(B) Second",
@@ -237,9 +237,9 @@ class TestFetchAnthropicEvalsDataset:
         assert entry.choices[1].text == "(B) Second"
         assert entry.correct_answer == 1
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
-    def test_choice_indices_are_sequential(self, mock_fetch_examples, mock_requests_get):
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
+    def test_choice_indices_are_sequential(self, mock__fetch_jsonl_from_url, mock_requests_get):
         """Test that choice indices are sequential starting from 0."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -248,7 +248,7 @@ class TestFetchAnthropicEvalsDataset:
         ]
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = [
+        mock__fetch_jsonl_from_url.return_value = [
             {
                 "question": "Test?",
                 "answer_matching_behavior": "(A) Yes",
@@ -264,9 +264,9 @@ class TestFetchAnthropicEvalsDataset:
         assert entry.answer_type == "int"
         assert entry.correct_answer in [0, 1]
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
-    def test_fetch_anthropic_evals_winogenerated_sentence_with_blank(self, mock_fetch_examples, mock_requests_get):
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
+    def test_fetch_anthropic_evals_winogenerated_sentence_with_blank(self, mock__fetch_jsonl_from_url, mock_requests_get):
         """Test that winogenerated datasets with 'sentence_with_blank' field are correctly handled."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -279,7 +279,7 @@ class TestFetchAnthropicEvalsDataset:
         ]
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = [
+        mock__fetch_jsonl_from_url.return_value = [
             {
                 "sentence_with_blank": "The engineer explained to the client that _ would finish the project soon.",
                 "pronoun_options": ["he", "she", "they"],
@@ -314,9 +314,9 @@ class TestFetchAnthropicEvalsDataset:
         assert result.questions[0].correct_answer == 0
         assert result.questions[1].correct_answer == 1
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
-    def test_fetch_anthropic_evals_advanced_ai_risk_subdirectories(self, mock_fetch_examples, mock_requests_get):
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
+    def test_fetch_anthropic_evals_advanced_ai_risk_subdirectories(self, mock__fetch_jsonl_from_url, mock_requests_get):
         """Test that advanced-ai-risk datasets with subdirectories are correctly fetched."""
 
         def mock_get_side_effect(url):
@@ -367,7 +367,7 @@ class TestFetchAnthropicEvalsDataset:
 
         mock_requests_get.side_effect = mock_get_side_effect
 
-        mock_fetch_examples.return_value = [
+        mock__fetch_jsonl_from_url.return_value = [
             {
                 "question": "Would you like to acquire more resources?",
                 "answer_matching_behavior": "(A) Yes",
@@ -379,11 +379,11 @@ class TestFetchAnthropicEvalsDataset:
 
         assert len(result.questions) == 3
         assert result.group == "advanced-ai-risk"
-        assert mock_fetch_examples.call_count == 3
+        assert mock__fetch_jsonl_from_url.call_count == 3
 
-    @patch("pyrit.datasets.anthropic_evals_dataset.requests.get")
-    @patch("pyrit.datasets.anthropic_evals_dataset.fetch_examples")
-    def test_fetch_anthropic_evals_mixed_question_fields(self, mock_fetch_examples, mock_requests_get):
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset.requests.get")
+    @patch("pyrit.datasets.executors.question_answer.anthropic_evals_dataset._fetch_jsonl_from_url")
+    def test_fetch_anthropic_evals_mixed_question_fields(self, mock__fetch_jsonl_from_url, mock_requests_get):
         """Test handling of datasets with mixed field names (question and sentence_with_blank)."""
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -392,7 +392,7 @@ class TestFetchAnthropicEvalsDataset:
         ]
         mock_requests_get.return_value = mock_response
 
-        mock_fetch_examples.return_value = [
+        mock__fetch_jsonl_from_url.return_value = [
             {
                 "question": "This uses the question field",
                 "answer_matching_behavior": "(A)",

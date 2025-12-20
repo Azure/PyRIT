@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import hashlib
+import json
 import logging
 import re
 from pathlib import Path
@@ -8,7 +10,7 @@ from typing import Dict, List, Optional
 
 import requests
 
-from pyrit.datasets.dataset_helper import fetch_examples
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.models import (
     QuestionAnsweringDataset,
     QuestionAnsweringEntry,
@@ -68,9 +70,48 @@ def _parse_answer_choices(item: Dict) -> tuple[List[QuestionChoice], int]:
     return choices, correct_index
 
 
+def _fetch_jsonl_from_url(url: str, cache: bool = True) -> List[Dict]:
+    """
+    Fetch JSONL data from a URL with optional caching.
+
+    Args:
+        url: The URL to fetch JSONL data from.
+        cache: Whether to cache the fetched data. Defaults to True.
+
+    Returns:
+        List of dictionaries parsed from JSONL.
+
+    Raises:
+        Exception: If the request fails.
+    """
+    cache_dir = DB_DATA_PATH / "anthropic-evals-cache"
+
+    if cache:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_key = hashlib.md5(url.encode("utf-8")).hexdigest()
+        cache_file = cache_dir / f"{cache_key}.jsonl"
+
+        if cache_file.exists():
+            with cache_file.open("r", encoding="utf-8") as f:
+                return [json.loads(line) for line in f if line.strip()]
+
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch data from {url}. Status code: {response.status_code}")
+
+    lines = response.text.strip().split("\n")
+    examples = [json.loads(line) for line in lines if line.strip()]
+
+    if cache:
+        with cache_file.open("w", encoding="utf-8") as f:
+            for example in examples:
+                f.write(json.dumps(example) + "\n")
+
+    return examples
+
+
 def fetch_anthropic_evals_dataset(
     category: Optional[str] = None,
-    cache_dir: Optional[str] = None,
 ) -> QuestionAnsweringDataset:
     """
     Fetch Anthropic's model-written-evals dataset from GitHub.
@@ -89,7 +130,6 @@ def fetch_anthropic_evals_dataset(
         category: Optional category to filter. Available categories:
             "persona", "sycophancy", "advanced-ai-risk", "winogenerated"
             Default: None (returns all categories)
-        cache_dir: Optional cache directory for downloaded files
 
     Returns:
         QuestionAnsweringDataset containing Anthropic eval questions with structured choices.
@@ -119,12 +159,7 @@ def fetch_anthropic_evals_dataset(
 
                     logger.info(f"Loading evaluation: {eval_name}")
 
-                    examples = fetch_examples(
-                        source=file_url,
-                        source_type="public_url",
-                        cache=True,
-                        data_home=Path(cache_dir) if cache_dir else None,
-                    )
+                    examples = _fetch_jsonl_from_url(file_url)
 
                     for item in examples:
                         question_text = (item.get("question") or item.get("sentence_with_blank", "")).strip()
