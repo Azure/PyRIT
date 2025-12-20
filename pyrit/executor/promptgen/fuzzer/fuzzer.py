@@ -985,9 +985,8 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         for prompt in prompts:
             seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")])
-            decomposed = seed_group.to_attack_parameters()
             request = NormalizerRequest(
-                message=decomposed.current_turn_message,
+                message=seed_group.next_message,
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
             )

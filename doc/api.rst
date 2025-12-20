@@ -330,7 +330,6 @@ API Reference
     AllowedCategories
     AttackOutcome
     AttackResult
-    DecomposedSeedGroup
     Message
     MessagePiece
     PromptDataType
