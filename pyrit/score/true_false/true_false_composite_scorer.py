@@ -39,14 +39,16 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             ValueError: If no scorers are provided.
             ValueError: If any provided scorer is not a TrueFalseScorer.
         """
+        # Initialize base with the selected aggregator used by TrueFalseScorer logic
+        # Validation is used by sub-scorers
+        super().__init__(score_aggregator=aggregator, validator=ScorerPromptValidator())
+
         if not scorers:
             raise ValueError("At least one scorer must be provided.")
 
         for scorer in scorers:
             if not isinstance(scorer, TrueFalseScorer):
                 raise ValueError("All scorers must be true_false scorers.")
-
-        super().__init__(score_aggregator=aggregator, validator=ScorerPromptValidator())
 
         self._scorers = scorers
 

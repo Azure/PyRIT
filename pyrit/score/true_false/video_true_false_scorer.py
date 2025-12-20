@@ -41,12 +41,11 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
             validator: Validator for the scorer. Defaults to video_path data type validator.
             score_aggregator: Aggregator for combining frame scores. Defaults to TrueFalseScoreAggregator.OR.
         """
-        _BaseVideoScorer.__init__(
-            self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
-        )
-
         TrueFalseScorer.__init__(
             self, validator=validator or self._default_validator, score_aggregator=score_aggregator
+        )
+        _BaseVideoScorer.__init__(
+            self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
         )
 
     def _build_scorer_identifier(self) -> None:
