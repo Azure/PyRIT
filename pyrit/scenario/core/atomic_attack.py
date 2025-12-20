@@ -139,8 +139,7 @@ class AtomicAttack:
         """
         remaining_set = set(remaining_objectives)
         self._seed_groups = [
-            sg for sg in self._seed_groups
-            if sg.objective is not None and sg.objective.value in remaining_set
+            sg for sg in self._seed_groups if sg.objective is not None and sg.objective.value in remaining_set
         ]
 
     async def run_async(

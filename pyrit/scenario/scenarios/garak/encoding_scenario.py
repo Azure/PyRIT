@@ -293,9 +293,7 @@ class EncodingScenario(Scenario):
                 attack_scoring_config=self._scorer_config,
             )
             atomic_attacks.append(
-                AtomicAttack(
-                    atomic_attack_name=encoding_name, attack=attack, seed_groups=seed_groups
-                )
+                AtomicAttack(atomic_attack_name=encoding_name, attack=attack, seed_groups=seed_groups)
             )
 
         return atomic_attacks

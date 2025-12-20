@@ -13,6 +13,24 @@ from pyrit.executor.attack import AttackExecutor, AttackStrategy
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.models import AttackOutcome, AttackResult
 
+# Common accepted parameters for attacks used in tests
+ACCEPTED_CONTEXT_PARAMS = {
+    "objective",
+    "memory_labels",
+    "prepended_conversation",
+    "start_time",
+    "related_conversations",
+    "conversation_id",
+    "next_message",
+    "system_prompt",
+    "metadata",
+    "session",
+    "executed_turns",
+    "last_response",
+    "last_score",
+    "max_turns",
+}
+
 
 @pytest.fixture
 def sample_objectives():
@@ -25,6 +43,7 @@ def mock_attack_strategy():
     """Create a mock attack strategy for testing."""
     strategy = MagicMock(spec=AttackStrategy)
     strategy.execute_async = AsyncMock()
+    strategy.accepted_context_parameters = ACCEPTED_CONTEXT_PARAMS
     strategy.get_identifier.return_value = {
         "__type__": "TestAttack",
         "__module__": "pyrit.executor.attack.test_attack",
@@ -52,9 +71,7 @@ def create_attack_result(objective: str, outcome: AttackOutcome = AttackOutcome.
 class TestPartialExecutionWithFailures:
     """Tests for AttackExecutor returning partial results when some objectives fail."""
 
-    async def test_execute_attack_returns_partial_on_some_failures(
-        self, mock_attack_strategy, sample_objectives
-    ):
+    async def test_execute_attack_returns_partial_on_some_failures(self, mock_attack_strategy, sample_objectives):
         """Test that execute_attack_async returns AttackExecutorResult
         when some objectives fail and return_partial_on_failure=True."""
 
@@ -96,9 +113,7 @@ class TestPartialExecutionWithFailures:
         assert result.has_incomplete is True
         assert result.all_completed is False
 
-    async def test_execute_attack_returns_partial_result_on_all_success(
-        self, mock_attack_strategy, sample_objectives
-    ):
+    async def test_execute_attack_returns_partial_result_on_all_success(self, mock_attack_strategy, sample_objectives):
         """Test that execute_attack_async returns AttackExecutorResult
         even when all objectives succeed, with no incomplete objectives."""
 
@@ -156,9 +171,7 @@ class TestPartialExecutionWithFailures:
                 objectives=sample_objectives,
             )
 
-    async def test_execute_attack_raises_on_failure_when_explicit_false(
-        self, mock_attack_strategy, sample_objectives
-    ):
+    async def test_execute_attack_raises_on_failure_when_explicit_false(self, mock_attack_strategy, sample_objectives):
         """Test that execute_attack_async raises exception when
         return_partial_on_failure=False is explicitly set."""
 
@@ -180,7 +193,9 @@ class TestPartialExecutionWithFailures:
                 return_partial_on_failure=False,
             )
 
-    async def test_execute_attack_returns_partial_on_some_failures_scenario2(self, mock_attack_strategy, sample_objectives):
+    async def test_execute_attack_returns_partial_on_some_failures_scenario2(
+        self, mock_attack_strategy, sample_objectives
+    ):
         """Test that execute_attack_async returns AttackExecutorResult
         when some objectives fail (scenario with first 2 succeeding)."""
 

@@ -946,4 +946,3 @@ def test_next_message_pieces_structure():
     assert len(current_pieces) == 2
     assert current_pieces[0].converted_value_data_type == "text"
     assert current_pieces[1].converted_value_data_type == "image_path"
-

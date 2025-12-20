@@ -10,7 +10,13 @@ import pytest
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
 from pyrit.executor.attack.core import AttackExecutorResult
-from pyrit.models import AttackOutcome, AttackResult, SeedGroup, SeedObjective, SeedPrompt
+from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
+    SeedGroup,
+    SeedObjective,
+    SeedPrompt,
+)
 from pyrit.scenario import AtomicAttack
 
 
@@ -161,9 +167,7 @@ class TestAtomicAttackInitialization:
                 atomic_attack_name="Test Attack Run",
             )
 
-    def test_init_fails_with_seed_group_missing_objective(
-        self, mock_attack, sample_seed_groups_without_objectives
-    ):
+    def test_init_fails_with_seed_group_missing_objective(self, mock_attack, sample_seed_groups_without_objectives):
         """Test that initialization fails when a seed group is missing an objective."""
         with pytest.raises(ValueError, match="SeedGroup at index 0 is missing an objective"):
             AtomicAttack(
@@ -200,9 +204,7 @@ class TestAtomicAttackExecution:
     """Tests for AtomicAttack execution methods."""
 
     @pytest.mark.asyncio
-    async def test_run_async_with_valid_atomic_attack(
-        self, mock_attack, sample_seed_groups, sample_attack_results
-    ):
+    async def test_run_async_with_valid_atomic_attack(self, mock_attack, sample_seed_groups, sample_attack_results):
         """Test successful execution of an atomic attack."""
         atomic_attack = AtomicAttack(
             attack=mock_attack,
@@ -210,9 +212,7 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(sample_attack_results)
 
             result = await atomic_attack.run_async()
@@ -227,9 +227,7 @@ class TestAtomicAttackExecution:
             assert call_kwargs["attack"] == mock_attack
 
     @pytest.mark.asyncio
-    async def test_run_async_with_custom_concurrency(
-        self, mock_attack, sample_seed_groups, sample_attack_results
-    ):
+    async def test_run_async_with_custom_concurrency(self, mock_attack, sample_seed_groups, sample_attack_results):
         """Test execution with custom max_concurrency for atomic attack."""
         atomic_attack = AtomicAttack(
             attack=mock_attack,
@@ -249,9 +247,7 @@ class TestAtomicAttackExecution:
                 assert len(result.completed_results) == 3
 
     @pytest.mark.asyncio
-    async def test_run_async_with_default_concurrency(
-        self, mock_attack, sample_seed_groups, sample_attack_results
-    ):
+    async def test_run_async_with_default_concurrency(self, mock_attack, sample_seed_groups, sample_attack_results):
         """Test that default concurrency (1) is used when not specified."""
         atomic_attack = AtomicAttack(
             attack=mock_attack,
@@ -270,9 +266,7 @@ class TestAtomicAttackExecution:
                 mock_init.assert_called_once_with(max_concurrency=1)
 
     @pytest.mark.asyncio
-    async def test_run_async_passes_memory_labels(
-        self, mock_attack, sample_seed_groups, sample_attack_results
-    ):
+    async def test_run_async_passes_memory_labels(self, mock_attack, sample_seed_groups, sample_attack_results):
         """Test that memory labels are passed to the executor."""
         memory_labels = {"test": "attack_run", "category": "attack"}
 
@@ -283,9 +277,7 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
@@ -295,9 +287,7 @@ class TestAtomicAttackExecution:
             assert call_kwargs["memory_labels"] == memory_labels
 
     @pytest.mark.asyncio
-    async def test_run_async_passes_seed_groups(
-        self, mock_attack, sample_seed_groups, sample_attack_results
-    ):
+    async def test_run_async_passes_seed_groups(self, mock_attack, sample_seed_groups, sample_attack_results):
         """Test that seed_groups are passed to the executor."""
         atomic_attack = AtomicAttack(
             attack=mock_attack,
@@ -305,9 +295,7 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
@@ -317,9 +305,7 @@ class TestAtomicAttackExecution:
             assert call_kwargs["seed_groups"] == sample_seed_groups
 
     @pytest.mark.asyncio
-    async def test_run_async_passes_attack_execute_params(
-        self, mock_attack, sample_seed_groups, sample_attack_results
-    ):
+    async def test_run_async_passes_attack_execute_params(self, mock_attack, sample_seed_groups, sample_attack_results):
         """Test that attack execute parameters are passed to the executor."""
         atomic_attack = AtomicAttack(
             attack=mock_attack,
@@ -329,9 +315,7 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
@@ -341,9 +325,7 @@ class TestAtomicAttackExecution:
             assert call_kwargs["max_retries"] == 3
 
     @pytest.mark.asyncio
-    async def test_run_async_merges_all_parameters(
-        self, mock_attack, sample_seed_groups, sample_attack_results
-    ):
+    async def test_run_async_merges_all_parameters(self, mock_attack, sample_seed_groups, sample_attack_results):
         """Test that all parameters are merged and passed correctly."""
         memory_labels = {"test": "merge"}
 
@@ -355,9 +337,7 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
@@ -377,9 +357,7 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.side_effect = Exception("Execution error")
 
             with pytest.raises(ValueError, match="Failed to execute atomic attack"):
@@ -396,9 +374,7 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
@@ -418,9 +394,7 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async(return_partial_on_failure=False)
@@ -458,9 +432,7 @@ class TestAtomicAttackIntegration:
             for i in range(3)
         ]
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(mock_results)
 
             attack_run_result = await atomic_attack.run_async(max_concurrency=3)
@@ -504,9 +476,7 @@ class TestAtomicAttackIntegration:
             )
         ]
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(mock_result)
 
             attack_run_result = await atomic_attack.run_async()
@@ -544,9 +514,7 @@ class TestAtomicAttackIntegration:
             for i in range(20)
         ]
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(mock_results)
 
             attack_run_result = await atomic_attack.run_async()
@@ -600,9 +568,7 @@ class TestAtomicAttackExecutorParamCompatibility:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(sample_attack_results)
 
             await atomic_attack.run_async()
@@ -695,9 +661,7 @@ class TestAtomicAttackWithMessages:
         assert sg2.user_messages[1].message_pieces[0].original_value == "Message B"
 
     @pytest.mark.asyncio
-    async def test_run_async_passes_seed_groups_with_messages(
-        self, mock_attack, seed_groups_with_messages
-    ):
+    async def test_run_async_passes_seed_groups_with_messages(self, mock_attack, seed_groups_with_messages):
         """Test that run_async correctly passes seed groups with messages to executor."""
         atomic_attack = AtomicAttack(
             attack=mock_attack,
@@ -716,9 +680,7 @@ class TestAtomicAttackWithMessages:
             for i in range(2)
         ]
 
-        with patch.object(
-            AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-        ) as mock_exec:
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
             mock_exec.return_value = wrap_results(mock_results)
 
             result = await atomic_attack.run_async()

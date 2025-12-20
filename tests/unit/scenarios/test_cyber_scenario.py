@@ -122,26 +122,20 @@ class TestCyberScenarioInitialization:
 
     def test_init_with_default_scorer(self, mock_memory_seed_groups):
         """Test initialization with default scorer."""
-        with patch.object(
-            CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups
-        ):
+        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario()
             assert scenario._objective_scorer_identifier
 
     def test_init_with_custom_scorer(self, mock_objective_scorer, mock_memory_seed_groups):
         """Test initialization with custom scorer."""
         scorer = MagicMock(TrueFalseCompositeScorer)
-        with patch.object(
-            CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups
-        ):
+        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(objective_scorer=scorer)
             assert isinstance(scenario._scorer_config, AttackScoringConfig)
 
     def test_init_default_adversarial_chat(self, mock_objective_scorer, mock_memory_seed_groups):
         """Test initialization with default adversarial chat."""
-        with patch.object(
-            CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups
-        ):
+        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(
                 objective_scorer=mock_objective_scorer,
             )
@@ -154,9 +148,7 @@ class TestCyberScenarioInitialization:
         adversarial_chat = MagicMock(OpenAIChatTarget)
         adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
 
-        with patch.object(
-            CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups
-        ):
+        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(
                 adversarial_chat=adversarial_chat,
                 objective_scorer=mock_objective_scorer,

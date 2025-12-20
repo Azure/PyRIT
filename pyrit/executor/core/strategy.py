@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import dataclasses
 import logging
 import uuid
 from abc import ABC, abstractmethod
@@ -153,10 +154,20 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
 
         Args:
             context_type (type[StrategyContextT]): The type of context this strategy will use.
+                Must be a dataclass.
             event_handler (Optional[StrategyEventHandler[StrategyContextT, StrategyResultT]]): An optional
                 event handler for strategy events.
             logger (logging.Logger): The logger to use for this strategy.
+
+        Raises:
+            TypeError: If context_type is not a dataclass.
         """
+        if not dataclasses.is_dataclass(context_type):
+            raise TypeError(
+                f"context_type must be a dataclass, got {context_type.__name__}. "
+                "All strategy context types must be dataclasses."
+            )
+
         self._id = uuid.uuid4()
         self._context_type = context_type
         self._event_handlers: Dict[str, StrategyEventHandler[StrategyContextT, StrategyResultT]] = {}
@@ -187,6 +198,24 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
             "__module__": self.__class__.__module__,
             "id": str(self._id),
         }
+
+    @property
+    def accepted_context_parameters(self) -> set[str]:
+        """
+        Get the set of parameter names accepted by this strategy's context type.
+
+        This property inspects the context type's dataclass fields to determine
+        what parameters are accepted when creating a context. This is used by
+        executors to filter out unsupported parameters before context creation.
+
+        Returns:
+            set[str]: Set of parameter names the context type accepts.
+        """
+        accepted = set()
+        for cls in self._context_type.__mro__:
+            if dataclasses.is_dataclass(cls):
+                accepted.update(f.name for f in dataclasses.fields(cls))
+        return accepted
 
     def _register_event_handler(self, event_handler: StrategyEventHandler[StrategyContextT, StrategyResultT]) -> None:
         """

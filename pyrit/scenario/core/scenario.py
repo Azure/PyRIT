@@ -21,7 +21,7 @@ from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import ScenarioResultEntry
-from pyrit.models import AttackResult, SeedGroup
+from pyrit.models import AttackResult
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack

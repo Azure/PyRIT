@@ -2,8 +2,6 @@
 # Licensed under the MIT license.
 
 import asyncio
-import inspect
-import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, Union, cast
 
@@ -139,27 +137,6 @@ class AttackExecutor:
             raise ValueError(f"max_concurrency must be a positive integer, got {max_concurrency}")
         self._max_concurrency = max_concurrency
 
-    def _get_accepted_parameters(
-        self, attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]
-    ) -> set[str]:
-        """
-        Get the set of parameter names accepted by the attack's execute_async method.
-
-        Args:
-            attack: The attack strategy to inspect.
-
-        Returns:
-            set[str]: Set of parameter names the attack accepts.
-        """
-        sig = inspect.signature(attack.execute_async)
-        accepted = set()
-        for name, param in sig.parameters.items():
-            if param.kind == inspect.Parameter.VAR_KEYWORD:
-                # **kwargs means it accepts anything
-                return {"*"}
-            accepted.add(name)
-        return accepted
-
     def _filter_params_for_attack(
         self,
         *,
@@ -168,7 +145,10 @@ class AttackExecutor:
         strict_param_matching: bool,
     ) -> Dict[str, Any]:
         """
-        Filter parameters to only those accepted by the attack.
+        Filter parameters to only those accepted by the attack's context type.
+
+        Uses the attack strategy's accepted_context_parameters property to determine
+        what parameters are accepted. This prevents passing unsupported parameters
 
         Args:
             attack: The attack strategy to check parameters against.
@@ -181,11 +161,7 @@ class AttackExecutor:
         Raises:
             ValueError: If strict_param_matching is True and unsupported parameters are provided.
         """
-        accepted = self._get_accepted_parameters(attack)
-
-        # If attack accepts **kwargs, pass everything
-        if "*" in accepted:
-            return params
+        accepted = attack.accepted_context_parameters
 
         filtered = {}
         unsupported = []
@@ -557,7 +533,7 @@ class AttackExecutor:
         # Broadcast prepended_conversation to all objectives
         prepended_conversations_list: Optional[List[Optional[List[Message]]]] = cast(
             Optional[List[Optional[List[Message]]]],
-            [prepended_conversation] * len(objectives) if prepended_conversation else None
+            [prepended_conversation] * len(objectives) if prepended_conversation else None,
         )
 
         return await self.execute_attack_async(

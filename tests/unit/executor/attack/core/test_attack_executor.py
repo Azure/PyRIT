@@ -15,6 +15,36 @@ from pyrit.executor.attack import (
 )
 from pyrit.models import AttackOutcome, AttackResult, Message
 
+# Common accepted parameters for single-turn attacks
+SINGLE_TURN_ACCEPTED_PARAMS = {
+    "objective",
+    "memory_labels",
+    "prepended_conversation",
+    "start_time",
+    "related_conversations",
+    "conversation_id",
+    "next_message",
+    "system_prompt",
+    "metadata",
+}
+
+# Common accepted parameters for multi-turn attacks (includes additional fields)
+MULTI_TURN_ACCEPTED_PARAMS = {
+    "objective",
+    "memory_labels",
+    "prepended_conversation",
+    "start_time",
+    "related_conversations",
+    "session",
+    "executed_turns",
+    "last_response",
+    "last_score",
+    "next_message",
+    "max_turns",  # Common attack param
+    "temperature",  # Common attack param
+    "messages",  # For multi-prompt attacks
+}
+
 
 @pytest.fixture
 def mock_attack_strategy():
@@ -22,6 +52,7 @@ def mock_attack_strategy():
     strategy = MagicMock(spec=AttackStrategy)
     strategy.execute_async = AsyncMock()
     strategy.execute_with_context_async = AsyncMock()
+    strategy.accepted_context_parameters = SINGLE_TURN_ACCEPTED_PARAMS | MULTI_TURN_ACCEPTED_PARAMS
     strategy.get_identifier.return_value = {
         "__type__": "TestAttack",
         "__module__": "pyrit.executor.attack.test_attack",
@@ -49,6 +80,7 @@ def mock_single_turn_attack_strategy():
     strategy.execute_async = AsyncMock()
     strategy.execute_with_context_async = AsyncMock()
     strategy._context_type = SingleTurnAttackContext
+    strategy.accepted_context_parameters = SINGLE_TURN_ACCEPTED_PARAMS
     strategy.get_identifier.return_value = {
         "__type__": "TestSingleTurnAttack",
         "__module__": "pyrit.executor.attack.test_attack",
@@ -64,6 +96,7 @@ def mock_multi_turn_attack_strategy():
     strategy.execute_async = AsyncMock()
     strategy.execute_with_context_async = AsyncMock()
     strategy._context_type = MultiTurnAttackContext
+    strategy.accepted_context_parameters = MULTI_TURN_ACCEPTED_PARAMS
     strategy.get_identifier.return_value = {
         "__type__": "TestMultiTurnAttack",
         "__module__": "pyrit.executor.attack.test_attack",
@@ -322,7 +355,7 @@ class TestExecuteAttackAsync:
 
         calls = mock_attack_strategy.execute_async.call_args_list
         assert calls[0].kwargs["max_turns"] == 10  # Overridden
-        assert calls[1].kwargs["max_turns"] == 5   # Uses broadcast
+        assert calls[1].kwargs["max_turns"] == 5  # Uses broadcast
 
     @pytest.mark.asyncio
     async def test_validates_empty_objectives(self, mock_attack_strategy):
@@ -507,7 +540,7 @@ class TestExecuteAttackFromSeedGroupsAsync:
     @pytest.fixture
     def sample_seed_groups(self):
         """Create sample seed groups for testing"""
-        from pyrit.models import SeedGroup, SeedPrompt, SeedObjective
+        from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 
         seed_groups = []
         for i in range(3):
@@ -629,9 +662,7 @@ class TestDeprecatedMethodsEmitWarnings:
         assert "execute_multi_objective_attack_async is deprecated" in caplog.text
 
     @pytest.mark.asyncio
-    async def test_execute_single_turn_attacks_async_emits_warning(
-        self, mock_single_turn_attack_strategy, caplog
-    ):
+    async def test_execute_single_turn_attacks_async_emits_warning(self, mock_single_turn_attack_strategy, caplog):
         """Test that execute_single_turn_attacks_async emits deprecation warning"""
         import logging
 
@@ -647,9 +678,7 @@ class TestDeprecatedMethodsEmitWarnings:
         assert "execute_single_turn_attacks_async is deprecated" in caplog.text
 
     @pytest.mark.asyncio
-    async def test_execute_multi_turn_attacks_async_emits_warning(
-        self, mock_multi_turn_attack_strategy, caplog
-    ):
+    async def test_execute_multi_turn_attacks_async_emits_warning(self, mock_multi_turn_attack_strategy, caplog):
         """Test that execute_multi_turn_attacks_async emits deprecation warning"""
         import logging
 
@@ -938,7 +967,7 @@ class TestBuildPerAttackParamsFromSeedGroups:
     @pytest.fixture
     def seed_groups_without_messages(self):
         """Create seed groups that have no multi-turn messages (only objective + next_message)."""
-        from pyrit.models import SeedGroup, SeedPrompt, SeedObjective
+        from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 
         seed_groups = []
         for i in range(2):
@@ -952,7 +981,7 @@ class TestBuildPerAttackParamsFromSeedGroups:
     @pytest.fixture
     def seed_groups_with_messages(self):
         """Create seed groups with multi-turn message sequences."""
-        from pyrit.models import SeedGroup, SeedPrompt, SeedObjective
+        from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 
         seed_groups = []
         for i in range(2):
@@ -970,7 +999,7 @@ class TestBuildPerAttackParamsFromSeedGroups:
     @pytest.fixture
     def mixed_seed_groups(self):
         """Create seed groups where only some have messages."""
-        from pyrit.models import SeedGroup, SeedPrompt, SeedObjective
+        from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 
         # First group without multi-turn messages
         objective1 = SeedObjective(value="Objective 0")
@@ -1116,7 +1145,7 @@ class TestExecuteAttackFromSeedGroupsWithMessages:
     @pytest.fixture
     def seed_groups_with_messages(self):
         """Create seed groups with multi-turn message sequences."""
-        from pyrit.models import SeedGroup, SeedPrompt, SeedObjective
+        from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 
         seed_groups = []
         for i in range(2):
@@ -1153,9 +1182,9 @@ class TestExecuteAttackFromSeedGroupsWithMessages:
             assert messages[1].message_pieces[0].original_value == f"Message {i}-1"
 
     @pytest.mark.asyncio
-    async def test_messages_filtered_for_unsupported_attacks(self, mock_attack_strategy):
+    async def test_messages_filtered_for_unsupported_attacks(self):
         """Test that messages are filtered out for attacks that don't accept them."""
-        from pyrit.models import SeedGroup, SeedPrompt, SeedObjective
+        from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 
         # Create seed group with messages (multi-sequence requires roles)
         seed_group = SeedGroup(
@@ -1168,18 +1197,226 @@ class TestExecuteAttackFromSeedGroupsWithMessages:
 
         executor = AttackExecutor(max_concurrency=1)
 
-        # Mock an attack that doesn't accept 'messages' parameter but accepts **kwargs
-        # We need the attack to not advertise 'messages' in its signature
-        mock_attack_strategy.execute_async.return_value = MagicMock()
+        # Create a mock attack that does NOT accept 'messages' parameter
+        mock_attack = MagicMock(spec=AttackStrategy)
+        mock_attack.accepted_context_parameters = SINGLE_TURN_ACCEPTED_PARAMS  # No 'messages'
+        mock_attack.execute_async = AsyncMock(return_value=MagicMock())
 
-        # The attack will receive messages but since it's a mock it will just accept them
         await executor.execute_attack_from_seed_groups_async(
-            attack=mock_attack_strategy,
+            attack=mock_attack,
             seed_groups=[seed_group],
         )
 
-        # Verify messages were passed to the attack
-        call_kwargs = mock_attack_strategy.execute_async.call_args.kwargs
-        assert "messages" in call_kwargs
-        assert len(call_kwargs["messages"]) == 2
+        # Verify messages were NOT passed to the attack (filtered out)
+        call_kwargs = mock_attack.execute_async.call_args.kwargs
+        assert "messages" not in call_kwargs
+        assert "objective" in call_kwargs
 
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestFilterParamsForAttack:
+    """Tests for _filter_params_for_attack method and accepted_context_parameters property."""
+
+    def test_filter_params_keeps_accepted_parameters(self):
+        """Test that parameters accepted by the context type are kept."""
+        executor = AttackExecutor(max_concurrency=1)
+
+        # Create a mock attack with SingleTurnAttackContext (has objective, memory_labels, etc.)
+        mock_attack = MagicMock(spec=AttackStrategy)
+        mock_attack.accepted_context_parameters = {"objective", "memory_labels", "next_message"}
+
+        params = {
+            "objective": "Test objective",
+            "memory_labels": {"key": "value"},
+            "next_message": MagicMock(),
+        }
+
+        filtered = executor._filter_params_for_attack(
+            attack=mock_attack,
+            params=params,
+            strict_param_matching=False,
+        )
+
+        assert filtered == params
+
+    def test_filter_params_removes_unsupported_parameters(self):
+        """Test that parameters not accepted by the context type are filtered out."""
+        executor = AttackExecutor(max_concurrency=1)
+
+        # Create a mock attack with limited accepted parameters (like SingleTurnAttackContext)
+        mock_attack = MagicMock(spec=AttackStrategy)
+        mock_attack.accepted_context_parameters = {"objective", "memory_labels", "next_message"}
+
+        params = {
+            "objective": "Test objective",
+            "memory_labels": {"key": "value"},
+            "messages": [MagicMock()],  # Not in accepted parameters
+            "unsupported_param": "should be filtered",
+        }
+
+        filtered = executor._filter_params_for_attack(
+            attack=mock_attack,
+            params=params,
+            strict_param_matching=False,
+        )
+
+        assert "objective" in filtered
+        assert "memory_labels" in filtered
+        assert "messages" not in filtered
+        assert "unsupported_param" not in filtered
+
+    def test_filter_params_strict_mode_raises_for_unsupported(self):
+        """Test that strict_param_matching=True raises ValueError for unsupported params."""
+        executor = AttackExecutor(max_concurrency=1)
+
+        mock_attack = MagicMock(spec=AttackStrategy)
+        mock_attack.accepted_context_parameters = {"objective", "memory_labels"}
+
+        params = {
+            "objective": "Test objective",
+            "unsupported_param": "should cause error",
+        }
+
+        with pytest.raises(ValueError, match="does not accept parameters"):
+            executor._filter_params_for_attack(
+                attack=mock_attack,
+                params=params,
+                strict_param_matching=True,
+            )
+
+    def test_filter_params_ignores_none_values(self):
+        """Test that None values are not included in filtered params."""
+        executor = AttackExecutor(max_concurrency=1)
+
+        mock_attack = MagicMock(spec=AttackStrategy)
+        mock_attack.accepted_context_parameters = {"objective", "memory_labels", "next_message"}
+
+        params = {
+            "objective": "Test objective",
+            "memory_labels": None,  # Should be ignored
+            "next_message": None,  # Should be ignored
+        }
+
+        filtered = executor._filter_params_for_attack(
+            attack=mock_attack,
+            params=params,
+            strict_param_matching=False,
+        )
+
+        assert "objective" in filtered
+        assert "memory_labels" not in filtered
+        assert "next_message" not in filtered
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestStrategyContextTypeValidation:
+    """Tests for Strategy context_type validation and accepted_context_parameters property."""
+
+    def test_strategy_init_with_non_dataclass_context_raises_type_error(self):
+        """Test that Strategy raises TypeError when context_type is not a dataclass."""
+        from pyrit.executor.core.strategy import Strategy
+
+        # Create a non-dataclass context (not inheriting from StrategyContext which is a dataclass)
+        class InvalidContext:
+            def __init__(self, objective: str):
+                self.objective = objective
+
+        # Create a concrete strategy implementation for testing
+        class TestStrategy(Strategy):
+            def _validate_context(self, *, context):
+                pass
+
+            async def _setup_async(self, *, context):
+                pass
+
+            async def _perform_async(self, *, context):
+                return None
+
+            async def _teardown_async(self, *, context):
+                pass
+
+        with pytest.raises(TypeError, match="context_type must be a dataclass"):
+            TestStrategy(context_type=InvalidContext)
+
+    def test_strategy_init_error_message_includes_class_name(self):
+        """Test that the error message includes the invalid class name."""
+        from pyrit.executor.core.strategy import Strategy
+
+        # Create a non-dataclass context (not inheriting from StrategyContext which is a dataclass)
+        class MyInvalidContext:
+            pass
+
+        class TestStrategy(Strategy):
+            def _validate_context(self, *, context):
+                pass
+
+            async def _setup_async(self, *, context):
+                pass
+
+            async def _perform_async(self, *, context):
+                return None
+
+            async def _teardown_async(self, *, context):
+                pass
+
+        with pytest.raises(TypeError, match="MyInvalidContext"):
+            TestStrategy(context_type=MyInvalidContext)
+
+    def test_accepted_context_parameters_returns_dataclass_fields(self):
+        """Test that accepted_context_parameters returns all dataclass fields."""
+        from dataclasses import dataclass
+
+        from pyrit.executor.core.strategy import Strategy, StrategyContext
+
+        @dataclass
+        class ValidContext(StrategyContext):
+            objective: str
+            custom_field: str = "default"
+
+        class TestStrategy(Strategy):
+            def _validate_context(self, *, context):
+                pass
+
+            async def _setup_async(self, *, context):
+                pass
+
+            async def _perform_async(self, *, context):
+                return None
+
+            async def _teardown_async(self, *, context):
+                pass
+
+        strategy = TestStrategy(context_type=ValidContext)
+        accepted = strategy.accepted_context_parameters
+
+        assert "objective" in accepted
+        assert "custom_field" in accepted
+
+    def test_accepted_context_parameters_includes_inherited_fields(self):
+        """Test that accepted_context_parameters includes fields from parent dataclasses."""
+        from pyrit.executor.core.strategy import Strategy
+
+        class TestStrategy(Strategy):
+            def _validate_context(self, *, context):
+                pass
+
+            async def _setup_async(self, *, context):
+                pass
+
+            async def _perform_async(self, *, context):
+                return None
+
+            async def _teardown_async(self, *, context):
+                pass
+
+        # SingleTurnAttackContext inherits from AttackContext
+        strategy = TestStrategy(context_type=SingleTurnAttackContext)
+        accepted = strategy.accepted_context_parameters
+
+        # From SingleTurnAttackContext
+        assert "next_message" in accepted
+        assert "conversation_id" in accepted
+        # From AttackContext (parent)
+        assert "objective" in accepted
+        assert "memory_labels" in accepted
+        assert "prepended_conversation" in accepted

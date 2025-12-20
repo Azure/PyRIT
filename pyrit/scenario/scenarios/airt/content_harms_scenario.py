@@ -14,7 +14,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     RolePlayPaths,
 )
-from pyrit.models import SeedGroup, SeedObjective
+from pyrit.models import SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
