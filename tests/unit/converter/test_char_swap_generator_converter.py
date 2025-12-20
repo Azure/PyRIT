@@ -105,3 +105,36 @@ async def test_char_swap_converter_random_swapping():
         result1 = await converter.convert_async(prompt=prompt)
 
     assert prompt != result1.output_text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "prompt,max_iterations,mock_positions,expected",
+    [
+        # Single swap at position 1: Testing -> Tseting
+        ("Testing", 1, [1], "Tseting"),
+        # Two swaps at same position reverts: Testing -> Tseting -> Testing
+        ("Testing", 2, [1, 1], "Testing"),
+        # Three swaps at same position: Testing -> Tseting -> Testing -> Tseting
+        ("Testing", 3, [1, 1, 1], "Tseting"),
+        # Two swaps at different positions: Testing -> Tseting -> Tsetnig
+        ("Testing", 2, [1, 4], "Tsetnig"),
+        # Single swap at position 2: Testing -> Tetsing
+        ("Testing", 1, [2], "Tetsing"),
+        # Longer word, single swap: Character -> Cahracter
+        ("Character", 1, [1], "Cahracter"),
+        # Longer word, two swaps at different positions
+        ("Character", 2, [1, 5], "Cahratcer"),
+    ],
+)
+async def test_char_swap_converter_max_iterations_has_effect(prompt, max_iterations, mock_positions, expected):
+    """Test that max_iterations parameter affects perturbation behavior."""
+    converter = CharSwapConverter(
+        max_iterations=max_iterations,
+        word_selection_strategy=WordProportionSelectionStrategy(proportion=1.0),
+    )
+
+    with patch("random.randint", side_effect=mock_positions):
+        result = await converter.convert_async(prompt=prompt)
+
+    assert result.output_text == expected
