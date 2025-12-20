@@ -1,23 +1,6 @@
-# 1. Local Installation with Conda/Python
+# Local Installation with Conda/Python
 
-## Choose Your Setup Approach
-
-You can set up PyRIT for development in one of two ways:
-
-1. **Local Installation with Conda/Python** (this page) - Install PyRIT in editable mode on your machine
-2. **[DevContainers in VS Code](./1b_install_devcontainers.md)** - Use a pre-configured Docker container with VS Code
-
-```{note}
-**Development Version:** Contributor installations use the **latest development code** from the `main` branch, not a stable release. The notebooks in your cloned repository will match your code version. This documentation website also shows the main branch version.
-```
-
-## Overview
-
-To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/1a_install_conda.md).
-
-However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets, attacks, converters, core, etc. code needs to be modified. This section walks through how to install PyRIT as a contributor.
-
-### Prerequisite software
+## Prerequisite software
 
 This is a list of the prerequisites needed to run this library.
 
@@ -30,7 +13,7 @@ This is a list of the prerequisites needed to run this library.
 
 Note: PyRIT requires Python version 3.10, 3.11, 3.12, or 3.13. If using Conda, you'll set the environment to use this version. If running PyRIT outside of a python environment, make sure you have this version installed.
 
-### Installation with conda
+## Installation with conda
 
 This is a guide for how to install PyRIT into a `conda` environment.
 
@@ -93,7 +76,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    If you are having problems getting pip to install, try this link for details here: [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
 
 
-### Local Environment Setup
+## Local Environment Setup
 
 PyRIT is compatible with Windows, Linux, and MacOS.
 
