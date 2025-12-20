@@ -123,7 +123,6 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    fetch_anthropic_evals_dataset
     SeedDatasetProvider
     TextJailBreak
 
