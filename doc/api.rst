@@ -341,6 +341,7 @@ API Reference
     ScenarioResult
     Score
     ScoreType
+    Seed
     SeedDataset
     SeedGroup
     SeedObjective
