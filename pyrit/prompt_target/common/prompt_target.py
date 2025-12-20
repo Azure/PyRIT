@@ -3,7 +3,7 @@
 
 import abc
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Identifier, Message
@@ -84,18 +84,27 @@ class PromptTarget(abc.ABC, Identifier):
         """
         self._memory.dispose_engine()
 
-    def get_identifier(self) -> dict:
+    def get_identifier(self) -> Dict[str, Any]:
         """
-        Get the identifier dictionary for the prompt target.
+        Get an identifier dictionary for this prompt target.
+
+        This includes essential attributes needed for scorer evaluation and registry tracking.
+        Subclasses should override this method to include additional relevant attributes
+        (e.g., temperature, top_p) when available.
 
         Returns:
-            dict: Dictionary containing the target's type, module, endpoint, and model name.
+            Dict[str, Any]: A dictionary containing identification attributes.
         """
-        public_attributes = {}
+        public_attributes: Dict[str, Any] = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         if self._endpoint:
             public_attributes["endpoint"] = self._endpoint
         if self._model_name:
             public_attributes["model_name"] = self._model_name
+        # Include temperature and top_p if available (set by subclasses)
+        if hasattr(self, "_temperature") and self._temperature is not None:
+            public_attributes["temperature"] = self._temperature
+        if hasattr(self, "_top_p") and self._top_p is not None:
+            public_attributes["top_p"] = self._top_p
         return public_attributes

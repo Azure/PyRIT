@@ -27,6 +27,7 @@ from pyrit.score import (
     TrueFalseCompositeScorer,
     TrueFalseInverterScorer,
     TrueFalseScoreAggregator,
+    TrueFalseScorer,
 )
 
 
@@ -87,7 +88,7 @@ class CyberScenario(Scenario):
         *,
         adversarial_chat: Optional[PromptChatTarget] = None,
         objectives: Optional[List[str]] = None,
-        objective_scorer: Optional[TrueFalseCompositeScorer] = None,
+        objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
     ) -> None:
@@ -99,7 +100,7 @@ class CyberScenario(Scenario):
                 to CyberStrategy.MultiTurn. If not provided, defaults to an OpenAI chat target.
             objectives (Optional[List[str]]): List of objectives to test for cyber harms, e.g. malware generation.
                 If not provided, defaults to objectives from the airt_malware dataset.
-            objective_scorer (Optional[SelfAskTrueFalseScorer]): Objective scorer for malware detection. If not
+            objective_scorer (Optional[TrueFalseScorer]): Objective scorer for malware detection. If not
                 provided, defaults to a SelfAskScorer using the malware.yaml file under the scorer config store for
                 malware detection
             include_baseline (bool): Whether to include a baseline atomic attack that sends all objectives

@@ -542,6 +542,7 @@ API Reference
     QuestionAnswerScorer
     Scorer
     ScorerEvaluator
+    ScorerIdentifier
     ScorerMetrics
     ScorerPromptValidator
     SelfAskCategoryScorer
