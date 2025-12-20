@@ -55,6 +55,16 @@ class PlagiarismScorer(FloatScaleScorer):
         self.metric = metric
         self.n = n
 
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            scorer_specific_params={
+                "reference_text": self.reference_text,
+                "metric": self.metric.value,
+                "n": self.n,
+            },
+        )
+
     def _tokenize(self, text: str) -> List[str]:
         """
         Tokenize text using whitespace-based tokenization (case-insensitive).

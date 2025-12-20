@@ -45,8 +45,16 @@ class PromptShieldScorer(TrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
         """
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._prompt_target = prompt_shield_target
+
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            prompt_target=self._prompt_target,
+            score_aggregator=self._score_aggregator.__name__,
+        )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         self._conversation_id = str(uuid.uuid4())

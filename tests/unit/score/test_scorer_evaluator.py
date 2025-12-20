@@ -419,7 +419,9 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
     ]
     entry1 = HarmHumanLabeledEntry(responses, [0.1, 0.3], "hate_speech")
     entry2 = HarmHumanLabeledEntry(responses, [0.2, 0.6], "hate_speech")
-    mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.HARM, entries=[entry1, entry2])
+    mock_dataset = HumanLabeledDataset(
+        name="test_dataset", metrics_type=MetricsType.HARM, entries=[entry1, entry2], version="1.0"
+    )
     # Patch scorer to return fixed scores
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
     mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
@@ -439,7 +441,9 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
     entry = ObjectiveHumanLabeledEntry(responses, [True], "Test objective")
-    mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry])
+    mock_dataset = HumanLabeledDataset(
+        name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry], version="1.0"
+    )
     # Patch scorer to return fixed scores
     mock_objective_scorer.score_prompts_with_tasks_batch_async = AsyncMock(
         return_value=[MagicMock(get_value=lambda: False)]
