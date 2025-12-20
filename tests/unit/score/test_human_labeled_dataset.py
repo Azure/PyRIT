@@ -45,16 +45,30 @@ def test_objective_human_labeled_entry(sample_responses):
 
 def test_human_labeled_dataset_init_harm_type(sample_responses):
     entry = HarmHumanLabeledEntry(sample_responses, [0.1, 0.2], "hate_speech")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM)
+    dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM, version="1.0")
     assert dataset.name == "hate_speech"
     assert dataset.metrics_type == MetricsType.HARM
     assert len(dataset.entries) == 1
     assert isinstance(dataset.entries[0], HarmHumanLabeledEntry)
 
 
+def test_human_labeled_dataset_version_required(sample_responses):
+    entry = HarmHumanLabeledEntry(sample_responses, [0.1], "hate_speech")
+    with pytest.raises(TypeError):
+        HumanLabeledDataset(name="test", entries=[entry], metrics_type=MetricsType.HARM)
+
+
+def test_human_labeled_dataset_version_set(sample_responses):
+    entry = HarmHumanLabeledEntry(sample_responses, [0.1], "hate_speech")
+    dataset = HumanLabeledDataset(name="test", entries=[entry], metrics_type=MetricsType.HARM, version="2.5")
+    assert dataset.version == "2.5"
+
+
 def test_human_labeled_dataset_init_objective_type(sample_responses):
     entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
-    dataset = HumanLabeledDataset(name="sample_objective", entries=[entry], metrics_type=MetricsType.OBJECTIVE)
+    dataset = HumanLabeledDataset(
+        name="sample_objective", entries=[entry], metrics_type=MetricsType.OBJECTIVE, version="1.0"
+    )
     assert dataset.name == "sample_objective"
     assert dataset.metrics_type == MetricsType.OBJECTIVE
     assert len(dataset.entries) == 1
@@ -64,52 +78,52 @@ def test_human_labeled_dataset_init_objective_type(sample_responses):
 def test_human_labeled_dataset_init_empty_args(sample_responses):
     entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
     with pytest.raises(ValueError):
-        HumanLabeledDataset(name="", entries=[entry], metrics_type=MetricsType.OBJECTIVE)
+        HumanLabeledDataset(name="", entries=[entry], metrics_type=MetricsType.OBJECTIVE, version="1.0")
 
 
 def test_human_labeled_dataset_init_mismatch_metrics_type_error(sample_responses):
     entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
     with pytest.raises(ValueError):
-        HumanLabeledDataset(name="harm", entries=[entry], metrics_type=MetricsType.HARM)
+        HumanLabeledDataset(name="harm", entries=[entry], metrics_type=MetricsType.HARM, version="1.0")
 
 
 def test_human_labeled_dataset_init_multiple_harm_categories_warns(sample_responses, caplog):
     entry1 = HarmHumanLabeledEntry(sample_responses, [0.1], "hate_speech")
     entry2 = HarmHumanLabeledEntry(sample_responses, [0.2], "violence")
     with caplog.at_level(logging.WARNING):
-        HumanLabeledDataset(name="mixed", entries=[entry1, entry2], metrics_type=MetricsType.HARM)
+        HumanLabeledDataset(name="mixed", entries=[entry1, entry2], metrics_type=MetricsType.HARM, version="1.0")
         assert any("All entries in a harm dataset should have the same harm category" in m for m in caplog.messages)
 
 
 def test_human_labeled_dataset_add_entry(sample_responses):
     entry = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM)
+    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM, version="1.0")
     dataset.add_entry(entry)
     assert len(dataset.entries) == 1
     assert isinstance(dataset.entries[0], HarmHumanLabeledEntry)
 
 
 def test_human_labeled_dataset_add_entry_warns(sample_responses, caplog):
-    entry = HarmHumanLabeledEntry(sample_responses, [0.1, 0.2], "hate_speech")
-    entry2 = HarmHumanLabeledEntry(sample_responses, [0.1, 0.2], "violence")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM)
+    entry = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
+    entry2 = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "violence")
+    dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM, version="1.0")
     with caplog.at_level(logging.WARNING):
         dataset.add_entry(entry2)
-        assert any("All entries in a harm dataset should have the same harm category" in m for m in caplog.messages)
+        assert "All entries in a harm dataset should have the same harm category" in caplog.text
 
 
 def test_human_labeled_dataset_add_entries(sample_responses):
-    entry1 = HarmHumanLabeledEntry(sample_responses, [0.1, 0.2], "hate_speech")
-    entry2 = HarmHumanLabeledEntry(sample_responses, [0.3, 0.4], "hate_speech")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM)
-    dataset.add_entries([entry1, entry2])
+    entry = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
+    entry2 = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
+    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM, version="1.0")
+    dataset.add_entries([entry, entry2])
     assert len(dataset.entries) == 2
     assert all(isinstance(e, HarmHumanLabeledEntry) for e in dataset.entries)
 
 
 def test_human_labeled_dataset_validate_entry_type_error(sample_responses):
     entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM)
+    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM, version="1.0")
     with pytest.raises(ValueError):
         dataset.add_entry(entry)
 
@@ -215,6 +229,7 @@ def test_human_labeled_dataset_from_csv():
         assistant_response_col_name="assistant_response",
         human_label_col_names=["human_score_1", "human_score_2", "human_score_3"],
         objective_or_harm_col_name="category",
+        version="1.0",
     )
     assert isinstance(dataset, HumanLabeledDataset)
     assert dataset.metrics_type == MetricsType.HARM
@@ -243,6 +258,24 @@ def test_human_labeled_dataset_from_csv_with_data_type_col(tmp_path):
         human_label_col_names=["label1", "label2"],
         objective_or_harm_col_name="harm_category",
         assistant_response_data_type_col_name="data_type",
+        version="1.0",
     )
     assert isinstance(dataset, HumanLabeledDataset)
     assert dataset.entries[0].conversation[0].message_pieces[0].original_value_data_type == "text"
+
+
+def test_human_labeled_dataset_from_csv_version_from_comment(tmp_path):
+    csv_file = tmp_path / "versioned.csv"
+    # Write CSV with version comment line
+    with open(csv_file, "w") as f:
+        f.write("# version=2.3\n")
+        f.write("assistant_response,label1,harm_category\n")
+        f.write("response1,0.5,hate_speech\n")
+    dataset = HumanLabeledDataset.from_csv(
+        csv_path=str(csv_file),
+        metrics_type=MetricsType.HARM,
+        human_label_col_names=["label1"],
+        objective_or_harm_col_name="harm_category",
+        version=None,
+    )
+    assert dataset.version == "2.3"

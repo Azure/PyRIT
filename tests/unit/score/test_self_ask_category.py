@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -156,7 +155,8 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
 
         with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskCategoryScorer"):
             await scorer.score_text_async("this has no bullying")
-        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert chat_target.send_prompt_async.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -187,7 +187,8 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries(patc
 
         with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskCategoryScorer"):
             await scorer.score_text_async("this has no bullying")
-        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert chat_target.send_prompt_async.call_count == 2
 
 
 @pytest.mark.asyncio

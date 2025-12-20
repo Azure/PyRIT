@@ -45,7 +45,10 @@ class HuggingFaceEndpointTarget(PromptTarget):
             verbose (bool, Optional): Flag to enable verbose logging. Defaults to False.
         """
         super().__init__(
-            max_requests_per_minute=max_requests_per_minute, verbose=verbose, endpoint=endpoint, model_name=model_id
+            max_requests_per_minute=max_requests_per_minute,
+            verbose=verbose,
+            endpoint=endpoint,
+            model_name=model_id,
         )
 
         validate_temperature(temperature)
@@ -55,8 +58,8 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self.endpoint = endpoint
         self.model_id = model_id
         self.max_tokens = max_tokens
-        self.temperature = temperature
-        self.top_p = top_p
+        self._temperature = temperature
+        self._top_p = top_p
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
@@ -81,8 +84,8 @@ class HuggingFaceEndpointTarget(PromptTarget):
             "inputs": request.converted_value,
             "parameters": {
                 "max_tokens": self.max_tokens,
-                "temperature": self.temperature,
-                "top_p": self.top_p,
+                "temperature": self._temperature,
+                "top_p": self._top_p,
             },
         }
 
