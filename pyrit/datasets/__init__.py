@@ -5,7 +5,6 @@
 Dataset fetching and loading utilities for various red teaming and safety evaluation datasets.
 """
 
-from pyrit.datasets.anthropic_evals_dataset import fetch_anthropic_evals_dataset
 from pyrit.datasets.jailbreak.text_jailbreak import TextJailBreak
 from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
 from pyrit.datasets.seed_datasets import local, remote  # noqa: F401
