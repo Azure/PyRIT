@@ -18,10 +18,9 @@
 #
 # This notebook covers:
 #
-# - **[PDFConverter](#pdf-converter)**: Convert text to PDF documents with templates or direct generation
+# - **PDFConverter**: Convert text to PDF documents with templates or direct generation
 
 # %% [markdown]
-# <a id="pdf-converter"></a>
 # ## PDFConverter
 #
 # The `PDFConverter` generates PDF documents from text in multiple modes:
