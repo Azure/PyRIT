@@ -138,3 +138,30 @@ async def test_char_swap_converter_max_iterations_has_effect(prompt, max_iterati
         result = await converter.convert_async(prompt=prompt)
 
     assert result.output_text == expected
+
+
+@pytest.mark.asyncio
+async def test_char_swap_converter_proportion_unchanged_with_iterations():
+    """Test that max_iterations doesn't affect which words are selected, only how much they're perturbed."""
+    prompt = "Testing multiple words here today"
+
+    # 50% proportion should select ~2-3 of the 5 eligible words, regardless of max_iterations
+    converter = CharSwapConverter(
+        max_iterations=10,
+        word_selection_strategy=WordProportionSelectionStrategy(proportion=0.5),
+    )
+
+    # Mock random.sample to select exactly 2 words (indices 0 and 2)
+    # This simulates the word selection strategy picking "Testing" and "words"
+    with patch("random.sample", return_value=[0, 2]) as mock_sample:
+        with patch("random.randint", return_value=1):
+            result = await converter.convert_async(prompt=prompt)
+
+    # Verify sample was called once (word selection happens once, not per iteration)
+    assert mock_sample.call_count == 1
+
+    # "multiple", "here", "today" should be unchanged
+    words = result.output_text.split()
+    assert words[1] == "multiple"
+    assert words[3] == "here"
+    assert words[4] == "today"
