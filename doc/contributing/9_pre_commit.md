@@ -6,7 +6,10 @@ There are a number of pre-commit hooks available to run on files within the repo
 ### Make sure all files are added with `git add` before running pre-commit
 
 # run hooks on all files
-pre-commit run --all-files
+uv run pre-commit run --all-files
 
 # run hooks on a specific file
-pre-commit run --files <file_name>
+uv run pre-commit run --files <file_name>
+
+```
+Note: if you did not install PyRIT using uv, the omit uv run from the above commands

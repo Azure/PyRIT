@@ -4,7 +4,6 @@
 import abc
 import json
 import logging
-import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import List, Optional, Set, Tuple, Type, TypeVar, Union, cast
@@ -17,6 +16,7 @@ from pyrit.common.path import (
     SCORER_EVALS_HARM_PATH,
     SCORER_EVALS_TRUE_FALSE_PATH,
 )
+from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message
 from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
@@ -65,8 +65,7 @@ class ScorerMetrics:
         Raises:
             FileNotFoundError: If the specified file does not exist.
         """
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found: {file_path}")
+        file_path = verify_and_resolve_path(file_path)
         with open(file_path, "r") as f:
             data = json.load(f)
         return cls(**data)
@@ -189,6 +188,7 @@ class ScorerEvaluator(abc.ABC):
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> ScorerMetrics:
         """
         Run the evaluation for the scorer/policy combination on the passed in CSV file.
@@ -209,9 +209,12 @@ class ScorerEvaluator(abc.ABC):
             dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
                 file name. This is used to inform the name of the metrics file and model scoring results CSV to save
                 in the 'scorer_evals' directory.
+            version (str, Optional): The version of the dataset. If not provided, it will be inferred from the CSV
+                file if a version comment line "# version=" is present. See `mini_hate_speech.csv` for an example.
 
         Returns:
-            ScorerMetrics: The metrics for the scorer.
+            ScorerMetrics: The metrics for the scorer. HarmScorerMetrics or ObjectiveScorerMetrics depending on the
+                ScorerEvaluator type.
         """
         pass
 
@@ -300,7 +303,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         """
         # First try the default PyRIT location
         metrics_path = self._get_metrics_path(dataset_name=dataset_name)
-        if os.path.exists(metrics_path):
+        if metrics_path.exists():
             return HarmScorerMetrics.from_json(metrics_path)
 
         # If not found, try to find in results folders of common CSV locations
@@ -342,24 +345,15 @@ class HarmScorerEvaluator(ScorerEvaluator):
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> HarmScorerMetrics:
         """
-        Run evaluation from a CSV file containing harm-labeled data.
+        Evaluate a harm scorer against a CSV dataset containing float scores (0.0-1.0).
 
-        Args:
-            csv_path (Union[str, Path]): The path to the CSV file containing the labeled data.
-            human_label_col_names (List[str]): The names of the columns containing human labels.
-            objective_or_harm_col_name (str): The name of the column containing the harm category.
-            assistant_response_col_name (str): The name of the column containing assistant responses.
-                Defaults to "assistant_response".
-            assistant_response_data_type_col_name (Optional[str]): The name of the column containing the
-                assistant response data type. Defaults to None.
-            num_scorer_trials (int): The number of trials to run for scoring. Defaults to 1.
-            save_results (bool): Whether to save the evaluation results. Defaults to True.
-            dataset_name (Optional[str]): The name of the dataset. Defaults to None.
+        See base class for full parameter documentation.
 
         Returns:
-            HarmScorerMetrics: The metrics from the evaluation.
+            HarmScorerMetrics: Metrics including MAE, t-statistic, p-value, and Krippendorff's alpha.
         """
         labeled_dataset = HumanLabeledDataset.from_csv(
             csv_path=csv_path,
@@ -369,6 +363,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             objective_or_harm_col_name=objective_or_harm_col_name,
             assistant_response_data_type_col_name=assistant_response_data_type_col_name,
             dataset_name=dataset_name,
+            version=version,
         )
         metrics = await self.run_evaluation_async(
             labeled_dataset=labeled_dataset,
@@ -563,7 +558,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         """
         # First try the default PyRIT location
         metrics_path = self._get_metrics_path(dataset_name=dataset_name)
-        if os.path.exists(metrics_path):
+        if metrics_path.exists():
             return ObjectiveScorerMetrics.from_json(metrics_path)
 
         # If not found, try to find in results folders of common CSV locations
@@ -605,24 +600,15 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         num_scorer_trials: int = 1,
         save_results: bool = True,
         dataset_name: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> ObjectiveScorerMetrics:
         """
-        Run evaluation from a CSV file containing objective-labeled data.
+        Evaluate an objective scorer against a CSV dataset containing binary labels (0 or 1).
 
-        Args:
-            csv_path (Union[str, Path]): The path to the CSV file containing the labeled data.
-            human_label_col_names (List[str]): The names of the columns containing human labels.
-            objective_or_harm_col_name (str): The name of the column containing the objective description.
-            assistant_response_col_name (str): The name of the column containing assistant responses.
-                Defaults to "assistant_response".
-            assistant_response_data_type_col_name (Optional[str]): The name of the column containing the
-                assistant response data type. Defaults to None.
-            num_scorer_trials (int): The number of trials to run for scoring. Defaults to 1.
-            save_results (bool): Whether to save the evaluation results. Defaults to True.
-            dataset_name (Optional[str]): The name of the dataset. Defaults to None.
+        See base class for full parameter documentation.
 
         Returns:
-            ObjectiveScorerMetrics: The metrics from the evaluation.
+            ObjectiveScorerMetrics: Metrics including accuracy, F1 score, precision, and recall.
         """
         labeled_dataset = HumanLabeledDataset.from_csv(
             csv_path=csv_path,
@@ -632,6 +618,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             objective_or_harm_col_name=objective_or_harm_col_name,
             assistant_response_data_type_col_name=assistant_response_data_type_col_name,
             dataset_name=dataset_name,
+            version=version,
         )
         metrics = await self.run_evaluation_async(
             labeled_dataset=labeled_dataset,
