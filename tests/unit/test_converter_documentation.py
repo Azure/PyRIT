@@ -74,6 +74,7 @@ def test_all_converters_are_documented():
         "LLMGenericTextConverter",  # Base class
         "WordLevelConverter",  # Base class
         "SmugglerConverter",  # Base class (in subdirectory)
+        "get_converter_modalities",  # Function, not a converter class
     }
 
     undocumented = undocumented - exceptions

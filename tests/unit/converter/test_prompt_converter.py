@@ -503,7 +503,7 @@ def is_speechsdk_installed():
         (DiacriticConverter(), ["text"], ["text"]),
         (EmojiConverter(), ["text"], ["text"]),
         (FlipConverter(), ["text"], ["text"]),
-        (HumanInTheLoopConverter(), [], []),
+        (HumanInTheLoopConverter(), ["text"], ["text"]),
         (LeetspeakConverter(), ["text"], ["text"]),
         (MorseConverter(), ["text"], ["text"]),
         (PDFConverter(), ["text"], ["url"]),
