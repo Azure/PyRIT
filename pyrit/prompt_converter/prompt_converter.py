@@ -171,6 +171,7 @@ def get_converter_modalities() -> list[tuple[str, list[PromptDataType], list[Pro
             - Converter class name (str)
             - List of supported input modalities (list[PromptDataType])
             - List of supported output modalities (list[PromptDataType])
+
         Sorted by input modality, then output modality, then converter name.
     """
     converter_modalities = []
