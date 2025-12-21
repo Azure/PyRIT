@@ -105,3 +105,63 @@ async def test_char_swap_converter_random_swapping():
         result1 = await converter.convert_async(prompt=prompt)
 
     assert prompt != result1.output_text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "prompt,max_iterations,mock_positions,expected",
+    [
+        # Single swap at position 1: Testing -> Tseting
+        ("Testing", 1, [1], "Tseting"),
+        # Two swaps at same position reverts: Testing -> Tseting -> Testing
+        ("Testing", 2, [1, 1], "Testing"),
+        # Three swaps at same position: Testing -> Tseting -> Testing -> Tseting
+        ("Testing", 3, [1, 1, 1], "Tseting"),
+        # Two swaps at different positions: Testing -> Tseting -> Tsetnig
+        ("Testing", 2, [1, 4], "Tsetnig"),
+        # Single swap at position 2: Testing -> Tetsing
+        ("Testing", 1, [2], "Tetsing"),
+        # Longer word, single swap: Character -> Cahracter
+        ("Character", 1, [1], "Cahracter"),
+        # Longer word, two swaps at different positions
+        ("Character", 2, [1, 5], "Cahratcer"),
+    ],
+)
+async def test_char_swap_converter_max_iterations_has_effect(prompt, max_iterations, mock_positions, expected):
+    """Test that max_iterations parameter affects perturbation behavior."""
+    converter = CharSwapConverter(
+        max_iterations=max_iterations,
+        word_selection_strategy=WordProportionSelectionStrategy(proportion=1.0),
+    )
+
+    with patch("random.randint", side_effect=mock_positions):
+        result = await converter.convert_async(prompt=prompt)
+
+    assert result.output_text == expected
+
+
+@pytest.mark.asyncio
+async def test_char_swap_converter_proportion_unchanged_with_iterations():
+    """Test that max_iterations doesn't affect which words are selected, only how much they're perturbed."""
+    prompt = "Testing multiple words here today"
+
+    # 50% proportion should select ~2-3 of the 5 eligible words, regardless of max_iterations
+    converter = CharSwapConverter(
+        max_iterations=10,
+        word_selection_strategy=WordProportionSelectionStrategy(proportion=0.5),
+    )
+
+    # Mock random.sample to select exactly 2 words (indices 0 and 2)
+    # This simulates the word selection strategy picking "Testing" and "words"
+    with patch("random.sample", return_value=[0, 2]) as mock_sample:
+        with patch("random.randint", return_value=1):
+            result = await converter.convert_async(prompt=prompt)
+
+    # Verify sample was called once (word selection happens once, not per iteration)
+    assert mock_sample.call_count == 1
+
+    # "multiple", "here", "today" should be unchanged
+    words = result.output_text.split()
+    assert words[1] == "multiple"
+    assert words[3] == "here"
+    assert words[4] == "today"
