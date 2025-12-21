@@ -195,7 +195,7 @@ class Scenario(ABC):
         *,
         objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore
         scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
-        max_concurrency: int = 1,
+        max_concurrency: int = 10,
         max_retries: int = 0,
         memory_labels: Optional[Dict[str, str]] = None,
     ) -> None:
