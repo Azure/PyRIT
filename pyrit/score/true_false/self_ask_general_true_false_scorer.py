@@ -84,6 +84,15 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         self._metadata_output_key = metadata_output_key
         self._category_output_key = category_output_key
 
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt_format_string,
+            user_prompt_template=self._prompt_format_string,
+            prompt_target=self._prompt_target,
+            score_aggregator=self._score_aggregator.__name__,
+        )
+
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Score a single message piece using the configured prompts.

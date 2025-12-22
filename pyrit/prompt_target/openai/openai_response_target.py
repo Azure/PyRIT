@@ -42,6 +42,8 @@ ToolExecutor = Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
 
 
 class MessagePieceType(str, Enum):
+    """Enumeration of different types of message pieces."""
+
     MESSAGE = "message"
     REASONING = "reasoning"
     IMAGE_GENERATION_CALL = "image_generation_call"
@@ -58,7 +60,7 @@ class MessagePieceType(str, Enum):
 
 class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     """
-    This class enables communication with endpoints that support the OpenAI Response API.
+    Enables communication with endpoints that support the OpenAI Response API.
 
     This works with models such as o1, o3, and o4-mini.
     Depending on the endpoint this allows for a variety of inputs, outputs, and tool calls.
@@ -78,7 +80,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         **kwargs,
     ):
         """
-        Initializes the OpenAIResponseTarget with the provided parameters.
+        Initialize the OpenAIResponseTarget with the provided parameters.
 
         Args:
             custom_functions: Mapping of user-defined function names (e.g., "my_func").
@@ -107,9 +109,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 an unknown function or does not output a function; if False, return a structured error so we can
                 wrap it as function_call_output and let the model potentially recover
                 (e.g., pick another tool or ask for clarification).
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                httpx.AsyncClient() constructor.
-                For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
+            **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the ``httpx.AsyncClient()``
+                constructor. For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
 
         Raises:
             PyritException: If the temperature or top_p values are out of bounds.
@@ -320,6 +322,13 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         NOTE: The Responses API uses top-level `response_format` for JSON,
         not `text.format` from the old Chat Completions style.
+
+        Args:
+            conversation: The full conversation history.
+            is_json_response: Whether the response should be formatted as JSON.
+
+        Returns:
+            dict: The request body to send to the Responses API.
         """
         input_items = await self._build_input_for_multi_modal_async(conversation)
 
@@ -490,7 +499,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         return responses_to_return
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """
+        Check if the target supports JSON as a response format.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return True
 
     def _parse_response_output_section(
@@ -506,6 +520,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             A MessagePiece for this section, or None to skip.
+
+        Raises:
+            EmptyResponseException: If the section content is empty or invalid.
+            ValueError: If the section type is unsupported.
         """
         section_type = section.type
         piece_type: PromptDataType = "text"  # Default, always set!
@@ -597,7 +615,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the structure and content of a message for compatibility of this target.
+        Validate the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.
@@ -619,6 +637,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         """
         Return the last tool-call section in assistant messages, or None.
         Looks for a piece whose value parses as JSON with a 'type' key matching function_call.
+
+        Args:
+            reply: The message to search for tool calls.
+
+        Returns:
+            The tool-call section dict, or None if not found.
         """
         for piece in reversed(reply.message_pieces):
             if piece.role == "assistant":
@@ -635,10 +659,18 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         """
         Execute a function_call from the custom_functions registry.
 
+        Args:
+            tool_call_section: The function_call section dict.
+
         Returns:
             A dict payload (will be serialized and sent as function_call_output).
             If fail_on_missing_function=False and a function is missing or no function is not called, returns:
             {"error": "function_not_found", "missing_function": "<name>", "available_functions": [...]}
+
+        Raises:
+            ValueError: If the function call section is missing a 'name' field.
+            ValueError: If the function arguments are malformed.
+            KeyError: If the function name is not registered in custom_functions.
         """
         name = tool_call_section.get("name")
         if not name:

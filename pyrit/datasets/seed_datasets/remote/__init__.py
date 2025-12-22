@@ -8,6 +8,7 @@ Import concrete implementations to trigger registration.
 """
 
 from pyrit.datasets.seed_datasets.remote.aya_redteaming_dataset import _AyaRedteamingDataset  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.aegis_ai_content_safety_dataset import _AegisContentSafetyDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.babelscape_alert_dataset import _BabelscapeAlertDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.ccp_sensitive_prompts_dataset import _CCPSensitivePromptsDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import _DarkBenchDataset  # noqa: F401
@@ -31,6 +32,9 @@ from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import _RemoteDat
 from pyrit.datasets.seed_datasets.remote.sorry_bench_dataset import _SorryBenchDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.sosbench_dataset import _SOSBenchDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.tdc23_redteaming_dataset import _TDC23RedteamingDataset  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.transphobia_awareness_dataset import (  # noqa: F401
+    _TransphobiaAwarenessDataset,
+)
 from pyrit.datasets.seed_datasets.remote.xstest_dataset import _XSTestDataset  # noqa: F401
 
 __all__ = [

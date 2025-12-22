@@ -66,6 +66,9 @@ class OpenAIVideoTarget(OpenAITarget):
                 - Sora-2-Pro: "720x1280", "1280x720", "1024x1792", "1792x1024"
             n_seconds (int, Optional): The duration of the generated video (in seconds).
                 Defaults to 4. Supported values: 4, 8, or 12 seconds.
+            **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the ``httpx.AsyncClient()``
+                constructor. For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
         """
         super().__init__(**kwargs)
 

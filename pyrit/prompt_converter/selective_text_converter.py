@@ -6,10 +6,12 @@ from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_converter.text_selection_strategy import (
+    AllWordsSelectionStrategy,
     TextSelectionStrategy,
     TokenSelectionStrategy,
     WordSelectionStrategy,
 )
+from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
 class SelectiveTextConverter(PromptConverter):
@@ -67,13 +69,14 @@ class SelectiveTextConverter(PromptConverter):
 
         Raises:
             ValueError: If the wrapped converter does not support text input/output.
+            ValueError: If a word-level selection_strategy is used with a WordLevelConverter
+                that has a non-default word_selection_strategy. When SelectiveTextConverter uses
+                a WordSelectionStrategy, it passes individual words to the wrapped converter,
+                making the wrapped converter's word selection strategy meaningless.
         """
         super().__init__()
 
-        if not converter.input_supported("text"):
-            raise ValueError(f"The converter {converter.__class__.__name__} does not support text input")
-        if not converter.output_supported("text"):
-            raise ValueError(f"The converter {converter.__class__.__name__} does not support text output")
+        self._validate_converter(converter=converter, selection_strategy=selection_strategy)
 
         self._converter = converter
         self._selection_strategy = selection_strategy
@@ -83,6 +86,42 @@ class SelectiveTextConverter(PromptConverter):
         self._word_separator = word_separator
         self._is_word_level = isinstance(selection_strategy, WordSelectionStrategy)
         self._is_token_based = isinstance(selection_strategy, TokenSelectionStrategy)
+
+    def _validate_converter(
+        self,
+        *,
+        converter: PromptConverter,
+        selection_strategy: TextSelectionStrategy,
+    ) -> None:
+        """
+        Validates the converter and selection strategy combination.
+
+        Args:
+            converter (PromptConverter): The converter to validate.
+            selection_strategy (TextSelectionStrategy): The selection strategy to validate against.
+
+        Raises:
+            ValueError: If the converter does not support text input/output.
+            ValueError: If a word-level selection strategy is used with a WordLevelConverter
+                that has a non-default word_selection_strategy.
+        """
+        if not converter.input_supported("text"):
+            raise ValueError(f"The converter {converter.__class__.__name__} does not support text input")
+        if not converter.output_supported("text"):
+            raise ValueError(f"The converter {converter.__class__.__name__} does not support text output")
+
+        # Check for conflicting word selection strategies
+        is_word_level_selection = isinstance(selection_strategy, WordSelectionStrategy)
+        if is_word_level_selection and isinstance(converter, WordLevelConverter):
+            has_non_default_strategy = not isinstance(converter._word_selection_strategy, AllWordsSelectionStrategy)
+            if has_non_default_strategy:
+                raise ValueError(
+                    f"Cannot use a WordSelectionStrategy with a {converter.__class__.__name__} that has a "
+                    f"non-default word_selection_strategy. When SelectiveTextConverter uses a word-level "
+                    f"strategy, it passes individual words to the wrapped converter, making the wrapped "
+                    f"converter's word selection strategy meaningless. Either use a character-level "
+                    f"selection strategy, or remove the word_selection_strategy from the wrapped converter."
+                )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

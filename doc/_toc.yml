@@ -7,16 +7,19 @@ chapters:
     - file: cookbooks/2_precomputing_turns
     - file: cookbooks/3_copyright_violations
     - file: cookbooks/4_testing_bias
-  - file: setup/1a_install_conda
+    - file: cookbooks/5_psychosocial_harms
+  - file: setup/1a_install_uv
     sections:
     - file: setup/1b_install_docker
+    - file: setup/1c_install_conda
     - file: setup/jupyter_setup
     - file: setup/populating_secrets
     - file: setup/use_azure_sql_db
   - file: contributing/README
     sections:
-    - file: contributing/1a_install_conda
+    - file: contributing/1a_install_uv
     - file: contributing/1b_install_devcontainers
+    - file: contributing/1c_install_conda
     - file: contributing/2_git
     - file: contributing/3_incorporating_research
     - file: contributing/4_style_guide
@@ -102,7 +105,7 @@ chapters:
       - file: code/scoring/6_refusal_scorer
       - file: code/scoring/7_batch_scorer
       - file: code/scoring/insecure_code_scorer
-      - file: code/scoring/look_back_scorer
+      - file: code/scoring/persuasion_full_conversation_scorer
       - file: code/scoring/prompt_shield_scorer
       - file: code/scoring/generic_scorers
       - file: code/scoring/scorer_evals

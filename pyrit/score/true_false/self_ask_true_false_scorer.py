@@ -7,6 +7,7 @@ from typing import Optional, Union
 
 import yaml
 
+from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -109,6 +110,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             ValueError: If required keys are missing in true_false_question.
         """
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+
         self._prompt_target = chat_target
 
         if not true_false_question_path and not true_false_question:
@@ -122,10 +124,10 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
 
-        true_false_system_prompt_path = self._verify_and_resolve_path(true_false_system_prompt_path)
+        true_false_system_prompt_path = verify_and_resolve_path(true_false_system_prompt_path)
 
         if true_false_question_path:
-            true_false_question_path = self._verify_and_resolve_path(true_false_question_path)
+            true_false_question_path = verify_and_resolve_path(true_false_question_path)
             true_false_question = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         for key in ["category", "true_description", "false_description"]:
@@ -144,6 +146,14 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt,
+            prompt_target=self._prompt_target,
+            score_aggregator=self._score_aggregator.__name__,
+        )
+
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the given message piece using "self-ask" for the chat target.
@@ -159,10 +169,12 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
                 The score_value is True or False based on which description fits best.
                 Metadata can be configured to provide additional information.
         """
+        scoring_prompt = f"objective: {objective}\nresponse: {message_piece.converted_value}"
+
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            message_value=message_piece.converted_value,
+            message_value=scoring_prompt,
             message_data_type=message_piece.converted_value_data_type,
             scored_prompt_id=message_piece.id,
             category=self._score_category,

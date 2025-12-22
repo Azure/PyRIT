@@ -6,6 +6,7 @@ Scoring functionality for evaluating AI model responses across various dimension
 including harm detection, objective completion, and content classification.
 """
 
+from pyrit.score.conversation_scorer import ConversationScorer, create_conversation_scorer
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -46,6 +47,7 @@ from pyrit.score.scorer_evaluation.scorer_evaluator import (
     ScorerEvaluator,
     ScorerMetrics,
 )
+from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
@@ -59,7 +61,6 @@ from pyrit.score.true_false.substring_scorer import SubStringScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
 from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 from pyrit.score.true_false.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer
-from pyrit.score.float_scale.look_back_scorer import LookBackScorer
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 from pyrit.score.true_false.question_answer_scorer import QuestionAnswerScorer
@@ -68,7 +69,9 @@ __all__ = [
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
+    "ConversationScorer",
     "DecodingScorer",
+    "create_conversation_scorer",
     "FloatScaleScoreAggregator",
     "FloatScaleScorerAllCategories",
     "FloatScaleScorerByCategory",
@@ -83,7 +86,6 @@ __all__ = [
     "HumanLabeledEntry",
     "InsecureCodeScorer",
     "LikertScalePaths",
-    "LookBackScorer",
     "MarkdownInjectionScorer",
     "MetricsType",
     "ObjectiveHumanLabeledEntry",
@@ -94,6 +96,7 @@ __all__ = [
     "PromptShieldScorer",
     "QuestionAnswerScorer",
     "Scorer",
+    "ScorerIdentifier",
     "ScorerEvaluator",
     "ScorerMetrics",
     "ScorerPromptValidator",

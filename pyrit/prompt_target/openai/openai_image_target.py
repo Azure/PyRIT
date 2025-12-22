@@ -140,6 +140,10 @@ class OpenAIImageTarget(OpenAITarget):
         Returns:
             Message: Constructed message with image path.
 
+        Raises:
+            EmptyResponseException: If the image generation returned an empty response
+                or if the model returned a URL instead of base64.
+
         Note:
             PyRIT expects base64-encoded images. Some models (like dall-e) return URLs by default,
             while others (like gpt-image-1) always return base64. This method detects the format
@@ -187,5 +191,10 @@ class OpenAIImageTarget(OpenAITarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """
+        Check if the target supports JSON as a response format.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return False
