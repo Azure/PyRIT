@@ -1,13 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
-
-import pytest
-
 from pyrit.executor.attack.component.conversation_manager import (
-    format_conversation_context,
     _format_piece_content,
+    format_conversation_context,
 )
 from pyrit.models import Message, MessagePiece
 

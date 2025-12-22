@@ -20,7 +20,9 @@ from pyrit.executor.attack.component import (
     ConversationState,
     ObjectiveEvaluator,
 )
-from pyrit.executor.attack.component.conversation_manager import format_conversation_context
+from pyrit.executor.attack.component.conversation_manager import (
+    format_conversation_context,
+)
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,

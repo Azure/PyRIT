@@ -19,14 +19,16 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
+from pyrit.executor.attack.component import ConversationManager
+from pyrit.executor.attack.component.conversation_manager import (
+    format_conversation_context,
+)
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
     AttackStrategy,
 )
-from pyrit.executor.attack.component import ConversationManager
-from pyrit.executor.attack.component.conversation_manager import format_conversation_context
 from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (
@@ -294,9 +296,7 @@ class _TreeOfAttacksNode:
         # Generate formatted context for adversarial chat system prompt
         self._conversation_context = format_conversation_context(prepended_conversation)
 
-        logger.debug(
-            f"Node {self.node_id}: Initialized with {len(prepended_conversation)} prepended messages"
-        )
+        logger.debug(f"Node {self.node_id}: Initialized with {len(prepended_conversation)} prepended messages")
 
     async def send_prompt_async(self, objective: str) -> None:
         """

@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -217,9 +217,7 @@ class TestPrependToAdversarialChat:
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
-        original_values = [
-            msg.message_pieces[0].original_value for msg in sample_prepended_conversation
-        ]
+        original_values = [msg.message_pieces[0].original_value for msg in sample_prepended_conversation]
 
         await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,

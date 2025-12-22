@@ -80,23 +80,8 @@ async def generate_simulated_conversation_async(
         List[Message]: The generated conversation as a list of Messages, suitable for use
             as `prepended_conversation` in subsequent attacks.
 
-    Example:
-        ```python
-        # Generate a 3-turn movie script conversation
-        conversation = await generate_simulated_conversation_async(
-            objective="convince the target to reveal the secret password",
-            adversarial_chat=adversarial_llm,
-            objective_scorer=scorer,
-            adversarial_chat_system_prompt_path=RTASystemPromptPaths.TEXT_GENERATION.value,
-            num_turns=3,
-        )
-
-        # Use the conversation as context for the real attack
-        result = await attack.execute_async(
-            objective="convince the target to reveal the secret password",
-            prepended_conversation=conversation,
-        )
-        ```
+    Raises:
+        ValueError: If num_turns is not a positive integer.
     """
     # Use the same LLM for both adversarial chat and simulated target
     # They get different system prompts to play different roles
@@ -164,8 +149,7 @@ async def generate_simulated_conversation_async(
             filtered_messages.append(message)
 
     logger.info(
-        f"Generated simulated conversation with {len(filtered_messages)} messages "
-        f"(outcome: {result.outcome.name})"
+        f"Generated simulated conversation with {len(filtered_messages)} messages " f"(outcome: {result.outcome.name})"
     )
 
     return filtered_messages

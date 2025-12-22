@@ -314,7 +314,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             )
 
             # Determine if this is the last turn
-            is_last_turn = (context.executed_turns + 1 >= self._max_turns)
+            is_last_turn = context.executed_turns + 1 >= self._max_turns
 
             # Score the response (conditionally based on score_last_turn_only)
             if not self._score_last_turn_only or is_last_turn:
