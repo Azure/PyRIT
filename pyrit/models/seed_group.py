@@ -194,50 +194,60 @@ class SeedGroup(YamlLoadable):
     @property
     def prepended_conversation(self) -> Optional[List[Message]]:
         """
-        Returns Messages from all sequences except the last turn.
+        Returns Messages that should be prepended as conversation history.
 
-        For multi-turn SeedGroups, this returns the conversation history
-        that should be prepended before the current turn.
-
-        Returns:
-            Optional[List[Message]]: Messages for prior turns, or None if single-turn.
-        """
-        unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
-
-        if len(unique_sequences) <= 1:
-            return None
-
-        last_sequence = unique_sequences[-1]
-        prepended_prompts = [p for p in self.prompts if p.sequence != last_sequence]
-
-        if not prepended_prompts:
-            return None
-
-        return self._prompts_to_messages(prepended_prompts)
-
-    @property
-    def next_message(self) -> Optional[Message]:
-        """
-        Returns a Message containing only the last turn's prompts.
-
-        For multi-turn SeedGroups, this is just the final sequence.
-        For single-turn SeedGroups, this contains all prompts.
+        If the last message in the sequence is a user message, returns all messages
+        except the last one. If the last message is not a user message, returns
+        the entire sequence as conversation history.
 
         Returns:
-            Optional[Message]: Message for the current/last turn, or None if no prompts.
+            Optional[List[Message]]: Messages for conversation history, or None if empty.
         """
         if not self.prompts:
             return None
 
+        last_role = self._get_last_sequence_role()
         unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
 
-        if len(unique_sequences) > 1:
-            # Multiple turns - get only the last sequence
+        if last_role == "user":
+            # Last message is user - prepend everything except the last sequence
+            if len(unique_sequences) <= 1:
+                return None
+
             last_sequence = unique_sequences[-1]
-            current_turn_prompts = [p for p in self.prompts if p.sequence == last_sequence]
+            prepended_prompts = [p for p in self.prompts if p.sequence != last_sequence]
+
+            if not prepended_prompts:
+                return None
+
+            return self._prompts_to_messages(prepended_prompts)
         else:
-            # Single turn - all prompts
-            current_turn_prompts = list(self.prompts)
+            # Last message is not user - entire sequence is prepended conversation
+            return self._prompts_to_messages(list(self.prompts))
+
+    @property
+    def next_message(self) -> Optional[Message]:
+        """
+        Returns a Message containing only the last turn's prompts if it's a user message.
+
+        If the last message in the sequence is a user message, returns that message.
+        If the last message is not a user message, returns None.
+
+        Returns:
+            Optional[Message]: Message for the current/last turn if user role, or None otherwise.
+        """
+        if not self.prompts:
+            return None
+
+        last_role = self._get_last_sequence_role()
+
+        if last_role != "user":
+            # Last message is not a user message - no next_message
+            return None
+
+        unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
+        last_sequence = unique_sequences[-1]
+        current_turn_prompts = [p for p in self.prompts if p.sequence == last_sequence]
 
         if not current_turn_prompts:
             return None
@@ -260,6 +270,23 @@ class SeedGroup(YamlLoadable):
             return []
 
         return self._prompts_to_messages(list(self.prompts))
+
+    def _get_last_sequence_role(self) -> Optional[str]:
+        """
+        Get the role of the last sequence in this SeedGroup.
+
+        Returns:
+            Optional[str]: The role of the last sequence, or None if no prompts exist.
+        """
+        if not self.prompts:
+            return None
+
+        unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
+        last_sequence = unique_sequences[-1]
+        last_sequence_prompts = [p for p in self.prompts if p.sequence == last_sequence]
+
+        # Role should be consistent within a sequence (enforced by _enforce_consistent_role)
+        return last_sequence_prompts[0].role if last_sequence_prompts else None
 
     def _prompts_to_messages(self, prompts: Sequence[SeedPrompt]) -> List[Message]:
         """

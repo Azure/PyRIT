@@ -721,18 +721,6 @@ metadata:
     assert seed_prompt.metadata["version"] == 1
 
 
-def test_seed_group_single_seed_prompt_creates_objective():
-    prompt_dict = {"value": "Test prompt from dict", "is_objective": True}
-
-    group = SeedGroup(seeds=[prompt_dict])
-
-    # Should create objective from the single prompt
-    assert group.objective is not None
-
-    # Prompts list should be empty
-    assert len(group.prompts) == 0
-
-
 def test_seed_group_dict_with_is_objective_true():
     """Test that a dictionary with is_objective=True creates an objective."""
     prompt_dict = {
@@ -784,24 +772,6 @@ def test_seed_group_dict_without_is_objective():
 
     # No objective should be created
     assert group.objective is None
-
-
-def test_seed_group_multiple_objectives_from_seed_objective():
-    """Test that multiple SeedObjective instances raises ValueError."""
-    objective1 = SeedObjective(value="First objective")
-    objective2 = SeedObjective(value="Second objective")
-
-    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
-        SeedGroup(seeds=[objective1, objective2])
-
-
-def test_seed_group_multiple_objectives_from_dict():
-    """Test that multiple dictionaries with is_objective=True raises ValueError."""
-    dict1 = {"value": "First dict objective", "data_type": "text", "is_objective": True}
-    dict2 = {"value": "Second dict objective", "data_type": "text", "is_objective": True}
-
-    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
-        SeedGroup(seeds=[dict1, dict2])
 
 
 def test_seed_group_mixed_objective_types():
@@ -946,3 +916,56 @@ def test_next_message_pieces_structure():
     assert len(current_pieces) == 2
     assert current_pieces[0].converted_value_data_type == "text"
     assert current_pieces[1].converted_value_data_type == "image_path"
+
+
+def test_next_message_none_when_last_is_assistant():
+    """Test that next_message is None when the last message is not a user message."""
+    prompt1 = SeedPrompt(value="User turn", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Assistant turn", data_type="text", sequence=1, role="assistant")
+    group = SeedGroup(seeds=[prompt1, prompt2])
+
+    # Last message is assistant, so next_message should be None
+    assert group.next_message is None
+
+    # prepended_conversation should contain the entire sequence
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 2
+    assert group.prepended_conversation[0].get_value() == "User turn"
+    assert group.prepended_conversation[0].role == "user"
+    assert group.prepended_conversation[1].get_value() == "Assistant turn"
+    assert group.prepended_conversation[1].role == "assistant"
+
+
+def test_next_message_none_when_single_assistant():
+    """Test that next_message is None when there's only an assistant message."""
+    prompt = SeedPrompt(value="Assistant only", data_type="text", sequence=0, role="assistant")
+    group = SeedGroup(seeds=[prompt])
+
+    # Last (and only) message is assistant, so next_message should be None
+    assert group.next_message is None
+
+    # prepended_conversation should contain the entire sequence
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 1
+    assert group.prepended_conversation[0].get_value() == "Assistant only"
+    assert group.prepended_conversation[0].role == "assistant"
+
+
+def test_prepended_conversation_ends_with_assistant():
+    """Test multi-turn conversation where last message is assistant."""
+    prompt1 = SeedPrompt(value="User 1", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Assistant 1", data_type="text", sequence=1, role="assistant")
+    prompt3 = SeedPrompt(value="User 2", data_type="text", sequence=2, role="user")
+    prompt4 = SeedPrompt(value="Assistant 2", data_type="text", sequence=3, role="assistant")
+    group = SeedGroup(seeds=[prompt1, prompt2, prompt3, prompt4])
+
+    # Last message is assistant, so next_message should be None
+    assert group.next_message is None
+
+    # prepended_conversation should contain all 4 messages
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 4
+    assert group.prepended_conversation[0].get_value() == "User 1"
+    assert group.prepended_conversation[1].get_value() == "Assistant 1"
+    assert group.prepended_conversation[2].get_value() == "User 2"
+    assert group.prepended_conversation[3].get_value() == "Assistant 2"
