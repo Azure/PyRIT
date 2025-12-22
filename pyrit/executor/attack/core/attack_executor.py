@@ -498,12 +498,6 @@ class AttackExecutor:
                 if messages:
                     params["messages"] = messages
 
-            # Add more property extractions here as needed:
-            # if "some_property" not in params:
-            #     value = seed_group.some_property
-            #     if value:
-            #         params["some_property"] = value
-
             merged_params.append(params)
 
         # If all params are empty, return None to avoid unnecessary processing
