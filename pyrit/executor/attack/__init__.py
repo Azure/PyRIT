@@ -47,6 +47,7 @@ from pyrit.executor.attack.component import (
     ConversationState,
     ObjectiveEvaluator,
     generate_simulated_conversation_async,
+    SimulatedConversationResult,
     SimulatedTargetSystemPromptPaths,
 )
 
@@ -91,5 +92,6 @@ __all__ = [
     "ObjectiveEvaluator",
     "AttackExecutorResult",
     "generate_simulated_conversation_async",
+    "SimulatedConversationResult",
     "SimulatedTargetSystemPromptPaths",
 ]

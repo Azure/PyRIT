@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import enum
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -23,11 +24,91 @@ from pyrit.executor.attack.core import (
 )
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.memory import CentralMemory
-from pyrit.models import Message, SeedPrompt
+from pyrit.models import Message, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class SimulatedConversationResult:
+    """
+    Result from generating a simulated conversation.
+
+    Stores the full conversation and provides properties to access different views of it
+    for various attack strategy use cases.
+
+    Attributes:
+        conversation: The complete conversation as a list of Messages (user/assistant only,
+            no system messages).
+        score: The score from evaluating the final turn of the conversation.
+        turn_index: 1-based index of the turn to treat as the "final" turn for splitting.
+            If None (default), uses the last turn. Can be set after creation to select
+            an earlier turn (e.g., if the last turn's attack didn't work).
+    """
+
+    conversation: List[Message]
+    score: Optional[Score]
+    turn_index: Optional[int] = None
+
+    @property
+    def _effective_turn_index(self) -> int:
+        """
+        Get the effective 1-based turn index.
+
+        Returns:
+            int: The turn index to use, bounded by available turns.
+        """
+        if not self.conversation:
+            return 0
+        # Calculate total complete turns (user+assistant pairs)
+        total_turns = len(self.conversation) // 2
+        # Account for trailing user message (incomplete turn)
+        if len(self.conversation) % 2 == 1 and self.conversation[-1].role == "user":
+            total_turns += 1
+
+        if self.turn_index is None:
+            return total_turns
+        return max(1, min(self.turn_index, total_turns))
+
+    @property
+    def prepended_messages(self) -> List[Message]:
+        """
+        Get all messages before the selected turn.
+
+        This returns completed turns before the turn specified by `turn_index`,
+        suitable for use as `prepended_conversation` in attack strategies.
+
+        Returns:
+            List[Message]: All messages before the selected turn.
+        """
+        turn = self._effective_turn_index
+        if turn <= 1:
+            return []
+        # Each complete turn is 2 messages (user + assistant)
+        # Messages before turn N: first (N-1) * 2 messages
+        return self.conversation[: (turn - 1) * 2]
+
+    @property
+    def next_message(self) -> Optional[Message]:
+        """
+        Get the user message at the selected turn.
+
+        This is the user message from the turn specified by `turn_index`, which
+        can be used as the initial prompt/next_message for an attack strategy.
+
+        Returns:
+            Optional[Message]: The user message at the selected turn, or None if not found.
+        """
+        turn = self._effective_turn_index
+        if turn < 1:
+            return None
+        # User message for turn N is at index (N-1) * 2
+        user_idx = (turn - 1) * 2
+        if user_idx < len(self.conversation) and self.conversation[user_idx].role == "user":
+            return self.conversation[user_idx]
+        return None
 
 
 class SimulatedTargetSystemPromptPaths(enum.Enum):
@@ -46,7 +127,7 @@ async def generate_simulated_conversation_async(
     simulated_target_system_prompt_path: Optional[Union[str, Path]] = None,
     attack_converter_config: Optional[AttackConverterConfig] = None,
     memory_labels: Optional[dict[str, str]] = None,
-) -> List[Message]:
+) -> SimulatedConversationResult:
     """
     Generate a simulated conversation between an adversarial chat and a compliant target.
 
@@ -77,8 +158,11 @@ async def generate_simulated_conversation_async(
             in memory. Defaults to None.
 
     Returns:
-        List[Message]: The generated conversation as a list of Messages, suitable for use
-            as `prepended_conversation` in subsequent attacks.
+        SimulatedConversationResult: The result containing the generated conversation and score.
+            Use `prepended_messages` to get completed turns before the selected turn,
+            `next_message` to get the user message at the selected turn for use as an
+            attack's initial prompt, or access `conversation` directly for all messages.
+            Set `turn_index` to select an earlier turn if the final turn wasn't successful.
 
     Raises:
         ValueError: If num_turns is not a positive integer.
@@ -148,8 +232,14 @@ async def generate_simulated_conversation_async(
         if message.role != "system":
             filtered_messages.append(message)
 
+    # Get the score from the result (there should be one score for the last turn)
+    final_score = result.last_score
+
     logger.info(
         f"Generated simulated conversation with {len(filtered_messages)} messages " f"(outcome: {result.outcome.name})"
     )
 
-    return filtered_messages
+    return SimulatedConversationResult(
+        conversation=filtered_messages,
+        score=final_score,
+    )

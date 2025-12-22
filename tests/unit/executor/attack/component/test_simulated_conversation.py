@@ -9,10 +9,11 @@ import pytest
 
 from pyrit.executor.attack import AttackConverterConfig, RTASystemPromptPaths
 from pyrit.executor.attack.component.simulated_conversation import (
+    SimulatedConversationResult,
     SimulatedTargetSystemPromptPaths,
     generate_simulated_conversation_async,
 )
-from pyrit.models import AttackOutcome, AttackResult, Message, MessagePiece
+from pyrit.models import AttackOutcome, AttackResult, Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import TrueFalseScorer
 
@@ -246,15 +247,16 @@ class TestGenerateSimulatedConversationAsync:
                 assert call_kwargs["max_turns"] == 5
 
     @pytest.mark.asyncio
-    async def test_returns_conversation_from_memory(
+    async def test_returns_simulated_conversation_result(
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
         adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
-        """Test that the function returns the conversation from memory."""
+        """Test that the function returns a SimulatedConversationResult."""
         conversation_id = str(uuid.uuid4())
+        mock_score = MagicMock(spec=Score)
 
         with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
@@ -266,6 +268,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     outcome=AttackOutcome.SUCCESS,
                     executed_turns=3,
+                    last_score=mock_score,
                 )
             )
             mock_attack_class.return_value = mock_attack
@@ -286,8 +289,10 @@ class TestGenerateSimulatedConversationAsync:
                 # Verify get_conversation was called with the correct conversation_id
                 mock_memory.get_conversation.assert_called_once_with(conversation_id=conversation_id)
 
-                # Verify the result matches the sample conversation
-                assert result == sample_conversation
+                # Verify the result is a SimulatedConversationResult
+                assert isinstance(result, SimulatedConversationResult)
+                assert result.conversation == sample_conversation
+                assert result.score == mock_score
 
     @pytest.mark.asyncio
     async def test_passes_system_prompt_via_prepended_conversation(
@@ -501,3 +506,180 @@ class TestGenerateSimulatedConversationAsync:
                 # Verify default max_turns is 3
                 call_kwargs = mock_attack_class.call_args.kwargs
                 assert call_kwargs["max_turns"] == 3
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestSimulatedConversationResult:
+    """Tests for SimulatedConversationResult dataclass."""
+
+    def _create_message(self, role: str, content: str) -> Message:
+        """Helper to create a Message with the given role and content."""
+        return Message(
+            message_pieces=[
+                MessagePiece(
+                    role=role,  # type: ignore[arg-type]
+                    original_value=content,
+                    original_value_data_type="text",
+                    conversation_id=str(uuid.uuid4()),
+                )
+            ]
+        )
+
+    def _create_conversation(self, num_turns: int) -> list[Message]:
+        """Helper to create a conversation with the specified number of turns."""
+        messages = []
+        for i in range(1, num_turns + 1):
+            messages.append(self._create_message("user", f"Turn {i} user"))
+            messages.append(self._create_message("assistant", f"Turn {i} assistant"))
+        return messages
+
+    def test_prepended_messages_default_excludes_last_turn(self):
+        """Test prepended_messages excludes last turn when turn_index is None (default)."""
+        messages = self._create_conversation(3)  # 6 messages
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        prepended = result.prepended_messages
+        # Should exclude last turn (2 messages)
+        assert len(prepended) == 4
+        assert prepended[-1].role == "assistant"
+        assert prepended[-1].get_value() == "Turn 2 assistant"
+
+    def test_prepended_messages_with_turn_index_2(self):
+        """Test prepended_messages with turn_index=2 returns only turn 1."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=2)
+
+        prepended = result.prepended_messages
+        # Should return only turn 1 (2 messages)
+        assert len(prepended) == 2
+        assert prepended[0].get_value() == "Turn 1 user"
+        assert prepended[1].get_value() == "Turn 1 assistant"
+
+    def test_prepended_messages_with_turn_index_1_returns_empty(self):
+        """Test prepended_messages with turn_index=1 returns empty list."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=1)
+
+        prepended = result.prepended_messages
+        assert len(prepended) == 0
+
+    def test_prepended_messages_with_empty_conversation(self):
+        """Test prepended_messages returns empty list for empty conversation."""
+        result = SimulatedConversationResult(conversation=[], score=None)
+        assert result.prepended_messages == []
+
+    def test_prepended_messages_with_single_turn(self):
+        """Test prepended_messages returns empty when only one turn."""
+        messages = self._create_conversation(1)
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        prepended = result.prepended_messages
+        assert len(prepended) == 0
+
+    def test_next_message_default_returns_last_user(self):
+        """Test next_message returns last turn's user message when turn_index is None."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        next_msg = result.next_message
+        assert next_msg is not None
+        assert next_msg.role == "user"
+        assert next_msg.get_value() == "Turn 3 user"
+
+    def test_next_message_with_turn_index_2(self):
+        """Test next_message with turn_index=2 returns turn 2's user message."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=2)
+
+        next_msg = result.next_message
+        assert next_msg is not None
+        assert next_msg.role == "user"
+        assert next_msg.get_value() == "Turn 2 user"
+
+    def test_next_message_with_turn_index_1(self):
+        """Test next_message with turn_index=1 returns first user message."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=1)
+
+        next_msg = result.next_message
+        assert next_msg is not None
+        assert next_msg.get_value() == "Turn 1 user"
+
+    def test_next_message_with_empty_conversation(self):
+        """Test next_message returns None for empty conversation."""
+        result = SimulatedConversationResult(conversation=[], score=None)
+        assert result.next_message is None
+
+    def test_turn_index_can_be_set_after_creation(self):
+        """Test that turn_index can be modified after creation."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        # Default: last turn (3)
+        assert result.next_message is not None
+        assert result.next_message.get_value() == "Turn 3 user"
+        assert len(result.prepended_messages) == 4
+
+        # Set to turn 2
+        result.turn_index = 2
+        assert result.next_message is not None
+        assert result.next_message.get_value() == "Turn 2 user"
+        assert len(result.prepended_messages) == 2
+
+        # Set to turn 1
+        result.turn_index = 1
+        assert result.next_message is not None
+        assert result.next_message.get_value() == "Turn 1 user"
+        assert len(result.prepended_messages) == 0
+
+    def test_turn_index_bounded_by_conversation_length(self):
+        """Test that turn_index is bounded by available turns."""
+        messages = self._create_conversation(2)  # Only 2 turns
+        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=10)
+
+        # Should clamp to last available turn (2)
+        next_msg = result.next_message
+        assert next_msg is not None
+        assert next_msg.get_value() == "Turn 2 user"
+
+    def test_turn_index_minimum_is_1(self):
+        """Test that turn_index minimum is 1."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=0)
+
+        # Should treat as turn 1
+        assert result.next_message is not None
+        assert result.next_message.get_value() == "Turn 1 user"
+        assert len(result.prepended_messages) == 0
+
+    def test_conversation_with_trailing_user_message(self):
+        """Test handling conversation that ends with user message (incomplete turn)."""
+        messages = self._create_conversation(2)
+        messages.append(self._create_message("user", "Turn 3 user"))  # No assistant response
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        # The trailing user message should be treated as a turn
+        next_msg = result.next_message
+        assert next_msg is not None
+        assert next_msg.get_value() == "Turn 3 user"
+        # prepended should have turns 1 and 2
+        assert len(result.prepended_messages) == 4
+
+    def test_conversation_property_returns_full_list(self):
+        """Test that conversation property returns the full message list."""
+        messages = self._create_conversation(2)
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        assert result.conversation == messages
+        assert len(result.conversation) == 4
+
+    def test_score_property(self):
+        """Test that score property returns the stored score."""
+        mock_score = MagicMock(spec=Score)
+        result = SimulatedConversationResult(conversation=[], score=mock_score)
+        assert result.score == mock_score
+
+    def test_score_property_none(self):
+        """Test that score property can be None."""
+        result = SimulatedConversationResult(conversation=[], score=None)
+        assert result.score is None

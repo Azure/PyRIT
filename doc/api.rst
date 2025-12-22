@@ -191,6 +191,7 @@ API Reference
     CrescendoAttackContext
     CrescendoAttackResult
     FlipAttack
+    generate_simulated_conversation_async
     ManyShotJailbreakAttack
     MarkdownAttackResultPrinter
     MultiPromptSendingAttack
@@ -204,6 +205,8 @@ API Reference
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
+    SimulatedConversationResult
+    SimulatedTargetSystemPromptPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
     TAPAttack
