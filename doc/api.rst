@@ -500,6 +500,7 @@ API Reference
     PromptTarget
     RealtimeTarget
     TextTarget
+    WebSocketCopilotTarget
 
 :py:mod:`pyrit.score`
 =====================
