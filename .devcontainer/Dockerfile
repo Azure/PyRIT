@@ -1,4 +1,9 @@
-FROM mcr.microsoft.com/devcontainers/anaconda:3
+# Use a Python image with uv pre-installed
+FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+
+# Makes installation faster
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_SYSTEM_PYTHON=1
 
 SHELL ["/bin/bash", "-c"]
 
@@ -6,9 +11,11 @@ USER root
 
 # Install required system packages + ODBC prerequisites
 RUN apt-get update && apt-get install -y \
+    sudo \
     unixodbc \
     unixodbc-dev \
     libgl1-mesa-glx \
+    git \
     curl \
     xdg-utils \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -41,25 +48,34 @@ RUN apt-get update \
       libpulse0 \
  && rm -rf /var/lib/apt/lists/*
 
-# Create conda env and install pyodbc into it
-RUN conda create -n pyrit-dev python=3.11 -y && \
-    conda install -n pyrit-dev -c conda-forge pyodbc -y && \
-    chown -R vscode:vscode /opt/conda/envs/pyrit-dev
+ARG USERNAME=vscode
+# Create the user and grant passwordless sudo
+RUN groupadd $USERNAME \
+    && useradd -g $USERNAME -m $USERNAME \
+    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Create venv using uv
+RUN uv venv /opt/venv --python 3.11 \
+ && chown -R vscode:vscode /opt/venv \
+ && ls -la /opt/venv/bin/activate
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Pre-create common user caches and fix permissions
 RUN mkdir -p /home/vscode/.cache/pre-commit \
  && mkdir -p /home/vscode/.vscode-server \
  && mkdir -p /home/vscode/.cache/pip \
- && mkdir -p /home/vscode/.cache/conda \
+ && mkdir -p /home/vscode/.cache/uv \
+ && mkdir -p /home/vscode/.cache/venv \
  && mkdir -p /home/vscode/.cache/pylance \
  && chown -R vscode:vscode /home/vscode/.cache /home/vscode/.vscode-server \
- && chmod -R 777 /home/vscode/.cache/conda /home/vscode/.cache/pip /home/vscode/.cache/pylance /opt/conda/pkgs/cache/ \
+ && chmod -R 777 /home/vscode/.cache/pip /home/vscode/.cache/pylance /home/vscode/.cache/venv /home/vscode/.cache/uv\
  && chmod -R 755 /home/vscode/.vscode-server
 
 USER vscode
-RUN /opt/conda/bin/conda init bash && \
-    echo "conda activate pyrit-dev" >> /home/vscode/.bashrc
-RUN echo "source /opt/conda/etc/profile.d/conda.sh && conda activate pyrit-dev" >> /home/vscode/.bash_profile
+# Create bash configuration files and activate the venv in bash sessions
+RUN touch /home/vscode/.bashrc /home/vscode/.bash_profile \
+ && echo "[ -f /opt/venv/bin/activate ] && source /opt/venv/bin/activate" >> /home/vscode/.bashrc \
+ && echo "[ -f /opt/venv/bin/activate ] && source /opt/venv/bin/activate" >> /home/vscode/.bash_profile
 
 # Configure Git for better performance with bind mounts
 RUN git config --global core.preloadindex true \
@@ -68,5 +84,5 @@ RUN git config --global core.preloadindex true \
  && git config --global status.showUntrackedFiles all \
  && git config --global core.fsmonitor true
 
-# Set pip’s cache directory so it can be mounted
-ENV PIP_CACHE_DIR="/home/vscode/.cache/pip"
+# Set uv’s cache directory so it can be mounted
+ENV UV_CACHE_DIR="/home/vscode/.cache/uv"

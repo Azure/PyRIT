@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -59,7 +58,8 @@ async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
         with pytest.raises(InvalidJsonException):
             await prompt_variation.convert_async(prompt="testing", input_type="text")
 
-        assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert mock_create.call_count == 2
 
 
 def test_variation_converter_input_supported(sqlite_instance):

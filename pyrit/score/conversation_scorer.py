@@ -197,4 +197,10 @@ def create_conversation_scorer(
             """Return the wrapped scorer."""
             return self._wrapped_scorer
 
+        def _build_scorer_identifier(self) -> None:
+            """Build the scorer evaluation identifier for this conversation scorer."""
+            self._set_scorer_identifier(
+                sub_scorers=[self._wrapped_scorer],
+            )
+
     return DynamicConversationScorer()

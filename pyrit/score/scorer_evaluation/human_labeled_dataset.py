@@ -3,13 +3,13 @@
 
 
 import logging
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union, cast, get_args
 
 import pandas as pd
 
+from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message, MessagePiece, PromptDataType
 from pyrit.score import MetricsType
 
@@ -80,13 +80,7 @@ class HumanLabeledDataset:
     HumanLabeledDatasets can be constructed from a CSV file.
     """
 
-    def __init__(
-        self,
-        *,
-        name: str,
-        entries: List[HumanLabeledEntry],
-        metrics_type: MetricsType,
-    ):
+    def __init__(self, *, name: str, entries: List[HumanLabeledEntry], metrics_type: MetricsType, version: str):
         """
         Initialize the HumanLabeledDataset.
 
@@ -97,6 +91,7 @@ class HumanLabeledDataset:
             entries (List[HumanLabeledEntry]): A list of entries in the dataset.
             metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or
                 OBJECTIVE.
+            version (str): The version of the human-labeled dataset.
 
         Raises:
             ValueError: If the dataset name is an empty string.
@@ -107,6 +102,7 @@ class HumanLabeledDataset:
         self.name = name
         self.entries = entries
         self.metrics_type = metrics_type
+        self.version = version
 
         for entry in self.entries:
             self._validate_entry(entry)
@@ -122,9 +118,12 @@ class HumanLabeledDataset:
         assistant_response_col_name: str = "assistant_response",
         assistant_response_data_type_col_name: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> "HumanLabeledDataset":
         """
         Load a human-labeled dataset from a CSV file. This only allows for single turn scored text responses.
+        You can optionally include a # comment line at the top of the CSV file to specify the dataset version
+        (using # version=x.y).
 
         Args:
             csv_path (Union[str, Path]): The path to the CSV file.
@@ -141,21 +140,33 @@ class HumanLabeledDataset:
                 the assistant responses. If not specified, it is assumed that the responses are text.
             dataset_name: (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
                 file name.
+            version (str, Optional): The version of the dataset. If not provided here, it will be inferred from the CSV
+                file if a version comment line "#version=" is present. See `mini_hate_speech.csv` for an example.
 
         Returns:
             HumanLabeledDataset: The human-labeled dataset object.
 
         Raises:
-            ValueError: If the CSV file does not exist.
+            FileNotFoundError: If the CSV file does not exist.
+            ValueError: If version is not provided and not found in the CSV file via comment line "# version=".
         """
-        if not os.path.exists(csv_path):
-            raise ValueError(f"CSV file does not exist: {csv_path}")
+        csv_path = verify_and_resolve_path(csv_path)
+        # Read the first line to check for version info
+        if not version:
+            with open(csv_path, "r", encoding="utf-8") as f:
+                first_line = f.readline().strip()
+                if first_line.startswith("#") and "version=" in first_line:
+                    # Extract version, handling trailing commas from CSV format (e.g., "# version=1.0,,,,")
+                    version_part = first_line.split("=", 1)[1].strip()
+                    version = version_part.split(",")[0].strip()
+                else:
+                    raise ValueError("Version not specified and not found in CSV file.")
 
         # Try UTF-8 first, fall back to latin-1 for files with special characters
         try:
-            eval_df = pd.read_csv(csv_path, encoding="utf-8")
+            eval_df = pd.read_csv(csv_path, comment="#", encoding="utf-8")
         except UnicodeDecodeError:
-            eval_df = pd.read_csv(csv_path, encoding="latin-1")
+            eval_df = pd.read_csv(csv_path, comment="#", encoding="latin-1")
 
         # cls._validate_fields
         cls._validate_columns(
@@ -216,7 +227,7 @@ class HumanLabeledDataset:
             entries.append(entry)
 
         dataset_name = dataset_name or Path(csv_path).stem
-        return cls(entries=entries, name=dataset_name, metrics_type=metrics_type)
+        return cls(entries=entries, name=dataset_name, metrics_type=metrics_type, version=version)
 
     def add_entries(self, entries: List[HumanLabeledEntry]):
         """

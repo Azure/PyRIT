@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     """
-    This class facilitates multimodal (image and text) input and text output generation.
+    Facilitates multimodal (image and text) input and text output generation.
 
     This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
 
@@ -116,9 +116,9 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                `httpx.AsyncClient()` constructor.
-                For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
+            **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the ``httpx.AsyncClient()``
+                constructor. For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
 
         Raises:
             PyritException: If the temperature or top_p values are out of bounds.
@@ -275,12 +275,17 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         return construct_response_from_request(request=request, response_text_pieces=[extracted_response])
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """
+        Check if the target supports JSON as a response format.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return self._is_json_supported
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries.
+        Build chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -295,10 +300,10 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
         """
-        Checks if the message piece is in text message format.
+        Check if the message piece is in text message format.
 
         Args:
-            conversation list[Message]: The conversation
+            conversation (list[Message]): The conversation
 
         Returns:
             bool: True if the message piece is in text message format, False otherwise.
@@ -312,7 +317,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries. This is needed because many
+        Build chat messages based on message entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted).
 
         Args:
@@ -320,6 +325,10 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             list[dict]: The list of constructed chat messages.
+
+        Raises:
+            ValueError: If any message does not have exactly one text piece.
+            ValueError: If any message piece is not of type text.
         """
         chat_messages: list[dict] = []
         for message in conversation:
@@ -340,13 +349,17 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     async def _build_chat_messages_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries.
+        Build chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
 
         Returns:
             list[dict]: The list of constructed chat messages.
+
+        Raises:
+            ValueError: If any message does not have a role.
+            ValueError: If any message piece has an unsupported data type.
         """
         chat_messages: list[dict] = []
         for message in conversation:
@@ -406,7 +419,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the structure and content of a message for compatibility of this target.
+        Validate the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.

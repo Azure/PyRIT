@@ -16,15 +16,29 @@ DEFAULT_PORT = 18812
 
 class RPCClientStoppedException(RPCAppException):
     """
-    This exception is thrown when the RPC client is stopped.
+    Thrown when the RPC client is stopped.
     """
 
     def __init__(self):
+        """Initialize the RPCClientStoppedException."""
         super().__init__("RPC client is stopped.")
 
 
 class RPCClient:
+    """
+    RPC client for remote procedure calls.
+
+    This class provides functionality for establishing and maintaining RPC connections,
+    handling message exchange, and managing connection lifecycle.
+    """
+
     def __init__(self, callback_disconnected: Optional[Callable] = None):
+        """
+        Initialize the RPC client.
+
+        Args:
+            callback_disconnected (Callable, Optional): Callback function to invoke when disconnected.
+        """
         self._c = None  # type: Optional[rpyc.Connection]
         self._bgsrv = None  # type: Optional[rpyc.BgServingThread]
 
@@ -39,6 +53,7 @@ class RPCClient:
         self._callback_disconnected = callback_disconnected
 
     def start(self):
+        """Start the RPC client connection and background service thread."""
         # Check if the port is open
         self._wait_for_server_avaible()
         self._prompt_received_sem = Semaphore(0)
@@ -50,12 +65,27 @@ class RPCClient:
         self._bgsrv_thread.start()
 
     def wait_for_prompt(self) -> MessagePiece:
+        """
+        Wait for a prompt to be received from the server.
+
+        Returns:
+            MessagePiece: The received message piece.
+
+        Raises:
+            RPCClientStoppedException: If the client has been stopped.
+        """
         self._prompt_received_sem.acquire()
         if self._is_running:
             return self._prompt_received
         raise RPCClientStoppedException()
 
     def send_message(self, response: bool):
+        """
+        Send a score response message back to the RPC server.
+
+        Args:
+            response (bool): True if the prompt is safe, False if unsafe.
+        """
         score = Score(
             score_value=str(response),
             score_type="true_false",

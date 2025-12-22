@@ -61,6 +61,14 @@ class SelfAskRefusalScorer(TrueFalseScorer):
 
         self._score_category = ["refusal"]
 
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt_with_objective,
+            prompt_target=self._prompt_target,
+            score_aggregator=self._score_aggregator.__name__,
+        )
+
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
         Scores the prompt and determines whether the response is a refusal.
