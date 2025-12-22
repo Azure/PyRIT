@@ -196,11 +196,16 @@ class AttackExecutor:
         **broadcast_attack_params,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
-        Execute an attack strategy with multiple objectives in parallel.
+        Run attack.execute_async in parallel for each set of parameters.
 
-        This is the primary method for executing attacks. It accepts list parameters that are
-        zipped with objectives, allowing per-objective customization of prepended conversations,
-        next messages, memory labels, and attack-specific parameters.
+        This method accepts lists of parameters for execute_async.
+        Each execution receives its own set of parameters (objective, prepended_conversation, next_message,
+        memory_labels, and any attack-specific params). Broadcast parameters are applied to all executions,
+        while per-execution parameters can be customized via corresponding list indices.
+
+        When an attack doesn't accept a parameter supplied (e.g., not all attacks accept next_message), the
+        parameter is silently ignored and the attack executes with the parameters it does accept.
+        Set strict_param_matching=True to raise an error for unsupported parameters instead.
 
         Args:
             attack (AttackStrategy): The attack strategy to execute.
@@ -350,12 +355,16 @@ class AttackExecutor:
         **broadcast_attack_params,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
-        Execute an attack strategy using SeedGroups to provide objectives and messages.
+        Run attack.execute_async in parallel, extracting parameters from SeedGroups.
 
         This method extracts attack parameters from SeedGroup objects:
         - objective: From SeedGroup.objective.value (required)
         - prepended_conversation: From SeedGroup.prepended_conversation
         - next_message: From SeedGroup.next_message
+
+        When an attack doesn't accept a parameter supplied (e.g., not all attacks accept next_message), the
+        parameter is silently ignored and the attack executes with the parameters it does accept.
+        Set strict_param_matching=True to raise an error for unsupported parameters instead.
 
         Args:
             attack (AttackStrategy): The attack strategy to execute.
