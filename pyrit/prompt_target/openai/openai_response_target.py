@@ -327,7 +327,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         Args:
             conversation: The full conversation history.
-            is_json_response: Whether the response should be formatted as JSON.
+            json_config: Specification for JSON formatting.
 
         Returns:
             dict: The request body to send to the Responses API.
