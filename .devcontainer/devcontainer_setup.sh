@@ -39,7 +39,7 @@ if [ -f "$HASH_FILE" ]; then
 fi
 
 uv venv /opt/venv --python 3.11 \
-    && . /opt/venv/bin/activate \
+    && . /opt/venv/bin/activate
 
 # Compute current hash
 CURRENT_HASH=$(sha256sum /workspace/pyproject.toml | awk '{print $1}')
@@ -49,8 +49,8 @@ if [ ! -f "$HASH_FILE" ] || [ "$(cat $HASH_FILE)" != "$CURRENT_HASH" ]; then
     echo "📦 pyproject.toml has changed, installing environment..."
 
     # Install dependencies
-    uv pip install -e ".[dev,all]"
     uv pip install ipykernel
+    uv pip install -e ".[dev,all]"
 
     # Save the new hash
     echo "$CURRENT_HASH" > "$HASH_FILE"
