@@ -91,6 +91,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_turns: int = 10,
+        score_last_turn_only: bool = False,
     ):
         """
         Initialize the red teaming attack strategy.
@@ -102,6 +103,10 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             attack_scoring_config: Configuration for attack scoring. Defaults to None.
             prompt_normalizer: The prompt normalizer to use for sending prompts. Defaults to None.
             max_turns (int): Maximum number of turns for the attack. Defaults to 10.
+            score_last_turn_only (bool): If True, only score the final turn instead of every turn.
+                This reduces LLM calls when intermediate scores are not needed (e.g., for
+                generating simulated conversations). The attack will run for exactly max_turns
+                when this is enabled. Defaults to False.
 
         Raises:
             ValueError: If objective_scorer is not provided in attack_scoring_config.
@@ -153,6 +158,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             raise ValueError("Maximum turns must be a positive integer.")
 
         self._max_turns = max_turns
+        self._score_last_turn_only = score_last_turn_only
 
     def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
         """
@@ -254,6 +260,16 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             labels=context.memory_labels,
         )
 
+        # Replay prepended conversation to adversarial chat so it has context
+        # This allows the adversarial chat to continue naturally from established context
+        if context.prepended_conversation:
+            await self._conversation_manager.prepend_to_adversarial_chat_async(
+                adversarial_chat=self._adversarial_chat,
+                adversarial_chat_conversation_id=context.session.adversarial_chat_conversation_id,
+                prepended_conversation=context.prepended_conversation,
+                labels=context.memory_labels,
+            )
+
     async def _perform_async(self, *, context: MultiTurnAttackContext) -> AttackResult:
         """
         Execute the red teaming attack by iteratively generating prompts,
@@ -292,11 +308,17 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
                 context=context, prompt=prompt_to_send
             )
 
-            # Score the response
-            context.last_score = await self._score_response_async(context=context)
+            # Determine if this is the last turn
+            is_last_turn = (context.executed_turns + 1 >= self._max_turns)
 
-            # Check if objective achieved
-            achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
+            # Score the response (conditionally based on score_last_turn_only)
+            if not self._score_last_turn_only or is_last_turn:
+                context.last_score = await self._score_response_async(context=context)
+                # Check if objective achieved
+                achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
+            else:
+                # Skip scoring on intermediate turns when score_last_turn_only is True
+                context.last_score = None
 
             # Increment the executed turns
             context.executed_turns += 1

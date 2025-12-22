@@ -432,3 +432,73 @@ class ConversationManager:
                 raise ValueError(
                     "There must be a user message preceding the assistant message in prepended conversations."
                 )
+
+    async def prepend_to_adversarial_chat_async(
+        self,
+        *,
+        adversarial_chat: PromptChatTarget,
+        adversarial_chat_conversation_id: str,
+        prepended_conversation: List[Message],
+        labels: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """
+        Replay prepended conversation to the adversarial chat's memory with swapped roles.
+
+        This method takes a conversation history (typically between user and objective target)
+        and replays it to the adversarial chat so it has context of the established conversation.
+        Roles are swapped because from the adversarial chat's perspective:
+        - "user" messages in the original become "assistant" (what the adversarial chat said)
+        - "assistant" messages become "user" (responses it received)
+
+        This is useful when using prepended_conversation to establish context (e.g., role-play
+        scenarios) and wanting the adversarial chat to continue naturally from that context.
+
+        Args:
+            adversarial_chat (PromptChatTarget): The adversarial chat target to prepend to.
+            adversarial_chat_conversation_id (str): The conversation ID for the adversarial chat.
+            prepended_conversation (List[Message]): The conversation history to replay.
+            labels (Optional[Dict[str, str]]): Optional labels to associate with the messages.
+
+        Note:
+            - System messages are skipped (adversarial chat has its own system prompt)
+            - Messages are added to memory directly without LLM calls
+        """
+        if not prepended_conversation:
+            logger.debug("No prepended conversation to replay to adversarial chat")
+            return
+
+        # Role mapping: swap user <-> assistant for adversarial chat's perspective
+        role_swap: Dict[ChatMessageRole, ChatMessageRole] = {
+            "user": "assistant",
+            "assistant": "user",
+        }
+
+        for message in prepended_conversation:
+            for piece in message.message_pieces:
+                # Skip system messages - adversarial chat has its own system prompt
+                if piece.role == "system":
+                    continue
+
+                # Create a new piece with swapped role for adversarial chat
+                swapped_role = role_swap.get(piece.role, piece.role)
+
+                adversarial_piece = MessagePiece(
+                    id=uuid.uuid4(),
+                    role=swapped_role,
+                    original_value=piece.original_value,
+                    converted_value=piece.converted_value,
+                    original_value_data_type=piece.original_value_data_type,
+                    converted_value_data_type=piece.converted_value_data_type,
+                    conversation_id=adversarial_chat_conversation_id,
+                    attack_identifier=self._attack_identifier,
+                    prompt_target_identifier=adversarial_chat.get_identifier(),
+                    labels=labels,
+                )
+
+                # Add to memory
+                self._memory.add_message_to_memory(request=adversarial_piece.to_message())
+
+        logger.debug(
+            f"Replayed {len(prepended_conversation)} messages to adversarial chat "
+            f"conversation {adversarial_chat_conversation_id}"
+        )

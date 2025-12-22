@@ -306,6 +306,16 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             labels=context.memory_labels,
         )
 
+        # Replay prepended conversation to adversarial chat so it has context
+        # This allows the adversarial chat to continue naturally from established context
+        if context.prepended_conversation:
+            await self._conversation_manager.prepend_to_adversarial_chat_async(
+                adversarial_chat=self._adversarial_chat,
+                adversarial_chat_conversation_id=context.session.adversarial_chat_conversation_id,
+                prepended_conversation=context.prepended_conversation,
+                labels=context.memory_labels,
+            )
+
         # Initialize backtrack count in context
         context.backtrack_count = 0
 

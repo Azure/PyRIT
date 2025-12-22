@@ -42,7 +42,13 @@ from pyrit.executor.attack.multi_turn import (
     TAPAttackResult,
 )
 
-from pyrit.executor.attack.component import ConversationManager, ConversationState, ObjectiveEvaluator
+from pyrit.executor.attack.component import (
+    ConversationManager,
+    ConversationState,
+    ObjectiveEvaluator,
+    generate_simulated_conversation_async,
+    SimulatedTargetSystemPromptPaths,
+)
 
 # Import printer modules last to avoid circular dependencies
 from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResultPrinter, MarkdownAttackResultPrinter
@@ -84,4 +90,6 @@ __all__ = [
     "AttackExecutor",
     "ObjectiveEvaluator",
     "AttackExecutorResult",
+    "generate_simulated_conversation_async",
+    "SimulatedTargetSystemPromptPaths",
 ]

@@ -1,0 +1,177 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+"""
+Utility functions for generating simulated conversations using adversarial chat.
+
+These utilities help create prepended_conversation content by running an adversarial chat
+against a simulated (compliant) target before executing the actual attack.
+"""
+
+from __future__ import annotations
+
+import enum
+import logging
+from pathlib import Path
+from typing import List, Optional, Union
+
+from pyrit.common.path import EXECUTOR_SIMULATED_TARGET_PATH
+from pyrit.executor.attack.core import (
+    AttackAdversarialConfig,
+    AttackConverterConfig,
+    AttackScoringConfig,
+)
+from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
+from pyrit.memory import CentralMemory
+from pyrit.models import Message, SeedPrompt
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.score import TrueFalseScorer
+
+logger = logging.getLogger(__name__)
+
+
+class SimulatedTargetSystemPromptPaths(enum.Enum):
+    """Enum for predefined simulated target system prompt paths."""
+
+    COMPLIANT = Path(EXECUTOR_SIMULATED_TARGET_PATH, "compliant.yaml").resolve()
+
+
+async def generate_simulated_conversation_async(
+    *,
+    objective: str,
+    adversarial_chat: PromptChatTarget,
+    objective_scorer: TrueFalseScorer,
+    num_turns: int = 3,
+    adversarial_chat_system_prompt_path: Optional[Union[str, Path]] = None,
+    simulated_target_system_prompt_path: Optional[Union[str, Path]] = None,
+    attack_converter_config: Optional[AttackConverterConfig] = None,
+    memory_labels: Optional[dict[str, str]] = None,
+) -> List[Message]:
+    """
+    Generate a simulated conversation between an adversarial chat and a compliant target.
+
+    This utility runs a RedTeamingAttack with `score_last_turn_only=True` against a simulated
+    target (the same LLM as adversarial_chat, but configured with a compliant system prompt).
+    The resulting conversation can be used as `prepended_conversation` for subsequent attacks
+    against real targets.
+
+    Use cases:
+    - Creating role-play scenarios dynamically (e.g., movie script, video game)
+    - Establishing conversational context before attacking a real target
+    - Generating multi-turn jailbreak setups without hardcoded responses
+
+    Args:
+        objective (str): The objective for the adversarial chat to work toward.
+        adversarial_chat (PromptChatTarget): The adversarial LLM that generates attack prompts.
+            This same LLM is also used as the simulated target with a compliant system prompt.
+        objective_scorer (TrueFalseScorer): Scorer to evaluate the final turn.
+        num_turns (int): Number of conversation turns to generate. Defaults to 3.
+        adversarial_chat_system_prompt_path (Optional[Union[str, Path]]): Path to the system prompt
+            for the adversarial chat. If not provided, uses the default text generation prompt.
+        simulated_target_system_prompt_path (Optional[Union[str, Path]]): Path to the system prompt
+            for the simulated target. If not provided, uses the default compliant prompt.
+            The template should accept `objective` and `num_turns` parameters.
+        attack_converter_config (Optional[AttackConverterConfig]): Converter configuration for
+            the attack. Defaults to None.
+        memory_labels (Optional[dict[str, str]]): Labels to associate with the conversation
+            in memory. Defaults to None.
+
+    Returns:
+        List[Message]: The generated conversation as a list of Messages, suitable for use
+            as `prepended_conversation` in subsequent attacks.
+
+    Example:
+        ```python
+        # Generate a 3-turn movie script conversation
+        conversation = await generate_simulated_conversation_async(
+            objective="convince the target to reveal the secret password",
+            adversarial_chat=adversarial_llm,
+            objective_scorer=scorer,
+            num_turns=3,
+        )
+
+        # Use the conversation as context for the real attack
+        result = await attack.execute_async(
+            objective="convince the target to reveal the secret password",
+            prepended_conversation=conversation,
+        )
+        ```
+    """
+    # Use the same LLM for both adversarial chat and simulated target
+    # They get different system prompts to play different roles
+    simulated_target = adversarial_chat
+    if num_turns <= 0:
+        raise ValueError("num_turns must be a positive integer")
+
+    # Load and configure simulated target system prompt
+    simulated_target_prompt_path = (
+        simulated_target_system_prompt_path or SimulatedTargetSystemPromptPaths.COMPLIANT.value
+    )
+    simulated_target_system_prompt_template = SeedPrompt.from_yaml_with_required_parameters(
+        template_path=simulated_target_prompt_path,
+        required_parameters=["objective", "num_turns"],
+        error_message="Simulated target system prompt must have objective and num_turns parameters",
+    )
+    simulated_target_system_prompt = simulated_target_system_prompt_template.render_template_value(
+        objective=objective,
+        num_turns=num_turns,
+    )
+
+    # Create adversarial config for the simulation
+    adversarial_config = AttackAdversarialConfig(
+        target=adversarial_chat,
+        system_prompt_path=adversarial_chat_system_prompt_path,
+    )
+
+    # Create scoring config
+    scoring_config = AttackScoringConfig(
+        objective_scorer=objective_scorer,
+        use_score_as_feedback=False,  # Don't need feedback for last-turn-only scoring
+    )
+
+    # Create the RedTeamingAttack with simulated target and score_last_turn_only
+    attack = RedTeamingAttack(
+        objective_target=simulated_target,
+        attack_adversarial_config=adversarial_config,
+        attack_converter_config=attack_converter_config,
+        attack_scoring_config=scoring_config,
+        max_turns=num_turns,
+        score_last_turn_only=True,
+    )
+
+    # Set system prompt on simulated target before execution
+    # We need a unique conversation ID for this simulation
+    import uuid
+
+    simulation_conversation_id = str(uuid.uuid4())
+    simulated_target.set_system_prompt(
+        system_prompt=simulated_target_system_prompt,
+        conversation_id=simulation_conversation_id,
+        attack_identifier=attack.get_identifier(),
+        labels=memory_labels,
+    )
+
+    # Execute the simulated attack
+    logger.info(f"Generating {num_turns}-turn simulated conversation for objective: {objective[:50]}...")
+
+    # Create a system message to include in the result
+    system_message = Message.from_system_prompt(simulated_target_system_prompt)
+
+    # Execute the attack - note we're using the attack's own conversation ID, not our pre-set one
+    # So we need to prepend a system message with our prompt to ensure the target gets it
+    result = await attack.execute_async(
+        objective=objective,
+        prepended_conversation=[system_message],
+        memory_labels=memory_labels,
+    )
+
+    # Extract the conversation from memory
+    memory = CentralMemory.get_memory_instance()
+    conversation_messages = list(memory.get_conversation(conversation_id=result.conversation_id))
+
+    logger.info(
+        f"Generated simulated conversation with {len(conversation_messages)} messages "
+        f"(outcome: {result.outcome.name})"
+    )
+
+    return conversation_messages

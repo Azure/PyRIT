@@ -25,6 +25,7 @@ from pyrit.executor.attack.core import (
     AttackScoringConfig,
     AttackStrategy,
 )
+from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (
@@ -239,6 +240,56 @@ class _TreeOfAttacksNode:
         self.last_prompt_sent: Optional[str] = None
         self.last_response: Optional[str] = None
         self.error_message: Optional[str] = None
+
+    async def initialize_with_prepended_conversation_async(
+        self,
+        *,
+        prepended_conversation: List[Message],
+    ) -> None:
+        """
+        Initialize the node with a prepended conversation history.
+
+        This method replays an existing conversation to both the objective target and
+        adversarial chat conversations. This is useful when starting an attack from
+        an established context (e.g., role-play scenarios, simulated conversations).
+
+        For the objective target: Messages are replayed as-is to establish context.
+        For the adversarial chat: Roles are swapped (user↔assistant) since from the
+        adversarial chat's perspective, "user" messages are what it generated and
+        "assistant" messages are responses it received.
+
+        Args:
+            prepended_conversation (List[Message]): The conversation history to replay.
+                System messages are handled separately for each target.
+
+        Note:
+            - This should be called before `send_prompt_async` for first-level nodes
+            - Duplicated nodes inherit conversation history automatically via `duplicate()`
+        """
+        if not prepended_conversation:
+            return
+
+        conversation_manager = ConversationManager(attack_identifier=self._attack_id)
+
+        # Add to objective target conversation (handles system prompts and memory)
+        await conversation_manager.update_conversation_state_async(
+            conversation_id=self.objective_target_conversation_id,
+            target=self._objective_target,
+            prepended_conversation=prepended_conversation,
+        )
+
+        # Add to adversarial chat conversation (role-swapped)
+        # Note: adversarial chat gets its own system prompt later in _generate_first_turn_prompt_async
+        await conversation_manager.prepend_to_adversarial_chat_async(
+            adversarial_chat=self._adversarial_chat,
+            adversarial_chat_conversation_id=self.adversarial_chat_conversation_id,
+            prepended_conversation=prepended_conversation,
+            labels=self._memory_labels,
+        )
+
+        logger.debug(
+            f"Node {self.node_id}: Initialized with {len(prepended_conversation)} prepended messages"
+        )
 
     async def send_prompt_async(self, objective: str) -> None:
         """
@@ -1286,6 +1337,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Each node represents an independent attack path that will generate its own
         adversarial prompts. All first-level nodes are created as children of the root.
 
+        If prepended_conversation is provided in the context, it is replayed to each
+        first-level node to establish conversation context before the attack begins.
+
         Args:
             context (TAPAttackContext): The attack context containing configuration and state.
         """
@@ -1293,6 +1347,13 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         for i in range(self._tree_width):
             node = self._create_attack_node(context=context, parent_id=None)
+
+            # Initialize node with prepended conversation if provided
+            if context.prepended_conversation:
+                await node.initialize_with_prepended_conversation_async(
+                    prepended_conversation=context.prepended_conversation,
+                )
+
             context.nodes.append(node)
             context.tree_visualization.create_node("1: ", node.node_id, parent="root")
 

@@ -49,6 +49,7 @@ DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
 
 EXECUTOR_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "executors").resolve()
 EXECUTOR_RED_TEAM_PATH = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH, "red_teaming").resolve()
+EXECUTOR_SIMULATED_TARGET_PATH = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH, "simulated_target").resolve()
 CONVERTER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "prompt_converters").resolve()
 SCORER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "score").resolve()
 SCORER_CONTENT_CLASSIFIERS_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "content_classifiers").resolve()
@@ -81,4 +82,5 @@ PATHS_DICT = {
     "scorer_evals_path": SCORER_EVALS_PATH,
     "scorer_evals_harm_path": SCORER_EVALS_HARM_PATH,
     "scorer_evals_objective_path": SCORER_EVALS_OBJECTIVE_PATH,
+    "simulated_target_path": EXECUTOR_SIMULATED_TARGET_PATH,
 }
