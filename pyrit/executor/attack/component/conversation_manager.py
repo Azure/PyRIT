@@ -18,6 +18,93 @@ from pyrit.prompt_target.common.prompt_target import PromptTarget
 logger = logging.getLogger(__name__)
 
 
+def format_conversation_context(messages: List[Message]) -> str:
+    """
+    Format a list of messages into a context string for adversarial chat system prompts.
+
+    This function converts conversation history into a formatted string that can be used
+    by TAP and Crescendo attacks to provide context about prior conversation turns.
+
+    For text pieces, includes both original_value and converted_value (if different).
+    For non-text pieces (images, audio, etc.), uses prompt_metadata["context_description"]
+    if available, otherwise uses a placeholder like [Image] or [Audio].
+
+    Args:
+        messages (List[Message]): The conversation messages to format.
+
+    Returns:
+        str: A formatted string representing the conversation context.
+            Returns empty string if no messages provided.
+
+    Example output:
+        Turn 1:
+        User: How do I make a cake?
+        Assistant: Here's a simple recipe for making a cake...
+
+        Turn 2:
+        User: [Image - A photo of baking ingredients]
+        Assistant: I can see flour, eggs, and sugar in your image...
+    """
+    if not messages:
+        return ""
+
+    context_parts: List[str] = []
+    turn_number = 0
+
+    for message in messages:
+        piece = message.get_piece()
+
+        # Skip system messages - they're handled separately
+        if piece.role == "system":
+            continue
+
+        # Start a new turn when we see a user message
+        if piece.role == "user":
+            turn_number += 1
+            context_parts.append(f"Turn {turn_number}:")
+
+        # Format the piece content
+        content = _format_piece_content(piece)
+        role_label = "User" if piece.role == "user" else "Assistant"
+        context_parts.append(f"{role_label}: {content}")
+
+    return "\n".join(context_parts)
+
+
+def _format_piece_content(piece: MessagePiece) -> str:
+    """
+    Format a single message piece into a content string.
+
+    For text pieces, shows original and converted values (if different).
+    For non-text pieces, uses context_description metadata or a placeholder.
+
+    Args:
+        piece (MessagePiece): The message piece to format.
+
+    Returns:
+        str: The formatted content string.
+    """
+    data_type = piece.converted_value_data_type or piece.original_value_data_type
+
+    # For non-text pieces, use metadata description or placeholder
+    if data_type != "text":
+        # Check for context_description in metadata
+        if piece.prompt_metadata and "context_description" in piece.prompt_metadata:
+            description = piece.prompt_metadata["context_description"]
+            return f"[{data_type.capitalize()} - {description}]"
+        else:
+            return f"[{data_type.capitalize()}]"
+
+    # For text pieces, include both original and converted if different
+    original = piece.original_value
+    converted = piece.converted_value
+
+    if original != converted:
+        return f"{converted} (original: {original})"
+    else:
+        return converted
+
+
 @dataclass
 class ConversationState:
     """Container for conversation state data shared between attack components."""

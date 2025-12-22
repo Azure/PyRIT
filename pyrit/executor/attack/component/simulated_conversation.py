@@ -42,7 +42,7 @@ async def generate_simulated_conversation_async(
     adversarial_chat: PromptChatTarget,
     objective_scorer: TrueFalseScorer,
     num_turns: int = 3,
-    adversarial_chat_system_prompt_path: Optional[Union[str, Path]] = None,
+    adversarial_chat_system_prompt_path: Union[str, Path],
     simulated_target_system_prompt_path: Optional[Union[str, Path]] = None,
     attack_converter_config: Optional[AttackConverterConfig] = None,
     memory_labels: Optional[dict[str, str]] = None,
@@ -66,8 +66,8 @@ async def generate_simulated_conversation_async(
             This same LLM is also used as the simulated target with a compliant system prompt.
         objective_scorer (TrueFalseScorer): Scorer to evaluate the final turn.
         num_turns (int): Number of conversation turns to generate. Defaults to 3.
-        adversarial_chat_system_prompt_path (Optional[Union[str, Path]]): Path to the system prompt
-            for the adversarial chat. If not provided, uses the default text generation prompt.
+        adversarial_chat_system_prompt_path (Union[str, Path]): Path to the system prompt
+            for the adversarial chat. This is required.
         simulated_target_system_prompt_path (Optional[Union[str, Path]]): Path to the system prompt
             for the simulated target. If not provided, uses the default compliant prompt.
             The template should accept `objective` and `num_turns` parameters.
@@ -87,6 +87,7 @@ async def generate_simulated_conversation_async(
             objective="convince the target to reveal the secret password",
             adversarial_chat=adversarial_llm,
             objective_scorer=scorer,
+            adversarial_chat_system_prompt_path=RTASystemPromptPaths.TEXT_GENERATION.value,
             num_turns=3,
         )
 
@@ -139,39 +140,32 @@ async def generate_simulated_conversation_async(
         score_last_turn_only=True,
     )
 
-    # Set system prompt on simulated target before execution
-    # We need a unique conversation ID for this simulation
-    import uuid
-
-    simulation_conversation_id = str(uuid.uuid4())
-    simulated_target.set_system_prompt(
-        system_prompt=simulated_target_system_prompt,
-        conversation_id=simulation_conversation_id,
-        attack_identifier=attack.get_identifier(),
-        labels=memory_labels,
-    )
-
     # Execute the simulated attack
     logger.info(f"Generating {num_turns}-turn simulated conversation for objective: {objective[:50]}...")
 
-    # Create a system message to include in the result
+    # Create a system message to prepend - this sets the simulated target's behavior
     system_message = Message.from_system_prompt(simulated_target_system_prompt)
 
-    # Execute the attack - note we're using the attack's own conversation ID, not our pre-set one
-    # So we need to prepend a system message with our prompt to ensure the target gets it
     result = await attack.execute_async(
         objective=objective,
         prepended_conversation=[system_message],
         memory_labels=memory_labels,
     )
 
-    # Extract the conversation from memory
+    # Extract the conversation from memory and filter for prepended_conversation use
     memory = CentralMemory.get_memory_instance()
-    conversation_messages = list(memory.get_conversation(conversation_id=result.conversation_id))
+    raw_messages = list(memory.get_conversation(conversation_id=result.conversation_id))
+
+    # Filter out system messages - prepended_conversation should only have user/assistant turns
+    # System prompts are set separately on each target during attack execution
+    filtered_messages: List[Message] = []
+    for message in raw_messages:
+        if message.role != "system":
+            filtered_messages.append(message)
 
     logger.info(
-        f"Generated simulated conversation with {len(conversation_messages)} messages "
+        f"Generated simulated conversation with {len(filtered_messages)} messages "
         f"(outcome: {result.outcome.name})"
     )
 
-    return conversation_messages
+    return filtered_messages

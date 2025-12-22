@@ -11,7 +11,7 @@ from pyrit.executor.attack.component.simulated_conversation import (
     SimulatedTargetSystemPromptPaths,
     generate_simulated_conversation_async,
 )
-from pyrit.executor.attack import AttackConverterConfig
+from pyrit.executor.attack import AttackConverterConfig, RTASystemPromptPaths
 from pyrit.models import AttackOutcome, AttackResult, Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import TrueFalseScorer
@@ -34,6 +34,12 @@ def mock_objective_scorer() -> MagicMock:
     scorer.score_async = AsyncMock()
     scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test_module"}
     return scorer
+
+
+@pytest.fixture
+def adversarial_system_prompt_path() -> Path:
+    """Return a valid adversarial chat system prompt path for testing."""
+    return RTASystemPromptPaths.TEXT_GENERATION.value
 
 
 @pytest.fixture
@@ -88,6 +94,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
     ):
         """Test that zero num_turns raises ValueError."""
         with pytest.raises(ValueError, match="num_turns must be a positive integer"):
@@ -95,6 +102,7 @@ class TestGenerateSimulatedConversationAsync:
                 objective="Test objective",
                 adversarial_chat=mock_adversarial_chat,
                 objective_scorer=mock_objective_scorer,
+                adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                 num_turns=0,
             )
 
@@ -103,6 +111,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
     ):
         """Test that negative num_turns raises ValueError."""
         with pytest.raises(ValueError, match="num_turns must be a positive integer"):
@@ -110,6 +119,7 @@ class TestGenerateSimulatedConversationAsync:
                 objective="Test objective",
                 adversarial_chat=mock_adversarial_chat,
                 objective_scorer=mock_objective_scorer,
+                adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                 num_turns=-1,
             )
 
@@ -118,6 +128,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
         """Test that the same adversarial_chat is used as simulated target."""
@@ -149,6 +160,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                     num_turns=3,
                 )
 
@@ -162,6 +174,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
         """Test that the attack is created with score_last_turn_only=True."""
@@ -192,6 +205,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                     num_turns=3,
                 )
 
@@ -204,6 +218,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
         """Test that the attack is created with the specified num_turns as max_turns."""
@@ -234,6 +249,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                     num_turns=5,
                 )
 
@@ -246,6 +262,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
         """Test that the function returns the conversation from memory."""
@@ -278,6 +295,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                     num_turns=3,
                 )
 
@@ -288,13 +306,14 @@ class TestGenerateSimulatedConversationAsync:
                 assert result == sample_conversation
 
     @pytest.mark.asyncio
-    async def test_sets_system_prompt_on_simulated_target(
+    async def test_passes_system_prompt_via_prepended_conversation(
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
-        """Test that set_system_prompt is called on the simulated target (adversarial_chat)."""
+        """Test that the simulated target system prompt is passed via prepended_conversation."""
         with patch(
             "pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack"
         ) as mock_attack_class:
@@ -322,20 +341,24 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                     num_turns=3,
                 )
 
-                # Verify set_system_prompt was called on the simulated target (adversarial_chat)
-                mock_adversarial_chat.set_system_prompt.assert_called_once()
-                call_kwargs = mock_adversarial_chat.set_system_prompt.call_args.kwargs
-                assert "system_prompt" in call_kwargs
-                assert call_kwargs["attack_identifier"] is not None
+                # Verify execute_async was called with a system message in prepended_conversation
+                mock_attack.execute_async.assert_called_once()
+                call_kwargs = mock_attack.execute_async.call_args.kwargs
+                assert "prepended_conversation" in call_kwargs
+                prepended = call_kwargs["prepended_conversation"]
+                assert len(prepended) == 1
+                assert prepended[0].role == "system"
 
     @pytest.mark.asyncio
     async def test_passes_memory_labels_to_execute(
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
         """Test that memory_labels are passed to attack.execute_async."""
@@ -368,6 +391,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                     num_turns=3,
                     memory_labels=memory_labels,
                 )
@@ -381,6 +405,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
         """Test that attack_converter_config is passed to RedTeamingAttack."""
@@ -413,6 +438,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                     num_turns=3,
                     attack_converter_config=converter_config,
                 )
@@ -426,6 +452,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
         """Test that a system message is prepended when executing the attack."""
@@ -456,6 +483,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                     num_turns=3,
                 )
 
@@ -471,6 +499,7 @@ class TestGenerateSimulatedConversationAsync:
         self,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
         """Test that default num_turns is 3."""
@@ -502,6 +531,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
                 )
 
                 # Verify default max_turns is 3

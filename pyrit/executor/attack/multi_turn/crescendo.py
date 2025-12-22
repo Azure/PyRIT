@@ -20,6 +20,7 @@ from pyrit.executor.attack.component import (
     ConversationState,
     ObjectiveEvaluator,
 )
+from pyrit.executor.attack.component.conversation_manager import format_conversation_context
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -294,9 +295,15 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         context.memory_labels = combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels or {})
 
         # Set the system prompt for adversarial chat
+        # Include conversation_context if we have prepended conversation history
+        conversation_context = None
+        if context.prepended_conversation:
+            conversation_context = format_conversation_context(context.prepended_conversation)
+
         system_prompt = self._adversarial_chat_system_prompt_template.render_template_value(
             objective=context.objective,
             max_turns=self._max_turns,
+            conversation_context=conversation_context,
         )
 
         self._adversarial_chat.set_system_prompt(

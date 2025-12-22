@@ -249,7 +249,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         context.memory_labels = combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels or {})
 
         # set the system prompt for the adversarial chat
-        system_prompt = self._adversarial_chat_system_prompt_template.render_template_value(objective=context.objective)
+        # Pass max_turns as well for templates that need it (e.g., Crescendo prompts)
+        # Templates that don't use max_turns will simply ignore it
+        system_prompt = self._adversarial_chat_system_prompt_template.render_template_value(
+            objective=context.objective,
+            max_turns=self._max_turns,
+        )
         if not system_prompt:
             raise ValueError("Adversarial chat system prompt must be defined")
 

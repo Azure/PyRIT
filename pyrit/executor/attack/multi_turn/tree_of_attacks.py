@@ -26,6 +26,7 @@ from pyrit.executor.attack.core import (
     AttackStrategy,
 )
 from pyrit.executor.attack.component import ConversationManager
+from pyrit.executor.attack.component.conversation_manager import format_conversation_context
 from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (
@@ -241,6 +242,9 @@ class _TreeOfAttacksNode:
         self.last_response: Optional[str] = None
         self.error_message: Optional[str] = None
 
+        # Context from prepended conversation (for adversarial chat system prompt)
+        self._conversation_context: Optional[str] = None
+
     async def initialize_with_prepended_conversation_async(
         self,
         *,
@@ -286,6 +290,9 @@ class _TreeOfAttacksNode:
             prepended_conversation=prepended_conversation,
             labels=self._memory_labels,
         )
+
+        # Generate formatted context for adversarial chat system prompt
+        self._conversation_context = format_conversation_context(prepended_conversation)
 
         logger.debug(
             f"Node {self.node_id}: Initialized with {len(prepended_conversation)} prepended messages"
@@ -637,6 +644,9 @@ class _TreeOfAttacksNode:
             conversation_id=self.adversarial_chat_conversation_id
         )
 
+        # Copy conversation context for adversarial chat system prompt
+        duplicate_node._conversation_context = self._conversation_context
+
         logger.debug(f"Node {self.node_id}: Created duplicate node {duplicate_node.node_id}")
 
         return duplicate_node
@@ -717,8 +727,11 @@ class _TreeOfAttacksNode:
                 to generate the first attack prompt.
         """
         # Initialize system prompt for adversarial chat
+        # Include conversation_context if we have prepended conversation history
         system_prompt = self._adversarial_chat_system_seed_prompt.render_template_value(
-            objective=objective, desired_prefix=self._desired_response_prefix
+            objective=objective,
+            desired_prefix=self._desired_response_prefix,
+            conversation_context=self._conversation_context,
         )
 
         self._adversarial_chat.set_system_prompt(
