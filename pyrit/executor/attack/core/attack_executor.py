@@ -182,6 +182,77 @@ class AttackExecutor:
 
         return filtered
 
+    def _validate_execute_attack_params(
+        self,
+        *,
+        objectives: Sequence[str],
+        prepended_conversations: Optional[Sequence[Optional[List[Message]]]],
+        next_messages: Optional[Sequence[Optional[Message]]],
+        per_attack_params: Optional[Sequence[Dict[str, Any]]],
+    ) -> None:
+        """
+        Validate that list parameters match the length of objectives.
+
+        Args:
+            objectives: List of attack objectives.
+            prepended_conversations: Optional conversations to prepend.
+            next_messages: Optional messages to send.
+            per_attack_params: Optional per-objective parameters.
+
+        Raises:
+            ValueError: If any list parameter doesn't match objectives length.
+        """
+        if not objectives:
+            raise ValueError("At least one objective must be provided")
+
+        if prepended_conversations is not None and len(prepended_conversations) != len(objectives):
+            raise ValueError(
+                f"Number of prepended_conversations ({len(prepended_conversations)}) must match "
+                f"number of objectives ({len(objectives)})"
+            )
+
+        if next_messages is not None and len(next_messages) != len(objectives):
+            raise ValueError(
+                f"Number of next_messages ({len(next_messages)}) must match "
+                f"number of objectives ({len(objectives)})"
+            )
+
+        if per_attack_params is not None and len(per_attack_params) != len(objectives):
+            raise ValueError(
+                f"Number of per_attack_params ({len(per_attack_params)}) must match "
+                f"number of objectives ({len(objectives)})"
+            )
+
+    def _normalize_memory_labels(
+        self,
+        *,
+        memory_labels: Optional[Union[Dict[str, str], Sequence[Optional[Dict[str, str]]]]],
+        count: int,
+    ) -> List[Optional[Dict[str, str]]]:
+        """
+        Normalize memory_labels to a list matching the number of objectives.
+
+        Args:
+            memory_labels: Either a single dict (broadcast to all) or a list of dicts.
+            count: Number of objectives to match.
+
+        Returns:
+            List of memory label dicts, one per objective.
+
+        Raises:
+            ValueError: If memory_labels is a list with wrong length.
+        """
+        if memory_labels is None:
+            return [None] * count
+        elif isinstance(memory_labels, dict):
+            return [memory_labels] * count
+        else:
+            if len(memory_labels) != count:
+                raise ValueError(
+                    f"Number of memory_labels ({len(memory_labels)}) must match " f"number of objectives ({count})"
+                )
+            return list(memory_labels)
+
     async def execute_attack_async(
         self,
         *,
@@ -235,55 +306,18 @@ class AttackExecutor:
             ValueError: If list parameters don't match the length of objectives, or if
                 strict_param_matching is True and unsupported parameters are provided.
             BaseException: If return_partial_on_failure=False and any objective doesn't complete.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_attack_async(
-            ...     attack=red_teaming_attack,
-            ...     objectives=["objective 1", "objective 2"],
-            ...     memory_labels={"scenario": "test"},  # Applied to all
-            ...     max_turns=5,  # Broadcast param applied to all
-            ... )
-            >>> for result in results:
-            ...     print(result)
         """
-        if not objectives:
-            raise ValueError("At least one objective must be provided")
+        self._validate_execute_attack_params(
+            objectives=objectives,
+            prepended_conversations=prepended_conversations,
+            next_messages=next_messages,
+            per_attack_params=per_attack_params,
+        )
 
-        # Validate list lengths
-        if prepended_conversations is not None and len(prepended_conversations) != len(objectives):
-            raise ValueError(
-                f"Number of prepended_conversations ({len(prepended_conversations)}) must match "
-                f"number of objectives ({len(objectives)})"
-            )
-
-        if next_messages is not None and len(next_messages) != len(objectives):
-            raise ValueError(
-                f"Number of next_messages ({len(next_messages)}) must match "
-                f"number of objectives ({len(objectives)})"
-            )
-
-        if per_attack_params is not None and len(per_attack_params) != len(objectives):
-            raise ValueError(
-                f"Number of per_attack_params ({len(per_attack_params)}) must match "
-                f"number of objectives ({len(objectives)})"
-            )
-
-        # Handle memory_labels - can be single dict or list
-        memory_labels_list: List[Optional[Dict[str, str]]]
-        if memory_labels is None:
-            memory_labels_list = [None] * len(objectives)
-        elif isinstance(memory_labels, dict):
-            # Single dict - broadcast to all objectives
-            memory_labels_list = [memory_labels] * len(objectives)
-        else:
-            # List of dicts
-            if len(memory_labels) != len(objectives):
-                raise ValueError(
-                    f"Number of memory_labels ({len(memory_labels)}) must match "
-                    f"number of objectives ({len(objectives)})"
-                )
-            memory_labels_list = list(memory_labels)
+        memory_labels_list = self._normalize_memory_labels(
+            memory_labels=memory_labels,
+            count=len(objectives),
+        )
 
         semaphore = asyncio.Semaphore(self._max_concurrency)
 
@@ -296,7 +330,6 @@ class AttackExecutor:
         ) -> AttackStrategyResultT:
             async with semaphore:
                 # Build params for this execution
-                # Start with broadcast params, then merge per-objective params (per-objective takes precedence)
                 params = {
                     "objective": objective,
                     "prepended_conversation": prepended_conversation,
@@ -387,14 +420,6 @@ class AttackExecutor:
             ValueError: If any SeedGroup doesn't have an objective, or if memory_labels list
                 doesn't match seed_groups length.
             BaseException: If return_partial_on_failure=False and any objective doesn't complete.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> seed_groups = [SeedGroup(...), SeedGroup(...)]
-            >>> results = await executor.execute_attack_from_seed_groups_async(
-            ...     attack=prompt_sending_attack,
-            ...     seed_groups=seed_groups,
-            ... )
         """
         if not seed_groups:
             raise ValueError("At least one seed_group must be provided")
@@ -524,16 +549,6 @@ class AttackExecutor:
 
         Raises:
             BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_multi_objective_attack_async(
-            ...     attack=red_teaming_attack,
-            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ... )
-            >>> # Iterate directly over results
-            >>> for result in results:
-            ...     print(result)
         """
         logger.warning(
             "execute_multi_objective_attack_async is deprecated and will disappear in 0.13.0. "
@@ -599,14 +614,6 @@ class AttackExecutor:
         Raises:
             BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
             TypeError: If the attack strategy does not use SingleTurnAttackContext.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_single_turn_attacks_async(
-            ...     attack=single_turn_attack,
-            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ...     messages=[Message(...), Message(...)]
-            ... )
         """
         logger.warning(
             "execute_single_turn_attacks_async is deprecated and will disappear in 0.13.0. "
@@ -673,14 +680,6 @@ class AttackExecutor:
         Raises:
             BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
             TypeError: If the attack strategy does not use MultiTurnAttackContext.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_multi_turn_attacks_async(
-            ...     attack=multi_turn_attack,
-            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ...     messages=[Message(...), Message(...)]
-            ... )
         """
         logger.warning(
             "execute_multi_turn_attacks_async is deprecated and will disappear in 0.13.0. "
@@ -779,18 +778,6 @@ class AttackExecutor:
             AttributeError: If the context_template doesn't have required 'duplicate()' method
                 or 'objective' attribute.
             BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> context = MultiTurnAttackContext(max_turns=5, ...)
-            >>> results = await executor.execute_multi_objective_attack_with_context_async(
-            ...     attack=prompt_injection_attack,
-            ...     context_template=context,
-            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"]
-            ... )
-            >>> # Iterate directly over results
-            >>> for result in results:
-            ...     print(result)
         """
         logger.warning(
             "execute_multi_objective_attack_with_context_async is deprecated and will disappear in 0.13.0. "

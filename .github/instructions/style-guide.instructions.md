@@ -102,6 +102,7 @@ def process(self, data: str) -> str:
 - Document return types and values
 - Include "Raises" section when applicable
 - Use triple quotes even for single-line docstrings
+- Do not include examkple calls for how its used
 
 ```python
 def calculate_score(

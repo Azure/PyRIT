@@ -267,7 +267,7 @@ class TestScenarioInitialization2:
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         assert scenario._max_retries == 0
-        assert scenario._max_concurrency == 1
+        assert scenario._max_concurrency == 10
         assert scenario._memory_labels == {}
 
 
@@ -297,7 +297,7 @@ class TestScenarioExecution:
         # Verify all runs were executed with correct concurrency
         assert len(result.attack_results) == 3
         for run in mock_atomic_attacks:
-            run.run_async.assert_called_once_with(max_concurrency=1, return_partial_on_failure=True)
+            run.run_async.assert_called_once_with(max_concurrency=10, return_partial_on_failure=True)
 
         # Verify results are aggregated correctly by atomic attack name
         assert "attack_run_1" in result.attack_results

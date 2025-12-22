@@ -202,7 +202,7 @@ class SeedGroup(YamlLoadable):
         Returns:
             Optional[List[Message]]: Messages for prior turns, or None if single-turn.
         """
-        unique_sequences = sorted({prompt.sequence for prompt in self.prompts if prompt.sequence is not None})
+        unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
 
         if len(unique_sequences) <= 1:
             return None
@@ -229,7 +229,7 @@ class SeedGroup(YamlLoadable):
         if not self.prompts:
             return None
 
-        unique_sequences = sorted({prompt.sequence for prompt in self.prompts if prompt.sequence is not None})
+        unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
 
         if len(unique_sequences) > 1:
             # Multiple turns - get only the last sequence
