@@ -11,7 +11,8 @@
   "customizations": {
     "vscode": {
       "settings": {
-        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/opt/pyrit-dev/bin/python",
         "python.analysis.extraPaths": [
           "/workspace"
         ],
@@ -32,7 +33,7 @@
           "pyrit/**"
         ],
         "python.analysis.exclude": [
-          "/opt/venv/**",
+          "/opt/pyrit-dev/**",
           "**/.venv/**",
           "**/site-packages/**",
           "**/doc/**",

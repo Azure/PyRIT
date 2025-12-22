@@ -38,8 +38,8 @@ if [ -f "$HASH_FILE" ]; then
     chmod 666 "$HASH_FILE"
 fi
 
-uv venv /opt/venv --python 3.11 \
-    && . /opt/venv/bin/activate
+# Activate the uv venv created in the Dockerfile
+source /opt/pyrit-dev/bin/activate
 
 # Compute current hash
 CURRENT_HASH=$(sha256sum /workspace/pyproject.toml | awk '{print $1}')
