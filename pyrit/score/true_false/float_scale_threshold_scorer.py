@@ -44,7 +44,18 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         super().__init__(validator=ScorerPromptValidator())
 
         if threshold <= 0 or threshold > 1:
-            raise ValueError("The threshold must be between 0 (exclusive) and 1 (inclusive).")
+            raise ValueError("The threshold must be between 0 and 1")
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            sub_scorers=[self._scorer],
+            score_aggregator=self._score_aggregator.__name__,
+            scorer_specific_params={
+                "threshold": self._threshold,
+                "float_scale_aggregator": self._float_scale_aggregator.__name__,
+            },
+        )
 
     async def _score_async(
         self,
@@ -138,13 +149,4 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         Raises:
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
-        raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-
-    def _get_sub_identifier(self):
-        """
-        Return the identifier of the underlying float scale scorer.
-
-        Returns:
-            dict: The identifier dictionary of the wrapped scorer.
-        """
-        return self._scorer.get_identifier()
+        raise NotImplementedError("FloatScaleThresholdScorer does not support piecewise scoring.")

@@ -55,7 +55,18 @@ class AzureBlobStorageTarget(PromptTarget):
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
+        """
+        Initialize the Azure Blob Storage target.
 
+        Args:
+            container_url (str, Optional): The Azure Storage container URL.
+                Defaults to the AZURE_STORAGE_ACCOUNT_CONTAINER_URL environment variable.
+            sas_token (str, Optional): The SAS token for authentication.
+                Defaults to the AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable.
+            blob_content_type (SupportedContentType): The content type for blobs.
+                Defaults to PLAIN_TEXT.
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+        """
         self._blob_content_type: str = blob_content_type.value
 
         self._container_url: str = default_values.get_required_value(
@@ -69,7 +80,7 @@ class AzureBlobStorageTarget(PromptTarget):
 
     async def _create_container_client_async(self) -> None:
         """
-        Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
+        Create an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
         for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication.
         """
@@ -126,8 +137,13 @@ class AzureBlobStorageTarget(PromptTarget):
                 logger.exception(msg=f"An unexpected error occurred: {exc}")
                 raise
 
-    def _parse_url(self):
-        """Parses the Azure Storage Blob URL to extract components."""
+    def _parse_url(self) -> tuple[str, str]:
+        """
+        Parse the Azure Storage Blob URL to extract components.
+
+        Returns:
+            tuple: A tuple containing the container URL and blob prefix.
+        """
         parsed_url = urlparse(self._container_url)
         path_parts = parsed_url.path.split("/")
         container_name = path_parts[1]
@@ -142,9 +158,7 @@ class AzureBlobStorageTarget(PromptTarget):
         to the provided storage container.
 
         Args:
-            normalized_prompt (str): A normalized prompt to be sent to the prompt target.
-            conversation_id (str): The ID of the conversation.
-            normalizer_id (str): ID provided by the prompt normalizer.
+            message (Message): A Message to be sent to the target.
 
         Returns:
             list[Message]: A list containing the response with the Blob URL.

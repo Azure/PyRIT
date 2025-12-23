@@ -331,7 +331,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
         with pytest.raises(EmptyResponseException):
             await target.send_prompt_async(message=message)
 
-        assert target._async_client.responses.create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert target._async_client.responses.create.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -472,7 +473,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
         with pytest.raises(EmptyResponseException):
             await target.send_prompt_async(message=message)
 
-        assert target._async_client.responses.create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert target._async_client.responses.create.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -490,8 +492,8 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResp
     # Our code converts RateLimitError to RateLimitException, which has retry logic
     with pytest.raises(RateLimitException):
         await target.send_prompt_async(message=message)
-        # The retry decorator will call it multiple times before giving up
-        assert target._async_client.responses.create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert target._async_client.responses.create.call_count == 2
 
 
 @pytest.mark.asyncio

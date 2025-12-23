@@ -38,6 +38,15 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAITarget(PromptChatTarget):
+    """
+    Abstract base class for OpenAI-based prompt targets.
+
+    This class provides common functionality for interacting with OpenAI API
+    endpoints, handling authentication, rate limiting, and request/response processing.
+
+    Read more about the various models here:
+    https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
+    """
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
@@ -58,11 +67,7 @@ class OpenAITarget(PromptChatTarget):
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
         """
-        Abstract class that initializes an Azure or non-Azure OpenAI chat target.
-
-        Read more about the various models here:
-        https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
-
+        Initialize an instance of OpenAITarget.
 
         Args:
             model_name (str, Optional): The name of the model.
@@ -365,7 +370,10 @@ class OpenAITarget(PromptChatTarget):
 
         Raises:
             RateLimitException: For 429 rate limit errors.
-            Various OpenAI SDK exceptions: For non-recoverable errors.
+            APIStatusError: For other API status errors.
+            APITimeoutError: For transient infrastructure errors.
+            APIConnectionError: For transient infrastructure errors.
+            AuthenticationError: For authentication failures.
         """
         try:
             # Execute the API call
@@ -527,7 +535,7 @@ class OpenAITarget(PromptChatTarget):
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:
         """
-        Sets deployment_environment_variable, endpoint_environment_variable,
+        Set deployment_environment_variable, endpoint_environment_variable,
         and api_key_environment_variable which are read from .env file.
         """
         raise NotImplementedError

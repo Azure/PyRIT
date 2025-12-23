@@ -8,6 +8,7 @@ from typing import Dict, Optional, Union
 
 import yaml
 
+from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_LIKERT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -57,13 +58,20 @@ class SelfAskLikertScorer(FloatScaleScorer):
         """
         super().__init__(validator=validator or self._default_validator)
 
-        likert_scale_path = self._verify_and_resolve_path(likert_scale_path)
-
         self._prompt_target = chat_target
 
-        self.set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
+        likert_scale_path = verify_and_resolve_path(likert_scale_path)
 
-    def set_likert_scale_system_prompt(self, likert_scale_path: Path):
+        self._set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            system_prompt_template=self._system_prompt,
+            prompt_target=self._prompt_target,
+        )
+
+    def _set_likert_scale_system_prompt(self, likert_scale_path: Path):
         """
         Set the Likert scale to use for scoring.
 
@@ -80,14 +88,14 @@ class SelfAskLikertScorer(FloatScaleScorer):
         else:
             raise ValueError(f"Improperly formatted likert scale yaml file. Missing category in {likert_scale_path}.")
 
-        likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
+        likert_scale_str = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
         self._scoring_instructions_template = SeedPrompt.from_yaml_file(
             SCORER_LIKERT_PATH / "likert_system_prompt.yaml"
         )
 
         self._system_prompt = self._scoring_instructions_template.render_template_value(
-            likert_scale=likert_scale, category=self._score_category
+            likert_scale=likert_scale_str, category=self._score_category
         )
 
     def _likert_scale_description_to_string(self, descriptions: list[Dict[str, str]]) -> str:
