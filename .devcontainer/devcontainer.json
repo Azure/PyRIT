@@ -68,7 +68,7 @@
           "**/build": true,
           "**/__pycache__": true
         },
-        "explorer.autoReveal": false,
+        "explorer.autoReveal": true,
         "files.maxMemoryForLargeFilesMB": 4096,
         "files.useExperimentalFileWatcher": true,
         "git.showUntrackedFiles": true

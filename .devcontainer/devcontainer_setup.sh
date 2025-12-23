@@ -2,6 +2,7 @@
 set -e
 
 MYPY_CACHE="/workspace/.mypy_cache"
+VIRTUAL_ENV="/opt/pyrit-dev"
 # Create the mypy cache directory if it doesn't exist
 if [ ! -d "$MYPY_CACHE" ]; then
     echo "Creating mypy cache directory..."
@@ -43,11 +44,13 @@ source /opt/pyrit-dev/bin/activate
 
 # Compute current hash
 CURRENT_HASH=$(sha256sum /workspace/pyproject.toml | awk '{print $1}')
+VIRTUAL_ENV=/opt/pyrit-dev
 
 # Check if hash file exists and if the hash has changed
 if [ ! -f "$HASH_FILE" ] || [ "$(cat $HASH_FILE)" != "$CURRENT_HASH" ]; then
     echo "📦 pyproject.toml has changed, installing environment..."
 
+    VIRTUAL_ENV=/opt/pyrit-dev
     # Install dependencies
     uv pip install ipykernel
     uv pip install -e ".[dev,all]"

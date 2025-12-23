@@ -3,6 +3,7 @@ FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 # Makes installation faster
 ENV UV_COMPILE_BYTECODE=1
+ENV VIRTUAL_ENV="/opt/pyrit-dev"
 
 SHELL ["/bin/bash", "-c"]
 
