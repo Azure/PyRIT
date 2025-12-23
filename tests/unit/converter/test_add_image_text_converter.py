@@ -127,4 +127,5 @@ async def test_add_image_text_converter_equal_to_add_text_image(
     os.remove(converted_image.output_text)
     if os.path.exists(converted_text_image.output_text):
         os.remove(converted_text_image.output_text)
-    os.remove("test.png")
+    if os.path.exists("test.png"):
+        os.remove("test.png")

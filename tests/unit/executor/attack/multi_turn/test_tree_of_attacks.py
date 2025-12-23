@@ -680,6 +680,56 @@ class TestEndToEndExecution:
     """Tests for end-to-end execution using execute_async."""
 
     @pytest.mark.asyncio
+    async def test_execute_async_with_message_uses_it_for_root_node(self, attack_builder, helpers):
+        """Test that providing a message parameter uses it for the root node prompt."""
+        attack = (
+            attack_builder.with_default_mocks()
+            .with_tree_params(tree_width=2, tree_depth=1)
+            .with_prompt_normalizer()
+            .build()
+        )
+
+        # Mock seed prompt loading
+        helpers.mock_prompt_loading(attack)
+
+        # Custom message to use for root node
+        custom_message = Message.from_prompt(prompt="Custom root prompt", role="user")
+
+        # Mock the tree execution to verify message was used
+        mock_result = TAPAttackResult(
+            conversation_id="test_conv_id",
+            objective="Test objective",
+            attack_identifier=attack.get_identifier(),
+            last_response=None,
+            last_score=helpers.create_score(0.5),
+            executed_turns=1,
+            execution_time_ms=100,
+            outcome=AttackOutcome.FAILURE,
+            outcome_reason="Test",
+        )
+        mock_result.tree_visualization = Tree()
+        mock_result.nodes_explored = 1
+        mock_result.nodes_pruned = 0
+        mock_result.max_depth_reached = 1
+        mock_result.auxiliary_scores_summary = {}
+
+        with patch.object(attack, "_perform_async", return_value=mock_result) as mock_perform:
+            with patch.object(attack._memory, "get_conversation", return_value=[]):
+                with patch.object(attack._memory, "get_message_pieces", return_value=[]):
+                    with patch.object(attack._memory, "add_attack_results_to_memory", return_value=None):
+                        result = await attack.execute_async(
+                            objective="Test objective",
+                            next_message=custom_message,
+                            memory_labels={"test": "label"},
+                        )
+
+        # Verify perform_async was called and context had the message
+        assert mock_perform.called
+        context = mock_perform.call_args.kwargs["context"]
+        assert context.next_message == custom_message
+        assert isinstance(result, TAPAttackResult)
+
+    @pytest.mark.asyncio
     async def test_execute_async_success_flow(self, attack_builder, helpers):
         """Test complete successful attack flow through execute_async."""
         attack = (

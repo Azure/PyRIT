@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -96,7 +95,8 @@ async def test_self_ask_scorer_bad_json_exception_retries(patch_central_database
     with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskTrueFalseScorer"):
         await scorer.score_text_async("this has no bullying")
 
-    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
+    # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+    assert chat_target.send_prompt_async.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -123,4 +123,53 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
     with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskTrueFalseScorer"):
         await scorer.score_text_async("this has no bullying")
 
-    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
+    # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+    assert chat_target.send_prompt_async.call_count == 2
+
+
+def test_self_ask_true_false_scorer_identifier_has_system_prompt_template(patch_central_database):
+    """Test that scorer_identifier includes system_prompt_template."""
+    chat_target = MagicMock()
+
+    scorer = SelfAskTrueFalseScorer(
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+    )
+
+    # Access scorer_identifier to trigger lazy build
+    sid = scorer.scorer_identifier
+
+    # Should have system_prompt_template set
+    assert sid.system_prompt_template is not None
+    assert len(sid.system_prompt_template) > 0
+
+
+def test_self_ask_true_false_get_identifier_type(patch_central_database):
+    """Test that get_identifier returns correct __type__."""
+    chat_target = MagicMock()
+
+    scorer = SelfAskTrueFalseScorer(
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+    )
+
+    identifier = scorer.get_identifier()
+
+    assert identifier["__type__"] == "SelfAskTrueFalseScorer"
+    assert "hash" in identifier
+    assert "system_prompt_template" in identifier
+
+
+def test_self_ask_true_false_get_identifier_long_prompt_hashed(patch_central_database):
+    """Test that long system prompts are hashed in get_identifier."""
+    chat_target = MagicMock()
+
+    scorer = SelfAskTrueFalseScorer(
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+    )
+
+    identifier = scorer.get_identifier()
+
+    # The GROUNDED system prompt is long (>100 chars), so it should be hashed
+    sys_prompt_in_id = identifier["system_prompt_template"]
+    if sys_prompt_in_id:
+        # If it's hashed, it will start with sha256:
+        assert sys_prompt_in_id.startswith("sha256:") or len(sys_prompt_in_id) <= 100

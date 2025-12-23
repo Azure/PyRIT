@@ -27,8 +27,13 @@ class MockScorer(TrueFalseScorer):
         self.scorer_type = "true_false"
         self._score_value = score_value
         self._score_rationale = score_rationale
-        self._validator = MagicMock()
         self.aggregator = aggregator
+        # Call super().__init__() to properly initialize the scorer including _scorer_identifier
+        super().__init__(validator=MagicMock())
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this mock scorer."""
+        self._set_scorer_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -141,6 +146,9 @@ def test_composite_scorer_invalid_scorer_type():
     class InvalidScorer(FloatScaleScorer):
         def __init__(self):
             self._validator = MagicMock()
+
+        def _build_scorer_identifier(self) -> None:
+            self._set_scorer_identifier()
 
         async def _score_piece_async(
             self, message_piece: MessagePiece, *, objective: Optional[str] = None

@@ -52,6 +52,13 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
         self._scorers = scorers
 
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_scorer_identifier(
+            sub_scorers=self._scorers,
+            score_aggregator=self._score_aggregator.__name__,
+        )
+
     async def _score_async(
         self,
         message: Message,
@@ -124,12 +131,3 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-
-    def _get_sub_identifier(self):
-        """
-        Return the identifiers of all constituent scorers.
-
-        Returns:
-            list[dict]: A list of identifier dictionaries from all wrapped scorers.
-        """
-        return [scorer.get_identifier() for scorer in self._scorers]

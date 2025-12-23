@@ -1,23 +1,4 @@
-# Install PyRIT Library
-
-## Choose Your Installation Method
-
-PyRIT offers two installation options for users:
-
-### Option 1: Docker (Recommended for Quick Start)
-
-If you want to get started quickly without setting up a Python environment, use our pre-configured Docker container. See the [Docker Installation Guide](./1b_install_docker.md) for complete instructions for running PyRIT in Docker with JupyterLab
-- Pre-installed PyRIT with all dependencies
-- No Python environment setup required
-- Works on Windows, macOS, and Linux
-
-**Use Docker if you:**
-- Want to get started immediately
-- Prefer not to manage Python environments
-- Want a consistent, isolated environment
-- Plan to use JupyterLab for interactive work
-
-### Option 2: Local Installation with Pip/Conda
+# Install PyRIT with Conda
 
 For a traditional Python installation on your local machine, follow the instructions below.
 
@@ -68,4 +49,3 @@ Notebooks and your PyRIT installation must be on the same version. This pip inst
    - This website documentation shows the latest development version (`main` branch).
 
 3. **If you installed from source:** The notebooks in your cloned repository will already match your code version.
-```

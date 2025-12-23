@@ -47,6 +47,7 @@ from pyrit.score.scorer_evaluation.scorer_evaluator import (
     ScorerEvaluator,
     ScorerMetrics,
 )
+from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
@@ -95,6 +96,7 @@ __all__ = [
     "PromptShieldScorer",
     "QuestionAnswerScorer",
     "Scorer",
+    "ScorerIdentifier",
     "ScorerEvaluator",
     "ScorerMetrics",
     "ScorerPromptValidator",
