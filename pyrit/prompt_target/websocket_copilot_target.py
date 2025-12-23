@@ -135,7 +135,7 @@ class WebSocketCopilotTarget(PromptTarget):
         """
         try:
             # https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#json-encoding
-            message = message = raw_message.split("\x1e")[0]  # record separator
+            message = raw_message.split("\x1e")[0]  # record separator
             if not message:
                 return (-1, "", {})
 
