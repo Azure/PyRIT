@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, MutableSequence, Optional
+from typing import Any, Dict, MutableSequence, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -13,6 +13,7 @@ from pyrit.exceptions import (
 from pyrit.models import (
     ChatMessage,
     ChatMessageListDictContent,
+    JsonResponseConfig,
     Message,
     MessagePiece,
     construct_response_from_request,
@@ -182,8 +183,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
-
-        is_json_response = self.is_response_format_json(message_piece)
+        json_config = self.get_json_response_config(message_piece=message_piece)
 
         # Get conversation from memory and append the current message
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
@@ -191,7 +191,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {message}")
 
-        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+        body = await self._construct_request_body(conversation=conversation, json_config=json_config)
 
         # Use unified error handling - automatically detects ChatCompletion and validates
         response = await self._handle_openai_request(
@@ -389,8 +389,11 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
+    ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
+        response_format = self._build_response_format(json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -404,7 +407,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             "seed": self._seed,
             "n": self._n,
             "messages": messages,
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "response_format": response_format,
         }
 
         if self._extra_body_parameters:
@@ -432,3 +435,19 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
+
+    def _build_response_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+
+        if json_config.schema:
+            return {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
+                },
+            }
+
+        return {"type": "json_object"}

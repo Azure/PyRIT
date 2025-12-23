@@ -21,6 +21,7 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import (
+    JsonResponseConfig,
     Message,
     MessagePiece,
     PromptDataType,
@@ -315,7 +316,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         return input_items
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
+    ) -> dict:
         """
         Construct the request body to send to the Responses API.
 
@@ -324,12 +327,14 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         Args:
             conversation: The full conversation history.
-            is_json_response: Whether the response should be formatted as JSON.
+            json_config: Specification for JSON formatting.
 
         Returns:
             dict: The request body to send to the Responses API.
         """
         input_items = await self._build_input_for_multi_modal_async(conversation)
+
+        text_format = self._build_text_format(json_config=json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -339,7 +344,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             "stream": False,
             "input": input_items,
             # Correct JSON response format per Responses API
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "text": text_format,
         }
 
         if self._extra_body_parameters:
@@ -347,6 +352,23 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
+
+    def _build_text_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+
+        if json_config.schema:
+            return {
+                "format": {
+                    "type": "json_schema",
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
+                }
+            }
+
+        logger.info("Using json_object format without schema - consider providing a schema for better results")
+        return {"format": {"type": "json_object"}}
 
     def _check_content_filter(self, response: Any) -> bool:
         """
@@ -445,7 +467,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
-        is_json_response = self.is_response_format_json(message_piece)
+        json_config = JsonResponseConfig(enabled=False)
+        if message.message_pieces:
+            last_piece = message.message_pieces[-1]
+            json_config = self.get_json_response_config(message_piece=last_piece)
 
         # Get full conversation history from memory and append the current message
         conversation: MutableSequence[Message] = self._memory.get_conversation(
@@ -462,7 +487,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         while True:
             logger.info(f"Sending conversation with {len(conversation)} messages to the prompt target")
 
-            body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+            body = await self._construct_request_body(conversation=conversation, json_config=json_config)
 
             # Use unified error handling - automatically detects Response and validates
             result = await self._handle_openai_request(
