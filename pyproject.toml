@@ -175,6 +175,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["pyrit", "pyrit.*"]
 
+[tool.setuptools.package-data]
+pyrit = ["py.typed"]
+
 [tool.jupytext]
 formats = "ipynb,py:percent"
 
