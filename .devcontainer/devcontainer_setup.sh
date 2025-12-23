@@ -38,6 +38,9 @@ if [ -f "$HASH_FILE" ]; then
     chmod 666 "$HASH_FILE"
 fi
 
+# Activate the uv venv created in the Dockerfile
+source /opt/pyrit-dev/bin/activate
+
 # Compute current hash
 CURRENT_HASH=$(sha256sum /workspace/pyproject.toml | awk '{print $1}')
 
@@ -46,8 +49,8 @@ if [ ! -f "$HASH_FILE" ] || [ "$(cat $HASH_FILE)" != "$CURRENT_HASH" ]; then
     echo "📦 pyproject.toml has changed, installing environment..."
 
     # Install dependencies
-    uv sync --extra dev --extra all
-    uv add ipykernel
+    uv pip install ipykernel
+    uv pip install -e ".[dev,all]"
 
     # Save the new hash
     echo "$CURRENT_HASH" > "$HASH_FILE"
