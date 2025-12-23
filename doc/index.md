@@ -48,8 +48,8 @@ Get started immediately with a pre-configured environment:
 
 :::
 
-:::{grid-item-card} 🐍 Local Pip/Conda Installation
-:link: setup/1a_install_conda
+:::{grid-item-card} 🐍 Local Pip/uv Installation
+:link: setup/1a_install_uv
 :shadow: md
 :class-header: bg-light
 :link-type: doc
@@ -94,8 +94,8 @@ Standardized development environment:
 
 :::
 
-:::{grid-item-card} 🐍 Local Conda Development
-:link: contributing/1a_install_conda
+:::{grid-item-card} 🐍 Local uv Development
+:link: contributing/1a_install_uv
 :shadow: md
 :class-header: bg-light
 :link-type: doc

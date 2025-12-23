@@ -7,6 +7,8 @@ from typing import Type, TypeVar, Union
 
 import yaml
 
+from pyrit.common.utils import verify_and_resolve_path
+
 T = TypeVar("T", bound="YamlLoadable")
 
 
@@ -30,9 +32,7 @@ class YamlLoadable(abc.ABC):
             FileNotFoundError: If the input YAML file path does not exist.
             ValueError: If the YAML file is invalid.
         """
-        file = Path(file)
-        if not file.exists():
-            raise FileNotFoundError(f"File '{file}' does not exist.")
+        file = verify_and_resolve_path(file)
         try:
             yaml_data = yaml.safe_load(file.read_text("utf-8"))
         except yaml.YAMLError as exc:

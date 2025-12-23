@@ -1,21 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import Message, MessagePiece
-from pyrit.prompt_converter import (
+from pyrit.executor.promptgen.fuzzer import (
     FuzzerCrossOverConverter,
     FuzzerExpandConverter,
     FuzzerRephraseConverter,
     FuzzerShortenConverter,
     FuzzerSimilarConverter,
 )
+from pyrit.models import Message, MessagePiece
 
 
 @pytest.mark.parametrize(
@@ -111,8 +110,8 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
 
         with pytest.raises(InvalidJsonException):
             await converter.convert_async(prompt="testing", input_type="text")
-            assert int(os.getenv("RETRY_MAX_NUM_ATTEMPTS")) == 2
-            assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+            # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+            assert mock_create.call_count == 2
 
 
 @pytest.mark.parametrize(

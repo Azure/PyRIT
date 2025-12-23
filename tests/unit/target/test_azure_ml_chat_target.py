@@ -277,7 +277,8 @@ async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: A
 
     with pytest.raises(RateLimitError):
         await aml_online_chat.send_prompt_async(message=message)
-        assert mock_complete_chat_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert mock_complete_chat_async.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -293,7 +294,8 @@ async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureML
 
     with pytest.raises(EmptyResponseException):
         await aml_online_chat.send_prompt_async(message=message)
-        assert mock_complete_chat_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert mock_complete_chat_async.call_count == 2
 
 
 def test_is_json_response_supported(aml_online_chat: AzureMLChatTarget):

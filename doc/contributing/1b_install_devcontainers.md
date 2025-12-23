@@ -15,7 +15,7 @@ DevContainers provide a pre-configured development environment for PyRIT that en
 - Prefer not to manage Python environments manually
 - Need all development tools and extensions pre-installed
 
-❌ **Consider [local installation](./1a_install_conda.md) if you:**
+❌ **Consider [local installation](./1a_install_uv.md) if you:**
 - Use a different IDE or editor
 - Prefer full control over your development environment
 - Need to customize your setup beyond what DevContainers offer

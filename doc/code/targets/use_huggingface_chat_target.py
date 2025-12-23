@@ -102,9 +102,3 @@ if model_times[model_id] is not None:
     print(f"{model_id}: {model_times[model_id]:.2f} seconds")
 else:
     print(f"{model_id}: Error occurred, no average time calculated.")
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

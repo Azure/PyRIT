@@ -23,6 +23,7 @@ from pyrit.executor.promptgen.core.prompt_generator_strategy import (
     PromptGeneratorStrategyContext,
     PromptGeneratorStrategyResult,
 )
+from pyrit.executor.promptgen.fuzzer.fuzzer_converter_base import FuzzerConverter
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -30,7 +31,6 @@ from pyrit.models import (
     SeedGroup,
     SeedPrompt,
 )
-from pyrit.prompt_converter import FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import FloatScaleThresholdScorer, Scorer, SelfAskScaleScorer
@@ -984,8 +984,10 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         requests: List[NormalizerRequest] = []
 
         for prompt in prompts:
+            seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")])
+            decomposed = seed_group.to_attack_parameters()
             request = NormalizerRequest(
-                seed_group=SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")]),
+                message=decomposed.current_turn_message,
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
             )

@@ -844,9 +844,9 @@ def test_to_attack_parameters_single_turn_no_objective():
     assert isinstance(result, DecomposedSeedGroup)
     assert result.objective is None
     assert result.prepended_conversation is None
-    assert result.current_turn_seed_group is not None
-    assert len(result.current_turn_seed_group.prompts) == 1
-    assert result.current_turn_seed_group.prompts[0].value == "Hello"
+    assert result.current_turn_message is not None
+    assert len(result.current_turn_message.message_pieces) == 1
+    assert result.current_turn_message.get_value() == "Hello"
 
 
 def test_to_attack_parameters_single_turn_with_objective():
@@ -860,9 +860,9 @@ def test_to_attack_parameters_single_turn_with_objective():
     assert isinstance(result, DecomposedSeedGroup)
     assert result.objective == "Test objective"
     assert result.prepended_conversation is None
-    assert result.current_turn_seed_group is not None
-    assert len(result.current_turn_seed_group.prompts) == 1
-    assert result.current_turn_seed_group.prompts[0].value == "Hello"
+    assert result.current_turn_message is not None
+    assert len(result.current_turn_message.message_pieces) == 1
+    assert result.current_turn_message.get_value() == "Hello"
 
 
 def test_to_attack_parameters_multi_turn_no_objective():
@@ -882,9 +882,9 @@ def test_to_attack_parameters_multi_turn_no_objective():
     assert result.prepended_conversation[0].role == "user"
     assert result.prepended_conversation[1].get_value() == "Turn 2"
     assert result.prepended_conversation[1].role == "assistant"
-    assert result.current_turn_seed_group is not None
-    assert len(result.current_turn_seed_group.prompts) == 1
-    assert result.current_turn_seed_group.prompts[0].value == "Turn 3"
+    assert result.current_turn_message is not None
+    assert len(result.current_turn_message.message_pieces) == 1
+    assert result.current_turn_message.get_value() == "Turn 3"
 
 
 def test_to_attack_parameters_multi_turn_with_objective():
@@ -901,8 +901,8 @@ def test_to_attack_parameters_multi_turn_with_objective():
     assert result.objective == "Multi-turn objective"
     assert result.prepended_conversation is not None
     assert len(result.prepended_conversation) == 2
-    assert result.current_turn_seed_group is not None
-    assert len(result.current_turn_seed_group.prompts) == 1
+    assert result.current_turn_message is not None
+    assert len(result.current_turn_message.message_pieces) == 1
 
 
 def test_to_attack_parameters_multi_part_single_turn():
@@ -916,8 +916,8 @@ def test_to_attack_parameters_multi_part_single_turn():
     assert isinstance(result, DecomposedSeedGroup)
     assert result.objective is None
     assert result.prepended_conversation is None
-    assert result.current_turn_seed_group is not None
-    assert len(result.current_turn_seed_group.prompts) == 2
+    assert result.current_turn_message is not None
+    assert len(result.current_turn_message.message_pieces) == 2
 
 
 def test_to_attack_parameters_multi_part_last_turn():
@@ -933,10 +933,10 @@ def test_to_attack_parameters_multi_part_last_turn():
     assert result.prepended_conversation is not None
     assert len(result.prepended_conversation) == 1
     assert result.prepended_conversation[0].get_value() == "Turn 1"
-    assert result.current_turn_seed_group is not None
-    assert len(result.current_turn_seed_group.prompts) == 2
-    assert result.current_turn_seed_group.prompts[0].value == "Turn 2 Part 1"
-    assert result.current_turn_seed_group.prompts[1].value == "Turn 2 Part 2"
+    assert result.current_turn_message is not None
+    assert len(result.current_turn_message.message_pieces) == 2
+    assert result.current_turn_message.message_pieces[0].converted_value == "Turn 2 Part 1"
+    assert result.current_turn_message.message_pieces[1].converted_value == "Turn 2 Part 2"
 
 
 def test_to_attack_parameters_preserves_prompt_group_id():
@@ -950,7 +950,7 @@ def test_to_attack_parameters_preserves_prompt_group_id():
 
     # Check that the conversation_id matches the group_id
     assert result.prepended_conversation[0].conversation_id == str(group_id)
-    assert result.current_turn_seed_group.prompts[0].prompt_group_id == group_id
+    assert result.current_turn_message.conversation_id == str(group_id)
 
 
 def test_to_attack_parameters_message_pieces_structure():
@@ -962,10 +962,10 @@ def test_to_attack_parameters_message_pieces_structure():
     result = group.to_attack_parameters()
 
     assert result.prepended_conversation is None
-    assert result.current_turn_seed_group is not None
+    assert result.current_turn_message is not None
 
-    # Current turn should have both prompts
-    current_prompts = result.current_turn_seed_group.prompts
-    assert len(current_prompts) == 2
-    assert current_prompts[0].data_type == "text"
-    assert current_prompts[1].data_type == "image_path"
+    # Current turn should have both message pieces
+    current_pieces = result.current_turn_message.message_pieces
+    assert len(current_pieces) == 2
+    assert current_pieces[0].converted_value_data_type == "text"
+    assert current_pieces[1].converted_value_data_type == "image_path"

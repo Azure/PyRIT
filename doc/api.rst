@@ -182,20 +182,30 @@ API Reference
     AttackExecutor
     AttackScoringConfig
     AttackStrategy
+    AttackResultPrinter
     ContextComplianceAttack
+    ConversationManager
     ConversationSession
+    ConversationState
     CrescendoAttack
+    CrescendoAttackContext
+    CrescendoAttackResult
     FlipAttack
     ManyShotJailbreakAttack
+    MarkdownAttackResultPrinter
     MultiPromptSendingAttack
     MultiPromptSendingAttackContext
     MultiTurnAttackContext
+    MultiTurnAttackStrategy
     AttackExecutorResult
+    ObjectiveEvaluator
     PromptSendingAttack
+    RolePlayPaths
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
     SingleTurnAttackContext
+    SingleTurnAttackStrategy
     TAPAttack
     TAPAttackContext
     TAPAttackResult
@@ -217,13 +227,31 @@ API Reference
     AnecdoctorContext
     AnecdoctorGenerator
     AnecdoctorResult
-    FuzzerContext
-    FuzzerResult
-    FuzzerGenerator
-    FuzzerResultPrinter
     PromptGeneratorStrategy
     PromptGeneratorStrategyContext
     PromptGeneratorStrategyResult
+
+:py:mod:`pyrit.executor.promptgen.fuzzer`
+=========================================
+
+.. automodule:: pyrit.executor.promptgen.fuzzer
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    FuzzerConverter
+    FuzzerContext
+    FuzzerCrossOverConverter
+    FuzzerExpandConverter
+    FuzzerGenerator
+    FuzzerRephraseConverter
+    FuzzerResult
+    FuzzerResultPrinter
+    FuzzerShortenConverter
+    FuzzerSimilarConverter
 
 :py:mod:`pyrit.executor.workflow`
 =================================
@@ -296,8 +324,13 @@ API Reference
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
     group_conversation_message_pieces_by_sequence
+    group_message_pieces_into_conversations
     Identifier
     ImagePathDataTypeSerializer
+    AllowedCategories
+    AttackOutcome
+    AttackResult
+    DecomposedSeedGroup
     Message
     MessagePiece
     PromptDataType
@@ -305,11 +338,15 @@ API Reference
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
+    ScenarioIdentifier
+    ScenarioResult
     Score
     ScoreType
-    SeedPrompt
     SeedDataset
     SeedGroup
+    SeedObjective
+    SeedPrompt
+    sort_message_pieces
     StorageIO
     StrategyResult
     TextDataTypeSerializer
@@ -333,13 +370,16 @@ API Reference
     AnsiAttackConverter
     AsciiArtConverter
     AsciiSmugglerConverter
+    AskToDecodeConverter
     AtbashConverter
     AudioFrequencyConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
+    Base2048Converter
     Base64Converter
     BinAsciiConverter
     BinaryConverter
+    BrailleConverter
     CaesarConverter
     CharacterSpaceConverter
     CharSwapConverter
@@ -348,32 +388,37 @@ API Reference
     ConverterResult
     DenylistConverter
     DiacriticConverter
+    EcojiConverter
     EmojiConverter
     FirstLetterConverter
     FlipConverter
-    FuzzerCrossOverConverter
-    FuzzerExpandConverter
-    FuzzerRephraseConverter
-    FuzzerShortenConverter
-    FuzzerSimilarConverter
     HumanInTheLoopConverter
     ImageCompressionConverter
+    IndexSelectionStrategy
     InsertPunctuationConverter
+    KeywordSelectionStrategy
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
     MathObfuscationConverter
     MathPromptConverter
     MorseConverter
+    NatoConverter
     NoiseConverter
     PDFConverter
     PersuasionConverter
+    PositionSelectionStrategy
     PromptConverter
+    ProportionSelectionStrategy
     QRCodeConverter
     RandomCapitalLettersConverter
+    RandomTranslationConverter
+    RangeSelectionStrategy
+    RegexSelectionStrategy
     RepeatTokenConverter
     ROT13Converter
     SearchReplaceConverter
+    SelectiveTextConverter
     SneakyBitsSmugglerConverter
     StringJoinConverter
     SuffixAppendConverter
@@ -381,6 +426,8 @@ API Reference
     TemplateSegmentConverter
     TenseConverter
     TextJailbreakConverter
+    TextSelectionStrategy
+    TokenSelectionStrategy
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter
@@ -391,13 +438,14 @@ API Reference
     UrlConverter
     VariationConverter
     VariationSelectorSmugglerConverter
+    WordIndexSelectionStrategy
+    WordKeywordSelectionStrategy
+    WordPositionSelectionStrategy
+    WordProportionSelectionStrategy
+    WordRegexSelectionStrategy
+    WordSelectionStrategy
     ZalgoConverter
     ZeroWidthConverter
-
-.. automodule:: pyrit.prompt_converter.fuzzer_converter
-    :no-members:
-    :no-inherited-members:
-    :no-index:
 
 :py:mod:`pyrit.prompt_normalizer`
 =================================
@@ -427,6 +475,7 @@ API Reference
 
     AzureBlobStorageTarget
     AzureMLChatTarget
+    CopilotType
     CrucibleTarget
     GandalfLevel
     GandalfTarget
@@ -444,6 +493,7 @@ API Reference
     OpenAIVideoTarget
     OpenAITTSTarget
     OpenAITarget
+    PlaywrightCopilotTarget
     PlaywrightTarget
     PromptChatTarget
     PromptShieldTarget
@@ -466,7 +516,12 @@ API Reference
     BatchScorer
     ContentClassifierPaths
     ConversationScorer
+    create_conversation_scorer
+    DecodingScorer
+    FloatScaleScoreAggregator
     FloatScaleScorer
+    FloatScaleScorerAllCategories
+    FloatScaleScorerByCategory
     FloatScaleThresholdScorer
     GandalfScorer
     HarmHumanLabeledEntry
@@ -488,6 +543,7 @@ API Reference
     QuestionAnswerScorer
     Scorer
     ScorerEvaluator
+    ScorerIdentifier
     ScorerMetrics
     ScorerPromptValidator
     SelfAskCategoryScorer
@@ -499,12 +555,15 @@ API Reference
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
     SubStringScorer
+    TrueFalseAggregatorFunc
     TrueFalseCompositeScorer
     TrueFalseInverterScorer
     TrueFalseQuestion
     TrueFalseQuestionPaths
     TrueFalseScoreAggregator
     TrueFalseScorer
+    VideoFloatScaleScorer
+    VideoTrueFalseScorer
 
 :py:mod:`pyrit.scenario`
 =========================
@@ -523,8 +582,6 @@ API Reference
     FoundryScenario
     Scenario
     ScenarioStrategy
-    ScenarioIdentifier
-    ScenarioResult
 
 :py:mod:`pyrit.setup`
 =====================
