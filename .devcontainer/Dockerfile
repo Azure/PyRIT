@@ -3,7 +3,6 @@ FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 # Makes installation faster
 ENV UV_COMPILE_BYTECODE=1
-ENV UV_SYSTEM_PYTHON=1
 
 SHELL ["/bin/bash", "-c"]
 
