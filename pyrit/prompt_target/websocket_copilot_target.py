@@ -10,6 +10,10 @@ from typing import Optional
 
 import websockets
 
+from pyrit.exceptions import (
+    EmptyResponseException,
+    pyrit_target_retry,
+)
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
@@ -266,6 +270,7 @@ class WebSocketCopilotTarget(PromptTarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     @limit_requests_per_minute
+    @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Asynchronously send a message to Microsoft Copilot using WebSocket.
@@ -277,15 +282,24 @@ class WebSocketCopilotTarget(PromptTarget):
             list[Message]: A list containing the response from Copilot.
 
         Raises:
-            websockets.exceptions.InvalidStatus: If the WebSocket connection fails.
+            EmptyResponseException: If the response from Copilot is empty.
+            InvalidStatus: If the WebSocket handshake fails with an HTTP status error.
+            WebSocketException: If the WebSocket connection fails.
             RuntimeError: If any other error occurs during WebSocket communication.
         """
         self._validate_request(message=message)
         request_piece = message.message_pieces[0]
 
+        logger.info(f"Sending the following prompt to WebSocketCopilotTarget: {request_piece}")
+
         try:
             prompt_text = request_piece.converted_value
             response_text = await self._connect_and_send(prompt_text)
+
+            if not response_text or not response_text.strip():
+                logger.error("Empty response received from Copilot.")
+                raise EmptyResponseException(message="Copilot returned an empty response.")
+            logger.info(f"Received the following response from WebSocketCopilotTarget: {response_text[:100]}...")
 
             response_entry = construct_response_from_request(
                 request=request_piece, response_text_pieces=[response_text]
@@ -299,7 +313,9 @@ class WebSocketCopilotTarget(PromptTarget):
                 "Ensure the WEBSOCKET_URL environment variable is correct and valid."
                 " For more details about authentication, refer to the class documentation."
             )
-            raise e
+            raise
 
+        except websockets.exceptions.WebSocketException as e:
+            raise RuntimeError(f"WebSocket communication error: {str(e)}") from e
         except Exception as e:
-            raise RuntimeError(f"An error occurred during WebSocket communication: {str(e)}") from e
+            raise RuntimeError(f"Unexpected error during WebSocket communication: {str(e)}") from e
