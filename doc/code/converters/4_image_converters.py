@@ -37,9 +37,3 @@ print(output_image_file)
 image_path = output_image_file.output_text
 image = Image.open(image_path)
 display(image)
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
