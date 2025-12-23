@@ -91,15 +91,7 @@ class MultiPromptSendingAttackParameters(AttackParameters):
         )
 
 
-@dataclass
-class MultiPromptSendingAttackContext(MultiTurnAttackContext):
-    """Context for the MultiPromptSending attack strategy."""
-
-    # Predefined messages to send to the target
-    messages: List[Message] = field(default_factory=list)
-
-
-class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackContext, AttackResult]):
+class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackResult]):
     """
     Implementation of multi-prompt sending attack strategy.
 
@@ -146,7 +138,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         super().__init__(
             objective_target=objective_target,
             logger=logger,
-            context_type=MultiPromptSendingAttackContext,
+            context_type=MultiTurnAttackContext,
             params_type=MultiPromptSendingAttackParameters,
         )
 
@@ -182,12 +174,12 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             successful_objective_threshold=self._successful_objective_threshold,
         )
 
-    def _validate_context(self, *, context: MultiPromptSendingAttackContext) -> None:
+    def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
         """
         Validate the context before executing the attack.
 
         Args:
-            context (MultiPromptSendingAttackContext): The attack context containing parameters and objective.
+            context (MultiTurnAttackContext): The attack context containing parameters and objective.
 
         Raises:
             ValueError: If the context is invalid.
@@ -195,15 +187,15 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         if not context.objective or context.objective.isspace():
             raise ValueError("Attack objective must be provided and non-empty in the context")
 
-        if not context.messages or len(context.messages) == 0:
-            raise ValueError("Messages must be provided and non-empty in the context")
+        if not context.params.messages or len(context.params.messages) == 0:
+            raise ValueError("Messages must be provided and non-empty in the params")
 
-    async def _setup_async(self, *, context: MultiPromptSendingAttackContext) -> None:
+    async def _setup_async(self, *, context: MultiTurnAttackContext) -> None:
         """
         Set up the attack by preparing conversation context.
 
         Args:
-            context (MultiPromptSendingAttackContext): The attack context containing attack parameters.
+            context (MultiTurnAttackContext): The attack context containing attack parameters.
         """
         # Ensure the context has a session (like red_teaming.py does)
         context.session = ConversationSession()
@@ -220,7 +212,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
             response_converters=self._response_converters,
         )
 
-    async def _perform_async(self, *, context: MultiPromptSendingAttackContext) -> AttackResult:
+    async def _perform_async(self, *, context: MultiTurnAttackContext) -> AttackResult:
         """
         Perform the multi-prompt sending attack.
 
@@ -242,8 +234,8 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         response = None
         score = None
 
-        for message_index, current_message in enumerate(context.messages):
-            logger.info(f"Processing message {message_index + 1}/{len(context.messages)}")
+        for message_index, current_message in enumerate(context.params.messages):
+            logger.info(f"Processing message {message_index + 1}/{len(context.params.messages)}")
 
             # Send the message directly
             response_message = await self._send_prompt_to_objective_target_async(
@@ -289,7 +281,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         *,
         response: Optional[Message],
         score: Optional[Score],
-        context: MultiPromptSendingAttackContext,
+        context: MultiTurnAttackContext,
     ) -> tuple[AttackOutcome, Optional[str]]:
         """
         Determine the outcome of the attack based on the response and score.
@@ -297,7 +289,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         Args:
             response (Optional[Message]): The last response from the target (if any).
             score (Optional[Score]): The objective score (if any).
-            context (MultiPromptSendingAttackContext): The attack context containing configuration.
+            context (MultiTurnAttackContext): The attack context containing configuration.
 
         Returns:
             tuple[AttackOutcome, Optional[str]]: A tuple of (outcome, outcome_reason).
@@ -320,20 +312,20 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         # At least one prompt was filtered or failed to get a response
         return AttackOutcome.FAILURE, "At least one prompt was filtered or failed to get a response"
 
-    async def _teardown_async(self, *, context: MultiPromptSendingAttackContext) -> None:
+    async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 
     async def _send_prompt_to_objective_target_async(
-        self, *, current_message: Message, context: MultiPromptSendingAttackContext
+        self, *, current_message: Message, context: MultiTurnAttackContext
     ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
         Args:
             current_message (Message): The message to send.
-            context (MultiPromptSendingAttackContext): The attack context containing parameters and labels.
+            context (MultiTurnAttackContext): The attack context containing parameters and labels.
 
         Returns:
             Optional[Message]: The model's response if successful, or None if
