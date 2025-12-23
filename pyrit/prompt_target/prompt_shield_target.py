@@ -3,7 +3,7 @@
 
 import json
 import logging
-from typing import Any, Callable, Dict, Literal, Optional, Sequence
+from typing import Any, Callable, Literal, Optional, Sequence
 
 from pyrit.common import default_values, net_utility
 from pyrit.models import (
@@ -57,7 +57,6 @@ class PromptShieldTarget(PromptTarget):
         api_version: Optional[str] = "2024-09-01",
         field: Optional[PromptShieldEntryField] = None,
         max_requests_per_minute: Optional[int] = None,
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Class that initializes an Azure Content Safety Prompt Shield Target.
@@ -78,8 +77,6 @@ class PromptShieldTarget(PromptTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            custom_metadata (Dict[str, Any], Optional): Custom metadata to associate with the target for identifier
-                purposes.
         """
         endpoint_value = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
@@ -87,7 +84,6 @@ class PromptShieldTarget(PromptTarget):
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
             endpoint=endpoint_value,
-            custom_metadata=custom_metadata,
         )
 
         self._api_version = api_version
@@ -102,9 +98,12 @@ class PromptShieldTarget(PromptTarget):
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
-        Parses the text in message to separate the userPrompt and documents contents,
-        then sends an HTTP request to the endpoint and obtains a response in JSON. For more info, visit
+        Parse the text in message to separate the userPrompt and documents contents,
+        then send an HTTP request to the endpoint and obtain a response in JSON. For more info, visit
         https://learn.microsoft.com/en-us/azure/ai-services/content-safety/quickstart-jailbreak.
+
+        Returns:
+            list[Message]: A list containing the response object with generated text pieces.
         """
         self._validate_request(message=message)
 
@@ -162,7 +161,14 @@ class PromptShieldTarget(PromptTarget):
 
     def _validate_response(self, request_body: dict, response_body: dict) -> None:
         """
-        Ensures that every field sent to the Prompt Shield was analyzed.
+        Ensure that every field sent to the Prompt Shield was analyzed.
+
+        Args:
+            request_body: The request body sent to Prompt Shield.
+            response_body: The response body received from Prompt Shield.
+
+        Raises:
+            ValueError: If any field sent was not analyzed.
         """
         user_prompt_sent: str | None = request_body.get("userPrompt")
         documents_sent: list[str] | None = request_body.get("documents")
@@ -178,8 +184,14 @@ class PromptShieldTarget(PromptTarget):
 
     def _input_parser(self, input_str: str) -> dict[str, Any]:
         """
-        Parses the input given to the target to extract the two fields sent to
+        Parse the input given to the target to extract the two fields sent to
         Prompt Shield: userPrompt: str, and documents: list[str].
+
+        Args:
+            input_str: The input string to parse.
+
+        Returns:
+            dict[str, Any]: A dictionary with 'userPrompt' and 'documents' keys.
         """
         match self._force_entry_field:
             case "userPrompt":
@@ -204,7 +216,10 @@ class PromptShieldTarget(PromptTarget):
 
     def _add_auth_param_to_headers(self, headers: dict) -> None:
         """
-        Adds the API key or token to the headers.
+        Add the API key or token to the headers.
+
+        Args:
+            headers: The headers dictionary to add authentication to.
         """
         if self._api_key:
             # If callable, call it to get the token

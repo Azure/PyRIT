@@ -5,7 +5,7 @@ import json
 import logging
 import re
 from abc import abstractmethod
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import urlparse
 
 from openai import (
@@ -38,6 +38,15 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAITarget(PromptChatTarget):
+    """
+    Abstract base class for OpenAI-based prompt targets.
+
+    This class provides common functionality for interacting with OpenAI API
+    endpoints, handling authentication, rate limiting, and request/response processing.
+
+    Read more about the various models here:
+    https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
+    """
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
@@ -55,15 +64,10 @@ class OpenAITarget(PromptChatTarget):
         api_key: Optional[str | Callable[[], str | Awaitable[str]]] = None,
         headers: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
-        custom_metadata: Optional[Dict[str, Any]] = None,
         httpx_client_kwargs: Optional[dict] = None,
     ) -> None:
         """
-        Abstract class that initializes an Azure or non-Azure OpenAI chat target.
-
-        Read more about the various models here:
-        https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
-
+        Initialize an instance of OpenAITarget.
 
         Args:
             model_name (str, Optional): The name of the model.
@@ -77,8 +81,6 @@ class OpenAITarget(PromptChatTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            custom_metadata (Dict[str, Any], Optional): Custom metadata to associate with the target for identifier
-                purposes.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
         """
@@ -107,7 +109,6 @@ class OpenAITarget(PromptChatTarget):
             max_requests_per_minute=max_requests_per_minute,
             endpoint=endpoint_value,
             model_name=self._model_name,
-            custom_metadata=custom_metadata,
         )
 
         # API key is required - either from parameter or environment variable
@@ -372,7 +373,10 @@ class OpenAITarget(PromptChatTarget):
 
         Raises:
             RateLimitException: For 429 rate limit errors.
-            Various OpenAI SDK exceptions: For non-recoverable errors.
+            APIStatusError: For other API status errors.
+            APITimeoutError: For transient infrastructure errors.
+            APIConnectionError: For transient infrastructure errors.
+            AuthenticationError: For authentication failures.
         """
         try:
             # Execute the API call
@@ -534,7 +538,7 @@ class OpenAITarget(PromptChatTarget):
     @abstractmethod
     def _set_openai_env_configuration_vars(self) -> None:
         """
-        Sets deployment_environment_variable, endpoint_environment_variable,
+        Set deployment_environment_variable, endpoint_environment_variable,
         and api_key_environment_variable which are read from .env file.
         """
         raise NotImplementedError

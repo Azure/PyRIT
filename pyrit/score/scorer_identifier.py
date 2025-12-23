@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import hashlib
 import json
 from dataclasses import dataclass
@@ -21,7 +23,7 @@ class ScorerIdentifier:
     type: str
     system_prompt_template: Optional[str] = None
     user_prompt_template: Optional[str] = None
-    sub_identifier: Optional[List["ScorerIdentifier"]] = None
+    sub_identifier: Optional[List[ScorerIdentifier]] = None
     target_info: Optional[Dict[str, Any]] = None
     score_aggregator: Optional[str] = None
     scorer_specific_params: Optional[Dict[str, Any]] = None

@@ -7,10 +7,12 @@
   "containerEnv": {
     "PYTHONPATH": "/workspace"
   },
+  "containerUser": "vscode",
   "customizations": {
     "vscode": {
       "settings": {
-        "python.defaultInterpreterPath": "/opt/conda/envs/pyrit-dev/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/opt/pyrit-dev/bin/python",
         "python.analysis.extraPaths": [
           "/workspace"
         ],
@@ -31,7 +33,7 @@
           "pyrit/**"
         ],
         "python.analysis.exclude": [
-          "/opt/conda/envs/**",
+          "/opt/pyrit-dev/**",
           "**/.venv/**",
           "**/site-packages/**",
           "**/doc/**",

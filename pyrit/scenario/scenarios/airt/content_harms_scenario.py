@@ -180,7 +180,6 @@ class ContentHarmsScenario(Scenario):
                     api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
                     model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                     temperature=0.9,
-                    custom_metadata={"safety": "unsafe"},
                 )
             ),
         )

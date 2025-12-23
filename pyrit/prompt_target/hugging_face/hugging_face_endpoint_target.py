@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.models import Message, construct_response_from_request
@@ -30,10 +30,9 @@ class HuggingFaceEndpointTarget(PromptTarget):
         top_p: float = 1.0,
         max_requests_per_minute: Optional[int] = None,
         verbose: bool = False,
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
+        Initialize the HuggingFaceEndpointTarget with API credentials and model parameters.
 
         Args:
             hf_token (str): The Hugging Face token for authenticating with the Hugging Face endpoint.
@@ -44,15 +43,12 @@ class HuggingFaceEndpointTarget(PromptTarget):
             top_p (float, Optional): The cumulative probability for nucleus sampling. Defaults to 1.0.
             max_requests_per_minute (Optional[int]): The maximum number of requests per minute. Defaults to None.
             verbose (bool, Optional): Flag to enable verbose logging. Defaults to False.
-            custom_metadata (Optional[Dict[str, Any]]): Custom metadata to associate with the target for identifier
-                purposes.
         """
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
             verbose=verbose,
             endpoint=endpoint,
             model_name=model_id,
-            custom_metadata=custom_metadata,
         )
 
         validate_temperature(temperature)
@@ -68,7 +64,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
-        Sends a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
+        Send a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
 
         Args:
             message (Message): The message containing the input data and associated details
@@ -127,7 +123,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
 
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the provided message.
+        Validate the provided message.
 
         Args:
             message (Message): The message to validate.
@@ -144,5 +140,10 @@ class HuggingFaceEndpointTarget(PromptTarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """
+        Check if the target supports JSON as a response format.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return False

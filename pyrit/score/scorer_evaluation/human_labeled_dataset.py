@@ -3,13 +3,13 @@
 
 
 import logging
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union, cast, get_args
 
 import pandas as pd
 
+from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message, MessagePiece, PromptDataType
 from pyrit.score import MetricsType
 
@@ -141,17 +141,16 @@ class HumanLabeledDataset:
             dataset_name: (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
                 file name.
             version (str, Optional): The version of the dataset. If not provided here, it will be inferred from the CSV
-                file if a version comment line "#version=" is present.
+                file if a version comment line "#version=" is present. See `mini_hate_speech.csv` for an example.
 
         Returns:
             HumanLabeledDataset: The human-labeled dataset object.
 
         Raises:
-            ValueError: If the CSV file does not exist.
+            FileNotFoundError: If the CSV file does not exist.
             ValueError: If version is not provided and not found in the CSV file via comment line "# version=".
         """
-        if not os.path.exists(csv_path):
-            raise ValueError(f"CSV file does not exist: {csv_path}")
+        csv_path = verify_and_resolve_path(csv_path)
         # Read the first line to check for version info
         if not version:
             with open(csv_path, "r", encoding="utf-8") as f:

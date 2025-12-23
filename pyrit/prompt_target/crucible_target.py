@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from httpx import HTTPStatusError
 
@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 class CrucibleTarget(PromptTarget):
+    """A prompt target for the Crucible service."""
+
     API_KEY_ENVIRONMENT_VARIABLE: str = "CRUCIBLE_API_KEY"
 
     def __init__(
@@ -27,7 +29,6 @@ class CrucibleTarget(PromptTarget):
         endpoint: str,
         api_key: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the Crucible target.
@@ -39,13 +40,10 @@ class CrucibleTarget(PromptTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            custom_metadata (Optional[Dict[str, Any]]): Custom metadata to associate with the target for
-                identifier purposes.
         """
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
             endpoint=endpoint,
-            custom_metadata=custom_metadata,
         )
 
         self._api_key: str = default_values.get_required_value(
@@ -54,6 +52,18 @@ class CrucibleTarget(PromptTarget):
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously send a message to the Crucible target.
+
+        Args:
+            message (Message): The message object containing the prompt to send.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+
+        Raises:
+            HTTPStatusError: For any other HTTP errors during the process.
+        """
         self._validate_request(message=message)
         request = message.message_pieces[0]
 

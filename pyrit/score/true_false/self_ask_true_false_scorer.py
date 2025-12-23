@@ -124,7 +124,6 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
 
-        # Verify and resolve paths using utility function (before super().__init__())
         true_false_system_prompt_path = verify_and_resolve_path(true_false_system_prompt_path)
 
         if true_false_question_path:

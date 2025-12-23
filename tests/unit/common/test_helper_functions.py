@@ -337,7 +337,7 @@ class TestVerifyAndResolvePath:
     def test_verify_and_resolve_path_rejects_nonexistent(self) -> None:
         """Test that the function correctly refuses to verify a non-existent path."""
         mock_path: str = "this/does/not/exist.yaml"
-        with pytest.raises(ValueError, match="Path not found"):
+        with pytest.raises(FileNotFoundError, match="Path not found"):
             verify_and_resolve_path(mock_path)
 
     def test_verify_and_resolve_path_confirms_existing(self) -> None:

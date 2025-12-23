@@ -43,11 +43,11 @@ from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
     from pyrit.score.scorer_evaluation.scorer_metrics_registry import RegistryType
-
-logger = logging.getLogger(__name__)
 
 
 class Scorer(abc.ABC):
@@ -75,10 +75,24 @@ class Scorer(abc.ABC):
 
         Subclasses must implement this method to call `_set_scorer_identifier()` with their
         specific parameters (system_prompt_template, sub_scorers, scorer_specific_params, prompt_target).
-
-        This method is called at the end of __init__ to construct the scorer's identity.
         """
         raise NotImplementedError("Subclasses must implement _build_scorer_identifier")
+
+    @property
+    def scorer_identifier(self) -> ScorerIdentifier:
+        """
+        Get the scorer identifier. Built lazily on first access.
+
+        Returns:
+            ScorerIdentifier: The identifier containing all configuration parameters.
+        """
+        if self._scorer_identifier is None:
+            self._build_scorer_identifier()
+        return self._scorer_identifier  # type: ignore[return-value]
+
+    @property
+    def _memory(self) -> MemoryInterface:
+        return CentralMemory.get_memory_instance()
 
     def _set_scorer_identifier(
         self,
@@ -112,7 +126,7 @@ class Scorer(abc.ABC):
             target_id = prompt_target.get_identifier()
             # Extract standard fields for scorer evaluation
             target_info = {}
-            for key in ["__type__", "model_name", "temperature", "top_p", "custom_metadata"]:
+            for key in ["__type__", "model_name", "temperature", "top_p"]:
                 if key in target_id:
                     target_info[key] = target_id[key]
 
@@ -126,22 +140,6 @@ class Scorer(abc.ABC):
             scorer_specific_params=scorer_specific_params,
             pyrit_version=pyrit.__version__,
         )
-
-    @property
-    def scorer_identifier(self) -> ScorerIdentifier:
-        """
-        Get the scorer identifier. Built lazily on first access.
-
-        Returns:
-            ScorerIdentifier: The identifier containing all configuration parameters.
-        """
-        if self._scorer_identifier is None:
-            self._build_scorer_identifier()
-        return self._scorer_identifier  # type: ignore[return-value]
-
-    @property
-    def _memory(self) -> MemoryInterface:
-        return CentralMemory.get_memory_instance()
 
     async def score_async(
         self,
@@ -317,7 +315,7 @@ class Scorer(abc.ABC):
 
         Args:
             text (str): The text to be scored.
-            objective (str): The task based on which the text should be scored
+            objective (Optional[str]): The task based on which the text should be scored
 
         Returns:
             list[Score]: A list of Score objects representing the results.

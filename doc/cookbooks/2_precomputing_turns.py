@@ -178,7 +178,6 @@ conversation_starters = {}
 for attack_result in attack_results:
     new_conversation = memory.duplicate_conversation_excluding_last_turn(
         conversation_id=attack_result.conversation_id,
-        new_attack_id=new_attack.get_identifier()["id"],
     )
 
     conversation_starters[attack_result.objective] = list(memory.get_conversation(conversation_id=new_conversation))

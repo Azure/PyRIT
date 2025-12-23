@@ -65,9 +65,10 @@ seed_group = SeedGroup(
     ]
 )
 
+decomposed = seed_group.to_attack_parameters()
 context = SingleTurnAttackContext(
     objective=objective,
-    seed_group=seed_group,
+    next_message=decomposed.current_turn_message,
 )
 
 attack = PromptSendingAttack(objective_target=target)

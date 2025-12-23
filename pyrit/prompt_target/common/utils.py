@@ -37,7 +37,7 @@ def validate_top_p(top_p: Optional[float]) -> None:
 
 def limit_requests_per_minute(func: Callable) -> Callable:
     """
-    A decorator to enforce rate limit of the target through setting requests per minute.
+    Enforce rate limit of the target through setting requests per minute.
     This should be applied to all send_prompt_async() functions on PromptTarget and PromptChatTarget.
 
     Args:

@@ -11,7 +11,7 @@ import requests
 
 def get_http_target_json_response_callback_function(key: str) -> Callable:
     """
-    Determines proper parsing response function for an HTTP Request.
+    Determine proper parsing response function for an HTTP Request.
 
     Parameters:
         key (str): this is the path pattern to follow for parsing the output response
@@ -19,17 +19,19 @@ def get_http_target_json_response_callback_function(key: str) -> Callable:
             (for BIC this needs to be a regex pattern for the desired output)
         response_type (ResponseType): this is the type of response (ie HTML or JSON)
 
-    Returns: proper output parsing response
+    Returns:
+        Callable: proper output parsing response
     """
 
-    def parse_json_http_response(response: requests.Response):
+    def parse_json_http_response(response: requests.Response) -> str:
         """
-        Parses JSON outputs.
+        Parse JSON outputs.
 
         Parameters:
             response (response): the HTTP Response to parse
 
-        Returns: parsed output from response given a "key" path to follow
+        Returns:
+            str: parsed output from response given a "key" path to follow
         """
         json_response = json.loads(response.content)
         data_key = _fetch_key(data=json_response, key=key)
@@ -39,16 +41,28 @@ def get_http_target_json_response_callback_function(key: str) -> Callable:
 
 
 def get_http_target_regex_matching_callback_function(key: str, url: str = None) -> Callable:
-    def parse_using_regex(response: requests.Response):
+    """
+    Get a callback function that parses HTTP responses using regex matching.
+
+    Args:
+        key (str): The regex pattern to use for parsing the response.
+        url (str, Optional): The original URL to prepend to matches if needed.
+
+    Returns:
+        Callable: A function that parses responses using the provided regex pattern.
+    """
+
+    def parse_using_regex(response: requests.Response) -> str:
         """
-        Parses text outputs using regex.
+        Parse text outputs using regex.
 
         Parameters:
             url (optional str): the original URL if this is needed to get a full URL response back (ie BIC)
             key (str): this is the regex pattern to follow for parsing the output response
             response (response): the HTTP Response to parse
 
-        Returns: parsed output from response given a regex pattern to follow
+        Returns:
+            str: parsed output from response given a regex pattern to follow
         """
         re_pattern = re.compile(key)
         match = re.search(re_pattern, str(response.content))
@@ -65,7 +79,7 @@ def get_http_target_regex_matching_callback_function(key: str, url: str = None) 
 
 def _fetch_key(data: dict, key: str):
     """
-    Fetches the answer from the HTTP JSON response based on the path.
+    Fetch the answer from the HTTP JSON response based on the path.
 
     Args:
         data (dict): HTTP response data.

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol
+from typing import TYPE_CHECKING, Optional, Protocol
 
 from pyrit.models import (
     Message,
@@ -21,7 +21,18 @@ class InteractionFunction(Protocol):
     Defines the structure of interaction functions used with PlaywrightTarget.
     """
 
-    async def __call__(self, page: "Page", message: Message) -> str: ...
+    async def __call__(self, page: "Page", message: Message) -> str:
+        """
+        Execute the interaction function with the given page and message.
+
+        Args:
+            page (Page): The Playwright page object.
+            message (Message): The message object containing the prompt.
+
+        Returns:
+            str: The response text from the interaction.
+        """
+        ...
 
 
 class PlaywrightTarget(PromptTarget):
@@ -46,7 +57,6 @@ class PlaywrightTarget(PromptTarget):
         interaction_func: InteractionFunction,
         page: "Page",
         max_requests_per_minute: Optional[int] = None,
-        custom_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the Playwright target.
@@ -57,20 +67,29 @@ class PlaywrightTarget(PromptTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            custom_metadata (Dict[str, Any], Optional): Custom metadata to associate with the target for identifier
-                purposes.
         """
         endpoint = page.url if page else ""
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
             endpoint=endpoint,
-            custom_metadata=custom_metadata,
         )
         self._interaction_func = interaction_func
         self._page = page
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously send a message to the Playwright target.
+
+        Args:
+            message (Message): The message object containing the prompt to send.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+
+        Raises:
+            RuntimeError: If the Playwright page is not initialized or if an error occurs during interaction.
+        """
         self._validate_request(message=message)
         if not self._page:
             raise RuntimeError(

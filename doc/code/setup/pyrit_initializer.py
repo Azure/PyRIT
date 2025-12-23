@@ -58,7 +58,7 @@ CustomInitializer()
 #
 # PyRIT includes a few built-in initializers that set more intelligent defaults!
 #
-# - **SimpleInitializer**: Requires only OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY
+# - **SimpleInitializer**: Requires only OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY
 # - **AIRTInitializer**: Our best guess at defaults, but requires full Azure OpenAI configuration
 #
 # These are easy to include.

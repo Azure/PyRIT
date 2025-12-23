@@ -324,8 +324,6 @@ class ScorerMetricsRegistry(metaclass=Singleton):
                 continue
             if target_name and target_info.get("target_name") != target_name:
                 continue
-            if target_metadata and target_info.get("custom_metadata") != target_metadata:
-                continue
 
             # Metrics threshold filters
             metrics_dict = entry.get("metrics", {})
