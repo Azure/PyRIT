@@ -27,16 +27,12 @@ PyRIT loads secrets and endpoints from environment variables or `.env` files. Th
 
 When `initialize_pyrit_async` runs, environment variables are loaded in a specific order. **Later sources override earlier ones:**
 
-```mermaid
+```{mermaid}
 flowchart LR
-    A["1️⃣ System Environment"] --> B{"env_files provided?"}
-    B -->|No| C["2️⃣ ~/.pyrit/.env"]
-    C --> D["3️⃣ ~/.pyrit/.env.local"]
-    B -->|Yes| E["2️⃣ Your specified files<br/>(in order)"]
-    style A fill:#e8e8e8
-    style C fill:#b3d9ff
-    style D fill:#90EE90
-    style E fill:#FFD700
+    A["1. System Environment"] --> B{"env_files provided?"}
+    B -->|No| C["2. ~/.pyrit/.env"]
+    C --> D["3. ~/.pyrit/.env.local"]
+    B -->|Yes| E["2. Your specified files (in order)"]
 ```
 
 **Default behavior** (no `env_files` argument):
