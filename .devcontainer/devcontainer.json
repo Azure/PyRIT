@@ -34,7 +34,6 @@
         ],
         "python.analysis.exclude": [
           "/opt/pyrit-dev/**",
-          "**/.venv/**",
           "**/site-packages/**",
           "**/doc/**",
           "**/tests/**",
