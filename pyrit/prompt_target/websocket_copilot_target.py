@@ -295,7 +295,6 @@ class WebSocketCopilotTarget(PromptTarget):
         Raises:
             EmptyResponseException: If the response from Copilot is empty.
             InvalidStatus: If the WebSocket handshake fails with an HTTP status error.
-            WebSocketException: If the WebSocket connection fails.
             RuntimeError: If any other error occurs during WebSocket communication.
         """
         self._validate_request(message=message)
@@ -326,7 +325,5 @@ class WebSocketCopilotTarget(PromptTarget):
             )
             raise
 
-        except websockets.exceptions.WebSocketException as e:
-            raise RuntimeError(f"WebSocket communication error: {str(e)}") from e
         except Exception as e:
-            raise RuntimeError(f"Unexpected error during WebSocket communication: {str(e)}") from e
+            raise RuntimeError(f"An error occurred during WebSocket communication: {str(e)}") from e
