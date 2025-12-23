@@ -89,10 +89,3 @@ results = AttackExecutor().execute_multi_turn_attacks_async(
 for result in results:
     await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
 """
-
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

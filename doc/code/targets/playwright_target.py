@@ -183,10 +183,3 @@ if __name__ == "__main__":
 flask_process.terminate()
 flask_process.wait()  # Ensure the process has terminated
 print("Flask app has been terminated.")
-
-# %%
-# Close connection to memory
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

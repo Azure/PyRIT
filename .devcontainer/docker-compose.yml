@@ -1,5 +1,6 @@
 services:
   devcontainer:
+    platform: linux/amd64
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
@@ -10,7 +11,6 @@ services:
           memory: "16G"
     volumes:
       - ..:/workspace:delegated
-      - pyrit-env:/opt/venv:cached
       - pip-cache:/home/vscode/.cache/pip:cached
       - uv-cache:/home/vscode/.cache/uv:cached
       - precommit-cache:/home/vscode/.cache/pre-commit:cached
@@ -23,7 +23,6 @@ services:
     command: "sleep infinity"
 
 volumes:
-  pyrit-env:
   pip-cache:
   uv-cache:
   precommit-cache:

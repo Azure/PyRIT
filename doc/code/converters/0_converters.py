@@ -44,11 +44,3 @@ print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(
 print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await BinaryConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await FirstLetterConverter().convert_tokens_async(prompt=prompt))  # type: ignore
-
-
-# %%
-# Close connection
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
