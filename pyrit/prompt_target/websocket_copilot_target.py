@@ -81,19 +81,30 @@ class WebSocketCopilotTarget(PromptTarget):
             model_name (str): The model name. Defaults to "copilot".
 
         Raises:
-            ValueError: If WebSocket URL is not provided as env variable.
+            ValueError: If WebSocket URL is not provided, is empty, or has invalid format.
+            ValueError: If required parameters are missing or empty in the WebSocket URL.
         """
         self._websocket_url = os.getenv("WEBSOCKET_URL")
-        if not self._websocket_url:
+        if not self._websocket_url or self._websocket_url.strip() == "":
             raise ValueError("WebSocket URL must be provided through the WEBSOCKET_URL environment variable")
 
-        if not "ConversationId=" in self._websocket_url:
-            raise ValueError("`ConversationId` parameter not found in URL.")
-        self._conversation_id = self._websocket_url.split("ConversationId=")[1].split("&")[0]
+        if not self._websocket_url.startswith(("wss://", "ws://")):
+            raise ValueError(
+                "WebSocket URL must start with 'wss://' or 'ws://'. "
+                f"Received URL starting with: {self._websocket_url[:10]}"
+            )
 
-        if not "X-SessionId=" in self._websocket_url:
-            raise ValueError("`X-SessionId` parameter not found in URL.")
+        if "ConversationId=" not in self._websocket_url:
+            raise ValueError("`ConversationId` parameter not found in WebSocket URL.")
+        self._conversation_id = self._websocket_url.split("ConversationId=")[1].split("&")[0]
+        if not self._conversation_id:
+            raise ValueError("`ConversationId` parameter is empty in WebSocket URL.")
+
+        if "X-SessionId=" not in self._websocket_url:
+            raise ValueError("`X-SessionId` parameter not found in WebSocket URL.")
         self._session_id = self._websocket_url.split("X-SessionId=")[1].split("&")[0]
+        if not self._session_id:
+            raise ValueError("`X-SessionId` parameter is empty in WebSocket URL.")
 
         super().__init__(
             verbose=verbose,
