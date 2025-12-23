@@ -197,7 +197,7 @@ API Reference
     ManyShotJailbreakAttack
     MarkdownAttackResultPrinter
     MultiPromptSendingAttack
-    MultiPromptSendingAttackContext
+    MultiPromptSendingAttackParameters
     MultiTurnAttackContext
     MultiTurnAttackStrategy
     ObjectiveEvaluator

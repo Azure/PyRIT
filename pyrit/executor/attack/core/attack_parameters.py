@@ -145,11 +145,11 @@ class AttackParameters:
 
         # Copy the from_seed_group method to the new class
         # We need to bind it as a classmethod on the new class
-        new_cls.from_seed_group = classmethod(
+        new_cls.from_seed_group = classmethod(  # type: ignore[attr-defined,method-assign]
             lambda c, sg, **ov: cls._from_seed_group_impl(c, sg, **ov)
-        )  # type: ignore[attr-defined]
+        )
 
-        return new_cls
+        return new_cls  # type: ignore[return-value]
 
     @classmethod
     def _from_seed_group_impl(
@@ -168,7 +168,7 @@ class AttackParameters:
 
         Returns:
             An instance of target_cls.
-            
+
         Raises:
             ValueError: If seed_group has no objective or if overrides contain invalid fields.
         """

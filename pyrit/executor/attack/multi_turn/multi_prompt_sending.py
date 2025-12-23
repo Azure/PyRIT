@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, List, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
@@ -36,12 +36,12 @@ logger = logging.getLogger(__name__)
 class MultiPromptSendingAttackParameters(AttackParameters):
     """
     Parameters for MultiPromptSendingAttack.
-    
-    Extends AttackParameters to include messages field for multi-turn attacks.
-    Only accepts objective and messages fields.
+
+    Extends AttackParameters to include user_messages field for multi-turn attacks.
+    Only accepts objective and user_messages fields.
     """
 
-    messages: Optional[List[Message]] = None
+    user_messages: Optional[List[Message]] = None
 
     @classmethod
     def from_seed_group(
@@ -65,29 +65,29 @@ class MultiPromptSendingAttackParameters(AttackParameters):
         # Extract objective (required)
         if seed_group.objective is None:
             raise ValueError("SeedGroup must have an objective")
-        
+
         # Extract messages from seed group (required)
-        messages = seed_group.user_messages
-        if not messages:
+        user_messages = seed_group.user_messages
+        if not user_messages:
             raise ValueError(
                 "SeedGroup must have user_messages for MultiPromptSendingAttack. "
                 "This attack requires multi-turn message sequences."
             )
-        
+
         # Validate overrides only contain valid fields
-        valid_fields = {"objective", "messages", "memory_labels"}
+        valid_fields = {"objective", "user_messages", "memory_labels"}
         invalid_fields = set(overrides.keys()) - valid_fields
         if invalid_fields:
             raise ValueError(
                 f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. "
                 f"Only accepts: {valid_fields}"
             )
-        
-        # Build parameters with only objective, messages, and memory_labels
+
+        # Build parameters with only objective, user_messages, and memory_labels
         return cls(
             objective=seed_group.objective.value,
             memory_labels=overrides.get("memory_labels", {}),
-            messages=messages,
+            user_messages=user_messages,
         )
 
 
@@ -187,8 +187,8 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, A
         if not context.objective or context.objective.isspace():
             raise ValueError("Attack objective must be provided and non-empty in the context")
 
-        if not context.params.messages or len(context.params.messages) == 0:
-            raise ValueError("Messages must be provided and non-empty in the params")
+        if not context.params.user_messages or len(context.params.user_messages) == 0:
+            raise ValueError("User messages must be provided and non-empty in the params")
 
     async def _setup_async(self, *, context: MultiTurnAttackContext) -> None:
         """
@@ -234,8 +234,8 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, A
         response = None
         score = None
 
-        for message_index, current_message in enumerate(context.params.messages):
-            logger.info(f"Processing message {message_index + 1}/{len(context.params.messages)}")
+        for message_index, current_message in enumerate(context.params.user_messages):
+            logger.info(f"Processing message {message_index + 1}/{len(context.params.user_messages)}")
 
             # Send the message directly
             response_message = await self._send_prompt_to_objective_target_async(
@@ -383,6 +383,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, A
             AttackResult: The result of the attack execution.
         """
         # Validate parameters before creating context
-        messages = get_kwarg_param(kwargs=kwargs, param_name="messages", expected_type=list, required=True)
+        user_messages = get_kwarg_param(kwargs=kwargs, param_name="user_messages", expected_type=list, required=True)
 
-        return await super().execute_async(**kwargs, messages=messages)
+        return await super().execute_async(**kwargs, user_messages=user_messages)
