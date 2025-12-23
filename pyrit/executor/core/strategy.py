@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import dataclasses
 import logging
 import uuid
 from abc import ABC, abstractmethod
@@ -154,20 +153,10 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
 
         Args:
             context_type (type[StrategyContextT]): The type of context this strategy will use.
-                Must be a dataclass.
             event_handler (Optional[StrategyEventHandler[StrategyContextT, StrategyResultT]]): An optional
                 event handler for strategy events.
             logger (logging.Logger): The logger to use for this strategy.
-
-        Raises:
-            TypeError: If context_type is not a dataclass.
         """
-        if not dataclasses.is_dataclass(context_type):
-            raise TypeError(
-                f"context_type must be a dataclass, got {context_type.__name__}. "
-                "All strategy context types must be dataclasses."
-            )
-
         self._id = uuid.uuid4()
         self._context_type = context_type
         self._event_handlers: Dict[str, StrategyEventHandler[StrategyContextT, StrategyResultT]] = {}
