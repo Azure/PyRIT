@@ -10,7 +10,7 @@ from pyrit.scenario.scenarios.airt.content_harms_scenario import (
 )
 from pyrit.scenario.scenarios.airt.psychosocial_harms_scenario import (
     PsychosocialHarmsScenario,
-    PsychosocialHarmsStrategy
+    PsychosocialHarmsStrategy,
 )
 
 __all__ = [
@@ -19,5 +19,5 @@ __all__ = [
     "ContentHarmsScenario",
     "ContentHarmsStrategy",
     "PsychosocialHarmsScenario",
-    "PsychosocialHarmsStrategy"
+    "PsychosocialHarmsStrategy",
 ]
