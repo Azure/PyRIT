@@ -23,7 +23,7 @@ from pyrit.executor.attack import (
     SingleTurnAttackContext,
 )
 from pyrit.executor.attack.core.attack_executor import AttackExecutorResult
-from pyrit.models import AttackResult, Message, SeedGroup
+from pyrit.models import AttackResult, Message
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class AtomicAttack:
         attack: AttackStrategy,
         objectives: List[str],
         prepended_conversations: Optional[List[List[Message]]] = None,
-        seed_groups: Optional[List[SeedGroup]] = None,
+        messages: Optional[List[Message]] = None,
         custom_prompts: Optional[List[str]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_execute_params: Any,
@@ -109,7 +109,7 @@ class AtomicAttack:
             prepended_conversations (Optional[List[List[Message]]]): Optional
                 list of conversation histories to prepend to each attack execution. This will be
                 used for all objectives.
-            seed_groups (Optional[List[SeedGroup]]): List of seed groups
+            messages (Optional[List[Message]]): List of messages
                 for single-turn attacks. Only valid for single-turn attacks.
             custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
                 Only valid for multi-turn attacks.
@@ -120,8 +120,6 @@ class AtomicAttack:
 
         Raises:
             ValueError: If objectives list is empty.
-            TypeError: If seed_groups is provided for multi-turn attacks or
-                custom_prompts is provided for single-turn attacks.
         """
         self.atomic_attack_name = atomic_attack_name
 
@@ -134,16 +132,9 @@ class AtomicAttack:
         # Determine context type once during initialization
         self._context_type: Literal["single_turn", "multi_turn", "unknown"] = self._determine_context_type(attack)
 
-        # Validate attack context type and parameters
-        self._validate_parameters(
-            seed_groups=seed_groups,
-            custom_prompts=custom_prompts,
-        )
-
         self._objectives = objectives
         self._prepended_conversations = prepended_conversations
-        self._seed_groups = seed_groups
-        self._custom_prompts = custom_prompts
+        self._messages = messages
         self._memory_labels = memory_labels or {}
         self._attack_execute_params = attack_execute_params
 
@@ -180,36 +171,6 @@ class AtomicAttack:
             elif issubclass(attack._context_type, MultiTurnAttackContext):
                 return "multi_turn"
         return "unknown"
-
-    def _validate_parameters(
-        self,
-        *,
-        seed_groups: Optional[List[SeedGroup]],
-        custom_prompts: Optional[List[str]],
-    ) -> None:
-        """
-        Validate that parameters match the attack context type.
-
-        Args:
-            seed_groups (Optional[List[SeedGroup]]): Seed groups parameter.
-            custom_prompts (Optional[List[str]]): Custom prompts parameter.
-
-        Raises:
-            TypeError: If parameters don't match the attack context type.
-        """
-        # Validate seed_groups is only used with single-turn attacks
-        if seed_groups is not None and self._context_type != "single_turn":
-            raise TypeError(
-                f"seed_groups can only be used with single-turn attacks. "
-                f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
-            )
-
-        # Validate custom_prompts is only used with multi-turn attacks
-        if custom_prompts is not None and self._context_type != "multi_turn":
-            raise TypeError(
-                f"custom_prompts can only be used with multi-turn attacks. "
-                f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
-            )
 
     async def run_async(
         self,
@@ -268,7 +229,7 @@ class AtomicAttack:
                 results = await executor.execute_single_turn_attacks_async(
                     attack=self._attack,
                     objectives=self._objectives,
-                    seed_groups=self._seed_groups,
+                    messages=self._messages,
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
                     return_partial_on_failure=return_partial_on_failure,
@@ -278,7 +239,7 @@ class AtomicAttack:
                 results = await executor.execute_multi_turn_attacks_async(
                     attack=self._attack,
                     objectives=self._objectives,
-                    custom_prompts=self._custom_prompts,
+                    messages=self._messages,
                     prepended_conversations=prepended_conversations,
                     memory_labels=merged_memory_labels,
                     return_partial_on_failure=return_partial_on_failure,
