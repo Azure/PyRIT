@@ -18,7 +18,7 @@ from pyrit.scenario import ScamScenario, ScamStrategy
 from pyrit.score import SelfAskTrueFalseScorer
 
 SEED_DATASETS_PATH = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
-SEED_PROMPT_LIST = list(SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "scams_impersonation.prompt").get_values())
+SEED_PROMPT_LIST = list(SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "scams.prompt").get_values())
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def mock_memory_seeds() -> List[SeedObjective]:
 
 @pytest.fixture
 def impersonation_strategy() -> ScamStrategy:
-    return ScamStrategy.IMPERSONATION
+    return ScamStrategy.ALL
 
 
 @pytest.fixture
