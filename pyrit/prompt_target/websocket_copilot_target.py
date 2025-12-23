@@ -19,11 +19,9 @@ from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
-"""
-Useful links:
-https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py
-https://labs.zenity.io/p/access-copilot-m365-terminal
-"""
+# Useful links:
+# https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py
+# https://labs.zenity.io/p/access-copilot-m365-terminal
 
 
 class CopilotMessageType(Enum):
