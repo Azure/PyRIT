@@ -54,7 +54,6 @@ class WebSocketCopilotTarget(PromptTarget):
     """
 
     # TODO: add more flexible auth, use puppeteer? https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py#L248
-    # TODO: add useful message for: "Error during WebSocket communication: server rejected WebSocket connection: HTTP 401"
 
     SUPPORTED_DATA_TYPES = {"text"}  # TODO: support more types?
 
@@ -278,7 +277,8 @@ class WebSocketCopilotTarget(PromptTarget):
             list[Message]: A list containing the response from Copilot.
 
         Raises:
-            RuntimeError: If an error occurs during WebSocket communication.
+            websockets.exceptions.InvalidStatus: If the WebSocket connection fails.
+            RuntimeError: If any other error occurs during WebSocket communication.
         """
         self._validate_request(message=message)
         request_piece = message.message_pieces[0]
@@ -292,6 +292,14 @@ class WebSocketCopilotTarget(PromptTarget):
             )
 
             return [response_entry]
+
+        except websockets.exceptions.InvalidStatus as e:
+            logger.error(
+                f"WebSocket connection failed: {str(e)}\n"
+                "Ensure the WEBSOCKET_URL environment variable is correct and valid."
+                " For more details about authentication, refer to the class documentation."
+            )
+            raise e
 
         except Exception as e:
             raise RuntimeError(f"An error occurred during WebSocket communication: {str(e)}") from e
