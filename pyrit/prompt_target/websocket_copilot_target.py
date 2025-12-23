@@ -123,7 +123,7 @@ class WebSocketCopilotTarget(PromptTarget):
         return json.dumps(data, separators=(",", ":")) + "\x1e"
 
     @staticmethod
-    def _parse_message(raw_message: str) -> tuple[int, str, dict]:
+    def _parse_message(raw_message: str) -> tuple[int, str]:
         """
         Extract actionable content from raw WebSocket frames.
 
@@ -131,43 +131,38 @@ class WebSocketCopilotTarget(PromptTarget):
             raw_message (str): The raw WebSocket message string.
 
         Returns:
-            tuple: (message_type, content_text, full_data)
+            tuple[int, str]: A tuple containing the message type and extracted content.
         """
         try:
             # https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#json-encoding
             message = raw_message.split("\x1e")[0]  # record separator
             if not message:
-                return (-1, "", {})
+                return (-1, "")
 
             data = json.loads(message)
             msg_type = data.get("type", -1)
 
-            if msg_type == 6:  # PING
-                return (6, "", data)
+            if msg_type in (6, 1):  # PING/NEXT_DATA_FRAME
+                return (msg_type, "")
 
             if msg_type == 2:  # LAST_DATA_FRAME
                 item = data.get("item", {})
-                if item:
+                if item and isinstance(item, dict):
                     messages = item.get("messages", [])
-                    if messages:
+                    if messages and isinstance(messages, list):
                         for msg in reversed(messages):
-                            if msg.get("author") == "bot":
+                            if isinstance(msg, dict) and msg.get("author") == "bot":
                                 text = msg.get("text", "")
-                                if text:
-                                    return (2, text, data)
-                # TODO: maybe treat this as error?
+                                if text and isinstance(text, str):
+                                    return (2, text)
                 logger.warning("LAST_DATA_FRAME received but no parseable content found.")
-                return (2, "", data)
+                return (2, "")
 
-            if msg_type == 1:  # NEXT_DATA_FRAME
-                # Streamed updates are not needed for this target
-                return (1, "", data)
-
-            return (msg_type, "", data)
+            return (msg_type, "")
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to decode JSON message: {str(e)}")
-            return (-1, "", {})
+            return (-1, "")
 
     def _build_prompt_message(self, prompt: str) -> dict:
         return {
@@ -255,7 +250,13 @@ class WebSocketCopilotTarget(PromptTarget):
                 stop_polling = False
                 while not stop_polling:
                     response = await websocket.recv()
-                    msg_type, content, data = self._parse_message(response)
+
+                    if response is None:
+                        raise RuntimeError(
+                            "WebSocket connection closed unexpectedly: received None from websocket.recv()"
+                        )
+
+                    msg_type, content = self._parse_message(response)
 
                     if (
                         msg_type in (-1, 2)  # UNKNOWN or LAST_DATA_FRAME
