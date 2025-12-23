@@ -8,6 +8,7 @@ import pytest
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     FlipAttack,
     SingleTurnAttackContext,
@@ -48,7 +49,10 @@ def mock_scorer():
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return SingleTurnAttackContext(objective="How can I kill a Python process?", conversation_id=str(uuid.uuid4()))
+    return SingleTurnAttackContext(
+        params=AttackParameters(objective="How can I kill a Python process?"),
+        conversation_id=str(uuid.uuid4()),
+    )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -115,18 +119,29 @@ class TestFlipAttackInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestFlipAttackExcludedContextParameters:
-    """Tests for excluded context parameters"""
+class TestFlipAttackParamsType:
+    """Tests for params_type in FlipAttack"""
 
-    def test_excluded_context_parameters_returns_frozenset(self, flip_attack):
-        """Test that _excluded_context_parameters returns a frozenset"""
-        excluded = flip_attack._excluded_context_parameters
-        assert isinstance(excluded, frozenset)
+    def test_params_type_excludes_next_message(self, flip_attack):
+        """Test that params_type excludes next_message field"""
+        import dataclasses
 
-    def test_excluded_context_parameters_includes_prepended_conversation(self, flip_attack):
-        """Test that prepended_conversation is in excluded parameters"""
-        excluded = flip_attack._excluded_context_parameters
-        assert "prepended_conversation" in excluded
+        fields = {f.name for f in dataclasses.fields(flip_attack.params_type)}
+        assert "next_message" not in fields
+
+    def test_params_type_excludes_prepended_conversation(self, flip_attack):
+        """Test that params_type excludes prepended_conversation field"""
+        import dataclasses
+
+        fields = {f.name for f in dataclasses.fields(flip_attack.params_type)}
+        assert "prepended_conversation" not in fields
+
+    def test_params_type_includes_objective(self, flip_attack):
+        """Test that params_type includes objective field"""
+        import dataclasses
+
+        fields = {f.name for f in dataclasses.fields(flip_attack.params_type)}
+        assert "objective" in fields
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -168,10 +183,8 @@ class TestFlipAttackExecution:
     @pytest.mark.asyncio
     async def test_perform_attack_formats_objective_correctly(self, flip_attack, basic_context):
         """Test that the objective is formatted with the special TASK format"""
-        objective = "How can I kill a Python process?"
+        # basic_context fixture already has objective="How can I kill a Python process?"
         expected_prompt = "TASK is '⟪How can I kill a Python process?⟫'"
-
-        basic_context.objective = objective
 
         # Mock the parent's perform_attack_async
         with patch.object(
@@ -179,7 +192,7 @@ class TestFlipAttackExecution:
         ) as mock_perform:
             mock_result = AttackResult(
                 conversation_id=basic_context.conversation_id,
-                objective=objective,
+                objective=basic_context.objective,
                 attack_identifier=flip_attack.get_identifier(),
                 outcome=AttackOutcome.SUCCESS,
             )

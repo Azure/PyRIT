@@ -199,43 +199,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
             "id": str(self._id),
         }
 
-    @property
-    def accepted_context_parameters(self) -> set[str]:
-        """
-        Get the set of parameter names accepted by this strategy's context type.
-
-        This property inspects the context type's dataclass fields to determine
-        what parameters are accepted when creating a context, then subtracts any
-        parameters that the strategy explicitly excludes via _excluded_context_parameters.
-        This is used by executors to filter out unsupported parameters before context creation.
-
-        Returns:
-            set[str]: Set of parameter names the context type accepts.
-        """
-        accepted: set[str] = set()
-        for cls in self._context_type.__mro__:
-            if dataclasses.is_dataclass(cls):
-                accepted.update(f.name for f in dataclasses.fields(cls))
-        return accepted - self._excluded_context_parameters
-
-    @property
-    def _excluded_context_parameters(self) -> frozenset[str]:
-        """
-        Get the set of parameter names that this strategy explicitly excludes.
-
-        Some strategies generate certain context parameters internally and should not
-        accept them from external callers. Subclasses can override this property to
-        declare which parameters they reject, allowing executors to filter them out
-        before context creation.
-
-        For example, RolePlayAttack generates next_message and prepended_conversation
-        internally, so it excludes those parameters.
-
-        Returns:
-            frozenset[str]: Set of parameter names this strategy excludes. Empty by default.
-        """
-        return frozenset()
-
     def _register_event_handler(self, event_handler: StrategyEventHandler[StrategyContextT, StrategyResultT]) -> None:
         """
         Register an event handler for strategy events.

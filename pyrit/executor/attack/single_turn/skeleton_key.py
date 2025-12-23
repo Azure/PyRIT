@@ -8,6 +8,7 @@ from typing import Optional
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
@@ -22,6 +23,10 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
+
+# SkeletonKeyAttack does not support prepended conversations
+# as it manages its own conversation flow with the skeleton key prompt.
+SkeletonKeyAttackParameters = AttackParameters.excluding("prepended_conversation", "next_message")
 
 
 class SkeletonKeyAttack(PromptSendingAttack):
@@ -74,6 +79,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
+            params_type=SkeletonKeyAttackParameters,
         )
 
         # Load skeleton key prompt
@@ -93,14 +99,6 @@ class SkeletonKeyAttack(PromptSendingAttack):
             return skeleton_key_prompt
 
         return SeedDataset.from_yaml_file(self.DEFAULT_SKELETON_KEY_PROMPT_PATH).prompts[0].value
-
-    @property
-    def _excluded_context_parameters(self) -> frozenset[str]:
-        """
-        SkeletonKeyAttack does not support prepended conversations
-        as it manages its own conversation flow with the skeleton key prompt.
-        """
-        return frozenset({"prepended_conversation"})
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """

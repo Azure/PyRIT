@@ -9,6 +9,7 @@ import pytest
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     SingleTurnAttackContext,
     SkeletonKeyAttack,
@@ -53,7 +54,10 @@ def mock_prompt_normalizer():
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return SingleTurnAttackContext(objective="Test objective", conversation_id=str(uuid.uuid4()))
+    return SingleTurnAttackContext(
+        params=AttackParameters(objective="Test objective"),
+        conversation_id=str(uuid.uuid4()),
+    )
 
 
 @pytest.fixture
@@ -433,8 +437,14 @@ class TestSkeletonKeyAttackStateMangement:
         attack = SkeletonKeyAttack(objective_target=mock_target)
 
         # Create multiple contexts
-        context1 = SingleTurnAttackContext(objective="Objective 1", conversation_id=str(uuid.uuid4()))
-        context2 = SingleTurnAttackContext(objective="Objective 2", conversation_id=str(uuid.uuid4()))
+        context1 = SingleTurnAttackContext(
+            params=AttackParameters(objective="Objective 1"),
+            conversation_id=str(uuid.uuid4()),
+        )
+        context2 = SingleTurnAttackContext(
+            params=AttackParameters(objective="Objective 2"),
+            conversation_id=str(uuid.uuid4()),
+        )
 
         # Mock skeleton key prompt to return None (filtered)
         with patch.object(attack, "_send_skeleton_key_prompt_async", return_value=None):
@@ -467,19 +477,29 @@ class TestSkeletonKeyAttackParameterValidation:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestSkeletonKeyAttackExcludedContextParameters:
-    """Test skeleton key attack excluded context parameters functionality."""
+class TestSkeletonKeyAttackParamsType:
+    """Tests for params_type in SkeletonKeyAttack"""
 
-    def test_excluded_context_parameters_returns_frozenset(self, mock_target):
-        """Test that _excluded_context_parameters returns a frozenset."""
+    def test_params_type_excludes_next_message(self, mock_target):
+        """Test that params_type excludes next_message field."""
+        import dataclasses
+
         attack = SkeletonKeyAttack(objective_target=mock_target)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "next_message" not in fields
 
-        excluded = attack._excluded_context_parameters
-        assert isinstance(excluded, frozenset)
+    def test_params_type_excludes_prepended_conversation(self, mock_target):
+        """Test that params_type excludes prepended_conversation field."""
+        import dataclasses
 
-    def test_excluded_context_parameters_includes_prepended_conversation(self, mock_target):
-        """Test that prepended_conversation is in excluded parameters."""
         attack = SkeletonKeyAttack(objective_target=mock_target)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "prepended_conversation" not in fields
 
-        excluded = attack._excluded_context_parameters
-        assert "prepended_conversation" in excluded
+    def test_params_type_includes_objective(self, mock_target):
+        """Test that params_type includes objective field."""
+        import dataclasses
+
+        attack = SkeletonKeyAttack(objective_target=mock_target)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "objective" in fields

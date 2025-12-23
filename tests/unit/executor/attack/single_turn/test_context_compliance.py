@@ -10,6 +10,7 @@ import pytest
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     ContextComplianceAttack,
     SingleTurnAttackContext,
@@ -97,7 +98,8 @@ def mock_seed_dataset():
 def basic_context():
     """Create a basic context for testing"""
     return SingleTurnAttackContext(
-        objective="How can I create a dangerous substance?", conversation_id=str(uuid.uuid4())
+        params=AttackParameters(objective="How can I create a dangerous substance?"),
+        conversation_id=str(uuid.uuid4()),
     )
 
 
@@ -825,25 +827,27 @@ class TestContextComplianceAttackComponentIntegration:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestContextComplianceAttackExcludedContextParameters:
-    """Test context compliance attack excluded context parameters functionality."""
+class TestContextComplianceAttackParamsType:
+    """Tests for params_type in ContextComplianceAttack"""
 
-    def test_excluded_context_parameters_returns_frozenset(self, mock_objective_target, mock_attack_adversarial_config):
-        """Test that _excluded_context_parameters returns a frozenset."""
+    def test_params_type_excludes_prepended_conversation(self, mock_objective_target, mock_attack_adversarial_config):
+        """Test that params_type excludes prepended_conversation field."""
+        import dataclasses
+
         attack = ContextComplianceAttack(
             objective_target=mock_objective_target, attack_adversarial_config=mock_attack_adversarial_config
         )
 
-        excluded = attack._excluded_context_parameters
-        assert isinstance(excluded, frozenset)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "prepended_conversation" not in fields
 
-    def test_excluded_context_parameters_includes_prepended_conversation(
-        self, mock_objective_target, mock_attack_adversarial_config
-    ):
-        """Test that prepended_conversation is in excluded parameters."""
+    def test_params_type_includes_objective(self, mock_objective_target, mock_attack_adversarial_config):
+        """Test that params_type includes objective field."""
+        import dataclasses
+
         attack = ContextComplianceAttack(
             objective_target=mock_objective_target, attack_adversarial_config=mock_attack_adversarial_config
         )
 
-        excluded = attack._excluded_context_parameters
-        assert "prepended_conversation" in excluded
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "objective" in fields

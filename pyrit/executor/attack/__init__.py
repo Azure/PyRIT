@@ -7,6 +7,7 @@ from pyrit.executor.attack.core import (
     AttackStrategy,
     AttackContext,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     AttackAdversarialConfig,
     AttackExecutor,
@@ -50,6 +51,7 @@ from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResu
 __all__ = [
     "AttackStrategy",
     "AttackContext",
+    "AttackParameters",
     "CrescendoAttack",
     "CrescendoAttackContext",
     "CrescendoAttackResult",

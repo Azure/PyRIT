@@ -8,6 +8,7 @@ import pytest
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     ManyShotJailbreakAttack,
     SingleTurnAttackContext,
@@ -62,7 +63,8 @@ def mock_scorer():
 def basic_context():
     """Create a basic context for testing"""
     return SingleTurnAttackContext(
-        objective="How can I break into a computer system?", conversation_id=str(uuid.uuid4())
+        params=AttackParameters(objective="How can I break into a computer system?"),
+        conversation_id=str(uuid.uuid4()),
     )
 
 
@@ -170,36 +172,53 @@ class TestManyShotJailbreakAttackInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestManyShotJailbreakAttackExcludedContextParameters:
-    """Tests for excluded context parameters"""
+class TestManyShotJailbreakAttackParamsType:
+    """Tests for params_type in ManyShotJailbreakAttack"""
 
     @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.SeedPrompt.from_yaml_file")
     @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.fetch_many_shot_jailbreaking_dataset")
-    def test_excluded_context_parameters_returns_frozenset(
+    def test_params_type_excludes_next_message(
         self, mock_fetch_dataset, mock_from_yaml, mock_objective_target, mock_template, sample_many_shot_examples
     ):
-        """Test that _excluded_context_parameters returns a frozenset."""
+        """Test that params_type excludes next_message field."""
+        import dataclasses
+
         mock_from_yaml.return_value = mock_template
         mock_fetch_dataset.return_value = sample_many_shot_examples
 
         attack = ManyShotJailbreakAttack(objective_target=mock_objective_target)
-
-        excluded = attack._excluded_context_parameters
-        assert isinstance(excluded, frozenset)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "next_message" not in fields
 
     @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.SeedPrompt.from_yaml_file")
     @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.fetch_many_shot_jailbreaking_dataset")
-    def test_excluded_context_parameters_includes_prepended_conversation(
+    def test_params_type_excludes_prepended_conversation(
         self, mock_fetch_dataset, mock_from_yaml, mock_objective_target, mock_template, sample_many_shot_examples
     ):
-        """Test that prepended_conversation is in excluded parameters."""
+        """Test that params_type excludes prepended_conversation field."""
+        import dataclasses
+
         mock_from_yaml.return_value = mock_template
         mock_fetch_dataset.return_value = sample_many_shot_examples
 
         attack = ManyShotJailbreakAttack(objective_target=mock_objective_target)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "prepended_conversation" not in fields
 
-        excluded = attack._excluded_context_parameters
-        assert "prepended_conversation" in excluded
+    @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.SeedPrompt.from_yaml_file")
+    @patch("pyrit.executor.attack.single_turn.many_shot_jailbreak.fetch_many_shot_jailbreaking_dataset")
+    def test_params_type_includes_objective(
+        self, mock_fetch_dataset, mock_from_yaml, mock_objective_target, mock_template, sample_many_shot_examples
+    ):
+        """Test that params_type includes objective field."""
+        import dataclasses
+
+        mock_from_yaml.return_value = mock_template
+        mock_fetch_dataset.return_value = sample_many_shot_examples
+
+        attack = ManyShotJailbreakAttack(objective_target=mock_objective_target)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "objective" in fields
 
 
 @pytest.mark.usefixtures("patch_central_database")

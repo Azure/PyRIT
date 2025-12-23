@@ -8,6 +8,7 @@ import pytest
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     ConversationSession,
     ConversationState,
@@ -63,7 +64,7 @@ def mock_prompt_normalizer():
 def basic_context():
     """Create a basic context for testing"""
     return MultiPromptSendingAttackContext(
-        objective="Test objective",
+        params=AttackParameters(objective="Test objective"),
         session=ConversationSession(),
         messages=[
             Message.from_prompt(prompt="First prompt", role="user"),
@@ -190,7 +191,7 @@ class TestContextValidation:
     def test_validate_context_raises_for_empty_objective(self, mock_target):
         attack = MultiPromptSendingAttack(objective_target=mock_target)
         context = MultiPromptSendingAttackContext(
-            objective="",
+            params=AttackParameters(objective=""),
             session=ConversationSession(),
             messages=[Message.from_prompt(prompt="prompt1", role="user")],
         )
@@ -201,7 +202,7 @@ class TestContextValidation:
     def test_validate_context_raises_for_whitespace_objective(self, mock_target):
         attack = MultiPromptSendingAttack(objective_target=mock_target)
         context = MultiPromptSendingAttackContext(
-            objective="   ",
+            params=AttackParameters(objective="   "),
             session=ConversationSession(),
             messages=[Message.from_prompt(prompt="prompt1", role="user")],
         )
@@ -212,7 +213,7 @@ class TestContextValidation:
     def test_validate_context_raises_for_empty_messages(self, mock_target):
         attack = MultiPromptSendingAttack(objective_target=mock_target)
         context = MultiPromptSendingAttackContext(
-            objective="Valid objective",
+            params=AttackParameters(objective="Valid objective"),
             session=ConversationSession(),
             messages=[],
         )
@@ -638,7 +639,7 @@ class TestEdgeCasesAndErrorHandling:
         attack = MultiPromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
         context = MultiPromptSendingAttackContext(
-            objective="Test objective",
+            params=AttackParameters(objective="Test objective"),
             session=ConversationSession(),
             messages=[Message.from_prompt(prompt="Single prompt", role="user")],
         )

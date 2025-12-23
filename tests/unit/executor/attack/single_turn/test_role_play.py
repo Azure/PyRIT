@@ -11,6 +11,7 @@ import yaml
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     RolePlayAttack,
     SingleTurnAttackContext,
@@ -101,7 +102,10 @@ def role_play_attack(mock_objective_target, mock_adversarial_chat_target, role_p
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return SingleTurnAttackContext(objective="test objective", conversation_id=str(uuid.uuid4()))
+    return SingleTurnAttackContext(
+        params=AttackParameters(objective="test objective"),
+        conversation_id=str(uuid.uuid4()),
+    )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -296,23 +300,29 @@ class TestRolePlayAttack:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestRolePlayAttackExcludedContextParameters:
-    """Tests for excluded context parameters in RolePlayAttack"""
+class TestRolePlayAttackParamsType:
+    """Tests for params_type in RolePlayAttack"""
 
-    def test_excluded_context_parameters_returns_frozenset(self, role_play_attack):
-        """Test that _excluded_context_parameters returns a frozenset"""
-        excluded = role_play_attack._excluded_context_parameters
-        assert isinstance(excluded, frozenset)
+    def test_params_type_excludes_next_message(self, role_play_attack):
+        """Test that params_type excludes next_message field"""
+        import dataclasses
 
-    def test_excluded_context_parameters_includes_next_message(self, role_play_attack):
-        """Test that next_message is in excluded parameters"""
-        excluded = role_play_attack._excluded_context_parameters
-        assert "next_message" in excluded
+        fields = {f.name for f in dataclasses.fields(role_play_attack.params_type)}
+        assert "next_message" not in fields
 
-    def test_excluded_context_parameters_includes_prepended_conversation(self, role_play_attack):
-        """Test that prepended_conversation is in excluded parameters"""
-        excluded = role_play_attack._excluded_context_parameters
-        assert "prepended_conversation" in excluded
+    def test_params_type_excludes_prepended_conversation(self, role_play_attack):
+        """Test that params_type excludes prepended_conversation field"""
+        import dataclasses
+
+        fields = {f.name for f in dataclasses.fields(role_play_attack.params_type)}
+        assert "prepended_conversation" not in fields
+
+    def test_params_type_includes_objective(self, role_play_attack):
+        """Test that params_type includes objective field"""
+        import dataclasses
+
+        fields = {f.name for f in dataclasses.fields(role_play_attack.params_type)}
+        assert "objective" in fields
 
 
 @pytest.mark.usefixtures("patch_central_database")

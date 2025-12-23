@@ -3,12 +3,13 @@
 
 import logging
 import uuid
-from typing import Optional
+from typing import Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
@@ -56,6 +57,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
+        params_type: Type[AttackParamsT] = AttackParameters,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -66,12 +68,20 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
             max_attempts_on_failure (int): Maximum number of attempts to retry on failure.
+            params_type (Type[AttackParamsT]): The type of parameters this strategy accepts.
+                Defaults to AttackParameters. Use AttackParameters.excluding() to create
+                a params type that rejects certain fields.
 
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(objective_target=objective_target, logger=logger, context_type=SingleTurnAttackContext)
+        super().__init__(
+            objective_target=objective_target,
+            logger=logger,
+            context_type=SingleTurnAttackContext,
+            params_type=params_type,
+        )
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()

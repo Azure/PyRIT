@@ -8,6 +8,7 @@ import pytest
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     PromptSendingAttack,
     SingleTurnAttackContext,
@@ -63,7 +64,10 @@ def mock_prompt_normalizer():
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return SingleTurnAttackContext(objective="Test objective", conversation_id=str(uuid.uuid4()))
+    return SingleTurnAttackContext(
+        params=AttackParameters(objective="Test objective"),
+        conversation_id=str(uuid.uuid4()),
+    )
 
 
 @pytest.fixture
@@ -184,7 +188,10 @@ class TestContextValidation:
     )
     def test_validate_context_raises_errors(self, mock_target, objective, conversation_id, expected_error):
         attack = PromptSendingAttack(objective_target=mock_target)
-        context = SingleTurnAttackContext(objective=objective, conversation_id=conversation_id)
+        context = SingleTurnAttackContext(
+            params=AttackParameters(objective=objective),
+            conversation_id=conversation_id,
+        )
 
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
@@ -196,9 +203,11 @@ class TestContextValidation:
     def test_validate_context_with_additional_optional_fields(self, mock_target):
         attack = PromptSendingAttack(objective_target=mock_target)
         context = SingleTurnAttackContext(
-            objective="Test objective",
+            params=AttackParameters(
+                objective="Test objective",
+                next_message=Message.from_prompt(prompt="test", role="user"),
+            ),
             conversation_id=str(uuid.uuid4()),
-            next_message=Message.from_prompt(prompt="test", role="user"),
             system_prompt="System prompt",
             metadata={"key": "value"},
         )
@@ -280,12 +289,16 @@ class TestPromptPreparation:
         assert result.message_pieces[0].original_value == existing_message.message_pieces[0].original_value
         assert result.message_pieces[0].role == existing_message.message_pieces[0].role
 
-    def test_get_message_creates_from_objective_when_no_message(self, mock_target, basic_context):
-        basic_context.next_message = None
-        basic_context.objective = "Custom objective text"
+    def test_get_message_creates_from_objective_when_no_message(self, mock_target):
+        # Create context with specific objective for this test
+        context = SingleTurnAttackContext(
+            params=AttackParameters(objective="Custom objective text"),
+            conversation_id=str(uuid.uuid4()),
+        )
+        context.next_message = None
 
         attack = PromptSendingAttack(objective_target=mock_target)
-        result = attack._get_message(basic_context)
+        result = attack._get_message(context)
 
         assert isinstance(result, Message)
         assert len(result.message_pieces) == 1
@@ -697,11 +710,15 @@ class TestConverterIntegration:
             prompt_normalizer=mock_prompt_normalizer,
         )
 
-        basic_context.objective = input_text
+        # Create context with specific objective for this parameterized test
+        context = SingleTurnAttackContext(
+            params=AttackParameters(objective=input_text),
+            conversation_id=str(uuid.uuid4()),
+        )
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
         # Execute the attack
-        await attack._perform_async(context=basic_context)
+        await attack._perform_async(context=context)
 
         # Verify the converter configuration was passed
         call_args = mock_prompt_normalizer.send_prompt_async.call_args
@@ -793,7 +810,10 @@ class TestDetermineAttackOutcome:
             attack = PromptSendingAttack(objective_target=mock_target, max_attempts_on_failure=max_attempts)
             attack._objective_scorer = MagicMock()
 
-            context = SingleTurnAttackContext(objective="Test objective", conversation_id=str(uuid.uuid4()))
+            context = SingleTurnAttackContext(
+                params=AttackParameters(objective="Test objective"),
+                conversation_id=str(uuid.uuid4()),
+            )
 
             outcome, reason = attack._determine_attack_outcome(
                 response=sample_response, score=failure_score, context=context
@@ -1027,13 +1047,13 @@ class TestAttackLifecycle:
         """Test execute_async raises error when invalid parameters are passed"""
         attack = PromptSendingAttack(objective_target=mock_target)
 
-        # Test with invalid message type
-        with pytest.raises(TypeError, match="Parameter 'next_message' must be of type Message"):
+        # Test with invalid message type - causes error during execution
+        with pytest.raises(RuntimeError):
             await attack.execute_async(objective="Test objective", next_message="invalid_type")  # Should be Message
 
-        # Test with invalid system_prompt type
-        with pytest.raises(TypeError, match="Parameter 'system_prompt' must be of type str"):
-            await attack.execute_async(objective="Test objective", system_prompt=123)  # Should be string
+        # Test with unknown parameter - should raise ValueError
+        with pytest.raises(ValueError, match="does not accept parameters"):
+            await attack.execute_async(objective="Test objective", unknown_param="invalid")  # Unknown param
 
 
 @pytest.mark.usefixtures("patch_central_database")

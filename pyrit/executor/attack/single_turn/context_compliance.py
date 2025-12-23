@@ -12,6 +12,7 @@ from pyrit.executor.attack.core import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
@@ -25,6 +26,10 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
+
+# ContextComplianceAttack generates prepended_conversation internally
+# by building a benign context conversation.
+ContextComplianceAttackParameters = AttackParameters.excluding("prepended_conversation", "next_message")
 
 
 class ContextComplianceAttack(PromptSendingAttack):
@@ -88,6 +93,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
+            params_type=ContextComplianceAttackParameters,
         )
 
         # Store adversarial chat target
@@ -124,14 +130,6 @@ class ContextComplianceAttack(PromptSendingAttack):
         self._rephrase_objective_to_user_turn = context_description_instructions.prompts[0]
         self._answer_user_turn = context_description_instructions.prompts[1]
         self._rephrase_objective_to_question = context_description_instructions.prompts[2]
-
-    @property
-    def _excluded_context_parameters(self) -> frozenset[str]:
-        """
-        ContextComplianceAttack generates prepended_conversation internally
-        by building a benign context conversation.
-        """
-        return frozenset({"prepended_conversation"})
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """

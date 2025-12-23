@@ -3,15 +3,16 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import time
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Dict, Optional, TypeVar, overload
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, cast, overload
 
 from pyrit.common.logger import logger
-from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.executor.core import (
     Strategy,
     StrategyContext,
@@ -33,23 +34,82 @@ AttackStrategyResultT = TypeVar("AttackStrategyResultT", bound="AttackResult")
 
 
 @dataclass
-class AttackContext(StrategyContext, ABC):
-    """Base class for all attack contexts."""
+class AttackContext(StrategyContext, ABC, Generic[AttackParamsT]):
+    """Base class for all attack contexts.
 
-    # Natural-language description of what the attack tries to achieve
-    objective: str
+    This class holds both the immutable attack parameters and the mutable
+    execution state. The params field contains caller-provided inputs,
+    while other fields track execution progress.
+
+    Attacks that generate certain values internally (e.g., RolePlayAttack generates
+    next_message and prepended_conversation) can set the mutable override fields
+    (_next_message_override, _prepended_conversation_override) during _setup_async.
+    """
+
+    # Immutable parameters from the caller
+    params: AttackParamsT
 
     # Start time of the attack execution
     start_time: float = 0.0
 
-    # Additional labels that can be applied to the prompts throughout the attack
-    memory_labels: Dict[str, str] = field(default_factory=dict)
-
     # Conversations relevant while the attack is running
     related_conversations: set[ConversationReference] = field(default_factory=set)
 
-    # Conversation that is automatically prepended to the target model
-    prepended_conversation: list[Message] = field(default_factory=list)
+    # Mutable overrides for attacks that generate these values internally
+    _next_message_override: Optional[Message] = None
+    _prepended_conversation_override: Optional[List[Message]] = None
+    _memory_labels_override: Optional[Dict[str, str]] = None
+
+    # Convenience properties that delegate to params or overrides
+    @property
+    def objective(self) -> str:
+        """Natural-language description of what the attack tries to achieve."""
+        return self.params.objective
+
+    @property
+    def memory_labels(self) -> Dict[str, str]:
+        """Additional labels that can be applied to the prompts throughout the attack."""
+        # Check override first (for attacks that merge labels)
+        if self._memory_labels_override is not None:
+            return self._memory_labels_override
+        return self.params.memory_labels or {}
+
+    @memory_labels.setter
+    def memory_labels(self, value: Dict[str, str]) -> None:
+        """Set the memory labels (for attacks that merge strategy + context labels)."""
+        self._memory_labels_override = value
+
+    @property
+    def prepended_conversation(self) -> List[Message]:
+        """Conversation that is automatically prepended to the target model."""
+        # Check override first (for attacks that generate internally)
+        if self._prepended_conversation_override is not None:
+            return self._prepended_conversation_override
+        # Then check params
+        if hasattr(self.params, "prepended_conversation") and self.params.prepended_conversation:
+            return self.params.prepended_conversation
+        return []
+
+    @prepended_conversation.setter
+    def prepended_conversation(self, value: List[Message]) -> None:
+        """Set the prepended conversation (for attacks that generate internally)."""
+        self._prepended_conversation_override = value
+
+    @property
+    def next_message(self) -> Optional[Message]:
+        """Optional message to send to the objective target."""
+        # Check override first (for attacks that generate internally)
+        if self._next_message_override is not None:
+            return self._next_message_override
+        # Then check params
+        if hasattr(self.params, "next_message"):
+            return self.params.next_message
+        return None
+
+    @next_message.setter
+    def next_message(self, value: Optional[Message]) -> None:
+        """Set the next message (for attacks that generate internally)."""
+        self._next_message_override = value
 
 
 class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyContextT, AttackStrategyResultT]):
@@ -174,6 +234,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         *,
         objective_target: PromptTarget,
         context_type: type[AttackStrategyContextT],
+        params_type: Type[AttackParamsT] = AttackParameters,
         logger: logging.Logger = logger,
     ):
         """
@@ -182,6 +243,9 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         Args:
             objective_target (PromptTarget): The target system to attack.
             context_type (type[AttackStrategyContextT]): The type of context this strategy operates on.
+            params_type (Type[AttackParamsT]): The type of parameters this strategy accepts.
+                Defaults to AttackParameters. Use AttackParameters.excluding() to create
+                a params type that rejects certain fields.
             logger (logging.Logger): Logger instance for logging events.
         """
         super().__init__(
@@ -192,6 +256,17 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
             logger=logger,
         )
         self._objective_target = objective_target
+        self._params_type = params_type
+
+    @property
+    def params_type(self) -> Type[AttackParameters]:
+        """
+        Get the parameters type for this attack strategy.
+
+        Returns:
+            Type[AttackParameters]: The parameters type this strategy accepts.
+        """
+        return self._params_type
 
     def get_objective_target(self) -> PromptTarget:
         """
@@ -220,7 +295,8 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         self,
         *,
         objective: str,
-        prepended_conversation: Optional[list[Message]] = None,
+        next_message: Optional[Message] = None,
+        prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs,
     ) -> AttackStrategyResultT: ...
@@ -238,25 +314,61 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         """
         Execute the attack strategy asynchronously with the provided parameters.
 
+        This method provides a stable contract for all attacks. The signature includes
+        all standard parameters (objective, next_message, prepended_conversation, memory_labels).
+        Attacks that don't accept certain parameters will raise ValueError if those
+        parameters are provided.
+
         Args:
             objective (str): The objective of the attack.
+            next_message (Optional[Message]): Message to send to the target.
             prepended_conversation (Optional[List[Message]]): Conversation to prepend.
             memory_labels (Optional[Dict[str, str]]): Memory labels for the attack context.
-            **kwargs: Additional parameters for the attack.
+            **kwargs: Additional context-specific parameters (conversation_id, system_prompt, etc.).
 
         Returns:
             AttackStrategyResultT: The result of the attack execution.
+
+        Raises:
+            ValueError: If required parameters are missing or if unsupported parameters are provided.
         """
-        # Validate parameters before creating context
-        objective = get_kwarg_param(kwargs=kwargs, param_name="objective", expected_type=str)
+        # Get valid field names for params and context
+        params_fields = {f.name for f in dataclasses.fields(self._params_type)}
+        context_fields = {f.name for f in dataclasses.fields(self._context_type)} - {"params"}
 
-        memory_labels = get_kwarg_param(kwargs=kwargs, param_name="memory_labels", expected_type=dict, required=False)
+        # Separate kwargs into params kwargs and context kwargs
+        params_kwargs = {}
+        context_kwargs = {}
+        unknown_fields = set()
 
-        if "prepended_conversation" in kwargs:
-            # Attacks such as TAP do not use prepended conversations
-            prepended_conversation = get_kwarg_param(
-                kwargs=kwargs, param_name="prepended_conversation", expected_type=list, required=False
+        for k, v in kwargs.items():
+            if v is None:
+                continue  # Skip None values
+            if k in params_fields:
+                params_kwargs[k] = v
+            elif k in context_fields:
+                context_kwargs[k] = v
+            else:
+                unknown_fields.add(k)
+
+        # Validate no unknown fields
+        if unknown_fields:
+            raise ValueError(
+                f"{self.__class__.__name__} does not accept parameters: {unknown_fields}. "
+                f"Accepted attack parameters: {params_fields}. "
+                f"Accepted context parameters: {context_fields}"
             )
-            kwargs["prepended_conversation"] = prepended_conversation
 
-        return await super().execute_async(**kwargs, objective=objective, memory_labels=memory_labels)
+        # Validate objective is provided
+        if "objective" not in params_kwargs:
+            raise ValueError("objective is required")
+
+        # Construct params instance
+        params = self._params_type(**params_kwargs)
+
+        # Create context with params and context-specific kwargs
+        # Note: We use cast here because the type checker doesn't know that _context_type
+        # (which is AttackContext or a subclass) always accepts 'params' as a keyword argument.
+        context = cast(AttackStrategyContextT, self._context_type(params=params, **context_kwargs))  # type: ignore[call-arg]
+
+        return await self.execute_with_context_async(context=context)
