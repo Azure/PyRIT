@@ -57,7 +57,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
-        params_type: Type[AttackParamsT] = AttackParameters,
+        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
     ) -> None:
         """
         Initialize the prompt injection attack strategy.

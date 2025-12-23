@@ -541,11 +541,11 @@ class TestAtomicAttackExecutorParamCompatibility:
         # These are the parameters that execute_attack_from_seed_groups_async accepts
         expected_params = set(sig.parameters.keys()) - {"self"}
 
-        # Verify the parameters we know AtomicAttack should pass
+        # Verify the explicit parameters we know AtomicAttack should pass
+        # Note: memory_labels is passed via **broadcast_fields, not as an explicit parameter
         required_from_atomic_attack = {
             "attack",
             "seed_groups",
-            "memory_labels",
             "return_partial_on_failure",
         }
 
@@ -553,6 +553,9 @@ class TestAtomicAttackExecutorParamCompatibility:
         assert required_from_atomic_attack.issubset(
             expected_params
         ), f"Missing expected params in executor: {required_from_atomic_attack - expected_params}"
+
+        # Verify that the executor accepts **broadcast_fields (e.g., for memory_labels)
+        assert "broadcast_fields" in expected_params, "Executor should accept **broadcast_fields for dynamic params"
 
     @pytest.mark.asyncio
     async def test_run_async_only_passes_valid_executor_params(

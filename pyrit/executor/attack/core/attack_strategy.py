@@ -8,7 +8,7 @@ import logging
 import time
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, cast, overload
+from typing import Dict, Generic, List, Optional, Type, TypeVar, cast, overload
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
@@ -35,7 +35,8 @@ AttackStrategyResultT = TypeVar("AttackStrategyResultT", bound="AttackResult")
 
 @dataclass
 class AttackContext(StrategyContext, ABC, Generic[AttackParamsT]):
-    """Base class for all attack contexts.
+    """
+    Base class for all attack contexts.
 
     This class holds both the immutable attack parameters and the mutable
     execution state. The params field contains caller-provided inputs,
@@ -234,7 +235,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         *,
         objective_target: PromptTarget,
         context_type: type[AttackStrategyContextT],
-        params_type: Type[AttackParamsT] = AttackParameters,
+        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         logger: logging.Logger = logger,
     ):
         """
@@ -369,6 +370,8 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         # Create context with params and context-specific kwargs
         # Note: We use cast here because the type checker doesn't know that _context_type
         # (which is AttackContext or a subclass) always accepts 'params' as a keyword argument.
-        context = cast(AttackStrategyContextT, self._context_type(params=params, **context_kwargs))  # type: ignore[call-arg]
+        context = cast(
+            AttackStrategyContextT, self._context_type(params=params, **context_kwargs)
+        )  # type: ignore[call-arg]
 
         return await self.execute_with_context_async(context=context)

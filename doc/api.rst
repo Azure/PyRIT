@@ -180,9 +180,12 @@ API Reference
     AttackContext
     AttackConverterConfig
     AttackExecutor
+    AttackExecutorResult
+    AttackParameters
+    AttackResultPrinter
     AttackScoringConfig
     AttackStrategy
-    AttackResultPrinter
+    ConsoleAttackResultPrinter
     ContextComplianceAttack
     ConversationManager
     ConversationSession
@@ -197,21 +200,19 @@ API Reference
     MultiPromptSendingAttackContext
     MultiTurnAttackContext
     MultiTurnAttackStrategy
-    AttackExecutorResult
     ObjectiveEvaluator
     PromptSendingAttack
-    RolePlayPaths
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
+    RolePlayPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
+    SkeletonKeyAttack
     TAPAttack
     TAPAttackContext
     TAPAttackResult
     TreeOfAttacksWithPruningAttack
-    SkeletonKeyAttack
-    ConsoleAttackResultPrinter
 
 :py:mod:`pyrit.executor.promptgen`
 ==================================

@@ -3,13 +3,14 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Any, List, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
 )
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
@@ -22,12 +23,72 @@ from pyrit.models import (
     AttackResult,
     Message,
     Score,
+    SeedGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class MultiPromptSendingAttackParameters(AttackParameters):
+    """
+    Parameters for MultiPromptSendingAttack.
+    
+    Extends AttackParameters to include messages field for multi-turn attacks.
+    Only accepts objective and messages fields.
+    """
+
+    messages: Optional[List[Message]] = None
+
+    @classmethod
+    def from_seed_group(
+        cls: Type["MultiPromptSendingAttackParameters"],
+        seed_group: SeedGroup,
+        **overrides: Any,
+    ) -> "MultiPromptSendingAttackParameters":
+        """
+        Create parameters from a SeedGroup, extracting user messages.
+
+        Args:
+            seed_group: The seed group to extract parameters from.
+            **overrides: Field overrides to apply.
+
+        Returns:
+            MultiPromptSendingAttackParameters instance.
+
+        Raises:
+            ValueError: If seed_group has no objective, no user messages, or if overrides contain invalid fields.
+        """
+        # Extract objective (required)
+        if seed_group.objective is None:
+            raise ValueError("SeedGroup must have an objective")
+        
+        # Extract messages from seed group (required)
+        messages = seed_group.user_messages
+        if not messages:
+            raise ValueError(
+                "SeedGroup must have user_messages for MultiPromptSendingAttack. "
+                "This attack requires multi-turn message sequences."
+            )
+        
+        # Validate overrides only contain valid fields
+        valid_fields = {"objective", "messages", "memory_labels"}
+        invalid_fields = set(overrides.keys()) - valid_fields
+        if invalid_fields:
+            raise ValueError(
+                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. "
+                f"Only accepts: {valid_fields}"
+            )
+        
+        # Build parameters with only objective, messages, and memory_labels
+        return cls(
+            objective=seed_group.objective.value,
+            memory_labels=overrides.get("memory_labels", {}),
+            messages=messages,
+        )
 
 
 @dataclass
@@ -81,8 +142,13 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiPromptSendingAttackC
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
         """
-        # Initialize base class
-        super().__init__(objective_target=objective_target, logger=logger, context_type=MultiPromptSendingAttackContext)
+        # Initialize base class with custom parameters type
+        super().__init__(
+            objective_target=objective_target,
+            logger=logger,
+            context_type=MultiPromptSendingAttackContext,
+            params_type=MultiPromptSendingAttackParameters,
+        )
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()

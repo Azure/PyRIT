@@ -6,12 +6,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.core.attack_strategy import (
     AttackContext,
     AttackStrategy,
     _DefaultAttackStrategyEventHandler,
 )
-from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.core import StrategyEvent, StrategyEventData
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (

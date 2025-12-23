@@ -18,7 +18,8 @@ from pyrit.prompt_target import PromptTarget
 
 @dataclass
 class SingleTurnAttackContext(AttackContext[AttackParamsT]):
-    """Context for single-turn attacks.
+    """
+    Context for single-turn attacks.
 
     Holds execution state for single-turn attacks. The immutable attack parameters
     (objective, next_message, prepended_conversation, memory_labels) are stored in
@@ -47,7 +48,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext, AttackRes
         *,
         objective_target: PromptTarget,
         context_type: type[SingleTurnAttackContext] = SingleTurnAttackContext,
-        params_type: Type[AttackParamsT] = AttackParameters,
+        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         logger: logging.Logger = logger,
     ):
         """

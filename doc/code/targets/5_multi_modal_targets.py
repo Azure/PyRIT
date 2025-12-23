@@ -140,7 +140,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #     ),
 # )
 #
-# results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+# results = await AttackExecutor().execute_attack_async(  # type: ignore
 #     attack=attack,
 #     objectives=objectives,
 # )
@@ -156,7 +156,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # %%
 import pathlib
 
-from pyrit.executor.attack import SingleTurnAttackContext
+from pyrit.executor.attack import AttackParameters, SingleTurnAttackContext
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
@@ -194,9 +194,11 @@ seed_group = SeedGroup(
     ]
 )
 
-context = SingleTurnAttackContext(
-    objective="Describe the picture",
-    next_message=seed_group.next_message,
+context: SingleTurnAttackContext = SingleTurnAttackContext(
+    params=AttackParameters(
+        objective="Describe the picture",
+        next_message=seed_group.next_message,
+    )
 )
 
 attack = PromptSendingAttack(

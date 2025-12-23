@@ -10,20 +10,18 @@ These tests verify the new API that uses AttackParameters and params_type.
 import asyncio
 import dataclasses
 import uuid
-from typing import Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from pyrit.executor.attack import (
-    AttackContext,
     AttackExecutor,
     AttackParameters,
     AttackStrategy,
     SingleTurnAttackContext,
 )
 from pyrit.executor.attack.core.attack_executor import AttackExecutorResult
-from pyrit.models import AttackOutcome, AttackResult, Message, SeedGroup, SeedPrompt
+from pyrit.models import AttackOutcome, AttackResult, SeedGroup, SeedPrompt
 
 
 # Helper to create a properly configured mock attack
@@ -95,9 +93,7 @@ class TestExecuteAttackAsync:
     async def test_execute_multiple_objectives(self):
         """Test executing with multiple objectives."""
         attack = create_mock_attack()
-        attack.execute_with_context_async.side_effect = [
-            create_attack_result(f"Obj{i}") for i in range(3)
-        ]
+        attack.execute_with_context_async.side_effect = [create_attack_result(f"Obj{i}") for i in range(3)]
 
         executor = AttackExecutor(max_concurrency=5)
         results = await executor.execute_attack_async(
@@ -435,7 +431,8 @@ class TestDeprecatedMethods:
         executor = AttackExecutor()
 
         import warnings
-        with warnings.catch_warnings(record=True) as w:
+
+        with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
             await executor.execute_multi_objective_attack_async(
                 attack=attack,
@@ -463,7 +460,6 @@ class TestDeprecatedMethods:
     async def test_execute_multi_turn_attacks_async_emits_warning(self):
         """Test that deprecated method works and logs warning."""
         from pyrit.executor.attack import MultiTurnAttackContext
-        from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import ConversationSession
 
         attack = create_mock_attack(context_type=MultiTurnAttackContext)
         attack.execute_with_context_async.return_value = create_attack_result("Test")

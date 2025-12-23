@@ -18,8 +18,12 @@ from pyrit.executor.attack.core import (
     AttackStrategyResultT,
 )
 from pyrit.executor.attack.core.attack_parameters import AttackParameters
-from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import MultiTurnAttackContext
-from pyrit.executor.attack.single_turn.single_turn_attack_strategy import SingleTurnAttackContext
+from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
+    MultiTurnAttackContext,
+)
+from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
+    SingleTurnAttackContext,
+)
 from pyrit.models import Message, SeedGroup
 
 AttackResultT = TypeVar("AttackResultT")
@@ -43,7 +47,11 @@ class AttackExecutorResult(Generic[AttackResultT]):
     incomplete_objectives: List[tuple[str, BaseException]]
 
     def __iter__(self):
-        """Iterate over completed results."""
+        """Iterate over completed results.
+        
+        Returns:
+            Iterator over completed attack results.
+        """
         return iter(self.completed_results)
 
     def __len__(self) -> int:
@@ -51,7 +59,11 @@ class AttackExecutorResult(Generic[AttackResultT]):
         return len(self.completed_results)
 
     def __getitem__(self, index: int) -> AttackResultT:
-        """Access completed results by index."""
+        """Access completed results by index.
+        
+        Returns:
+            The attack result at the specified index.
+        """
         return self.completed_results[index]
 
     @property
@@ -75,7 +87,11 @@ class AttackExecutorResult(Generic[AttackResultT]):
             raise self.incomplete_objectives[0][1]
 
     def get_results(self) -> List[AttackResultT]:
-        """Get completed results, raising if any incomplete."""
+        """Get completed results, raising if any incomplete.
+        
+        Returns:
+            List of completed attack results.
+        """
         self.raise_if_incomplete()
         return self.completed_results
 
@@ -199,8 +215,7 @@ class AttackExecutor:
 
         if field_overrides and len(field_overrides) != len(objectives):
             raise ValueError(
-                f"field_overrides length ({len(field_overrides)}) must match "
-                f"objectives length ({len(objectives)})"
+                f"field_overrides length ({len(field_overrides)}) must match " f"objectives length ({len(objectives)})"
             )
 
         params_type = attack.params_type
@@ -389,6 +404,9 @@ class AttackExecutor:
 
         Returns:
             AttackExecutorResult with completed results and any incomplete objectives.
+            
+        Raises:
+            TypeError: If the attack does not use SingleTurnAttackContext.
         """
         logger.warning(
             "execute_single_turn_attacks_async is deprecated and will disappear in 0.13.0. "
@@ -450,6 +468,9 @@ class AttackExecutor:
 
         Returns:
             AttackExecutorResult with completed results and any incomplete objectives.
+            
+        Raises:
+            TypeError: If the attack does not use MultiTurnAttackContext.
         """
         logger.warning(
             "execute_multi_turn_attacks_async is deprecated and will disappear in 0.13.0. "

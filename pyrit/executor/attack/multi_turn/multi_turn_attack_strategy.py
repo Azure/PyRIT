@@ -38,7 +38,8 @@ class ConversationSession:
 
 @dataclass
 class MultiTurnAttackContext(AttackContext[AttackParamsT]):
-    """Context for multi-turn attacks.
+    """
+    Context for multi-turn attacks.
 
     Holds execution state for multi-turn attacks. The immutable attack parameters
     (objective, next_message, prepended_conversation, memory_labels) are stored in
@@ -70,7 +71,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         *,
         objective_target: PromptTarget,
         context_type: type[MultiTurnAttackStrategyContextT],
-        params_type: Type[AttackParamsT] = AttackParameters,
+        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         logger: logging.Logger = logger,
     ):
         """

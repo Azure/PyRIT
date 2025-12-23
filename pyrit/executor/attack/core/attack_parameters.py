@@ -66,8 +66,7 @@ class AttackParameters:
         invalid_fields = set(overrides.keys()) - valid_fields
         if invalid_fields:
             raise ValueError(
-                f"{cls.__name__} does not accept parameters: {invalid_fields}. "
-                f"Accepted parameters: {valid_fields}"
+                f"{cls.__name__} does not accept parameters: {invalid_fields}. " f"Accepted parameters: {valid_fields}"
             )
 
         # Extract objective (required)
@@ -146,7 +145,9 @@ class AttackParameters:
 
         # Copy the from_seed_group method to the new class
         # We need to bind it as a classmethod on the new class
-        new_cls.from_seed_group = classmethod(lambda c, sg, **ov: cls._from_seed_group_impl(c, sg, **ov))
+        new_cls.from_seed_group = classmethod(
+            lambda c, sg, **ov: cls._from_seed_group_impl(c, sg, **ov)
+        )  # type: ignore[attr-defined]
 
         return new_cls
 
@@ -158,7 +159,7 @@ class AttackParameters:
         **overrides: Any,
     ) -> AttackParamsT:
         """
-        Implementation of from_seed_group that can be used by dynamically created classes.
+        Implement from_seed_group for dynamically created classes.
 
         Args:
             target_cls: The actual class to instantiate (may be a dynamically created subclass).
@@ -167,6 +168,9 @@ class AttackParameters:
 
         Returns:
             An instance of target_cls.
+            
+        Raises:
+            ValueError: If seed_group has no objective or if overrides contain invalid fields.
         """
         # Get valid field names for the target class
         valid_fields = {f.name for f in dataclasses.fields(target_cls)}

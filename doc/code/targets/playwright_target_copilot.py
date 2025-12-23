@@ -30,6 +30,7 @@ from playwright.async_api import Page, async_playwright
 
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
+    AttackParameters,
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
@@ -154,9 +155,11 @@ async def run_multimodal(page: Page) -> None:
             SeedPrompt(value=objective, data_type="text"),
         ]
     )
-    attack_context = SingleTurnAttackContext(
-        next_message=seed_group.next_message,
-        objective=objective,
+    attack_context: SingleTurnAttackContext = SingleTurnAttackContext(
+        params=AttackParameters(
+            objective=objective,
+            next_message=seed_group.next_message,
+        )
     )
 
     result = await attack.execute_with_context_async(context=attack_context)  # type: ignore
