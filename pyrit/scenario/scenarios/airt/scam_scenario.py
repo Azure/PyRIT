@@ -39,10 +39,10 @@ class ScamStrategy(ScenarioStrategy):
     ROLE_PLAY = ("roleplay", {"roleplay"})
     MULTI_TURN = ("multi_turn", {"multi_turn"})
 
-    Persuasion = ("persuasion", {"roleplay"})
-    Movie = ("movie", {"roleplay"})
-    Trivia = ("trivia", {"roleplay"})
-    VideoGame = ("video_game", {"roleplay"})
+    # Persuasion = ("persuasion", {"roleplay"})
+    # Movie = ("movie", {"roleplay"})
+    # Trivia = ("trivia", {"roleplay"})
+    # VideoGame = ("video_game", {"roleplay"})
     # TranslationConverter Strategy - add (Russian language) converter to each seed prompt + add "respond in english"
 
 
@@ -167,9 +167,9 @@ class ScamScenario(Scenario):
             OpenAIChatTarget: Target that supplies the persuasion script rephrasing.
         """
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2"),
+            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2"),
             temperature=1.2,
         )
 
