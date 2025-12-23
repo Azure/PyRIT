@@ -85,13 +85,11 @@ class OpenAITarget(PromptChatTarget):
                 will be capped at the value provided.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
-            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
-                identification purposes. This is useful when the deployment name in Azure differs
+            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") used solely for
+                target identifier purposes. This is useful when the deployment name in Azure differs
                 from the actual model. If not provided, will attempt to fetch from environment variable.
-
-                NOTE: If underlying_model is not provided and not set via environment variable,
-                it will remain None. Use `get_underlying_model_async()` to attempt fetching it from the
-                endpoint.
+                If it is not there either, the identifier "model_name" attribute will use the model_name.
+                Defaults to None.
         """
         self._headers: dict = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
@@ -496,39 +494,6 @@ class OpenAITarget(PromptChatTarget):
             Message: Constructed message with extracted content.
         """
         pass
-
-    async def _fetch_underlying_model_async(self) -> Optional[str]:
-        """
-        Fetch the underlying model name by making a minimal request to the endpoint.
-
-        This method sends a basic request to the endpoint and extracts the model name
-        from the response. Subclasses should override this based on their specific
-        API response format.
-
-        Returns:
-            Optional[str]: The underlying model name extracted from the response,
-                or None if it cannot be determined.
-        """
-        return None
-
-    async def get_underlying_model_async(self) -> Optional[str]:
-        """
-        Get the underlying model name, fetching from endpoint if not already set.
-
-        This method returns the underlying model if already configured. If not,
-        it attempts to fetch it by making a minimal request to the endpoint and setting
-        it in the target's underlying_model attribute.
-
-        Returns:
-            Optional[str]: The underlying model name, or None if it cannot be determined.
-        """
-        if self._underlying_model:
-            return self._underlying_model
-
-        # Attempt to fetch from endpoint
-        self._underlying_model = await self._fetch_underlying_model_async()
-
-        return self._underlying_model
 
     def _check_content_filter(self, response: Any) -> bool:
         """

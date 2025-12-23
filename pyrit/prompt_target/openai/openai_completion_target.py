@@ -162,26 +162,3 @@ class OpenAICompletionTarget(OpenAITarget):
             bool: True if JSON response is supported, False otherwise.
         """
         return False
-
-    async def _fetch_underlying_model_async(self) -> Optional[str]:
-        """
-        Fetch the underlying model name by making a minimal completion request.
-
-        Sends a simple prompt with max_tokens=1 to minimize cost and latency,
-        then extracts the model name from the response.
-
-        Returns:
-            Optional[str]: The underlying model name, or None if it cannot be determined.
-        """
-        try:
-            response = await self._async_client.completions.create(
-                model=self._model_name,
-                prompt="hi",
-                max_tokens=1,
-            )
-
-            raw_model = getattr(response, "model", None)
-            return raw_model
-        except Exception as e:
-            logger.warning(f"Failed to fetch underlying model from endpoint: {e}")
-            return None

@@ -100,6 +100,11 @@ class PromptTarget(abc.ABC, Identifier):
 
         Returns:
             Dict[str, Any]: A dictionary containing identification attributes.
+
+        Note:
+            If the underlying model is specified, either passed in during instantiation or via environment variable,
+            it is used as the model_name for the identifier. Otherwise, self._model_name (which is often the
+            deployment name in Azure) is used.
         """
         public_attributes: Dict[str, Any] = {}
         public_attributes["__type__"] = self.__class__.__name__
@@ -107,11 +112,11 @@ class PromptTarget(abc.ABC, Identifier):
         if self._endpoint:
             public_attributes["endpoint"] = self._endpoint
         # if the underlying model is specified, use it as the model name for identification
-        # otherwise, use the model name (which is often the deployment name in Azure)
+        # otherwise, use self._model_name (which is often the deployment name in Azure)
         if self._underlying_model:
-            public_attributes["model"] = self._underlying_model
+            public_attributes["model_name"] = self._underlying_model
         elif self._model_name:
-            public_attributes["model"] = self._model_name
+            public_attributes["model_name"] = self._model_name
         # Include temperature and top_p if available (set by subclasses)
         if hasattr(self, "_temperature") and self._temperature is not None:
             public_attributes["temperature"] = self._temperature

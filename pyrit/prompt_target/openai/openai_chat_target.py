@@ -436,27 +436,3 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
-
-    async def _fetch_underlying_model_async(self) -> Optional[str]:
-        """
-        Fetch the underlying model name by making a minimal chat request.
-
-        Sends a simple "hi" message with max_tokens=1 to minimize cost and latency,
-        then extracts the model name from the response.
-
-        Returns:
-            Optional[str]: The underlying model name (with date suffix stripped),
-                or None if it cannot be determined.
-        """
-        try:
-            response = await self._async_client.chat.completions.create(
-                model=self._model_name,
-                messages=[{"role": "user", "content": "hi"}],
-                max_completion_tokens=1,
-            )
-
-            raw_model = getattr(response, "model", None)
-            return raw_model
-        except Exception as e:
-            logger.warning(f"Failed to fetch underlying model from endpoint: {e}")
-            return None
