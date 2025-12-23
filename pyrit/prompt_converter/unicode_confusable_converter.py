@@ -9,7 +9,6 @@ from typing import Literal
 from confusable_homoglyphs.confusables import is_confusable
 from confusables import confusable_characters
 
-from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
@@ -20,6 +19,9 @@ class UnicodeConfusableConverter(PromptConverter):
     Applies substitutions to words in the prompt to test adversarial textual robustness
     by replacing characters with visually similar ones.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
         self,
@@ -152,9 +154,3 @@ class UnicodeConfusableConverter(PromptConverter):
             return confusable_options[-1]
         else:
             return random.choice(confusable_options)
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

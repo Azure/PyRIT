@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter, get_converter_modalities
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 from pyrit.prompt_converter.selective_text_converter import SelectiveTextConverter
 from pyrit.prompt_converter.text_selection_strategy import (
@@ -175,4 +175,5 @@ __all__ = [
     "WordSelectionStrategy",
     "ZalgoConverter",
     "ZeroWidthConverter",
+    "get_converter_modalities",
 ]

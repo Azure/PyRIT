@@ -28,6 +28,9 @@ class AnsiAttackConverter(PromptConverter):
         - Incorporate the user's original prompt into the final scenario, making the testing more dynamic.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(
         self,
         include_raw: bool = True,

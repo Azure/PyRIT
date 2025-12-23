@@ -31,6 +31,9 @@ class PDFConverter(PromptConverter):
             onto the original PDF.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("url",)
+
     def __init__(
         self,
         prompt_template: Optional[SeedPrompt] = None,
@@ -128,12 +131,6 @@ class PDFConverter(PromptConverter):
 
         # Return the result
         return ConverterResult(output_text=pdf_serializer.value, output_type="url")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "url"
 
     def _prepare_content(self, prompt: str) -> str:
         """

@@ -18,6 +18,9 @@ class HumanInTheLoopConverter(PromptConverter):
     or run the prompt through one of the passed-in converters before sending it.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(
         self,
         converters: Optional[list[PromptConverter]] = None,
@@ -90,9 +93,3 @@ class HumanInTheLoopConverter(PromptConverter):
             else:
                 raise ValueError("No converters were passed into the HumanInTheLoopConverter")
         return ConverterResult(output_text=prompt, output_type=input_type)
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == []
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == []

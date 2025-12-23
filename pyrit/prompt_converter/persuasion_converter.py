@@ -44,6 +44,9 @@ class PersuasionConverter(PromptConverter):
             Presenting oneself or an issue in a way that's not genuine or true.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     @apply_defaults
     def __init__(
         self,
@@ -128,9 +131,3 @@ class PersuasionConverter(PromptConverter):
 
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

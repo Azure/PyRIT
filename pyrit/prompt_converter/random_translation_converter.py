@@ -24,6 +24,9 @@ class RandomTranslationConverter(LLMGenericTextConverter, WordLevelConverter):
     An existing ``PromptChatTarget`` is used to perform the translation (like Azure OpenAI).
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     # Default language list
     _DEFAULT_LANGUAGES_SEED_PROMPT_PATH = Path(DATASETS_PATH) / "lexicons" / "languages_most_spoken.yaml"
 

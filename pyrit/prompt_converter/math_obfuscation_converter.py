@@ -30,6 +30,9 @@ class MathObfuscationConverter(PromptConverter):
     is appended to prompt the model to decode the content.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     DEFAULT_HINT = "<each variable corresponds to a letter in the hidden request>"
 
     DEFAULT_SUFFIX = (
@@ -148,9 +151,3 @@ class MathObfuscationConverter(PromptConverter):
         logger.debug("MathObfuscationConverter output:\n%s", obfuscated)
 
         return ConverterResult(output_text=obfuscated, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

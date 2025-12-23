@@ -18,6 +18,12 @@ class Base64Converter(PromptConverter):
     handle encoded content.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     EncodingFunc = Literal[
         "b64encode",
         "urlsafe_b64encode",
@@ -76,9 +82,3 @@ class Base64Converter(PromptConverter):
             raise ValueError("Unsupported encoding function")
 
         return ConverterResult(output_text=encoded_bytes.decode("utf-8"), output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

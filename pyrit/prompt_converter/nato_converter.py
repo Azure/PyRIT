@@ -27,6 +27,9 @@ class NatoConverter(PromptConverter):
         Output: "Hotel Echo Lima Lima Oscar"
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     _NATO_MAP = {
         "A": "Alfa",
         "B": "Bravo",
@@ -76,30 +79,6 @@ class NatoConverter(PromptConverter):
         nato_text = self._convert_to_nato(prompt)
 
         return ConverterResult(output_text=nato_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        """
-        Checks if the input type is supported.
-
-        Args:
-            input_type (PromptDataType): The input type to check.
-
-        Returns:
-            bool: True if input type is "text", False otherwise.
-        """
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        """
-        Checks if the output type is supported.
-
-        Args:
-            output_type (PromptDataType): The output type to check.
-
-        Returns:
-            bool: True if output type is "text", False otherwise.
-        """
-        return output_type == "text"
 
     def _convert_to_nato(self, text: str) -> str:
         """

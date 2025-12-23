@@ -13,6 +13,9 @@ class SearchReplaceConverter(PromptConverter):
     Converts a string by replacing chosen phrase with a new phrase of choice.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(self, pattern: str, replace: str | list[str], regex_flags=0) -> None:
         """
         Initializes the converter with the specified regex pattern and replacement phrase(s).
@@ -50,9 +53,3 @@ class SearchReplaceConverter(PromptConverter):
         return ConverterResult(
             output_text=re.sub(self.pattern, replace, prompt, flags=self.regex_flags), output_type="text"
         )
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

@@ -23,6 +23,9 @@ class LLMGenericTextConverter(PromptConverter):
     Represents a generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format).
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     @apply_defaults
     def __init__(
         self,
@@ -106,9 +109,3 @@ class LLMGenericTextConverter(PromptConverter):
 
         response = await self._converter_target.send_prompt_async(message=request)
         return ConverterResult(output_text=response[0].get_value(), output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

@@ -43,6 +43,9 @@ class ImageCompressionConverter(PromptConverter):
         https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#webp-saving
     """
 
+    SUPPORTED_INPUT_TYPES = ("image_path", "url")
+    SUPPORTED_OUTPUT_TYPES = ("image_path",)
+
     def __init__(
         self,
         *,
@@ -262,9 +265,3 @@ class ImageCompressionConverter(PromptConverter):
         logger.info(f"Image compressed: {original_size} → {compressed_size} ({compression_ratio:.1f}% reduction)")
 
         return ConverterResult(output_text=str(img_serializer.value), output_type="image_path")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type in ("image_path", "url")
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "image_path"

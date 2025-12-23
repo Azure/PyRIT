@@ -19,6 +19,9 @@ class InsertPunctuationConverter(PromptConverter):
     "a1b2c3" is a word; "a1 2" are 2 words; "a1,b,3" are 3 words.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     #: Common punctuation characters. Used if no punctuation list is provided.
     default_punctuation_list = [",", ".", "!", "?", ":", ";", "-"]
 
@@ -168,9 +171,3 @@ class InsertPunctuationConverter(PromptConverter):
             prompt_list.insert(index, random.choice(punctuation_list))
 
         return "".join(prompt_list).strip()
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
