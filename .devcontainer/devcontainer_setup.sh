@@ -2,6 +2,7 @@
 set -e
 
 MYPY_CACHE="/workspace/.mypy_cache"
+VIRTUAL_ENV="/opt/pyrit-dev"
 # Create the mypy cache directory if it doesn't exist
 if [ ! -d "$MYPY_CACHE" ]; then
     echo "Creating mypy cache directory..."
