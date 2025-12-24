@@ -14,16 +14,11 @@ have a common interface for scenarios.
 """
 
 import logging
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
-from pyrit.executor.attack import (
-    AttackExecutor,
-    AttackStrategy,
-    MultiTurnAttackContext,
-    SingleTurnAttackContext,
-)
+from pyrit.executor.attack import AttackExecutor, AttackStrategy
 from pyrit.executor.attack.core.attack_executor import AttackExecutorResult
-from pyrit.models import AttackResult, Message, SeedGroup
+from pyrit.models import AttackResult, SeedGroup
 
 logger = logging.getLogger(__name__)
 
@@ -36,54 +31,30 @@ class AtomicAttack:
     all objectives in a dataset. Multiple AtomicAttacks can be grouped together into
     larger test scenarios for comprehensive security testing and evaluation.
 
-    The AtomicAttack automatically detects whether the attack is single-turn or multi-turn
-    and calls the appropriate executor method. For single-turn attacks, you can provide
-    seed_groups. For multi-turn attacks, you can provide custom_prompts.
+    The AtomicAttack uses SeedGroups as the single source of truth for objectives,
+    prepended conversations, and next messages. Each SeedGroup must have an objective set.
 
     Example:
         >>> from pyrit.scenario import AtomicAttack
         >>> from pyrit.attacks import PromptAttack
         >>> from pyrit.prompt_target import OpenAIChatTarget
+        >>> from pyrit.models import SeedGroup
         >>>
         >>> target = OpenAIChatTarget()
         >>> attack = PromptAttack(objective_target=target)
-        >>> objectives = ["how to make a bomb", "how to hack a system"]
+        >>>
+        >>> # Create seed groups with objectives
+        >>> seed_groups = SeedGroup.from_yaml_file("seeds.yaml")
+        >>> for sg in seed_groups:
+        ...     sg.set_objective("your objective here")
         >>>
         >>> atomic_attack = AtomicAttack(
+        ...     atomic_attack_name="test_attack",
         ...     attack=attack,
-        ...     objectives=objectives,
+        ...     seed_groups=seed_groups,
         ...     memory_labels={"test": "run1"}
         ... )
         >>> results = await atomic_attack.run_async(max_concurrency=5)
-        >>>
-        >>> # With prepended conversations
-        >>> from pyrit.models import Message
-        >>> conversation = [Message(...)]
-        >>> atomic_attack = AtomicAttack(
-        ...     attack=attack,
-        ...     objectives=objectives,
-        ...     prepended_conversations=[conversation]
-        ... )
-        >>> results = await atomic_attack.run_async(max_concurrency=5)
-        >>>
-        >>> # Single-turn attack with seeds
-        >>> from pyrit.models import SeedGroup
-        >>> seeds = [SeedGroup(...), SeedGroup(...)]
-        >>> atomic_attack = AtomicAttack(
-        ...     attack=single_turn_attack,
-        ...     objectives=objectives,
-        ...     seed_groups=seeds
-        ... )
-        >>> results = await atomic_attack.run_async(max_concurrency=3)
-        >>>
-        >>> # Multi-turn attack with custom prompts
-        >>> custom_prompts = ["Tell me about chemistry", "Explain system administration"]
-        >>> atomic_attack = AtomicAttack(
-        ...     attack=multi_turn_attack,
-        ...     objectives=objectives,
-        ...     custom_prompts=custom_prompts
-        ... )
-        >>> results = await atomic_attack.run_async(max_concurrency=3)
     """
 
     def __init__(
@@ -91,125 +62,85 @@ class AtomicAttack:
         *,
         atomic_attack_name: str,
         attack: AttackStrategy,
-        objectives: List[str],
-        prepended_conversations: Optional[List[List[Message]]] = None,
-        seed_groups: Optional[List[SeedGroup]] = None,
-        custom_prompts: Optional[List[str]] = None,
+        seed_groups: List[SeedGroup],
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_execute_params: Any,
     ) -> None:
         """
-        Initialize an atomic attack with an attack strategy and dataset parameters.
+        Initialize an atomic attack with an attack strategy and seed groups.
 
         Args:
             atomic_attack_name (str): Used to group an AtomicAttack with related attacks for a
                 strategy.
             attack (AttackStrategy): The configured attack strategy to execute.
-            objectives (List[str]): List of attack objectives to test against.
-            prepended_conversations (Optional[List[List[Message]]]): Optional
-                list of conversation histories to prepend to each attack execution. This will be
-                used for all objectives.
-            seed_groups (Optional[List[SeedGroup]]): List of seed groups
-                for single-turn attacks. Only valid for single-turn attacks.
-            custom_prompts (Optional[List[str]]): List of custom prompts for multi-turn attacks.
-                Only valid for multi-turn attacks.
+            seed_groups (List[SeedGroup]): List of seed groups. Each seed group must have an
+                objective set. The seed groups serve as the single source of truth for objectives,
+                prepended conversations, and next messages.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
                 These labels help track and categorize the atomic attack in memory.
             **attack_execute_params (Any): Additional parameters to pass to the attack
                 execution method (e.g., batch_size).
 
         Raises:
-            ValueError: If objectives list is empty.
-            TypeError: If seed_groups is provided for multi-turn attacks or
-                custom_prompts is provided for single-turn attacks.
+            ValueError: If seed_groups list is empty or any seed group is missing an objective.
         """
         self.atomic_attack_name = atomic_attack_name
-
-        if not objectives:
-            raise ValueError("objectives list cannot be empty")
-
-        # Store attack first so we can use it in helper methods
         self._attack = attack
 
-        # Determine context type once during initialization
-        self._context_type: Literal["single_turn", "multi_turn", "unknown"] = self._determine_context_type(attack)
+        # Validate seed_groups
+        if not seed_groups:
+            raise ValueError("seed_groups list cannot be empty")
 
-        # Validate attack context type and parameters
-        self._validate_parameters(
-            seed_groups=seed_groups,
-            custom_prompts=custom_prompts,
-        )
+        # Validate each seed group has an objective
+        for i, sg in enumerate(seed_groups):
+            if sg.objective is None:
+                raise ValueError(
+                    f"SeedGroup at index {i} is missing an objective. "
+                    "Use seed_group.set_objective(value) to set one."
+                )
 
-        self._objectives = objectives
-        self._prepended_conversations = prepended_conversations
         self._seed_groups = seed_groups
-        self._custom_prompts = custom_prompts
         self._memory_labels = memory_labels or {}
         self._attack_execute_params = attack_execute_params
 
         logger.info(
-            f"Initialized atomic attack with {len(self._objectives)} objectives, "
-            f"attack type: {type(attack).__name__}, context type: {self._context_type}"
+            f"Initialized atomic attack with {len(self._seed_groups)} seed groups, "
+            f"attack type: {type(attack).__name__}"
         )
 
     @property
     def objectives(self) -> List[str]:
         """
-        Get a copy of the objectives list for this atomic attack.
-
-        This property is read-only. To use different objectives, create a new AtomicAttack instance.
+        Get the objectives from the seed groups.
 
         Returns:
-            List[str]: A copy of the objectives list.
+            List[str]: List of objectives from all seed groups.
         """
-        return list(self._objectives)
+        return [sg.objective.value for sg in self._seed_groups if sg.objective is not None]
 
-    def _determine_context_type(self, attack: AttackStrategy) -> Literal["single_turn", "multi_turn", "unknown"]:
+    @property
+    def seed_groups(self) -> List[SeedGroup]:
         """
-        Determine the context type of the attack strategy.
-
-        Args:
-            attack (AttackStrategy): The attack strategy to check.
+        Get a copy of the seed groups list for this atomic attack.
 
         Returns:
-            Literal["single_turn", "multi_turn", "unknown"]: The context type of the attack.
+            List[SeedGroup]: A copy of the seed groups list.
         """
-        if hasattr(attack, "_context_type"):
-            if issubclass(attack._context_type, SingleTurnAttackContext):
-                return "single_turn"
-            elif issubclass(attack._context_type, MultiTurnAttackContext):
-                return "multi_turn"
-        return "unknown"
+        return list(self._seed_groups)
 
-    def _validate_parameters(
-        self,
-        *,
-        seed_groups: Optional[List[SeedGroup]],
-        custom_prompts: Optional[List[str]],
-    ) -> None:
+    def filter_seed_groups_by_objectives(self, *, remaining_objectives: List[str]) -> None:
         """
-        Validate that parameters match the attack context type.
+        Filter seed groups to only those with objectives in the remaining list.
+
+        This is used for scenario resumption to skip already completed objectives.
 
         Args:
-            seed_groups (Optional[List[SeedGroup]]): Seed groups parameter.
-            custom_prompts (Optional[List[str]]): Custom prompts parameter.
-
-        Raises:
-            TypeError: If parameters don't match the attack context type.
+            remaining_objectives (List[str]): List of objectives that still need to be executed.
         """
-        # Validate seed_groups is only used with single-turn attacks
-        if seed_groups is not None and self._context_type != "single_turn":
-            raise TypeError(
-                f"seed_groups can only be used with single-turn attacks. "
-                f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
-            )
-
-        # Validate custom_prompts is only used with multi-turn attacks
-        if custom_prompts is not None and self._context_type != "multi_turn":
-            raise TypeError(
-                f"custom_prompts can only be used with multi-turn attacks. "
-                f"Attack {self._attack.__class__.__name__} uses {self._context_type} context"
-            )
+        remaining_set = set(remaining_objectives)
+        self._seed_groups = [
+            sg for sg in self._seed_groups if sg.objective is not None and sg.objective.value in remaining_set
+        ]
 
     async def run_async(
         self,
@@ -219,11 +150,10 @@ class AtomicAttack:
         **attack_params,
     ) -> AttackExecutorResult[AttackResult]:
         """
-        Execute the atomic attack against all objectives in the dataset.
+        Execute the atomic attack against all seed groups.
 
         This method uses AttackExecutor to run the configured attack against
-        all objectives from the dataset. It automatically detects whether to use
-        single-turn or multi-turn execution based on the attack's context type.
+        all seed groups.
 
         When return_partial_on_failure=True (default), this method will return
         an AttackExecutorResult containing both completed results and incomplete
@@ -248,53 +178,21 @@ class AtomicAttack:
         Raises:
             ValueError: If the attack execution fails completely and return_partial_on_failure=False.
         """
-        # Create the executor with the specified concurrency
         executor = AttackExecutor(max_concurrency=max_concurrency)
 
-        # Merge memory labels from initialization and execution parameters
-        merged_memory_labels = {**self._memory_labels}
-
-        # Determine prepended_conversations to use
-        prepended_conversations = self._prepended_conversations
-
         logger.info(
-            f"Starting atomic attack execution with {len(self._objectives)} objectives "
+            f"Starting atomic attack execution with {len(self._seed_groups)} seed groups "
             f"and max_concurrency={max_concurrency}"
         )
 
         try:
-            # Execute based on context type with common parameters
-            if self._context_type == "single_turn":
-                results = await executor.execute_single_turn_attacks_async(
-                    attack=self._attack,
-                    objectives=self._objectives,
-                    seed_groups=self._seed_groups,
-                    prepended_conversations=prepended_conversations,
-                    memory_labels=merged_memory_labels,
-                    return_partial_on_failure=return_partial_on_failure,
-                    **self._attack_execute_params,
-                )
-            elif self._context_type == "multi_turn":
-                results = await executor.execute_multi_turn_attacks_async(
-                    attack=self._attack,
-                    objectives=self._objectives,
-                    custom_prompts=self._custom_prompts,
-                    prepended_conversations=prepended_conversations,
-                    memory_labels=merged_memory_labels,
-                    return_partial_on_failure=return_partial_on_failure,
-                    **self._attack_execute_params,
-                )
-            else:
-                # Fall back to generic execute_multi_objective_attack_async
-                # Note: This method uses prepended_conversation (singular) instead of prepended_conversations
-                results = await executor.execute_multi_objective_attack_async(
-                    attack=self._attack,
-                    objectives=self._objectives,
-                    prepended_conversation=prepended_conversations[0] if prepended_conversations else None,
-                    memory_labels=merged_memory_labels,
-                    return_partial_on_failure=return_partial_on_failure,
-                    **self._attack_execute_params,
-                )
+            results = await executor.execute_attack_from_seed_groups_async(
+                attack=self._attack,
+                seed_groups=self._seed_groups,
+                memory_labels=self._memory_labels,
+                return_partial_on_failure=return_partial_on_failure,
+                **self._attack_execute_params,
+            )
 
             # Log completion status
             if results.has_incomplete:

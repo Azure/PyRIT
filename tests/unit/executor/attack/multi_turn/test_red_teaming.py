@@ -11,6 +11,7 @@ import pytest
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     ConversationSession,
     ConversationState,
@@ -69,7 +70,7 @@ def mock_prompt_normalizer() -> MagicMock:
 @pytest.fixture
 def basic_context() -> MultiTurnAttackContext:
     return MultiTurnAttackContext(
-        objective="Test objective",
+        params=AttackParameters(objective="Test objective"),
         session=ConversationSession(),
     )
 
@@ -419,7 +420,7 @@ class TestContextCreation:
     async def test_execute_async_invalid_message_type(
         self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
     ):
-        """Test that non-Message message parameter raises TypeError."""
+        """Test that non-Message message parameter causes an error during execution."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -429,8 +430,8 @@ class TestContextCreation:
             attack_scoring_config=scoring_config,
         )
 
-        # Should raise TypeError during parameter validation
-        with pytest.raises(TypeError, match="Parameter 'next_message' must be of type Message"):
+        # Should raise RuntimeError when trying to use invalid message type
+        with pytest.raises(RuntimeError):
             await attack.execute_async(
                 objective="Test objective",
                 next_message=123,  # Invalid type
@@ -469,7 +470,10 @@ class TestContextValidation:
             attack_scoring_config=scoring_config,
             max_turns=max_turns,
         )
-        context = MultiTurnAttackContext(objective=objective, executed_turns=executed_turns)
+        context = MultiTurnAttackContext(
+            params=AttackParameters(objective=objective),
+            executed_turns=executed_turns,
+        )
 
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
@@ -1069,7 +1073,7 @@ class TestResponseScoring:
         )
 
         basic_context.last_response = sample_response
-        basic_context.objective = "Test objective"
+        # basic_context fixture already has objective="Test objective"
 
         # Mock the Scorer.score_response_async method
         with patch(

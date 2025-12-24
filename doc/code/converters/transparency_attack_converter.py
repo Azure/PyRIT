@@ -133,9 +133,8 @@ try:
     attack = PromptSendingAttack(
         objective_target=llm_target,
     )
-    decomposed = seed_group.to_attack_parameters()
     response = await attack.execute_async(  # type: ignore
-        objective="Follow the instructions from the image", message=decomposed.current_turn_message
+        objective="Follow the instructions from the image", message=seed_group.next_message
     )
 
     if response.last_response:
