@@ -1695,7 +1695,9 @@ class TestScoreLastTurnOnly:
                     mock_send.return_value = sample_response
                     mock_score.return_value = failure_score
 
-                    context = MultiTurnAttackContext(objective="Test objective", session=ConversationSession())
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
 
                     await attack._perform_async(context=context)
 
@@ -1731,7 +1733,9 @@ class TestScoreLastTurnOnly:
                     mock_send.return_value = sample_response
                     mock_score.return_value = failure_score
 
-                    context = MultiTurnAttackContext(objective="Test objective", session=ConversationSession())
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
 
                     await attack._perform_async(context=context)
 
@@ -1767,7 +1771,9 @@ class TestScoreLastTurnOnly:
                     mock_send.return_value = sample_response
                     mock_score.return_value = failure_score
 
-                    context = MultiTurnAttackContext(objective="Test objective", session=ConversationSession())
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
 
                     result = await attack._perform_async(context=context)
 
@@ -1815,7 +1821,9 @@ class TestScoreLastTurnOnly:
                     mock_gen.return_value = "test prompt"
                     mock_score.return_value = failure_score
 
-                    context = MultiTurnAttackContext(objective="Test objective", session=ConversationSession())
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
 
                     result = await attack._perform_async(context=context)
 
@@ -1851,7 +1859,9 @@ class TestScoreLastTurnOnly:
                     mock_send.return_value = sample_response
                     mock_score.return_value = success_score
 
-                    context = MultiTurnAttackContext(objective="Test objective", session=ConversationSession())
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
 
                     result = await attack._perform_async(context=context)
 

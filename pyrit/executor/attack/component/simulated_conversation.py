@@ -39,13 +39,11 @@ class SimulatedConversationResult:
     Stores the full conversation and provides properties to access different views of it
     for various attack strategy use cases.
 
-    Attributes:
-        conversation: The complete conversation as a list of Messages (user/assistant only,
-            no system messages).
-        score: The score from evaluating the final turn of the conversation.
-        turn_index: 1-based index of the turn to treat as the "final" turn for splitting.
-            If None (default), uses the last turn. Can be set after creation to select
-            an earlier turn (e.g., if the last turn's attack didn't work).
+    The conversation attribute contains the complete conversation as a list of Messages
+    (user/assistant only, no system messages). The score attribute holds the score from
+    evaluating the final turn. The turn_index is a 1-based index of the turn to treat as
+    the "final" turn for splitting. If None (default), uses the last turn. Can be set after
+    creation to select an earlier turn (e.g., if the last turn's attack didn't work).
     """
 
     conversation: List[Message]

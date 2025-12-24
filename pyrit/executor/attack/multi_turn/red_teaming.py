@@ -302,7 +302,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         achieved_objective = False
 
         # Execute conversation turns
-        while context.executed_turns < self._max_turns and not achieved_objective:
+        while context.executed_turns < self._max_turns and (self._score_last_turn_only or not achieved_objective):
             logger.info(f"Executing turn {context.executed_turns + 1}/{self._max_turns}")
 
             # Determine what to send next
