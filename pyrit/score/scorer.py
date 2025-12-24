@@ -10,6 +10,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -43,6 +44,10 @@ from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
+    from pyrit.score.scorer_evaluation.scorer_metrics_registry import RegistryType
 
 
 class Scorer(abc.ABC):
@@ -281,6 +286,28 @@ class Scorer(abc.ABC):
 
         scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
         return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
+
+    def get_scorer_metrics_from_registry(
+        self, registry_type: Optional["RegistryType"] = None
+    ) -> Optional["ScorerMetrics"]:
+        """
+        Get scorer metrics from the registry based on this specific scorer configuration.
+
+        Args:
+            registry_type (Optional[RegistryType]): The type of registry to query (HARM or OBJECTIVE).
+
+        Returns:
+            Optional[ScorerMetrics]: The metrics for this scorer configuration, or None if not found.
+        """
+        from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
+            ScorerMetricsRegistry,
+        )
+
+        registry = ScorerMetricsRegistry()
+        metrics = registry.get_scorer_registry_metrics_by_identifier(
+            scorer_identifier=self.scorer_identifier, registry_type=registry_type
+        )
+        return metrics
 
     async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
         """

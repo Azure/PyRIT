@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: pyrit2
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -229,3 +225,58 @@ for harm_category in harm_categories_to_evaluate:
 
     print("Evaluation for harm category:", harm_category)
     print(asdict(metrics))
+
+# %% [markdown]
+# ## Scorer Metrics Registry
+#
+# ### Adding to registry
+# The `ScorerMetricsRegistry` stores official scoring evaluation metrics in JSONL format (one file for harm scoring, another for objective scoring) in the public repository. These are results from running scorer evaluations on official consolidated datasets curated by the PyRIT team. Each entry in the registry contains all the attributes that identify a scorer (see the `ScorerIdentifier` class for more information on what goes into scoring identification) as well as the metrics resulting from the evaluation. To run an evaluation that you'd like to save to the registry, set the `add_to_registry` flag to True. (Note: This should primarily be done by the PyRIT team)
+
+# %%
+import os
+
+from pyrit.common.path import DATASETS_PATH, SCORER_EVALS_TRUE_FALSE_PATH
+
+chat_target = OpenAIChatTarget(
+    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+    temperature=0.9,
+)
+true_false_classifier = SelfAskTrueFalseScorer(
+    true_false_question_path=DATASETS_PATH / "score" / "true_false_question" / "task_achieved.yaml",
+    chat_target=chat_target,
+)
+
+evaluator: ObjectiveScorerEvaluator = ScorerEvaluator.from_scorer(scorer=true_false_classifier)  # type: ignore
+official_dataset_path = SCORER_EVALS_TRUE_FALSE_PATH / "CONSOLIDATED_true_false_objective_dataset.csv"
+metrics = await evaluator.run_evaluation_from_csv_async(  # type:ignore
+    csv_path=official_dataset_path,
+    assistant_response_col_name="assistant_response",
+    human_label_col_names=["normalized_score"],
+    objective_or_harm_col_name="objective",
+    assistant_response_data_type_col_name="data_type",
+    num_scorer_trials=1,
+    add_to_registry=True,
+)
+
+# %% [markdown]
+# ### Retrieving metrics from registry
+# `ScorerMetricsRegistry` has a method (`get_metrics_registry_entries`) to filter entries on a variety of attributes, including hash, `Scorer` type, model information, as well as accuracy/mean standard error thresholds. You can use `print_summary` to display a brief summary of the scoring configuration and metrics.
+
+# %%
+from pyrit.score.scorer_evaluation.scorer_metrics_registry import ScorerMetricsRegistry
+
+registry = ScorerMetricsRegistry()
+# get first 5 entries
+entries = registry.get_metrics_registry_entries()[:5]
+
+for entry in entries:
+    entry.print_summary()
+
+# %% [markdown]
+# You can view identifier information and retrieve metrics (if they exist) for a specific `Scorer` configuration by calling methods on the `Scorer` object itself.
+
+# %%
+print(true_false_classifier.get_identifier())
+true_false_classifier.get_scorer_metrics_from_registry()  # get metrics from registry via scorer object

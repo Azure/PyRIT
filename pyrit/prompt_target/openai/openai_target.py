@@ -105,7 +105,10 @@ class OpenAITarget(PromptChatTarget):
 
         # Initialize parent with endpoint and model_name
         PromptChatTarget.__init__(
-            self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value, model_name=self._model_name
+            self,
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint_value,
+            model_name=self._model_name,
         )
 
         # API key is required - either from parameter or environment variable

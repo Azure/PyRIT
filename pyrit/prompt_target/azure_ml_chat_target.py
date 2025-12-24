@@ -86,7 +86,11 @@ class AzureMLChatTarget(PromptChatTarget):
         endpoint_value = default_values.get_required_value(
             env_var_name=self.endpoint_uri_environment_variable, passed_value=endpoint
         )
-        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
+        PromptChatTarget.__init__(
+            self,
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint_value,
+        )
 
         self._initialize_vars(endpoint=endpoint, api_key=api_key)
 

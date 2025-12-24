@@ -545,6 +545,8 @@ API Reference
     ScorerEvaluator
     ScorerIdentifier
     ScorerMetrics
+    ScorerMetricsEntry
+    ScorerMetricsRegistry
     ScorerPromptValidator
     SelfAskCategoryScorer
     SelfAskGeneralFloatScaleScorer
