@@ -8,7 +8,6 @@ from pathlib import Path
 
 skip_files = {
     "conf.py",
-    "0_auxiliary_attacks.py",
     # auxiliary_attacks
     "1_gcg_azure_ml.py",  # missing required env variables
     # converters
@@ -16,8 +15,6 @@ skip_files = {
     # memory
     "6_azure_sql_memory.py",  # requires Azure SQL setup, remove following completion of #4001
     "7_azure_sql_memory_attacks.py",  # remove following completion of #4001
-    "11_harm_categories.py",  # requires attack results in memory, analyze_results fails on empty list
-    # targets
     "4_non_llm_targets.py",  # requires Azure SQL Storage IO for Azure Storage Account (see #4001)
     "playwright_target.py",  # Playwright installation takes too long
     "playwright_target_copilot.py",  # Playwright installation takes too long, plus requires M365 account
@@ -36,7 +33,7 @@ pyrit_root = doc_dir.parent
 file_type = ".py"
 included_dirs = {"code", "cookbooks"}
 cache_dir = os.path.join(pyrit_root, "dbdata")
-kernel_name = "pyrit_kernel"
+kernel_name = "pyrit-dev"
 
 
 def main():

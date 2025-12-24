@@ -31,6 +31,8 @@ def in_git_repo() -> bool:
 
 PYRIT_PATH = pathlib.Path(__file__, "..", "..").resolve()
 
+CONFIGURATION_DIRECTORY_PATH = pathlib.Path.home() / ".pyrit"
+
 # Points to the root of the project
 HOME_PATH = pathlib.Path(PYRIT_PATH, "..").resolve()
 
