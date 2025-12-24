@@ -39,6 +39,3 @@ default_memory.json.memory
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
-
-# Backend frontend directory (generated during packaging)
-pyrit/backend/frontend/

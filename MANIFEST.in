@@ -8,4 +8,3 @@ recursive-include pyrit *.wav
 recursive-include pyrit *.mp4
 recursive-include pyrit *.md
 include pyrit/auxiliary_attacks/gcg/src/Dockerfile
-recursive-include pyrit/backend/frontend *
