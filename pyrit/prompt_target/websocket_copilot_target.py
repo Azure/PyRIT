@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import json
 import logging
 import os
@@ -59,9 +60,8 @@ class WebSocketCopilotTarget(PromptTarget):
 
     SUPPORTED_DATA_TYPES = {"text"}  # TODO: support more types?
 
-    # TODO: implement timeouts and retries
-    MAX_WAIT_TIME_SECONDS: int = 300
-    POLL_INTERVAL_MS: int = 2000
+    RESPONSE_TIMEOUT_SECONDS: int = 60
+    CONNECTION_TIMEOUT_SECONDS: int = 30
 
     def __init__(
         self,
@@ -238,7 +238,11 @@ class WebSocketCopilotTarget(PromptTarget):
         inputs = [protocol_msg, prompt_dict]
         last_response = ""
 
-        async with websockets.connect(self._websocket_url) as websocket:
+        async with websockets.connect(
+            self._websocket_url,
+            open_timeout=self.CONNECTION_TIMEOUT_SECONDS,
+            close_timeout=self.CONNECTION_TIMEOUT_SECONDS,
+        ) as websocket:
             for input_msg in inputs:
                 payload = self._dict_to_websocket(input_msg)
                 is_user_input = input_msg.get("type") == 4  # USER_PROMPT
@@ -247,7 +251,15 @@ class WebSocketCopilotTarget(PromptTarget):
 
                 stop_polling = False
                 while not stop_polling:
-                    response = await websocket.recv()
+                    try:
+                        response = await asyncio.wait_for(
+                            websocket.recv(),
+                            timeout=self.RECEIVE_TIMEOUT_SECONDS,
+                        )
+                    except asyncio.TimeoutError:
+                        raise TimeoutError(
+                            f"Timed out waiting for Copilot response after {self.RECEIVE_TIMEOUT_SECONDS} seconds."
+                        )
 
                     if response is None:
                         raise RuntimeError(
