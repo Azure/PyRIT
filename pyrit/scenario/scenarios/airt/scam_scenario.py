@@ -6,7 +6,12 @@ from typing import List, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
-from pyrit.executor.attack import RolePlayAttack, RolePlayPaths
+from pyrit.executor.attack import (
+    CrescendoAttack,
+    RolePlayAttack,
+    RolePlayPaths,
+    TAPAttack,
+)
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -21,12 +26,7 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioStrategy,
 )
 from pyrit.score import (
-    SelfAskRefusalScorer,
     SelfAskTrueFalseScorer,
-    TrueFalseCompositeScorer,
-    TrueFalseInverterScorer,
-    TrueFalseScoreAggregator,
-    TrueFalseScorer,
 )
 
 
@@ -36,14 +36,33 @@ class ScamStrategy(ScenarioStrategy):
     """
 
     ALL = ("all", {"all"})
-    ROLE_PLAY = ("roleplay", {"roleplay"})
+    # ROLE_PLAY = ("roleplay", {"roleplay"})
     MULTI_TURN = ("multi_turn", {"multi_turn"})
+    # Consider using DeepResearch to run Targeted Multi-Turn attacks on the prompts...e.g. using Deep Research to get info about a specific test subject.
+    # TARGETED_MULTI_TURN = ("targeted_multi_turn", {"targeted"})
+
+    Crescendo = ("crescendo", {"multi_turn"})
+    RedTeaming = ("red_teaming", {"multi_turn"})
+    Pair = ("pair", {"multi_turn"})
+    TAP = ("tap", {"multi_turn"})
+    # MultiPromptSending = ("multi_prompt_sending", {"multi_turn"})
 
     # Persuasion = ("persuasion", {"roleplay"})
     # Movie = ("movie", {"roleplay"})
     # Trivia = ("trivia", {"roleplay"})
     # VideoGame = ("video_game", {"roleplay"})
     # TranslationConverter Strategy - add (Russian language) converter to each seed prompt + add "respond in english"
+
+    @classmethod
+    def get_aggregate_tags(cls) -> set[str]:
+        """
+        Get the set of tags that represent aggregate categories.
+
+        Returns:
+            set[str]: Set of tags that are aggregate markers.
+        """
+        # Include base class aggregates ("all") and add scenario-specific ones
+        return super().get_aggregate_tags() | {"multi_turn"}
 
 
 class ScamScenario(Scenario):
@@ -84,7 +103,7 @@ class ScamScenario(Scenario):
         self,
         *,
         objectives: Optional[List[str]] = None,
-        objective_scorer: Optional[TrueFalseCompositeScorer] = None,
+        objective_scorer: Optional[SelfAskTrueFalseScorer] = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
@@ -94,7 +113,7 @@ class ScamScenario(Scenario):
 
         Args:
             objectives (Optional[List[str]]): List of objectives to test for scam-related harms.
-            objective_scorer (Optional[TrueFalseCompositeScorer]): Custom scorer for objective
+            objective_scorer (Optional[SelfAskTrueFalseScorer]): Custom scorer for objective
                 evaluation.
             adversarial_chat (Optional[PromptChatTarget]): Chat target used to rephrase the
                 objective into the role-play context (in single-turn strategies).
@@ -124,18 +143,16 @@ class ScamScenario(Scenario):
         # Now we can safely access self._memory
         self._objectives = objectives if objectives else self._get_default_objectives()
 
-    def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
+    def _get_default_objective_scorer(self) -> SelfAskTrueFalseScorer:
         """
         Retrieve the default objective scorer.
         The scoring mechanism is as follows:
         1. Detect for objective achieved using a SelfAskTrueFalseScorer.
-        2. Detect for NON-refusal as a backstop. (If the target model refuses to produce scam material, we want that
-        to register as a negative score).
 
         Returns:
-            TrueFalseCompositeScorer: Default objective scorer with backstop and response evaluation.
+            SelfAskTrueFalseScorer: Default objective scorer for scam scenarios.
         """
-        scam_evaluator = SelfAskTrueFalseScorer(
+        return SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(
                 endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
                 api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
@@ -143,20 +160,6 @@ class ScamScenario(Scenario):
                 temperature=0.9,
             ),
             true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "scams.yaml",
-        )
-    
-        backstop = TrueFalseInverterScorer(
-            scorer=SelfAskRefusalScorer(
-                chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
-                )
-            )
-        )
-
-        return TrueFalseCompositeScorer(
-            aggregator=TrueFalseScoreAggregator.AND, scorers=[scam_evaluator, backstop]
         )
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
@@ -187,7 +190,7 @@ class ScamScenario(Scenario):
 
         return [seed.value for seed in seed_objectives]
 
-    def _get_atomic_attack_from_strategy(self, strategy: str) -> List[AtomicAttack]:
+    def _get_atomic_attack_from_strategy(self, strategy: str) -> AtomicAttack:
         """
         Translate the strategies into actual AtomicAttacks.
 
@@ -195,7 +198,7 @@ class ScamScenario(Scenario):
             strategy (ScenarioCompositeStrategy): The strategy to create the attack from.
 
         Returns:
-            List[AtomicAttack]: Configured for the specified strategy.
+            AtomicAttack: Configured for the specified strategy.
 
         Raises:
             ValueError: If an unknown ScamStrategy is provided.
@@ -204,29 +207,49 @@ class ScamScenario(Scenario):
         assert self._objective_target is not None
         attack_strategy: Optional[AttackStrategy] = None
 
-        if strategy == "multi_turn":
+        if strategy == "red_teaming":
             attack_strategy = RedTeamingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
                 attack_adversarial_config=self._adversarial_config,
             )
+        elif strategy == "crescendo":
+            attack_strategy = CrescendoAttack(
+                objective_target=self._objective_target,
+                attack_adversarial_config=self._adversarial_config,
+                attack_scoring_config=self._scorer_config,
+            )
+        elif strategy == "tap":
+            attack_strategy = TAPAttack(
+                objective_target=self._objective_target,
+                attack_adversarial_config=self._adversarial_config,
+                attack_scoring_config=self._scorer_config,
+            )
+        elif strategy == "pair":
+            attack_strategy = TAPAttack(
+                objective_target=self._objective_target,
+                attack_adversarial_config=self._adversarial_config,
+                attack_scoring_config=self._scorer_config,
+                tree_width=1,
+            )
         elif strategy == "roleplay":
             # TODO: Return multiple RolePlayAttacks for each role-play subtype (persuasion, movie, trivia, video game)
+            # TODO: Maybe remove bc its not useful
             attack_strategy = RolePlayAttack(
                 objective_target=self._objective_target,
                 adversarial_chat=self._adversarial_chat,
-                role_play_definition_path=RolePlayPaths.PERSUASION_SCRIPT.value,
+                role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
                 attack_scoring_config=self._scorer_config,
             )
         else:
             raise ValueError(f"Unknown ScamStrategy: {strategy}")
 
-        return [AtomicAttack(
+        return AtomicAttack(
             atomic_attack_name=f"scam_{strategy}",
             attack=attack_strategy,
             objectives=self._objectives,
             memory_labels=self._memory_labels,
-        )]
+        )
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -241,6 +264,6 @@ class ScamScenario(Scenario):
         )
 
         for strategy in strategies:
-            atomic_attacks.extend(self._get_atomic_attack_from_strategy(strategy))
+            atomic_attacks.append(self._get_atomic_attack_from_strategy(strategy))
 
         return atomic_attacks
