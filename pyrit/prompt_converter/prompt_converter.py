@@ -3,6 +3,7 @@
 
 import abc
 import asyncio
+import inspect
 import re
 from dataclasses import dataclass
 from typing import get_args
@@ -28,15 +29,42 @@ class PromptConverter(abc.ABC, Identifier):
     """
     Base class for converters that transform prompts into a different representation or format.
 
-    Subclasses should declare their supported input and output modalities using class attributes:
+    Concrete subclasses must declare their supported input and output modalities using class attributes:
     - SUPPORTED_INPUT_TYPES: tuple of PromptDataType values that the converter accepts
     - SUPPORTED_OUTPUT_TYPES: tuple of PromptDataType values that the converter produces
+
+    These attributes are enforced at class definition time for all non-abstract subclasses.
     """
 
-    #: Tuple of input modalities supported by this converter. Subclasses should override this.
+    #: Tuple of input modalities supported by this converter. Subclasses must override this.
     SUPPORTED_INPUT_TYPES: tuple[PromptDataType, ...] = ()
-    #: Tuple of output modalities supported by this converter. Subclasses should override this.
+    #: Tuple of output modalities supported by this converter. Subclasses must override this.
     SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ()
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        """
+        Validates that concrete subclasses define required class attributes.
+
+        Args:
+            **kwargs: Additional keyword arguments passed to the superclass.
+
+        Raises:
+            TypeError: If a concrete subclass does not define non-empty SUPPORTED_INPUT_TYPES
+                or SUPPORTED_OUTPUT_TYPES.
+        """
+        super().__init_subclass__(**kwargs)
+        # Only validate concrete (non-abstract) classes
+        if not inspect.isabstract(cls):
+            if not cls.SUPPORTED_INPUT_TYPES:
+                raise TypeError(
+                    f"{cls.__name__} must define non-empty SUPPORTED_INPUT_TYPES tuple. "
+                    f"Declare the input modalities this converter accepts."
+                )
+            if not cls.SUPPORTED_OUTPUT_TYPES:
+                raise TypeError(
+                    f"{cls.__name__} must define non-empty SUPPORTED_OUTPUT_TYPES tuple. "
+                    f"Declare the output modalities this converter produces."
+                )
 
     def __init__(self):
         """
