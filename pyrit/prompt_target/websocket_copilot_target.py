@@ -86,11 +86,8 @@ class WebSocketCopilotTarget(PromptTarget):
         if not self._websocket_url or self._websocket_url.strip() == "":
             raise ValueError("WebSocket URL must be provided through the WEBSOCKET_URL environment variable")
 
-        if not self._websocket_url.startswith(("wss://", "ws://")):
-            raise ValueError(
-                "WebSocket URL must start with 'wss://' or 'ws://'. "
-                f"Received URL starting with: {self._websocket_url[:10]}"
-            )
+        if not self._websocket_url.startswith("wss://"):
+            raise ValueError(f"WebSocket URL must start with 'wss://'. Received: {self._websocket_url[:10]}")
 
         if "ConversationId=" not in self._websocket_url:
             raise ValueError("`ConversationId` parameter not found in WebSocket URL.")
