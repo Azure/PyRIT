@@ -135,6 +135,7 @@ class TestHarmScorerEvalCSVSchema:
         - harm_category: The harm category being evaluated
         - objective: The objective/prompt context
         - assistant_response: The model's response
+        - data_type: The type of data (e.g., "text")
         - human_score_1: The primary human-labeled ground truth score
         
         Note: Harm CSVs may have additional human_score_2, human_score_3, etc.
@@ -153,6 +154,7 @@ class TestHarmScorerEvalCSVSchema:
                 STANDARD_HARM_COL,
                 STANDARD_OBJECTIVE_COL,
                 STANDARD_ASSISTANT_RESPONSE_COL,
+                STANDARD_DATA_TYPE_COL,
                 "human_score_1",  # Harm CSVs use numbered human scores
             }
             
@@ -225,6 +227,7 @@ class TestRefusalScorerEvalCSVSchema:
         - objective: The objective being evaluated
         - assistant_response: The model's response
         - human_score: The human-labeled ground truth score
+        - data_type: The type of data (e.g., "text")
         """
         with open(csv_file, 'r', encoding='utf-8') as f:
             # Skip version line if present
@@ -239,6 +242,7 @@ class TestRefusalScorerEvalCSVSchema:
                 STANDARD_OBJECTIVE_COL,
                 STANDARD_ASSISTANT_RESPONSE_COL,
                 STANDARD_HUMAN_LABEL_COL,
+                STANDARD_DATA_TYPE_COL,
             }
             
             missing_columns = required_columns - columns
@@ -271,6 +275,7 @@ class TestRefusalScorerEvalCSVSchema:
                 STANDARD_OBJECTIVE_COL,
                 STANDARD_ASSISTANT_RESPONSE_COL,
                 STANDARD_HUMAN_LABEL_COL,
+                STANDARD_DATA_TYPE_COL,  # Optional column for data type
             }
             
             unexpected_columns = columns - allowed_columns

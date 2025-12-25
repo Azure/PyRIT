@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 OBJECTIVE_RESULTS_PATH = SCORER_EVALS_OBJECTIVE_PATH / "objective_evaluation_results.jsonl"
 
 # Thread locks for writing (module-level, persists for application lifetime)
-_objective_write_lock = threading.Lock()
-_harm_write_locks: Dict[str, threading.Lock] = {}
+# Locks are created per file path to ensure thread-safe writes
+_file_write_locks: Dict[str, threading.Lock] = {}
 
 
 def load_all_objective_metrics() -> List[Dict]:
@@ -65,74 +65,58 @@ def find_objective_metrics_by_hash(hash: str) -> Optional["ObjectiveScorerMetric
     return None
 
 
-def add_to_objective_evaluation_results(
+def add_evaluation_results(
+    *,
+    file_path: Path,
     scorer_identifier: ScorerIdentifier,
-    metrics: "ObjectiveScorerMetrics",
+    metrics: "ScorerMetrics",
     dataset_version: str,
+    harm_category: Optional[str] = None,
 ) -> None:
     """
-    Append an objective scorer metrics entry to the evaluation results file (thread-safe).
+    Append scorer metrics entry to the specified evaluation results file (thread-safe).
     
-    This should primarily be used by the PyRIT team when running evaluations on
-    official datasets.
+    This unified function handles both objective and harm scorer metrics, writing to
+    the specified file path with appropriate validation and thread safety.
     
     Args:
-        scorer_identifier: The scorer's configuration identifier.
-        metrics: The computed objective metrics.
-        dataset_version: The version of the dataset used for evaluation.
-    """
-    from pyrit.score.scorer_evaluation.scorer_evaluator import ObjectiveScorerMetrics
+        file_path (Path): The full path to the JSONL file to append to.
+        scorer_identifier (ScorerIdentifier): The scorer's configuration identifier.
+        metrics (ScorerMetrics): The computed metrics (ObjectiveScorerMetrics or HarmScorerMetrics).
+        dataset_version (str): The version of the dataset used for evaluation.
+        harm_category (Optional[str]): The harm category (required for HarmScorerMetrics).
     
+    Raises:
+        ValueError: If metrics is HarmScorerMetrics but harm_category is None.
+    """
+    from pyrit.score.scorer_evaluation.scorer_evaluator import HarmScorerMetrics, ObjectiveScorerMetrics
+    
+    # Validate harm_category for HarmScorerMetrics
+    if isinstance(metrics, HarmScorerMetrics) and harm_category is None:
+        raise ValueError("harm_category must be provided when metrics is HarmScorerMetrics")
+    
+    # Get or create lock for this file path
+    file_path_str = str(file_path)
+    if file_path_str not in _file_write_locks:
+        _file_write_locks[file_path_str] = threading.Lock()
+    
+    # Build entry dictionary
     entry = scorer_identifier.to_compact_dict()
     entry["dataset_version"] = dataset_version
+    
+    if harm_category is not None:
+        entry["harm_category"] = harm_category
+    
     entry["metrics"] = asdict(metrics)
     
+    # Write to file with thread safety
     _append_jsonl_entry(
-        file_path=OBJECTIVE_RESULTS_PATH,
-        lock=_objective_write_lock,
+        file_path=file_path,
+        lock=_file_write_locks[file_path_str],
         entry=entry,
     )
     
-    logger.info(f"Added objective metrics for {scorer_identifier.type} to evaluation results")
-
-
-def add_to_harm_evaluation_results(
-    scorer_identifier: ScorerIdentifier,
-    metrics: "HarmScorerMetrics",
-    harm_category: str,
-    dataset_version: str,
-) -> None:
-    """
-    Append a harm scorer metrics entry to the harm-specific evaluation results file (thread-safe).
-    
-    Each harm category has its own evaluation results file.
-    
-    Args:
-        scorer_identifier: The scorer's configuration identifier.
-        metrics: The computed harm metrics.
-        harm_category: The harm category (e.g., "hate_speech", "violence").
-        dataset_version: The version of the dataset used for evaluation.
-    """
-    from pyrit.score.scorer_evaluation.scorer_evaluator import HarmScorerMetrics
-    
-    # Get or create lock for this harm category
-    if harm_category not in _harm_write_locks:
-        _harm_write_locks[harm_category] = threading.Lock()
-    
-    harm_file_path = SCORER_EVALS_HARM_PATH / f"harm_{harm_category}_evaluation_results.jsonl"
-    
-    entry = scorer_identifier.to_compact_dict()
-    entry["harm_category"] = harm_category
-    entry["dataset_version"] = dataset_version
-    entry["metrics"] = asdict(metrics)
-    
-    _append_jsonl_entry(
-        file_path=harm_file_path,
-        lock=_harm_write_locks[harm_category],
-        entry=entry,
-    )
-    
-    logger.info(f"Added harm metrics for {scorer_identifier.type} ({harm_category}) to evaluation results")
+    logger.info(f"Added metrics for {scorer_identifier.type} to {file_path.name}")
 
 
 def load_harm_metrics(harm_category: str) -> List[Dict]:

@@ -4,7 +4,7 @@
 import abc
 import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import List, Optional, Set, Tuple, Type, TypeVar, Union, cast
 
@@ -32,6 +32,7 @@ STANDARD_HUMAN_LABEL_COL = "human_score"
 STANDARD_OBJECTIVE_COL = "objective"
 STANDARD_HARM_COL = "harm_category"
 STANDARD_ASSISTANT_RESPONSE_COL = "assistant_response"
+STANDARD_DATA_TYPE_COL = "data_type"
 
 
 @dataclass
@@ -59,6 +60,7 @@ class ScorerMetrics:
 
     This class provides methods for serializing metrics to JSON and loading them from JSON files.
     """
+    trial_scores: Optional[np.ndarray] = field(default=None, kw_only=True)
 
     def to_json(self) -> str:
         """
@@ -120,7 +122,6 @@ class HarmScorerMetrics(ScorerMetrics):
     krippendorff_alpha_combined: float
     krippendorff_alpha_humans: Optional[float] = None
     krippendorff_alpha_model: Optional[float] = None
-    trial_scores: Optional[np.ndarray] = None
 
 
 @dataclass
@@ -146,7 +147,6 @@ class ObjectiveScorerMetrics(ScorerMetrics):
     f1_score: float
     precision: float
     recall: float
-    trial_scores: Optional[np.ndarray] = None
 
 
 class ScorerEvaluator(abc.ABC):
@@ -154,6 +154,9 @@ class ScorerEvaluator(abc.ABC):
     A class that evaluates an LLM scorer against HumanLabeledDatasets, calculating appropriate
     metrics and saving them to a file.
     """
+
+    # Subclasses must define the expected metrics type
+    expected_metrics_type: MetricsType
 
     def __init__(self, scorer: Scorer):
         """
@@ -192,6 +195,7 @@ class ScorerEvaluator(abc.ABC):
         dataset_files: List[ScorerEvalDatasetFiles],
         num_scorer_trials: int = 1,
         add_to_registry: bool = False,
+        max_concurrency: int = 10,
     ) -> dict[str, ScorerMetrics]:
         """
         Evaluate scorer using dataset files configuration.
@@ -208,6 +212,7 @@ class ScorerEvaluator(abc.ABC):
                 Each specifies glob patterns for input files and a result file name.
             num_scorer_trials: Number of scoring trials per response. Defaults to 1.
             add_to_registry: Whether to save to official results. Defaults to False.
+            max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
         
         Returns:
             Dict mapping result name (file stem) to ScorerMetrics.
@@ -233,57 +238,181 @@ class ScorerEvaluator(abc.ABC):
             
             # Load each CSV as a HumanLabeledDataset and combine entries
             all_entries = []
+            dataset_versions = set()
             for csv_file in csv_files:
                 dataset = HumanLabeledDataset.from_csv(
                     csv_path=csv_file,
                     metrics_type=metrics_type,
-                    assistant_response_col_name=STANDARD_ASSISTANT_RESPONSE_COL,
-                    human_label_col_names=[STANDARD_HUMAN_LABEL_COL],
-                    objective_or_harm_col_name=STANDARD_OBJECTIVE_COL,
-                    # data_type column is optional - defaults to "text" when not provided
                 )
                 all_entries.extend(dataset.entries)
+                dataset_versions.add(dataset.version)
+            
+            # Concatenate unique versions, sorted for consistency
+            combined_version = "_".join(sorted(dataset_versions))
             
             # Create combined dataset
             combined_dataset = HumanLabeledDataset(
                 entries=all_entries,
                 metrics_type=metrics_type,
                 name=dataset_config.result_file,
-                version="combined",
+                version=combined_version,
             )
             
             # Evaluate
             metrics = await self.run_evaluation_async(
                 labeled_dataset=combined_dataset,
                 num_scorer_trials=num_scorer_trials,
-                add_to_registry=add_to_registry,
+                max_concurrency=max_concurrency,
             )
+            
+            # Handle registry writing if requested
+            if add_to_registry:
+                self._write_metrics_to_registry(
+                    metrics=metrics,
+                    labeled_dataset=combined_dataset,
+                    result_file_path=SCORER_EVALS_PATH / dataset_config.result_file,
+                )
             
             results[result_key] = metrics
         
         return results
 
-    @abc.abstractmethod
     async def run_evaluation_async(
         self,
         labeled_dataset: HumanLabeledDataset,
         num_scorer_trials: int = 1,
-        add_to_registry: bool = False,
+        max_concurrency: int = 10,
     ) -> ScorerMetrics:
         """
         Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
+        
+        This method performs pure computation without side effects (no file writing).
+        Use run_evaluation_from_files_async with add_to_registry=True to write results to files.
 
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate the scorer against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses.
-            add_to_registry (bool): Whether to add the metrics to the official evaluation results. Defaults to False. This
-                should only be True when running evaluations on official datasets.
+            max_concurrency (int): Maximum number of concurrent scoring requests. Defaults to 10.
 
         Returns:
             ScorerMetrics: The metrics for the scorer. This will be either HarmScorerMetrics or ObjectiveScorerMetrics
                 depending on the type of the HumanLabeledDataset (HARM or OBJECTIVE).
         """
+        # Validate dataset and extract data
+        assistant_responses, human_scores_list, objectives = self._validate_and_extract_data(labeled_dataset)
+
+        # Transpose human scores so each row is a complete set of scores across all responses
+        all_human_scores = np.array(human_scores_list).T
+
+        # Run scoring trials
+        all_model_scores_list = []
+        for _ in range(num_scorer_trials):
+            scores = await self.scorer.score_prompts_batch_async(
+                messages=assistant_responses,
+                objectives=objectives,
+                batch_size=max_concurrency,
+                infer_objective_from_request=True,
+            )
+            score_values = [score.get_value() for score in scores]
+            all_model_scores_list.append(score_values)
+        all_model_scores = np.array(all_model_scores_list)
+
+        # Compute metrics using subclass implementation
+        metrics = self._compute_metrics(
+            all_human_scores=all_human_scores,
+            all_model_scores=all_model_scores,
+        )
+
+        # Include trial scores for debugging and analysis
+        metrics.trial_scores = all_model_scores
+
+        return metrics
+
+    @abc.abstractmethod
+    def _validate_and_extract_data(
+        self,
+        labeled_dataset: HumanLabeledDataset,
+    ) -> Tuple[List, List[List[float]], Optional[List[str]]]:
+        """
+        Validate the dataset and extract data for evaluation.
+
+        Args:
+            labeled_dataset: The dataset to validate and extract from.
+
+        Returns:
+            Tuple of (assistant_responses, human_scores_list, objectives).
+            objectives may be None for harm scoring.
+
+        Raises:
+            ValueError: If the dataset is invalid for this evaluator.
+        """
         pass
+
+    @abc.abstractmethod
+    def _compute_metrics(
+        self,
+        *,
+        all_human_scores: np.ndarray,
+        all_model_scores: np.ndarray,
+    ) -> ScorerMetrics:
+        """
+        Compute evaluation metrics from human and model scores.
+
+        Args:
+            all_human_scores: Array of human scores, shape (num_raters, num_responses).
+            all_model_scores: Array of model scores, shape (num_trials, num_responses).
+
+        Returns:
+            ScorerMetrics subclass with computed metrics.
+        """
+        pass
+
+    def _write_metrics_to_registry(
+        self,
+        *,
+        metrics: ScorerMetrics,
+        labeled_dataset: HumanLabeledDataset,
+        result_file_path: Path,
+    ) -> None:
+        """
+        Write metrics to the evaluation registry file.
+        
+        Creates a version of metrics without trial_scores (too large for registry)
+        and writes to the specified file path.
+
+        Args:
+            metrics (ScorerMetrics): The computed metrics.
+            labeled_dataset (HumanLabeledDataset): The dataset that was evaluated.
+            result_file_path (Path): The full path to the result file.
+        """
+        from pyrit.score.scorer_evaluation.scorer_metrics_utility import add_evaluation_results
+
+        try:
+            # Extract harm_category if this is a HarmScorerMetrics
+            harm_category = None
+            if isinstance(metrics, HarmScorerMetrics):
+                for entry in labeled_dataset.entries:
+                    if isinstance(entry, HarmHumanLabeledEntry):
+                        harm_category = entry.harm_category
+                        break
+                
+                if harm_category is None:
+                    raise ValueError("Could not extract harm_category from HarmScorerMetrics dataset")
+            
+            # Create metrics without trial_scores (too large for registry)
+            metrics_dict = asdict(metrics)
+            metrics_dict.pop("trial_scores", None)
+            registry_metrics = type(metrics)(**metrics_dict)
+            
+            add_evaluation_results(
+                file_path=result_file_path,
+                scorer_identifier=self.scorer.scorer_identifier,
+                metrics=registry_metrics,
+                dataset_version=labeled_dataset.version,
+                harm_category=harm_category,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to add metrics to evaluation results: {e}")
 
 
 class HarmScorerEvaluator(ScorerEvaluator):
@@ -291,78 +420,43 @@ class HarmScorerEvaluator(ScorerEvaluator):
     A class that evaluates a harm scorer against HumanLabeledDatasets of type HARM.
     """
 
-    async def run_evaluation_async(
+    expected_metrics_type = MetricsType.HARM
+
+    def _validate_and_extract_data(
         self,
         labeled_dataset: HumanLabeledDataset,
-        num_scorer_trials: int = 1,
-        add_to_registry: bool = False,
-    ) -> HarmScorerMetrics:
+    ) -> Tuple[List, List[List[float]], Optional[List[str]]]:
         """
-        Evaluate the scorer against a HumanLabeledDataset of type HARM.
+        Validate harm dataset and extract evaluation data.
 
         Args:
-            labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate against.
-            num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
-            add_to_registry (bool): Whether to add the metrics to the official evaluation results. Defaults to False. This
-                should only be True when running evaluations on official datasets.
+            labeled_dataset: The dataset to validate and extract from.
 
         Returns:
-            HarmScorerMetrics: The metrics for the harm scorer.
+            Tuple of (assistant_responses, human_scores_list, None).
+            objectives is None for harm scoring (uses infer_objective_from_request).
 
         Raises:
-            ValueError: If the HumanLabeledDataset is not of type HARM or contains multiple harm categories.
+            ValueError: If dataset is not HARM type or has multiple harm categories.
         """
-        if add_to_registry:
-            logger.warning("Evaluation results functionality for harm scoring should use add_to_harm_evaluation_results(). Ignoring add_to_registry flag.")
-
         if labeled_dataset.metrics_type != MetricsType.HARM:
             raise ValueError("The HumanLabeledDataset must be of type HARM to evaluate a harm scorer.")
 
-        harm_categories: Set[str] = {
-            entry.harm_category for entry in labeled_dataset.entries if isinstance(entry, HarmHumanLabeledEntry)
-        }
-        if len(harm_categories) > 1:
-            raise ValueError("Evaluating a dataset with multiple harm categories is not currently supported.")
+        labeled_dataset.validate()
 
-        assistant_responses, human_scores_list, harms = [], [], []
-        for index, entry in enumerate(labeled_dataset.entries):
-            if not isinstance(entry, HarmHumanLabeledEntry):
-                raise ValueError(
-                    f"Entry at index {index} is not a HarmHumanLabeledEntry, "
-                    "but the HumanLabeledDataset type is HARM."
-                )
-            for message in entry.conversation:
+        assistant_responses: List = []
+        human_scores_list: List[List[float]] = []
+
+        for entry in labeled_dataset.entries:
+            harm_entry = cast(HarmHumanLabeledEntry, entry)
+            for message in harm_entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)
-                # Logic may need to change for multi-turn scoring
                 assistant_responses.append(message)
-            human_scores_list.append(entry.human_scores)
-            harms.append(entry.harm_category)
+            human_scores_list.append(harm_entry.human_scores)
 
-        # Transpose human scores list so each row is a complete set of human scores across all the responses
-        # (i.e. if there are 200 responses and 3 human scores per response, the shape will be (3, 200))
-        all_human_scores = np.array(human_scores_list).T
+        return assistant_responses, human_scores_list, None
 
-        all_model_scores_list = []
-        for _ in range(num_scorer_trials):
-            scores = await self.scorer.score_prompts_batch_async(
-                messages=assistant_responses, infer_objective_from_request=True
-            )
-
-            score_values = [score.get_value() for score in scores]
-            all_model_scores_list.append(score_values)
-        all_model_scores = np.array(all_model_scores_list)
-
-        harm_metrics = self._compute_harm_metrics(
-            all_human_scores=all_human_scores,
-            all_model_scores=all_model_scores,
-        )
-
-        # Include trial scores for debugging and analysis
-        harm_metrics.trial_scores = all_model_scores
-
-        return harm_metrics
-
-    def _compute_harm_metrics(
+    def _compute_metrics(
         self,
         *,
         all_human_scores: np.ndarray,
@@ -405,90 +499,44 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     A class that evaluates an objective scorer against HumanLabeledDatasets of type OBJECTIVE.
     """
 
-    async def run_evaluation_async(
+    expected_metrics_type = MetricsType.OBJECTIVE
+
+    def _validate_and_extract_data(
         self,
         labeled_dataset: HumanLabeledDataset,
-        num_scorer_trials: int = 1,
-        add_to_registry: bool = False,
-    ) -> ObjectiveScorerMetrics:
+    ) -> Tuple[List, List[List[float]], Optional[List[str]]]:
         """
-        Evaluate the scorer against a HumanLabeledDataset of type OBJECTIVE.
+        Validate objective dataset and extract evaluation data.
 
         Args:
-            labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate against.
-            num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
-            add_to_registry (bool): Whether to add the metrics to the official evaluation results. Defaults to False. This
-                should only be True when running evaluations on official datasets.
+            labeled_dataset: The dataset to validate and extract from.
 
         Returns:
-            ObjectiveScorerMetrics: The metrics for the objective scorer.
+            Tuple of (assistant_responses, human_scores_list, objectives).
 
         Raises:
-            ValueError: If the HumanLabeledDataset is not of type OBJECTIVE or contains invalid entries.
+            ValueError: If dataset is not OBJECTIVE type or contains invalid entries.
         """
         if labeled_dataset.metrics_type != MetricsType.OBJECTIVE:
             raise ValueError("The HumanLabeledDataset must be of type OBJECTIVE to evaluate an objective scorer.")
-        assistant_responses, human_scores_list, objectives = [], [], []
-        for index, entry in enumerate(labeled_dataset.entries):
-            if not isinstance(entry, ObjectiveHumanLabeledEntry):
-                raise ValueError(
-                    f"Entry at index {index} is not an ObjectiveHumanLabeledEntry, "
-                    "but the HumanLabeledDataset type is OBJECTIVE."
-                )
-            for message in entry.conversation:
+
+        labeled_dataset.validate()
+
+        assistant_responses: List = []
+        human_scores_list: List[List[float]] = []
+        objectives: List[str] = []
+
+        for entry in labeled_dataset.entries:
+            objective_entry = cast(ObjectiveHumanLabeledEntry, entry)
+            for message in objective_entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)
-                # Logic may need to change for multi-turn scoring
-                assistant_responses.append(message.message_pieces[0])
-            human_scores_list.append(entry.human_scores)
-            objectives.append(entry.objective)
+                assistant_responses.append(message)
+            human_scores_list.append([float(score) for score in objective_entry.human_scores])
+            objectives.append(objective_entry.objective)
 
-        # Transpose human scores list so each row is a complete set of human scores across all the responses
-        # (i.e. if there are 200 responses and 3 human scores per response, the shape will be (3, 200))
-        all_human_scores = np.array(human_scores_list).T
+        return assistant_responses, human_scores_list, objectives
 
-        all_model_scores_list = []
-        for _ in range(num_scorer_trials):
-            scores = await self.scorer.score_prompts_batch_async(
-                messages=[piece.to_message() for piece in assistant_responses],
-                objectives=objectives,
-            )
-
-            score_values = [score.get_value() for score in scores]
-            all_model_scores_list.append(score_values)
-        all_model_scores = np.array(all_model_scores_list)
-
-        objective_metrics = self._compute_objective_metrics(
-            all_human_scores=all_human_scores,
-            all_model_scores=all_model_scores,
-        )
-
-        # Include trial scores for debugging and analysis
-        objective_metrics.trial_scores = all_model_scores
-
-        if add_to_registry:
-            try:
-                from pyrit.score.scorer_evaluation.scorer_metrics_utility import add_to_objective_evaluation_results
-                
-                # Don't include trial_scores in evaluation results entry (too large)
-                results_metrics = ObjectiveScorerMetrics(
-                    accuracy=objective_metrics.accuracy,
-                    accuracy_standard_error=objective_metrics.accuracy_standard_error,
-                    f1_score=objective_metrics.f1_score,
-                    precision=objective_metrics.precision,
-                    recall=objective_metrics.recall,
-                )
-                
-                add_to_objective_evaluation_results(
-                    scorer_identifier=self.scorer.scorer_identifier,
-                    metrics=results_metrics,
-                    dataset_version=labeled_dataset.version,
-                )
-            except Exception as e:
-                logger.warning(f"Failed to add metrics to evaluation results: {e}")
-
-        return objective_metrics
-
-    def _compute_objective_metrics(
+    def _compute_metrics(
         self,
         *,
         all_human_scores: np.ndarray,

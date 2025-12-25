@@ -15,6 +15,12 @@ from pyrit.score import MetricsType
 
 logger = logging.getLogger(__name__)
 
+# Standard column names for evaluation datasets
+STANDARD_HUMAN_LABEL_COL = "human_score"
+STANDARD_OBJECTIVE_COL = "objective"
+STANDARD_ASSISTANT_RESPONSE_COL = "assistant_response"
+STANDARD_DATA_TYPE_COL = "data_type"
+
 
 @dataclass
 class HumanLabeledEntry:
@@ -35,6 +41,18 @@ class HumanLabeledEntry:
     conversation: List[Message]
     human_scores: List
 
+    def __post_init__(self) -> None:
+        """
+        Validate that conversation and human_scores are not None and have positive lengths.
+
+        Raises:
+            ValueError: If conversation or human_scores is None or empty.
+        """
+        if self.conversation is None or len(self.conversation) == 0:
+            raise ValueError("conversation must not be None or empty.")
+        if self.human_scores is None or len(self.human_scores) == 0:
+            raise ValueError("human_scores must not be None or empty.")
+
 
 @dataclass
 class HarmHumanLabeledEntry(HumanLabeledEntry):
@@ -49,13 +67,18 @@ class HarmHumanLabeledEntry(HumanLabeledEntry):
     # For now, this is a string, but may be enum or Literal in the future.
     harm_category: str
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """
-        Validate that all human scores are between 0.0 and 1.0 inclusive.
+        Validate harm category and human scores.
 
         Raises:
-            ValueError: If any human score is not between 0.0 and 1.0 inclusive.
+            ValueError: If harm_category is None or empty, or if any human score is not between 0.0 and 1.0 inclusive.
         """
+        super().__post_init__()
+        
+        if not self.harm_category or not self.harm_category.strip():
+            raise ValueError("harm_category must not be None or empty.")
+        
         if not all(score >= 0.0 and score <= 1.0 for score in self.human_scores):
             raise ValueError("All human scores must be between 0.0 and 1.0 inclusive.")
 
@@ -71,6 +94,18 @@ class ObjectiveHumanLabeledEntry(HumanLabeledEntry):
 
     human_scores: List[bool]
     objective: str
+
+    def __post_init__(self) -> None:
+        """
+        Validate objective field.
+
+        Raises:
+            ValueError: If objective is None or empty.
+        """
+        super().__post_init__()
+        
+        if not self.objective or not self.objective.strip():
+            raise ValueError("objective must not be None or empty.")
 
 
 class HumanLabeledDataset:
@@ -104,44 +139,34 @@ class HumanLabeledDataset:
         self.metrics_type = metrics_type
         self.version = version
 
-        for entry in self.entries:
-            self._validate_entry(entry)
-
     @classmethod
     def from_csv(
         cls,
         *,
         csv_path: Union[str, Path],
         metrics_type: MetricsType,
-        human_label_col_names: List[str],
-        objective_or_harm_col_name: str,
-        assistant_response_col_name: str = "assistant_response",
-        assistant_response_data_type_col_name: Optional[str] = None,
         dataset_name: Optional[str] = None,
         version: Optional[str] = None,
     ) -> "HumanLabeledDataset":
         """
-        Load a human-labeled dataset from a CSV file. This only allows for single turn scored text responses.
-        You can optionally include a # comment line at the top of the CSV file to specify the dataset version
-        (using # version=x.y).
+        Load a human-labeled dataset from a CSV file with standard column names.
+        
+        Expected CSV format:
+        - 'assistant_response': The assistant's response text
+        - 'human_score': Human-assigned label (can have multiple columns for multiple raters)
+        - 'objective': For OBJECTIVE datasets, the objective being evaluated
+        - 'data_type': Optional data type (defaults to 'text' if not present)
+        
+        You can optionally include a # comment line at the top of the CSV file to specify 
+        the dataset version (using # version=x.y).
 
         Args:
             csv_path (Union[str, Path]): The path to the CSV file.
-            metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or
-                OBJECTIVE.
-            assistant_response_col_name (str): The name of the column containing the assistant responses.
-                Defaults to "assistant_response".
-            human_label_col_names (List[str]): The names of the columns containing the human assigned labels. For
-                harm datasets, the CSV file should contain float scores between 0.0 and 1.0 for each response.
-                For objective datasets, the CSV file should contain a 0 or 1 for each response.
-            objective_or_harm_col_name (str): The name of the column containing the objective or harm category for
-                each response.
-            assistant_response_data_type_col_name (str, Optional): The name of the column containing the data type of
-                the assistant responses. If not specified, it is assumed that the responses are text.
-            dataset_name: (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
-                file name.
-            version (str, Optional): The version of the dataset. If not provided here, it will be inferred from the CSV
-                file if a version comment line "#version=" is present. See `mini_hate_speech.csv` for an example.
+            metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or OBJECTIVE.
+            dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred 
+                from the CSV file name.
+            version (str, Optional): The version of the dataset. If not provided here, it will be inferred 
+                from the CSV file if a version comment line "#version=" is present.
 
         Returns:
             HumanLabeledDataset: The human-labeled dataset object.
@@ -168,33 +193,31 @@ class HumanLabeledDataset:
         except UnicodeDecodeError:
             eval_df = pd.read_csv(csv_path, comment="#", encoding="latin-1")
 
-        # cls._validate_fields
-        cls._validate_columns(
-            eval_df=eval_df,
-            human_label_col_names=human_label_col_names,
-            assistant_response_col_name=assistant_response_col_name,
-            objective_or_harm_col_name=objective_or_harm_col_name,
-            assistant_response_data_type_col_name=assistant_response_data_type_col_name,
-        )
+        # Validate required columns exist and have no NaN values
+        cls._validate_csv_columns(eval_df=eval_df)
 
-        responses_to_score = eval_df[assistant_response_col_name].tolist()
+        # Determine human label columns (all columns starting with standard prefix)
+        human_label_col_names = [col for col in eval_df.columns if col.startswith(STANDARD_HUMAN_LABEL_COL)]
+        if not human_label_col_names:
+            raise ValueError(
+                f"No human score columns found. Expected columns starting with '{STANDARD_HUMAN_LABEL_COL}'."
+            )
+
+        # Get data type column if it exists, otherwise default to 'text'
+        has_data_type_col = STANDARD_DATA_TYPE_COL in eval_df.columns
+
+        responses_to_score = eval_df[STANDARD_ASSISTANT_RESPONSE_COL].tolist()
         all_human_scores = eval_df[human_label_col_names].values.tolist()
-        objectives_or_harms = eval_df[objective_or_harm_col_name].tolist()
-        if assistant_response_data_type_col_name:
-            data_types = eval_df[assistant_response_data_type_col_name].tolist()
+        objectives_or_harms = eval_df[STANDARD_OBJECTIVE_COL].tolist()
+        if has_data_type_col:
+            data_types = eval_df[STANDARD_DATA_TYPE_COL].tolist()
         else:
-            data_types = ["text"] * len(eval_df[assistant_response_col_name])
+            data_types = ["text"] * len(eval_df[STANDARD_ASSISTANT_RESPONSE_COL])
 
         entries: List[HumanLabeledEntry] = []
         for response_to_score, human_scores, objective_or_harm, data_type in zip(
             responses_to_score, all_human_scores, objectives_or_harms, data_types
         ):
-            cls._validate_fields(
-                response_to_score=response_to_score,
-                human_scores=human_scores,
-                objective_or_harm=objective_or_harm,
-                data_type=data_type,
-            )
             response_to_score = str(response_to_score).strip()
             objective_or_harm = str(objective_or_harm).strip()
             data_type = str(data_type).strip()
@@ -229,115 +252,77 @@ class HumanLabeledDataset:
         dataset_name = dataset_name or Path(csv_path).stem
         return cls(entries=entries, name=dataset_name, metrics_type=metrics_type, version=version)
 
-    def add_entries(self, entries: List[HumanLabeledEntry]):
+    def validate(self) -> None:
         """
-        Add multiple entries to the human-labeled dataset.
-
-        Args:
-            entries (List[HumanLabeledEntry]): A list of entries to add.
+        Validate that the dataset is internally consistent.
+        
+        Checks that all entries match the dataset's metrics_type and, for HARM datasets,
+        that all entries have the same harm_category.
+        
+        Raises:
+            ValueError: If entries don't match metrics_type or harm categories are inconsistent.
         """
-        for entry in entries:
-            self.add_entry(entry)
-
-    def add_entry(self, entry: HumanLabeledEntry):
-        """
-        Add a new entry to the human-labeled dataset.
-
-        Args:
-            entry (HumanLabeledEntry): The entry to add.
-        """
-        self._validate_entry(entry)
-        self.entries.append(entry)
-
-    def _validate_entry(self, entry: HumanLabeledEntry):
+        if not self.entries:
+            return
+        
         if self.metrics_type == MetricsType.HARM:
-            if not isinstance(entry, HarmHumanLabeledEntry):
-                raise ValueError("All entries must be HarmHumanLabeledEntry instances for harm datasets.")
-            if self.entries:
-                first_entry = self.entries[0]
-                # if statement for static type checking
-                if isinstance(first_entry, HarmHumanLabeledEntry):
-                    if entry.harm_category != first_entry.harm_category:
-                        logger.warning(
-                            "All entries in a harm dataset should have the same harm category. "
-                            "Evaluating a dataset with multiple harm categories is not currently supported."
-                        )
+            harm_categories = set()
+            for index, entry in enumerate(self.entries):
+                if not isinstance(entry, HarmHumanLabeledEntry):
+                    raise ValueError(
+                        f"Entry at index {index} is not a HarmHumanLabeledEntry, "
+                        "but the HumanLabeledDataset type is HARM."
+                    )
+                harm_categories.add(entry.harm_category)
+            
+            if len(harm_categories) > 1:
+                raise ValueError("Evaluating a dataset with multiple harm categories is not currently supported.")
+        
         elif self.metrics_type == MetricsType.OBJECTIVE:
-            if not isinstance(entry, ObjectiveHumanLabeledEntry):
-                raise ValueError("All entries must be ObjectiveHumanLabeledEntry instances for objective datasets.")
+            for index, entry in enumerate(self.entries):
+                if not isinstance(entry, ObjectiveHumanLabeledEntry):
+                    raise ValueError(
+                        f"Entry at index {index} is not an ObjectiveHumanLabeledEntry, "
+                        "but the HumanLabeledDataset type is OBJECTIVE."
+                    )
 
     @staticmethod
-    def _validate_columns(
-        *,
-        eval_df: pd.DataFrame,
-        human_label_col_names: List[str],
-        assistant_response_col_name: str,
-        objective_or_harm_col_name: str,
-        assistant_response_data_type_col_name: Optional[str] = None,
-    ):
+    def _validate_csv_columns(*, eval_df: pd.DataFrame) -> None:
         """
-        Validate that the required columns exist in the DataFrame (representing the human-labeled dataset)
-        and that they are of the correct length and do not contain NaN values.
+        Validate that the required standard columns exist in the DataFrame.
 
         Args:
             eval_df (pd.DataFrame): The DataFrame to validate.
-            human_label_col_names (List[str]): The names of the columns containing the human assigned labels.
-            assistant_response_col_name (str): The name of the column containing the assistant responses.
-            objective_or_harm_col_name (str): The name of the column containing the objective or harm category
-                for each response.
-            assistant_response_data_type_col_name (Optional[str]): The name of the column containing the data type
-                of the assistant responses.
 
         Raises:
-            ValueError: If any required column is missing, contains NaN values, or if column names are not unique.
+            ValueError: If any required column is missing or if column names are not unique.
         """
         if len(eval_df.columns) != len(set(eval_df.columns)):
             raise ValueError("Column names in the dataset must be unique.")
 
-        required_columns = human_label_col_names + [assistant_response_col_name, objective_or_harm_col_name]
-        if assistant_response_data_type_col_name:
-            required_columns.append(assistant_response_data_type_col_name)
-
+        # Required columns
+        required_columns = [STANDARD_ASSISTANT_RESPONSE_COL, STANDARD_OBJECTIVE_COL]
+        
         for column in required_columns:
             if column not in eval_df.columns:
-                raise ValueError(f"Column {column} is missing from the dataset.")
+                raise ValueError(
+                    f"Required column '{column}' is missing from the dataset. "
+                    f"Found columns: {list(eval_df.columns)}"
+                )
             if eval_df[column].isna().any():
-                raise ValueError(f"Column {column} contains NaN values.")
-
-    @staticmethod
-    def _validate_fields(
-        *,
-        response_to_score,
-        human_scores: List,
-        objective_or_harm,
-        data_type,
-    ):
-        """
-        Validate the fields needed for a human-labeled dataset entry.
-
-        Args:
-            response_to_score: The response to score.
-            human_scores (List): The human scores for the response.
-            objective_or_harm: The objective or harm category for the response.
-            data_type: The data type of the response (e.g., "text", "image", etc.).
-
-        Raises:
-            ValueError: If any field is invalid.
-        """
-        if not response_to_score or not str(response_to_score).strip():
-            raise ValueError("One or more of the responses is empty. Ensure that the file contains " "valid responses.")
-        if not all(isinstance(score, (int, float)) for score in human_scores):
+                raise ValueError(f"Column '{column}' contains NaN values.")
+        
+        # Check for at least one human score column
+        human_score_cols = [col for col in eval_df.columns if col.startswith(STANDARD_HUMAN_LABEL_COL)]
+        if not human_score_cols:
             raise ValueError(
-                "Human scores must be a list of numeric values (int or float). Ensure that the file contains valid"
-                " human scores. True and False values should be represented as 1 and 0 respectively."
+                f"No human score columns found. Expected at least one column starting with '{STANDARD_HUMAN_LABEL_COL}'."
             )
-        if not objective_or_harm or not isinstance(objective_or_harm, str) or not str(objective_or_harm).strip():
-            raise ValueError(
-                "An objective or harm category is missing or not a string. Ensure that the file contains"
-                " valid objectives or harm categories."
-            )
-        if not data_type or not isinstance(data_type, str) or data_type.strip() not in get_args(PromptDataType):
-            raise ValueError(f"One of the data types is invalid. Valid types are: {get_args(PromptDataType)}.")
+        
+        # Validate human score columns don't have NaN
+        for col in human_score_cols:
+            if eval_df[col].isna().any():
+                raise ValueError(f"Human score column '{col}' contains NaN values.")
 
     @staticmethod
     def _construct_harm_entry(*, messages: List[Message], harm: str, human_scores: List):

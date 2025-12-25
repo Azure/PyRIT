@@ -93,313 +93,6 @@ def test_from_scorer_objective(mock_objective_scorer):
     assert isinstance(evaluator2, ObjectiveScorerEvaluator)
 
 
-def test_get_scorer_metrics_harm(tmp_path, mock_harm_scorer):
-    # Create a fake metrics file
-    metrics = HarmScorerMetrics(
-        mean_absolute_error=0.1,
-        mae_standard_error=0.01,
-        t_statistic=1.0,
-        p_value=0.05,
-        krippendorff_alpha_combined=0.8,
-        krippendorff_alpha_humans=0.7,
-        krippendorff_alpha_model=0.9,
-    )
-    metrics_path = tmp_path / "metrics.json"
-    with open(metrics_path, "w") as f:
-        f.write(metrics.to_json())
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    # Patch _get_metrics_path to return our temp file
-    with patch.object(evaluator, "_get_metrics_path", return_value=metrics_path):
-        loaded = evaluator.get_scorer_metrics("any_dataset")
-        assert loaded == metrics
-
-    with patch.object(evaluator, "_get_metrics_path", return_value=tmp_path / "does_not_exist.json"):
-        with pytest.raises(FileNotFoundError):
-            evaluator.get_scorer_metrics("any_dataset")
-
-
-def test_get_scorer_metrics_harm_with_results_folder_search(tmp_path, mock_harm_scorer):
-    """Test that get_scorer_metrics finds metrics in results folders when default location fails."""
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-
-    # Create metrics in a results folder
-    results_dir = tmp_path / "results"
-    results_dir.mkdir()
-    metrics = HarmScorerMetrics(
-        mean_absolute_error=0.1,
-        mae_standard_error=0.01,
-        t_statistic=1.0,
-        p_value=0.05,
-        krippendorff_alpha_combined=0.8,
-    )
-    metrics_filename = "test_dataset_MagicMock_metrics.json"
-    metrics_path = results_dir / metrics_filename
-    with open(metrics_path, "w") as f:
-        f.write(metrics.to_json())
-
-    # Mock _get_metrics_path to return non-existent default path
-    default_path = tmp_path / "default" / "does_not_exist.json"
-
-    with patch.object(evaluator, "_get_metrics_path", return_value=default_path):
-        with patch("pathlib.Path.cwd", return_value=tmp_path):
-            loaded = evaluator.get_scorer_metrics("test_dataset")
-            assert loaded == metrics
-
-
-def test_get_scorer_metrics_objective_with_results_folder_search(tmp_path, mock_objective_scorer):
-    """Test that get_scorer_metrics finds metrics in results folders when default location fails."""
-    evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
-
-    # Create metrics in a results folder
-    results_dir = tmp_path / "results"
-    results_dir.mkdir()
-    metrics = ObjectiveScorerMetrics(
-        accuracy=0.9,
-        accuracy_standard_error=0.05,
-        f1_score=0.8,
-        precision=0.85,
-        recall=0.75,
-    )
-    metrics_filename = "test_dataset_MagicMock_metrics.json"
-    metrics_path = results_dir / metrics_filename
-    with open(metrics_path, "w") as f:
-        f.write(metrics.to_json())
-
-    # Mock _get_metrics_path to return non-existent default path
-    default_path = tmp_path / "default" / "does_not_exist.json"
-
-    with patch.object(evaluator, "_get_metrics_path", return_value=default_path):
-        with patch("pathlib.Path.cwd", return_value=tmp_path):
-            loaded = evaluator.get_scorer_metrics("test_dataset")
-            assert loaded == metrics
-
-
-def test_get_scorer_metrics_no_metrics_found_error_message(tmp_path, mock_harm_scorer):
-    """Test that get_scorer_metrics provides helpful error message when no metrics found."""
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-
-    # Mock _get_metrics_path to return non-existent default path
-    default_path = tmp_path / "default" / "does_not_exist.json"
-
-    with patch.object(evaluator, "_get_metrics_path", return_value=default_path):
-        with patch("pathlib.Path.cwd", return_value=tmp_path):
-            with pytest.raises(FileNotFoundError) as exc_info:
-                evaluator.get_scorer_metrics("test_dataset")
-
-            error_msg = str(exc_info.value)
-            assert "Metrics for dataset 'test_dataset' not found" in error_msg
-            assert "Default location:" in error_msg
-            assert "Results folders:" in error_msg
-
-
-def test_get_scorer_metrics_objective(tmp_path, mock_objective_scorer):
-    metrics = ObjectiveScorerMetrics(
-        accuracy=0.9,
-        accuracy_standard_error=0.05,
-        f1_score=0.8,
-        precision=0.85,
-        recall=0.75,
-    )
-    metrics_path = tmp_path / "metrics.json"
-    with open(metrics_path, "w") as f:
-        f.write(metrics.to_json())
-    evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
-
-    with patch.object(evaluator, "_get_metrics_path", return_value=metrics_path):
-        loaded = evaluator.get_scorer_metrics("any_dataset")
-        assert loaded == metrics
-
-    with patch.object(evaluator, "_get_metrics_path", return_value=tmp_path / "does_not_exist.json"):
-        with pytest.raises(FileNotFoundError):
-            evaluator.get_scorer_metrics("any_dataset")
-
-
-@pytest.mark.asyncio
-@patch(
-    "pyrit.score.scorer_evaluation.scorer_evaluator.HarmScorerEvaluator.run_evaluation_async", new_callable=AsyncMock
-)
-async def test_run_evaluation_from_csv_async_harm(mock_run_eval, sample_harm_csv_path, mock_harm_scorer):
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    expected_metrics = HarmScorerMetrics(
-        mean_absolute_error=0.1,
-        mae_standard_error=0.01,
-        t_statistic=1.0,
-        p_value=0.05,
-        krippendorff_alpha_combined=0.8,
-        krippendorff_alpha_humans=0.7,
-        krippendorff_alpha_model=0.9,
-    )
-    mock_run_eval.return_value = expected_metrics
-
-    result = await evaluator.run_evaluation_from_csv_async(
-        csv_path=sample_harm_csv_path,
-        assistant_response_col_name="assistant_response",
-        human_label_col_names=["human_score_1", "human_score_2", "human_score_3"],
-        objective_or_harm_col_name="category",
-        num_scorer_trials=2,
-        save_results=False,
-        dataset_name="SAMPLE_hate_speech",
-    )
-
-    assert result == expected_metrics
-    mock_run_eval.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-@patch(
-    "pyrit.score.scorer_evaluation.scorer_evaluator.ObjectiveScorerEvaluator.run_evaluation_async",
-    new_callable=AsyncMock,
-)
-async def test_run_evaluation_from_csv_async_objective(mock_run_eval, sample_objective_csv_path, mock_objective_scorer):
-    evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
-    expected_metrics = ObjectiveScorerMetrics(
-        accuracy=0.9,
-        accuracy_standard_error=0.05,
-        f1_score=0.8,
-        precision=0.85,
-        recall=0.75,
-    )
-    mock_run_eval.return_value = expected_metrics
-
-    result = await evaluator.run_evaluation_from_csv_async(
-        csv_path=sample_objective_csv_path,
-        assistant_response_col_name="assistant_response",
-        human_label_col_names=["normalized_score"],
-        objective_or_harm_col_name="objective",
-        assistant_response_data_type_col_name="data_type",
-        num_scorer_trials=2,
-        save_results=False,
-        dataset_name="SAMPLE_mixed_objective_refusal",
-    )
-
-    assert result == expected_metrics
-    mock_run_eval.assert_awaited_once()
-
-
-def test_save_model_scores_to_csv(tmp_path, mock_harm_scorer):
-    """Test _save_model_scores_to_csv basic functionality without true_scores."""
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    objectives_or_harms = ["hate_speech", "hate_speech"]
-    responses = ["resp1", "resp2"]
-    all_model_scores = np.array([[1, 0], [0, 1]])
-    file_path = tmp_path / "results.csv"
-
-    evaluator._save_model_scores_to_csv(objectives_or_harms, responses, all_model_scores, file_path)
-
-    df = pd.read_csv(file_path)
-    assert list(df["objective_or_harm"]) == objectives_or_harms
-    assert list(df["assistant_response"]) == responses
-    assert "trial 1" in df.columns
-    assert "trial 2" in df.columns
-    assert "true_label" not in df.columns
-
-    # Clean up the temporary file
-    file_path.unlink()
-
-
-def test_save_model_scores_to_csv_with_true_scores_array(tmp_path, mock_harm_scorer):
-    """Test _save_model_scores_to_csv with true_scores as numpy array."""
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    objectives_or_harms = ["hate_speech", "hate_speech"]
-    responses = ["resp1", "resp2"]
-    all_model_scores = np.array([[1, 0], [0, 1]])
-    true_scores = np.array([0.8, 0.2])
-    file_path = tmp_path / "results.csv"
-
-    evaluator._save_model_scores_to_csv(objectives_or_harms, responses, all_model_scores, file_path, true_scores)
-
-    df = pd.read_csv(file_path)
-    assert list(df["objective_or_harm"]) == objectives_or_harms
-    assert list(df["assistant_response"]) == responses
-    assert "trial 1" in df.columns
-    assert "trial 2" in df.columns
-    assert "true_label" in df.columns
-    assert list(df["true_label"]) == [0.8, 0.2]
-
-    # Clean up the temporary file
-    file_path.unlink()
-
-
-def test_save_model_scores_to_csv_with_true_scores_scalar(tmp_path, mock_harm_scorer):
-    """Test _save_model_scores_to_csv with true_scores as scalar value."""
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    objectives_or_harms = ["hate_speech", "hate_speech"]
-    responses = ["resp1", "resp2"]
-    all_model_scores = np.array([[1, 0], [0, 1]])
-    true_scores = 0.5  # scalar value
-    file_path = tmp_path / "results.csv"
-
-    evaluator._save_model_scores_to_csv(objectives_or_harms, responses, all_model_scores, file_path, true_scores)
-
-    df = pd.read_csv(file_path)
-    assert list(df["objective_or_harm"]) == objectives_or_harms
-    assert list(df["assistant_response"]) == responses
-    assert "trial 1" in df.columns
-    assert "trial 2" in df.columns
-    assert "true_label" in df.columns
-    assert list(df["true_label"]) == [0.5, 0.5]  # scalar repeated for each response
-
-    # Clean up the temporary file
-    file_path.unlink()
-
-
-def test_save_model_scores_to_csv_with_true_scores_list(tmp_path, mock_harm_scorer):
-    """Test _save_model_scores_to_csv with true_scores as list."""
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    objectives_or_harms = ["hate_speech", "hate_speech"]
-    responses = ["resp1", "resp2"]
-    all_model_scores = np.array([[1, 0], [0, 1]])
-    true_scores = [0.9, 0.1]  # list
-    file_path = tmp_path / "results.csv"
-
-    evaluator._save_model_scores_to_csv(objectives_or_harms, responses, all_model_scores, file_path, true_scores)
-
-    df = pd.read_csv(file_path)
-    assert "true_label" in df.columns
-    assert list(df["true_label"]) == [0.9, 0.1]
-
-    # Clean up the temporary file
-    file_path.unlink()
-
-
-def test_save_model_scores_to_csv_column_order(tmp_path, mock_harm_scorer):
-    """Test that true_label column is added after all trial columns."""
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    objectives_or_harms = ["hate_speech"]
-    responses = ["resp1"]
-    all_model_scores = np.array([[1], [0], [1]])  # 3 trials, 1 response
-    true_scores = [0.5]
-    file_path = tmp_path / "results.csv"
-
-    evaluator._save_model_scores_to_csv(objectives_or_harms, responses, all_model_scores, file_path, true_scores)
-
-    df = pd.read_csv(file_path)
-    expected_columns = ["objective_or_harm", "assistant_response", "trial 1", "trial 2", "trial 3", "true_label"]
-    assert list(df.columns) == expected_columns
-
-
-def test_get_metrics_path_and_csv_path_harm(mock_harm_scorer):
-    evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    dataset_name = "SAMPLE_harm"
-    expected_metrics_path = Path(SCORER_EVALS_HARM_PATH) / f"{dataset_name}_MagicMock_metrics.json"
-    expected_csv_path = Path(SCORER_EVALS_HARM_PATH) / f"{dataset_name}_MagicMock_scoring_results.csv"
-    metrics_path = evaluator._get_metrics_path(dataset_name)
-    csv_path = evaluator._get_csv_results_path(dataset_name)
-    assert metrics_path == expected_metrics_path
-    assert csv_path == expected_csv_path
-
-
-def test_get_metrics_path_and_csv_path_objective(mock_objective_scorer):
-    evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
-    dataset_name = "SAMPLE_objective"
-    expected_metrics_path = Path(SCORER_EVALS_OBJECTIVE_PATH) / f"{dataset_name}_MagicMock_metrics.json"
-    expected_csv_path = Path(SCORER_EVALS_OBJECTIVE_PATH) / f"{dataset_name}_MagicMock_scoring_results.csv"
-    metrics_path = evaluator._get_metrics_path(dataset_name)
-    csv_path = evaluator._get_csv_results_path(dataset_name)
-    assert metrics_path == expected_metrics_path
-    assert csv_path == expected_csv_path
-
-
 @pytest.mark.asyncio
 async def test_run_evaluation_async_harm(mock_harm_scorer):
     responses = [
@@ -415,7 +108,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
     mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
     metrics = await evaluator.run_evaluation_async(
-        labeled_dataset=mock_dataset, num_scorer_trials=2, save_results=False
+        labeled_dataset=mock_dataset, num_scorer_trials=2
     )
     assert mock_harm_scorer._memory.add_message_to_memory.call_count == 2
     assert isinstance(metrics, HarmScorerMetrics)
@@ -433,12 +126,12 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
         name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry], version="1.0"
     )
     # Patch scorer to return fixed scores
-    mock_objective_scorer.score_prompts_with_tasks_batch_async = AsyncMock(
+    mock_objective_scorer.score_prompts_batch_async = AsyncMock(
         return_value=[MagicMock(get_value=lambda: False)]
     )
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
     metrics = await evaluator.run_evaluation_async(
-        labeled_dataset=mock_dataset, num_scorer_trials=2, save_results=False
+        labeled_dataset=mock_dataset, num_scorer_trials=2
     )
     assert mock_objective_scorer._memory.add_message_to_memory.call_count == 1
     assert isinstance(metrics, ObjectiveScorerMetrics)
@@ -447,28 +140,28 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
 
 
 @pytest.mark.asyncio
-async def test_run_evaluation_async_objective_add_to_registry(mock_objective_scorer):
-    """Test that add_to_registry=True calls ScorerMetricsRegistry.add_entry."""
+async def test_run_evaluation_async_objective_returns_metrics(mock_objective_scorer):
+    """Test that run_evaluation_async returns metrics without side effects."""
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
     entry = ObjectiveHumanLabeledEntry(responses, [True], "Test objective")
-    mock_dataset = HumanLabeledDataset(name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry])
-    mock_objective_scorer.score_prompts_with_tasks_batch_async = AsyncMock(
+    mock_dataset = HumanLabeledDataset(
+        name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry], version="1.0"
+    )
+    mock_objective_scorer.score_prompts_batch_async = AsyncMock(
         return_value=[MagicMock(get_value=lambda: True)]
     )
     mock_objective_scorer.scorer_identifier = MagicMock()
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
 
-    with patch("pyrit.score.scorer_evaluation.scorer_evaluator.ScorerMetricsRegistry") as mock_registry_cls:
-        mock_registry = MagicMock()
-        mock_registry_cls.return_value = mock_registry
-
-        await evaluator.run_evaluation_async(
-            labeled_dataset=mock_dataset, num_scorer_trials=1, save_results=False, add_to_registry=True
-        )
-
-        mock_registry.add_entry.assert_called_once()
+    metrics = await evaluator.run_evaluation_async(
+        labeled_dataset=mock_dataset, num_scorer_trials=1
+    )
+    
+    # Verify metrics returned without registry writing
+    assert metrics is not None
+    assert isinstance(metrics, ObjectiveScorerMetrics)
 
 
 def test_compute_objective_metrics_perfect_agreement(mock_objective_scorer):
@@ -476,7 +169,7 @@ def test_compute_objective_metrics_perfect_agreement(mock_objective_scorer):
     # 2 responses, 3 human scores each, all agree (all 1s), model also all 1s
     all_human_scores = np.array([[1, 1], [1, 1], [1, 1]])
     all_model_scores = np.array([[1, 1], [1, 1]])
-    metrics = evaluator._compute_objective_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
+    metrics = evaluator._compute_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     assert metrics.accuracy == 1.0
     assert metrics.f1_score == 1.0
     assert metrics.precision == 1.0
@@ -488,7 +181,7 @@ def test_compute_objective_metrics_partial_agreement(mock_objective_scorer):
     # 2 responses, 3 human scores each, mixed labels, model gets one right, one wrong
     all_human_scores = np.array([[1, 0], [1, 0], [0, 1]])  # gold: [1, 0]
     all_model_scores = np.array([[1, 1]])
-    metrics = evaluator._compute_objective_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
+    metrics = evaluator._compute_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     # gold: [1, 0], model: [1, 1]
     # TP=1 (first), FP=1 (second), TN=0, FN=0
     assert metrics.accuracy == 0.5
@@ -504,7 +197,7 @@ def test_compute_harm_metrics_perfect_agreement(mock_harm_scorer):
     # 2 model trials
     all_model_scores = np.array([[0.1, 0.2], [0.1, 0.2]])
     # Patch krippendorff.krippendorff_alpha to return 1.0 for all calls
-    metrics = evaluator._compute_harm_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
+    metrics = evaluator._compute_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     assert metrics.mean_absolute_error == 0.0
     assert metrics.mae_standard_error == 0.0
     assert metrics.krippendorff_alpha_combined == 1.0
@@ -517,5 +210,5 @@ def test_compute_harm_metrics_partial_agreement(mock_harm_scorer):
     # 2 responses, 3 human scores each, model is off by 0.1 for each
     all_human_scores = np.array([[0.1, 0.2], [0.1, 0.2], [0.1, 0.2]])
     all_model_scores = np.array([[0.2, 0.3], [0.2, 0.3]])
-    metrics = evaluator._compute_harm_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
+    metrics = evaluator._compute_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
     assert np.isclose(metrics.mean_absolute_error, 0.1)

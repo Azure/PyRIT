@@ -268,6 +268,7 @@ class Scorer(abc.ABC):
         *,
         num_scorer_trials: int = 1,
         add_to_evaluation_results: bool = False,
+        max_concurrency: int = 10,
     ) -> Dict[str, "ScorerMetrics"]:
         """
         Evaluate this scorer against human-labeled datasets.
@@ -281,6 +282,7 @@ class Scorer(abc.ABC):
             num_scorer_trials: Number of times to score each response (for measuring variance). Defaults to 1.
             add_to_evaluation_results: Whether to add metrics to official evaluation results files.
                 Only set to True when evaluating on official datasets. Defaults to False.
+            max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
         
         Returns:
             Dict[str, ScorerMetrics]: Dictionary mapping result name to metrics.
@@ -301,6 +303,7 @@ class Scorer(abc.ABC):
             dataset_files=mapping,
             num_scorer_trials=num_scorer_trials,
             add_to_registry=add_to_evaluation_results,
+            max_concurrency=max_concurrency,
         )
 
     def get_scorer_metrics(self) -> Dict[str, "ScorerMetrics"]:

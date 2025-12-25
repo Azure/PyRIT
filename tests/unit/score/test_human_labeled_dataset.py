@@ -95,39 +95,6 @@ def test_human_labeled_dataset_init_multiple_harm_categories_warns(sample_respon
         assert any("All entries in a harm dataset should have the same harm category" in m for m in caplog.messages)
 
 
-def test_human_labeled_dataset_add_entry(sample_responses):
-    entry = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM, version="1.0")
-    dataset.add_entry(entry)
-    assert len(dataset.entries) == 1
-    assert isinstance(dataset.entries[0], HarmHumanLabeledEntry)
-
-
-def test_human_labeled_dataset_add_entry_warns(sample_responses, caplog):
-    entry = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
-    entry2 = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "violence")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM, version="1.0")
-    with caplog.at_level(logging.WARNING):
-        dataset.add_entry(entry2)
-        assert "All entries in a harm dataset should have the same harm category" in caplog.text
-
-
-def test_human_labeled_dataset_add_entries(sample_responses):
-    entry = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
-    entry2 = HarmHumanLabeledEntry(sample_responses, [0.2, 0.8], "hate_speech")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM, version="1.0")
-    dataset.add_entries([entry, entry2])
-    assert len(dataset.entries) == 2
-    assert all(isinstance(e, HarmHumanLabeledEntry) for e in dataset.entries)
-
-
-def test_human_labeled_dataset_validate_entry_type_error(sample_responses):
-    entry = ObjectiveHumanLabeledEntry(sample_responses, [True, False], "objective")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[], metrics_type=MetricsType.HARM, version="1.0")
-    with pytest.raises(ValueError):
-        dataset.add_entry(entry)
-
-
 def test_human_labeled_dataset_validate_columns_missing_column():
     import pandas as pd
 
@@ -228,7 +195,7 @@ def test_human_labeled_dataset_from_csv():
         metrics_type=MetricsType.HARM,
         assistant_response_col_name="assistant_response",
         human_label_col_names=["human_score_1", "human_score_2", "human_score_3"],
-        objective_or_harm_col_name="category",
+        objective_or_harm_col_name="harm_category",
         version="1.0",
     )
     assert isinstance(dataset, HumanLabeledDataset)
