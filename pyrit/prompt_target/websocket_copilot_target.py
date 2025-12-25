@@ -31,6 +31,7 @@ class CopilotMessageType(IntEnum):
     UNKNOWN = -1
     NEXT_DATA_FRAME = 1  # streaming Copilot responses
     LAST_DATA_FRAME = 2  # the last data frame with final content
+    FINAL_DATA_FRAME = 3  # the final data frame indicating completion
     USER_PROMPT = 4
     PING = 6
 
@@ -124,46 +125,63 @@ class WebSocketCopilotTarget(PromptTarget):
         return json.dumps(data, separators=(",", ":")) + "\x1e"
 
     @staticmethod
-    def _parse_message(raw_message: str) -> tuple[CopilotMessageType, str]:
+    def _parse_raw_message(message: str) -> list[tuple[CopilotMessageType, str]]:
         """
-        Extract actionable content from raw WebSocket frames.
+        Extract actionable content from a raw WebSocket message.
+        Returns more than one JSON message if multiple are found.
 
         Args:
-            raw_message (str): The raw WebSocket message string.
+            message (str): The raw WebSocket message string.
 
         Returns:
-            tuple[CopilotMessageType, str]: A tuple containing the message type and extracted content.
+            list[tuple[CopilotMessageType, str]]: A list of tuples where each tuple contains
+                message type and extracted content.
         """
-        try:
-            # https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#json-encoding
-            message = raw_message.split("\x1e")[0]  # record separator
-            if not message:
-                return (CopilotMessageType.UNKNOWN, "")
+        # Find the last chat message with text content
+        extract_bot_message = lambda data: next(
+            (
+                msg.get("text", "")
+                for msg in reversed(data.get("item", {}).get("messages", []))
+                if isinstance(msg, dict) and msg.get("author") == "bot" and msg.get("text")
+            ),
+            "",
+        )
 
-            data = json.loads(message)
-            msg_type = CopilotMessageType(data.get("type", -1))
+        results: list[tuple[CopilotMessageType, str]] = []
 
-            if msg_type in (CopilotMessageType.PING, CopilotMessageType.NEXT_DATA_FRAME):
-                return (msg_type, "")
+        # https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#json-encoding
+        messages = message.split("\x1e")  # record separator
 
-            if msg_type == CopilotMessageType.LAST_DATA_FRAME:
-                item = data.get("item", {})
-                if item and isinstance(item, dict):
-                    messages = item.get("messages", [])
-                    if messages and isinstance(messages, list):
-                        for msg in reversed(messages):
-                            if isinstance(msg, dict) and msg.get("author") == "bot":
-                                text = msg.get("text", "")
-                                if text and isinstance(text, str):
-                                    return (CopilotMessageType.LAST_DATA_FRAME, text)
-                logger.warning("LAST_DATA_FRAME received but no parseable content found.")
-                return (CopilotMessageType.LAST_DATA_FRAME, "")
+        for message in messages:
+            if not message or not message.strip():
+                continue
 
-            return (msg_type, "")
+            try:
+                data = json.loads(message)
+                msg_type = CopilotMessageType(data.get("type", -1))
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to decode JSON message: {str(e)}")
-            return (CopilotMessageType.UNKNOWN, "")
+                if msg_type in (
+                    CopilotMessageType.PING,
+                    CopilotMessageType.NEXT_DATA_FRAME,
+                    CopilotMessageType.FINAL_DATA_FRAME,
+                ):
+                    results.append((msg_type, ""))
+                    continue
+
+                if msg_type == CopilotMessageType.LAST_DATA_FRAME:
+                    bot_text = extract_bot_message(data)
+                    if not bot_text:
+                        logger.warning("LAST_DATA_FRAME received but no parseable content found.")
+                    results.append((CopilotMessageType.LAST_DATA_FRAME, bot_text))
+                    continue
+
+                results.append((msg_type, ""))
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to decode JSON message: {str(e)}")
+                results.append((CopilotMessageType.UNKNOWN, ""))
+
+        return results if results else [(CopilotMessageType.UNKNOWN, "")]
 
     def _build_prompt_message(self, prompt: str) -> dict:
         return {
@@ -248,8 +266,6 @@ class WebSocketCopilotTarget(PromptTarget):
         ) as websocket:
             for input_msg in inputs:
                 payload = self._dict_to_websocket(input_msg)
-                is_user_input = input_msg.get("type") == CopilotMessageType.USER_PROMPT
-
                 await websocket.send(payload)
 
                 stop_polling = False
@@ -269,19 +285,20 @@ class WebSocketCopilotTarget(PromptTarget):
                             "WebSocket connection closed unexpectedly: received None from websocket.recv()"
                         )
 
-                    msg_type, content = self._parse_message(response)
+                    parsed_messages = self._parse_raw_message(response)
 
-                    if (
-                        msg_type in (CopilotMessageType.UNKNOWN, CopilotMessageType.LAST_DATA_FRAME)
-                        or msg_type == CopilotMessageType.PING
-                        and not is_user_input
-                    ):
-                        stop_polling = True
+                    for msg_type, content in parsed_messages:
+                        if msg_type in (
+                            CopilotMessageType.UNKNOWN,
+                            CopilotMessageType.LAST_DATA_FRAME,
+                            CopilotMessageType.FINAL_DATA_FRAME,
+                        ):
+                            stop_polling = True
 
-                        if msg_type == CopilotMessageType.LAST_DATA_FRAME:
-                            last_response = content
-                        elif msg_type == CopilotMessageType.UNKNOWN:
-                            logger.debug("Received unknown or empty message type.")
+                            if msg_type == CopilotMessageType.LAST_DATA_FRAME:
+                                last_response = content
+                            elif msg_type == CopilotMessageType.UNKNOWN:
+                                logger.debug("Received unknown or empty message type.")
 
             return last_response
 
