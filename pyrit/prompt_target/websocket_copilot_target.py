@@ -163,6 +163,7 @@ class WebSocketCopilotTarget(PromptTarget):
                     if not bot_text:
                         # In this case, EmptyResponseException will be raised anyway
                         logger.warning("FINAL_CONTENT received but no parseable content found.")
+                        logger.debug(f"Full raw message: {message}")
                     results.append((CopilotMessageType.FINAL_CONTENT, bot_text))
                     continue
 
