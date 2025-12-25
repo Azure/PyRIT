@@ -148,7 +148,7 @@ class WebSocketCopilotTarget(PromptTarget):
 
             try:
                 data = json.loads(message)
-                msg_type = CopilotMessageType(data.get("type", -1))
+                msg_type = CopilotMessageType._value2member_map_.get(data.get("type", -1), CopilotMessageType.UNKNOWN)
 
                 if msg_type in (
                     CopilotMessageType.PING,
