@@ -65,3 +65,12 @@ class TestWebSocketCopilotTargetInit:
     def test_init_sets_endpoint_correctly(self, mock_env_websocket_url):
         target = WebSocketCopilotTarget()
         assert target._endpoint == "wss://substrate.office.com/m365Copilot/Chathub/test_chat_id"
+
+    def test_init_with_custom_response_timeout(self, mock_env_websocket_url):
+        target = WebSocketCopilotTarget(response_timeout_seconds=120)
+        assert target._response_timeout_seconds == 120
+
+        for invalid_timeout in [0, -10]:
+            with pytest.raises(ValueError, match="response_timeout_seconds must be a positive integer."):
+                WebSocketCopilotTarget(response_timeout_seconds=invalid_timeout)
+

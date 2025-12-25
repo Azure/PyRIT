@@ -69,6 +69,7 @@ class WebSocketCopilotTarget(PromptTarget):
         verbose: bool = False,
         max_requests_per_minute: Optional[int] = None,
         model_name: str = "copilot",
+        response_timeout_seconds: int = RESPONSE_TIMEOUT_SECONDS,
     ) -> None:
         """
         Initialize the WebSocketCopilotTarget.
@@ -77,6 +78,7 @@ class WebSocketCopilotTarget(PromptTarget):
             verbose (bool): Enable verbose logging. Defaults to False.
             max_requests_per_minute (int, Optional): Maximum number of requests per minute.
             model_name (str): The model name. Defaults to "copilot".
+            response_timeout_seconds (int): Timeout for receiving responses in seconds. Defaults to 60s.
 
         Raises:
             ValueError: If WebSocket URL is not provided, is empty, or has invalid format.
@@ -107,6 +109,10 @@ class WebSocketCopilotTarget(PromptTarget):
             endpoint=self._websocket_url.split("?")[0],  # wss://substrate.office.com/m365Copilot/Chathub/...
             model_name=model_name,
         )
+
+        if response_timeout_seconds <= 0:
+            raise ValueError("response_timeout_seconds must be a positive integer.")
+        self._response_timeout_seconds = response_timeout_seconds
 
         if self._verbose:
             logger.info(f"WebSocketCopilotTarget initialized with conversation_id: {self._conversation_id}")
@@ -251,11 +257,11 @@ class WebSocketCopilotTarget(PromptTarget):
                     try:
                         response = await asyncio.wait_for(
                             websocket.recv(),
-                            timeout=self.RECEIVE_TIMEOUT_SECONDS,
+                            timeout=self._response_timeout_seconds,
                         )
                     except asyncio.TimeoutError:
                         raise TimeoutError(
-                            f"Timed out waiting for Copilot response after {self.RECEIVE_TIMEOUT_SECONDS} seconds."
+                            f"Timed out waiting for Copilot response after {self._response_timeout_seconds} seconds."
                         )
 
                     if response is None:
