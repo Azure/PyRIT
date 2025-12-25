@@ -93,7 +93,7 @@ RAW_WEBSOCKET_MESSAGES = [
     '{"type":6}\x1e',
     '{"type":1,"target":"update","arguments":[{"messages":[{"text":"Apple","author":"bot","responseIdentifier":"Default"}]}]}\x1e',
     '{"type":3,"invocationId":"0"}\x1e',
-    '{"type":2,"invocationId":"0","item":{"messages":[{"text":"Name a fruit","author":"user"},{"text":"Apple. 🍎 \n\nWould you like me to list more fruits or give you some interesting facts about apples?","turnState":"Completed","author":"bot","turnCount":1}],"firstNewMessageIndex":1,"conversationId":"conversationId","requestId":"requestId","result":{"value":"Success","message":"Apple. 🍎 \n\nWould you like me to list more fruits or give you some interesting facts about apples?","serviceVersion":"1.0.03273.12483"}}}\x1e',
+    '{"type":2,"invocationId":"0","item":{"messages":[{"text":"Name a fruit","author":"user"},{"text":"Apple. \n\nWould you like me to list more fruits or give you some interesting facts about apples?","turnState":"Completed","author":"bot","turnCount":1}],"firstNewMessageIndex":1,"conversationId":"conversationId","requestId":"requestId","result":{"value":"Success","message":"Apple. \n\nWould you like me to list more fruits or give you some interesting facts about apples?","serviceVersion":"1.0.03273.12483"}}}\x1e',
 ]
 
 # TODO: add tests for _parse_raw_message
