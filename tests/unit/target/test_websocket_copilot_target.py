@@ -30,7 +30,7 @@ def mock_env_websocket_url():
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestWebSocketCopilotTargetInit:
-    def test_init_with_valid_wss_url(self, mock_env_websocket_url):
+    def test_init_with_valid_wss_url(self):
         target = WebSocketCopilotTarget()
 
         assert target._websocket_url == VALID_WEBSOCKET_URL
@@ -62,11 +62,11 @@ class TestWebSocketCopilotTargetInit:
                 with pytest.raises(ValueError, match=error_msg):
                     WebSocketCopilotTarget()
 
-    def test_init_sets_endpoint_correctly(self, mock_env_websocket_url):
+    def test_init_sets_endpoint_correctly(self):
         target = WebSocketCopilotTarget()
         assert target._endpoint == "wss://substrate.office.com/m365Copilot/Chathub/test_chat_id"
 
-    def test_init_with_custom_response_timeout(self, mock_env_websocket_url):
+    def test_init_with_custom_response_timeout(self):
         target = WebSocketCopilotTarget(response_timeout_seconds=120)
         assert target._response_timeout_seconds == 120
 
