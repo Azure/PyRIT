@@ -88,12 +88,65 @@ def test_dict_to_websocket_static_method(data, expected):
     assert result == expected
 
 
-RAW_WEBSOCKET_MESSAGES = [
-    "{}\x1e",
-    '{"type":6}\x1e',
-    '{"type":1,"target":"update","arguments":[{"messages":[{"text":"Apple","author":"bot","responseIdentifier":"Default"}]}]}\x1e',
-    '{"type":3,"invocationId":"0"}\x1e',
-    '{"type":2,"invocationId":"0","item":{"messages":[{"text":"Name a fruit","author":"user"},{"text":"Apple. \n\nWould you like me to list more fruits or give you some interesting facts about apples?","turnState":"Completed","author":"bot","turnCount":1}],"firstNewMessageIndex":1,"conversationId":"conversationId","requestId":"requestId","result":{"value":"Success","message":"Apple. \n\nWould you like me to list more fruits or give you some interesting facts about apples?","serviceVersion":"1.0.03273.12483"}}}\x1e',
-]
+class TestParseRawMessage:
+    from pyrit.prompt_target.websocket_copilot_target import CopilotMessageType
 
-# TODO: add tests for _parse_raw_message
+    @pytest.mark.parametrize(
+        "message,expected_types,expected_content",
+        [
+            ("", [CopilotMessageType.UNKNOWN], [""]),
+            ("   \n\t  ", [CopilotMessageType.UNKNOWN], [""]),
+            ("{}\x1e", [CopilotMessageType.UNKNOWN], [""]),
+            ('{"type":6}\x1e', [CopilotMessageType.PING], [""]),
+            (
+                '{"type":1,"target":"update","arguments":[{"messages":[{"text":"Partial","author":"bot"}]}]}\x1e',
+                [CopilotMessageType.PARTIAL_RESPONSE],
+                [""],
+            ),
+            (
+                '{"type":2,"item":{"result":{"message":"Final."}}}\x1e{"type":3,"invocationId":"0"}\x1e',
+                [CopilotMessageType.FINAL_CONTENT, CopilotMessageType.STREAM_END],
+                [
+                    "Final.",
+                    "",
+                ],
+            ),
+        ],
+    )
+    def test_parse_raw_message_with_valid_data(self, message, expected_types, expected_content):
+        result = WebSocketCopilotTarget._parse_raw_message(message)
+
+        assert len(result) == len(expected_types)
+        for i, expected_type in enumerate(expected_types):
+            assert result[i][0] == expected_type
+            assert result[i][1] == expected_content[i]
+
+    def test_parse_final_message_without_content(self):
+        from pyrit.prompt_target.websocket_copilot_target import CopilotMessageType
+
+        with patch("pyrit.prompt_target.websocket_copilot_target.logger") as mock_logger:
+            message = '{"type":2,"invocationId":"0"}\x1e'
+            result = WebSocketCopilotTarget._parse_raw_message(message)
+
+            assert len(result) == 1
+            assert result[0][0] == CopilotMessageType.FINAL_CONTENT
+            assert result[0][1] == ""
+
+            mock_logger.warning.assert_called_with("FINAL_CONTENT received but no parseable content found.")
+            mock_logger.debug.assert_called_with(f"Full raw message: {message[:-1]}")
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            '{"type":99,"data":"unknown"}\x1e',
+            '{"data":"no type field"}\x1e',
+            '{"invalid json structure\x1e',
+        ],
+    )
+    def test_parse_unknown_or_invalid_messages(self, message):
+        from pyrit.prompt_target.websocket_copilot_target import CopilotMessageType
+
+        result = WebSocketCopilotTarget._parse_raw_message(message)
+        assert len(result) == 1
+        assert result[0][0] == CopilotMessageType.UNKNOWN
+        assert result[0][1] == ""
