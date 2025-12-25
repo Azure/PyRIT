@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import uuid
-from enum import Enum
+from enum import IntEnum
 from typing import Optional
 
 import websockets
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # https://labs.zenity.io/p/access-copilot-m365-terminal
 
 
-class CopilotMessageType(Enum):
+class CopilotMessageType(IntEnum):
     """Enumeration for Copilot WebSocket message types."""
 
     UNKNOWN = -1
@@ -124,7 +124,7 @@ class WebSocketCopilotTarget(PromptTarget):
         return json.dumps(data, separators=(",", ":")) + "\x1e"
 
     @staticmethod
-    def _parse_message(raw_message: str) -> tuple[int, str]:
+    def _parse_message(raw_message: str) -> tuple[CopilotMessageType, str]:
         """
         Extract actionable content from raw WebSocket frames.
 
@@ -132,21 +132,21 @@ class WebSocketCopilotTarget(PromptTarget):
             raw_message (str): The raw WebSocket message string.
 
         Returns:
-            tuple[int, str]: A tuple containing the message type and extracted content.
+            tuple[CopilotMessageType, str]: A tuple containing the message type and extracted content.
         """
         try:
             # https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#json-encoding
             message = raw_message.split("\x1e")[0]  # record separator
             if not message:
-                return (-1, "")
+                return (CopilotMessageType.UNKNOWN, "")
 
             data = json.loads(message)
-            msg_type = data.get("type", -1)
+            msg_type = CopilotMessageType(data.get("type", -1))
 
-            if msg_type in (6, 1):  # PING/NEXT_DATA_FRAME
+            if msg_type in (CopilotMessageType.PING, CopilotMessageType.NEXT_DATA_FRAME):
                 return (msg_type, "")
 
-            if msg_type == 2:  # LAST_DATA_FRAME
+            if msg_type == CopilotMessageType.LAST_DATA_FRAME:
                 item = data.get("item", {})
                 if item and isinstance(item, dict):
                     messages = item.get("messages", [])
@@ -155,15 +155,15 @@ class WebSocketCopilotTarget(PromptTarget):
                             if isinstance(msg, dict) and msg.get("author") == "bot":
                                 text = msg.get("text", "")
                                 if text and isinstance(text, str):
-                                    return (2, text)
+                                    return (CopilotMessageType.LAST_DATA_FRAME, text)
                 logger.warning("LAST_DATA_FRAME received but no parseable content found.")
-                return (2, "")
+                return (CopilotMessageType.LAST_DATA_FRAME, "")
 
             return (msg_type, "")
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to decode JSON message: {str(e)}")
-            return (-1, "")
+            return (CopilotMessageType.UNKNOWN, "")
 
     def _build_prompt_message(self, prompt: str) -> dict:
         return {
@@ -231,7 +231,7 @@ class WebSocketCopilotTarget(PromptTarget):
             ],
             "invocationId": "0",  # TODO: should be dynamic?
             "target": "chat",
-            "type": 4,
+            "type": CopilotMessageType.USER_PROMPT,
         }
 
     async def _connect_and_send(self, prompt: str) -> str:
@@ -248,7 +248,7 @@ class WebSocketCopilotTarget(PromptTarget):
         ) as websocket:
             for input_msg in inputs:
                 payload = self._dict_to_websocket(input_msg)
-                is_user_input = input_msg.get("type") == 4  # USER_PROMPT
+                is_user_input = input_msg.get("type") == CopilotMessageType.USER_PROMPT
 
                 await websocket.send(payload)
 
@@ -272,15 +272,15 @@ class WebSocketCopilotTarget(PromptTarget):
                     msg_type, content = self._parse_message(response)
 
                     if (
-                        msg_type in (-1, 2)  # UNKNOWN or LAST_DATA_FRAME
-                        or msg_type == 6
+                        msg_type in (CopilotMessageType.UNKNOWN, CopilotMessageType.LAST_DATA_FRAME)
+                        or msg_type == CopilotMessageType.PING
                         and not is_user_input
                     ):
                         stop_polling = True
 
-                        if msg_type == 2:  # LAST_DATA_FRAME - final response
+                        if msg_type == CopilotMessageType.LAST_DATA_FRAME:
                             last_response = content
-                        elif msg_type == -1:  # UNKNOWN/NONE
+                        elif msg_type == CopilotMessageType.UNKNOWN:
                             logger.debug("Received unknown or empty message type.")
 
             return last_response
