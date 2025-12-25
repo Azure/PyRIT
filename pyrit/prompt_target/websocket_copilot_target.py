@@ -137,16 +137,6 @@ class WebSocketCopilotTarget(PromptTarget):
             list[tuple[CopilotMessageType, str]]: A list of tuples where each tuple contains
                 message type and extracted content.
         """
-        # Find the last chat message with text content
-        extract_bot_message = lambda data: next(
-            (
-                msg.get("text", "")
-                for msg in reversed(data.get("item", {}).get("messages", []))
-                if isinstance(msg, dict) and msg.get("author") == "bot" and msg.get("text")
-            ),
-            "",
-        )
-
         results: list[tuple[CopilotMessageType, str]] = []
 
         # https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#json-encoding
@@ -169,8 +159,9 @@ class WebSocketCopilotTarget(PromptTarget):
                     continue
 
                 if msg_type == CopilotMessageType.FINAL_CONTENT:
-                    bot_text = extract_bot_message(data)
+                    bot_text = data.get("item", {}).get("result", {}).get("message", "")
                     if not bot_text:
+                        # In this case, EmptyResponseException will be raised anyway
                         logger.warning("FINAL_CONTENT received but no parseable content found.")
                     results.append((CopilotMessageType.FINAL_CONTENT, bot_text))
                     continue
