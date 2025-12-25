@@ -10,7 +10,7 @@ from pyrit.prompt_target import WebSocketCopilotTarget
 
 
 VALID_WEBSOCKET_URL = (
-    "wss://substrate.office.com/m365Copilot/Chathub/test_chat_id"
+    "wss://substrate.office.com/m365Copilot/Chathub/test_object_id@test_tenant_id"
     "?ClientRequestId=test_client_request_id"
     "&X-SessionId=test_session_id&token=abc123"
     "&ConversationId=test_conversation_id"
@@ -63,7 +63,7 @@ class TestWebSocketCopilotTargetInit:
 
     def test_init_sets_endpoint_correctly(self, mock_env_websocket_url):
         target = WebSocketCopilotTarget()
-        assert target._endpoint == "wss://substrate.office.com/m365Copilot/Chathub/test_chat_id"
+        assert target._endpoint == "wss://substrate.office.com/m365Copilot/Chathub/test_object_id@test_tenant_id"
 
     def test_init_with_custom_response_timeout(self, mock_env_websocket_url):
         target = WebSocketCopilotTarget(response_timeout_seconds=120)
