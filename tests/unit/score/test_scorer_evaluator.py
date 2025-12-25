@@ -26,60 +26,6 @@ from pyrit.score import (
 
 @pytest.fixture
 def mock_harm_scorer():
-    scorer = MagicMock(spec=FloatScaleScorer)
-    scorer._memory = MagicMock()
-    return scorer
-
-
-@pytest.fixture
-def mock_objective_scorer():
-    scorer = MagicMock(spec=TrueFalseScorer)
-    scorer._memory = MagicMock()
-    return scorer
-
-
-def test_harm_metrics_to_json_and_from_json(tmp_path):
-    metrics = HarmScorerMetrics(
-        mean_absolute_error=0.1,
-        mae_standard_error=0.01,
-        t_statistic=1.0,
-        p_value=0.05,
-        krippendorff_alpha_combined=0.8,
-        krippendorff_alpha_humans=0.7,
-        krippendorff_alpha_model=0.9,
-    )
-    json_str = metrics.to_json()
-    data = json.loads(json_str)
-    assert data["mean_absolute_error"] == 0.1
-
-    # Save to file and reload
-    file_path = tmp_path / "metrics.json"
-    with open(file_path, "w") as f:
-        f.write(json_str)
-    loaded = HarmScorerMetrics.from_json(str(file_path))
-    assert loaded == metrics
-
-
-def test_objective_metrics_to_json_and_from_json(tmp_path):
-    metrics = ObjectiveScorerMetrics(
-        accuracy=0.9,
-        accuracy_standard_error=0.05,
-        f1_score=0.8,
-        precision=0.85,
-        recall=0.75,
-    )
-    json_str = metrics.to_json()
-    data = json.loads(json_str)
-    assert data["accuracy"] == 0.9
-
-    file_path = tmp_path / "metrics.json"
-    with open(file_path, "w") as f:
-        f.write(json_str)
-    loaded = ObjectiveScorerMetrics.from_json(str(file_path))
-    assert loaded == metrics
-
-
-def test_from_scorer_harm(mock_harm_scorer):
     evaluator = ScorerEvaluator.from_scorer(mock_harm_scorer, metrics_type=MetricsType.HARM)
     assert isinstance(evaluator, HarmScorerEvaluator)
     evaluator2 = ScorerEvaluator.from_scorer(mock_harm_scorer)
@@ -94,7 +40,7 @@ def test_from_scorer_objective(mock_objective_scorer):
 
 
 @pytest.mark.asyncio
-async def test_run_evaluation_async_harm(mock_harm_scorer):
+async def test__run_evaluation_async_harm(mock_harm_scorer):
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
@@ -107,7 +53,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
     mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    metrics = await evaluator.run_evaluation_async(
+    metrics = await evaluator._run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=2
     )
     assert mock_harm_scorer._memory.add_message_to_memory.call_count == 2
@@ -117,7 +63,7 @@ async def test_run_evaluation_async_harm(mock_harm_scorer):
 
 
 @pytest.mark.asyncio
-async def test_run_evaluation_async_objective(mock_objective_scorer):
+async def test__run_evaluation_async_objective(mock_objective_scorer):
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
@@ -130,7 +76,7 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
         return_value=[MagicMock(get_value=lambda: False)]
     )
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
-    metrics = await evaluator.run_evaluation_async(
+    metrics = await evaluator._run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=2
     )
     assert mock_objective_scorer._memory.add_message_to_memory.call_count == 1
@@ -140,8 +86,8 @@ async def test_run_evaluation_async_objective(mock_objective_scorer):
 
 
 @pytest.mark.asyncio
-async def test_run_evaluation_async_objective_returns_metrics(mock_objective_scorer):
-    """Test that run_evaluation_async returns metrics without side effects."""
+async def test__run_evaluation_async_objective_returns_metrics(mock_objective_scorer):
+    """Test that _run_evaluation_async returns metrics without side effects."""
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
@@ -155,7 +101,7 @@ async def test_run_evaluation_async_objective_returns_metrics(mock_objective_sco
     mock_objective_scorer.scorer_identifier = MagicMock()
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
 
-    metrics = await evaluator.run_evaluation_async(
+    metrics = await evaluator._run_evaluation_async(
         labeled_dataset=mock_dataset, num_scorer_trials=1
     )
     

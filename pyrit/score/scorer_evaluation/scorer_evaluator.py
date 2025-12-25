@@ -2,16 +2,14 @@
 # Licensed under the MIT license.
 
 import abc
-import json
 import logging
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Optional, Set, Tuple, Type, TypeVar, Union, cast
+from typing import List, Optional, Tuple, cast
 
 import numpy as np
 from scipy.stats import ttest_1samp
 
-from pyrit.common.utils import verify_and_resolve_path
 from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
@@ -19,13 +17,19 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     ObjectiveHumanLabeledEntry,
 )
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_evaluation.scorer_metrics import (
+    HarmScorerMetrics,
+    ObjectiveScorerMetrics,
+    ScorerMetrics,
+)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+from pyrit.common.path import SCORER_EVALS_PATH
 
-from .krippendorff import krippendorff_alpha
+from pyrit.score.scorer_evaluation.krippendorff import krippendorff_alpha
+from pyrit.score.scorer_evaluation.scorer_metrics_io import add_evaluation_results
+
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T", bound="ScorerMetrics")
 
 # Standard column names for evaluation datasets
 STANDARD_HUMAN_LABEL_COL = "human_score"
@@ -51,102 +55,6 @@ class ScorerEvalDatasetFiles:
     """
     human_labeled_datasets_files: List[str]
     result_file: str
-
-
-@dataclass
-class ScorerMetrics:
-    """
-    Base dataclass for storing scorer evaluation metrics.
-
-    This class provides methods for serializing metrics to JSON and loading them from JSON files.
-    """
-    trial_scores: Optional[np.ndarray] = field(default=None, kw_only=True)
-
-    def to_json(self) -> str:
-        """
-        Convert the metrics to a JSON string.
-
-        Returns:
-            str: The JSON string representation of the metrics.
-        """
-        return json.dumps(asdict(self))
-
-    @classmethod
-    def from_json(cls: Type[T], file_path: Union[str, Path]) -> T:
-        """
-        Load the metrics from a JSON file.
-
-        Args:
-            file_path (Union[str, Path]): The path to the JSON file.
-
-        Returns:
-            ScorerMetrics: An instance of ScorerMetrics with the loaded data.
-
-        Raises:
-            FileNotFoundError: If the specified file does not exist.
-        """
-        file_path = verify_and_resolve_path(file_path)
-        with open(file_path, "r") as f:
-            data = json.load(f)
-        return cls(**data)
-
-
-@dataclass
-class HarmScorerMetrics(ScorerMetrics):
-    """
-    Metrics for evaluating a harm scorer against a HumanLabeledDataset.
-
-    Args:
-        mean_absolute_error (float): The mean absolute error between the model scores and the gold scores.
-        mae_standard_error (float): The standard error of the mean absolute error. This can be used to calculate
-            a confidence interval for the mean absolute error.
-        t_statistic (float): The t-statistic for the one-sample t-test comparing model scores to human scores with a
-            null hypothesis that the mean difference is 0. A high positive t-statistic (along with a low p-value)
-            indicates that the model scores are typically higher than the human scores.
-        p_value (float): The p-value for the one-sample t-test above. It represents the probability of obtaining a
-            difference in means as extreme as the observed difference, assuming the null hypothesis is true.
-        krippendorff_alpha_combined (float): Krippendorff's alpha for the reliability data, which includes both
-            human and model scores. This measures the agreement between all the human raters and model scoring trials
-            and ranges between -1.0 to 1.0 where 1.0 indicates perfect agreement, 0.0 indicates no agreement, and
-            negative values indicate systematic disagreement.
-        krippendorff_alpha_humans (float, Optional): Krippendorff's alpha for human scores, if there are
-            multiple human raters. This measures the agreement between human raters.
-        krippendorff_alpha_model (float, Optional): Krippendorff's alpha for model scores, if there are
-            multiple model scoring trials. This measures the agreement between model scoring trials.
-    """
-
-    mean_absolute_error: float
-    mae_standard_error: float
-    t_statistic: float
-    p_value: float
-    krippendorff_alpha_combined: float
-    krippendorff_alpha_humans: Optional[float] = None
-    krippendorff_alpha_model: Optional[float] = None
-
-
-@dataclass
-class ObjectiveScorerMetrics(ScorerMetrics):
-    """
-    Metrics for evaluating an objective scorer against a HumanLabeledDataset.
-
-    Args:
-        accuracy (float): The accuracy of the model scores when using the majority vote of
-            human scores as the gold label.
-        f1_score (float): The F1 score of the model scores, an indicator of performance of the
-            LLM scorer in its alignment with human scores.
-        precision (float): The precision of the model scores, an indicator of the model's accuracy
-            in its positive predictions.
-        recall (float): The recall of the model scores, an indicator of the model's ability to correctly
-            identify positive labels.
-        trial_scores (Optional[np.ndarray]): The raw scores from each trial. Shape is (num_trials, num_responses).
-            Useful for debugging and analyzing scorer variance.
-    """
-
-    accuracy: float
-    accuracy_standard_error: float
-    f1_score: float
-    precision: float
-    recall: float
 
 
 class ScorerEvaluator(abc.ABC):
@@ -189,11 +97,11 @@ class ScorerEvaluator(abc.ABC):
         evaluator = _EVALUATOR_MAP.get(metrics_type, HarmScorerEvaluator)
         return evaluator(scorer=scorer)
 
-    async def run_evaluation_from_files_async(
+    async def run_evaluation_async(
         self,
         *,
         dataset_files: List[ScorerEvalDatasetFiles],
-        num_scorer_trials: int = 1,
+        num_scorer_trials: int = 3,
         add_to_registry: bool = False,
         max_concurrency: int = 10,
     ) -> dict[str, ScorerMetrics]:
@@ -217,7 +125,6 @@ class ScorerEvaluator(abc.ABC):
         Returns:
             Dict mapping result name (file stem) to ScorerMetrics.
         """
-        from pyrit.common.path import SCORER_EVALS_PATH
         
         results = {}
         metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
@@ -259,7 +166,7 @@ class ScorerEvaluator(abc.ABC):
             )
             
             # Evaluate
-            metrics = await self.run_evaluation_async(
+            metrics = await self._run_evaluation_async(
                 labeled_dataset=combined_dataset,
                 num_scorer_trials=num_scorer_trials,
                 max_concurrency=max_concurrency,
@@ -277,7 +184,7 @@ class ScorerEvaluator(abc.ABC):
         
         return results
 
-    async def run_evaluation_async(
+    async def _run_evaluation_async(
         self,
         labeled_dataset: HumanLabeledDataset,
         num_scorer_trials: int = 1,
@@ -287,7 +194,7 @@ class ScorerEvaluator(abc.ABC):
         Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
         
         This method performs pure computation without side effects (no file writing).
-        Use run_evaluation_from_files_async with add_to_registry=True to write results to files.
+        Use run_evaluation_async with add_to_registry=True to write results to files.
 
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate the scorer against.
@@ -321,6 +228,7 @@ class ScorerEvaluator(abc.ABC):
         metrics = self._compute_metrics(
             all_human_scores=all_human_scores,
             all_model_scores=all_model_scores,
+            num_scorer_trials=num_scorer_trials,
         )
 
         # Include trial scores for debugging and analysis
@@ -354,6 +262,7 @@ class ScorerEvaluator(abc.ABC):
         *,
         all_human_scores: np.ndarray,
         all_model_scores: np.ndarray,
+        num_scorer_trials: int,
     ) -> ScorerMetrics:
         """
         Compute evaluation metrics from human and model scores.
@@ -361,6 +270,7 @@ class ScorerEvaluator(abc.ABC):
         Args:
             all_human_scores: Array of human scores, shape (num_raters, num_responses).
             all_model_scores: Array of model scores, shape (num_trials, num_responses).
+            num_scorer_trials: Number of scoring trials that were performed.
 
         Returns:
             ScorerMetrics subclass with computed metrics.
@@ -385,7 +295,6 @@ class ScorerEvaluator(abc.ABC):
             labeled_dataset (HumanLabeledDataset): The dataset that was evaluated.
             result_file_path (Path): The full path to the result file.
         """
-        from pyrit.score.scorer_evaluation.scorer_metrics_utility import add_evaluation_results
 
         try:
             # Extract harm_category if this is a HarmScorerMetrics
@@ -461,6 +370,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         *,
         all_human_scores: np.ndarray,
         all_model_scores: np.ndarray,
+        num_scorer_trials: int,
     ) -> HarmScorerMetrics:
         reliability_data = np.concatenate((all_human_scores, all_model_scores))
         # Calculate the mean of human scores for each response, which is considered the gold label
@@ -481,6 +391,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             "krippendorff_alpha_combined": krippendorff_alpha(
                 reliability_data=reliability_data, level_of_measurement="ordinal"
             ),
+            "num_scorer_trials": num_scorer_trials,
         }
         if len(all_human_scores) > 1:
             metrics["krippendorff_alpha_humans"] = krippendorff_alpha(
@@ -541,6 +452,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         *,
         all_human_scores: np.ndarray,
         all_model_scores: np.ndarray,
+        num_scorer_trials: int,
     ) -> ObjectiveScorerMetrics:
         # Calculate the majority vote of human scores for each response, which is considered the gold label.
         # If the vote is split, the resulting gold score will be 0 (i.e. False). Same logic is applied to model trials.
@@ -561,6 +473,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             "precision": precision,
             "recall": recall,
             "f1_score": f1_score,
+            "num_scorer_trials": num_scorer_trials,
         }
 
         return ObjectiveScorerMetrics(**metrics)

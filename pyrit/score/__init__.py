@@ -39,13 +39,15 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HumanLabeledEntry,
     ObjectiveHumanLabeledEntry,
 )
+from pyrit.score.scorer_evaluation.scorer_metrics import (
+    HarmScorerMetrics,
+    ObjectiveScorerMetrics,
+    ScorerMetrics,
+)
 from pyrit.score.scorer_evaluation.scorer_evaluator import (
     HarmScorerEvaluator,
-    HarmScorerMetrics,
     ObjectiveScorerEvaluator,
-    ObjectiveScorerMetrics,
     ScorerEvaluator,
-    ScorerMetrics,
 )
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer

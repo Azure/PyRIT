@@ -299,7 +299,7 @@ class Scorer(abc.ABC):
             )
         
         scorer_evaluator = ScorerEvaluator.from_scorer(self)
-        return await scorer_evaluator.run_evaluation_from_files_async(
+        return await scorer_evaluator.run_evaluation_async(
             dataset_files=mapping,
             num_scorer_trials=num_scorer_trials,
             add_to_registry=add_to_evaluation_results,
