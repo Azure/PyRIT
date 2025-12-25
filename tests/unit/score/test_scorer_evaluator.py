@@ -20,12 +20,36 @@ from pyrit.score import (
     ObjectiveScorerEvaluator,
     ObjectiveScorerMetrics,
     ScorerEvaluator,
+    ScorerIdentifier,
     TrueFalseScorer,
 )
 
 
 @pytest.fixture
 def mock_harm_scorer():
+    scorer = MagicMock(spec=FloatScaleScorer)
+    scorer._memory = MagicMock()
+    scorer._memory.add_message_to_memory = MagicMock()
+    scorer.scorer_identifier = ScorerIdentifier(
+        type="FloatScaleScorer",
+        system_prompt_template="test_system_prompt",
+    )
+    return scorer
+
+
+@pytest.fixture
+def mock_objective_scorer():
+    scorer = MagicMock(spec=TrueFalseScorer)
+    scorer._memory = MagicMock()
+    scorer._memory.add_message_to_memory = MagicMock()
+    scorer.scorer_identifier = ScorerIdentifier(
+        type="TrueFalseScorer",
+        user_prompt_template="test_user_prompt",
+    )
+    return scorer
+
+
+def test_from_scorer_harm(mock_harm_scorer):
     evaluator = ScorerEvaluator.from_scorer(mock_harm_scorer, metrics_type=MetricsType.HARM)
     assert isinstance(evaluator, HarmScorerEvaluator)
     evaluator2 = ScorerEvaluator.from_scorer(mock_harm_scorer)
@@ -115,7 +139,9 @@ def test_compute_objective_metrics_perfect_agreement(mock_objective_scorer):
     # 2 responses, 3 human scores each, all agree (all 1s), model also all 1s
     all_human_scores = np.array([[1, 1], [1, 1], [1, 1]])
     all_model_scores = np.array([[1, 1], [1, 1]])
-    metrics = evaluator._compute_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
+    metrics = evaluator._compute_metrics(
+        all_human_scores=all_human_scores, all_model_scores=all_model_scores, num_scorer_trials=2
+    )
     assert metrics.accuracy == 1.0
     assert metrics.f1_score == 1.0
     assert metrics.precision == 1.0
@@ -127,7 +153,9 @@ def test_compute_objective_metrics_partial_agreement(mock_objective_scorer):
     # 2 responses, 3 human scores each, mixed labels, model gets one right, one wrong
     all_human_scores = np.array([[1, 0], [1, 0], [0, 1]])  # gold: [1, 0]
     all_model_scores = np.array([[1, 1]])
-    metrics = evaluator._compute_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
+    metrics = evaluator._compute_metrics(
+        all_human_scores=all_human_scores, all_model_scores=all_model_scores, num_scorer_trials=1
+    )
     # gold: [1, 0], model: [1, 1]
     # TP=1 (first), FP=1 (second), TN=0, FN=0
     assert metrics.accuracy == 0.5
@@ -143,7 +171,9 @@ def test_compute_harm_metrics_perfect_agreement(mock_harm_scorer):
     # 2 model trials
     all_model_scores = np.array([[0.1, 0.2], [0.1, 0.2]])
     # Patch krippendorff.krippendorff_alpha to return 1.0 for all calls
-    metrics = evaluator._compute_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
+    metrics = evaluator._compute_metrics(
+        all_human_scores=all_human_scores, all_model_scores=all_model_scores, num_scorer_trials=2
+    )
     assert metrics.mean_absolute_error == 0.0
     assert metrics.mae_standard_error == 0.0
     assert metrics.krippendorff_alpha_combined == 1.0
@@ -156,5 +186,190 @@ def test_compute_harm_metrics_partial_agreement(mock_harm_scorer):
     # 2 responses, 3 human scores each, model is off by 0.1 for each
     all_human_scores = np.array([[0.1, 0.2], [0.1, 0.2], [0.1, 0.2]])
     all_model_scores = np.array([[0.2, 0.3], [0.2, 0.3]])
-    metrics = evaluator._compute_metrics(all_human_scores=all_human_scores, all_model_scores=all_model_scores)
+    metrics = evaluator._compute_metrics(
+        all_human_scores=all_human_scores, all_model_scores=all_model_scores, num_scorer_trials=2
+    )
     assert np.isclose(metrics.mean_absolute_error, 0.1)
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
+def test_find_existing_metrics_objective_found(mock_find, mock_objective_scorer):
+    """Test finding existing objective metrics that match all criteria."""
+    evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    
+    # Mock the compute_hash method on the scorer_identifier
+    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+        # Create expected metrics
+        expected_metrics = ObjectiveScorerMetrics(
+            num_responses=10,
+            num_human_raters=3,
+            accuracy=0.95,
+            accuracy_standard_error=0.02,
+            precision=0.96,
+            recall=0.94,
+            f1_score=0.95,
+            num_scorer_trials=3,
+            dataset_name="test_dataset",
+            dataset_version="1.0",
+        )
+        mock_find.return_value = expected_metrics
+        
+        result = evaluator._find_existing_metrics(
+            dataset_version="1.0",
+            num_scorer_trials=3,
+            harm_category=None,
+        )
+        
+        assert result == expected_metrics
+        mock_find.assert_called_once_with(hash="test_hash_123")
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
+def test_find_existing_metrics_objective_not_found(mock_find, mock_objective_scorer):
+    """Test when no existing objective metrics are found in registry."""
+    evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    
+    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+        mock_find.return_value = None
+        
+        result = evaluator._find_existing_metrics(
+            dataset_version="1.0",
+            num_scorer_trials=3,
+            harm_category=None,
+        )
+        
+        assert result is None
+        mock_find.assert_called_once_with(hash="test_hash_123")
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
+def test_find_existing_metrics_objective_wrong_version(mock_find, mock_objective_scorer):
+    """Test when metrics exist but dataset_version doesn't match."""
+    evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    
+    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+        # Metrics exist but with different dataset version
+        existing_metrics = ObjectiveScorerMetrics(
+            num_responses=10,
+            num_human_raters=3,
+            accuracy=0.95,
+            accuracy_standard_error=0.02,
+            precision=0.96,
+            recall=0.94,
+            f1_score=0.95,
+            num_scorer_trials=3,
+            dataset_name="test_dataset",
+            dataset_version="2.0",  # Different version
+        )
+        mock_find.return_value = existing_metrics
+        
+        result = evaluator._find_existing_metrics(
+            dataset_version="1.0",  # Looking for version 1.0
+            num_scorer_trials=3,
+            harm_category=None,
+        )
+        
+        assert result is None
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
+def test_find_existing_metrics_objective_wrong_trials(mock_find, mock_objective_scorer):
+    """Test when metrics exist but num_scorer_trials doesn't match."""
+    evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    
+    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+        # Metrics exist but with different num_scorer_trials
+        existing_metrics = ObjectiveScorerMetrics(
+            num_responses=10,
+            num_human_raters=3,
+            accuracy=0.95,
+            accuracy_standard_error=0.02,
+            precision=0.96,
+            recall=0.94,
+            f1_score=0.95,
+            num_scorer_trials=5,  # Different number of trials
+            dataset_name="test_dataset",
+            dataset_version="1.0",
+        )
+        mock_find.return_value = existing_metrics
+        
+        result = evaluator._find_existing_metrics(
+            dataset_version="1.0",
+            num_scorer_trials=3,  # Looking for 3 trials
+            harm_category=None,
+        )
+        
+        assert result is None
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_harm_metrics_by_hash")
+def test_find_existing_metrics_harm_found(mock_find, mock_harm_scorer):
+    """Test finding existing harm metrics that match all criteria."""
+    evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
+    
+    with patch.object(mock_harm_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_456"):
+        # Create expected harm metrics
+        expected_metrics = HarmScorerMetrics(
+            num_responses=15,
+            num_human_raters=4,
+            mean_absolute_error=0.05,
+            mae_standard_error=0.01,
+            t_statistic=1.5,
+            p_value=0.15,
+            krippendorff_alpha_combined=0.85,
+            krippendorff_alpha_humans=0.88,
+            krippendorff_alpha_model=0.82,
+            num_scorer_trials=3,
+            dataset_name="harm_dataset",
+            dataset_version="1.0",
+            harm_category="hate_speech",
+        )
+        mock_find.return_value = expected_metrics
+        
+        result = evaluator._find_existing_metrics(
+            dataset_version="1.0",
+            num_scorer_trials=3,
+            harm_category="hate_speech",
+        )
+        
+        assert result == expected_metrics
+        mock_find.assert_called_once_with(harm_category="hate_speech", hash="test_hash_456")
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_harm_metrics_by_hash")
+def test_find_existing_metrics_harm_wrong_category_extraction(mock_find, mock_harm_scorer):
+    """Test when harm category is not provided for harm scorer."""
+    evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
+    
+    with patch.object(mock_harm_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_456"):
+        # No harm_category provided
+        result = evaluator._find_existing_metrics(
+            dataset_version="1.0",
+            num_scorer_trials=3,
+            harm_category=None,
+        )
+        
+        assert result is None
+        mock_find.assert_not_called()
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
+def test_find_existing_metrics_exception_handling(mock_find, mock_objective_scorer):
+    """Test that exceptions are caught and None is returned."""
+    evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    
+    # Make compute_hash raise an exception
+    with patch.object(
+        mock_objective_scorer.scorer_identifier, 
+        'compute_hash', 
+        side_effect=Exception("Hash computation failed")
+    ):
+        result = evaluator._find_existing_metrics(
+            dataset_version="1.0",
+            num_scorer_trials=3,
+            harm_category=None,
+        )
+        
+        assert result is None
+        mock_find.assert_not_called()
+

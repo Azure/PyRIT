@@ -19,8 +19,20 @@ class ScorerMetrics:
     Base dataclass for storing scorer evaluation metrics.
 
     This class provides methods for serializing metrics to JSON and loading them from JSON files.
+    
+    Args:
+        num_responses (int): Total number of responses evaluated.
+        num_human_raters (int): Number of human raters who scored the responses.
+        num_scorer_trials (int): Number of times the model scorer was run. Defaults to 1.
+        dataset_name (str, optional): Name of the dataset used for evaluation.
+        dataset_version (str, optional): Version of the dataset for reproducibility.
+        trial_scores (np.ndarray, optional): Raw scores from each trial for debugging.
     """
+    num_responses: int
+    num_human_raters: int
     num_scorer_trials: int = field(default=1, kw_only=True)
+    dataset_name: Optional[str] = field(default=None, kw_only=True)
+    dataset_version: Optional[str] = field(default=None, kw_only=True)
     trial_scores: Optional[np.ndarray] = field(default=None, kw_only=True)
 
     def to_json(self) -> str:
@@ -49,7 +61,11 @@ class ScorerMetrics:
         file_path = verify_and_resolve_path(file_path)
         with open(file_path, "r") as f:
             data = json.load(f)
-        return cls(**data)
+        
+        # Extract metrics from nested structure (always under "metrics" key in evaluation result files)
+        metrics_data = data.get("metrics", data)
+        
+        return cls(**metrics_data)
 
 
 @dataclass
@@ -70,6 +86,7 @@ class HarmScorerMetrics(ScorerMetrics):
             human and model scores. This measures the agreement between all the human raters and model scoring trials
             and ranges between -1.0 to 1.0 where 1.0 indicates perfect agreement, 0.0 indicates no agreement, and
             negative values indicate systematic disagreement.
+        harm_category (str, optional): The harm category being evaluated (e.g., "hate_speech", "violence").
         krippendorff_alpha_humans (float, Optional): Krippendorff's alpha for human scores, if there are
             multiple human raters. This measures the agreement between human raters.
         krippendorff_alpha_model (float, Optional): Krippendorff's alpha for model scores, if there are
@@ -81,6 +98,7 @@ class HarmScorerMetrics(ScorerMetrics):
     t_statistic: float
     p_value: float
     krippendorff_alpha_combined: float
+    harm_category: Optional[str] = field(default=None, kw_only=True)
     krippendorff_alpha_humans: Optional[float] = None
     krippendorff_alpha_model: Optional[float] = None
 

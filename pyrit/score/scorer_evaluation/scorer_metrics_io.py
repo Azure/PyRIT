@@ -18,46 +18,46 @@ from pyrit.score.scorer_identifier import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
 
-# File paths
-OBJECTIVE_RESULTS_PATH = SCORER_EVALS_OBJECTIVE_PATH / "objective_evaluation_results.jsonl"
-
 # Thread locks for writing (module-level, persists for application lifetime)
 # Locks are created per file path to ensure thread-safe writes
 _file_write_locks: Dict[str, threading.Lock] = {}
 
 
-def load_all_objective_metrics() -> List[Dict]:
+def load_all_metrics(file_path: Path) -> List[Dict]:
     """
-    Load all objective scorer metrics entries from JSONL file.
+    Load all scorer metrics entries from a JSONL file.
     
     Returns raw dictionaries for users who want to browse and compare scorer performance.
     Each dict contains scorer_identifier fields and metrics.
     
+    Args:
+        file_path (Path): Path to the JSONL file to load.
+    
     Returns:
         List[Dict]: List of raw JSONL entries as dictionaries.
     """
-    return _load_jsonl(OBJECTIVE_RESULTS_PATH)
+    return _load_jsonl(file_path)
 
 
-def find_objective_metrics_by_hash(hash: str) -> Optional["ObjectiveScorerMetrics"]:
+def find_metrics_by_hash(*, file_path: Path, hash: str, metrics_class: type) -> Optional["ScorerMetrics"]:
     """
-    Find objective scorer metrics by configuration hash.
+    Find scorer metrics by configuration hash in a specific file.
     
     Args:
-        hash: The scorer configuration hash to search for.
+        file_path (Path): Path to the JSONL file to search.
+        hash (str): The scorer configuration hash to search for.
+        metrics_class (type): The metrics class to instantiate (ObjectiveScorerMetrics or HarmScorerMetrics).
     
     Returns:
-        ObjectiveScorerMetrics if found, else None.
+        ScorerMetrics if found, else None.
     """
-    from pyrit.score.scorer_evaluation.scorer_evaluator import ObjectiveScorerMetrics
-    
-    entries = load_all_objective_metrics()
+    entries = load_all_metrics(file_path)
     
     for entry in entries:
         if entry.get("hash") == hash:
             metrics_dict = entry.get("metrics", {})
             try:
-                return ObjectiveScorerMetrics(**metrics_dict)
+                return metrics_class(**metrics_dict)
             except Exception as e:
                 logger.warning(f"Failed to parse metrics for hash {hash}: {e}")
                 return None
@@ -102,7 +102,6 @@ def add_evaluation_results(
     
     # Build entry dictionary
     entry = scorer_identifier.to_compact_dict()
-    entry["dataset_version"] = dataset_version
     
     if harm_category is not None:
         entry["harm_category"] = harm_category
@@ -117,47 +116,6 @@ def add_evaluation_results(
     )
     
     logger.info(f"Added metrics for {scorer_identifier.type} to {file_path.name}")
-
-
-def load_harm_metrics(harm_category: str) -> List[Dict]:
-    """
-    Load all harm scorer metrics entries for a specific harm category.
-    
-    Args:
-        harm_category: The harm category to load (e.g., "hate_speech", "violence").
-    
-    Returns:
-        List[Dict]: List of raw JSONL entries as dictionaries.
-    """
-    harm_file_path = SCORER_EVALS_HARM_PATH / f"harm_{harm_category}_evaluation_results.jsonl"
-    return _load_jsonl(harm_file_path)
-
-
-def find_harm_metrics_by_hash(harm_category: str, hash: str) -> Optional["HarmScorerMetrics"]:
-    """
-    Find harm scorer metrics by configuration hash and harm category.
-    
-    Args:
-        harm_category: The harm category to search in.
-        hash: The scorer configuration hash to search for.
-    
-    Returns:
-        HarmScorerMetrics if found, else None.
-    """
-    from pyrit.score.scorer_evaluation.scorer_evaluator import HarmScorerMetrics
-    
-    entries = load_harm_metrics(harm_category)
-    
-    for entry in entries:
-        if entry.get("hash") == hash:
-            metrics_dict = entry.get("metrics", {})
-            try:
-                return HarmScorerMetrics(**metrics_dict)
-            except Exception as e:
-                logger.warning(f"Failed to parse harm metrics for hash {hash}: {e}")
-                return None
-    
-    return None
 
 
 def _load_jsonl(file_path: Path) -> List[Dict]:

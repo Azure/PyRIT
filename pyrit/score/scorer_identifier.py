@@ -27,7 +27,6 @@ class ScorerIdentifier:
     target_info: Optional[Dict[str, Any]] = None
     score_aggregator: Optional[str] = None
     scorer_specific_params: Optional[Dict[str, Any]] = None
-    pyrit_version: str = pyrit.__version__
 
     def compute_hash(self, hashable_dict: Optional[Dict[str, Any]] = None) -> str:
         """
@@ -98,5 +97,4 @@ class ScorerIdentifier:
             "target_info": self.target_info,
             "score_aggregator": self.score_aggregator,
             "scorer_specific_params": self.scorer_specific_params,
-            "pyrit_version": self.pyrit_version,
         }

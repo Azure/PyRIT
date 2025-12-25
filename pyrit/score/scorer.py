@@ -141,7 +141,6 @@ class Scorer(abc.ABC):
             target_info=target_info,
             score_aggregator=score_aggregator,
             scorer_specific_params=scorer_specific_params,
-            pyrit_version=pyrit.__version__,
         )
 
     async def score_async(
@@ -266,8 +265,8 @@ class Scorer(abc.ABC):
         self,
         file_mapping: Optional[List["ScorerEvalDatasetFiles"]] = None,
         *,
-        num_scorer_trials: int = 1,
-        add_to_evaluation_results: bool = False,
+        num_scorer_trials: int = 3,
+        add_to_evaluation_results: bool = True,
         max_concurrency: int = 10,
     ) -> Dict[str, "ScorerMetrics"]:
         """
@@ -281,7 +280,8 @@ class Scorer(abc.ABC):
                 Each entry maps input file patterns to an output result name.
             num_scorer_trials: Number of times to score each response (for measuring variance). Defaults to 1.
             add_to_evaluation_results: Whether to add metrics to official evaluation results files.
-                Only set to True when evaluating on official datasets. Defaults to False.
+                Set to True for production evaluations (checks registry, skips if exists).
+                Set to False for debugging (always runs, never writes). Defaults to True.
             max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
         
         Returns:
@@ -302,7 +302,7 @@ class Scorer(abc.ABC):
         return await scorer_evaluator.run_evaluation_async(
             dataset_files=mapping,
             num_scorer_trials=num_scorer_trials,
-            add_to_registry=add_to_evaluation_results,
+            debug_only=not add_to_evaluation_results,
             max_concurrency=max_concurrency,
         )
 

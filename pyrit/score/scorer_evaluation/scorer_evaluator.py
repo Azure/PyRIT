@@ -26,7 +26,10 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.common.path import SCORER_EVALS_PATH
 
 from pyrit.score.scorer_evaluation.krippendorff import krippendorff_alpha
-from pyrit.score.scorer_evaluation.scorer_metrics_io import add_evaluation_results
+from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+    add_evaluation_results,
+    find_metrics_by_hash,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -52,9 +55,12 @@ class ScorerEvalDatasetFiles:
             Examples: ["objective/*.csv"], ["objective/hate_speech.csv", "objective/violence.csv"]
         result_file (str): Name of the result file (stem used as dict key in results).
             Example: "objective_evaluation_results.jsonl"
+        harm_category (Optional[str]): The harm category for harm scorers (e.g., "hate_speech", "violence").
+            Required for harm evaluations, ignored for objective evaluations. Defaults to None.
     """
     human_labeled_datasets_files: List[str]
     result_file: str
+    harm_category: Optional[str] = None
 
 
 class ScorerEvaluator(abc.ABC):
@@ -102,24 +108,24 @@ class ScorerEvaluator(abc.ABC):
         *,
         dataset_files: List[ScorerEvalDatasetFiles],
         num_scorer_trials: int = 3,
-        add_to_registry: bool = False,
+        debug_only: bool = False,
         max_concurrency: int = 10,
     ) -> dict[str, ScorerMetrics]:
         """
         Evaluate scorer using dataset files configuration.
         
         For each dataset files entry:
-        - Collect all files matching the glob patterns
-        - Load each file as a HumanLabeledDataset
-        - Combine the datasets
-        - Evaluate the combined dataset
-        - Return metrics keyed by result file stem
+        - If debug_only=False: Check registry for existing results matching scorer config,
+          dataset version, and num_scorer_trials. If found, return cached metrics.
+          If not found, run evaluation and write to registry.
+        - If debug_only=True: Always run evaluation, never write to registry (for testing).
         
         Args:
             dataset_files: List of ScorerEvalDatasetFiles configurations.
                 Each specifies glob patterns for input files and a result file name.
-            num_scorer_trials: Number of scoring trials per response. Defaults to 1.
-            add_to_registry: Whether to save to official results. Defaults to False.
+            num_scorer_trials: Number of scoring trials per response. Defaults to 3.
+            debug_only: If False, checks registry and writes results (production mode).
+                If True, always runs without writing (debug mode). Defaults to False.
             max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
         
         Returns:
@@ -128,6 +134,15 @@ class ScorerEvaluator(abc.ABC):
         
         results = {}
         metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
+        
+        # Validate harm_category for harm scorers
+        if metrics_type == MetricsType.HARM:
+            for dataset_config in dataset_files:
+                if dataset_config.harm_category is None:
+                    raise ValueError(
+                        f"harm_category must be specified in ScorerEvalDatasetFiles for harm scorer evaluations. "
+                        f"Missing for result_file: {dataset_config.result_file}"
+                    )
         
         for dataset_config in dataset_files:
             # Collect all matching files
@@ -165,15 +180,31 @@ class ScorerEvaluator(abc.ABC):
                 version=combined_version,
             )
             
-            # Evaluate
+            # Check for existing metrics if not in debug mode
+            if not debug_only:
+                existing_metrics = self._find_existing_metrics(
+                    dataset_version=combined_version,
+                    num_scorer_trials=num_scorer_trials,
+                    harm_category=dataset_config.harm_category,
+                    result_file_path=SCORER_EVALS_PATH / dataset_config.result_file,
+                )
+                if existing_metrics:
+                    logger.info(
+                        f"Found existing evaluation results for {result_key}. "
+                        f"Skipping evaluation (set debug_only=True to force re-run)."
+                    )
+                    results[result_key] = existing_metrics
+                    continue
+            
+            # Run evaluation
             metrics = await self._run_evaluation_async(
                 labeled_dataset=combined_dataset,
                 num_scorer_trials=num_scorer_trials,
                 max_concurrency=max_concurrency,
             )
             
-            # Handle registry writing if requested
-            if add_to_registry:
+            # Write to registry if not in debug mode
+            if not debug_only:
                 self._write_metrics_to_registry(
                     metrics=metrics,
                     labeled_dataset=combined_dataset,
@@ -183,6 +214,71 @@ class ScorerEvaluator(abc.ABC):
             results[result_key] = metrics
         
         return results
+
+    def _find_existing_metrics(
+        self,
+        *,
+        dataset_version: str,
+        num_scorer_trials: int,
+        harm_category: Optional[str] = None,
+        result_file_path: Path,
+    ) -> Optional[ScorerMetrics]:
+        """
+        Check if evaluation metrics already exist in the registry.
+        
+        Looks up metrics by scorer configuration hash, dataset version, and num_scorer_trials.
+        
+        Args:
+            dataset_version (str): The version of the dataset.
+            num_scorer_trials (int): Number of scorer trials used.
+            harm_category (Optional[str]): The harm category for harm scorers. Required for harm evaluations.
+            result_file_path (Path): Path to the result file to search.
+        
+        Returns:
+            Optional[ScorerMetrics]: Existing metrics if found and matching num_scorer_trials, else None.
+        """
+        try:
+            scorer_hash = self.scorer.scorer_identifier.compute_hash()
+            
+            # Determine if this is a harm or objective evaluation
+            metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
+            
+            if metrics_type == MetricsType.HARM:
+                if harm_category is None:
+                    logger.warning("harm_category must be provided for harm scorer evaluations")
+                    return None
+                existing = find_metrics_by_hash(
+                    file_path=result_file_path,
+                    hash=scorer_hash,
+                    metrics_class=HarmScorerMetrics,
+                )
+            else:
+                existing = find_metrics_by_hash(
+                    file_path=result_file_path,
+                    hash=scorer_hash,
+                    metrics_class=ObjectiveScorerMetrics,
+                )
+            
+            if existing:
+                # Verify dataset_version and num_scorer_trials match
+                if (existing.dataset_version == dataset_version and 
+                    existing.num_scorer_trials == num_scorer_trials):
+                    logger.info(
+                        f"Found existing metrics: dataset_version={dataset_version}, "
+                        f"num_scorer_trials={num_scorer_trials}"
+                    )
+                    return existing
+                else:
+                    logger.info(
+                        f"Found metrics with different parameters (dataset_version={existing.dataset_version}, "
+                        f"num_scorer_trials={existing.num_scorer_trials}). Will re-run evaluation."
+                    )
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error checking for existing metrics: {e}")
+            return None
 
     async def _run_evaluation_async(
         self,
@@ -224,11 +320,21 @@ class ScorerEvaluator(abc.ABC):
             all_model_scores_list.append(score_values)
         all_model_scores = np.array(all_model_scores_list)
 
+        # Extract harm category if this is a harm dataset
+        harm_category = None
+        if labeled_dataset.metrics_type == MetricsType.HARM and labeled_dataset.entries:
+            first_entry = labeled_dataset.entries[0]
+            if isinstance(first_entry, HarmHumanLabeledEntry):
+                harm_category = first_entry.harm_category
+
         # Compute metrics using subclass implementation
         metrics = self._compute_metrics(
             all_human_scores=all_human_scores,
             all_model_scores=all_model_scores,
             num_scorer_trials=num_scorer_trials,
+            dataset_name=labeled_dataset.name,
+            dataset_version=labeled_dataset.version,
+            harm_category=harm_category,
         )
 
         # Include trial scores for debugging and analysis
@@ -263,6 +369,9 @@ class ScorerEvaluator(abc.ABC):
         all_human_scores: np.ndarray,
         all_model_scores: np.ndarray,
         num_scorer_trials: int,
+        dataset_name: Optional[str] = None,
+        dataset_version: Optional[str] = None,
+        harm_category: Optional[str] = None,
     ) -> ScorerMetrics:
         """
         Compute evaluation metrics from human and model scores.
@@ -271,6 +380,9 @@ class ScorerEvaluator(abc.ABC):
             all_human_scores: Array of human scores, shape (num_raters, num_responses).
             all_model_scores: Array of model scores, shape (num_trials, num_responses).
             num_scorer_trials: Number of scoring trials that were performed.
+            dataset_name: Name of the dataset being evaluated.
+            dataset_version: Version of the dataset.
+            harm_category: Harm category for harm metrics (ignored for objective metrics).
 
         Returns:
             ScorerMetrics subclass with computed metrics.
@@ -371,6 +483,9 @@ class HarmScorerEvaluator(ScorerEvaluator):
         all_human_scores: np.ndarray,
         all_model_scores: np.ndarray,
         num_scorer_trials: int,
+        dataset_name: Optional[str] = None,
+        dataset_version: Optional[str] = None,
+        harm_category: Optional[str] = None,
     ) -> HarmScorerMetrics:
         reliability_data = np.concatenate((all_human_scores, all_model_scores))
         # Calculate the mean of human scores for each response, which is considered the gold label
@@ -383,26 +498,39 @@ class HarmScorerEvaluator(ScorerEvaluator):
 
         abs_error = np.abs(diff)
         t_statistic, p_value = cast(Tuple[float, float], ttest_1samp(diff, 0))
-        metrics = {
-            "mean_absolute_error": np.mean(abs_error),
-            "mae_standard_error": np.std(abs_error) / np.sqrt(len(abs_error)),
-            "t_statistic": t_statistic,
-            "p_value": p_value,
-            "krippendorff_alpha_combined": krippendorff_alpha(
-                reliability_data=reliability_data, level_of_measurement="ordinal"
-            ),
-            "num_scorer_trials": num_scorer_trials,
-        }
+        
+        num_responses = all_human_scores.shape[1]
+        num_human_raters = all_human_scores.shape[0]
+        
+        krippendorff_alpha_humans = None
         if len(all_human_scores) > 1:
-            metrics["krippendorff_alpha_humans"] = krippendorff_alpha(
+            krippendorff_alpha_humans = krippendorff_alpha(
                 reliability_data=all_human_scores, level_of_measurement="ordinal"
             )
+        
+        krippendorff_alpha_model = None
         if len(all_model_scores) > 1:
-            metrics["krippendorff_alpha_model"] = krippendorff_alpha(
+            krippendorff_alpha_model = krippendorff_alpha(
                 reliability_data=all_model_scores, level_of_measurement="ordinal"
             )
 
-        return HarmScorerMetrics(**metrics)
+        return HarmScorerMetrics(
+            num_responses=num_responses,
+            num_human_raters=num_human_raters,
+            mean_absolute_error=np.mean(abs_error),
+            mae_standard_error=np.std(abs_error) / np.sqrt(len(abs_error)),
+            t_statistic=t_statistic,
+            p_value=p_value,
+            krippendorff_alpha_combined=krippendorff_alpha(
+                reliability_data=reliability_data, level_of_measurement="ordinal"
+            ),
+            krippendorff_alpha_humans=krippendorff_alpha_humans,
+            krippendorff_alpha_model=krippendorff_alpha_model,
+            num_scorer_trials=num_scorer_trials,
+            dataset_name=dataset_name,
+            dataset_version=dataset_version,
+            harm_category=harm_category,
+        )
 
 
 class ObjectiveScorerEvaluator(ScorerEvaluator):
@@ -453,6 +581,9 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         all_human_scores: np.ndarray,
         all_model_scores: np.ndarray,
         num_scorer_trials: int,
+        dataset_name: Optional[str] = None,
+        dataset_version: Optional[str] = None,
+        harm_category: Optional[str] = None,
     ) -> ObjectiveScorerMetrics:
         # Calculate the majority vote of human scores for each response, which is considered the gold label.
         # If the vote is split, the resulting gold score will be 0 (i.e. False). Same logic is applied to model trials.
@@ -467,13 +598,19 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0.0
         recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0.0
         f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-        metrics = {
-            "accuracy": accuracy,
-            "accuracy_standard_error": np.sqrt(accuracy * (1 - accuracy) / gold_scores.size),
-            "precision": precision,
-            "recall": recall,
-            "f1_score": f1_score,
-            "num_scorer_trials": num_scorer_trials,
-        }
-
-        return ObjectiveScorerMetrics(**metrics)
+        
+        num_responses = all_human_scores.shape[1]
+        num_human_raters = all_human_scores.shape[0]
+        
+        return ObjectiveScorerMetrics(
+            num_responses=num_responses,
+            num_human_raters=num_human_raters,
+            accuracy=accuracy,
+            accuracy_standard_error=np.sqrt(accuracy * (1 - accuracy) / gold_scores.size),
+            precision=precision,
+            recall=recall,
+            f1_score=f1_score,
+            num_scorer_trials=num_scorer_trials,
+            dataset_name=dataset_name,
+            dataset_version=dataset_version,
+        )
