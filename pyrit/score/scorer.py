@@ -9,6 +9,7 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -39,15 +40,13 @@ from pyrit.models import (
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
-    from pyrit.score.scorer_evaluation.scorer_metrics_registry import RegistryType
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles, ScorerMetrics
 
 
 class Scorer(abc.ABC):
@@ -56,6 +55,10 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+    
+    # Evaluation configuration - maps input dataset files to result files
+    # Each entry specifies glob patterns for datasets and a result file name
+    evaluation_file_mapping: Optional[List["ScorerEvalDatasetFiles"]] = None
 
     _scorer_identifier: Optional[ScorerIdentifier] = None
 
@@ -259,55 +262,80 @@ class Scorer(abc.ABC):
         """
         raise NotImplementedError()
 
-    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
+    async def evaluate_async(
+        self,
+        file_mapping: Optional[List["ScorerEvalDatasetFiles"]] = None,
+        *,
+        num_scorer_trials: int = 1,
+        add_to_evaluation_results: bool = False,
+    ) -> Dict[str, "ScorerMetrics"]:
         """
-        Get evaluation statistics for the scorer using the dataset_name of the human labeled dataset.
-
-        This scorer was run against. If you did not evaluate the scorer against your own human labeled dataset, you can
-        use this method to retrieve metrics based on a pre-existing dataset name, which is often a 'harm_category'
-        or abbreviated version of the 'objective'. For example, to retrieve metrics for the 'hate_speech' harm,
-        you would pass 'hate_speech' as the dataset_name.
-
-        The existing metrics can be found in the 'dataset/score/scorer_evals' directory within either
-        the 'harm' or 'objective' subdirectory.
-
+        Evaluate this scorer against human-labeled datasets.
+        
+        Uses file mapping to determine which datasets to evaluate and how to aggregate results.
+        
         Args:
-            dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to
-                inform the name of the metrics file to read in the `scorer_evals` directory.
-            metrics_type (MetricsType, optional): The type of metrics to retrieve, either HARM
-                or OBJECTIVE. If not provided, it will default to OBJECTIVE for true/false scorers
-                and HARM for all other scorers.
-
+            file_mapping: Optional list of ScorerEvalDatasetFiles configurations.
+                If not provided, uses the scorer's configured evaluation_file_mapping.
+                Each entry maps input file patterns to an output result name.
+            num_scorer_trials: Number of times to score each response (for measuring variance). Defaults to 1.
+            add_to_evaluation_results: Whether to add metrics to official evaluation results files.
+                Only set to True when evaluating on official datasets. Defaults to False.
+        
         Returns:
-            ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
+            Dict[str, ScorerMetrics]: Dictionary mapping result name to metrics.
         """
-        # Import ScorerEvaluator here to avoid circular imports
         from pyrit.score import ScorerEvaluator
+        
+        # Use provided mapping or fall back to scorer's configured mapping
+        mapping = file_mapping if file_mapping is not None else self.evaluation_file_mapping
+        
+        if mapping is None:
+            raise ValueError(
+                f"No file_mapping provided and no evaluation_file_mapping configured for {self.__class__.__name__}. "
+                "Either provide file_mapping parameter or configure evaluation_file_mapping on the scorer class."
+            )
+        
+        scorer_evaluator = ScorerEvaluator.from_scorer(self)
+        return await scorer_evaluator.run_evaluation_from_files_async(
+            dataset_files=mapping,
+            num_scorer_trials=num_scorer_trials,
+            add_to_registry=add_to_evaluation_results,
+        )
 
-        scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
-        return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
-
-    def get_scorer_metrics_from_registry(
-        self, registry_type: Optional["RegistryType"] = None
-    ) -> Optional["ScorerMetrics"]:
+    def get_scorer_metrics(self) -> Dict[str, "ScorerMetrics"]:
         """
-        Get scorer metrics from the registry based on this specific scorer configuration.
-
-        Args:
-            registry_type (Optional[RegistryType]): The type of registry to query (HARM or OBJECTIVE).
-
+        Get evaluation metrics for this scorer from the configured evaluation result files.
+        
+        Reads metrics from the result files defined in the scorer's evaluation_file_mapping.
+        
         Returns:
-            Optional[ScorerMetrics]: The metrics for this scorer configuration, or None if not found.
+            Dict[str, ScorerMetrics]: Dictionary mapping result name to metrics.
+        
+        Raises:
+            ValueError: If no evaluation_file_mapping is configured for this scorer.
+            FileNotFoundError: If a result file doesn't exist.
         """
-        from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-            ScorerMetricsRegistry,
-        )
-
-        registry = ScorerMetricsRegistry()
-        metrics = registry.get_scorer_registry_metrics_by_identifier(
-            scorer_identifier=self.scorer_identifier, registry_type=registry_type
-        )
-        return metrics
+        from pyrit.common.path import SCORER_EVALS_PATH
+        from pyrit.score.scorer_evaluation.scorer_evaluator import ObjectiveScorerMetrics, HarmScorerMetrics
+        from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+        
+        if self.evaluation_file_mapping is None:
+            return {}
+        
+        results = {}
+        metrics_class = ObjectiveScorerMetrics if isinstance(self, TrueFalseScorer) else HarmScorerMetrics
+        
+        for dataset_config in self.evaluation_file_mapping:
+            result_file = SCORER_EVALS_PATH / dataset_config.result_file
+            result_key = Path(dataset_config.result_file).stem
+            
+            if result_file.exists():
+                results[result_key] = metrics_class.from_json(result_file)
+            else:
+                logger.info(f"Result file not found: {result_file}")
+        
+        return results
 
     async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
         """

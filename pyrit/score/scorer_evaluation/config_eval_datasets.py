@@ -31,7 +31,7 @@ def get_harm_eval_datasets(category: str, metrics_type: str):
         directory = str(SCORER_EVALS_LIKERT_PATH)
         eval_directory = SCORER_LIKERT_PATH
     elif metrics_type == "objective":
-        directory = str(SCORER_EVALS_TRUE_FALSE_PATH)
+        directory = str(SCORER_EVALS_OBJECTIVE_PATH)
         eval_directory = TRUE_FALSE_QUESTIONS_PATH
 
     else:

@@ -9,15 +9,9 @@ from pathlib import Path
 from typing import List, Optional, Set, Tuple, Type, TypeVar, Union, cast
 
 import numpy as np
-import pandas as pd
 from scipy.stats import ttest_1samp
 
-from pyrit.common.path import (
-    SCORER_EVALS_HARM_PATH,
-    SCORER_EVALS_TRUE_FALSE_PATH,
-)
 from pyrit.common.utils import verify_and_resolve_path
-from pyrit.models import Message
 from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
@@ -25,10 +19,6 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     ObjectiveHumanLabeledEntry,
 )
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
-from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-    RegistryType,
-    ScorerMetricsRegistry,
-)
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 from .krippendorff import krippendorff_alpha
@@ -36,6 +26,30 @@ from .krippendorff import krippendorff_alpha
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound="ScorerMetrics")
+
+# Standard column names for evaluation datasets
+STANDARD_HUMAN_LABEL_COL = "human_score"
+STANDARD_OBJECTIVE_COL = "objective"
+STANDARD_HARM_COL = "harm_category"
+STANDARD_ASSISTANT_RESPONSE_COL = "assistant_response"
+
+
+@dataclass
+class ScorerEvalDatasetFiles:
+    """
+    Configuration for evaluating a scorer on a set of dataset files.
+    
+    Maps input dataset files (via glob patterns) to an output result file.
+    Multiple files matching the patterns will be concatenated before evaluation.
+    
+    Args:
+        human_labeled_datasets_files (List[str]): List of glob patterns to match CSV files.
+            Examples: ["objective/*.csv"], ["objective/hate_speech.csv", "objective/violence.csv"]
+        result_file (str): Name of the result file (stem used as dict key in results).
+            Example: "objective_evaluation_results.jsonl"
+    """
+    human_labeled_datasets_files: List[str]
+    result_file: str
 
 
 @dataclass
@@ -106,6 +120,7 @@ class HarmScorerMetrics(ScorerMetrics):
     krippendorff_alpha_combined: float
     krippendorff_alpha_humans: Optional[float] = None
     krippendorff_alpha_model: Optional[float] = None
+    trial_scores: Optional[np.ndarray] = None
 
 
 @dataclass
@@ -122,6 +137,8 @@ class ObjectiveScorerMetrics(ScorerMetrics):
             in its positive predictions.
         recall (float): The recall of the model scores, an indicator of the model's ability to correctly
             identify positive labels.
+        trial_scores (Optional[np.ndarray]): The raw scores from each trial. Shape is (num_trials, num_responses).
+            Useful for debugging and analyzing scorer variance.
     """
 
     accuracy: float
@@ -129,6 +146,7 @@ class ObjectiveScorerMetrics(ScorerMetrics):
     f1_score: float
     precision: float
     recall: float
+    trial_scores: Optional[np.ndarray] = None
 
 
 class ScorerEvaluator(abc.ABC):
@@ -168,70 +186,88 @@ class ScorerEvaluator(abc.ABC):
         evaluator = _EVALUATOR_MAP.get(metrics_type, HarmScorerEvaluator)
         return evaluator(scorer=scorer)
 
-    @abc.abstractmethod
-    def get_scorer_metrics(self, dataset_name: str) -> ScorerMetrics:
-        """
-        Get the metrics for the scorer in the 'dataset/score/scorer_evals' directory based on the dataset name.
-
-        Args:
-            dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
-
-        Returns:
-            ScorerMetrics: The metrics for the scorer.
-        """
-        pass
-
-    @abc.abstractmethod
-    async def run_evaluation_from_csv_async(
+    async def run_evaluation_from_files_async(
         self,
-        csv_path: Union[str, Path],
-        human_label_col_names: List[str],
-        objective_or_harm_col_name: str,
-        assistant_response_col_name: str = "assistant_response",
-        assistant_response_data_type_col_name: Optional[str] = None,
+        *,
+        dataset_files: List[ScorerEvalDatasetFiles],
         num_scorer_trials: int = 1,
-        save_results: bool = True,
-        dataset_name: Optional[str] = None,
-        version: Optional[str] = None,
         add_to_registry: bool = False,
-    ) -> ScorerMetrics:
+    ) -> dict[str, ScorerMetrics]:
         """
-        Run the evaluation for the scorer/policy combination on the passed in CSV file.
-
+        Evaluate scorer using dataset files configuration.
+        
+        For each dataset files entry:
+        - Collect all files matching the glob patterns
+        - Load each file as a HumanLabeledDataset
+        - Combine the datasets
+        - Evaluate the combined dataset
+        - Return metrics keyed by result file stem
+        
         Args:
-            csv_path (str): The path to the CSV file, which will be used to construct the HumanLabeledDataset
-                object.
-            assistant_response_col_name (str): The name of the column in the CSV file that contains the assistant
-                responses. Defaults to "assistant_response".
-            human_label_col_names (List[str]): The names of the columns in the CSV file that contain the human labels.
-            objective_or_harm_col_name (str): The name of the column in the CSV file that contains the objective or harm
-                category associated with each response.
-            assistant_response_data_type_col_name (str, Optional): The name of the column containing the data type of
-                the assistant responses. If not specified, it is assumed that the responses are text.
-            num_scorer_trials (int): The number of trials to run the scorer on all responses.
-            save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
-                in a CSV file. Defaults to True.
-            dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred from the CSV
-                file name. This is used to inform the name of the metrics file and model scoring results CSV to save
-                in the 'scorer_evals' directory.
-            version (str, Optional): The version of the dataset. If not provided, it will be inferred from the CSV
-                file if a version comment line "# version=" is present. See `mini_hate_speech.csv` for an example.
-            add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This
-                should only be True when running evaluations on official consolidated datasets.
-
+            dataset_files: List of ScorerEvalDatasetFiles configurations.
+                Each specifies glob patterns for input files and a result file name.
+            num_scorer_trials: Number of scoring trials per response. Defaults to 1.
+            add_to_registry: Whether to save to official results. Defaults to False.
+        
         Returns:
-            ScorerMetrics: The metrics for the scorer. HarmScorerMetrics or ObjectiveScorerMetrics depending on the
-                ScorerEvaluator type.
+            Dict mapping result name (file stem) to ScorerMetrics.
         """
-        pass
+        from pyrit.common.path import SCORER_EVALS_PATH
+        
+        results = {}
+        metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
+        
+        for dataset_config in dataset_files:
+            # Collect all matching files
+            csv_files = []
+            for pattern in dataset_config.human_labeled_datasets_files:
+                matched = list(SCORER_EVALS_PATH.glob(pattern))
+                csv_files.extend(matched)
+            
+            if not csv_files:
+                logger.warning(f"No files found for patterns {dataset_config.human_labeled_datasets_files}")
+                continue
+            
+            # Result key is the stem of the result file
+            result_key = Path(dataset_config.result_file).stem
+            
+            # Load each CSV as a HumanLabeledDataset and combine entries
+            all_entries = []
+            for csv_file in csv_files:
+                dataset = HumanLabeledDataset.from_csv(
+                    csv_path=csv_file,
+                    metrics_type=metrics_type,
+                    assistant_response_col_name=STANDARD_ASSISTANT_RESPONSE_COL,
+                    human_label_col_names=[STANDARD_HUMAN_LABEL_COL],
+                    objective_or_harm_col_name=STANDARD_OBJECTIVE_COL,
+                    # data_type column is optional - defaults to "text" when not provided
+                )
+                all_entries.extend(dataset.entries)
+            
+            # Create combined dataset
+            combined_dataset = HumanLabeledDataset(
+                entries=all_entries,
+                metrics_type=metrics_type,
+                name=dataset_config.result_file,
+                version="combined",
+            )
+            
+            # Evaluate
+            metrics = await self.run_evaluation_async(
+                labeled_dataset=combined_dataset,
+                num_scorer_trials=num_scorer_trials,
+                add_to_registry=add_to_registry,
+            )
+            
+            results[result_key] = metrics
+        
+        return results
 
     @abc.abstractmethod
     async def run_evaluation_async(
         self,
         labeled_dataset: HumanLabeledDataset,
         num_scorer_trials: int = 1,
-        save_results: bool = True,
-        csv_path: Optional[Union[str, Path]] = None,
         add_to_registry: bool = False,
     ) -> ScorerMetrics:
         """
@@ -240,11 +276,8 @@ class ScorerEvaluator(abc.ABC):
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate the scorer against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses.
-            save_results (bool): Whether to save the metrics in a JSON file and the model score(s) for each response
-                in a CSV file. Defaults to True.
-            csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
-            add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This
-                should only be True when running evaluations on official consolidated datasets.
+            add_to_registry (bool): Whether to add the metrics to the official evaluation results. Defaults to False. This
+                should only be True when running evaluations on official datasets.
 
         Returns:
             ScorerMetrics: The metrics for the scorer. This will be either HarmScorerMetrics or ObjectiveScorerMetrics
@@ -252,165 +285,26 @@ class ScorerEvaluator(abc.ABC):
         """
         pass
 
-    def _save_model_scores_to_csv(
-        self,
-        objectives_or_harms: List[str],
-        responses: List[str],
-        all_model_scores: np.ndarray,
-        file_path: Path,
-        true_scores: Optional[Union[np.ndarray, np.floating, np.integer, float, int]] = None,
-    ):
-        """
-        Save the scores generated by the LLM scorer during evaluation to a CSV file.
-
-        Args:
-            objectives_or_harms (List[str]): The objectives or harms associated with each response.
-            responses (List[str]): The assistant responses.
-            all_model_scores (np.ndarray): The scores for each trial.
-            file_path (Path): The path save the model scoring trials to.
-            true_scores (Union[np.ndarray, np.floating, np.integer, float, int], optional):
-                The true/gold scores from the original dataset. If provided, adds a 'true_label' column.
-        """
-        cols_dict = {"objective_or_harm": objectives_or_harms, "assistant_response": responses}
-        for trial, scores in enumerate(all_model_scores):
-            cols_dict[f"trial {trial+1}"] = scores
-
-        # Add the true_label column after all trials, if true_scores is provided
-        if true_scores is not None:
-            # Convert true_scores to a list, handling arrays, lists, and scalars
-            if isinstance(true_scores, np.ndarray):
-                true_label_values = true_scores.tolist()
-            elif isinstance(true_scores, list):
-                true_label_values = true_scores
-            elif isinstance(true_scores, (float, int, np.floating, np.integer)):
-                true_label_values = [true_scores] * len(responses)
-            else:
-                # Fallback: try to convert to list, else repeat as scalar
-                try:
-                    true_label_values = list(true_scores)
-                except (TypeError, ValueError):
-                    true_label_values = [true_scores] * len(responses)
-
-            # Ensure all values are strings for DataFrame compatibility
-            cols_dict["true_label"] = [str(v) for v in true_label_values]
-
-        scores_df = pd.DataFrame(cols_dict)
-        scores_df.to_csv(file_path, index=False)
-
 
 class HarmScorerEvaluator(ScorerEvaluator):
     """
     A class that evaluates a harm scorer against HumanLabeledDatasets of type HARM.
     """
 
-    def get_scorer_metrics(self, dataset_name: str) -> HarmScorerMetrics:
-        """
-        Retrieve the scorer metrics for a given dataset name.
-
-        Args:
-            dataset_name (str): The name of the dataset to retrieve metrics for.
-
-        Returns:
-            HarmScorerMetrics: The metrics for the specified dataset.
-
-        Raises:
-            FileNotFoundError: If metrics for the dataset are not found in any expected location.
-        """
-        # First try the default PyRIT location
-        metrics_path = self._get_metrics_path(dataset_name=dataset_name)
-        if metrics_path.exists():
-            return HarmScorerMetrics.from_json(metrics_path)
-
-        # If not found, try to find in results folders of common CSV locations
-        scorer_name = type(self.scorer).__name__
-        metrics_filename = f"{dataset_name}_{scorer_name}_metrics.json"
-
-        # Look for results folders in common locations
-        search_paths = [
-            Path.cwd() / "results" / metrics_filename,  # Current directory results
-            Path(SCORER_EVALS_HARM_PATH).parent / "results" / metrics_filename,  # Next to scorer_evals
-        ]
-
-        # Also search in any subdirectories that might contain results folders
-        for base_path in [Path.cwd(), Path(SCORER_EVALS_HARM_PATH).parent]:
-            for results_dir in base_path.rglob("results"):
-                if results_dir.is_dir():
-                    potential_path = results_dir / metrics_filename
-                    search_paths.append(potential_path)
-
-        # Try each path
-        for path in search_paths:
-            if path.exists():
-                return HarmScorerMetrics.from_json(path)
-
-        raise FileNotFoundError(
-            f"Metrics for dataset '{dataset_name}' not found. Tried:\n"
-            + f"- Default location: {metrics_path}\n"
-            + f"- Results folders: {[str(p) for p in search_paths[:5]]}...\n"
-            + "Evaluation may not have been run with this dataset yet."
-        )
-
-    async def run_evaluation_from_csv_async(
-        self,
-        csv_path: Union[str, Path],
-        human_label_col_names: List[str],
-        objective_or_harm_col_name: str,
-        assistant_response_col_name: str = "assistant_response",
-        assistant_response_data_type_col_name: Optional[str] = None,
-        num_scorer_trials: int = 1,
-        save_results: bool = True,
-        dataset_name: Optional[str] = None,
-        version: Optional[str] = None,
-        add_to_registry: bool = False,
-    ) -> HarmScorerMetrics:
-        """
-        Evaluate a harm scorer against a CSV dataset containing float scores (0.0-1.0).
-
-        See base class for full parameter documentation.
-
-        Returns:
-            HarmScorerMetrics: Metrics including MAE, t-statistic, p-value, and Krippendorff's alpha.
-        """
-        labeled_dataset = HumanLabeledDataset.from_csv(
-            csv_path=csv_path,
-            metrics_type=MetricsType.HARM,
-            assistant_response_col_name=assistant_response_col_name,
-            human_label_col_names=human_label_col_names,
-            objective_or_harm_col_name=objective_or_harm_col_name,
-            assistant_response_data_type_col_name=assistant_response_data_type_col_name,
-            dataset_name=dataset_name,
-            version=version,
-        )
-        metrics = await self.run_evaluation_async(
-            labeled_dataset=labeled_dataset,
-            num_scorer_trials=num_scorer_trials,
-            save_results=save_results,
-            csv_path=csv_path,
-            add_to_registry=add_to_registry,
-        )
-
-        return metrics
-
     async def run_evaluation_async(
         self,
         labeled_dataset: HumanLabeledDataset,
         num_scorer_trials: int = 1,
-        save_results: bool = True,
-        csv_path: Optional[Union[str, Path]] = None,
         add_to_registry: bool = False,
     ) -> HarmScorerMetrics:
         """
-        Evaluate the scorer against a HumanLabeledDataset of type HARM. If save_results is True, the evaluation
-        metrics and CSV file containing the LLM-produced scores across all trials will be saved in the
-        'dataset/score/scorer_evals/harm' directory based on the name of the HumanLabeledDataset.
+        Evaluate the scorer against a HumanLabeledDataset of type HARM.
 
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
-            save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
-            csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to.
-            add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This
-                should only be True when running evaluations on official consolidated datasets.
+            add_to_registry (bool): Whether to add the metrics to the official evaluation results. Defaults to False. This
+                should only be True when running evaluations on official datasets.
 
         Returns:
             HarmScorerMetrics: The metrics for the harm scorer.
@@ -419,7 +313,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
             ValueError: If the HumanLabeledDataset is not of type HARM or contains multiple harm categories.
         """
         if add_to_registry:
-            logger.warning("Registry functionality is not implemented for harm scoring. Ignoring add_to_registry flag.")
+            logger.warning("Evaluation results functionality for harm scoring should use add_to_harm_evaluation_results(). Ignoring add_to_registry flag.")
 
         if labeled_dataset.metrics_type != MetricsType.HARM:
             raise ValueError("The HumanLabeledDataset must be of type HARM to evaluate a harm scorer.")
@@ -463,21 +357,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
             all_model_scores=all_model_scores,
         )
 
-        if save_results:
-            # Calculate the gold scores (mean of human scores) for the CSV output
-            gold_scores = np.mean(all_human_scores, axis=0)
-            metrics_path = self._get_metrics_path(dataset_name=labeled_dataset.name, csv_path=csv_path)
-            csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name, csv_path=csv_path)
-            self._save_model_scores_to_csv(
-                objectives_or_harms=harms,
-                responses=Message.get_all_values(assistant_responses),
-                all_model_scores=all_model_scores,
-                true_scores=gold_scores,
-                file_path=csv_results_path,
-            )
-            # Save the metrics to a JSON file
-            with open(metrics_path, "w") as f:
-                json.dump(asdict(harm_metrics), f, indent=4)
+        # Include trial scores for debugging and analysis
+        harm_metrics.trial_scores = all_model_scores
 
         return harm_metrics
 
@@ -518,162 +399,26 @@ class HarmScorerEvaluator(ScorerEvaluator):
 
         return HarmScorerMetrics(**metrics)
 
-    def _get_metrics_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
-        """
-        Get the path to save the metrics file.
-
-        Args:
-            dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
-            csv_path (str, optional): The path to the input CSV file. If provided, results will be saved
-                in the same directory as the CSV file.
-
-        Returns:
-            Path: The path to save the metrics file.
-        """
-        scorer_name = type(self.scorer).__name__
-        if csv_path:
-            csv_dir = Path(csv_path).parent
-            results_dir = csv_dir / "results"
-            results_dir.mkdir(exist_ok=True)
-            return Path(results_dir, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
-        else:
-            return Path(SCORER_EVALS_HARM_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
-
-    def _get_csv_results_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
-        """
-        Get the path to save the CSV results file.
-
-        Args:
-            dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
-            csv_path (str, optional): The path to the input CSV file. If provided, results will be saved
-                in the same directory as the CSV file.
-
-        Returns:
-            Path: The path to the CSV to save the results from the LLM scoring trials.
-        """
-        scorer_name = type(self.scorer).__name__
-        if csv_path:
-            csv_dir = Path(csv_path).parent
-            results_dir = csv_dir / "results"
-            results_dir.mkdir(exist_ok=True)
-            return Path(results_dir, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
-        else:
-            return Path(SCORER_EVALS_HARM_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
-
 
 class ObjectiveScorerEvaluator(ScorerEvaluator):
     """
     A class that evaluates an objective scorer against HumanLabeledDatasets of type OBJECTIVE.
     """
 
-    def get_scorer_metrics(self, dataset_name: str) -> ObjectiveScorerMetrics:
-        """
-        Retrieve the scorer metrics for a given dataset name.
-
-        Args:
-            dataset_name (str): The name of the dataset to retrieve metrics for.
-
-        Returns:
-            ObjectiveScorerMetrics: The metrics for the specified dataset.
-
-        Raises:
-            FileNotFoundError: If metrics for the dataset are not found in any expected location.
-        """
-        # First try the default PyRIT location
-        metrics_path = self._get_metrics_path(dataset_name=dataset_name)
-        if metrics_path.exists():
-            return ObjectiveScorerMetrics.from_json(metrics_path)
-
-        # If not found, try to find in results folders of common CSV locations
-        scorer_name = type(self.scorer).__name__
-        metrics_filename = f"{dataset_name}_{scorer_name}_metrics.json"
-
-        # Look for results folders in common locations
-        search_paths = [
-            Path.cwd() / "results" / metrics_filename,  # Current directory results
-            Path(SCORER_EVALS_TRUE_FALSE_PATH).parent / "results" / metrics_filename,  # Next to scorer_evals
-        ]
-
-        # Also search in any subdirectories that might contain results folders
-        for base_path in [Path.cwd(), Path(SCORER_EVALS_TRUE_FALSE_PATH).parent]:
-            for results_dir in base_path.rglob("results"):
-                if results_dir.is_dir():
-                    potential_path = results_dir / metrics_filename
-                    search_paths.append(potential_path)
-
-        # Try each path
-        for path in search_paths:
-            if path.exists():
-                return ObjectiveScorerMetrics.from_json(path)
-
-        raise FileNotFoundError(
-            f"Metrics for dataset '{dataset_name}' not found. Tried:\n"
-            + f"- Default location: {metrics_path}\n"
-            + f"- Results folders: {[str(p) for p in search_paths[:5]]}...\n"
-            + "Evaluation may not have been run with this dataset yet."
-        )
-
-    async def run_evaluation_from_csv_async(
-        self,
-        csv_path: Union[str, Path],
-        human_label_col_names: List[str],
-        objective_or_harm_col_name: str,
-        assistant_response_col_name: str = "assistant_response",
-        assistant_response_data_type_col_name: Optional[str] = None,
-        num_scorer_trials: int = 1,
-        save_results: bool = True,
-        dataset_name: Optional[str] = None,
-        version: Optional[str] = None,
-        add_to_registry: bool = False,
-    ) -> ObjectiveScorerMetrics:
-        """
-        Evaluate an objective scorer against a CSV dataset containing binary labels (0 or 1).
-
-        See base class for full parameter documentation.
-
-        Returns:
-            ObjectiveScorerMetrics: Metrics including accuracy, F1 score, precision, and recall.
-        """
-        labeled_dataset = HumanLabeledDataset.from_csv(
-            csv_path=csv_path,
-            metrics_type=MetricsType.OBJECTIVE,
-            assistant_response_col_name=assistant_response_col_name,
-            human_label_col_names=human_label_col_names,
-            objective_or_harm_col_name=objective_or_harm_col_name,
-            assistant_response_data_type_col_name=assistant_response_data_type_col_name,
-            dataset_name=dataset_name,
-            version=version,
-        )
-        metrics = await self.run_evaluation_async(
-            labeled_dataset=labeled_dataset,
-            num_scorer_trials=num_scorer_trials,
-            save_results=save_results,
-            csv_path=csv_path,
-            add_to_registry=add_to_registry,
-        )
-
-        return metrics
-
     async def run_evaluation_async(
         self,
         labeled_dataset: HumanLabeledDataset,
         num_scorer_trials: int = 1,
-        save_results: bool = True,
-        csv_path: Optional[Union[str, Path]] = None,
         add_to_registry: bool = False,
     ) -> ObjectiveScorerMetrics:
         """
-        Evaluate the scorer against a HumanLabeledDataset of type OBJECTIVE. If save_results is True, the evaluation
-        metrics and CSV file containing the LLM-produced scores across all trials will be saved in the
-        'dataset/score/scorer_evals/objective' directory based on the name of the HumanLabeledDataset.
+        Evaluate the scorer against a HumanLabeledDataset of type OBJECTIVE.
 
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate against.
             num_scorer_trials (int): The number of trials to run the scorer on all responses. Defaults to 1.
-            save_results (bool): Whether to save the metrics and model scoring results. Defaults to True.
-            csv_path (Optional[Union[str, Path]]): The path to the CSV file to save results to. Defaults to None.
-            add_to_registry (bool): Whether to add the metrics to the ScorerMetricsRegistry. Defaults to False. This
-                should only be True when running evaluations on official consolidated datasets.
+            add_to_registry (bool): Whether to add the metrics to the official evaluation results. Defaults to False. This
+                should only be True when running evaluations on official datasets.
 
         Returns:
             ObjectiveScorerMetrics: The metrics for the objective scorer.
@@ -717,35 +462,29 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
             all_model_scores=all_model_scores,
         )
 
-        if save_results:
-            # Calculate the gold scores (majority vote of human scores) for the CSV output
-            gold_scores = np.round(np.mean(all_human_scores, axis=0))
-            metrics_path = self._get_metrics_path(dataset_name=labeled_dataset.name, csv_path=csv_path)
-            csv_results_path = self._get_csv_results_path(dataset_name=labeled_dataset.name, csv_path=csv_path)
-            self._save_model_scores_to_csv(
-                objectives_or_harms=objectives,
-                responses=[response.converted_value for response in assistant_responses],
-                all_model_scores=all_model_scores,
-                true_scores=gold_scores,
-                file_path=csv_results_path,
-            )
-            # Save the metrics to a JSON file
-            with open(metrics_path, "w") as f:
-                json.dump(asdict(objective_metrics), f, indent=4)
+        # Include trial scores for debugging and analysis
+        objective_metrics.trial_scores = all_model_scores
 
         if add_to_registry:
             try:
-                registry = ScorerMetricsRegistry()
-                scorer_identifier = self.scorer.scorer_identifier
-                registry.add_entry(
-                    scorer_identifier=scorer_identifier,
-                    metrics=objective_metrics,
-                    registry_type=RegistryType.OBJECTIVE,
+                from pyrit.score.scorer_evaluation.scorer_metrics_utility import add_to_objective_evaluation_results
+                
+                # Don't include trial_scores in evaluation results entry (too large)
+                results_metrics = ObjectiveScorerMetrics(
+                    accuracy=objective_metrics.accuracy,
+                    accuracy_standard_error=objective_metrics.accuracy_standard_error,
+                    f1_score=objective_metrics.f1_score,
+                    precision=objective_metrics.precision,
+                    recall=objective_metrics.recall,
+                )
+                
+                add_to_objective_evaluation_results(
+                    scorer_identifier=self.scorer.scorer_identifier,
+                    metrics=results_metrics,
                     dataset_version=labeled_dataset.version,
                 )
-                logger.info(f"Added metrics for {scorer_identifier.type} to registry")
             except Exception as e:
-                logger.warning(f"Failed to add metrics to registry: {e}")
+                logger.warning(f"Failed to add metrics to evaluation results: {e}")
 
         return objective_metrics
 
@@ -777,45 +516,3 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         }
 
         return ObjectiveScorerMetrics(**metrics)
-
-    def _get_metrics_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
-        """
-        Get the path to save the metrics file.
-
-        Args:
-            dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
-            csv_path (str, optional): The path to the input CSV file. If provided, results will be saved
-                in the same directory as the CSV file.
-
-        Returns:
-            Path: The path to save the metrics file.
-        """
-        scorer_name = type(self.scorer).__name__
-        if csv_path:
-            csv_dir = Path(csv_path).parent
-            results_dir = csv_dir / "results"
-            results_dir.mkdir(exist_ok=True)
-            return Path(results_dir, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
-        else:
-            return Path(SCORER_EVALS_TRUE_FALSE_PATH, f"{dataset_name}_{scorer_name}_metrics.json").resolve()
-
-    def _get_csv_results_path(self, dataset_name: str, csv_path: Optional[Union[str, Path]] = None) -> Path:
-        """
-        Get the path to save the CSV results file.
-
-        Args:
-            dataset_name (str): The name of the HumanLabeledDataset on which evaluation was run.
-            csv_path (str, optional): The path to the input CSV file. If provided, results will be saved
-                in the same directory as the CSV file.
-
-        Returns:
-            Path: The path to the CSV to save the results from the LLM scoring trials.
-        """
-        scorer_name = type(self.scorer).__name__
-        if csv_path:
-            csv_dir = Path(csv_path).parent
-            results_dir = csv_dir / "results"
-            results_dir.mkdir(exist_ok=True)
-            return Path(results_dir, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()
-        else:
-            return Path(SCORER_EVALS_TRUE_FALSE_PATH, f"{dataset_name}_{scorer_name}_scoring_results.csv").resolve()

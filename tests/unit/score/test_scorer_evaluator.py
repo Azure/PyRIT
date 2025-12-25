@@ -6,10 +6,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
-import pandas as pd
 import pytest
 
-from pyrit.common.path import SCORER_EVALS_HARM_PATH, SCORER_EVALS_TRUE_FALSE_PATH
 from pyrit.models import Message, MessagePiece
 from pyrit.score import (
     FloatScaleScorer,
@@ -24,16 +22,6 @@ from pyrit.score import (
     ScorerEvaluator,
     TrueFalseScorer,
 )
-
-
-@pytest.fixture
-def sample_harm_csv_path():
-    return f"{str(SCORER_EVALS_HARM_PATH)}/mini_hate_speech.csv"
-
-
-@pytest.fixture
-def sample_objective_csv_path():
-    return f"{str(SCORER_EVALS_TRUE_FALSE_PATH)}/mini_refusal.csv"
 
 
 @pytest.fixture
@@ -404,8 +392,8 @@ def test_get_metrics_path_and_csv_path_harm(mock_harm_scorer):
 def test_get_metrics_path_and_csv_path_objective(mock_objective_scorer):
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
     dataset_name = "SAMPLE_objective"
-    expected_metrics_path = Path(SCORER_EVALS_TRUE_FALSE_PATH) / f"{dataset_name}_MagicMock_metrics.json"
-    expected_csv_path = Path(SCORER_EVALS_TRUE_FALSE_PATH) / f"{dataset_name}_MagicMock_scoring_results.csv"
+    expected_metrics_path = Path(SCORER_EVALS_OBJECTIVE_PATH) / f"{dataset_name}_MagicMock_metrics.json"
+    expected_csv_path = Path(SCORER_EVALS_OBJECTIVE_PATH) / f"{dataset_name}_MagicMock_scoring_results.csv"
     metrics_path = evaluator._get_metrics_path(dataset_name)
     csv_path = evaluator._get_csv_results_path(dataset_name)
     assert metrics_path == expected_metrics_path

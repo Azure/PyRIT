@@ -11,7 +11,6 @@ from pyrit.models import AttackOutcome, AttackResult
 
 if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
-    from pyrit.score.scorer_evaluation.scorer_metrics_registry import RegistryType
 
 logger = logging.getLogger(__name__)
 
@@ -141,9 +140,7 @@ class ScenarioResult:
         successful_results = sum(1 for result in all_results if result.outcome == AttackOutcome.SUCCESS)
         return int((successful_results / total_results) * 100)
 
-    def get_scorer_evaluation_metrics(
-        self, registry_type: Optional["RegistryType"] = None
-    ) -> Optional["ScorerMetrics"]:
+    def get_scorer_evaluation_metrics(self) -> Optional["ScorerMetrics"]:
         """
         Get the evaluation metrics for the scenario's scorer from the scorer evaluation registry.
 
@@ -151,17 +148,11 @@ class ScenarioResult:
             ScorerMetrics: The evaluation metrics object, or None if not found.
         """
         # import here to avoid circular imports
-        from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-            ScorerMetricsRegistry,
-        )
+        from pyrit.score.scorer_evaluation.scorer_metrics_utility import find_objective_metrics_by_hash
 
         # Use the stored hash directly for lookup (avoids needing to reconstruct ScorerIdentifier)
         scorer_hash = self.objective_scorer_identifier.get("hash")
         if not scorer_hash:
             return None
 
-        registry = ScorerMetricsRegistry()
-        entries = registry.get_metrics_registry_entries(registry_type=registry_type, hash=scorer_hash)
-        if entries:
-            return entries[0].metrics
-        return None
+        return find_objective_metrics_by_hash(hash=scorer_hash)

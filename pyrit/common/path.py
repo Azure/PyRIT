@@ -62,6 +62,7 @@ JAILBREAK_TEMPLATES_PATH = pathlib.Path(DATASETS_PATH, "jailbreak", "templates")
 SCORER_EVALS_PATH = pathlib.Path(PYRIT_PATH, "score", "scorer_evals").resolve()
 SCORER_EVALS_HARM_PATH = pathlib.Path(SCORER_EVALS_PATH, "harm").resolve()
 SCORER_EVALS_OBJECTIVE_PATH = pathlib.Path(SCORER_EVALS_PATH, "objective").resolve()
+SCORER_EVALS_REFUSAL_SCORER_PATH = pathlib.Path(SCORER_EVALS_PATH, "refusal_scorer").resolve()
 SCORER_EVALS_TRUE_FALSE_PATH = pathlib.Path(SCORER_EVALS_PATH, "true_false").resolve()
 SCORER_EVALS_LIKERT_PATH = pathlib.Path(SCORER_EVALS_PATH, "likert").resolve()
 
