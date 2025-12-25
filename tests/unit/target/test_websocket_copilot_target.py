@@ -21,13 +21,6 @@ VALID_WEBSOCKET_URL = (
 )
 
 
-@pytest.fixture
-def mock_env_websocket_url():
-    """Fixture to set the WEBSOCKET_URL environment variable."""
-    with patch.dict(os.environ, {"WEBSOCKET_URL": VALID_WEBSOCKET_URL}):
-        yield
-
-
 @pytest.mark.usefixtures("patch_central_database")
 class TestWebSocketCopilotTargetInit:
     def test_init_with_valid_wss_url(self):
@@ -74,3 +67,16 @@ class TestWebSocketCopilotTargetInit:
             with pytest.raises(ValueError, match="response_timeout_seconds must be a positive integer."):
                 WebSocketCopilotTarget(response_timeout_seconds=invalid_timeout)
 
+
+@pytest.mark.parametrize(
+    "data,expected",
+    [
+        ({"key": "value"}, '{"key":"value"}\x1e'),
+        ({"protocol": "json", "version": 1}, '{"protocol":"json","version":1}\x1e'),
+        ({"outer": {"inner": "value"}}, '{"outer":{"inner":"value"}}\x1e'),
+        ({"items": [1, 2, 3]}, '{"items":[1,2,3]}\x1e'),
+    ],
+)
+def test_dict_to_websocket_static_method(data, expected):
+    result = WebSocketCopilotTarget._dict_to_websocket(data)
+    assert result == expected
