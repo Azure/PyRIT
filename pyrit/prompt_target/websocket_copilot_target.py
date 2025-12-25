@@ -29,9 +29,9 @@ class CopilotMessageType(IntEnum):
     """Enumeration for Copilot WebSocket message types."""
 
     UNKNOWN = -1
-    NEXT_DATA_FRAME = 1  # streaming Copilot responses
-    LAST_DATA_FRAME = 2  # the last data frame with final content
-    FINAL_DATA_FRAME = 3  # the final data frame indicating completion
+    PARTIAL_RESPONSE = 1
+    FINAL_CONTENT = 2
+    STREAM_END = 3
     USER_PROMPT = 4
     PING = 6
 
@@ -162,17 +162,17 @@ class WebSocketCopilotTarget(PromptTarget):
 
                 if msg_type in (
                     CopilotMessageType.PING,
-                    CopilotMessageType.NEXT_DATA_FRAME,
-                    CopilotMessageType.FINAL_DATA_FRAME,
+                    CopilotMessageType.PARTIAL_RESPONSE,
+                    CopilotMessageType.STREAM_END,
                 ):
                     results.append((msg_type, ""))
                     continue
 
-                if msg_type == CopilotMessageType.LAST_DATA_FRAME:
+                if msg_type == CopilotMessageType.FINAL_CONTENT:
                     bot_text = extract_bot_message(data)
                     if not bot_text:
-                        logger.warning("LAST_DATA_FRAME received but no parseable content found.")
-                    results.append((CopilotMessageType.LAST_DATA_FRAME, bot_text))
+                        logger.warning("FINAL_CONTENT received but no parseable content found.")
+                    results.append((CopilotMessageType.FINAL_CONTENT, bot_text))
                     continue
 
                 results.append((msg_type, ""))
@@ -290,12 +290,12 @@ class WebSocketCopilotTarget(PromptTarget):
                     for msg_type, content in parsed_messages:
                         if msg_type in (
                             CopilotMessageType.UNKNOWN,
-                            CopilotMessageType.LAST_DATA_FRAME,
-                            CopilotMessageType.FINAL_DATA_FRAME,
+                            CopilotMessageType.FINAL_CONTENT,
+                            CopilotMessageType.STREAM_END,
                         ):
                             stop_polling = True
 
-                            if msg_type == CopilotMessageType.LAST_DATA_FRAME:
+                            if msg_type == CopilotMessageType.FINAL_CONTENT:
                                 last_response = content
                             elif msg_type == CopilotMessageType.UNKNOWN:
                                 logger.debug("Received unknown or empty message type.")
