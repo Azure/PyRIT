@@ -57,6 +57,8 @@ class WebSocketCopilotTarget(PromptTarget):
         Only works with licensed Microsoft 365 Copilot. The free Copilot version is not compatible.
     """
 
+    # TODO: add more flexible auth, use puppeteer? https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py#L248
+
     SUPPORTED_DATA_TYPES = {"text"}  # TODO: support more types?
 
     RESPONSE_TIMEOUT_SECONDS: int = 60
@@ -177,59 +179,67 @@ class WebSocketCopilotTarget(PromptTarget):
         return {
             "arguments": [
                 {
-                    # TODO: use msal for auth, then set these fields properly, as with current approach they are not really needed
-                    # "source": "officeweb",
-                    # "clientCorrelationId": str(uuid.uuid4()),
-                    # "sessionId": self._session_id,
-                    # "optionsSets": [
-                    #     "enterprise_flux_web",
-                    #     "enterprise_flux_work",
-                    #     "enable_request_response_interstitials",
-                    #     "enterprise_flux_image_v1",
-                    #     "enterprise_toolbox_with_skdsstore",
-                    #     "enterprise_toolbox_with_skdsstore_search_message_extensions",
-                    #     "enable_ME_auth_interstitial",
-                    #     "skdsstorethirdparty",
-                    #     "enable_confirmation_interstitial",
-                    #     "enable_plugin_auth_interstitial",
-                    #     "enable_response_action_processing",
-                    #     "enterprise_flux_work_gptv",
-                    #     "enterprise_flux_work_code_interpreter",
-                    #     "enable_batch_token_processing",
-                    # ],
-                    # "options": {},
-                    # "allowedMessageTypes": [
-                    #     "Chat",
-                    #     "Suggestion",
-                    #     "InternalSearchQuery",
-                    #     "InternalSearchResult",
-                    #     "Disengaged",
-                    #     "InternalLoaderMessage",
-                    #     "RenderCardRequest",
-                    #     "AdsQuery",
-                    #     "SemanticSerp",
-                    #     "GenerateContentQuery",
-                    #     "SearchQuery",
-                    #     "ConfirmationCard",
-                    #     "AuthError",
-                    #     "DeveloperLogs",
-                    # ],
-                    # "sliceIds": [],
-                    # "threadLevelGptId": {},
-                    # "conversationId": self._conversation_id,
-                    # "traceId": str(uuid.uuid4()).replace("-", ""),
-                    # "isStartOfSession": 0,
-                    # "productThreadType": "Office",
-                    # "clientInfo": {"clientPlatform": "web"},
+                    "source": "officeweb",  # TODO: support 'teamshub' as well
+                    # TODO: not sure whether to uuid.uuid4() or use a static like it's done in power-pwn
+                    # https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py#L156
+                    "clientCorrelationId": str(uuid.uuid4()),
+                    "sessionId": self._session_id,
+                    "optionsSets": [
+                        "enterprise_flux_web",
+                        "enterprise_flux_work",
+                        "enable_request_response_interstitials",
+                        "enterprise_flux_image_v1",
+                        "enterprise_toolbox_with_skdsstore",
+                        "enterprise_toolbox_with_skdsstore_search_message_extensions",
+                        "enable_ME_auth_interstitial",
+                        "skdsstorethirdparty",
+                        "enable_confirmation_interstitial",
+                        "enable_plugin_auth_interstitial",
+                        "enable_response_action_processing",
+                        "enterprise_flux_work_gptv",
+                        "enterprise_flux_work_code_interpreter",
+                        "enable_batch_token_processing",
+                    ],
+                    "options": {},
+                    "allowedMessageTypes": [
+                        "Chat",
+                        "Suggestion",
+                        "InternalSearchQuery",
+                        "InternalSearchResult",
+                        "Disengaged",
+                        "InternalLoaderMessage",
+                        "RenderCardRequest",
+                        "AdsQuery",
+                        "SemanticSerp",
+                        "GenerateContentQuery",
+                        "SearchQuery",
+                        "ConfirmationCard",
+                        "AuthError",
+                        "DeveloperLogs",
+                    ],
+                    "sliceIds": [],
+                    # TODO: enable using agents https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py#L192
+                    "threadLevelGptId": {},
+                    "conversationId": self._conversation_id,
+                    "traceId": str(uuid.uuid4()).replace("-", ""),  # TODO: same case as clientCorrelationId
+                    "isStartOfSession": 0,
+                    "productThreadType": "Office",
+                    "clientInfo": {"clientPlatform": "web"},
                     "message": {
                         "author": "user",
+                        "inputMethod": "Keyboard",
                         "text": prompt,
+                        "entityAnnotationTypes": ["People", "File", "Event", "Email", "TeamsMessage"],
                         "requestId": str(uuid.uuid4()).replace("-", ""),
+                        "locationInfo": {"timeZoneOffset": 0, "timeZone": "UTC"},
+                        "locale": "en-US",
+                        "messageType": "Chat",
+                        "experienceType": "Default",
                     },
-                    # "plugins": [],
+                    "plugins": [],  # TODO: support enabling some plugins?
                 }
             ],
-            "invocationId": "0",
+            "invocationId": "0",  # TODO: should be dynamic?
             "target": "chat",
             "type": CopilotMessageType.USER_PROMPT,
         }
