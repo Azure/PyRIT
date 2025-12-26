@@ -48,8 +48,9 @@ class OpenAIVideoTarget(OpenAITarget):
         Initialize the OpenAI Video Target.
 
         Args:
-            model_name (str, Optional): The video model to use (e.g., "sora-2", "sora-2-pro").
-                If no value is provided, the OPENAI_VIDEO_MODEL environment variable will be used.
+            model_name (str, Optional): The video model to use (e.g., "sora-2", "sora-2-pro")
+                (or deployment name in Azure). If no value is provided, the OPENAI_VIDEO_MODEL
+                environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
                 or a callable that returns an access token. For Azure endpoints with Entra authentication,
@@ -80,6 +81,7 @@ class OpenAIVideoTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_VIDEO_MODEL"
         self.endpoint_environment_variable = "OPENAI_VIDEO_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_VIDEO_KEY"
+        self.underlying_model_environment_variable = "OPENAI_VIDEO_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""

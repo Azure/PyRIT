@@ -36,8 +36,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     Args:
         api_key (str): The api key for the OpenAI API
         endpoint (str): The endpoint for the OpenAI API
-        model_name (str): The model name for the OpenAI API
-        deployment_name (str): For Azure, the deployment name
+        model_name (str): The model name for the OpenAI API (or deployment name in Azure)
         temperature (float): The temperature for the completion
         max_completion_tokens (int): The maximum number of tokens to be returned by the model.
             The total length of input tokens and generated tokens is limited by
@@ -149,10 +148,15 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._n = n
         self._extra_body_parameters = extra_body_parameters
 
-    def _set_openai_env_configuration_vars(self):
+    def _set_openai_env_configuration_vars(self) -> None:
+        """
+        Set deployment_environment_variable, endpoint_environment_variable,
+        and api_key_environment_variable which are read from .env file.
+        """
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+        self.underlying_model_environment_variable = "OPENAI_CHAT_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""

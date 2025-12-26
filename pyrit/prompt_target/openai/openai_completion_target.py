@@ -31,7 +31,7 @@ class OpenAICompletionTarget(OpenAITarget):
         Initialize the OpenAICompletionTarget with the given parameters.
 
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
                 If no value is provided, the OPENAI_COMPLETION_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
@@ -75,6 +75,7 @@ class OpenAICompletionTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_COMPLETION_MODEL"
         self.endpoint_environment_variable = "OPENAI_COMPLETION_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_COMPLETION_API_KEY"
+        self.underlying_model_environment_variable = "OPENAI_COMPLETION_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
