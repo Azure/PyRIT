@@ -3,7 +3,6 @@ FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 # Makes installation faster
 ENV UV_COMPILE_BYTECODE=1
-ENV VIRTUAL_ENV="/opt/pyrit-dev"
 
 SHELL ["/bin/bash", "-c"]
 
@@ -55,12 +54,12 @@ RUN groupadd $USERNAME \
     && useradd -g $USERNAME -m $USERNAME \
     && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Remove any existing venv and create fresh uv venv
-RUN rm -rf /opt/pyrit-dev \
- && uv venv /opt/pyrit-dev --python 3.11 \
- && chown -R vscode:vscode /opt/pyrit-dev \
- && ls -la /opt/pyrit-dev/bin/activate
-ENV PATH="/opt/pyrit-dev/bin:$PATH"
+# Create pyrit-dev venv at /opt/venv (reusing base image's VIRTUAL_ENV path) with pyrit-dev prompt
+RUN rm -rf /opt/venv \
+ && uv venv /opt/venv --python 3.11 --prompt pyrit-dev \
+ && chown -R vscode:vscode /opt/venv \
+ && ls -la /opt/venv/bin/activate
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Pre-create common user caches and fix permissions
 RUN mkdir -p /home/vscode/.cache/pre-commit \
@@ -76,8 +75,8 @@ RUN mkdir -p /home/vscode/.cache/pre-commit \
 USER vscode
 # Create bash configuration files and activate the venv in bash sessions
 RUN touch /home/vscode/.bashrc /home/vscode/.bash_profile \
- && echo "[ -f /opt/pyrit-dev/bin/activate ] && source /opt/pyrit-dev/bin/activate" >> /home/vscode/.bashrc \
- && echo "[ -f /opt/pyrit-dev/bin/activate ] && source /opt/pyrit-dev/bin/activate" >> /home/vscode/.bash_profile
+ && echo "[ -f /opt/venv/bin/activate ] && source /opt/venv/bin/activate" >> /home/vscode/.bashrc \
+ && echo "[ -f /opt/venv/bin/activate ] && source /opt/venv/bin/activate" >> /home/vscode/.bash_profile
 
 # Configure Git for better performance with bind mounts
 RUN git config --global core.preloadindex true \
