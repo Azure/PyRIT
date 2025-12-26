@@ -60,7 +60,7 @@ HARM_DEFINITION_PATH = pathlib.Path(DATASETS_PATH, "harm_definition").resolve()
 
 JAILBREAK_TEMPLATES_PATH = pathlib.Path(DATASETS_PATH, "jailbreak", "templates").resolve()
 
-SCORER_EVALS_PATH = pathlib.Path(PYRIT_PATH, "score", "scorer_evals").resolve()
+SCORER_EVALS_PATH = pathlib.Path(DATASETS_PATH, "scorer_evals").resolve()
 SCORER_EVALS_HARM_PATH = pathlib.Path(SCORER_EVALS_PATH, "harm").resolve()
 SCORER_EVALS_OBJECTIVE_PATH = pathlib.Path(SCORER_EVALS_PATH, "objective").resolve()
 SCORER_EVALS_REFUSAL_SCORER_PATH = pathlib.Path(SCORER_EVALS_PATH, "refusal_scorer").resolve()
