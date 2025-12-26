@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Standard column names for evaluation datasets
 STANDARD_HUMAN_LABEL_COL = "human_score"
 STANDARD_OBJECTIVE_COL = "objective"
+STANDARD_HARM_COL = "harm_category"
 STANDARD_ASSISTANT_RESPONSE_COL = "assistant_response"
 STANDARD_DATA_TYPE_COL = "data_type"
 
@@ -194,7 +195,7 @@ class HumanLabeledDataset:
             eval_df = pd.read_csv(csv_path, comment="#", encoding="latin-1")
 
         # Validate required columns exist and have no NaN values
-        cls._validate_csv_columns(eval_df=eval_df)
+        cls._validate_csv_columns(eval_df=eval_df, metrics_type=metrics_type)
 
         # Determine human label columns (all columns starting with standard prefix)
         human_label_col_names = [col for col in eval_df.columns if col.startswith(STANDARD_HUMAN_LABEL_COL)]
@@ -208,7 +209,9 @@ class HumanLabeledDataset:
 
         responses_to_score = eval_df[STANDARD_ASSISTANT_RESPONSE_COL].tolist()
         all_human_scores = eval_df[human_label_col_names].values.tolist()
-        objectives_or_harms = eval_df[STANDARD_OBJECTIVE_COL].tolist()
+        # Use appropriate column based on metrics type
+        objective_or_harm_col = STANDARD_HARM_COL if metrics_type == MetricsType.HARM else STANDARD_OBJECTIVE_COL
+        objectives_or_harms = eval_df[objective_or_harm_col].tolist()
         if has_data_type_col:
             data_types = eval_df[STANDARD_DATA_TYPE_COL].tolist()
         else:
@@ -286,13 +289,14 @@ class HumanLabeledDataset:
                         "but the HumanLabeledDataset type is OBJECTIVE."
                     )
 
-    @staticmethod
-    def _validate_csv_columns(*, eval_df: pd.DataFrame) -> None:
+    @classmethod
+    def _validate_csv_columns(cls, *, eval_df: pd.DataFrame, metrics_type: MetricsType) -> None:
         """
         Validate that the required standard columns exist in the DataFrame.
 
         Args:
             eval_df (pd.DataFrame): The DataFrame to validate.
+            metrics_type (MetricsType): The type of dataset (HARM or OBJECTIVE).
 
         Raises:
             ValueError: If any required column is missing or if column names are not unique.
@@ -300,8 +304,9 @@ class HumanLabeledDataset:
         if len(eval_df.columns) != len(set(eval_df.columns)):
             raise ValueError("Column names in the dataset must be unique.")
 
-        # Required columns
-        required_columns = [STANDARD_ASSISTANT_RESPONSE_COL, STANDARD_OBJECTIVE_COL]
+        # Required columns depend on metrics type
+        objective_or_harm_col = STANDARD_HARM_COL if metrics_type == MetricsType.HARM else STANDARD_OBJECTIVE_COL
+        required_columns = [STANDARD_ASSISTANT_RESPONSE_COL, objective_or_harm_col]
         
         for column in required_columns:
             if column not in eval_df.columns:

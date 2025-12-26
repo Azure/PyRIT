@@ -43,6 +43,11 @@ from pyrit.score.scorer_evaluation.scorer_metrics import (
     HarmScorerMetrics,
     ObjectiveScorerMetrics,
     ScorerMetrics,
+    ScorerMetricsWithIdentity,
+)
+from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+    get_all_harm_metrics,
+    get_all_objective_metrics,
 )
 from pyrit.score.scorer_evaluation.scorer_evaluator import (
     HarmScorerEvaluator,
@@ -101,6 +106,9 @@ __all__ = [
     "ScorerIdentifier",
     "ScorerEvaluator",
     "ScorerMetrics",
+    "ScorerMetricsWithIdentity",
+    "get_all_harm_metrics",
+    "get_all_objective_metrics",
     "ScorerPromptValidator",
     "SelfAskCategoryScorer",
     "SelfAskGeneralFloatScaleScorer",

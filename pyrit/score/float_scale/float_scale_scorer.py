@@ -1,13 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptDataType, Score, UnvalidatedScore
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.scorer_metrics import HarmScorerMetrics
 
 
 class FloatScaleScorer(Scorer):
@@ -38,6 +41,27 @@ class FloatScaleScorer(Scorer):
         for score in scores:
             if not (0 <= score.get_value() <= 1):
                 raise ValueError("FloatScaleScorer score value must be between 0 and 1.")
+
+    def get_scorer_metrics(self) -> Optional["HarmScorerMetrics"]:
+        """
+        Get evaluation metrics for this scorer from the configured evaluation result file.
+        
+        Returns:
+            HarmScorerMetrics: The metrics for this scorer, or None if not found or not configured.
+        """
+        from pyrit.common.path import SCORER_EVALS_PATH
+        from pyrit.score.scorer_evaluation.scorer_metrics_io import find_harm_metrics_by_hash
+        
+        if self.evaluation_file_mapping is None:
+            return None
+        
+        scorer_hash = self.scorer_identifier.compute_hash()
+        result_file = SCORER_EVALS_PATH / self.evaluation_file_mapping.result_file
+        
+        if not result_file.exists():
+            return None
+        
+        return find_harm_metrics_by_hash(hash=scorer_hash, file_path=result_file)
 
     async def _score_value_with_llm(
         self,

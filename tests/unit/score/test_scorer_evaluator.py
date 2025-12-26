@@ -193,13 +193,14 @@ def test_compute_harm_metrics_partial_agreement(mock_harm_scorer):
 
 
 @patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
-def test_find_existing_metrics_objective_found(mock_find, mock_objective_scorer):
-    """Test finding existing objective metrics that match all criteria."""
+def test_should_skip_evaluation_objective_found(mock_find, mock_objective_scorer, tmp_path):
+    """Test skipping evaluation when existing objective metrics have sufficient trials."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    result_file = tmp_path / "test_results.jsonl"
     
     # Mock the compute_hash method on the scorer_identifier
     with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
-        # Create expected metrics
+        # Create expected metrics with same version and sufficient trials
         expected_metrics = ObjectiveScorerMetrics(
             num_responses=10,
             num_human_raters=3,
@@ -214,38 +215,50 @@ def test_find_existing_metrics_objective_found(mock_find, mock_objective_scorer)
         )
         mock_find.return_value = expected_metrics
         
-        result = evaluator._find_existing_metrics(
+        should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
             num_scorer_trials=3,
             harm_category=None,
+            result_file_path=result_file,
         )
         
+        assert should_skip is True
         assert result == expected_metrics
-        mock_find.assert_called_once_with(hash="test_hash_123")
+        mock_find.assert_called_once_with(
+            file_path=result_file,
+            hash="test_hash_123",
+        )
 
 
 @patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
-def test_find_existing_metrics_objective_not_found(mock_find, mock_objective_scorer):
+def test_should_skip_evaluation_objective_not_found(mock_find, mock_objective_scorer, tmp_path):
     """Test when no existing objective metrics are found in registry."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    result_file = tmp_path / "test_results.jsonl"
     
     with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
         mock_find.return_value = None
         
-        result = evaluator._find_existing_metrics(
+        should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
             num_scorer_trials=3,
             harm_category=None,
+            result_file_path=result_file,
         )
         
+        assert should_skip is False
         assert result is None
-        mock_find.assert_called_once_with(hash="test_hash_123")
+        mock_find.assert_called_once_with(
+            file_path=result_file,
+            hash="test_hash_123",
+        )
 
 
 @patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
-def test_find_existing_metrics_objective_wrong_version(mock_find, mock_objective_scorer):
-    """Test when metrics exist but dataset_version doesn't match."""
+def test_should_skip_evaluation_version_changed_runs_evaluation(mock_find, mock_objective_scorer, tmp_path):
+    """Test that different dataset_version triggers re-evaluation (replace existing)."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    result_file = tmp_path / "test_results.jsonl"
     
     with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
         # Metrics exist but with different dataset version
@@ -263,22 +276,26 @@ def test_find_existing_metrics_objective_wrong_version(mock_find, mock_objective
         )
         mock_find.return_value = existing_metrics
         
-        result = evaluator._find_existing_metrics(
+        # When version differs, should NOT skip (run and replace)
+        should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",  # Looking for version 1.0
             num_scorer_trials=3,
             harm_category=None,
+            result_file_path=result_file,
         )
         
+        assert should_skip is False
         assert result is None
 
 
 @patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
-def test_find_existing_metrics_objective_wrong_trials(mock_find, mock_objective_scorer):
-    """Test when metrics exist but num_scorer_trials doesn't match."""
+def test_should_skip_evaluation_fewer_trials_requested_skips(mock_find, mock_objective_scorer, tmp_path):
+    """Test that requesting fewer trials than existing skips evaluation."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    result_file = tmp_path / "test_results.jsonl"
     
     with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
-        # Metrics exist but with different num_scorer_trials
+        # Metrics exist with more trials than requested
         existing_metrics = ObjectiveScorerMetrics(
             num_responses=10,
             num_human_raters=3,
@@ -287,25 +304,63 @@ def test_find_existing_metrics_objective_wrong_trials(mock_find, mock_objective_
             precision=0.96,
             recall=0.94,
             f1_score=0.95,
-            num_scorer_trials=5,  # Different number of trials
+            num_scorer_trials=5,  # Existing has 5 trials
             dataset_name="test_dataset",
             dataset_version="1.0",
         )
         mock_find.return_value = existing_metrics
         
-        result = evaluator._find_existing_metrics(
+        # Requesting only 3 trials - should skip since existing has more
+        should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
-            num_scorer_trials=3,  # Looking for 3 trials
+            num_scorer_trials=3,  # Requesting fewer trials
             harm_category=None,
+            result_file_path=result_file,
         )
         
+        assert should_skip is True
+        assert result == existing_metrics
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
+def test_should_skip_evaluation_more_trials_requested_runs(mock_find, mock_objective_scorer, tmp_path):
+    """Test that requesting more trials than existing triggers re-evaluation."""
+    evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    result_file = tmp_path / "test_results.jsonl"
+    
+    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+        # Metrics exist with fewer trials than requested
+        existing_metrics = ObjectiveScorerMetrics(
+            num_responses=10,
+            num_human_raters=3,
+            accuracy=0.95,
+            accuracy_standard_error=0.02,
+            precision=0.96,
+            recall=0.94,
+            f1_score=0.95,
+            num_scorer_trials=2,  # Existing has only 2 trials
+            dataset_name="test_dataset",
+            dataset_version="1.0",
+        )
+        mock_find.return_value = existing_metrics
+        
+        # Requesting 5 trials - should NOT skip (run and replace)
+        should_skip, result = evaluator._should_skip_evaluation(
+            dataset_version="1.0",
+            num_scorer_trials=5,  # Requesting more trials
+            harm_category=None,
+            result_file_path=result_file,
+        )
+        
+        assert should_skip is False
         assert result is None
 
 
 @patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_harm_metrics_by_hash")
-def test_find_existing_metrics_harm_found(mock_find, mock_harm_scorer):
-    """Test finding existing harm metrics that match all criteria."""
+def test_should_skip_evaluation_harm_found(mock_find, mock_harm_scorer, tmp_path):
+    """Test skipping evaluation when existing harm metrics have sufficient trials."""
     evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
+    result_file = tmp_path / "test_results.jsonl"
     
     with patch.object(mock_harm_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_456"):
         # Create expected harm metrics
@@ -326,37 +381,46 @@ def test_find_existing_metrics_harm_found(mock_find, mock_harm_scorer):
         )
         mock_find.return_value = expected_metrics
         
-        result = evaluator._find_existing_metrics(
+        should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
             num_scorer_trials=3,
             harm_category="hate_speech",
+            result_file_path=result_file,
         )
         
+        assert should_skip is True
         assert result == expected_metrics
-        mock_find.assert_called_once_with(harm_category="hate_speech", hash="test_hash_456")
+        mock_find.assert_called_once_with(
+            file_path=result_file,
+            hash="test_hash_456",
+        )
 
 
 @patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_harm_metrics_by_hash")
-def test_find_existing_metrics_harm_wrong_category_extraction(mock_find, mock_harm_scorer):
-    """Test when harm category is not provided for harm scorer."""
+def test_should_skip_evaluation_harm_missing_category(mock_find, mock_harm_scorer, tmp_path):
+    """Test that missing harm_category returns should not skip."""
     evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
+    result_file = tmp_path / "test_results.jsonl"
     
     with patch.object(mock_harm_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_456"):
         # No harm_category provided
-        result = evaluator._find_existing_metrics(
+        should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
             num_scorer_trials=3,
             harm_category=None,
+            result_file_path=result_file,
         )
         
+        assert should_skip is False
         assert result is None
         mock_find.assert_not_called()
 
 
 @patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_objective_metrics_by_hash")
-def test_find_existing_metrics_exception_handling(mock_find, mock_objective_scorer):
-    """Test that exceptions are caught and None is returned."""
+def test_should_skip_evaluation_exception_handling(mock_find, mock_objective_scorer, tmp_path):
+    """Test that exceptions are caught and returns (False, None)."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
+    result_file = tmp_path / "test_results.jsonl"
     
     # Make compute_hash raise an exception
     with patch.object(
@@ -364,12 +428,14 @@ def test_find_existing_metrics_exception_handling(mock_find, mock_objective_scor
         'compute_hash', 
         side_effect=Exception("Hash computation failed")
     ):
-        result = evaluator._find_existing_metrics(
+        should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
             num_scorer_trials=3,
             harm_category=None,
+            result_file_path=result_file,
         )
         
+        assert should_skip is False
         assert result is None
         mock_find.assert_not_called()
 

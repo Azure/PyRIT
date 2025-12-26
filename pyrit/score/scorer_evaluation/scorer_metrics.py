@@ -1,16 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Generic, Optional, Type, TypeVar, Union
 
 import numpy as np
 
 from pyrit.common.utils import verify_and_resolve_path
 
+if TYPE_CHECKING:
+    from pyrit.score.scorer_identifier import ScorerIdentifier
+
 T = TypeVar("T", bound="ScorerMetrics")
+M = TypeVar("M", bound="ScorerMetrics")
 
 
 @dataclass
@@ -126,3 +132,29 @@ class ObjectiveScorerMetrics(ScorerMetrics):
     f1_score: float
     precision: float
     recall: float
+
+
+@dataclass
+class ScorerMetricsWithIdentity(Generic[M]):
+    """
+    Wrapper that combines scorer metrics with the scorer's identity information.
+
+    This class provides a clean interface for working with evaluation results,
+    allowing access to both the scorer configuration and its performance metrics.
+
+    Generic over the metrics type M, so:
+    - ScorerMetricsWithIdentity[ObjectiveScorerMetrics] has metrics: ObjectiveScorerMetrics
+    - ScorerMetricsWithIdentity[HarmScorerMetrics] has metrics: HarmScorerMetrics
+
+    Args:
+        scorer_identifier (ScorerIdentifier): The scorer's configuration identifier.
+        metrics (M): The evaluation metrics (ObjectiveScorerMetrics or HarmScorerMetrics).
+    """
+
+    scorer_identifier: "ScorerIdentifier"
+    metrics: M
+
+    def __repr__(self) -> str:
+        metrics_type = type(self.metrics).__name__
+        scorer_type = self.scorer_identifier.type
+        return f"ScorerMetricsWithIdentity(scorer={scorer_type}, metrics_type={metrics_type})"

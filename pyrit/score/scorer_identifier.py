@@ -98,3 +98,37 @@ class ScorerIdentifier:
             "score_aggregator": self.score_aggregator,
             "scorer_specific_params": self.scorer_specific_params,
         }
+
+    @classmethod
+    def from_compact_dict(cls, data: Dict[str, Any]) -> "ScorerIdentifier":
+        """
+        Create a ScorerIdentifier from a compact dictionary (as stored in JSONL).
+
+        This is the inverse of to_compact_dict() (without the hash field).
+        Handles the __type__ -> type field mapping and recursively reconstructs
+        nested sub_identifiers.
+
+        Args:
+            data (Dict[str, Any]): The compact dictionary representation.
+
+        Returns:
+            ScorerIdentifier: A new ScorerIdentifier instance.
+        """
+        # Handle __type__ -> type mapping
+        scorer_type = data.get("__type__") or data.get("type", "")
+
+        # Recursively reconstruct sub_identifiers
+        sub_identifier = None
+        sub_id_data = data.get("sub_identifier")
+        if sub_id_data is not None:
+            sub_identifier = [cls.from_compact_dict(si) for si in sub_id_data]
+
+        return cls(
+            type=scorer_type,
+            system_prompt_template=data.get("system_prompt_template"),
+            user_prompt_template=data.get("user_prompt_template"),
+            sub_identifier=sub_identifier,
+            target_info=data.get("target_info"),
+            score_aggregator=data.get("score_aggregator"),
+            scorer_specific_params=data.get("scorer_specific_params"),
+        )

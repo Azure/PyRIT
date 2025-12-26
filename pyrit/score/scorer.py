@@ -56,9 +56,9 @@ class Scorer(abc.ABC):
 
     scorer_type: ScoreType
     
-    # Evaluation configuration - maps input dataset files to result files
-    # Each entry specifies glob patterns for datasets and a result file name
-    evaluation_file_mapping: Optional[List["ScorerEvalDatasetFiles"]] = None
+    # Evaluation configuration - maps input dataset files to a result file
+    # Specifies glob patterns for datasets and a result file name
+    evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
 
     _scorer_identifier: Optional[ScorerIdentifier] = None
 
@@ -263,29 +263,29 @@ class Scorer(abc.ABC):
 
     async def evaluate_async(
         self,
-        file_mapping: Optional[List["ScorerEvalDatasetFiles"]] = None,
+        file_mapping: Optional["ScorerEvalDatasetFiles"] = None,
         *,
         num_scorer_trials: int = 3,
         add_to_evaluation_results: bool = True,
         max_concurrency: int = 10,
-    ) -> Dict[str, "ScorerMetrics"]:
+    ) -> Optional["ScorerMetrics"]:
         """
         Evaluate this scorer against human-labeled datasets.
         
         Uses file mapping to determine which datasets to evaluate and how to aggregate results.
         
         Args:
-            file_mapping: Optional list of ScorerEvalDatasetFiles configurations.
+            file_mapping: Optional ScorerEvalDatasetFiles configuration.
                 If not provided, uses the scorer's configured evaluation_file_mapping.
-                Each entry maps input file patterns to an output result name.
-            num_scorer_trials: Number of times to score each response (for measuring variance). Defaults to 1.
+                Maps input file patterns to an output result file.
+            num_scorer_trials: Number of times to score each response (for measuring variance). Defaults to 3.
             add_to_evaluation_results: Whether to add metrics to official evaluation results files.
                 Set to True for production evaluations (checks registry, skips if exists).
                 Set to False for debugging (always runs, never writes). Defaults to True.
             max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
         
         Returns:
-            Dict[str, ScorerMetrics]: Dictionary mapping result name to metrics.
+            ScorerMetrics: The evaluation metrics, or None if no datasets found.
         """
         from pyrit.score import ScorerEvaluator
         
@@ -306,39 +306,22 @@ class Scorer(abc.ABC):
             max_concurrency=max_concurrency,
         )
 
-    def get_scorer_metrics(self) -> Dict[str, "ScorerMetrics"]:
+    @abstractmethod
+    def get_scorer_metrics(self) -> Optional["ScorerMetrics"]:
         """
-        Get evaluation metrics for this scorer from the configured evaluation result files.
+        Get evaluation metrics for this scorer from the configured evaluation result file.
         
-        Reads metrics from the result files defined in the scorer's evaluation_file_mapping.
+        Looks up metrics by this scorer's identity hash in the JSONL result file.
+        The result file may contain entries for multiple scorer configurations.
+        
+        Subclasses must implement this to return the appropriate metrics type:
+        - TrueFalseScorer subclasses should return ObjectiveScorerMetrics
+        - FloatScaleScorer subclasses should return HarmScorerMetrics
         
         Returns:
-            Dict[str, ScorerMetrics]: Dictionary mapping result name to metrics.
-        
-        Raises:
-            ValueError: If no evaluation_file_mapping is configured for this scorer.
-            FileNotFoundError: If a result file doesn't exist.
+            ScorerMetrics: The metrics for this scorer, or None if not found or not configured.
         """
-        from pyrit.common.path import SCORER_EVALS_PATH
-        from pyrit.score.scorer_evaluation.scorer_evaluator import ObjectiveScorerMetrics, HarmScorerMetrics
-        from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
-        
-        if self.evaluation_file_mapping is None:
-            return {}
-        
-        results = {}
-        metrics_class = ObjectiveScorerMetrics if isinstance(self, TrueFalseScorer) else HarmScorerMetrics
-        
-        for dataset_config in self.evaluation_file_mapping:
-            result_file = SCORER_EVALS_PATH / dataset_config.result_file
-            result_key = Path(dataset_config.result_file).stem
-            
-            if result_file.exists():
-                results[result_key] = metrics_class.from_json(result_file)
-            else:
-                logger.info(f"Result file not found: {result_file}")
-        
-        return results
+        raise NotImplementedError("Subclasses must implement get_scorer_metrics")
 
     async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
         """

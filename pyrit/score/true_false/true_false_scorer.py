@@ -13,6 +13,7 @@ from pyrit.score.true_false.true_false_score_aggregator import (
 
 if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
+    from pyrit.score.scorer_evaluation.scorer_metrics import ObjectiveScorerMetrics
 
 
 class TrueFalseScorer(Scorer):
@@ -25,7 +26,7 @@ class TrueFalseScorer(Scorer):
     """
 
     # Default evaluation configuration - evaluates against all objective CSVs
-    evaluation_file_mapping: Optional[list["ScorerEvalDatasetFiles"]] = None
+    evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
 
     def __init__(
         self,
@@ -51,12 +52,10 @@ class TrueFalseScorer(Scorer):
         if self.evaluation_file_mapping is None:
             from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
 
-            self.evaluation_file_mapping = [
-                ScorerEvalDatasetFiles(
-                    human_labeled_datasets_files=["objective/*.csv"],
-                    result_file="objective_evaluation_results.jsonl",
-                )
-            ]
+            self.evaluation_file_mapping = ScorerEvalDatasetFiles(
+                human_labeled_datasets_files=["objective/*.csv"],
+                result_file="objective_evaluation_results.jsonl",
+            )
         
         super().__init__(validator=validator)
 
@@ -76,6 +75,27 @@ class TrueFalseScorer(Scorer):
 
         if scores[0].score_value.lower() not in ["true", "false"]:
             raise ValueError("TrueFalseScorer score value must be True or False.")
+
+    def get_scorer_metrics(self) -> Optional["ObjectiveScorerMetrics"]:
+        """
+        Get evaluation metrics for this scorer from the configured evaluation result file.
+        
+        Returns:
+            ObjectiveScorerMetrics: The metrics for this scorer, or None if not found or not configured.
+        """
+        from pyrit.common.path import SCORER_EVALS_PATH
+        from pyrit.score.scorer_evaluation.scorer_metrics_io import find_objective_metrics_by_hash
+        
+        if self.evaluation_file_mapping is None:
+            return None
+        
+        scorer_hash = self.scorer_identifier.compute_hash()
+        result_file = SCORER_EVALS_PATH / self.evaluation_file_mapping.result_file
+        
+        if not result_file.exists():
+            return None
+        
+        return find_objective_metrics_by_hash(hash=scorer_hash, file_path=result_file)
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """

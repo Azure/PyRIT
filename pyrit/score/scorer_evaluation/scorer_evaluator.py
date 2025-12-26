@@ -27,8 +27,9 @@ from pyrit.common.path import SCORER_EVALS_PATH
 
 from pyrit.score.scorer_evaluation.krippendorff import krippendorff_alpha
 from pyrit.score.scorer_evaluation.scorer_metrics_io import (
-    add_evaluation_results,
-    find_metrics_by_hash,
+    find_harm_metrics_by_hash,
+    find_objective_metrics_by_hash,
+    replace_evaluation_results,
 )
 
 
@@ -106,136 +107,131 @@ class ScorerEvaluator(abc.ABC):
     async def run_evaluation_async(
         self,
         *,
-        dataset_files: List[ScorerEvalDatasetFiles],
+        dataset_files: ScorerEvalDatasetFiles,
         num_scorer_trials: int = 3,
         debug_only: bool = False,
         max_concurrency: int = 10,
-    ) -> dict[str, ScorerMetrics]:
+    ) -> Optional[ScorerMetrics]:
         """
         Evaluate scorer using dataset files configuration.
         
-        For each dataset files entry:
         - If debug_only=False: Check registry for existing results matching scorer config,
           dataset version, and num_scorer_trials. If found, return cached metrics.
           If not found, run evaluation and write to registry.
         - If debug_only=True: Always run evaluation, never write to registry (for testing).
         
         Args:
-            dataset_files: List of ScorerEvalDatasetFiles configurations.
-                Each specifies glob patterns for input files and a result file name.
+            dataset_files: ScorerEvalDatasetFiles configuration specifying glob patterns
+                for input files and a result file name.
             num_scorer_trials: Number of scoring trials per response. Defaults to 3.
             debug_only: If False, checks registry and writes results (production mode).
                 If True, always runs without writing (debug mode). Defaults to False.
             max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
         
         Returns:
-            Dict mapping result name (file stem) to ScorerMetrics.
+            ScorerMetrics if evaluation completed, None if no files found.
         """
-        
-        results = {}
         metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
         
         # Validate harm_category for harm scorers
         if metrics_type == MetricsType.HARM:
-            for dataset_config in dataset_files:
-                if dataset_config.harm_category is None:
-                    raise ValueError(
-                        f"harm_category must be specified in ScorerEvalDatasetFiles for harm scorer evaluations. "
-                        f"Missing for result_file: {dataset_config.result_file}"
-                    )
-        
-        for dataset_config in dataset_files:
-            # Collect all matching files
-            csv_files = []
-            for pattern in dataset_config.human_labeled_datasets_files:
-                matched = list(SCORER_EVALS_PATH.glob(pattern))
-                csv_files.extend(matched)
-            
-            if not csv_files:
-                logger.warning(f"No files found for patterns {dataset_config.human_labeled_datasets_files}")
-                continue
-            
-            # Result key is the stem of the result file
-            result_key = Path(dataset_config.result_file).stem
-            
-            # Load each CSV as a HumanLabeledDataset and combine entries
-            all_entries = []
-            dataset_versions = set()
-            for csv_file in csv_files:
-                dataset = HumanLabeledDataset.from_csv(
-                    csv_path=csv_file,
-                    metrics_type=metrics_type,
+            if dataset_files.harm_category is None:
+                raise ValueError(
+                    f"harm_category must be specified in ScorerEvalDatasetFiles for harm scorer evaluations. "
+                    f"Missing for result_file: {dataset_files.result_file}"
                 )
-                all_entries.extend(dataset.entries)
-                dataset_versions.add(dataset.version)
-            
-            # Concatenate unique versions, sorted for consistency
-            combined_version = "_".join(sorted(dataset_versions))
-            
-            # Create combined dataset
-            combined_dataset = HumanLabeledDataset(
-                entries=all_entries,
+        
+        # Collect all matching files
+        csv_files = []
+        for pattern in dataset_files.human_labeled_datasets_files:
+            matched = list(SCORER_EVALS_PATH.glob(pattern))
+            csv_files.extend(matched)
+        
+        if not csv_files:
+            logger.warning(f"No files found for patterns {dataset_files.human_labeled_datasets_files}")
+            return None
+        
+        # Load each CSV as a HumanLabeledDataset and combine entries
+        all_entries = []
+        dataset_versions = set()
+        for csv_file in csv_files:
+            dataset = HumanLabeledDataset.from_csv(
+                csv_path=csv_file,
                 metrics_type=metrics_type,
-                name=dataset_config.result_file,
-                version=combined_version,
             )
-            
-            # Check for existing metrics if not in debug mode
-            if not debug_only:
-                existing_metrics = self._find_existing_metrics(
-                    dataset_version=combined_version,
-                    num_scorer_trials=num_scorer_trials,
-                    harm_category=dataset_config.harm_category,
-                    result_file_path=SCORER_EVALS_PATH / dataset_config.result_file,
-                )
-                if existing_metrics:
-                    logger.info(
-                        f"Found existing evaluation results for {result_key}. "
-                        f"Skipping evaluation (set debug_only=True to force re-run)."
-                    )
-                    results[result_key] = existing_metrics
-                    continue
-            
-            # Run evaluation
-            metrics = await self._run_evaluation_async(
-                labeled_dataset=combined_dataset,
-                num_scorer_trials=num_scorer_trials,
-                max_concurrency=max_concurrency,
-            )
-            
-            # Write to registry if not in debug mode
-            if not debug_only:
-                self._write_metrics_to_registry(
-                    metrics=metrics,
-                    labeled_dataset=combined_dataset,
-                    result_file_path=SCORER_EVALS_PATH / dataset_config.result_file,
-                )
-            
-            results[result_key] = metrics
+            all_entries.extend(dataset.entries)
+            dataset_versions.add(dataset.version)
         
-        return results
+        # Concatenate unique versions, sorted for consistency
+        combined_version = "_".join(sorted(dataset_versions))
+        
+        # Create combined dataset
+        combined_dataset = HumanLabeledDataset(
+            entries=all_entries,
+            metrics_type=metrics_type,
+            name=dataset_files.result_file,
+            version=combined_version,
+        )
+        
+        # Check for existing metrics if not in debug mode
+        if not debug_only:
+            should_skip, existing_metrics = self._should_skip_evaluation(
+                dataset_version=combined_version,
+                num_scorer_trials=num_scorer_trials,
+                harm_category=dataset_files.harm_category,
+                result_file_path=SCORER_EVALS_PATH / dataset_files.result_file,
+            )
+            if should_skip and existing_metrics:
+                logger.info(
+                    f"Using existing evaluation results for {dataset_files.result_file}. "
+                    f"(set debug_only=True to force re-run)"
+                )
+                return existing_metrics
+        
+        # Run evaluation
+        metrics = await self._run_evaluation_async(
+            labeled_dataset=combined_dataset,
+            num_scorer_trials=num_scorer_trials,
+            max_concurrency=max_concurrency,
+        )
+        
+        # Write to registry if not in debug mode
+        if not debug_only:
+            self._write_metrics_to_registry(
+                metrics=metrics,
+                labeled_dataset=combined_dataset,
+                result_file_path=SCORER_EVALS_PATH / dataset_files.result_file,
+            )
+        
+        return metrics
 
-    def _find_existing_metrics(
+    def _should_skip_evaluation(
         self,
         *,
         dataset_version: str,
         num_scorer_trials: int,
         harm_category: Optional[str] = None,
         result_file_path: Path,
-    ) -> Optional[ScorerMetrics]:
+    ) -> Tuple[bool, Optional[ScorerMetrics]]:
         """
-        Check if evaluation metrics already exist in the registry.
+        Determine whether to skip evaluation based on existing registry entries.
         
-        Looks up metrics by scorer configuration hash, dataset version, and num_scorer_trials.
+        Decision logic (only one entry per scorer hash is maintained):
+        - If no existing entry: run evaluation
+        - If existing version differs from requested: run and replace (assume newer dataset)
+        - If versions match and existing num_scorer_trials >= requested: skip (existing is sufficient)
+        - If versions match and existing num_scorer_trials < requested: run and replace (higher fidelity)
         
         Args:
             dataset_version (str): The version of the dataset.
-            num_scorer_trials (int): Number of scorer trials used.
+            num_scorer_trials (int): Number of scorer trials requested.
             harm_category (Optional[str]): The harm category for harm scorers. Required for harm evaluations.
             result_file_path (Path): Path to the result file to search.
         
         Returns:
-            Optional[ScorerMetrics]: Existing metrics if found and matching num_scorer_trials, else None.
+            Tuple[bool, Optional[ScorerMetrics]]: (should_skip, existing_metrics)
+                - (True, metrics) if should skip and use existing metrics
+                - (False, None) if should run evaluation
         """
         try:
             scorer_hash = self.scorer.scorer_identifier.compute_hash()
@@ -246,39 +242,47 @@ class ScorerEvaluator(abc.ABC):
             if metrics_type == MetricsType.HARM:
                 if harm_category is None:
                     logger.warning("harm_category must be provided for harm scorer evaluations")
-                    return None
-                existing = find_metrics_by_hash(
+                    return (False, None)
+                existing = find_harm_metrics_by_hash(
                     file_path=result_file_path,
                     hash=scorer_hash,
-                    metrics_class=HarmScorerMetrics,
                 )
             else:
-                existing = find_metrics_by_hash(
+                existing = find_objective_metrics_by_hash(
                     file_path=result_file_path,
                     hash=scorer_hash,
-                    metrics_class=ObjectiveScorerMetrics,
                 )
             
-            if existing:
-                # Verify dataset_version and num_scorer_trials match
-                if (existing.dataset_version == dataset_version and 
-                    existing.num_scorer_trials == num_scorer_trials):
-                    logger.info(
-                        f"Found existing metrics: dataset_version={dataset_version}, "
-                        f"num_scorer_trials={num_scorer_trials}"
-                    )
-                    return existing
-                else:
-                    logger.info(
-                        f"Found metrics with different parameters (dataset_version={existing.dataset_version}, "
-                        f"num_scorer_trials={existing.num_scorer_trials}). Will re-run evaluation."
-                    )
+            if not existing:
+                logger.debug(f"No existing metrics found for hash {scorer_hash[:8]}...")
+                return (False, None)
             
-            return None
+            # Check if versions differ - if so, run and replace (assume newer dataset)
+            if existing.dataset_version != dataset_version:
+                logger.info(
+                    f"Dataset version changed ({existing.dataset_version} -> {dataset_version}). "
+                    f"Will re-run evaluation and replace existing entry."
+                )
+                return (False, None)
+            
+            # Versions match - check num_scorer_trials
+            if existing.num_scorer_trials >= num_scorer_trials:
+                logger.info(
+                    f"Found existing metrics with sufficient trials: "
+                    f"dataset_version={dataset_version}, num_scorer_trials={existing.num_scorer_trials} "
+                    f"(requested {num_scorer_trials}). Skipping evaluation."
+                )
+                return (True, existing)
+            else:
+                logger.info(
+                    f"Existing metrics have fewer trials ({existing.num_scorer_trials} < {num_scorer_trials}). "
+                    f"Will re-run evaluation with more trials and replace existing entry."
+                )
+                return (False, None)
             
         except Exception as e:
             logger.warning(f"Error checking for existing metrics: {e}")
-            return None
+            return (False, None)
 
     async def _run_evaluation_async(
         self,
@@ -425,7 +429,7 @@ class ScorerEvaluator(abc.ABC):
             metrics_dict.pop("trial_scores", None)
             registry_metrics = type(metrics)(**metrics_dict)
             
-            add_evaluation_results(
+            replace_evaluation_results(
                 file_path=result_file_path,
                 scorer_identifier=self.scorer.scorer_identifier,
                 metrics=registry_metrics,
@@ -433,7 +437,7 @@ class ScorerEvaluator(abc.ABC):
                 harm_category=harm_category,
             )
         except Exception as e:
-            logger.warning(f"Failed to add metrics to evaluation results: {e}")
+            logger.warning(f"Failed to write metrics to evaluation results: {e}")
 
 
 class HarmScorerEvaluator(ScorerEvaluator):
