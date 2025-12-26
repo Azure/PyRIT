@@ -460,6 +460,7 @@ class Scorer(abc.ABC):
         message_value: str,
         message_data_type: PromptDataType,
         scored_prompt_id: str,
+        additional_image_path: Optional[str] = None,
         category: Optional[Sequence[str] | str] = None,
         objective: Optional[str] = None,
         score_value_output_key: str = "score_value",
@@ -481,6 +482,9 @@ class Scorer(abc.ABC):
             message_value (str): The actual value or content to be scored by the LLM.
             message_data_type (PromptDataType): The type of the data being sent in the message.
             scored_prompt_id (str): The ID of the scored prompt.
+            additional_image_path (Optional[str]): Path to an image to append as an additional piece
+                in the scoring request. When provided, creates a multi-piece message with the
+                text message_value followed by this image. Defaults to None.
             category (Optional[Sequence[str] | str]): The category of the score. Can also be parsed from
                 the JSON response if not provided. Defaults to None.
             objective (Optional[str]): A description of the objective that is associated with the score,
@@ -518,19 +522,34 @@ class Scorer(abc.ABC):
             attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        scorer_llm_request = Message(
-            [
+
+        # Build message pieces - text first, then optional image
+        message_pieces = [
+            MessagePiece(
+                role="user",
+                original_value=message_value,
+                original_value_data_type=message_data_type,
+                converted_value_data_type=message_data_type,
+                conversation_id=conversation_id,
+                prompt_target_identifier=prompt_target.get_identifier(),
+                prompt_metadata=prompt_metadata,
+            )
+        ]
+
+        # Add image piece if provided
+        if additional_image_path:
+            message_pieces.append(
                 MessagePiece(
                     role="user",
-                    original_value=message_value,
-                    original_value_data_type=message_data_type,
-                    converted_value_data_type=message_data_type,
+                    original_value=additional_image_path,
+                    original_value_data_type="image_path",
+                    converted_value_data_type="image_path",
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
-                    prompt_metadata=prompt_metadata,
                 )
-            ]
-        )
+            )
+
+        scorer_llm_request = Message(message_pieces)
         try:
             response = await prompt_target.send_prompt_async(message=scorer_llm_request)
         except Exception as ex:
