@@ -85,5 +85,6 @@ RUN git config --global core.preloadindex true \
  && git config --global status.showUntrackedFiles all \
  && git config --global core.fsmonitor true
 
-# Set uv’s cache directory so it can be mounted
+ # Set cache directories so they can be mounted
+ENV PIP_CACHE_DIR="/home/vscode/.cache/pip"
 ENV UV_CACHE_DIR="/home/vscode/.cache/uv"

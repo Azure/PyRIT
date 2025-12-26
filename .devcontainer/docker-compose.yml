@@ -12,6 +12,7 @@ services:
     volumes:
       - ..:/workspace:delegated
       - pip-cache:/home/vscode/.cache/pip:cached
+      - pyrit-env:/opt/pyrit-dev:cached
       - uv-cache:/home/vscode/.cache/uv:cached
       - precommit-cache:/home/vscode/.cache/pre-commit:cached
       - mypy-cache:/workspace/.mypy_cache:cached
@@ -24,6 +25,7 @@ services:
 
 volumes:
   pip-cache:
+  pyrit-env:
   uv-cache:
   precommit-cache:
   mypy-cache:
