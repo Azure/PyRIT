@@ -22,7 +22,6 @@ from pyrit.prompt_converter.text_selection_strategy import (
     WordSelectionStrategy,
 )
 
-
 from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverter
 from pyrit.prompt_converter.add_image_to_video_converter import AddImageVideoConverter
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
@@ -58,6 +57,7 @@ from pyrit.prompt_converter.math_obfuscation_converter import MathObfuscationCon
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.nato_converter import NatoConverter
+from pyrit.prompt_converter.negation_trap_converter import NegationTrapConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
 from pyrit.prompt_converter.pdf_converter import PDFConverter
 from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
@@ -89,7 +89,6 @@ from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
 from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
-
 
 __all__ = [
     "AddImageTextConverter",
@@ -133,6 +132,7 @@ __all__ = [
     "MathPromptConverter",
     "MorseConverter",
     "NatoConverter",
+    "NegationTrapConverter",
     "NoiseConverter",
     "PDFConverter",
     "PersuasionConverter",
