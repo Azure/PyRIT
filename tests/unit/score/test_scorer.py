@@ -303,6 +303,84 @@ async def test_scorer_remove_markdown_json_called(good_json):
         mock_remove_markdown_json.assert_called_once()
 
 
+@pytest.mark.asyncio
+async def test_score_value_with_llm_additional_image_path_creates_multipiece_message(good_json):
+    """Test that additional_image_path creates a multi-piece message (text + image)."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
+    scorer = MockScorer()
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="objective: test\nresponse:",
+        message_data_type="text",
+        scored_prompt_id="123",
+        additional_image_path="test_image.png",
+        category="category",
+        objective="task",
+    )
+
+    # Verify send_prompt_async was called
+    chat_target.send_prompt_async.assert_called_once()
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have 2 pieces: text prompt + image
+    assert len(sent_message.message_pieces) == 2
+
+    # First piece should be text
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+    assert "objective: test" in text_piece.original_value
+
+    # Second piece should be the image
+    image_piece = sent_message.message_pieces[1]
+    assert image_piece.converted_value_data_type == "image_path"
+    assert image_piece.original_value == "test_image.png"
+
+
+@pytest.mark.asyncio
+async def test_score_value_with_llm_no_additional_image_creates_single_piece_message(good_json):
+    """Test that without additional_image_path, only a single piece message is created."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
+    scorer = MockScorer()
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="objective: test\nresponse: some text",
+        message_data_type="text",
+        scored_prompt_id="123",
+        category="category",
+        objective="task",
+    )
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have only 1 piece
+    assert len(sent_message.message_pieces) == 1
+
+    # The piece should be text with the full message
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+    assert "objective: test" in text_piece.original_value
+    assert "response: some text" in text_piece.original_value
+
+
 def test_scorer_extract_task_from_response(patch_central_database):
     """
     Test that _extract_task_from_response properly gathers text from the
