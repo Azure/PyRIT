@@ -132,7 +132,13 @@ def test_human_labeled_dataset_empty_name_raises(sample_messages):
 def test_validate_harm_dataset_with_objective_entry_raises(sample_messages):
     """Validate raises when HARM dataset contains ObjectiveHumanLabeledEntry."""
     entry = ObjectiveHumanLabeledEntry(sample_messages, [True], "objective")
-    dataset = HumanLabeledDataset(name="test", entries=[entry], metrics_type=MetricsType.HARM, version="1.0")
+    dataset = HumanLabeledDataset(
+        name="test",
+        entries=[entry],
+        metrics_type=MetricsType.HARM,
+        version="1.0",
+        harm_definition="hate_speech.yaml",
+    )
     with pytest.raises(ValueError, match="not a HarmHumanLabeledEntry"):
         dataset.validate()
 
@@ -149,8 +155,24 @@ def test_validate_harm_dataset_multiple_harm_categories_raises(sample_messages):
     """Validate raises when HARM dataset has entries with different harm categories."""
     entry1 = HarmHumanLabeledEntry(sample_messages, [0.1], "hate_speech")
     entry2 = HarmHumanLabeledEntry(sample_messages, [0.2], "violence")
-    dataset = HumanLabeledDataset(name="mixed", entries=[entry1, entry2], metrics_type=MetricsType.HARM, version="1.0")
+    dataset = HumanLabeledDataset(
+        name="mixed",
+        entries=[entry1, entry2],
+        metrics_type=MetricsType.HARM,
+        version="1.0",
+        harm_definition="hate_speech.yaml",
+    )
     with pytest.raises(ValueError, match="multiple harm categories"):
+        dataset.validate()
+
+
+def test_validate_harm_dataset_missing_harm_definition_raises(sample_messages):
+    """Validate raises when HARM dataset is missing harm_definition."""
+    entry = HarmHumanLabeledEntry(sample_messages, [0.1], "hate_speech")
+    dataset = HumanLabeledDataset(
+        name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM, version="1.0"
+    )
+    with pytest.raises(ValueError, match="harm_definition must be specified"):
         dataset.validate()
 
 
@@ -159,7 +181,11 @@ def test_validate_harm_dataset_same_harm_category_succeeds(sample_messages):
     entry1 = HarmHumanLabeledEntry(sample_messages, [0.1], "hate_speech")
     entry2 = HarmHumanLabeledEntry(sample_messages, [0.2], "hate_speech")
     dataset = HumanLabeledDataset(
-        name="hate_speech", entries=[entry1, entry2], metrics_type=MetricsType.HARM, version="1.0"
+        name="hate_speech",
+        entries=[entry1, entry2],
+        metrics_type=MetricsType.HARM,
+        version="1.0",
+        harm_definition="hate_speech.yaml",
     )
     # Should not raise
     dataset.validate()
@@ -177,9 +203,9 @@ def test_validate_objective_dataset_different_objectives_succeeds(sample_message
 
 
 def test_validate_empty_dataset_succeeds(sample_messages):
-    """Validate succeeds for empty dataset."""
+    """Validate succeeds for empty dataset (no entries means no harm_definition needed)."""
     dataset = HumanLabeledDataset(name="empty", entries=[], metrics_type=MetricsType.HARM, version="1.0")
-    # Should not raise
+    # Should not raise - empty datasets skip validation
     dataset.validate()
 
 
@@ -381,11 +407,11 @@ def test_from_csv_objective_dataset():
     assert all(isinstance(e, ObjectiveHumanLabeledEntry) for e in dataset.entries)
 
 
-def test_from_csv_version_from_comment(tmp_path):
-    """Version can be read from # comment line in CSV."""
+def test_from_csv_dataset_version_from_comment(tmp_path):
+    """Dataset version can be read from # comment line in CSV."""
     csv_file = tmp_path / "versioned.csv"
     with open(csv_file, "w") as f:
-        f.write("# version=2.3\n")
+        f.write("# dataset_version=2.3\n")
         f.write("assistant_response,human_score,harm_category\n")
         f.write("response1,0.5,hate_speech\n")
 
@@ -400,7 +426,7 @@ def test_from_csv_version_from_parameter_overrides_comment(tmp_path):
     """Version parameter overrides version in CSV comment."""
     csv_file = tmp_path / "versioned.csv"
     with open(csv_file, "w") as f:
-        f.write("# version=2.3\n")
+        f.write("# dataset_version=2.3\n")
         f.write("assistant_response,human_score,harm_category\n")
         f.write("response1,0.5,hate_speech\n")
 
@@ -426,11 +452,43 @@ def test_from_csv_no_version_raises(tmp_path):
         )
 
 
+def test_from_csv_harm_definition_from_comment(tmp_path):
+    """harm_definition can be read from # comment line in CSV."""
+    csv_file = tmp_path / "with_harm_def.csv"
+    with open(csv_file, "w") as f:
+        f.write("# dataset_version=1.0, harm_definition=hate_speech.yaml\n")
+        f.write("assistant_response,human_score,harm_category\n")
+        f.write("response1,0.5,hate_speech\n")
+
+    dataset = HumanLabeledDataset.from_csv(
+        csv_path=str(csv_file),
+        metrics_type=MetricsType.HARM,
+    )
+    assert dataset.version == "1.0"
+    assert dataset.harm_definition == "hate_speech.yaml"
+
+
+def test_from_csv_harm_definition_from_parameter_overrides_comment(tmp_path):
+    """harm_definition parameter overrides harm_definition in CSV comment."""
+    csv_file = tmp_path / "with_harm_def.csv"
+    with open(csv_file, "w") as f:
+        f.write("# dataset_version=1.0, harm_definition=hate_speech.yaml\n")
+        f.write("assistant_response,human_score,harm_category\n")
+        f.write("response1,0.5,hate_speech\n")
+
+    dataset = HumanLabeledDataset.from_csv(
+        csv_path=str(csv_file),
+        metrics_type=MetricsType.HARM,
+        harm_definition="custom/path.yaml",
+    )
+    assert dataset.harm_definition == "custom/path.yaml"
+
+
 def test_from_csv_custom_dataset_name(tmp_path):
     """Dataset name can be overridden with parameter."""
     csv_file = tmp_path / "sample.csv"
     with open(csv_file, "w") as f:
-        f.write("# version=1.0\n")
+        f.write("# dataset_version=1.0\n")
         f.write("assistant_response,human_score,harm_category\n")
         f.write("response1,0.5,hate_speech\n")
 
@@ -446,7 +504,7 @@ def test_from_csv_with_data_type_column(tmp_path):
     """data_type column is respected when present."""
     csv_file = tmp_path / "with_data_type.csv"
     with open(csv_file, "w") as f:
-        f.write("# version=1.0\n")
+        f.write("# dataset_version=1.0\n")
         f.write("assistant_response,human_score,harm_category,data_type\n")
         f.write("response1,0.5,hate_speech,text\n")
 
@@ -461,7 +519,7 @@ def test_from_csv_multiple_human_raters(tmp_path):
     """Multiple human_score columns are all captured."""
     csv_file = tmp_path / "multi_rater.csv"
     with open(csv_file, "w") as f:
-        f.write("# version=1.0\n")
+        f.write("# dataset_version=1.0\n")
         f.write("assistant_response,human_score_1,human_score_2,human_score_3,harm_category\n")
         f.write("response1,0.1,0.2,0.3,hate_speech\n")
 
@@ -477,7 +535,7 @@ def test_from_csv_harm_dataset_ignores_objective_column(tmp_path):
     """Harm dataset reads from harm_category, not objective column."""
     csv_file = tmp_path / "harm_with_objective.csv"
     with open(csv_file, "w") as f:
-        f.write("# version=1.0\n")
+        f.write("# dataset_version=1.0, harm_definition=hate_speech.yaml\n")
         f.write("assistant_response,human_score,harm_category,objective\n")
         f.write("response1,0.5,hate_speech,Write hate speech\n")
         f.write("response2,0.3,hate_speech,Write more hate speech\n")
@@ -496,7 +554,7 @@ def test_from_csv_objective_dataset_ignores_harm_category_column(tmp_path):
     """Objective dataset reads from objective, not harm_category column."""
     csv_file = tmp_path / "objective_with_harm.csv"
     with open(csv_file, "w") as f:
-        f.write("# version=1.0\n")
+        f.write("# dataset_version=1.0\n")
         f.write("assistant_response,human_score,objective,harm_category\n")
         f.write("response1,1,Was this a refusal?,hate_speech\n")
         f.write("response2,0,Did it comply?,violence\n")

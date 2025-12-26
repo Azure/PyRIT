@@ -3,13 +3,13 @@
 
 import enum
 import logging
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional
 
 import yaml
 
-from pyrit.common import verify_and_resolve_path
-from pyrit.common.path import SCORER_LIKERT_PATH
+from pyrit.common.path import HARM_DEFINITION_PATH, SCORER_LIKERT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -18,20 +18,141 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 logger = logging.getLogger(__name__)
 
 
-class LikertScalePaths(enum.Enum):
-    """Enum containing paths to Likert scale YAML configuration files."""
+@dataclass(frozen=True)
+class LikertScaleEvalFiles:
+    """
+    Configuration for evaluating a Likert scale scorer on a set of dataset files.
 
-    CYBER_SCALE = Path(SCORER_LIKERT_PATH, "cyber.yaml").resolve()
-    FAIRNESS_BIAS_SCALE = Path(SCORER_LIKERT_PATH, "fairness_bias.yaml").resolve()
-    HARM_SCALE = Path(SCORER_LIKERT_PATH, "harm.yaml").resolve()
-    HATE_SPEECH_SCALE = Path(SCORER_LIKERT_PATH, "hate_speech.yaml").resolve()
-    MISINFORMATION_SCALE = Path(SCORER_LIKERT_PATH, "misinformation.yaml").resolve()
-    PERSUASION_SCALE = Path(SCORER_LIKERT_PATH, "persuasion.yaml").resolve()
-    PHISHING_SCALE = Path(SCORER_LIKERT_PATH, "phishing.yaml").resolve()
-    SEXUAL_SCALE = Path(SCORER_LIKERT_PATH, "sexual.yaml").resolve()
-    VIOLENCE_SCALE = Path(SCORER_LIKERT_PATH, "violence.yaml").resolve()
-    DECEPTION_SCALE = Path(SCORER_LIKERT_PATH, "deception.yaml").resolve()
-    EXPLOITS_SCALE = Path(SCORER_LIKERT_PATH, "exploits.yaml").resolve()
+    Args:
+        human_labeled_datasets_files (List[str]): List of glob patterns to match CSV files.
+        result_file (str): Name of the result file for storing evaluation results.
+        harm_category (Optional[str]): The harm category for harm scorers. Defaults to None.
+        harm_definition_path (Optional[str]): Relative path to the harm definition YAML file. Defaults to None.
+    """
+
+    human_labeled_datasets_files: List[str]
+    result_file: str
+    harm_category: Optional[str] = None
+    harm_definition_path: Optional[str] = None
+
+
+class LikertScalePaths(enum.Enum):
+    """
+    Enum containing Likert scale configurations including YAML paths and evaluation file mappings.
+
+    Each enum value is a tuple of (yaml_path, evaluation_files) where:
+    - yaml_path: Path to the YAML file containing the Likert scale definition
+    - evaluation_files: Optional LikertScaleEvalFiles for scorer evaluation, or None if no dataset exists
+    """
+
+    # Scales WITH evaluation datasets
+    EXPLOITS_SCALE = (
+        Path(SCORER_LIKERT_PATH, "exploits.yaml").resolve(),
+        LikertScaleEvalFiles(
+            human_labeled_datasets_files=["harm/exploit.csv"],
+            result_file="likert/exploits_results.jsonl",
+            harm_category="exploits",
+            harm_definition_path="harm_definition/exploits.yaml",
+        ),
+    )
+    HATE_SPEECH_SCALE = (
+        Path(SCORER_LIKERT_PATH, "hate_speech.yaml").resolve(),
+        LikertScaleEvalFiles(
+            human_labeled_datasets_files=["harm/hate_speech.csv"],
+            result_file="likert/hate_speech_results.jsonl",
+            harm_category="hate_speech",
+            harm_definition_path="harm_definition/hate_speech.yaml",
+        ),
+    )
+    INFORMATION_INTEGRITY_SCALE = (
+        Path(SCORER_LIKERT_PATH, "information_integrity.yaml").resolve(),
+        LikertScaleEvalFiles(
+            human_labeled_datasets_files=["harm/info_integrity.csv"],
+            result_file="likert/information_integrity_results.jsonl",
+            harm_category="information_integrity",
+            harm_definition_path="harm_definition/information_integrity.yaml",
+        ),
+    )
+    PRIVACY_SCALE = (
+        Path(SCORER_LIKERT_PATH, "privacy.yaml").resolve(),
+        LikertScaleEvalFiles(
+            human_labeled_datasets_files=["harm/privacy.csv"],
+            result_file="likert/privacy_results.jsonl",
+            harm_category="privacy",
+            harm_definition_path="harm_definition/privacy.yaml",
+        ),
+    )
+    SELF_HARM_SCALE = (
+        Path(SCORER_LIKERT_PATH, "self_harm.yaml").resolve(),
+        LikertScaleEvalFiles(
+            human_labeled_datasets_files=["harm/self_harm.csv"],
+            result_file="likert/self_harm_results.jsonl",
+            harm_category="self_harm",
+            harm_definition_path="harm_definition/self_harm.yaml",
+        ),
+    )
+    SEXUAL_SCALE = (
+        Path(SCORER_LIKERT_PATH, "sexual.yaml").resolve(),
+        LikertScaleEvalFiles(
+            human_labeled_datasets_files=["harm/sexual.csv"],
+            result_file="likert/sexual_results.jsonl",
+            harm_category="sexual",
+            harm_definition_path="harm_definition/sexual.yaml",
+        ),
+    )
+    VIOLENCE_SCALE = (
+        Path(SCORER_LIKERT_PATH, "violence.yaml").resolve(),
+        LikertScaleEvalFiles(
+            human_labeled_datasets_files=["harm/violence.csv"],
+            result_file="likert/violence_results.jsonl",
+            harm_category="violence",
+            harm_definition_path="harm_definition/violence.yaml",
+        ),
+    )
+
+    # Scales WITHOUT evaluation datasets (evaluation_files = None)
+    BEHAVIOR_CHANGE_SCALE = (
+        Path(SCORER_LIKERT_PATH, "behavior_change.yaml").resolve(),
+        None,
+    )
+    CYBER_SCALE = (
+        Path(SCORER_LIKERT_PATH, "cyber.yaml").resolve(),
+        None,
+    )
+    DECEPTION_SCALE = (
+        Path(SCORER_LIKERT_PATH, "deception.yaml").resolve(),
+        None,
+    )
+    FAIRNESS_BIAS_SCALE = (
+        Path(SCORER_LIKERT_PATH, "fairness_bias.yaml").resolve(),
+        None,
+    )
+    HARM_SCALE = (
+        Path(SCORER_LIKERT_PATH, "harm.yaml").resolve(),
+        None,
+    )
+    MISINFORMATION_SCALE = (
+        Path(SCORER_LIKERT_PATH, "misinformation.yaml").resolve(),
+        None,
+    )
+    PERSUASION_SCALE = (
+        Path(SCORER_LIKERT_PATH, "persuasion.yaml").resolve(),
+        None,
+    )
+    PHISHING_SCALE = (
+        Path(SCORER_LIKERT_PATH, "phishing.yaml").resolve(),
+        None,
+    )
+
+    @property
+    def path(self) -> Path:
+        """Get the path to the Likert scale YAML file."""
+        return self.value[0]
+
+    @property
+    def evaluation_files(self) -> Optional[LikertScaleEvalFiles]:
+        """Get the evaluation file configuration, or None if no evaluation dataset exists."""
+        return self.value[1]
 
 
 class SelfAskLikertScorer(FloatScaleScorer):
@@ -45,7 +166,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        likert_scale_path: Union[str, Path],
+        likert_scale: LikertScalePaths,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
         """
@@ -53,16 +174,26 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         Args:
             chat_target (PromptChatTarget): The chat target to use for scoring.
-            likert_scale_path (Union[str, Path]): Path to the YAML file containing the Likert scale definition.
+            likert_scale (LikertScalePaths): The Likert scale configuration to use for scoring.
             validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
         """
         super().__init__(validator=validator or self._default_validator)
 
         self._prompt_target = chat_target
+        self._likert_scale = likert_scale
 
-        likert_scale_path = verify_and_resolve_path(likert_scale_path)
+        # Auto-set evaluation file mapping from the LikertScalePaths enum
+        if likert_scale.evaluation_files is not None:
+            from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
 
-        self._set_likert_scale_system_prompt(likert_scale_path=likert_scale_path)
+            eval_files = likert_scale.evaluation_files
+            self.evaluation_file_mapping = ScorerEvalDatasetFiles(
+                human_labeled_datasets_files=eval_files.human_labeled_datasets_files,
+                result_file=eval_files.result_file,
+                harm_category=eval_files.harm_category,
+            )
+
+        self._set_likert_scale_system_prompt(likert_scale_path=likert_scale.path)
 
     def _build_scorer_identifier(self) -> None:
         """Build the scorer evaluation identifier for this scorer."""

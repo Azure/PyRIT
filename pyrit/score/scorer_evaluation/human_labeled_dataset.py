@@ -5,13 +5,16 @@
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union, cast, get_args
+from typing import TYPE_CHECKING, List, Optional, Union, cast, get_args
 
 import pandas as pd
 
 from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message, MessagePiece, PromptDataType
 from pyrit.score import MetricsType
+
+if TYPE_CHECKING:
+    from pyrit.models.harm_definition import HarmDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +119,15 @@ class HumanLabeledDataset:
     HumanLabeledDatasets can be constructed from a CSV file.
     """
 
-    def __init__(self, *, name: str, entries: List[HumanLabeledEntry], metrics_type: MetricsType, version: str):
+    def __init__(
+        self,
+        *,
+        name: str,
+        entries: List[HumanLabeledEntry],
+        metrics_type: MetricsType,
+        version: str,
+        harm_definition: Optional[str] = None,
+    ):
         """
         Initialize the HumanLabeledDataset.
 
@@ -128,6 +139,7 @@ class HumanLabeledDataset:
             metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or
                 OBJECTIVE.
             version (str): The version of the human-labeled dataset.
+            harm_definition (str, optional): Path to the harm definition YAML file for HARM datasets.
 
         Raises:
             ValueError: If the dataset name is an empty string.
@@ -139,6 +151,34 @@ class HumanLabeledDataset:
         self.entries = entries
         self.metrics_type = metrics_type
         self.version = version
+        self.harm_definition = harm_definition
+        self._harm_definition_obj: Optional["HarmDefinition"] = None
+
+    def get_harm_definition(self) -> Optional["HarmDefinition"]:
+        """
+        Load and return the HarmDefinition object for this dataset.
+
+        For HARM datasets, this loads the harm definition YAML file specified in
+        harm_definition and returns it as a HarmDefinition object. The result is
+        cached after the first load.
+
+        Returns:
+            HarmDefinition: The loaded harm definition object, or None if this is not
+                a HARM dataset or harm_definition is not set.
+
+        Raises:
+            FileNotFoundError: If the harm definition file does not exist.
+            ValueError: If the harm definition file is invalid.
+        """
+        if self.metrics_type != MetricsType.HARM or not self.harm_definition:
+            return None
+
+        if self._harm_definition_obj is None:
+            from pyrit.models.harm_definition import HarmDefinition
+
+            self._harm_definition_obj = HarmDefinition.from_yaml(self.harm_definition)
+
+        return self._harm_definition_obj
 
     @classmethod
     def from_csv(
@@ -148,6 +188,7 @@ class HumanLabeledDataset:
         metrics_type: MetricsType,
         dataset_name: Optional[str] = None,
         version: Optional[str] = None,
+        harm_definition: Optional[str] = None,
     ) -> "HumanLabeledDataset":
         """
         Load a human-labeled dataset from a CSV file with standard column names.
@@ -159,7 +200,9 @@ class HumanLabeledDataset:
         - 'data_type': Optional data type (defaults to 'text' if not present)
         
         You can optionally include a # comment line at the top of the CSV file to specify 
-        the dataset version (using # version=x.y).
+        the dataset version and harm definition path. The format is:
+        - For harm datasets: # dataset_version=x.y, harm_definition=path/to/definition.yaml
+        - For objective datasets: # dataset_version=x.y
 
         Args:
             csv_path (Union[str, Path]): The path to the CSV file.
@@ -167,26 +210,48 @@ class HumanLabeledDataset:
             dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred 
                 from the CSV file name.
             version (str, Optional): The version of the dataset. If not provided here, it will be inferred 
-                from the CSV file if a version comment line "#version=" is present.
+                from the CSV file if a dataset_version comment line is present.
+            harm_definition (str, Optional): Path to the harm definition YAML file. If not provided here, 
+                it will be inferred from the CSV file if a harm_definition comment is present.
 
         Returns:
             HumanLabeledDataset: The human-labeled dataset object.
 
         Raises:
             FileNotFoundError: If the CSV file does not exist.
-            ValueError: If version is not provided and not found in the CSV file via comment line "# version=".
+            ValueError: If version is not provided and not found in the CSV file.
         """
         csv_path = verify_and_resolve_path(csv_path)
-        # Read the first line to check for version info
+        # Read the first line to check for version and harm_definition info
+        parsed_version = None
+        parsed_harm_definition = None
+        with open(csv_path, "r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            if first_line.startswith("#"):
+                # Parse key=value pairs from the comment line
+                # Format: # dataset_version=x.y, harm_definition=path/to/file.yaml
+                # or legacy: # version=x.y
+                content = first_line[1:].strip()  # Remove leading #
+                for part in content.split(","):
+                    part = part.strip()
+                    if "=" in part:
+                        key, value = part.split("=", 1)
+                        key = key.strip()
+                        value = value.strip()
+                        if key == "dataset_version":
+                            parsed_version = value
+                        elif key == "harm_definition":
+                            parsed_harm_definition = value
+
+        # Use provided values or fall back to parsed values
         if not version:
-            with open(csv_path, "r", encoding="utf-8") as f:
-                first_line = f.readline().strip()
-                if first_line.startswith("#") and "version=" in first_line:
-                    # Extract version, handling trailing commas from CSV format (e.g., "# version=1.0,,,,")
-                    version_part = first_line.split("=", 1)[1].strip()
-                    version = version_part.split(",")[0].strip()
-                else:
-                    raise ValueError("Version not specified and not found in CSV file.")
+            if parsed_version:
+                version = parsed_version
+            else:
+                raise ValueError("Version not specified and not found in CSV file.")
+        
+        if not harm_definition and parsed_harm_definition:
+            harm_definition = parsed_harm_definition
 
         # Try UTF-8 first, fall back to latin-1 for files with special characters
         try:
@@ -253,22 +318,41 @@ class HumanLabeledDataset:
             entries.append(entry)
 
         dataset_name = dataset_name or Path(csv_path).stem
-        return cls(entries=entries, name=dataset_name, metrics_type=metrics_type, version=version)
+        return cls(
+            entries=entries,
+            name=dataset_name,
+            metrics_type=metrics_type,
+            version=version,
+            harm_definition=harm_definition,
+        )
 
     def validate(self) -> None:
         """
         Validate that the dataset is internally consistent.
         
         Checks that all entries match the dataset's metrics_type and, for HARM datasets,
-        that all entries have the same harm_category.
+        that all entries have the same harm_category, that harm_definition is specified,
+        and that the harm definition file exists and is loadable.
         
         Raises:
-            ValueError: If entries don't match metrics_type or harm categories are inconsistent.
+            ValueError: If entries don't match metrics_type, harm categories are inconsistent,
+                or harm_definition is missing for HARM datasets.
+            FileNotFoundError: If the harm definition file does not exist.
         """
         if not self.entries:
             return
         
         if self.metrics_type == MetricsType.HARM:
+            if not self.harm_definition:
+                raise ValueError(
+                    "harm_definition must be specified for HARM datasets. "
+                    "Provide a path to the harm definition YAML file."
+                )
+            
+            # Validate that the harm definition file exists and is loadable
+            # This will raise FileNotFoundError or ValueError if invalid
+            self.get_harm_definition()
+            
             harm_categories = set()
             for index, entry in enumerate(self.entries):
                 if not isinstance(entry, HarmHumanLabeledEntry):

@@ -56,6 +56,7 @@ SCORER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "score").resolve()
 SCORER_CONTENT_CLASSIFIERS_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "content_classifiers").resolve()
 SCORER_LIKERT_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "likert").resolve()
 SCORER_SCALES_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "scales").resolve()
+HARM_DEFINITION_PATH = pathlib.Path(DATASETS_PATH, "harm_definition").resolve()
 
 JAILBREAK_TEMPLATES_PATH = pathlib.Path(DATASETS_PATH, "jailbreak", "templates").resolve()
 
@@ -74,6 +75,7 @@ PATHS_DICT = {
     "db_data_path": DB_DATA_PATH,
     "docs_code_path": DOCS_CODE_PATH,
     "docs_path": DOCS_PATH,
+    "harm_definition_path": HARM_DEFINITION_PATH,
     "jailbreak_templates_path": JAILBREAK_TEMPLATES_PATH,
     "likert_path": SCORER_LIKERT_PATH,
     "log_path": LOG_PATH,

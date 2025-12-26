@@ -24,6 +24,7 @@ from pyrit.models.data_type_serializer import (
     data_serializer_factory,
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
+from pyrit.models.harm_definition import HarmDefinition, ScaleDescription, get_all_harm_definitions
 from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.message import (
@@ -65,8 +66,10 @@ __all__ = [
     "EmbeddingSupport",
     "EmbeddingUsageInformation",
     "ErrorDataTypeSerializer",
+    "get_all_harm_definitions",
     "group_conversation_message_pieces_by_sequence",
     "group_message_pieces_into_conversations",
+    "HarmDefinition",
     "Identifier",
     "ImagePathDataTypeSerializer",
     "Message",
@@ -76,6 +79,7 @@ __all__ = [
     "QuestionAnsweringDataset",
     "QuestionAnsweringEntry",
     "QuestionChoice",
+    "ScaleDescription",
     "Score",
     "ScoreType",
     "ScenarioIdentifier",

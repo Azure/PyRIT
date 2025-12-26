@@ -54,7 +54,7 @@ class TestObjectiveScorerEvalCSVSchema:
         with open(csv_file, 'r', encoding='utf-8') as f:
             # Skip version line if present
             first_line = f.readline()
-            if not first_line.startswith("# version="):
+            if not first_line.startswith("# dataset_version="):
                 # Reset to beginning if no version line
                 f.seek(0)
             
@@ -88,7 +88,7 @@ class TestObjectiveScorerEvalCSVSchema:
         with open(csv_file, 'r', encoding='utf-8') as f:
             # Skip version line if present
             first_line = f.readline()
-            if not first_line.startswith("# version="):
+            if not first_line.startswith("# dataset_version="):
                 f.seek(0)
             
             reader = csv.DictReader(f)
@@ -144,7 +144,7 @@ class TestHarmScorerEvalCSVSchema:
         with open(csv_file, 'r', encoding='utf-8') as f:
             # Skip version line if present
             first_line = f.readline()
-            if not first_line.startswith("# version="):
+            if not first_line.startswith("# dataset_version="):
                 f.seek(0)
             
             reader = csv.DictReader(f)
@@ -181,7 +181,7 @@ class TestHarmScorerEvalCSVSchema:
         with open(csv_file, 'r', encoding='utf-8') as f:
             # Skip version line if present
             first_line = f.readline()
-            if not first_line.startswith("# version="):
+            if not first_line.startswith("# dataset_version="):
                 f.seek(0)
             
             reader = csv.DictReader(f)
@@ -232,7 +232,7 @@ class TestRefusalScorerEvalCSVSchema:
         with open(csv_file, 'r', encoding='utf-8') as f:
             # Skip version line if present
             first_line = f.readline()
-            if not first_line.startswith("# version="):
+            if not first_line.startswith("# dataset_version="):
                 f.seek(0)
             
             reader = csv.DictReader(f)
@@ -265,7 +265,7 @@ class TestRefusalScorerEvalCSVSchema:
         with open(csv_file, 'r', encoding='utf-8') as f:
             # Skip version line if present
             first_line = f.readline()
-            if not first_line.startswith("# version="):
+            if not first_line.startswith("# dataset_version="):
                 f.seek(0)
             
             reader = csv.DictReader(f)
@@ -304,16 +304,84 @@ class TestCSVVersionMetadata:
         + list(Path(SCORER_EVALS_REFUSAL_SCORER_PATH).glob("*.csv")),
         ids=lambda p: f"{p.parent.name}/{p.name}",
     )
-    def test_csv_has_version_line(self, csv_file: Path) -> None:
+    def test_csv_has_dataset_version_line(self, csv_file: Path) -> None:
         """
-        Test that each CSV has a version metadata line.
+        Test that each CSV has a dataset_version metadata line.
         
-        Version line format: # version=X.Y
+        Version line format: # dataset_version=X.Y
         """
         with open(csv_file, 'r', encoding='utf-8') as f:
             first_line = f.readline().strip()
             
-            assert first_line.startswith("# version="), (
-                f"CSV {csv_file} is missing version metadata line. "
-                f"First line should be '# version=X.Y', but got: '{first_line}'"
+            assert first_line.startswith("#") and "dataset_version=" in first_line, (
+                f"CSV {csv_file} is missing dataset_version metadata line. "
+                f"First line should contain '# dataset_version=X.Y', but got: '{first_line}'"
             )
+
+    @pytest.mark.parametrize(
+        "csv_file",
+        list(Path(SCORER_EVALS_HARM_PATH).glob("*.csv")),
+        ids=lambda p: f"{p.parent.name}/{p.name}",
+    )
+    def test_harm_csv_has_harm_definition(self, csv_file: Path) -> None:
+        """
+        Test that each harm CSV has a harm_definition path in its metadata.
+        
+        Format: # dataset_version=X.Y, harm_definition=path/to/definition.yaml
+        """
+        with open(csv_file, 'r', encoding='utf-8') as f:
+            first_line = f.readline().strip()
+            
+            assert "harm_definition=" in first_line, (
+                f"Harm CSV {csv_file} is missing harm_definition metadata. "
+                f"First line should contain 'harm_definition=path/to/file.yaml', but got: '{first_line}'"
+            )
+
+    @pytest.mark.parametrize(
+        "csv_file",
+        list(Path(SCORER_EVALS_HARM_PATH).glob("*.csv")),
+        ids=lambda p: f"{p.parent.name}/{p.name}",
+    )
+    def test_harm_definition_file_exists_and_is_valid(self, csv_file: Path) -> None:
+        """
+        Test that the harm_definition file referenced in each harm CSV exists and is valid YAML.
+        
+        This validates:
+        1. The harm_definition path can be parsed from the CSV
+        2. The referenced YAML file exists in the harm_definition directory
+        3. The YAML file contains valid harm definition structure
+        """
+        from pyrit.models.harm_definition import HarmDefinition
+        
+        with open(csv_file, 'r', encoding='utf-8') as f:
+            first_line = f.readline().strip()
+        
+        # Parse harm_definition from the comment line
+        harm_definition_path = None
+        content = first_line[1:].strip()  # Remove leading #
+        for part in content.split(","):
+            part = part.strip()
+            if "=" in part:
+                key, value = part.split("=", 1)
+                if key.strip() == "harm_definition":
+                    harm_definition_path = value.strip()
+                    break
+        
+        assert harm_definition_path is not None, (
+            f"Could not parse harm_definition from {csv_file}. First line: '{first_line}'"
+        )
+        
+        # HarmDefinition.from_yaml will raise FileNotFoundError if file doesn't exist,
+        # or ValueError if the YAML is invalid
+        try:
+            harm_def = HarmDefinition.from_yaml(harm_definition_path)
+            assert harm_def.version, f"Harm definition {harm_definition_path} is missing version"
+            assert harm_def.category, f"Harm definition {harm_definition_path} is missing category"
+            assert len(harm_def.scale_descriptions) > 0, (
+                f"Harm definition {harm_definition_path} has no scale descriptions"
+            )
+        except FileNotFoundError as e:
+            pytest.fail(f"Harm definition file not found for {csv_file}: {e}")
+        except ValueError as e:
+            pytest.fail(f"Invalid harm definition YAML for {csv_file}: {e}")
+

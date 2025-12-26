@@ -46,8 +46,12 @@ async def evaluate_scorers() -> None:
     print("Initializing PyRIT...")
     await initialize_pyrit_async(memory_db_type=IN_MEMORY)
 
+
+    ### Refusal Scorer
     refuasal = SelfAskRefusalScorer(chat_target=OpenAIChatTarget())
 
+
+    ### Objective Scorers
     refuasal_gpt_4o = TrueFalseInverterScorer(
         scorer=SelfAskRefusalScorer(chat_target=OpenAIChatTarget())
     )
@@ -93,6 +97,8 @@ async def evaluate_scorers() -> None:
                 ),
             ]
     )
+
+    #### Harm Scorers
 
     # Build list of scorers to evaluate
     scorers = [

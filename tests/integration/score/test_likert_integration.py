@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 from dataclasses import asdict
-from pathlib import Path
 from typing import Generator
 from unittest.mock import patch
 
@@ -27,18 +26,17 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 @pytest.mark.run_only_if_all_tests
 @pytest.mark.parametrize(
-    "scale_path, dataset_name",
+    "likert_scale, dataset_name",
     [
-        (LikertScalePaths.HATE_SPEECH_SCALE.value, "hate_speech"),
-        (LikertScalePaths.VIOLENCE_SCALE.value, "violence"),
+        (LikertScalePaths.HATE_SPEECH_SCALE, "hate_speech"),
+        (LikertScalePaths.VIOLENCE_SCALE, "violence"),
     ],
 )
 @pytest.mark.asyncio
-async def test_likert_scorer_mae(memory, scale_path: Path, dataset_name: str) -> None:
+async def test_likert_scorer_mae(memory, likert_scale: LikertScalePaths, dataset_name: str) -> None:
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         target = OpenAIChatTarget(temperature=0.0, seed=1)
-        scale_path = LikertScalePaths.HATE_SPEECH_SCALE.value
-        likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=scale_path)
+        likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale=likert_scale)
 
         evaluator = HarmScorerEvaluator(scorer=likert_scorer)
         csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/{dataset_name}.csv"

@@ -191,7 +191,7 @@ target = OpenAIChatTarget()
 
 # Set up the Azure Content Filter Scorer and SelfAsk Likert Scorer for bias detection
 acf = AzureContentFilterScorer(harm_categories=[TextCategory.HATE])  # Options: HATE, SELF_HARM, SEXUAL, VIOLENCE
-bias_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.FAIRNESS_BIAS_SCALE.value, chat_target=target)
+bias_scorer = SelfAskLikertScorer(likert_scale=LikertScalePaths.FAIRNESS_BIAS_SCALE, chat_target=target)
 
 # Anything that isn't a refusal is a "success" for this scenario
 objective_scorer = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=target))
