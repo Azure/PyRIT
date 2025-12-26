@@ -5,6 +5,7 @@ import logging
 import time
 from typing import Callable, Union
 from urllib.parse import urlparse
+import textwrap
 
 import msal
 from azure.core.credentials import AccessToken
@@ -173,6 +174,52 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
     try:
         app = msal.PublicClientApplication(client_id)
         result = app.acquire_token_interactive(scopes=[scope])
+        return result["access_token"]
+    except Exception as e:
+        logger.error(f"Failed to obtain token for '{scope}' with client ID '{client_id}': {e}")
+        raise
+
+
+def get_access_token_from_device_code(
+    *, client_id: str, scope: str, authority: str = "https://login.microsoftonline.com/common"
+):
+    """
+    Use Device Code Flow to authenticate. User will be prompted to visit a URL and enter a code.
+    This method is useful for headless environments or when interactive browser login is not available.
+
+    Args:
+        client_id (str): The client ID of the service.
+        scope (str): The scope to request.
+        authority (str): The MSAL authority URL. Defaults to common tenant.
+
+    Returns:
+        str: Authentication token.
+
+    Raises:
+        RuntimeError: If device flow initiation or authentication fails.
+    """
+    try:
+        app = msal.PublicClientApplication(client_id=client_id, authority=authority)
+        flow = app.initiate_device_flow(scopes=[scope])
+
+        if "user_code" not in flow:
+            error_msg = flow.get("error_description", "Unknown error")
+            raise RuntimeError(f"Failed to initiate device flow: {error_msg}")
+
+        print("\n" + "=" * 80)
+        print("  DEVICE CODE AUTHENTICATION".center(80))
+        print("=" * 80)
+        print("\n" + textwrap.fill(flow["message"], width=76, initial_indent="  ", subsequent_indent="  "))
+        print("\n  ⏳ Waiting for authentication to complete...")
+        print("=" * 80 + "\n")
+
+        result = app.acquire_token_by_device_flow(flow)
+
+        if "access_token" not in result:
+            error = result.get("error", "Unknown error")
+            error_desc = result.get("error_description", "")
+            raise RuntimeError(f"Authentication failed: {error} - {error_desc}")
+
         return result["access_token"]
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}' with client ID '{client_id}': {e}")
