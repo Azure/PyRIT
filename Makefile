@@ -1,6 +1,6 @@
 .PHONY: all pre-commit mypy test test-cov-html test-cov-xml
 
-CMD:=uv run
+CMD:=uv run -m
 PYMODULE:=pyrit
 TESTS:=tests
 UNIT_TESTS:=tests/unit
@@ -11,14 +11,14 @@ all: pre-commit
 
 pre-commit:
 	$(CMD) isort --multi-line 3 --recursive $(PYMODULE) $(TESTS)
-	 pre-commit run --all-files
+	pre-commit run --all-files
 
 mypy:
 	$(CMD) mypy $(PYMODULE) $(UNIT_TESTS)
 
 docs-build:
 	uv run jb build -W -v ./doc
-	uv run /build_scripts/generate_rss.py
+	uv run ./build_scripts/generate_rss.py
 
 # Because of import time, "auto" seemed to actually go slower than just using 4 processes
 unit-test:
