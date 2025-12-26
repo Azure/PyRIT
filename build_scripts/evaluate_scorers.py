@@ -13,18 +13,17 @@ Usage:
 
 import asyncio
 import sys
+import time
+import os
 from pathlib import Path
 
-from pyrit.setup.initializers.simple import SimpleInitializer
-
-# Add parent directory to path to allow imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+from tqdm import tqdm
 
 from pyrit.common.path import SCORER_EVALS_PATH
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     SelfAskRefusalScorer,
-    SelfAskLikertScorer,
+    TrueFalseInverterScorer
 )
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
@@ -41,45 +40,81 @@ async def evaluate_scorers() -> None:
     5. Save results to scorer_evals directory
     """
     print("Initializing PyRIT...")
-    initializer = SimpleInitializer()
     await initialize_pyrit_async(memory_db_type=IN_MEMORY)
+
+    target = OpenAIChatTarget()
+
+    basic_refusal_scorer = SelfAskRefusalScorer(chat_target=target)
+
+    no_refusal_objective_scorer_unsafe = TrueFalseInverterScorer(
+        scorer=SelfAskRefusalScorer(
+            chat_target=OpenAIChatTarget(
+                endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+            )
+        )
+    )
+
+    no_refusal_objective_scorer_unsafe_temp_9 = TrueFalseInverterScorer(
+        scorer=SelfAskRefusalScorer(
+            chat_target=OpenAIChatTarget(
+                endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                temperature=0.9,
+            )
+        )
+    )
 
     # Build list of scorers to evaluate
     scorers = [
-        SelfAskRefusalScorer(chat_target=OpenAIChatTarget()),
-        SimpleInitializer().get_default_objective_scorer(),
+        basic_refusal_scorer,
+        no_refusal_objective_scorer_unsafe,
+        no_refusal_objective_scorer_unsafe_temp_9,
     ]
     
     print(f"\nEvaluating {len(scorers)} scorer(s)...\n")
     
+    # Use tqdm for progress tracking across all scorers
+    scorer_iterator = tqdm(enumerate(scorers, 1), total=len(scorers), desc="Scorers") if tqdm else enumerate(scorers, 1)
+    
     # Evaluate each scorer
-    for i, scorer in enumerate(scorers, 1):
+    for i, scorer in scorer_iterator:
         scorer_name = scorer.__class__.__name__
-        print(f"[{i}/{len(scorers)}] Evaluating {scorer_name}...")
+        print(f"\n[{i}/{len(scorers)}] Evaluating {scorer_name}...")
+        print("  Status: Starting evaluation (this may take several minutes)...")
+        
+        start_time = time.time()
         
         try:
             # Run evaluation with production settings:
             # - num_scorer_trials=3 for variance measurement
             # - add_to_evaluation_results=True to save to registry
+            print("  Status: Running evaluations...")
             results = await scorer.evaluate_async(
                 num_scorer_trials=3,
                 add_to_evaluation_results=True,
                 max_concurrency=10,
             )
             
-            # Display results
-            print(f"  ✓ Evaluation complete!")
-            for dataset_name, metrics in results.items():
-                print(f"    Dataset: {dataset_name}")
-                print(f"      Accuracy: {metrics.accuracy:.2%} (±{metrics.accuracy_standard_error:.2%})")
-                print(f"      Precision: {metrics.precision:.3f}")
-                print(f"      Recall: {metrics.recall:.3f}")
-                print(f"      F1 Score: {metrics.f1_score:.3f}")
-            print()
+            elapsed_time = time.time() - start_time
+            
+            # Results are saved to disk by evaluate_async() with add_to_evaluation_results=True
+            print(f"  ✓ Evaluation complete and saved!")
+            print(f"    Elapsed time: {elapsed_time:.1f}s")
+            print(f"    Evaluated {len(results)} dataset(s):")
+            
+            # Show what was saved
+            for dataset_name in results.keys():
+                print(f"      - {dataset_name}")
             
         except Exception as e:
-            print(f"  ✗ Error evaluating {name}: {e}")
+            elapsed_time = time.time() - start_time
+            print(f"  ✗ Error evaluating {scorer_name} after {elapsed_time:.1f}s: {e}")
             print(f"    Continuing with next scorer...\n")
+            import traceback
+            traceback.print_exc()
             continue
     
     print("=" * 60)
@@ -95,6 +130,9 @@ if __name__ == "__main__":
     print("This script will evaluate multiple scorers against human-labeled")
     print("datasets. This is a long-running process that may take several")
     print("minutes to hours depending on the number of scorers and datasets.")
+    print()
+    print("Results will be saved to the registry files in:")
+    print(f"  {SCORER_EVALS_PATH}")
     print("=" * 60)
     print()
     
@@ -105,4 +143,6 @@ if __name__ == "__main__":
         sys.exit(1)
     except Exception as e:
         print(f"\n\nFatal error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
