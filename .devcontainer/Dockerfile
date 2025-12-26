@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     xdg-utils \
+    build-essential \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install the Azure CLI, Microsoft ODBC Driver 18 & SQL tools
