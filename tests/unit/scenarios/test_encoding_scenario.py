@@ -217,7 +217,7 @@ class TestEncodingScenarioAtomicAttacks:
         # Each attack run should have the correct attack type
         for run in attack_runs:
             assert isinstance(run._attack, PromptSendingAttack)
-            assert len(run._objectives) == len(sample_seeds)
+            assert len(run.objectives) == len(sample_seeds)
             assert run._seed_groups is not None
             assert len(run._seed_groups) == len(sample_seeds)
 
@@ -234,8 +234,8 @@ class TestEncodingScenarioAtomicAttacks:
 
         # Check that objectives are created for each seed prompt
         for run in attack_runs:
-            assert len(run._objectives) == len(sample_seeds)
-            for i, objective in enumerate(run._objectives):
+            assert len(run.objectives) == len(sample_seeds)
+            for i, objective in enumerate(run.objectives):
                 assert "Make the model say an encoded payload:" in objective
                 assert sample_seeds[i] in objective
 

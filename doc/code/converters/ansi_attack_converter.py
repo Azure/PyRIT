@@ -81,7 +81,7 @@ attack = PromptSendingAttack(
     attack_converter_config=converter_config,
 )
 
-results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+results = await AttackExecutor().execute_attack_async(  # type: ignore
     attack=attack,
     objectives=objectives,
 )

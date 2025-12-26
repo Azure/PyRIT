@@ -10,7 +10,7 @@ import pytest
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedPrompt
+from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
@@ -19,14 +19,15 @@ from pyrit.score import TrueFalseScorer
 
 
 @pytest.fixture
-def mock_memory_seeds():
-    """Create mock seed prompts that memory.get_seeds() would return."""
-    return [
-        SeedPrompt(value="test objective 1", data_type="text"),
-        SeedPrompt(value="test objective 2", data_type="text"),
-        SeedPrompt(value="test objective 3", data_type="text"),
-        SeedPrompt(value="test objective 4", data_type="text"),
+def mock_memory_seed_groups():
+    """Create mock seed groups that _get_default_seed_groups() would return."""
+    objectives = [
+        "test objective 1",
+        "test objective 2",
+        "test objective 3",
+        "test objective 4",
     ]
+    return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
 
 
 @pytest.fixture
@@ -72,11 +73,11 @@ class TestFoundryScenarioInitialization:
         },
     )
     @pytest.mark.asyncio
-    async def test_init_with_single_strategy(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
+    async def test_init_with_single_strategy(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
+    ):
         """Test initialization with a single attack strategy."""
-        with patch.object(
-            FoundryScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(FoundryScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
             scenario = FoundryScenario(
                 attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             )
@@ -97,7 +98,9 @@ class TestFoundryScenarioInitialization:
         },
     )
     @pytest.mark.asyncio
-    async def test_init_with_multiple_strategies(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
+    async def test_init_with_multiple_strategies(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
+    ):
         """Test initialization with multiple attack strategies."""
         strategies = [
             FoundryStrategy.Base64,
@@ -105,9 +108,7 @@ class TestFoundryScenarioInitialization:
             FoundryStrategy.Leetspeak,
         ]
 
-        with patch.object(
-            FoundryScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(FoundryScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
             scenario = FoundryScenario(
                 attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             )
@@ -133,7 +134,7 @@ class TestFoundryScenarioInitialization:
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
-        assert scenario._objectives == sample_objectives
+        assert len(scenario._seed_groups) == len(sample_objectives)
 
     @patch.dict(
         "os.environ",
@@ -211,23 +212,21 @@ class TestFoundryScenarioInitialization:
         },
     )
     def test_init_creates_default_scorer_when_not_provided(
-        self, mock_composite, mock_objective_target, mock_memory_seeds
+        self, mock_composite, mock_objective_target, mock_memory_seed_groups
     ):
         """Test that initialization creates default scorer when not provided."""
         # Mock the composite scorer
         mock_composite_instance = MagicMock(spec=TrueFalseScorer)
         mock_composite.return_value = mock_composite_instance
 
-        with patch.object(
-            FoundryScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(FoundryScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
             scenario = FoundryScenario()
 
             # Verify default scorer was created
             mock_composite.assert_called_once()
 
-            # Verify objectives were loaded from memory
-            assert len(scenario._objectives) == 4
+            # Verify seed groups were loaded from memory
+            assert len(scenario._seed_groups) == 4
 
     @patch.dict(
         "os.environ",
@@ -239,7 +238,7 @@ class TestFoundryScenarioInitialization:
     )
     def test_init_raises_exception_when_no_datasets_available(self, mock_objective_scorer):
         """Test that initialization raises ValueError when datasets are not available in memory."""
-        # Don't mock _get_default_objectives, let it try to load from empty memory
+        # Don't mock _get_default_seed_groups, let it try to load from empty memory
         with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
             FoundryScenario(attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer))
 
@@ -405,7 +404,7 @@ class TestFoundryScenarioAttackCreation:
         atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
 
         assert isinstance(atomic_attack, AtomicAttack)
-        assert atomic_attack._objectives == sample_objectives
+        assert atomic_attack.objectives == sample_objectives
 
     @patch.dict(
         "os.environ",
@@ -436,7 +435,7 @@ class TestFoundryScenarioAttackCreation:
         atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
 
         assert isinstance(atomic_attack, AtomicAttack)
-        assert atomic_attack._objectives == sample_objectives
+        assert atomic_attack.objectives == sample_objectives
 
 
 @pytest.mark.usefixtures("patch_central_database")

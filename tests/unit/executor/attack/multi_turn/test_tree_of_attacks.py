@@ -16,6 +16,7 @@ from pyrit.exceptions import InvalidJsonException
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     TAPAttackContext,
     TAPAttackResult,
@@ -238,8 +239,7 @@ class TestHelpers:
     def create_basic_context() -> TAPAttackContext:
         """Create a basic context with initialized tree."""
         context = TAPAttackContext(
-            objective="Test objective",
-            memory_labels={"test": "label"},
+            params=AttackParameters(objective="Test objective", memory_labels={"test": "label"}),
         )
         context.tree_visualization.create_node("Root", "root")
         return context

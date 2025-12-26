@@ -10,6 +10,7 @@ from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
@@ -24,6 +25,9 @@ from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormaliz
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
+
+# FlipAttack generates prepended_conversation internally from its system prompt.
+FlipAttackParameters = AttackParameters.excluding("prepended_conversation", "next_message")
 
 
 class FlipAttack(PromptSendingAttack):
@@ -57,6 +61,7 @@ class FlipAttack(PromptSendingAttack):
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
+            params_type=FlipAttackParameters,
         )
 
         flip_converter = PromptConverterConfiguration.from_converters(converters=[FlipConverter()])
@@ -67,20 +72,6 @@ class FlipAttack(PromptSendingAttack):
         system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
         self._system_prompt = Message.from_system_prompt(system_prompt=system_prompt)
-
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
-        """
-        Validate the context before executing the attack.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context containing parameters and objective.
-
-        Raises:
-            ValueError: If the context is invalid.
-        """
-        if context.prepended_conversation:
-            raise ValueError("FlipAttack does not support prepended conversations as it uses its own system prompt.")
-        super()._validate_context(context=context)
 
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """

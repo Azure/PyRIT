@@ -80,6 +80,7 @@ from typing import List, Optional, Type
 
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
+from pyrit.models import SeedGroup, SeedObjective
 from pyrit.scenario import AtomicAttack, Scenario, ScenarioStrategy
 from pyrit.scenario.core.scenario_strategy import ScenarioCompositeStrategy
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -139,6 +140,12 @@ class MyScenario(Scenario):
         )
 
         for strategy in selected_strategies:
+            # Create seed groups with objectives
+            seed_groups = [
+                SeedGroup(seeds=[SeedObjective(value="objective1")]),
+                SeedGroup(seeds=[SeedObjective(value="objective2")]),
+            ]
+
             # Create attack instances based on strategy
             attack = PromptSendingAttack(
                 objective_target=self._objective_target,
@@ -148,7 +155,7 @@ class MyScenario(Scenario):
                 AtomicAttack(
                     atomic_attack_name=strategy,
                     attack=attack,
-                    objectives=["objective1", "objective2"],
+                    seed_groups=seed_groups,
                     memory_labels=self._memory_labels,
                 )
             )
