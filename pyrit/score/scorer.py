@@ -46,6 +46,7 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
     from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles, ScorerMetrics
 
 
@@ -266,43 +267,50 @@ class Scorer(abc.ABC):
         file_mapping: Optional["ScorerEvalDatasetFiles"] = None,
         *,
         num_scorer_trials: int = 3,
-        add_to_evaluation_results: bool = True,
+        update_registry_behavior: "RegistryUpdateBehavior" = None,  # type: ignore[assignment]
         max_concurrency: int = 10,
     ) -> Optional["ScorerMetrics"]:
         """
         Evaluate this scorer against human-labeled datasets.
-        
+
         Uses file mapping to determine which datasets to evaluate and how to aggregate results.
-        
+
         Args:
             file_mapping: Optional ScorerEvalDatasetFiles configuration.
                 If not provided, uses the scorer's configured evaluation_file_mapping.
                 Maps input file patterns to an output result file.
             num_scorer_trials: Number of times to score each response (for measuring variance). Defaults to 3.
-            add_to_evaluation_results: Whether to add metrics to official evaluation results files.
-                Set to True for production evaluations (checks registry, skips if exists).
-                Set to False for debugging (always runs, never writes). Defaults to True.
+            update_registry_behavior: Controls how existing registry entries are handled.
+                - SKIP_IF_EXISTS (default): Check registry for existing results. If found, return cached metrics.
+                - ALWAYS_UPDATE: Always run evaluation and overwrite any existing registry entry.
+                - NEVER_UPDATE: Always run evaluation but never write to registry (for debugging).
+                Defaults to RegistryUpdateBehavior.SKIP_IF_EXISTS.
             max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
-        
+
         Returns:
             ScorerMetrics: The evaluation metrics, or None if no datasets found.
         """
         from pyrit.score import ScorerEvaluator
-        
+        from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
+
+        # Handle default for update_registry_behavior (can't use enum in signature due to forward ref)
+        if update_registry_behavior is None:
+            update_registry_behavior = RegistryUpdateBehavior.SKIP_IF_EXISTS
+
         # Use provided mapping or fall back to scorer's configured mapping
         mapping = file_mapping if file_mapping is not None else self.evaluation_file_mapping
-        
+
         if mapping is None:
             raise ValueError(
                 f"No file_mapping provided and no evaluation_file_mapping configured for {self.__class__.__name__}. "
                 "Either provide file_mapping parameter or configure evaluation_file_mapping on the scorer class."
             )
-        
+
         scorer_evaluator = ScorerEvaluator.from_scorer(self)
         return await scorer_evaluator.run_evaluation_async(
             dataset_files=mapping,
             num_scorer_trials=num_scorer_trials,
-            debug_only=not add_to_evaluation_results,
+            update_registry_behavior=update_registry_behavior,
             max_concurrency=max_concurrency,
         )
 

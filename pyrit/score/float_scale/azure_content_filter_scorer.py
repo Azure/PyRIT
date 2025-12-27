@@ -30,6 +30,7 @@ from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
     from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
@@ -54,10 +55,10 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     # Mapping from Azure TextCategory to evaluation file configurations
     _CATEGORY_EVAL_FILES: dict[TextCategory, tuple[list[str], str, str]] = {
-        TextCategory.HATE: (["harm/hate_speech.csv"], "azure_content_filter/hate_speech_metrics.jsonl", "hate_speech"),
-        TextCategory.SELF_HARM: (["harm/self_harm.csv"], "azure_content_filter/self_harm_metrics.jsonl", "self_harm"),
-        TextCategory.SEXUAL: (["harm/sexual.csv"], "azure_content_filter/sexual_metrics.jsonl", "sexual"),
-        TextCategory.VIOLENCE: (["harm/violence.csv"], "azure_content_filter/violence_metrics.jsonl", "violence"),
+        TextCategory.HATE: (["harm/hate_speech.csv"], "harm/hate_speech_metrics.jsonl", "hate_speech"),
+        TextCategory.SELF_HARM: (["harm/self_harm.csv"], "harm/self_harm_metrics.jsonl", "self_harm"),
+        TextCategory.SEXUAL: (["harm/sexual.csv"], "harm/sexual_metrics.jsonl", "sexual"),
+        TextCategory.VIOLENCE: (["harm/violence.csv"], "harm/violence_metrics.jsonl", "violence"),
     }
 
     @classmethod
@@ -156,7 +157,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         file_mapping: Optional["ScorerEvalDatasetFiles"] = None,
         *,
         num_scorer_trials: int = 3,
-        add_to_evaluation_results: bool = True,
+        update_registry_behavior: "RegistryUpdateBehavior" = None,  # type: ignore[assignment]
         max_concurrency: int = 10,
     ) -> Optional["ScorerMetrics"]:
         """
@@ -170,7 +171,11 @@ class AzureContentFilterScorer(FloatScaleScorer):
             file_mapping: Optional ScorerEvalDatasetFiles configuration.
                 If not provided, uses the mapping based on the configured harm category.
             num_scorer_trials: Number of times to score each response. Defaults to 3.
-            add_to_evaluation_results: Whether to add metrics to official results. Defaults to True.
+            update_registry_behavior: Controls how existing registry entries are handled.
+                - SKIP_IF_EXISTS (default): Check registry for existing results. If found, return cached metrics.
+                - ALWAYS_UPDATE: Always run evaluation and overwrite any existing registry entry.
+                - NEVER_UPDATE: Always run evaluation but never write to registry (for debugging).
+                Defaults to RegistryUpdateBehavior.SKIP_IF_EXISTS.
             max_concurrency: Maximum concurrent scoring requests. Defaults to 10.
 
         Returns:
@@ -179,6 +184,8 @@ class AzureContentFilterScorer(FloatScaleScorer):
         Raises:
             ValueError: If more than one harm category is configured.
         """
+        from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
+
         if len(self._harm_categories) > 1:
             raise ValueError(
                 f"AzureContentFilterScorer evaluation requires exactly one harm category, "
@@ -196,7 +203,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         return await super().evaluate_async(
             file_mapping=file_mapping,
             num_scorer_trials=num_scorer_trials,
-            add_to_evaluation_results=add_to_evaluation_results,
+            update_registry_behavior=update_registry_behavior,
             max_concurrency=max_concurrency,
         )
 

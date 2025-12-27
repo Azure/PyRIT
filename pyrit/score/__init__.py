@@ -32,7 +32,7 @@ from pyrit.score.true_false.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.float_scale.plagiarism_scorer import PlagiarismScorer, PlagiarismMetric
 from pyrit.score.true_false.prompt_shield_scorer import PromptShieldScorer
 
-from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType, RegistryUpdateBehavior
 from pyrit.models.harm_definition import (
     HarmDefinition,
     ScaleDescription,
@@ -57,6 +57,7 @@ from pyrit.score.scorer_evaluation.scorer_metrics_io import (
 from pyrit.score.scorer_evaluation.scorer_evaluator import (
     HarmScorerEvaluator,
     ObjectiveScorerEvaluator,
+    ScorerEvalDatasetFiles,
     ScorerEvaluator,
 )
 from pyrit.score.scorer_identifier import ScorerIdentifier
@@ -108,8 +109,10 @@ __all__ = [
     "PlagiarismScorer",
     "PromptShieldScorer",
     "QuestionAnswerScorer",
+    "RegistryUpdateBehavior",
     "Scorer",
     "ScorerIdentifier",
+    "ScorerEvalDatasetFiles",
     "ScorerEvaluator",
     "ScorerMetrics",
     "ScorerMetricsWithIdentity",

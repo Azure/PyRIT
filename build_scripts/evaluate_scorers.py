@@ -29,6 +29,7 @@ from pyrit.score import (
 )
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
+from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
 from pyrit.score.true_false.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.true_false.true_false_composite_scorer import TrueFalseCompositeScorer
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
@@ -170,7 +171,6 @@ async def evaluate_scorers() -> None:
             print("  Status: Running evaluations...")
             results = await scorer.evaluate_async(
                 num_scorer_trials=3,
-                add_to_evaluation_results=True,
                 max_concurrency=10,
             )
             

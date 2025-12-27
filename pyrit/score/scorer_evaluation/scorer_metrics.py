@@ -26,7 +26,7 @@ class ScorerMetrics:
     Base dataclass for storing scorer evaluation metrics.
 
     This class provides methods for serializing metrics to JSON and loading them from JSON files.
-    
+
     Args:
         num_responses (int): Total number of responses evaluated.
         num_human_raters (int): Number of human raters who scored the responses.
@@ -34,6 +34,7 @@ class ScorerMetrics:
         dataset_name (str, optional): Name of the dataset used for evaluation.
         dataset_version (str, optional): Version of the dataset for reproducibility.
         trial_scores (np.ndarray, optional): Raw scores from each trial for debugging.
+        average_score_time_seconds (float): Average time in seconds to score a single item. Defaults to 0.0.
     """
     num_responses: int
     num_human_raters: int
@@ -41,6 +42,7 @@ class ScorerMetrics:
     dataset_name: Optional[str] = field(default=None, kw_only=True)
     dataset_version: Optional[str] = field(default=None, kw_only=True)
     trial_scores: Optional[np.ndarray] = field(default=None, kw_only=True)
+    average_score_time_seconds: float = field(default=0.0, kw_only=True)
 
     def to_json(self) -> str:
         """

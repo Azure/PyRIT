@@ -3,6 +3,7 @@
 
 import abc
 import logging
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple, cast
@@ -16,7 +17,7 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HumanLabeledDataset,
     ObjectiveHumanLabeledEntry,
 )
-from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType, RegistryUpdateBehavior
 from pyrit.score.scorer_evaluation.scorer_metrics import (
     HarmScorerMetrics,
     ObjectiveScorerMetrics,
@@ -109,25 +110,27 @@ class ScorerEvaluator(abc.ABC):
         *,
         dataset_files: ScorerEvalDatasetFiles,
         num_scorer_trials: int = 3,
-        debug_only: bool = False,
+        update_registry_behavior: RegistryUpdateBehavior = RegistryUpdateBehavior.SKIP_IF_EXISTS,
         max_concurrency: int = 10,
     ) -> Optional[ScorerMetrics]:
         """
         Evaluate scorer using dataset files configuration.
-        
-        - If debug_only=False: Check registry for existing results matching scorer config,
+
+        The update_registry_behavior parameter controls how existing registry entries are handled:
+        - SKIP_IF_EXISTS (default): Check registry for existing results matching scorer config,
           dataset version, and num_scorer_trials. If found, return cached metrics.
           If not found, run evaluation and write to registry.
-        - If debug_only=True: Always run evaluation, never write to registry (for testing).
-        
+        - ALWAYS_UPDATE: Always run evaluation and overwrite any existing registry entry.
+        - NEVER_UPDATE: Always run evaluation but never write to registry (for debugging).
+
         Args:
             dataset_files: ScorerEvalDatasetFiles configuration specifying glob patterns
                 for input files and a result file name.
             num_scorer_trials: Number of scoring trials per response. Defaults to 3.
-            debug_only: If False, checks registry and writes results (production mode).
-                If True, always runs without writing (debug mode). Defaults to False.
+            update_registry_behavior: Controls how existing registry entries are handled.
+                Defaults to RegistryUpdateBehavior.SKIP_IF_EXISTS.
             max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
-        
+
         Returns:
             ScorerMetrics if evaluation completed, None if no files found.
         """
@@ -176,9 +179,9 @@ class ScorerEvaluator(abc.ABC):
             version=combined_version,
             harm_definition=harm_definition,
         )
-        
-        # Check for existing metrics if not in debug mode
-        if not debug_only:
+
+        # Check for existing metrics only in SKIP_IF_EXISTS mode
+        if update_registry_behavior == RegistryUpdateBehavior.SKIP_IF_EXISTS:
             should_skip, existing_metrics = self._should_skip_evaluation(
                 dataset_version=combined_version,
                 num_scorer_trials=num_scorer_trials,
@@ -188,25 +191,25 @@ class ScorerEvaluator(abc.ABC):
             if should_skip and existing_metrics:
                 logger.info(
                     f"Using existing evaluation results for {dataset_files.result_file}. "
-                    f"(set debug_only=True to force re-run)"
+                    f"(set update_registry_behavior=ALWAYS_UPDATE to force re-run)"
                 )
                 return existing_metrics
-        
+
         # Run evaluation
         metrics = await self._run_evaluation_async(
             labeled_dataset=combined_dataset,
             num_scorer_trials=num_scorer_trials,
             max_concurrency=max_concurrency,
         )
-        
-        # Write to registry if not in debug mode
-        if not debug_only:
+
+        # Write to registry unless in NEVER_UPDATE mode
+        if update_registry_behavior != RegistryUpdateBehavior.NEVER_UPDATE:
             self._write_metrics_to_registry(
                 metrics=metrics,
                 labeled_dataset=combined_dataset,
                 result_file_path=SCORER_EVALS_PATH / dataset_files.result_file,
             )
-        
+
         return metrics
 
     def _should_skip_evaluation(
@@ -315,18 +318,27 @@ class ScorerEvaluator(abc.ABC):
         # Transpose human scores so each row is a complete set of scores across all responses
         all_human_scores = np.array(human_scores_list).T
 
-        # Run scoring trials
+        # Run scoring trials and measure timing
         all_model_scores_list = []
+        total_scoring_time = 0.0
+        total_scored_items = 0
         for _ in range(num_scorer_trials):
+            start_time = time.perf_counter()
             scores = await self.scorer.score_prompts_batch_async(
                 messages=assistant_responses,
                 objectives=objectives,
                 batch_size=max_concurrency,
                 infer_objective_from_request=True,
             )
+            elapsed_time = time.perf_counter() - start_time
+            total_scoring_time += elapsed_time
+            total_scored_items += len(scores)
             score_values = [score.get_value() for score in scores]
             all_model_scores_list.append(score_values)
         all_model_scores = np.array(all_model_scores_list)
+
+        # Calculate average time per scored item
+        average_score_time = total_scoring_time / total_scored_items if total_scored_items > 0 else 0.0
 
         # Extract harm category if this is a harm dataset
         harm_category = None
@@ -347,6 +359,8 @@ class ScorerEvaluator(abc.ABC):
 
         # Include trial scores for debugging and analysis
         metrics.trial_scores = all_model_scores
+        # Include average scoring time per item
+        metrics.average_score_time_seconds = average_score_time
 
         return metrics
 
