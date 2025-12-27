@@ -28,6 +28,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
+from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_converter import (
     AnsiAttackConverter,
     AsciiArtConverter,
@@ -244,7 +245,7 @@ class FoundryScenario(Scenario):
         self,
         *,
         adversarial_chat: Optional[PromptChatTarget] = None,
-        objectives: Optional[list[str]] = None,
+        objectives: Optional[List[str]] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
@@ -256,8 +257,8 @@ class FoundryScenario(Scenario):
             adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
                 like Crescendo and RedTeaming. Additionally used for scoring defaults.
                 If not provided, a default OpenAI target will be created using environment variables.
-            objectives (Optional[list[str]]): List of attack objectives/prompts to test.
-                If not provided, defaults to 4 random objectives from the HarmBench dataset.
+            objectives (Optional[List[str]]): List of attack objectives/prompts to test.
+                If not provided, defaults to 5 random objectives from the HarmBench dataset.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring,
                 including the objective scorer and auxiliary scorers. If not provided, creates a default
                 configuration with a composite scorer using Azure Content Filter and SelfAsk Refusal scorers.
@@ -293,16 +294,20 @@ class FoundryScenario(Scenario):
         )
 
         # Now we can safely access self._memory
-        self._objectives = objectives if objectives else self._get_default_objectives()
+        # Convert objectives to seed_groups if provided, otherwise load from dataset
+        if objectives:
+            self._seed_groups = [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
+        else:
+            self._seed_groups = self._get_default_seed_groups()
 
-    def _get_default_objectives(self) -> list[str]:
-        seed_objectives = self._memory.get_seeds(dataset_name="harmbench")
+    def _get_default_seed_groups(self) -> List[SeedGroup]:
+        seed_groups = self._memory.get_seed_groups(dataset_name="harmbench")
 
-        if not seed_objectives:
+        if not seed_groups:
             self._raise_dataset_exception()
 
-        sampled_seeds = random.sample(list(seed_objectives), min(5, len(seed_objectives)))
-        return [seed.value for seed in sampled_seeds]
+        sampled_groups = random.sample(list(seed_groups), min(5, len(seed_groups)))
+        return sampled_groups
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -437,7 +442,7 @@ class FoundryScenario(Scenario):
         return AtomicAttack(
             atomic_attack_name=composite_strategy.name,
             attack=attack,
-            objectives=self._objectives,
+            seed_groups=self._seed_groups,
             memory_labels=self._memory_labels,
         )
 

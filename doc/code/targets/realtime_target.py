@@ -44,6 +44,7 @@ from pathlib import Path
 
 from pyrit.executor.attack import (
     AttackExecutor,
+    AttackParameters,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
     SingleTurnAttackContext,
@@ -65,10 +66,11 @@ seed_group = SeedGroup(
     ]
 )
 
-decomposed = seed_group.to_attack_parameters()
-context = SingleTurnAttackContext(
-    objective=objective,
-    next_message=decomposed.current_turn_message,
+context: SingleTurnAttackContext = SingleTurnAttackContext(
+    params=AttackParameters(
+        objective=objective,
+        next_message=seed_group.next_message,
+    )
 )
 
 attack = PromptSendingAttack(objective_target=target)
@@ -93,7 +95,7 @@ second_prompt_to_send = "What is the size of that city?"
 # Showing how to send multiple prompts but each is its own conversation, ie the second prompt is not a follow up to the first
 
 attack = PromptSendingAttack(objective_target=target)
-results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+results = await AttackExecutor().execute_attack_async(  # type: ignore
     attack=attack,
     objectives=[prompt_to_send, second_prompt_to_send],
 )

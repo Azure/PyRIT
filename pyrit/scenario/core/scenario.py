@@ -164,7 +164,7 @@ class Scenario(ABC):
         *,
         objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore
         scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
-        max_concurrency: int = 1,
+        max_concurrency: int = 10,
         max_retries: int = 0,
         memory_labels: Optional[Dict[str, str]] = None,
     ) -> None:
@@ -249,7 +249,7 @@ class Scenario(ABC):
 
         # Store original objectives for each atomic attack (before any mutations during execution)
         self._original_objectives_map = {
-            atomic_attack.atomic_attack_name: tuple(atomic_attack._objectives) for atomic_attack in self._atomic_attacks
+            atomic_attack.atomic_attack_name: tuple(atomic_attack.objectives) for atomic_attack in self._atomic_attacks
         }
 
         # Check if we're resuming an existing scenario
@@ -306,13 +306,13 @@ class Scenario(ABC):
 
         first_attack = self._atomic_attacks[0]
 
-        # Copy objectives, scoring, target from the first attack
-        objectives = first_attack.objectives
+        # Copy seed_groups, scoring, target from the first attack
+        seed_groups = first_attack.seed_groups
         attack_scoring_config = first_attack._attack.get_attack_scoring_config()
         objective_target = first_attack._attack.get_objective_target()
 
-        if not objectives or len(objectives) == 0:
-            raise ValueError("First atomic attack must have objectives to create baseline.")
+        if not seed_groups or len(seed_groups) == 0:
+            raise ValueError("First atomic attack must have seed_groups to create baseline.")
 
         if not objective_target:
             raise ValueError("Objective target is required to create baseline attack.")
@@ -329,7 +329,7 @@ class Scenario(ABC):
         return AtomicAttack(
             atomic_attack_name="baseline",
             attack=attack,
-            objectives=objectives,
+            seed_groups=seed_groups,
             memory_labels=self._memory_labels,
         )
 
@@ -451,7 +451,7 @@ class Scenario(ABC):
                         f"{len(remaining_objectives)}/{len(original_objectives)} objectives remaining"
                     )
                 # Update the objectives for this atomic attack to only include remaining ones
-                atomic_attack._objectives = remaining_objectives
+                atomic_attack.filter_seed_groups_by_objectives(remaining_objectives=remaining_objectives)
 
                 remaining_attacks.append(atomic_attack)
             else:

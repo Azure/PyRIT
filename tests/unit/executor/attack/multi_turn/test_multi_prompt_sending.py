@@ -12,7 +12,8 @@ from pyrit.executor.attack import (
     ConversationSession,
     ConversationState,
     MultiPromptSendingAttack,
-    MultiPromptSendingAttackContext,
+    MultiPromptSendingAttackParameters,
+    MultiTurnAttackContext,
 )
 from pyrit.models import (
     AttackOutcome,
@@ -62,14 +63,16 @@ def mock_prompt_normalizer():
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return MultiPromptSendingAttackContext(
-        objective="Test objective",
+    return MultiTurnAttackContext(
+        params=MultiPromptSendingAttackParameters(
+            objective="Test objective",
+            user_messages=[
+                Message.from_prompt(prompt="First prompt", role="user"),
+                Message.from_prompt(prompt="Second prompt", role="user"),
+                Message.from_prompt(prompt="Third prompt", role="user"),
+            ],
+        ),
         session=ConversationSession(),
-        messages=[
-            Message.from_prompt(prompt="First prompt", role="user"),
-            Message.from_prompt(prompt="Second prompt", role="user"),
-            Message.from_prompt(prompt="Third prompt", role="user"),
-        ],
     )
 
 
@@ -189,10 +192,12 @@ class TestContextValidation:
 
     def test_validate_context_raises_for_empty_objective(self, mock_target):
         attack = MultiPromptSendingAttack(objective_target=mock_target)
-        context = MultiPromptSendingAttackContext(
-            objective="",
+        context = MultiTurnAttackContext(
+            params=MultiPromptSendingAttackParameters(
+                objective="",
+                user_messages=[Message.from_prompt(prompt="prompt1", role="user")],
+            ),
             session=ConversationSession(),
-            messages=[Message.from_prompt(prompt="prompt1", role="user")],
         )
 
         with pytest.raises(ValueError, match="Attack objective must be provided and non-empty in the context"):
@@ -200,10 +205,12 @@ class TestContextValidation:
 
     def test_validate_context_raises_for_whitespace_objective(self, mock_target):
         attack = MultiPromptSendingAttack(objective_target=mock_target)
-        context = MultiPromptSendingAttackContext(
-            objective="   ",
+        context = MultiTurnAttackContext(
+            params=MultiPromptSendingAttackParameters(
+                objective="   ",
+                user_messages=[Message.from_prompt(prompt="prompt1", role="user")],
+            ),
             session=ConversationSession(),
-            messages=[Message.from_prompt(prompt="prompt1", role="user")],
         )
 
         with pytest.raises(ValueError, match="Attack objective must be provided and non-empty in the context"):
@@ -211,13 +218,15 @@ class TestContextValidation:
 
     def test_validate_context_raises_for_empty_messages(self, mock_target):
         attack = MultiPromptSendingAttack(objective_target=mock_target)
-        context = MultiPromptSendingAttackContext(
-            objective="Valid objective",
+        context = MultiTurnAttackContext(
+            params=MultiPromptSendingAttackParameters(
+                objective="Valid objective",
+                user_messages=[],
+            ),
             session=ConversationSession(),
-            messages=[],
         )
 
-        with pytest.raises(ValueError, match="Messages must be provided and non-empty in the context"):
+        with pytest.raises(ValueError, match="User messages must be provided and non-empty in the params"):
             attack._validate_context(context=context)
 
     def test_validate_context_with_complete_valid_context(self, mock_target, basic_context):
@@ -387,8 +396,8 @@ class TestAttackExecution:
         result = await attack._perform_async(context=basic_context)
 
         # Should have called send_prompt_async for each message in sequence
-        assert mock_prompt_normalizer.send_prompt_async.call_count == len(basic_context.messages)
-        assert result.executed_turns == len(basic_context.messages)
+        assert mock_prompt_normalizer.send_prompt_async.call_count == len(basic_context.params.user_messages)
+        assert result.executed_turns == len(basic_context.params.user_messages)
         assert result.last_response is not None
 
     @pytest.mark.asyncio
@@ -509,7 +518,7 @@ class TestExecuteAsync:
 
             result = await attack.execute_async(
                 objective="Test objective",
-                messages=[
+                user_messages=[
                     Message.from_prompt(prompt="prompt1", role="user"),
                     Message.from_prompt(prompt="prompt2", role="user"),
                 ],
@@ -521,7 +530,7 @@ class TestExecuteAsync:
     @pytest.mark.asyncio
     async def test_execute_async_validates_messages_parameter(self, mock_target):
         """
-        Test that execute_async validates the messages parameter.
+        Test that execute_async validates the user_messages parameter.
         This ensures the required parameter is properly validated at the entry point.
         """
         attack = MultiPromptSendingAttack(objective_target=mock_target)
@@ -529,13 +538,13 @@ class TestExecuteAsync:
         with pytest.raises(ValueError):
             await attack.execute_async(
                 objective="Test objective"
-                # Missing messages parameter
+                # Missing user_messages parameter
             )
 
     @pytest.mark.asyncio
     async def test_execute_async_passes_messages_to_context(self, mock_target):
         """
-        Test that execute_async properly passes messages to the context.
+        Test that execute_async properly passes user_messages to the context.
         This verifies parameter propagation through the execution pipeline.
         """
         attack = MultiPromptSendingAttack(objective_target=mock_target)
@@ -556,12 +565,12 @@ class TestExecuteAsync:
                 executed_turns=0,
             )
 
-            await attack.execute_async(objective="Test objective", messages=test_messages)
+            await attack.execute_async(objective="Test objective", user_messages=test_messages)
 
             # Verify the context was created with the correct messages
             call_args = mock_perform.call_args[1]
             context = call_args["context"]
-            assert context.messages == test_messages
+            assert context.params.user_messages == test_messages
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -637,10 +646,12 @@ class TestEdgeCasesAndErrorHandling:
 
         attack = MultiPromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
-        context = MultiPromptSendingAttackContext(
-            objective="Test objective",
+        context = MultiTurnAttackContext(
+            params=MultiPromptSendingAttackParameters(
+                objective="Test objective",
+                user_messages=[Message.from_prompt(prompt="Single prompt", role="user")],
+            ),
             session=ConversationSession(),
-            messages=[Message.from_prompt(prompt="Single prompt", role="user")],
         )
 
         result = await attack._perform_async(context=context)
