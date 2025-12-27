@@ -95,6 +95,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--env-files",
+        type=str,
+        nargs="+",
+        help=frontend_core.ARG_HELP["env_files"],
+    )
+
+    parser.add_argument(
         "--strategies",
         "-s",
         type=str,
@@ -152,9 +159,18 @@ def main(args=None) -> int:
                 print(f"Error: {e}")
                 return 1
 
+        env_files = None
+        if parsed_args.env_files:
+            try:
+                env_files = frontend_core.resolve_env_files(env_file_paths=parsed_args.env_files)
+            except ValueError as e:
+                print(f"Error: {e}")
+                return 1
+
         context = frontend_core.FrontendCore(
             database=parsed_args.database,
             initialization_scripts=initialization_scripts,
+            env_files=env_files,
             log_level=parsed_args.log_level,
         )
 
@@ -181,11 +197,17 @@ def main(args=None) -> int:
                 script_paths=parsed_args.initialization_scripts
             )
 
+        # Collect environment files
+        env_files = None
+        if parsed_args.env_files:
+            env_files = frontend_core.resolve_env_files(env_file_paths=parsed_args.env_files)
+
         # Create context with initializers
         context = frontend_core.FrontendCore(
             database=parsed_args.database,
             initialization_scripts=initialization_scripts,
             initializer_names=parsed_args.initializers,
+            env_files=env_files,
             log_level=parsed_args.log_level,
         )
 

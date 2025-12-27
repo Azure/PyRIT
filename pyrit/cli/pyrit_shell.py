@@ -39,10 +39,12 @@ class PyRITShell(cmd.Cmd):
     Shell Startup Options:
         --database <type>       Database type (InMemory, SQLite, AzureSQL) - default for all runs
         --log-level <level>     Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) - default for all runs
+        --env-files <path> ...  Environment files to load in order - default for all runs
 
     Run Command Options:
         --initializers <name> ...       Built-in initializers to run before the scenario
         --initialization-scripts <...>  Custom Python scripts to run before the scenario
+        --env-files <path> ...          Environment files to load in order (overrides startup default)
         --strategies, -s <s1> ...       Strategy names to use
         --max-concurrency <N>           Maximum concurrent operations
         --max-retries <N>               Maximum retry attempts
@@ -97,6 +99,7 @@ class PyRITShell(cmd.Cmd):
         self.context = context
         self.default_database = context._database
         self.default_log_level = context._log_level
+        self.default_env_files = context._env_files
 
         # Track scenario execution history: list of (command_string, ScenarioResult) tuples
         self._scenario_history: list[tuple[str, ScenarioResult]] = []
@@ -150,6 +153,7 @@ class PyRITShell(cmd.Cmd):
         Options:
             --initializers <name> ...       Built-in initializers to run before the scenario
             --initialization-scripts <...>  Custom Python scripts to run before the scenario
+            --env-files <path> ...          Environment files to load in order
             --strategies, -s <s1> <s2> ...  Strategy names to use
             --max-concurrency <N>           Maximum concurrent operations
             --max-retries <N>               Maximum retry attempts
@@ -214,11 +218,24 @@ class PyRITShell(cmd.Cmd):
                 print(f"Error: {e}")
                 return
 
+        # Resolve env files if provided
+        resolved_env_files = None
+        if args["env_files"]:
+            try:
+                resolved_env_files = frontend_core.resolve_env_files(env_file_paths=args["env_files"])
+            except ValueError as e:
+                print(f"Error: {e}")
+                return
+        else:
+            # Use default env files from shell startup
+            resolved_env_files = self.default_env_files
+
         # Create a context for this run with overrides
         run_context = frontend_core.FrontendCore(
             database=args["database"] or self.default_database,
             initialization_scripts=resolved_scripts,
             initializer_names=args["initializers"],
+            env_files=resolved_env_files,
             log_level=args["log_level"] or self.default_log_level,
         )
         # Use the existing registries (don't reinitialize)
@@ -455,13 +472,30 @@ def main():
         help="Default logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) (default: WARNING, can be overridden per-run)",
     )
 
+    parser.add_argument(
+        "--env-files",
+        type=str,
+        nargs="+",
+        help="Environment files to load in order (default for all runs, can be overridden per-run)",
+    )
+
     args = parser.parse_args()
+
+    # Resolve env files if provided
+    env_files = None
+    if args.env_files:
+        try:
+            env_files = frontend_core.resolve_env_files(env_file_paths=args.env_files)
+        except ValueError as e:
+            print(f"Error: {e}")
+            return 1
 
     # Create context (initializers are specified per-run, not at startup)
     context = frontend_core.FrontendCore(
         database=args.database,
         initialization_scripts=None,
         initializer_names=None,
+        env_files=env_files,
         log_level=args.log_level,
     )
 
