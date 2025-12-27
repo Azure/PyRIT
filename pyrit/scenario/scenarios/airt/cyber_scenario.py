@@ -125,7 +125,7 @@ class CyberScenario(Scenario):
             name="Cyber Scenario",
             version=self.version,
             strategy_class=CyberStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )

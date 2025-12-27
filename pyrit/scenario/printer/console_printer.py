@@ -2,11 +2,13 @@
 # Licensed under the MIT license.
 
 import textwrap
+from typing import Optional
 
 from colorama import Fore, Style
 
 from pyrit.models.scenario_result import ScenarioResult
 from pyrit.scenario.printer.scenario_result_printer import ScenarioResultPrinter
+from pyrit.score.printer import ConsoleScorerPrinter, ScorerPrinter
 
 
 class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
@@ -18,7 +20,14 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
     that don't support ANSI characters.
     """
 
-    def __init__(self, *, width: int = 100, indent_size: int = 2, enable_colors: bool = True):
+    def __init__(
+        self,
+        *,
+        width: int = 100,
+        indent_size: int = 2,
+        enable_colors: bool = True,
+        scorer_printer: Optional[ScorerPrinter] = None,
+    ):
         """
         Initialize the console printer.
 
@@ -29,6 +38,8 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
                 Defaults to 2.
             enable_colors (bool): Whether to enable ANSI color output. When False,
                 all output will be plain text without colors. Defaults to True.
+            scorer_printer (Optional[ScorerPrinter]): Printer for scorer information.
+                If not provided, a ConsoleScorerPrinter with matching settings is created.
 
         Raises:
             ValueError: If width <= 0 or indent_size < 0.
@@ -36,6 +47,9 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         self._width = width
         self._indent = " " * indent_size
         self._enable_colors = enable_colors
+        self._scorer_printer = scorer_printer or ConsoleScorerPrinter(
+            indent_size=indent_size, enable_colors=enable_colors
+        )
 
     def _print_colored(self, text: str, *colors: str) -> None:
         """
@@ -109,12 +123,9 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         self._print_colored(f"{self._indent * 2}• Target Model: {target_model}", Fore.CYAN)
         self._print_colored(f"{self._indent * 2}• Target Endpoint: {target_endpoint}", Fore.CYAN)
 
-        # Scorer information
-        if result.objective_scorer_identifier:
-            print()
-            self._print_colored(f"{self._indent}📊 Scorer Information", Style.BRIGHT)
-            self._print_scorer_info(result.objective_scorer_identifier, indent_level=2)
-            self._print_registry_metrics(result)
+        # Scorer information - use ScorerIdentifier from result
+        scorer_identifier = result.get_objective_scorer_identifier()
+        self._scorer_printer.print_objective_scorer(scorer_identifier)
 
         # Overall statistics
         self._print_section_header("Overall Statistics")
@@ -170,83 +181,6 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         print()
         self._print_colored("=" * self._width, Fore.CYAN)
         print()
-
-    def _print_scorer_info(self, scorer_identifier: dict, *, indent_level: int = 2) -> None:
-        """
-        Print scorer information including nested sub-scorers.
-
-        Args:
-            scorer_identifier (dict): The scorer identifier dictionary.
-            indent_level (int): Current indentation level for nested display.
-        """
-        scorer_type = scorer_identifier.get("__type__", "Unknown")
-        indent = self._indent * indent_level
-
-        self._print_colored(f"{indent}• Scorer Type: {scorer_type}", Fore.CYAN)
-
-        # Check for sub_identifier
-        sub_identifier = scorer_identifier.get("sub_identifier")
-        if sub_identifier:
-            # Handle list of sub-scorers (composite scorer)
-            if isinstance(sub_identifier, list):
-                self._print_colored(f"{indent}  └─ Composite of {len(sub_identifier)} scorer(s):", Fore.CYAN)
-                for sub_scorer in sub_identifier:
-                    self._print_scorer_info(sub_scorer, indent_level=indent_level + 3)
-            # Handle single nested scorer
-            elif isinstance(sub_identifier, dict):
-                self._print_colored(f"{indent}  └─ Wraps:", Fore.CYAN)
-                self._print_scorer_info(sub_identifier, indent_level=indent_level + 2)
-
-    def _print_registry_metrics(self, result: ScenarioResult) -> None:
-        """
-        Print scorer evaluation metrics from the registry if available.
-
-        Args:
-            result (ScenarioResult): The scenario result containing scorer info.
-        """
-        metrics = result.get_scorer_evaluation_metrics()
-        if metrics is None:
-            self._print_colored(
-                f"{self._indent * 2}• Scorer Performance Metrics: "
-                f"Official evaluation has not been run yet for this "
-                f"specific configuration",
-                Fore.YELLOW,
-            )
-            return
-
-        print()
-        self._print_colored(f"{self._indent}📉 Scorer Performance Metrics", Style.BRIGHT)
-
-        # Check for objective metrics (accuracy-based)
-        if hasattr(metrics, "accuracy"):
-            self._print_colored(f"{self._indent * 2}• Accuracy: {metrics.accuracy:.2%}", Fore.GREEN)
-            if hasattr(metrics, "accuracy_standard_error") and metrics.accuracy_standard_error is not None:
-                self._print_colored(
-                    f"{self._indent * 2}• Accuracy Std Error: ±{metrics.accuracy_standard_error:.4f}", Fore.CYAN
-                )
-            if hasattr(metrics, "f1_score") and metrics.f1_score is not None:
-                self._print_colored(f"{self._indent * 2}• F1 Score: {metrics.f1_score:.4f}", Fore.CYAN)
-            if hasattr(metrics, "precision") and metrics.precision is not None:
-                self._print_colored(f"{self._indent * 2}• Precision: {metrics.precision:.4f}", Fore.CYAN)
-            if hasattr(metrics, "recall") and metrics.recall is not None:
-                self._print_colored(f"{self._indent * 2}• Recall: {metrics.recall:.4f}", Fore.CYAN)
-
-        # Check for harm metrics (MAE-based)
-        elif hasattr(metrics, "mean_absolute_error"):
-            self._print_colored(
-                f"{self._indent * 2}• Mean Absolute Error: {metrics.mean_absolute_error:.4f}", Fore.GREEN
-            )
-            if hasattr(metrics, "mae_standard_error") and metrics.mae_standard_error is not None:
-                self._print_colored(f"{self._indent * 2}• MAE Std Error: ±{metrics.mae_standard_error:.4f}", Fore.CYAN)
-            if hasattr(metrics, "krippendorff_alpha_combined") and metrics.krippendorff_alpha_combined is not None:
-                self._print_colored(
-                    f"{self._indent * 2}• Krippendorff Alpha (Combined): {metrics.krippendorff_alpha_combined:.4f}",
-                    Fore.CYAN,
-                )
-            if hasattr(metrics, "krippendorff_alpha_model") and metrics.krippendorff_alpha_model is not None:
-                self._print_colored(
-                    f"{self._indent * 2}• Krippendorff Alpha (Model): {metrics.krippendorff_alpha_model:.4f}", Fore.CYAN
-                )
 
     def _get_rate_color(self, rate: int) -> str:
         """

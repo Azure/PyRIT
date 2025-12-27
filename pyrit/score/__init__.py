@@ -77,11 +77,13 @@ from pyrit.score.true_false.self_ask_question_answer_scorer import SelfAskQuesti
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 from pyrit.score.true_false.question_answer_scorer import QuestionAnswerScorer
+from pyrit.score.printer import ConsoleScorerPrinter, ScorerPrinter
 
 __all__ = [
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
+    "ConsoleScorerPrinter",
     "ConversationScorer",
     "DecodingScorer",
     "create_conversation_scorer",
@@ -127,6 +129,7 @@ __all__ = [
     "SelfAskRefusalScorer",
     "SelfAskScaleScorer",
     "SelfAskTrueFalseScorer",
+    "ScorerPrinter",
     "SubStringScorer",
     "TrueFalseCompositeScorer",
     "TrueFalseInverterScorer",
