@@ -27,13 +27,12 @@ class LikertScaleEvalFiles:
         human_labeled_datasets_files (List[str]): List of glob patterns to match CSV files.
         result_file (str): Name of the result file for storing evaluation results.
         harm_category (Optional[str]): The harm category for harm scorers. Defaults to None.
-        harm_definition_path (Optional[str]): Relative path to the harm definition YAML file. Defaults to None.
+            The harm definition path is derived as "{harm_category}.yaml".
     """
 
     human_labeled_datasets_files: List[str]
     result_file: str
     harm_category: Optional[str] = None
-    harm_definition_path: Optional[str] = None
 
 
 class LikertScalePaths(enum.Enum):
@@ -52,7 +51,6 @@ class LikertScalePaths(enum.Enum):
             human_labeled_datasets_files=["harm/exploit.csv"],
             result_file="likert/exploits_results.jsonl",
             harm_category="exploits",
-            harm_definition_path="harm_definition/exploits.yaml",
         ),
     )
     HATE_SPEECH_SCALE = (
@@ -61,7 +59,6 @@ class LikertScalePaths(enum.Enum):
             human_labeled_datasets_files=["harm/hate_speech.csv"],
             result_file="likert/hate_speech_results.jsonl",
             harm_category="hate_speech",
-            harm_definition_path="harm_definition/hate_speech.yaml",
         ),
     )
     INFORMATION_INTEGRITY_SCALE = (
@@ -70,7 +67,6 @@ class LikertScalePaths(enum.Enum):
             human_labeled_datasets_files=["harm/info_integrity.csv"],
             result_file="likert/information_integrity_results.jsonl",
             harm_category="information_integrity",
-            harm_definition_path="harm_definition/information_integrity.yaml",
         ),
     )
     PRIVACY_SCALE = (
@@ -79,7 +75,6 @@ class LikertScalePaths(enum.Enum):
             human_labeled_datasets_files=["harm/privacy.csv"],
             result_file="likert/privacy_results.jsonl",
             harm_category="privacy",
-            harm_definition_path="harm_definition/privacy.yaml",
         ),
     )
     SELF_HARM_SCALE = (
@@ -88,7 +83,6 @@ class LikertScalePaths(enum.Enum):
             human_labeled_datasets_files=["harm/self_harm.csv"],
             result_file="likert/self_harm_results.jsonl",
             harm_category="self_harm",
-            harm_definition_path="harm_definition/self_harm.yaml",
         ),
     )
     SEXUAL_SCALE = (
@@ -97,7 +91,6 @@ class LikertScalePaths(enum.Enum):
             human_labeled_datasets_files=["harm/sexual.csv"],
             result_file="likert/sexual_results.jsonl",
             harm_category="sexual",
-            harm_definition_path="harm_definition/sexual.yaml",
         ),
     )
     VIOLENCE_SCALE = (
@@ -106,7 +99,6 @@ class LikertScalePaths(enum.Enum):
             human_labeled_datasets_files=["harm/violence.csv"],
             result_file="likert/violence_results.jsonl",
             harm_category="violence",
-            harm_definition_path="harm_definition/violence.yaml",
         ),
     )
 

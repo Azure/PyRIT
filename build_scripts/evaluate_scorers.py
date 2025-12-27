@@ -26,6 +26,7 @@ from pyrit.score import (
     TrueFalseInverterScorer
 )
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
+from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.true_false.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.true_false.true_false_composite_scorer import TrueFalseCompositeScorer
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
@@ -47,33 +48,52 @@ async def evaluate_scorers() -> None:
     await initialize_pyrit_async(memory_db_type=IN_MEMORY)
 
 
-    ### Refusal Scorer
-    refuasal = SelfAskRefusalScorer(chat_target=OpenAIChatTarget())
-
-
-    ### Objective Scorers
-    refuasal_gpt_4o = TrueFalseInverterScorer(
-        scorer=SelfAskRefusalScorer(chat_target=OpenAIChatTarget())
+    ### Targets
+    gpt_4o_target = OpenAIChatTarget(
+        endpoint=os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT"),
+        api_key=os.environ.get("AZURE_OPENAI_GPT4O_KEY"),
+        model_name=os.environ.get("AZURE_OPENAI_GPT4O_MODEL"),
     )
 
-    refusal_gpt_4o_unsafe = TrueFalseInverterScorer(
-        scorer=SelfAskRefusalScorer(
-            chat_target=OpenAIChatTarget(
-                endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
-            )
-        )
+    gpt_4o_unsafe = OpenAIChatTarget(
+        endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+        api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+        model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
     )
 
-    refusal_gpt_4o_unsafe_temp9 = TrueFalseInverterScorer(
-        scorer=SelfAskRefusalScorer(
-            chat_target=OpenAIChatTarget(
+    gpt_4o_unsafe_temp9 = OpenAIChatTarget(
                 endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
                 api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
                 model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 temperature=0.9,
             )
+
+    gpt_5_endpoint = OpenAIChatTarget(
+        endpoint=os.environ.get("AZURE_OPENAI_GPT5_COMPLETION_ENDPOINT"),
+        api_key=os.environ.get("AZURE_OPENAI_GPT5_KEY"),
+        model_name=os.environ.get("AZURE_OPENAI_GPT5_MODEL"),
+    )
+
+
+
+    ### Refusal Scorer
+    refuasal = SelfAskRefusalScorer(chat_target=gpt_4o_target)
+
+
+    ### Objective Scorers
+    refuasal_gpt_4o = TrueFalseInverterScorer(
+        scorer=SelfAskRefusalScorer(chat_target=gpt_4o_target)
+    )
+
+    refusal_gpt_4o_unsafe = TrueFalseInverterScorer(
+        scorer=SelfAskRefusalScorer(
+            chat_target=gpt_4o_unsafe
+        )
+    )
+
+    refusal_gpt_4o_unsafe_temp9 = TrueFalseInverterScorer(
+        scorer=SelfAskRefusalScorer(
+            chat_target=gpt_4o_unsafe_temp9
         )
     )
 
@@ -87,18 +107,22 @@ async def evaluate_scorers() -> None:
                 FloatScaleThresholdScorer(scorer=AzureContentFilterScorer(), threshold=0.5),
                 TrueFalseInverterScorer(
                     scorer=SelfAskRefusalScorer(
-                        chat_target=OpenAIChatTarget(
-                            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
-                            temperature=0.9,
-                        )
+                        chat_target=gpt_4o_unsafe_temp9
                     ),
                 ),
             ]
     )
 
     #### Harm Scorers
+    likert_scorers_gpt_4o = []
+    for scale in LikertScalePaths:
+        if scale.evaluation_files is not None:
+            likert_scorers_gpt_4o.append(
+                SelfAskLikertScorer(
+                    chat_target=gpt_4o_target,
+                    likert_scale=scale,
+                )
+            )
 
     # Build list of scorers to evaluate
     scorers = [
@@ -111,6 +135,8 @@ async def evaluate_scorers() -> None:
         acs_t7,
         acs_with_refusal,
     ]
+
+    scorers.extend(likert_scorers_gpt_4o)
     
     print(f"\nEvaluating {len(scorers)} scorer(s)...\n")
     
@@ -141,11 +167,8 @@ async def evaluate_scorers() -> None:
             # Results are saved to disk by evaluate_async() with add_to_evaluation_results=True
             print(f"  ✓ Evaluation complete and saved!")
             print(f"    Elapsed time: {elapsed_time:.1f}s")
-            print(f"    Evaluated {len(results)} dataset(s):")
-            
-            # Show what was saved
-            for dataset_name in results.keys():
-                print(f"      - {dataset_name}")
+            if results:
+                print(f"    Dataset: {results.dataset_name}")
             
         except Exception as e:
             elapsed_time = time.time() - start_time

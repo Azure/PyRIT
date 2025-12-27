@@ -17,6 +17,7 @@ from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 
 
 @pytest.fixture
@@ -89,12 +90,12 @@ async def test_score_piece_async_image(patch_central_database, image_message_pie
 
 def test_default_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar")
-    assert len(scorer._score_categories) == 4
+    assert len(scorer._harm_categories) == 4
 
 
 def test_explicit_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    assert len(scorer._score_categories) == 1
+    assert len(scorer._harm_categories) == 1
 
 
 @pytest.mark.asyncio
@@ -138,12 +139,12 @@ async def test_azure_content_filter_scorer_score(patch_central_database):
 
 def test_azure_content_default_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar")
-    assert len(scorer._score_categories) == 4
+    assert len(scorer._harm_categories) == 4
 
 
 def test_azure_content_explicit_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    assert len(scorer._score_categories) == 1
+    assert len(scorer._harm_categories) == 1
 
 
 @pytest.mark.asyncio
@@ -193,3 +194,43 @@ async def test_azure_content_filter_scorer_accepts_short_text(patch_central_data
         assert len(scores) == 1
         assert scores[0].score_value == str(3.0 / 7)
         mock_client.analyze_text.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_evaluate_async_raises_for_multiple_categories():
+    """Test that evaluate_async raises ValueError when multiple harm categories are configured."""
+    scorer = AzureContentFilterScorer(
+        api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE, TextCategory.VIOLENCE]
+    )
+    with pytest.raises(ValueError, match="requires exactly one harm category"):
+        await scorer.evaluate_async()
+
+
+@pytest.mark.asyncio
+async def test_evaluate_async_raises_for_all_categories():
+    """Test that evaluate_async raises ValueError when all categories are configured (default)."""
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar")
+    with pytest.raises(ValueError, match="requires exactly one harm category"):
+        await scorer.evaluate_async()
+
+
+@pytest.mark.asyncio
+async def test_evaluate_async_sets_file_mapping_for_single_category(patch_central_database):
+    """Test that evaluate_async sets evaluation_file_mapping for single category."""
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
+
+    # Initially no file mapping
+    assert scorer.evaluation_file_mapping is None
+
+    # Mock the parent evaluate_async to avoid actual evaluation
+    with patch.object(FloatScaleScorer, "evaluate_async", AsyncMock(return_value=None)) as mock_eval:
+        await scorer.evaluate_async()
+
+        # File mapping should be set
+        assert scorer.evaluation_file_mapping is not None
+        assert scorer.evaluation_file_mapping.harm_category == "hate_speech"
+        assert scorer.evaluation_file_mapping.result_file == "azure_content_filter/hate_speech_results.jsonl"
+
+        # Parent evaluate_async should be called
+        mock_eval.assert_called_once()
+

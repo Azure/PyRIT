@@ -45,7 +45,7 @@ def get_all_objective_metrics(
     Args:
         file_path (Optional[Path]): Path to a specific JSONL file to load.
             If not provided, uses the default path:
-            SCORER_EVALS_PATH / "objective_evaluation_results.jsonl"
+            SCORER_EVALS_PATH / "objective" / "objective_evaluation_results.jsonl"
     
     Returns:
         List[ScorerMetricsWithIdentity[ObjectiveScorerMetrics]]: List of metrics with scorer identity.
@@ -53,7 +53,7 @@ def get_all_objective_metrics(
             Access scorer info via `entry.scorer_identifier.type`, etc.
     """
     if file_path is None:
-        file_path = SCORER_EVALS_PATH / "objective_evaluation_results.jsonl"
+        file_path = SCORER_EVALS_PATH / "objective" / "objective_evaluation_results.jsonl"
     
     return _load_metrics_from_file(file_path=file_path, metrics_class=ObjectiveScorerMetrics)
 
@@ -140,13 +140,13 @@ def find_objective_metrics_by_hash(
         hash (str): The scorer configuration hash to search for.
         file_path (Optional[Path]): Path to the JSONL file to search.
             If not provided, uses the default path:
-            SCORER_EVALS_PATH / "objective_evaluation_results.jsonl"
+            SCORER_EVALS_PATH / "objective" / "objective_evaluation_results.jsonl"
     
     Returns:
         ObjectiveScorerMetrics if found, else None.
     """
     if file_path is None:
-        file_path = SCORER_EVALS_PATH / "objective_evaluation_results.jsonl"
+        file_path = SCORER_EVALS_PATH / "objective" / "objective_evaluation_results.jsonl"
     
     return _find_metrics_by_hash(file_path=file_path, hash=hash, metrics_class=ObjectiveScorerMetrics)
 

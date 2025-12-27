@@ -165,12 +165,16 @@ class ScorerEvaluator(abc.ABC):
         # Concatenate unique versions, sorted for consistency
         combined_version = "_".join(sorted(dataset_versions))
         
+        # Derive harm_definition from harm_category for harm datasets
+        harm_definition = f"{dataset_files.harm_category}.yaml" if dataset_files.harm_category else None
+        
         # Create combined dataset
         combined_dataset = HumanLabeledDataset(
             entries=all_entries,
             metrics_type=metrics_type,
             name=dataset_files.result_file,
             version=combined_version,
+            harm_definition=harm_definition,
         )
         
         # Check for existing metrics if not in debug mode

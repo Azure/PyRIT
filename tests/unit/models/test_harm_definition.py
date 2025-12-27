@@ -311,8 +311,8 @@ class TestGetAllHarmDefinitions:
         )
 
 
-class TestHarmDefinitionIntegration:
-    """Integration tests for harm definition loading."""
+class TestHarmDefinitionFiles:
+    """Unit tests that validate all harm definition YAML files in the repository."""
 
     @pytest.mark.parametrize(
         "yaml_file",
@@ -331,3 +331,39 @@ class TestHarmDefinitionIntegration:
         for scale in harm_def.scale_descriptions:
             assert scale.score_value, f"{yaml_file.name} has scale with empty score_value"
             assert scale.description, f"{yaml_file.name} has scale with empty description"
+
+    @pytest.mark.parametrize(
+        "yaml_file",
+        list(HARM_DEFINITION_PATH.glob("*.yaml")),
+        ids=lambda p: p.stem,
+    )
+    def test_harm_definition_filename_matches_category(self, yaml_file: Path) -> None:
+        """Test that each harm definition filename matches its category field.
+        
+        This ensures consistency between filenames and categories, which is required
+        because harm_definition paths are derived from harm_category as "{category}.yaml".
+        """
+        harm_def = HarmDefinition.from_yaml(yaml_file)
+        expected_category = yaml_file.stem  # filename without .yaml extension
+        
+        assert harm_def.category == expected_category, (
+            f"Filename '{yaml_file.name}' does not match category '{harm_def.category}'. "
+            f"Either rename the file to '{harm_def.category}.yaml' or update the category field."
+        )
+
+    @pytest.mark.parametrize(
+        "yaml_file",
+        list(HARM_DEFINITION_PATH.glob("*.yaml")),
+        ids=lambda p: p.stem,
+    )
+    def test_harm_definition_category_is_valid_format(self, yaml_file: Path) -> None:
+        """Test that each harm definition category follows the naming convention.
+        
+        Categories must contain only lowercase letters and underscores.
+        """
+        harm_def = HarmDefinition.from_yaml(yaml_file)
+        
+        assert HarmDefinition.validate_category(harm_def.category), (
+            f"Category '{harm_def.category}' in {yaml_file.name} is invalid. "
+            f"Categories must contain only lowercase letters and underscores."
+        )

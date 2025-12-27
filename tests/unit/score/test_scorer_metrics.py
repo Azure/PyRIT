@@ -174,7 +174,9 @@ class TestGetAllObjectiveMetrics:
 
     def test_get_all_objective_metrics_loads_correctly(self, tmp_path):
         """Test loading objective metrics."""
-        objective_file = tmp_path / "objective_evaluation_results.jsonl"
+        objective_dir = tmp_path / "objective"
+        objective_dir.mkdir(parents=True, exist_ok=True)
+        objective_file = objective_dir / "objective_evaluation_results.jsonl"
         self._create_objective_jsonl(objective_file)
         
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
@@ -201,7 +203,9 @@ class TestGetAllObjectiveMetrics:
 
     def test_get_all_objective_metrics_empty_file(self, tmp_path):
         """Test handling of empty JSONL file."""
-        empty_file = tmp_path / "objective_evaluation_results.jsonl"
+        objective_dir = tmp_path / "objective"
+        objective_dir.mkdir(parents=True, exist_ok=True)
+        empty_file = objective_dir / "objective_evaluation_results.jsonl"
         empty_file.touch()
         
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
@@ -218,7 +222,9 @@ class TestGetAllObjectiveMetrics:
 
     def test_get_all_objective_metrics_malformed_entry_skipped(self, tmp_path):
         """Test that malformed entries are skipped with warning."""
-        file_path = tmp_path / "objective_evaluation_results.jsonl"
+        objective_dir = tmp_path / "objective"
+        objective_dir.mkdir(parents=True, exist_ok=True)
+        file_path = objective_dir / "objective_evaluation_results.jsonl"
         
         # Write one valid and one malformed entry
         with open(file_path, "w") as f:
@@ -249,7 +255,9 @@ class TestGetAllObjectiveMetrics:
 
     def test_get_all_objective_metrics_sortable_by_metric(self, tmp_path):
         """Test that results can be sorted by metrics attributes."""
-        objective_file = tmp_path / "objective_evaluation_results.jsonl"
+        objective_dir = tmp_path / "objective"
+        objective_dir.mkdir(parents=True, exist_ok=True)
+        objective_file = objective_dir / "objective_evaluation_results.jsonl"
         self._create_objective_jsonl(objective_file)
         
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
@@ -263,7 +271,9 @@ class TestGetAllObjectiveMetrics:
 
     def test_get_all_objective_metrics_scorer_identifier_reconstructed(self, tmp_path):
         """Test that ScorerIdentifier is properly reconstructed with all fields."""
-        file_path = tmp_path / "objective_evaluation_results.jsonl"
+        objective_dir = tmp_path / "objective"
+        objective_dir.mkdir(parents=True, exist_ok=True)
+        file_path = objective_dir / "objective_evaluation_results.jsonl"
         
         entry = {
             "__type__": "ComplexScorer",

@@ -72,7 +72,11 @@ class ScorerMetrics:
         # Extract metrics from nested structure (always under "metrics" key in evaluation result files)
         metrics_data = data.get("metrics", data)
         
-        return cls(**metrics_data)
+        # Filter out internal fields that shouldn't be passed to __init__
+        # (e.g., _harm_definition_obj is a cached field with init=False)
+        filtered_data = {k: v for k, v in metrics_data.items() if not k.startswith("_")}
+        
+        return cls(**filtered_data)
 
 
 @dataclass
