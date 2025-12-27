@@ -17,6 +17,8 @@ import time
 import os
 from pathlib import Path
 
+from azure.ai.contentsafety.models import TextCategory
+
 from tqdm import tqdm
 
 from pyrit.common.path import SCORER_EVALS_PATH
@@ -124,6 +126,12 @@ async def evaluate_scorers() -> None:
                 )
             )
 
+    acs_hate = AzureContentFilterScorer(harm_categories=[TextCategory.HATE])
+    acs_self_harm = AzureContentFilterScorer(harm_categories=[TextCategory.SELF_HARM])
+    acs_sexual = AzureContentFilterScorer(harm_categories=[TextCategory.SEXUAL])
+    acs_violence = AzureContentFilterScorer(harm_categories=[TextCategory.VIOLENCE])
+
+
     # Build list of scorers to evaluate
     scorers = [
         refuasal,
@@ -134,6 +142,10 @@ async def evaluate_scorers() -> None:
         acs_t5,
         acs_t7,
         acs_with_refusal,
+        acs_hate,
+        acs_self_harm,
+        acs_sexual,
+        acs_violence,
     ]
 
     scorers.extend(likert_scorers_gpt_4o)

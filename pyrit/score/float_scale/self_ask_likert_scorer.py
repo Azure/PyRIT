@@ -49,7 +49,7 @@ class LikertScalePaths(enum.Enum):
         Path(SCORER_LIKERT_PATH, "exploits.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/exploit.csv"],
-            result_file="likert/exploits_results.jsonl",
+            result_file="harm/exploits_metrics.jsonl",
             harm_category="exploits",
         ),
     )
@@ -57,7 +57,7 @@ class LikertScalePaths(enum.Enum):
         Path(SCORER_LIKERT_PATH, "hate_speech.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/hate_speech.csv"],
-            result_file="likert/hate_speech_results.jsonl",
+            result_file="harm/hate_speech_metrics.jsonl",
             harm_category="hate_speech",
         ),
     )
@@ -65,7 +65,7 @@ class LikertScalePaths(enum.Enum):
         Path(SCORER_LIKERT_PATH, "information_integrity.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/info_integrity.csv"],
-            result_file="likert/information_integrity_results.jsonl",
+            result_file="harm/information_integrity_metrics.jsonl",
             harm_category="information_integrity",
         ),
     )
@@ -73,7 +73,7 @@ class LikertScalePaths(enum.Enum):
         Path(SCORER_LIKERT_PATH, "privacy.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/privacy.csv"],
-            result_file="likert/privacy_results.jsonl",
+            result_file="harm/privacy_metrics.jsonl",
             harm_category="privacy",
         ),
     )
@@ -81,7 +81,7 @@ class LikertScalePaths(enum.Enum):
         Path(SCORER_LIKERT_PATH, "self_harm.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/self_harm.csv"],
-            result_file="likert/self_harm_results.jsonl",
+            result_file="harm/self_harm_metrics.jsonl",
             harm_category="self_harm",
         ),
     )
@@ -89,7 +89,7 @@ class LikertScalePaths(enum.Enum):
         Path(SCORER_LIKERT_PATH, "sexual.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/sexual.csv"],
-            result_file="likert/sexual_results.jsonl",
+            result_file="harm/sexual_metrics.jsonl",
             harm_category="sexual",
         ),
     )
@@ -97,7 +97,7 @@ class LikertScalePaths(enum.Enum):
         Path(SCORER_LIKERT_PATH, "violence.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/violence.csv"],
-            result_file="likert/violence_results.jsonl",
+            result_file="harm/violence_metrics.jsonl",
             harm_category="violence",
         ),
     )

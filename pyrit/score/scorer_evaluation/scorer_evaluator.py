@@ -55,7 +55,7 @@ class ScorerEvalDatasetFiles:
         human_labeled_datasets_files (List[str]): List of glob patterns to match CSV files.
             Examples: ["objective/*.csv"], ["objective/hate_speech.csv", "objective/violence.csv"]
         result_file (str): Name of the result file (stem used as dict key in results).
-            Example: "objective_evaluation_results.jsonl"
+            Example: "objective_achieved_metrics.jsonl"
         harm_category (Optional[str]): The harm category for harm scorers (e.g., "hate_speech", "violence").
             Required for harm evaluations, ignored for objective evaluations. Defaults to None.
     """
@@ -248,8 +248,8 @@ class ScorerEvaluator(abc.ABC):
                     logger.warning("harm_category must be provided for harm scorer evaluations")
                     return (False, None)
                 existing = find_harm_metrics_by_hash(
-                    file_path=result_file_path,
                     hash=scorer_hash,
+                    harm_category=harm_category,
                 )
             else:
                 existing = find_objective_metrics_by_hash(
@@ -429,8 +429,11 @@ class ScorerEvaluator(abc.ABC):
                     raise ValueError("Could not extract harm_category from HarmScorerMetrics dataset")
             
             # Create metrics without trial_scores (too large for registry)
+            # and without internal fields (those starting with _)
             metrics_dict = asdict(metrics)
             metrics_dict.pop("trial_scores", None)
+            # Filter out internal fields that have init=False (e.g., _harm_definition_obj)
+            metrics_dict = {k: v for k, v in metrics_dict.items() if not k.startswith("_")}
             registry_metrics = type(metrics)(**metrics_dict)
             
             replace_evaluation_results(

@@ -229,7 +229,7 @@ async def test_evaluate_async_sets_file_mapping_for_single_category(patch_centra
         # File mapping should be set
         assert scorer.evaluation_file_mapping is not None
         assert scorer.evaluation_file_mapping.harm_category == "hate_speech"
-        assert scorer.evaluation_file_mapping.result_file == "azure_content_filter/hate_speech_results.jsonl"
+        assert scorer.evaluation_file_mapping.result_file == "azure_content_filter/hate_speech_metrics.jsonl"
 
         # Parent evaluate_async should be called
         mock_eval.assert_called_once()

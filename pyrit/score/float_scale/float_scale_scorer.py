@@ -49,19 +49,16 @@ class FloatScaleScorer(Scorer):
         Returns:
             HarmScorerMetrics: The metrics for this scorer, or None if not found or not configured.
         """
-        from pyrit.common.path import SCORER_EVALS_PATH
         from pyrit.score.scorer_evaluation.scorer_metrics_io import find_harm_metrics_by_hash
         
-        if self.evaluation_file_mapping is None:
+        if self.evaluation_file_mapping is None or self.evaluation_file_mapping.harm_category is None:
             return None
         
         scorer_hash = self.scorer_identifier.compute_hash()
-        result_file = SCORER_EVALS_PATH / self.evaluation_file_mapping.result_file
         
-        if not result_file.exists():
-            return None
-        
-        return find_harm_metrics_by_hash(hash=scorer_hash, file_path=result_file)
+        return find_harm_metrics_by_hash(
+            hash=scorer_hash, harm_category=self.evaluation_file_mapping.harm_category
+        )
 
     async def _score_value_with_llm(
         self,

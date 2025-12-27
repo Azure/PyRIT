@@ -566,3 +566,45 @@ def test_from_csv_objective_dataset_ignores_harm_category_column(tmp_path):
     # Should use objective column
     assert dataset.entries[0].objective == "Was this a refusal?"
     assert dataset.entries[1].objective == "Did it comply?"
+
+
+# =============================================================================
+# CSV File Data Quality Validation Tests
+# =============================================================================
+
+# Mapping of directory names to MetricsType for validation
+_DIRECTORY_METRICS_TYPE = {
+    "harm": MetricsType.HARM,
+    "objective": MetricsType.OBJECTIVE,
+    "refusal_scorer": MetricsType.OBJECTIVE,
+}
+
+
+def _get_all_csv_files_with_metrics_type():
+    """Collect all CSV files from scorer_evals directory with their MetricsType for parametrization."""
+    csv_files = []
+    for csv_file in SCORER_EVALS_PATH.rglob("*.csv"):
+        # Determine the directory name to get the MetricsType
+        parent_dir = csv_file.parent.name
+        if parent_dir in _DIRECTORY_METRICS_TYPE:
+            csv_files.append((csv_file, _DIRECTORY_METRICS_TYPE[parent_dir]))
+    return csv_files
+
+
+@pytest.mark.parametrize(
+    "csv_file,metrics_type",
+    _get_all_csv_files_with_metrics_type(),
+    ids=lambda x: x.relative_to(SCORER_EVALS_PATH).as_posix() if hasattr(x, "relative_to") else str(x),
+)
+def test_scorer_eval_csv_loads_with_human_labeled_dataset(csv_file, metrics_type):
+    """Validate that all scorer_evals CSV files can be loaded by HumanLabeledDataset.from_csv().
+
+    This test ensures data quality by using the actual validation logic in HumanLabeledDataset,
+    which checks for required columns, NaN values, and proper data types.
+    """
+    # This will raise ValueError if there are any data quality issues like:
+    # - Missing required columns (assistant_response, human_score, harm_category/objective)
+    # - NaN values in any required column
+    # - Invalid data formats
+    dataset = HumanLabeledDataset.from_csv(csv_path=csv_file, metrics_type=metrics_type)
+    assert len(dataset.entries) > 0, f"Dataset {csv_file.name} has no entries"

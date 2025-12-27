@@ -54,7 +54,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
 
         self.evaluation_file_mapping = ScorerEvalDatasetFiles(
             human_labeled_datasets_files=["refusal_scorer/*.csv"],
-            result_file="refusal_scorer/refusal_evaluation_results.jsonl",
+            result_file="refusal_scorer/refusal_metrics.jsonl",
         )
 
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)

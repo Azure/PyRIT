@@ -54,7 +54,7 @@ class TrueFalseScorer(Scorer):
 
             self.evaluation_file_mapping = ScorerEvalDatasetFiles(
                 human_labeled_datasets_files=["objective/*.csv"],
-                result_file="objective/objective_evaluation_results.jsonl",
+                result_file="objective/objective_achieved_metrics.jsonl",
             )
         
         super().__init__(validator=validator)

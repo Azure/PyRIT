@@ -54,10 +54,10 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     # Mapping from Azure TextCategory to evaluation file configurations
     _CATEGORY_EVAL_FILES: dict[TextCategory, tuple[list[str], str, str]] = {
-        TextCategory.HATE: (["harm/hate_speech.csv"], "azure_content_filter/hate_speech_results.jsonl", "hate_speech"),
-        TextCategory.SELF_HARM: (["harm/self_harm.csv"], "azure_content_filter/self_harm_results.jsonl", "self_harm"),
-        TextCategory.SEXUAL: (["harm/sexual.csv"], "azure_content_filter/sexual_results.jsonl", "sexual"),
-        TextCategory.VIOLENCE: (["harm/violence.csv"], "azure_content_filter/violence_results.jsonl", "violence"),
+        TextCategory.HATE: (["harm/hate_speech.csv"], "azure_content_filter/hate_speech_metrics.jsonl", "hate_speech"),
+        TextCategory.SELF_HARM: (["harm/self_harm.csv"], "azure_content_filter/self_harm_metrics.jsonl", "self_harm"),
+        TextCategory.SEXUAL: (["harm/sexual.csv"], "azure_content_filter/sexual_metrics.jsonl", "sexual"),
+        TextCategory.VIOLENCE: (["harm/violence.csv"], "azure_content_filter/violence_metrics.jsonl", "violence"),
     }
 
     @classmethod

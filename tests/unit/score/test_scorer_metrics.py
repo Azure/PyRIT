@@ -176,7 +176,7 @@ class TestGetAllObjectiveMetrics:
         """Test loading objective metrics."""
         objective_dir = tmp_path / "objective"
         objective_dir.mkdir(parents=True, exist_ok=True)
-        objective_file = objective_dir / "objective_evaluation_results.jsonl"
+        objective_file = objective_dir / "objective_achieved_metrics.jsonl"
         self._create_objective_jsonl(objective_file)
         
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
@@ -205,7 +205,7 @@ class TestGetAllObjectiveMetrics:
         """Test handling of empty JSONL file."""
         objective_dir = tmp_path / "objective"
         objective_dir.mkdir(parents=True, exist_ok=True)
-        empty_file = objective_dir / "objective_evaluation_results.jsonl"
+        empty_file = objective_dir / "objective_achieved_metrics.jsonl"
         empty_file.touch()
         
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
@@ -224,7 +224,7 @@ class TestGetAllObjectiveMetrics:
         """Test that malformed entries are skipped with warning."""
         objective_dir = tmp_path / "objective"
         objective_dir.mkdir(parents=True, exist_ok=True)
-        file_path = objective_dir / "objective_evaluation_results.jsonl"
+        file_path = objective_dir / "objective_achieved_metrics.jsonl"
         
         # Write one valid and one malformed entry
         with open(file_path, "w") as f:
@@ -257,7 +257,7 @@ class TestGetAllObjectiveMetrics:
         """Test that results can be sorted by metrics attributes."""
         objective_dir = tmp_path / "objective"
         objective_dir.mkdir(parents=True, exist_ok=True)
-        objective_file = objective_dir / "objective_evaluation_results.jsonl"
+        objective_file = objective_dir / "objective_achieved_metrics.jsonl"
         self._create_objective_jsonl(objective_file)
         
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
@@ -273,7 +273,7 @@ class TestGetAllObjectiveMetrics:
         """Test that ScorerIdentifier is properly reconstructed with all fields."""
         objective_dir = tmp_path / "objective"
         objective_dir.mkdir(parents=True, exist_ok=True)
-        file_path = objective_dir / "objective_evaluation_results.jsonl"
+        file_path = objective_dir / "objective_achieved_metrics.jsonl"
         
         entry = {
             "__type__": "ComplexScorer",
@@ -338,11 +338,13 @@ class TestGetAllHarmMetrics:
 
     def test_get_all_harm_metrics_loads_correctly(self, tmp_path):
         """Test loading harm metrics."""
-        harm_file = tmp_path / "harm_evaluation_results.jsonl"
+        harm_path = tmp_path / "harm"
+        harm_path.mkdir()
+        harm_file = harm_path / "hate_speech_metrics.jsonl"
         self._create_harm_jsonl(harm_file)
         
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
-            results = get_all_harm_metrics()
+            results = get_all_harm_metrics("hate_speech")
         
         assert len(results) == 1
         assert isinstance(results[0].metrics, HarmScorerMetrics)
@@ -350,30 +352,35 @@ class TestGetAllHarmMetrics:
         assert results[0].metrics.mean_absolute_error == 0.12
         assert results[0].metrics.harm_category == "hate_speech"
 
-    def test_get_all_harm_metrics_custom_file_path(self, tmp_path):
-        """Test loading from a custom file path."""
-        custom_file = tmp_path / "my_harm_results.jsonl"
-        self._create_harm_jsonl(custom_file)
+    def test_get_all_harm_metrics_different_category(self, tmp_path):
+        """Test loading from a different harm category."""
+        harm_path = tmp_path / "harm"
+        harm_path.mkdir()
+        violence_file = harm_path / "violence_metrics.jsonl"
+        self._create_harm_jsonl(violence_file)
         
-        results = get_all_harm_metrics(file_path=custom_file)
+        with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
+            results = get_all_harm_metrics("violence")
         
         assert len(results) == 1
         assert isinstance(results[0].metrics, HarmScorerMetrics)
 
     def test_get_all_harm_metrics_empty_file(self, tmp_path):
         """Test handling of empty JSONL file."""
-        empty_file = tmp_path / "harm_evaluation_results.jsonl"
+        harm_path = tmp_path / "harm"
+        harm_path.mkdir()
+        empty_file = harm_path / "hate_speech_metrics.jsonl"
         empty_file.touch()
         
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
-            results = get_all_harm_metrics()
+            results = get_all_harm_metrics("hate_speech")
         
         assert results == []
 
     def test_get_all_harm_metrics_missing_file(self, tmp_path):
         """Test handling of missing file (returns empty list)."""
         with patch("pyrit.score.scorer_evaluation.scorer_metrics_io.SCORER_EVALS_PATH", tmp_path):
-            results = get_all_harm_metrics()
+            results = get_all_harm_metrics("nonexistent_category")
         
         assert results == []
 

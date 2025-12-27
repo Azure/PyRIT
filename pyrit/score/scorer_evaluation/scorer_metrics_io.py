@@ -45,7 +45,7 @@ def get_all_objective_metrics(
     Args:
         file_path (Optional[Path]): Path to a specific JSONL file to load.
             If not provided, uses the default path:
-            SCORER_EVALS_PATH / "objective" / "objective_evaluation_results.jsonl"
+            SCORER_EVALS_PATH / "objective" / "objective_achieved_metrics.jsonl"
     
     Returns:
         List[ScorerMetricsWithIdentity[ObjectiveScorerMetrics]]: List of metrics with scorer identity.
@@ -53,34 +53,30 @@ def get_all_objective_metrics(
             Access scorer info via `entry.scorer_identifier.type`, etc.
     """
     if file_path is None:
-        file_path = SCORER_EVALS_PATH / "objective" / "objective_evaluation_results.jsonl"
+        file_path = SCORER_EVALS_PATH / "objective" / "objective_achieved_metrics.jsonl"
     
     return _load_metrics_from_file(file_path=file_path, metrics_class=ObjectiveScorerMetrics)
 
 
 def get_all_harm_metrics(
-    file_path: Optional[Path] = None,
+    harm_category: str,
 ) -> List[ScorerMetricsWithIdentity[HarmScorerMetrics]]:
     """
-    Load all harm scorer metrics with full scorer identity for comparison.
+    Load all harm scorer metrics for a specific harm category.
     
     Returns a list of ScorerMetricsWithIdentity[HarmScorerMetrics] objects that wrap
     the scorer's identity information and its performance metrics, enabling clean attribute
     access like `entry.metrics.mean_absolute_error` or `entry.metrics.harm_category`.
     
     Args:
-        file_path (Optional[Path]): Path to a specific JSONL file to load.
-            If not provided, uses the default path:
-            SCORER_EVALS_PATH / "harm_evaluation_results.jsonl"
+        harm_category (str): The harm category to load metrics for (e.g., "hate_speech", "violence").
     
     Returns:
         List[ScorerMetricsWithIdentity[HarmScorerMetrics]]: List of metrics with scorer identity.
             Access metrics via `entry.metrics.mean_absolute_error`, `entry.metrics.harm_category`, etc.
             Access scorer info via `entry.scorer_identifier.type`, etc.
     """
-    if file_path is None:
-        file_path = SCORER_EVALS_PATH / "harm_evaluation_results.jsonl"
-    
+    file_path = SCORER_EVALS_PATH / "harm" / f"{harm_category}_metrics.jsonl"
     return _load_metrics_from_file(file_path=file_path, metrics_class=HarmScorerMetrics)
 
 
@@ -106,6 +102,8 @@ def _load_metrics_from_file(
     
     for entry in entries:
         metrics_dict = entry.get("metrics", {})
+        # Filter out internal fields that have init=False (e.g., _harm_definition_obj)
+        metrics_dict = {k: v for k, v in metrics_dict.items() if not k.startswith("_")}
         
         # Extract scorer identity (everything except metrics)
         identity_dict = {k: v for k, v in entry.items() if k != "metrics"}
@@ -140,13 +138,13 @@ def find_objective_metrics_by_hash(
         hash (str): The scorer configuration hash to search for.
         file_path (Optional[Path]): Path to the JSONL file to search.
             If not provided, uses the default path:
-            SCORER_EVALS_PATH / "objective" / "objective_evaluation_results.jsonl"
+            SCORER_EVALS_PATH / "objective" / "objective_achieved_metrics.jsonl"
     
     Returns:
         ObjectiveScorerMetrics if found, else None.
     """
     if file_path is None:
-        file_path = SCORER_EVALS_PATH / "objective" / "objective_evaluation_results.jsonl"
+        file_path = SCORER_EVALS_PATH / "objective" / "objective_achieved_metrics.jsonl"
     
     return _find_metrics_by_hash(file_path=file_path, hash=hash, metrics_class=ObjectiveScorerMetrics)
 
@@ -154,23 +152,19 @@ def find_objective_metrics_by_hash(
 def find_harm_metrics_by_hash(
     *,
     hash: str,
-    file_path: Optional[Path] = None,
+    harm_category: str,
 ) -> Optional[HarmScorerMetrics]:
     """
     Find harm scorer metrics by configuration hash.
     
     Args:
         hash (str): The scorer configuration hash to search for.
-        file_path (Optional[Path]): Path to the JSONL file to search.
-            If not provided, uses the default path:
-            SCORER_EVALS_PATH / "harm_evaluation_results.jsonl"
+        harm_category (str): The harm category to search in (e.g., "hate_speech", "violence").
     
     Returns:
         HarmScorerMetrics if found, else None.
     """
-    if file_path is None:
-        file_path = SCORER_EVALS_PATH / "harm_evaluation_results.jsonl"
-    
+    file_path = SCORER_EVALS_PATH / "harm" / f"{harm_category}_metrics.jsonl"
     return _find_metrics_by_hash(file_path=file_path, hash=hash, metrics_class=HarmScorerMetrics)
 
 
@@ -198,6 +192,8 @@ def _find_metrics_by_hash(
     for entry in entries:
         if entry.get("hash") == hash:
             metrics_dict = entry.get("metrics", {})
+            # Filter out internal fields that have init=False (e.g., _harm_definition_obj)
+            metrics_dict = {k: v for k, v in metrics_dict.items() if not k.startswith("_")}
             try:
                 return metrics_class(**metrics_dict)
             except Exception as e:

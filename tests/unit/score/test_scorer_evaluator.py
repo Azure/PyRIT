@@ -71,7 +71,11 @@ async def test__run_evaluation_async_harm(mock_harm_scorer):
     entry1 = HarmHumanLabeledEntry(responses, [0.1, 0.3], "hate_speech")
     entry2 = HarmHumanLabeledEntry(responses, [0.2, 0.6], "hate_speech")
     mock_dataset = HumanLabeledDataset(
-        name="test_dataset", metrics_type=MetricsType.HARM, entries=[entry1, entry2], version="1.0"
+        name="test_dataset",
+        metrics_type=MetricsType.HARM,
+        entries=[entry1, entry2],
+        version="1.0",
+        harm_definition="hate_speech.yaml",
     )
     # Patch scorer to return fixed scores
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
@@ -391,8 +395,8 @@ def test_should_skip_evaluation_harm_found(mock_find, mock_harm_scorer, tmp_path
         assert should_skip is True
         assert result == expected_metrics
         mock_find.assert_called_once_with(
-            file_path=result_file,
             hash="test_hash_456",
+            harm_category="hate_speech",
         )
 
 
