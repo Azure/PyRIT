@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 import yaml
 
-from pyrit.common.path import HARM_DEFINITION_PATH, SCORER_LIKERT_PATH
+from pyrit.common.path import SCORER_LIKERT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -176,7 +176,9 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         # Auto-set evaluation file mapping from the LikertScalePaths enum
         if likert_scale.evaluation_files is not None:
-            from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
+            from pyrit.score.scorer_evaluation.scorer_evaluator import (
+                ScorerEvalDatasetFiles,
+            )
 
             eval_files = likert_scale.evaluation_files
             self.evaluation_file_mapping = ScorerEvalDatasetFiles(

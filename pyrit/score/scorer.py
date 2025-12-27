@@ -9,7 +9,6 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -21,7 +20,6 @@ from typing import (
     cast,
 )
 
-import pyrit
 from pyrit.exceptions import (
     InvalidJsonException,
     PyritException,
@@ -47,7 +45,10 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
-    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles, ScorerMetrics
+    from pyrit.score.scorer_evaluation.scorer_evaluator import (
+        ScorerEvalDatasetFiles,
+        ScorerMetrics,
+    )
 
 
 class Scorer(abc.ABC):
@@ -56,7 +57,7 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
-    
+
     # Evaluation configuration - maps input dataset files to a result file
     # Specifies glob patterns for datasets and a result file name
     evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
@@ -318,14 +319,14 @@ class Scorer(abc.ABC):
     def get_scorer_metrics(self) -> Optional["ScorerMetrics"]:
         """
         Get evaluation metrics for this scorer from the configured evaluation result file.
-        
+
         Looks up metrics by this scorer's identity hash in the JSONL result file.
         The result file may contain entries for multiple scorer configurations.
-        
+
         Subclasses must implement this to return the appropriate metrics type:
         - TrueFalseScorer subclasses should return ObjectiveScorerMetrics
         - FloatScaleScorer subclasses should return HarmScorerMetrics
-        
+
         Returns:
             ScorerMetrics: The metrics for this scorer, or None if not found or not configured.
         """

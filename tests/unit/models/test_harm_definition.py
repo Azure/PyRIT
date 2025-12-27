@@ -6,17 +6,16 @@ Unit tests for the harm_definition module.
 """
 
 from pathlib import Path
-from typing import Dict
 
 import pytest
 import yaml
 
+from pyrit.common.path import HARM_DEFINITION_PATH
 from pyrit.models.harm_definition import (
     HarmDefinition,
     ScaleDescription,
     get_all_harm_definitions,
 )
-from pyrit.common.path import HARM_DEFINITION_PATH
 
 
 class TestScaleDescription:
@@ -306,9 +305,7 @@ class TestGetAllHarmDefinitions:
         # Count YAML files in the directory
         yaml_files = list(HARM_DEFINITION_PATH.glob("*.yaml"))
 
-        assert len(result) == len(yaml_files), (
-            f"Expected {len(yaml_files)} harm definitions, got {len(result)}"
-        )
+        assert len(result) == len(yaml_files), f"Expected {len(yaml_files)} harm definitions, got {len(result)}"
 
 
 class TestHarmDefinitionFiles:
@@ -339,13 +336,13 @@ class TestHarmDefinitionFiles:
     )
     def test_harm_definition_filename_matches_category(self, yaml_file: Path) -> None:
         """Test that each harm definition filename matches its category field.
-        
+
         This ensures consistency between filenames and categories, which is required
         because harm_definition paths are derived from harm_category as "{category}.yaml".
         """
         harm_def = HarmDefinition.from_yaml(yaml_file)
         expected_category = yaml_file.stem  # filename without .yaml extension
-        
+
         assert harm_def.category == expected_category, (
             f"Filename '{yaml_file.name}' does not match category '{harm_def.category}'. "
             f"Either rename the file to '{harm_def.category}.yaml' or update the category field."
@@ -358,11 +355,11 @@ class TestHarmDefinitionFiles:
     )
     def test_harm_definition_category_is_valid_format(self, yaml_file: Path) -> None:
         """Test that each harm definition category follows the naming convention.
-        
+
         Categories must contain only lowercase letters and underscores.
         """
         harm_def = HarmDefinition.from_yaml(yaml_file)
-        
+
         assert HarmDefinition.validate_category(harm_def.category), (
             f"Category '{harm_def.category}' in {yaml_file.name} is invalid. "
             f"Categories must contain only lowercase letters and underscores."

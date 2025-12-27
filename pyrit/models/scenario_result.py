@@ -186,7 +186,9 @@ class ScenarioResult:
             ScorerMetrics: The evaluation metrics object, or None if not found.
         """
         # import here to avoid circular imports
-        from pyrit.score.scorer_evaluation.scorer_metrics_io import find_objective_metrics_by_hash
+        from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+            find_objective_metrics_by_hash,
+        )
 
         # Use the stored hash directly for lookup (avoids needing to reconstruct ScorerIdentifier)
         scorer_hash = self.objective_scorer_identifier.get("hash")

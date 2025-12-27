@@ -13,8 +13,6 @@ from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
-    HarmScorerEvaluator,
-    HarmScorerMetrics,
     Scorer,
     ScorerPromptValidator,
     TrueFalseScorer,

@@ -169,9 +169,7 @@ def test_validate_harm_dataset_multiple_harm_categories_raises(sample_messages):
 def test_validate_harm_dataset_missing_harm_definition_raises(sample_messages):
     """Validate raises when HARM dataset is missing harm_definition."""
     entry = HarmHumanLabeledEntry(sample_messages, [0.1], "hate_speech")
-    dataset = HumanLabeledDataset(
-        name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM, version="1.0"
-    )
+    dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM, version="1.0")
     with pytest.raises(ValueError, match="harm_definition must be specified"):
         dataset.validate()
 

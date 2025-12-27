@@ -517,6 +517,7 @@ API Reference
 
     AzureContentFilterScorer
     BatchScorer
+    ConsoleScorerPrinter
     ContentClassifierPaths
     ConversationScorer
     create_conversation_scorer
@@ -527,6 +528,8 @@ API Reference
     FloatScaleScorerByCategory
     FloatScaleThresholdScorer
     GandalfScorer
+    get_all_harm_definitions
+    HarmDefinition
     HarmHumanLabeledEntry
     HarmScorerEvaluator
     HarmScorerMetrics
@@ -552,7 +555,9 @@ API Reference
     ScorerIdentifier
     ScorerMetrics
     ScorerMetricsWithIdentity
+    ScorerPrinter
     ScorerPromptValidator
+    ScaleDescription
     get_all_harm_metrics
     get_all_objective_metrics
     SelfAskCategoryScorer

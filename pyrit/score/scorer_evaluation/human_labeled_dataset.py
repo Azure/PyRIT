@@ -5,7 +5,7 @@
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union, cast, get_args
+from typing import TYPE_CHECKING, List, Optional, Union, cast
 
 import pandas as pd
 
@@ -79,10 +79,10 @@ class HarmHumanLabeledEntry(HumanLabeledEntry):
             ValueError: If harm_category is None or empty, or if any human score is not between 0.0 and 1.0 inclusive.
         """
         super().__post_init__()
-        
+
         if not self.harm_category or not self.harm_category.strip():
             raise ValueError("harm_category must not be None or empty.")
-        
+
         if not all(score >= 0.0 and score <= 1.0 for score in self.human_scores):
             raise ValueError("All human scores must be between 0.0 and 1.0 inclusive.")
 
@@ -107,7 +107,7 @@ class ObjectiveHumanLabeledEntry(HumanLabeledEntry):
             ValueError: If objective is None or empty.
         """
         super().__post_init__()
-        
+
         if not self.objective or not self.objective.strip():
             raise ValueError("objective must not be None or empty.")
 
@@ -192,14 +192,14 @@ class HumanLabeledDataset:
     ) -> "HumanLabeledDataset":
         """
         Load a human-labeled dataset from a CSV file with standard column names.
-        
+
         Expected CSV format:
         - 'assistant_response': The assistant's response text
         - 'human_score': Human-assigned label (can have multiple columns for multiple raters)
         - 'objective': For OBJECTIVE datasets, the objective being evaluated
         - 'data_type': Optional data type (defaults to 'text' if not present)
-        
-        You can optionally include a # comment line at the top of the CSV file to specify 
+
+        You can optionally include a # comment line at the top of the CSV file to specify
         the dataset version and harm definition path. The format is:
         - For harm datasets: # dataset_version=x.y, harm_definition=path/to/definition.yaml
         - For objective datasets: # dataset_version=x.y
@@ -207,11 +207,11 @@ class HumanLabeledDataset:
         Args:
             csv_path (Union[str, Path]): The path to the CSV file.
             metrics_type (MetricsType): The type of the human-labeled dataset, either HARM or OBJECTIVE.
-            dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred 
+            dataset_name (str, Optional): The name of the dataset. If not provided, it will be inferred
                 from the CSV file name.
-            version (str, Optional): The version of the dataset. If not provided here, it will be inferred 
+            version (str, Optional): The version of the dataset. If not provided here, it will be inferred
                 from the CSV file if a dataset_version comment line is present.
-            harm_definition (str, Optional): Path to the harm definition YAML file. If not provided here, 
+            harm_definition (str, Optional): Path to the harm definition YAML file. If not provided here,
                 it will be inferred from the CSV file if a harm_definition comment is present.
 
         Returns:
@@ -249,7 +249,7 @@ class HumanLabeledDataset:
                 version = parsed_version
             else:
                 raise ValueError("Version not specified and not found in CSV file.")
-        
+
         if not harm_definition and parsed_harm_definition:
             harm_definition = parsed_harm_definition
 
@@ -329,11 +329,11 @@ class HumanLabeledDataset:
     def validate(self) -> None:
         """
         Validate that the dataset is internally consistent.
-        
+
         Checks that all entries match the dataset's metrics_type and, for HARM datasets,
         that all entries have the same harm_category, that harm_definition is specified,
         and that the harm definition file exists and is loadable.
-        
+
         Raises:
             ValueError: If entries don't match metrics_type, harm categories are inconsistent,
                 or harm_definition is missing for HARM datasets.
@@ -341,18 +341,18 @@ class HumanLabeledDataset:
         """
         if not self.entries:
             return
-        
+
         if self.metrics_type == MetricsType.HARM:
             if not self.harm_definition:
                 raise ValueError(
                     "harm_definition must be specified for HARM datasets. "
                     "Provide a path to the harm definition YAML file."
                 )
-            
+
             # Validate that the harm definition file exists and is loadable
             # This will raise FileNotFoundError or ValueError if invalid
             self.get_harm_definition()
-            
+
             harm_categories = set()
             for index, entry in enumerate(self.entries):
                 if not isinstance(entry, HarmHumanLabeledEntry):
@@ -361,10 +361,10 @@ class HumanLabeledDataset:
                         "but the HumanLabeledDataset type is HARM."
                     )
                 harm_categories.add(entry.harm_category)
-            
+
             if len(harm_categories) > 1:
                 raise ValueError("Evaluating a dataset with multiple harm categories is not currently supported.")
-        
+
         elif self.metrics_type == MetricsType.OBJECTIVE:
             for index, entry in enumerate(self.entries):
                 if not isinstance(entry, ObjectiveHumanLabeledEntry):
@@ -391,7 +391,7 @@ class HumanLabeledDataset:
         # Required columns depend on metrics type
         objective_or_harm_col = STANDARD_HARM_COL if metrics_type == MetricsType.HARM else STANDARD_OBJECTIVE_COL
         required_columns = [STANDARD_ASSISTANT_RESPONSE_COL, objective_or_harm_col]
-        
+
         for column in required_columns:
             if column not in eval_df.columns:
                 raise ValueError(
@@ -400,14 +400,14 @@ class HumanLabeledDataset:
                 )
             if eval_df[column].isna().any():
                 raise ValueError(f"Column '{column}' contains NaN values.")
-        
+
         # Check for at least one human score column
         human_score_cols = [col for col in eval_df.columns if col.startswith(STANDARD_HUMAN_LABEL_COL)]
         if not human_score_cols:
             raise ValueError(
                 f"No human score columns found. Expected at least one column starting with '{STANDARD_HUMAN_LABEL_COL}'."
             )
-        
+
         # Validate human score columns don't have NaN
         for col in human_score_cols:
             if eval_df[col].isna().any():

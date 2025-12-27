@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
@@ -81,9 +79,7 @@ async def test__run_evaluation_async_harm(mock_harm_scorer):
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
     mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    metrics = await evaluator._run_evaluation_async(
-        labeled_dataset=mock_dataset, num_scorer_trials=2
-    )
+    metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=2)
     assert mock_harm_scorer._memory.add_message_to_memory.call_count == 2
     assert isinstance(metrics, HarmScorerMetrics)
     assert metrics.mean_absolute_error == 0.0
@@ -100,13 +96,9 @@ async def test__run_evaluation_async_objective(mock_objective_scorer):
         name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry], version="1.0"
     )
     # Patch scorer to return fixed scores
-    mock_objective_scorer.score_prompts_batch_async = AsyncMock(
-        return_value=[MagicMock(get_value=lambda: False)]
-    )
+    mock_objective_scorer.score_prompts_batch_async = AsyncMock(return_value=[MagicMock(get_value=lambda: False)])
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
-    metrics = await evaluator._run_evaluation_async(
-        labeled_dataset=mock_dataset, num_scorer_trials=2
-    )
+    metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=2)
     assert mock_objective_scorer._memory.add_message_to_memory.call_count == 1
     assert isinstance(metrics, ObjectiveScorerMetrics)
     assert metrics.accuracy == 0.0
@@ -123,16 +115,12 @@ async def test__run_evaluation_async_objective_returns_metrics(mock_objective_sc
     mock_dataset = HumanLabeledDataset(
         name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry], version="1.0"
     )
-    mock_objective_scorer.score_prompts_batch_async = AsyncMock(
-        return_value=[MagicMock(get_value=lambda: True)]
-    )
+    mock_objective_scorer.score_prompts_batch_async = AsyncMock(return_value=[MagicMock(get_value=lambda: True)])
     mock_objective_scorer.scorer_identifier = MagicMock()
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
 
-    metrics = await evaluator._run_evaluation_async(
-        labeled_dataset=mock_dataset, num_scorer_trials=1
-    )
-    
+    metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=1)
+
     # Verify metrics returned without registry writing
     assert metrics is not None
     assert isinstance(metrics, ObjectiveScorerMetrics)
@@ -201,9 +189,9 @@ def test_should_skip_evaluation_objective_found(mock_find, mock_objective_scorer
     """Test skipping evaluation when existing objective metrics have sufficient trials."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
     result_file = tmp_path / "test_results.jsonl"
-    
+
     # Mock the compute_hash method on the scorer_identifier
-    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+    with patch.object(mock_objective_scorer.scorer_identifier, "compute_hash", return_value="test_hash_123"):
         # Create expected metrics with same version and sufficient trials
         expected_metrics = ObjectiveScorerMetrics(
             num_responses=10,
@@ -218,14 +206,14 @@ def test_should_skip_evaluation_objective_found(mock_find, mock_objective_scorer
             dataset_version="1.0",
         )
         mock_find.return_value = expected_metrics
-        
+
         should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
             num_scorer_trials=3,
             harm_category=None,
             result_file_path=result_file,
         )
-        
+
         assert should_skip is True
         assert result == expected_metrics
         mock_find.assert_called_once_with(
@@ -239,17 +227,17 @@ def test_should_skip_evaluation_objective_not_found(mock_find, mock_objective_sc
     """Test when no existing objective metrics are found in registry."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
     result_file = tmp_path / "test_results.jsonl"
-    
-    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+
+    with patch.object(mock_objective_scorer.scorer_identifier, "compute_hash", return_value="test_hash_123"):
         mock_find.return_value = None
-        
+
         should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
             num_scorer_trials=3,
             harm_category=None,
             result_file_path=result_file,
         )
-        
+
         assert should_skip is False
         assert result is None
         mock_find.assert_called_once_with(
@@ -263,8 +251,8 @@ def test_should_skip_evaluation_version_changed_runs_evaluation(mock_find, mock_
     """Test that different dataset_version triggers re-evaluation (replace existing)."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
     result_file = tmp_path / "test_results.jsonl"
-    
-    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+
+    with patch.object(mock_objective_scorer.scorer_identifier, "compute_hash", return_value="test_hash_123"):
         # Metrics exist but with different dataset version
         existing_metrics = ObjectiveScorerMetrics(
             num_responses=10,
@@ -279,7 +267,7 @@ def test_should_skip_evaluation_version_changed_runs_evaluation(mock_find, mock_
             dataset_version="2.0",  # Different version
         )
         mock_find.return_value = existing_metrics
-        
+
         # When version differs, should NOT skip (run and replace)
         should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",  # Looking for version 1.0
@@ -287,7 +275,7 @@ def test_should_skip_evaluation_version_changed_runs_evaluation(mock_find, mock_
             harm_category=None,
             result_file_path=result_file,
         )
-        
+
         assert should_skip is False
         assert result is None
 
@@ -297,8 +285,8 @@ def test_should_skip_evaluation_fewer_trials_requested_skips(mock_find, mock_obj
     """Test that requesting fewer trials than existing skips evaluation."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
     result_file = tmp_path / "test_results.jsonl"
-    
-    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+
+    with patch.object(mock_objective_scorer.scorer_identifier, "compute_hash", return_value="test_hash_123"):
         # Metrics exist with more trials than requested
         existing_metrics = ObjectiveScorerMetrics(
             num_responses=10,
@@ -313,7 +301,7 @@ def test_should_skip_evaluation_fewer_trials_requested_skips(mock_find, mock_obj
             dataset_version="1.0",
         )
         mock_find.return_value = existing_metrics
-        
+
         # Requesting only 3 trials - should skip since existing has more
         should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
@@ -321,7 +309,7 @@ def test_should_skip_evaluation_fewer_trials_requested_skips(mock_find, mock_obj
             harm_category=None,
             result_file_path=result_file,
         )
-        
+
         assert should_skip is True
         assert result == existing_metrics
 
@@ -331,8 +319,8 @@ def test_should_skip_evaluation_more_trials_requested_runs(mock_find, mock_objec
     """Test that requesting more trials than existing triggers re-evaluation."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
     result_file = tmp_path / "test_results.jsonl"
-    
-    with patch.object(mock_objective_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_123"):
+
+    with patch.object(mock_objective_scorer.scorer_identifier, "compute_hash", return_value="test_hash_123"):
         # Metrics exist with fewer trials than requested
         existing_metrics = ObjectiveScorerMetrics(
             num_responses=10,
@@ -347,7 +335,7 @@ def test_should_skip_evaluation_more_trials_requested_runs(mock_find, mock_objec
             dataset_version="1.0",
         )
         mock_find.return_value = existing_metrics
-        
+
         # Requesting 5 trials - should NOT skip (run and replace)
         should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
@@ -355,7 +343,7 @@ def test_should_skip_evaluation_more_trials_requested_runs(mock_find, mock_objec
             harm_category=None,
             result_file_path=result_file,
         )
-        
+
         assert should_skip is False
         assert result is None
 
@@ -365,8 +353,8 @@ def test_should_skip_evaluation_harm_found(mock_find, mock_harm_scorer, tmp_path
     """Test skipping evaluation when existing harm metrics have sufficient trials."""
     evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
     result_file = tmp_path / "test_results.jsonl"
-    
-    with patch.object(mock_harm_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_456"):
+
+    with patch.object(mock_harm_scorer.scorer_identifier, "compute_hash", return_value="test_hash_456"):
         # Create expected harm metrics
         expected_metrics = HarmScorerMetrics(
             num_responses=15,
@@ -384,14 +372,14 @@ def test_should_skip_evaluation_harm_found(mock_find, mock_harm_scorer, tmp_path
             harm_category="hate_speech",
         )
         mock_find.return_value = expected_metrics
-        
+
         should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
             num_scorer_trials=3,
             harm_category="hate_speech",
             result_file_path=result_file,
         )
-        
+
         assert should_skip is True
         assert result == expected_metrics
         mock_find.assert_called_once_with(
@@ -405,8 +393,8 @@ def test_should_skip_evaluation_harm_missing_category(mock_find, mock_harm_score
     """Test that missing harm_category returns should not skip."""
     evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
     result_file = tmp_path / "test_results.jsonl"
-    
-    with patch.object(mock_harm_scorer.scorer_identifier, 'compute_hash', return_value="test_hash_456"):
+
+    with patch.object(mock_harm_scorer.scorer_identifier, "compute_hash", return_value="test_hash_456"):
         # No harm_category provided
         should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
@@ -414,7 +402,7 @@ def test_should_skip_evaluation_harm_missing_category(mock_find, mock_harm_score
             harm_category=None,
             result_file_path=result_file,
         )
-        
+
         assert should_skip is False
         assert result is None
         mock_find.assert_not_called()
@@ -425,12 +413,10 @@ def test_should_skip_evaluation_exception_handling(mock_find, mock_objective_sco
     """Test that exceptions are caught and returns (False, None)."""
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
     result_file = tmp_path / "test_results.jsonl"
-    
+
     # Make compute_hash raise an exception
     with patch.object(
-        mock_objective_scorer.scorer_identifier, 
-        'compute_hash', 
-        side_effect=Exception("Hash computation failed")
+        mock_objective_scorer.scorer_identifier, "compute_hash", side_effect=Exception("Hash computation failed")
     ):
         should_skip, result = evaluator._should_skip_evaluation(
             dataset_version="1.0",
@@ -438,8 +424,7 @@ def test_should_skip_evaluation_exception_handling(mock_find, mock_objective_sco
             harm_category=None,
             result_file_path=result_file,
         )
-        
+
         assert should_skip is False
         assert result is None
         mock_find.assert_not_called()
-

@@ -36,6 +36,7 @@ class ScorerMetrics:
         trial_scores (np.ndarray, optional): Raw scores from each trial for debugging.
         average_score_time_seconds (float): Average time in seconds to score a single item. Defaults to 0.0.
     """
+
     num_responses: int
     num_human_raters: int
     num_scorer_trials: int = field(default=1, kw_only=True)
@@ -70,14 +71,14 @@ class ScorerMetrics:
         file_path = verify_and_resolve_path(file_path)
         with open(file_path, "r") as f:
             data = json.load(f)
-        
+
         # Extract metrics from nested structure (always under "metrics" key in evaluation result files)
         metrics_data = data.get("metrics", data)
-        
+
         # Filter out internal fields that shouldn't be passed to __init__
         # (e.g., _harm_definition_obj is a cached field with init=False)
         filtered_data = {k: v for k, v in metrics_data.items() if not k.startswith("_")}
-        
+
         return cls(**filtered_data)
 
 

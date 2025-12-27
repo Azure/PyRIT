@@ -13,7 +13,7 @@ import logging
 import textwrap
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Sequence, Set, Type, Union
+from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
 from tqdm.auto import tqdm
 

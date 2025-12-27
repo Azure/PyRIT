@@ -75,7 +75,9 @@ class AzureContentFilterScorer(FloatScaleScorer):
         if category not in cls._CATEGORY_EVAL_FILES:
             return None
 
-        from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
+        from pyrit.score.scorer_evaluation.scorer_evaluator import (
+            ScorerEvalDatasetFiles,
+        )
 
         datasets, result_file, harm_category = cls._CATEGORY_EVAL_FILES[category]
         return ScorerEvalDatasetFiles(
@@ -184,8 +186,6 @@ class AzureContentFilterScorer(FloatScaleScorer):
         Raises:
             ValueError: If more than one harm category is configured.
         """
-        from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
-
         if len(self._harm_categories) > 1:
             raise ValueError(
                 f"AzureContentFilterScorer evaluation requires exactly one harm category, "

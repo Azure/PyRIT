@@ -50,7 +50,9 @@ class SelfAskRefusalScorer(TrueFalseScorer):
                 Defaults to TrueFalseScoreAggregator.OR.
         """
         # Set refusal-specific evaluation file mapping before calling super().__init__
-        from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
+        from pyrit.score.scorer_evaluation.scorer_evaluator import (
+            ScorerEvalDatasetFiles,
+        )
 
         self.evaluation_file_mapping = ScorerEvalDatasetFiles(
             human_labeled_datasets_files=["refusal_scorer/*.csv"],

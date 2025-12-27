@@ -9,7 +9,10 @@ from pyrit.score.printer.scorer_printer import ScorerPrinter
 from pyrit.score.scorer_identifier import ScorerIdentifier
 
 if TYPE_CHECKING:
-    from pyrit.score.scorer_evaluation.scorer_metrics import HarmScorerMetrics, ObjectiveScorerMetrics
+    from pyrit.score.scorer_evaluation.scorer_metrics import (
+        HarmScorerMetrics,
+        ObjectiveScorerMetrics,
+    )
 
 
 class ConsoleScorerPrinter(ScorerPrinter):
@@ -65,7 +68,9 @@ class ConsoleScorerPrinter(ScorerPrinter):
         Args:
             scorer_identifier (ScorerIdentifier): The scorer identifier to print information for.
         """
-        from pyrit.score.scorer_evaluation.scorer_metrics_io import find_objective_metrics_by_hash
+        from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+            find_objective_metrics_by_hash,
+        )
 
         print()
         self._print_colored(f"{self._indent}📊 Scorer Information", Style.BRIGHT)
@@ -90,7 +95,9 @@ class ConsoleScorerPrinter(ScorerPrinter):
             scorer_identifier (ScorerIdentifier): The scorer identifier to print information for.
             harm_category (str): The harm category for looking up metrics (e.g., "hate_speech", "violence").
         """
-        from pyrit.score.scorer_evaluation.scorer_metrics_io import find_harm_metrics_by_hash
+        from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+            find_harm_metrics_by_hash,
+        )
 
         print()
         self._print_colored(f"{self._indent}📊 Scorer Information", Style.BRIGHT)
@@ -146,14 +153,11 @@ class ConsoleScorerPrinter(ScorerPrinter):
         Args:
             metrics (Optional[ObjectiveScorerMetrics]): The metrics to print, or None if not available.
         """
-        from pyrit.score.scorer_evaluation.scorer_metrics import ObjectiveScorerMetrics
-
         if metrics is None:
             print()
             self._print_colored(f"{self._indent * 2}▸ Performance Metrics", Fore.WHITE)
             self._print_colored(
-                f"{self._indent * 3}Official evaluation has not been run yet for this "
-                f"specific configuration",
+                f"{self._indent * 3}Official evaluation has not been run yet for this " f"specific configuration",
                 Fore.YELLOW,
             )
             return
@@ -179,23 +183,18 @@ class ConsoleScorerPrinter(ScorerPrinter):
         Args:
             metrics (Optional[HarmScorerMetrics]): The metrics to print, or None if not available.
         """
-        from pyrit.score.scorer_evaluation.scorer_metrics import HarmScorerMetrics
-
         if metrics is None:
             print()
             self._print_colored(f"{self._indent * 2}▸ Performance Metrics", Fore.WHITE)
             self._print_colored(
-                f"{self._indent * 3}Official evaluation has not been run yet for this "
-                f"specific configuration",
+                f"{self._indent * 3}Official evaluation has not been run yet for this " f"specific configuration",
                 Fore.YELLOW,
             )
             return
 
         print()
         self._print_colored(f"{self._indent * 2}▸ Performance Metrics", Fore.WHITE)
-        self._print_colored(
-            f"{self._indent * 3}• Mean Absolute Error: {metrics.mean_absolute_error:.4f}", Fore.CYAN
-        )
+        self._print_colored(f"{self._indent * 3}• Mean Absolute Error: {metrics.mean_absolute_error:.4f}", Fore.CYAN)
         if metrics.mae_standard_error is not None:
             self._print_colored(f"{self._indent * 3}• MAE Std Error: ±{metrics.mae_standard_error:.4f}", Fore.CYAN)
         if metrics.krippendorff_alpha_combined is not None:
