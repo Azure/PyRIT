@@ -139,5 +139,8 @@ __all__ = [
     "TrueFalseAggregatorFunc",
     "TrueFalseScorer",
     "VideoFloatScaleScorer",
-    "VideoTrueFalseScorer", "HarmDefinition", "ScaleDescription", "get_all_harm_definitions",
+    "VideoTrueFalseScorer",
+    "HarmDefinition",
+    "ScaleDescription",
+    "get_all_harm_definitions",
 ]

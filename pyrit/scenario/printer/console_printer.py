@@ -125,7 +125,8 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
 
         # Scorer information - use ScorerIdentifier from result
         scorer_identifier = result.get_objective_scorer_identifier()
-        self._scorer_printer.print_objective_scorer(scorer_identifier)
+        if scorer_identifier:
+            self._scorer_printer.print_objective_scorer(scorer_identifier=scorer_identifier)
 
         # Overall statistics
         self._print_section_header("Overall Statistics")

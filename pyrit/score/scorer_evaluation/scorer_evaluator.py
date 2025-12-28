@@ -135,6 +135,9 @@ class ScorerEvaluator(abc.ABC):
 
         Returns:
             ScorerMetrics if evaluation completed, None if no files found.
+
+        Raises:
+            ValueError: If harm_category is not specified for harm scorer evaluations.
         """
         metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
 
@@ -248,6 +251,7 @@ class ScorerEvaluator(abc.ABC):
             # Determine if this is a harm or objective evaluation
             metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
 
+            existing: Optional[ScorerMetrics] = None
             if metrics_type == MetricsType.HARM:
                 if harm_category is None:
                     logger.warning("harm_category must be provided for harm scorer evaluations")
@@ -430,6 +434,9 @@ class ScorerEvaluator(abc.ABC):
             metrics (ScorerMetrics): The computed metrics.
             labeled_dataset (HumanLabeledDataset): The dataset that was evaluated.
             result_file_path (Path): The full path to the result file.
+
+        Raises:
+            ValueError: If harm_category cannot be extracted from HarmScorerMetrics dataset.
         """
         try:
             # Extract harm_category if this is a HarmScorerMetrics

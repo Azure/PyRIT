@@ -12,6 +12,7 @@ from pyrit.models import AttackOutcome, AttackResult
 if TYPE_CHECKING:
     from pyrit.score import Scorer
     from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
+    from pyrit.score.scorer_identifier import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
 

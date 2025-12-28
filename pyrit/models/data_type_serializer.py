@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional, Union, get_args
 from urllib.parse import urlparse
 
-import aiofiles  # type: ignore[import-untyped]
+import aiofiles
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.models.literals import PromptDataType

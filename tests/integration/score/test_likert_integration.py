@@ -8,13 +8,14 @@ from unittest.mock import patch
 import pytest
 from integration.mocks import get_memory_interface
 
-from pyrit.common.path import SCORER_EVALS_HARM_PATH
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     HarmScorerEvaluator,
     HarmScorerMetrics,
     LikertScalePaths,
+    RegistryUpdateBehavior,
+    ScorerEvalDatasetFiles,
     SelfAskLikertScorer,
 )
 
@@ -39,23 +40,27 @@ async def test_likert_scorer_mae(memory, likert_scale: LikertScalePaths, dataset
         likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale=likert_scale)
 
         evaluator = HarmScorerEvaluator(scorer=likert_scorer)
-        csv_path = f"{str(SCORER_EVALS_HARM_PATH)}/{dataset_name}.csv"
 
-        baseline_metrics = likert_scorer.get_scorer_metrics(dataset_name=dataset_name)
+        baseline_metrics = likert_scorer.get_scorer_metrics()
 
         assert isinstance(baseline_metrics, HarmScorerMetrics), "Expected HarmScorerMetrics type"
         # using ~95% confidence interval for the mean absolute error (MAE) for thresholding
         mae_threshold = baseline_metrics.mean_absolute_error + (2 * baseline_metrics.mae_standard_error)
 
-        metrics = await evaluator.run_evaluation_from_csv_async(
-            csv_path=csv_path,
-            assistant_response_col_name="assistant_response",
-            human_label_col_names=["human_score_1", "human_score_2", "human_score_3"],
-            objective_or_harm_col_name="category",
-            num_scorer_trials=1,
-            save_results=False,
+        dataset_files = ScorerEvalDatasetFiles(
+            human_labeled_datasets_files=[f"{dataset_name}.csv"],
+            result_file=f"test_{dataset_name}_metrics.jsonl",
+            harm_category=dataset_name,
         )
 
+        metrics = await evaluator.run_evaluation_async(
+            dataset_files=dataset_files,
+            num_scorer_trials=1,
+            update_registry_behavior=RegistryUpdateBehavior.NEVER_UPDATE,
+        )
+
+        assert metrics is not None, "Evaluation returned None metrics"
+        assert isinstance(metrics, HarmScorerMetrics), "Expected HarmScorerMetrics type"
         assert (
             metrics.mean_absolute_error <= mae_threshold
         ), f"MAE {metrics.mean_absolute_error} exceeds threshold {mae_threshold}. Full metrics: {asdict(metrics)}"

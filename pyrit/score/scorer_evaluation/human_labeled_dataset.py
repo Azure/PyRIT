@@ -405,7 +405,8 @@ class HumanLabeledDataset:
         human_score_cols = [col for col in eval_df.columns if col.startswith(STANDARD_HUMAN_LABEL_COL)]
         if not human_score_cols:
             raise ValueError(
-                f"No human score columns found. Expected at least one column starting with '{STANDARD_HUMAN_LABEL_COL}'."
+                f"No human score columns found. "
+                f"Expected at least one column starting with '{STANDARD_HUMAN_LABEL_COL}'."
             )
 
         # Validate human score columns don't have NaN

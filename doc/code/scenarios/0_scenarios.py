@@ -118,7 +118,7 @@ class MyScenario(Scenario):
             name="My Custom Scenario",
             version=self.version,
             strategy_class=MyStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier() if objective_scorer else None,
+            objective_scorer=objective_scorer,
             scenario_result_id=scenario_result_id,
         )
 

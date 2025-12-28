@@ -193,6 +193,7 @@ class ScorerMetricsWithIdentity(Generic[M]):
     metrics: M
 
     def __repr__(self) -> str:
+        """Return a string representation of the ScorerMetricsWithIdentity."""
         metrics_type = type(self.metrics).__name__
         scorer_type = self.scorer_identifier.type
         return f"ScorerMetricsWithIdentity(scorer={scorer_type}, metrics_type={metrics_type})"

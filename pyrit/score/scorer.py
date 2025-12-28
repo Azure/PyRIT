@@ -290,6 +290,9 @@ class Scorer(abc.ABC):
 
         Returns:
             ScorerMetrics: The evaluation metrics, or None if no datasets found.
+
+        Raises:
+            ValueError: If no file_mapping is provided and no evaluation_file_mapping is configured.
         """
         from pyrit.score import ScorerEvaluator
         from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior

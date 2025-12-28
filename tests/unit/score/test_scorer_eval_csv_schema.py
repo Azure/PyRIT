@@ -288,7 +288,7 @@ class TestCSVVersionMetadata:
     @pytest.fixture(scope="class")
     def all_csv_files(self) -> List[Path]:
         """Get all CSV files from all scorer eval directories."""
-        files = []
+        files: list[Path] = []
         files.extend(Path(SCORER_EVALS_OBJECTIVE_PATH).glob("*.csv"))
         files.extend(Path(SCORER_EVALS_HARM_PATH).glob("*.csv"))
         files.extend(Path(SCORER_EVALS_REFUSAL_SCORER_PATH).glob("*.csv"))

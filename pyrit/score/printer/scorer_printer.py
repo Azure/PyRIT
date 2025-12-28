@@ -16,7 +16,7 @@ class ScorerPrinter(ABC):
     """
 
     @abstractmethod
-    def print_objective_scorer(self, scorer_identifier: ScorerIdentifier) -> None:
+    def print_objective_scorer(self, *, scorer_identifier: ScorerIdentifier) -> None:
         """
         Print objective scorer information including type, nested scorers, and evaluation metrics.
 
