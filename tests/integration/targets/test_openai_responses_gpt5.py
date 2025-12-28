@@ -77,19 +77,19 @@ async def test_openai_responses_gpt5_json_schema(sqlite_instance, gpt5_args):
         "properties": {
             "name": {"type": "string", "minLength": 12},
             "age": {"type": "integer", "minimum": 0, "maximum": 20},
-            "colour": {
+            "fur_rgb": {
                 "type": "array",
                 "items": {"type": "integer", "minimum": 0, "maximum": 255},
                 "minItems": 3,
                 "maxItems": 3,
             },
         },
-        "required": ["name", "age", "colour"],
+        "required": ["name", "age", "fur_rgb"],
         "additionalProperties": False,
     }
 
     prompt = "Create a JSON object that describes a mystical cat "
-    prompt += "with the following properties: name, age, colour."
+    prompt += "with the following properties: name, age, fur_rgb."
 
     user_piece = MessagePiece(
         role="user",
@@ -126,7 +126,7 @@ async def test_openai_responses_gpt5_json_object(sqlite_instance, gpt5_args):
     sqlite_instance.add_message_to_memory(request=developer_piece.to_message())
 
     prompt = "Create a JSON object that describes a mystical cat "
-    prompt += "with the following properties: name, age, colour."
+    prompt += "with the following properties: name, age, fur_rgb."
 
     user_piece = MessagePiece(
         role="user",
