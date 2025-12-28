@@ -4,13 +4,14 @@
 import asyncio
 import json
 import logging
-import os
 import uuid
 from enum import IntEnum
 from typing import Optional
 
+import jwt
 import websockets
 
+from pyrit.auth import CopilotAuthenticator
 from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
@@ -41,26 +42,26 @@ class WebSocketCopilotTarget(PromptTarget):
     A WebSocket-based prompt target for Microsoft Copilot integration.
 
     This target enables communication with Microsoft Copilot through a WebSocket connection.
-    Currently, authentication requires manually extracting a WebSocket URL from an active browser session.
-    In the future, more flexible authentication mechanisms will be added.
+    Authentication is handled automatically using CopilotAuthenticator, which uses Playwright
+    to automate browser login and obtain access tokens.
 
-    To obtain the WebSocket URL:
-        1. Ensure you are logged into Microsoft 365 with access to Copilot
-        2. Navigate to https://m365.cloud.microsoft/chat or open Copilot in https://teams.microsoft.com/v2
-        3. Open browser developer tools and switch to the Network tab
-        4. Begin typing or send a message to Copilot to establish the WebSocket connection
-        5. Search the network requests for "chathub", "conversation", or "access_token"
-        6. Identify the WebSocket connection (look for WS protocol) and copy its full URL
+    Requirements:
+        Set the following environment variables:
+            - COPILOT_USERNAME: Your Microsoft account username (email).
+            - COPILOT_PASSWORD: Your Microsoft account password.
 
-    Warning:
-        All target instances using the same `WEBSOCKET_URL` will share a single conversation session.
+        Install Playwright and its browser dependencies:
+            pip install playwright
+            playwright install chromium
+
+    Note:
         Only works with licensed Microsoft 365 Copilot. The free Copilot version is not compatible.
+        Each target instance creates a new conversation session with unique conversation and session IDs.
     """
-
-    # TODO: add more flexible auth, use puppeteer? https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py#L248
 
     SUPPORTED_DATA_TYPES = {"text"}  # TODO: support more types?
 
+    WEBSOCKET_BASE_URL: str = "wss://substrate.office.com/m365Copilot/Chathub"
     RESPONSE_TIMEOUT_SECONDS: int = 60
     CONNECTION_TIMEOUT_SECONDS: int = 30
 
@@ -71,53 +72,41 @@ class WebSocketCopilotTarget(PromptTarget):
         max_requests_per_minute: Optional[int] = None,
         model_name: str = "copilot",
         response_timeout_seconds: int = RESPONSE_TIMEOUT_SECONDS,
+        authenticator: Optional[CopilotAuthenticator] = None,
     ) -> None:
         """
         Initialize the WebSocketCopilotTarget.
 
         Args:
             verbose (bool): Enable verbose logging. Defaults to False.
-            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+            max_requests_per_minute (Optional[int]): Maximum number of requests per minute.
             model_name (str): The model name. Defaults to "copilot".
             response_timeout_seconds (int): Timeout for receiving responses in seconds. Defaults to 60s.
+            authenticator (Optional[CopilotAuthenticator]): Authenticator instance for token management.
+                If None, a new CopilotAuthenticator instance will be created with default settings.
 
         Raises:
-            ValueError: If WebSocket URL is not provided, is empty, or has invalid format.
-            ValueError: If required parameters are missing or empty in the WebSocket URL.
+            ValueError: If ``response_timeout_seconds`` is not a positive integer.
         """
-        self._websocket_url = os.getenv("WEBSOCKET_URL")
-        if not self._websocket_url or self._websocket_url.strip() == "":
-            raise ValueError("WebSocket URL must be provided through the WEBSOCKET_URL environment variable")
+        if response_timeout_seconds <= 0:
+            raise ValueError("response_timeout_seconds must be a positive integer.")
 
-        if not self._websocket_url.startswith("wss://"):
-            raise ValueError(f"WebSocket URL must start with 'wss://'. Received: {self._websocket_url[:10]}")
+        self._authenticator = authenticator or CopilotAuthenticator()
+        self._response_timeout_seconds = response_timeout_seconds
 
-        if "ConversationId=" not in self._websocket_url:
-            raise ValueError("`ConversationId` parameter not found in WebSocket URL.")
-        self._conversation_id = self._websocket_url.split("ConversationId=")[1].split("&")[0]
-        if not self._conversation_id:
-            raise ValueError("`ConversationId` parameter is empty in WebSocket URL.")
-
-        if "X-SessionId=" not in self._websocket_url:
-            raise ValueError("`X-SessionId` parameter not found in WebSocket URL.")
-        self._session_id = self._websocket_url.split("X-SessionId=")[1].split("&")[0]
-        if not self._session_id:
-            raise ValueError("`X-SessionId` parameter is empty in WebSocket URL.")
+        # These will be generated fresh for each request
+        self._session_id: Optional[str] = None
+        self._conversation_id: Optional[str] = None
 
         super().__init__(
             verbose=verbose,
             max_requests_per_minute=max_requests_per_minute,
-            endpoint=self._websocket_url.split("?")[0],  # wss://substrate.office.com/m365Copilot/Chathub/...
+            endpoint=self.WEBSOCKET_BASE_URL,
             model_name=model_name,
         )
 
-        if response_timeout_seconds <= 0:
-            raise ValueError("response_timeout_seconds must be a positive integer.")
-        self._response_timeout_seconds = response_timeout_seconds
-
         if self._verbose:
-            logger.info(f"WebSocketCopilotTarget initialized with conversation_id: {self._conversation_id}")
-            logger.info(f"Session ID: {self._session_id}")
+            logger.info("WebSocketCopilotTarget initialized")
 
     @staticmethod
     def _dict_to_websocket(data: dict) -> str:
@@ -175,14 +164,53 @@ class WebSocketCopilotTarget(PromptTarget):
 
         return results if results else [(CopilotMessageType.UNKNOWN, "")]
 
+    async def _build_websocket_url_async(self) -> str:
+        access_token = await self._authenticator.get_token()
+
+        try:
+            parsed_token = jwt.decode(access_token, algorithms=["RS256"], options={"verify_signature": False})
+        except Exception as e:
+            raise ValueError(f"Failed to decode access token: {str(e)}") from e
+
+        tenant_id = parsed_token.get("tid")
+        object_id = parsed_token.get("oid")
+
+        if not tenant_id or not object_id:
+            raise ValueError(
+                "Failed to extract tenant_id (tid) or object_id (oid) from bearer token. "
+                f"Token claims: {list(parsed_token.keys())}"
+            )
+
+        self._session_id = str(uuid.uuid4())
+        self._conversation_id = str(uuid.uuid4())
+        client_request_id = str(uuid.uuid4())
+
+        base_url = f"{self.WEBSOCKET_BASE_URL}/{object_id}@{tenant_id}"
+        query_params = [
+            f"ClientRequestId={client_request_id}",
+            f"X-SessionId={self._session_id}",
+            f"ConversationId={self._conversation_id}",
+            f"access_token={access_token}",
+            "X-variants=feature.includeExternal,feature.AssistantConnectorsContentSources,"
+            "3S.BizChatWprBoostAssistant,3S.EnableMEFromSkillDiscovery,feature.EnableAuthErrorMessage,"
+            "EnableRequestPlugins,feature.EnableSensitivityLabels,feature.IsEntityAnnotationsEnabled,"
+            "EnableUnsupportedUrlDetector",
+            "source=%22officeweb%22",
+            "scenario=OfficeWebIncludedCopilot",
+        ]
+
+        websocket_url = f"{base_url}?{'&'.join(query_params)}"
+        logger.debug(f"WebSocket URL: {websocket_url}")
+        return websocket_url
+
     def _build_prompt_message(self, prompt: str) -> dict:
+        request_id = trace_id = uuid.uuid4().hex
+
         return {
             "arguments": [
                 {
-                    "source": "officeweb",  # TODO: support 'teamshub' as well
-                    # TODO: not sure whether to uuid.uuid4() or use a static like it's done in power-pwn
-                    # https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py#L156
-                    "clientCorrelationId": str(uuid.uuid4()),
+                    "source": "officeweb",
+                    "clientCorrelationId": uuid.uuid4().hex,
                     "sessionId": self._session_id,
                     "optionsSets": [
                         "enterprise_flux_web",
@@ -218,11 +246,10 @@ class WebSocketCopilotTarget(PromptTarget):
                         "DeveloperLogs",
                     ],
                     "sliceIds": [],
-                    # TODO: enable using agents https://github.com/mbrg/power-pwn/blob/main/src/powerpwn/copilot/copilot_connector/copilot_connector.py#L192
                     "threadLevelGptId": {},
                     "conversationId": self._conversation_id,
-                    "traceId": str(uuid.uuid4()).replace("-", ""),  # TODO: same case as clientCorrelationId
-                    "isStartOfSession": 0,
+                    "traceId": trace_id,
+                    "isStartOfSession": True,
                     "productThreadType": "Office",
                     "clientInfo": {"clientPlatform": "web"},
                     "message": {
@@ -230,35 +257,37 @@ class WebSocketCopilotTarget(PromptTarget):
                         "inputMethod": "Keyboard",
                         "text": prompt,
                         "entityAnnotationTypes": ["People", "File", "Event", "Email", "TeamsMessage"],
-                        "requestId": str(uuid.uuid4()).replace("-", ""),
+                        "requestId": request_id,
                         "locationInfo": {"timeZoneOffset": 0, "timeZone": "UTC"},
                         "locale": "en-US",
                         "messageType": "Chat",
                         "experienceType": "Default",
                     },
-                    "plugins": [],  # TODO: support enabling some plugins?
+                    "plugins": [],
                 }
             ],
-            "invocationId": "0",  # TODO: should be dynamic?
+            "invocationId": "0",
             "target": "chat",
             "type": CopilotMessageType.USER_PROMPT,
         }
 
     async def _connect_and_send(self, prompt: str) -> str:
-        protocol_msg = {"protocol": "json", "version": 1}
-        prompt_dict = self._build_prompt_message(prompt)
+        websocket_url = await self._build_websocket_url_async()
 
-        inputs = [protocol_msg, prompt_dict]
-        last_response = ""
+        # TODO: explain why PING is not sent here
+        inputs = [{"protocol": "json", "version": 1}, self._build_prompt_message(prompt)]
+        response = ""
 
         async with websockets.connect(
-            self._websocket_url,
+            websocket_url,
             open_timeout=self.CONNECTION_TIMEOUT_SECONDS,
             close_timeout=self.CONNECTION_TIMEOUT_SECONDS,
         ) as websocket:
             for input_msg in inputs:
                 payload = self._dict_to_websocket(input_msg)
                 await websocket.send(payload)
+
+                is_user_input = input_msg.get("type") == CopilotMessageType.USER_PROMPT
 
                 stop_polling = False
                 while not stop_polling:
@@ -288,11 +317,14 @@ class WebSocketCopilotTarget(PromptTarget):
                             stop_polling = True
 
                             if msg_type == CopilotMessageType.FINAL_CONTENT:
-                                last_response = content
+                                response = content
                             elif msg_type == CopilotMessageType.UNKNOWN:
                                 logger.debug("Received unknown or empty message type.")
 
-            return last_response
+                        elif msg_type == CopilotMessageType.PING and not is_user_input:
+                            stop_polling = True
+
+            return response
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)
@@ -332,7 +364,7 @@ class WebSocketCopilotTarget(PromptTarget):
             if not response_text or not response_text.strip():
                 logger.error("Empty response received from Copilot.")
                 raise EmptyResponseException(message="Copilot returned an empty response.")
-            logger.info(f"Received the following response from WebSocketCopilotTarget: {response_text[:100]}...")
+            logger.info(f"Received the following response from WebSocketCopilotTarget: \n{response_text}")
 
             response_entry = construct_response_from_request(
                 request=request_piece, response_text_pieces=[response_text]
@@ -343,7 +375,7 @@ class WebSocketCopilotTarget(PromptTarget):
         except websockets.exceptions.InvalidStatus as e:
             logger.error(
                 f"WebSocket connection failed: {str(e)}\n"
-                "Ensure the WEBSOCKET_URL environment variable is correct and valid."
+                "Ensure that COPILOT_USERNAME and COPILOT_PASSWORD environment variables are set correctly."
                 " For more details about authentication, refer to the class documentation."
             )
             raise

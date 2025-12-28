@@ -93,6 +93,7 @@ class CopilotAuthenticator(Authenticator):
             raise
 
     def _get_cached_token_if_available_and_valid(self) -> Optional[dict]:
+        # TODO: make sure the cached token matches the proper user account
         try:
             cache_data = self._token_cache.load()
             if not cache_data:
@@ -185,6 +186,7 @@ class CopilotAuthenticator(Authenticator):
         Raises:
             RuntimeError: If token retrieval fails.
         """
+        # TODO: make sure multiple concurrent calls don't launch multiple browsers
         cached_token = self._get_cached_token_if_available_and_valid()
         if cached_token and "access_token" in cached_token:
             logger.info("Using cached access token.")
@@ -203,6 +205,7 @@ class CopilotAuthenticator(Authenticator):
         Returns:
             Optional[str]: The bearer token if successfully retrieved, else None.
         """
+        # TODO: it's a long function, maybe split into smaller ones?
         try:
             from playwright.async_api import async_playwright
 
