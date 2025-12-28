@@ -39,7 +39,7 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
             "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"
         )
 
-    _load_environment_files()
+    _load_environment_files(env_files=None)
     hf_token = os.environ.get("HUGGINGFACE_TOKEN")
     if not hf_token:
         raise ValueError("Please set the HUGGINGFACE_TOKEN environment variable")

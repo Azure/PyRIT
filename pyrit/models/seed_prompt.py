@@ -28,7 +28,7 @@ class SeedPrompt(Seed):
 
     # Sequence number for ordering prompts in a conversation, prompts with
     # the same sequence number are grouped together if they also share the same prompt_group_id
-    sequence: Optional[int] = 0
+    sequence: int = 0
 
     # Parameters that can be used in the prompt template
     parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])

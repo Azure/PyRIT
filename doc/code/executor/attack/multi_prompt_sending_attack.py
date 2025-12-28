@@ -52,7 +52,7 @@ messages = [
 
 objective = "Make the target disclose their name."
 
-result = await multi_attack.execute_async(objective=objective, messages=messages)  # type: ignore
+result = await multi_attack.execute_async(objective=objective, user_messages=messages)  # type: ignore
 
 result_printer = ConsoleAttackResultPrinter()
 await result_printer.print_result_async(result)  # type: ignore

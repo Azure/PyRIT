@@ -16,6 +16,7 @@ from pyrit.exceptions import (
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     ConversationSession,
     ConversationState,
@@ -153,7 +154,7 @@ def mock_prompt_normalizer() -> MagicMock:
 @pytest.fixture
 def basic_context() -> CrescendoAttackContext:
     return CrescendoAttackContext(
-        objective="Test objective",
+        params=AttackParameters(objective="Test objective"),
         session=ConversationSession(),
     )
 
@@ -503,7 +504,7 @@ class TestContextValidation:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
         )
-        context = CrescendoAttackContext(objective=objective)
+        context = CrescendoAttackContext(params=AttackParameters(objective=objective))
 
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
@@ -1503,9 +1504,12 @@ class TestContextCreation:
     def test_create_context_with_basic_params(self):
         """Test creating context with basic parameters."""
         context = CrescendoAttackContext(
-            objective="Test objective",
-            prepended_conversation=[],
-            memory_labels={"test": "label"},
+            params=AttackParameters(
+                objective="Test objective",
+                prepended_conversation=[],
+                memory_labels={"test": "label"},
+            ),
+            session=ConversationSession(),
         )
 
         assert isinstance(context, CrescendoAttackContext)
@@ -1517,10 +1521,13 @@ class TestContextCreation:
         """Test creating context with message."""
         message = Message.from_prompt(prompt="My custom prompt", role="user")
         context = CrescendoAttackContext(
-            objective="Test objective",
-            prepended_conversation=[],
-            memory_labels={},
-            next_message=message,
+            params=AttackParameters(
+                objective="Test objective",
+                prepended_conversation=[],
+                memory_labels={},
+                next_message=message,
+            ),
+            session=ConversationSession(),
         )
 
         assert context.next_message == message
@@ -1532,9 +1539,12 @@ class TestContextCreation:
         """Test context creation with prepended conversation."""
         prepended_conversation = [sample_response]
         context = CrescendoAttackContext(
-            objective="Test objective",
-            prepended_conversation=prepended_conversation,
-            memory_labels={},
+            params=AttackParameters(
+                objective="Test objective",
+                prepended_conversation=prepended_conversation,
+                memory_labels={},
+            ),
+            session=ConversationSession(),
         )
 
         assert context.prepended_conversation == prepended_conversation
@@ -1694,7 +1704,8 @@ class TestIntegrationScenarios:
         )
 
         context = CrescendoAttackContext(
-            objective="Extract sensitive information",
+            params=AttackParameters(objective="Extract sensitive information"),
+            session=ConversationSession(),
         )
 
         # Set up mock responses for a 3-turn successful attack
@@ -1812,7 +1823,8 @@ class TestIntegrationScenarios:
         )
 
         context = CrescendoAttackContext(
-            objective="Test with refusals",
+            params=AttackParameters(objective="Test with refusals"),
+            session=ConversationSession(),
         )
 
         # Set up responses
@@ -1894,7 +1906,7 @@ class TestEdgeCases:
             adversarial_chat=mock_adversarial_chat,
         )
 
-        context = CrescendoAttackContext(objective="")
+        context = CrescendoAttackContext(params=AttackParameters(objective=""))
 
         with pytest.raises(ValueError, match="Strategy context validation failed for CrescendoAttack"):
             await attack.execute_with_context_async(context=context)
@@ -1979,8 +1991,8 @@ class TestEdgeCases:
 
         # Create two contexts that could be used concurrently
         # They have different objectives to ensure isolation
-        context1 = CrescendoAttackContext(objective="Objective 1")
-        context2 = CrescendoAttackContext(objective="Objective 2")
+        context1 = CrescendoAttackContext(params=AttackParameters(objective="Objective 1"))
+        context2 = CrescendoAttackContext(params=AttackParameters(objective="Objective 2"))
 
         # Mock conversation manager for both setups
         mock_state1 = ConversationState(turn_count=0)
@@ -2060,8 +2072,8 @@ class TestEdgeCases:
             attack_adversarial_config=adversarial_config,
         )
 
-        # Test with unknown parameter - should raise TypeError
-        with pytest.raises(TypeError, match="got an unexpected keyword argument"):
+        # Test with unknown parameter - should raise ValueError
+        with pytest.raises(ValueError, match="does not accept parameters"):
             await attack.execute_async(
                 objective="Test objective",
                 unknown_param="should cause error",
