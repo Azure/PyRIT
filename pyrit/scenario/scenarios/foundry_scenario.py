@@ -9,12 +9,13 @@ The FoundryFactory creates a comprehensive test scenario that includes all
 Foundry attacks against specified datasets.
 """
 
+import logging
 import os
-import random
 from inspect import signature
 from typing import Any, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
+
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack import (
     CrescendoAttack,
@@ -61,6 +62,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_chat_target import OpenAIChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
@@ -76,6 +78,7 @@ from pyrit.score import (
 )
 
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
+logger = logging.getLogger(__name__)
 
 
 class FoundryStrategy(ScenarioStrategy):
@@ -234,11 +237,9 @@ class FoundryScenario(Scenario):
         return FoundryStrategy.EASY
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return a list of dataset names required by this scenario."""
-        return [
-            "harmbench",
-        ]
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """Return the default dataset configuration for this scenario."""
+        return DatasetConfiguration(dataset_name="harmbench", max_dataset_size=4)
 
     @apply_defaults
     def __init__(
@@ -257,8 +258,8 @@ class FoundryScenario(Scenario):
             adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
                 like Crescendo and RedTeaming. Additionally used for scoring defaults.
                 If not provided, a default OpenAI target will be created using environment variables.
-            objectives (Optional[List[str]]): List of attack objectives/prompts to test.
-                If not provided, defaults to 5 random objectives from the HarmBench dataset.
+            objectives (Optional[List[str]]): Deprecated. Use dataset_config in initialize_async instead.
+                List of attack objectives/prompts to test. Will be removed in a future release.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for attack scoring,
                 including the objective scorer and auxiliary scorers. If not provided, creates a default
                 configuration with a composite scorer using Azure Content Filter and SelfAsk Refusal scorers.
@@ -271,6 +272,15 @@ class FoundryScenario(Scenario):
         Raises:
             ValueError: If attack_strategies is empty or contains unsupported strategies.
         """
+        # Handle deprecation warning for objectives parameter
+        if objectives is not None:
+            logger.warning(
+                "objectives is deprecated and will be removed in 0.13.0. "
+                "Use dataset_config in initialize_async instead."
+            )
+
+        self._objectives = objectives  # Store for backward compatibility
+
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._attack_scoring_config = (
             attack_scoring_config if attack_scoring_config else self._get_default_scoring_config()
@@ -293,21 +303,33 @@ class FoundryScenario(Scenario):
             scenario_result_id=scenario_result_id,
         )
 
-        # Now we can safely access self._memory
-        # Convert objectives to seed_groups if provided, otherwise load from dataset
-        if objectives:
-            self._seed_groups = [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
-        else:
-            self._seed_groups = self._get_default_seed_groups()
+    def _resolve_seed_groups(self) -> List[SeedGroup]:
+        """
+        Resolve seed groups from the configuration. This can be removed once objectives is removed.
 
-    def _get_default_seed_groups(self) -> List[SeedGroup]:
-        seed_groups = self._memory.get_seed_groups(dataset_name="harmbench")
+        Priority order:
+        1. objectives parameter (deprecated, for backward compatibility)
+        2. dataset_config (set by initialize_async, with scenario default if not provided)
 
-        if not seed_groups:
-            self._raise_dataset_exception()
+        Returns:
+            List[SeedGroup]: The resolved seed groups.
 
-        sampled_groups = random.sample(list(seed_groups), min(5, len(seed_groups)))
-        return sampled_groups
+        Raises:
+            ValueError: If both deprecated objectives and dataset_config are provided.
+        """
+        # Check for conflict between deprecated parameter and new dataset_config
+        if self._objectives is not None and self._dataset_config_provided:
+            raise ValueError(
+                "Cannot use both deprecated 'objectives' parameter and 'dataset_config'. "
+                "Please use only 'dataset_config' in initialize_async()."
+            )
+
+        # Backward compatibility: convert objectives list to seed groups
+        if self._objectives is not None:
+            return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in self._objectives]
+
+        # Use dataset_config (always set by initialize_async)
+        return self._dataset_config.get_seed_groups()
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -316,6 +338,9 @@ class FoundryScenario(Scenario):
         Returns:
             List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
+        # Resolve seed groups now that initialize_async has been called
+        self._seed_groups = self._resolve_seed_groups()
+
         atomic_attacks = []
         for composition in self._scenario_composites:
             atomic_attacks.append(self._get_attack_from_strategy(composition))

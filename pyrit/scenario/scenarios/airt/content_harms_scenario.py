@@ -17,6 +17,7 @@ from pyrit.executor.attack import (
 from pyrit.models import SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
@@ -86,17 +87,24 @@ class ContentHarmsScenario(Scenario):
         return ContentHarmsStrategy.ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return a list of dataset names required by this scenario."""
-        return [
-            "airt_hate",
-            "airt_fairness",
-            "airt_violence",
-            "airt_sexual",
-            "airt_harassment",
-            "airt_misinformation",
-            "airt_leakage",
-        ]
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """
+        Return the default dataset configuration for this scenario.
+
+        Returns:
+            DatasetConfiguration: Configuration with all content harm datasets.
+        """
+        return DatasetConfiguration(
+            dataset_names=[
+                "airt_hate",
+                "airt_fairness",
+                "airt_violence",
+                "airt_sexual",
+                "airt_harassment",
+                "airt_misinformation",
+                "airt_leakage",
+            ]
+        )
 
     @apply_defaults
     def __init__(

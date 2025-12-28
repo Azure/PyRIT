@@ -222,7 +222,7 @@ class ScenarioRegistry:
                 - default_strategy: The default strategy used when none specified
                 - all_strategies: All available strategy values
                 - aggregate_strategies: Aggregate strategy values
-                - required_datasets: Names of datasets required to be in memory
+                - default_datasets: Names of default datasets for this scenario
         """
         # If we already have metadata, return it
         if self._scenario_metadata is not None:
@@ -244,7 +244,7 @@ class ScenarioRegistry:
             # Get the strategy class for this scenario
             strategy_class = scenario_class.get_strategy_class()
 
-            required_datasets = scenario_class.required_datasets()
+            default_datasets = scenario_class.default_dataset_config().get_default_dataset_names()
 
             scenarios_info.append(
                 {
@@ -254,7 +254,7 @@ class ScenarioRegistry:
                     "default_strategy": scenario_class.get_default_strategy().value,
                     "all_strategies": [s.value for s in strategy_class.get_all_strategies()],
                     "aggregate_strategies": [s.value for s in strategy_class.get_aggregate_strategies()],
-                    "required_datasets": required_datasets,
+                    "default_datasets": default_datasets,
                 }
             )
 

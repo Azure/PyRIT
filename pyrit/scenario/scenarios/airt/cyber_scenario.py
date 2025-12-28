@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
 import os
 from typing import List, Optional
 
@@ -16,6 +17,7 @@ from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
@@ -30,6 +32,8 @@ from pyrit.score import (
     TrueFalseScorer,
 )
 
+
+logger = logging.getLogger(__name__)
 
 class CyberStrategy(ScenarioStrategy):
     """
@@ -78,9 +82,14 @@ class CyberScenario(Scenario):
         return CyberStrategy.ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return a list of dataset names required by this scenario."""
-        return ["airt_malware"]
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """
+        Return the default dataset configuration for this scenario.
+
+        Returns:
+            DatasetConfiguration: Configuration with airt_malware dataset.
+        """
+        return DatasetConfiguration(dataset_name="airt_malware")
 
     @apply_defaults
     def __init__(
@@ -98,8 +107,7 @@ class CyberScenario(Scenario):
         Args:
             adversarial_chat (Optional[PromptChatTarget]): Adversarial chat for the red teaming attack, corresponding
                 to CyberStrategy.MultiTurn. If not provided, defaults to an OpenAI chat target.
-            objectives (Optional[List[str]]): List of objectives to test for cyber harms, e.g. malware generation.
-                If not provided, defaults to objectives from the airt_malware dataset.
+            objectives (Optional[List[str]]): Deprecated. Use dataset_config in initialize_async instead.
             objective_scorer (Optional[TrueFalseScorer]): Objective scorer for malware detection. If not
                 provided, defaults to a SelfAskScorer using the malware.yaml file under the scorer config store for
                 malware detection
@@ -109,6 +117,12 @@ class CyberScenario(Scenario):
                 attack-modified prompts.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
+        if objectives is not None:
+            logger.warning(
+                "objectives is deprecated and will be removed in 0.13.0. "
+                "Use dataset_config in initialize_async instead."
+            )
+
         # CyberScenario uses a "take object, make config" pattern to expose a more ergonomic interface. Helper
         # methods return objects, not configs.
 
@@ -132,11 +146,10 @@ class CyberScenario(Scenario):
             scenario_result_id=scenario_result_id,
         )
 
-        # Convert objectives to seed_groups if provided, otherwise load from dataset
-        if objectives:
-            self._seed_groups = [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
-        else:
-            self._seed_groups = self._get_default_seed_groups()
+        # Store deprecated objectives for later resolution in _resolve_seed_groups
+        self._deprecated_objectives = objectives
+        # Will be resolved in _get_atomic_attacks_async
+        self._seed_groups: Optional[List[SeedGroup]] = None
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
@@ -186,16 +199,27 @@ class CyberScenario(Scenario):
             temperature=1.2,
         )
 
-    def _get_default_seed_groups(self) -> List[SeedGroup]:
+    def _resolve_seed_groups(self) -> List[SeedGroup]:
         """
-        Get the default seed groups for malware tests.
-
-        This dataset includes a set of exploits that represent cybersecurity harms.
+        Resolve seed groups from deprecated objectives or dataset configuration.
 
         Returns:
             List[SeedGroup]: List of seed groups with objectives to be tested.
         """
-        seed_groups = self._memory.get_seed_groups(dataset_name="airt_malware", is_objective=True)
+        # Check for conflict between deprecated objectives and dataset_config
+        if self._deprecated_objectives is not None and self._dataset_config_provided:
+            raise ValueError(
+                "Cannot specify both 'objectives' parameter and 'dataset_config'. "
+                "Please use only 'dataset_config' in initialize_async."
+            )
+
+        # Use deprecated objectives if provided
+        if self._deprecated_objectives is not None:
+            return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives]
+
+        # Use dataset_config (either provided or default)
+        config = self._dataset_config if self._dataset_config else self.default_dataset_config()
+        seed_groups = config.get_seed_groups(is_objective=True)
 
         if not seed_groups:
             self._raise_dataset_exception()
@@ -246,6 +270,9 @@ class CyberScenario(Scenario):
         Returns:
             List[AtomicAttack]: List of atomic attacks to execute.
         """
+        # Resolve seed groups from deprecated objectives or dataset config
+        self._seed_groups = self._resolve_seed_groups()
+
         atomic_attacks: List[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=CyberStrategy

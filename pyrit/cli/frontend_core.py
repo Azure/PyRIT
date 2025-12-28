@@ -60,7 +60,7 @@ class ScenarioInfo(TypedDict):
     default_strategy: str
     all_strategies: list[str]
     aggregate_strategies: list[str]
-    required_datasets: list[str]
+    default_datasets: list[str]
 
 
 class FrontendCore:
@@ -214,6 +214,8 @@ async def run_scenario_async(
     max_concurrency: Optional[int] = None,
     max_retries: Optional[int] = None,
     memory_labels: Optional[dict[str, str]] = None,
+    dataset_names: Optional[list[str]] = None,
+    max_dataset_size: Optional[int] = None,
     print_summary: bool = True,
 ) -> "ScenarioResult":
     """
@@ -226,6 +228,8 @@ async def run_scenario_async(
         max_concurrency: Max concurrent operations.
         max_retries: Max retry attempts.
         memory_labels: Labels to attach to memory entries.
+        dataset_names: Optional list of dataset names to use instead of scenario defaults.
+        max_dataset_size: Optional maximum number of items to use from the dataset.
         print_summary: Whether to print the summary after execution. Defaults to True.
 
     Returns:
@@ -296,6 +300,15 @@ async def run_scenario_async(
         init_kwargs["max_retries"] = max_retries
     if memory_labels is not None:
         init_kwargs["memory_labels"] = memory_labels
+
+    # Build dataset_config if CLI args provided
+    if dataset_names or max_dataset_size is not None:
+        from pyrit.scenario import DatasetConfiguration
+
+        init_kwargs["dataset_config"] = DatasetConfiguration(
+            dataset_names=dataset_names,
+            max_dataset_size=max_dataset_size,
+        )
 
     # Instantiate and run
     print(f"\nRunning scenario: {scenario_name}")
@@ -389,14 +402,14 @@ def format_scenario_info(*, scenario_info: ScenarioInfo) -> None:
     if scenario_info.get("default_strategy"):
         print(f"    Default Strategy: {scenario_info['default_strategy']}")
 
-    if scenario_info.get("required_datasets"):
-        datasets = scenario_info["required_datasets"]
+    if scenario_info.get("default_datasets"):
+        datasets = scenario_info["default_datasets"]
         if datasets:
-            print(f"    Required Datasets ({len(datasets)}):")
+            print(f"    Default Datasets ({len(datasets)}):")
             formatted = _format_wrapped_text(text=", ".join(datasets), indent="      ")
             print(formatted)
         else:
-            print("    Required Datasets: None")
+            print("    Default Datasets: None")
 
 
 def format_initializer_info(*, initializer_info: "InitializerInfo") -> None:
@@ -723,8 +736,8 @@ ARG_HELP = {
     "max_retries": "Maximum number of automatic retries on exception (must be >= 0)",
     "memory_labels": 'Additional labels as JSON string (e.g., \'{"experiment": "test1"}\')',
     "database": "Database type to use for memory storage",
-    "log_level": "Logging level",
-}
+    "log_level": "Logging level",    "dataset_names": "List of dataset names to use instead of scenario defaults (e.g., harmbench advbench)",
+    "max_dataset_size": "Maximum number of items to use from the dataset (must be >= 1)",}
 
 
 def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
@@ -745,6 +758,8 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             - memory_labels: Optional[dict[str, str]]
             - database: Optional[str]
             - log_level: Optional[str]
+            - dataset_names: Optional[list[str]]
+            - max_dataset_size: Optional[int]
 
     Raises:
         ValueError: If parsing or validation fails.
@@ -765,6 +780,8 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
         "memory_labels": None,
         "database": None,
         "log_level": None,
+        "dataset_names": None,
+        "max_dataset_size": None,
     }
 
     i = 1
@@ -826,6 +843,19 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             if i >= len(parts):
                 raise ValueError("--log-level requires a value")
             result["log_level"] = validate_log_level(log_level=parts[i])
+            i += 1
+        elif parts[i] == "--dataset-names":
+            # Collect dataset names until next flag
+            result["dataset_names"] = []
+            i += 1
+            while i < len(parts) and not parts[i].startswith("--"):
+                result["dataset_names"].append(parts[i])
+                i += 1
+        elif parts[i] == "--max-dataset-size":
+            i += 1
+            if i >= len(parts):
+                raise ValueError("--max-dataset-size requires a value")
+            result["max_dataset_size"] = validate_integer(parts[i], name="--max-dataset-size", min_value=1)
             i += 1
         else:
             logger.warning(f"Unknown argument: {parts[i]}")
