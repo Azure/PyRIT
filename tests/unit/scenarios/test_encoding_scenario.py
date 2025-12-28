@@ -104,7 +104,7 @@ class TestEncodingScenarioInitialization:
         scenario = EncodingScenario(objective_scorer=mock_objective_scorer)
 
         # Error should occur during initialize_async when _get_atomic_attacks_async resolves seed prompts
-        with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
+        with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
             await scenario.initialize_async(objective_target=mock_objective_target)
 
     def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_seeds):

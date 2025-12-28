@@ -202,12 +202,13 @@ class EncodingScenario(Scenario):
 
         # Use dataset_config (either provided or default)
         config = self._dataset_config if self._dataset_config else self.default_dataset_config()
-        seeds = config.get_seeds()
+        seed_groups = config.get_seed_groups()
 
-        if not seeds:
+        if not seed_groups:
             self._raise_dataset_exception()
 
-        return [seed.value for seed in seeds]
+        # Flatten all seeds from seed groups
+        return [seed.value for group in seed_groups for seed in group.seeds]
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """

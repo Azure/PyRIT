@@ -219,7 +219,7 @@ class CyberScenario(Scenario):
 
         # Use dataset_config (either provided or default)
         config = self._dataset_config if self._dataset_config else self.default_dataset_config()
-        seed_groups = config.get_seed_groups(is_objective=True)
+        seed_groups = config.get_seed_groups()
 
         if not seed_groups:
             self._raise_dataset_exception()
