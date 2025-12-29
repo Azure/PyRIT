@@ -180,9 +180,12 @@ API Reference
     AttackContext
     AttackConverterConfig
     AttackExecutor
+    AttackExecutorResult
+    AttackParameters
+    AttackResultPrinter
     AttackScoringConfig
     AttackStrategy
-    AttackResultPrinter
+    ConsoleAttackResultPrinter
     ContextComplianceAttack
     ConversationManager
     ConversationSession
@@ -191,27 +194,28 @@ API Reference
     CrescendoAttackContext
     CrescendoAttackResult
     FlipAttack
+    generate_simulated_conversation_async
     ManyShotJailbreakAttack
     MarkdownAttackResultPrinter
     MultiPromptSendingAttack
-    MultiPromptSendingAttackContext
+    MultiPromptSendingAttackParameters
     MultiTurnAttackContext
     MultiTurnAttackStrategy
-    AttackExecutorResult
     ObjectiveEvaluator
     PromptSendingAttack
-    RolePlayPaths
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
+    SimulatedConversationResult
+    SimulatedTargetSystemPromptPaths
+    RolePlayPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
+    SkeletonKeyAttack
     TAPAttack
     TAPAttackContext
     TAPAttackResult
     TreeOfAttacksWithPruningAttack
-    SkeletonKeyAttack
-    ConsoleAttackResultPrinter
 
 :py:mod:`pyrit.executor.promptgen`
 ==================================
@@ -330,7 +334,6 @@ API Reference
     AllowedCategories
     AttackOutcome
     AttackResult
-    DecomposedSeedGroup
     Message
     MessagePiece
     PromptDataType
@@ -342,6 +345,7 @@ API Reference
     ScenarioResult
     Score
     ScoreType
+    Seed
     SeedDataset
     SeedGroup
     SeedObjective

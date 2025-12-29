@@ -101,10 +101,3 @@ red_teaming_attack = RedTeamingAttack(
 
 result = await red_teaming_attack.execute_async(objective=conversation_objective)  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
-
-# %%
-# Close connection
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

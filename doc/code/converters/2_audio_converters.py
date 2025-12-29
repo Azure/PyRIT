@@ -86,9 +86,3 @@ audio_frequency_converter = AudioFrequencyConverter()
 converted_audio_file = await audio_frequency_converter.convert_async(prompt=prompt)  # type: ignore
 
 print(converted_audio_file)
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
