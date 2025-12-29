@@ -331,7 +331,6 @@ API Reference
     AllowedCategories
     AttackOutcome
     AttackResult
-    DecomposedSeedGroup
     JsonResponseConfig
     Message
     MessagePiece
