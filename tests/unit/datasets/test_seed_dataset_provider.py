@@ -9,8 +9,8 @@ from pyrit.datasets import SeedDatasetProvider
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import _DarkBenchDataset
 from pyrit.datasets.seed_datasets.remote.harmbench_dataset import _HarmBenchDataset
 from pyrit.datasets.seed_datasets.remote.jailbreakv_28k_dataset import (
-    _JailbreakV28KDataset,
     HarmCategory,
+    _JailbreakV28KDataset,
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
@@ -272,7 +272,7 @@ class TestJailbreakV28KDataset:
         zip_dir.mkdir()
         images_dir = zip_dir / "JailBreakV_28K" / "images"
         images_dir.mkdir(parents=True)
-        
+
         # Create mock image files
         (images_dir / "test_001.png").touch()
         (images_dir / "test_002.png").touch()
@@ -285,14 +285,14 @@ class TestJailbreakV28KDataset:
         with patch("pathlib.Path.exists") as mock_exists:
             # ZIP exists, extracted folder exists
             mock_exists.side_effect = lambda: True
-            
+
             with patch.object(loader, "_fetch_from_huggingface", return_value=mock_jailbreakv_data):
                 with patch.object(loader, "_resolve_image_path") as mock_resolve:
                     # Mock image path resolution
                     mock_resolve.side_effect = lambda rel_path, local_directory, call_cache: str(
                         local_directory / rel_path
                     )
-                    
+
                     dataset = await loader.fetch_dataset()
 
                     assert isinstance(dataset, SeedDataset)
@@ -359,7 +359,7 @@ class TestJailbreakV28KDataset:
                     mock_resolve.side_effect = lambda rel_path, local_directory, call_cache: str(
                         local_directory / rel_path
                     )
-                    
+
                     dataset = await loader.fetch_dataset()
 
                     text_prompts = [p for p in dataset.seeds if p.data_type == "text"]
@@ -393,10 +393,10 @@ class TestJailbreakV28KDataset:
         with patch("pathlib.Path.exists", return_value=True):
             with patch.object(loader, "_fetch_from_huggingface", return_value=mock_jailbreakv_data):
                 with patch.object(loader, "_resolve_image_path") as mock_resolve:
-                    mock_resolve.side_effect = lambda rel_path, local_directory, call_cache: str(
-                        local_directory / rel_path
-                    ) if "test_001" in rel_path else ""
-                    
+                    mock_resolve.side_effect = lambda rel_path, local_directory, call_cache: (
+                        str(local_directory / rel_path) if "test_001" in rel_path else ""
+                    )
+
                     dataset = await loader.fetch_dataset()
 
                     # Should only get first example (hate speech), not second (violence)
@@ -407,7 +407,7 @@ class TestJailbreakV28KDataset:
     def test_normalize_policy(self):
         """Test policy normalization helper."""
         loader = _JailbreakV28KDataset()
-        
+
         assert loader._normalize_policy("Hate Speech") == "hate_speech"
         assert loader._normalize_policy("Economic-Harm") == "economic_harm"
         assert loader._normalize_policy("  Violence  ") == "violence"
@@ -436,9 +436,9 @@ class TestJailbreakV28KDataset:
                     # Mock so that only 1 out of 4 images resolves (25% success = 75% unpaired)
                     def resolve_side_effect(rel_path, local_directory, call_cache):
                         return str(local_directory / rel_path) if "001" in rel_path else ""
-                    
+
                     mock_resolve.side_effect = resolve_side_effect
-                    
+
                     # Should raise because 75% are unpaired (>= 50%)
                     with pytest.raises(ValueError, match="75.0% of items are missing images"):
                         await loader.fetch_dataset()
@@ -467,11 +467,11 @@ class TestJailbreakV28KDataset:
                     # Mock so that 3 out of 4 images resolve (75% success = 25% unpaired)
                     def resolve_side_effect(rel_path, local_directory, call_cache):
                         return "" if "004" in rel_path else str(local_directory / rel_path)
-                    
+
                     mock_resolve.side_effect = resolve_side_effect
-                    
+
                     # Should succeed because only 25% are unpaired (< 50%)
                     dataset = await loader.fetch_dataset()
-                    
+
                     # Should have 3 pairs (6 total prompts)
                     assert len(dataset.seeds) == 6

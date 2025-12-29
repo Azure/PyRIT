@@ -94,8 +94,7 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
         if harm_categories is not None:
             valid_categories = {category.value for category in HarmCategory}
             invalid_categories = (
-                set(cat.value if isinstance(cat, HarmCategory) else cat for cat in harm_categories)
-                - valid_categories
+                set(cat.value if isinstance(cat, HarmCategory) else cat for cat in harm_categories) - valid_categories
             )
             if invalid_categories:
                 raise ValueError(f"Invalid harm categories: {', '.join(invalid_categories)}")
