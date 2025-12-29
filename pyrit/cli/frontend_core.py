@@ -303,13 +303,19 @@ async def run_scenario_async(
         init_kwargs["memory_labels"] = memory_labels
 
     # Build dataset_config if CLI args provided
-    if dataset_names or max_dataset_size is not None:
+    if dataset_names:
+        # User specified dataset names - create new config
         from pyrit.scenario import DatasetConfiguration
 
         init_kwargs["dataset_config"] = DatasetConfiguration(
             dataset_names=dataset_names,
             max_dataset_size=max_dataset_size,
         )
+    elif max_dataset_size is not None:
+        # User only specified max_dataset_size - use scenario's default datasets with custom size
+        default_config = scenario_class.default_dataset_config()
+        default_config.max_dataset_size = max_dataset_size
+        init_kwargs["dataset_config"] = default_config
 
     # Instantiate and run
     print(f"\nRunning scenario: {scenario_name}")

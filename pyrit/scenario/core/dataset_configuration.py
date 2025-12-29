@@ -76,7 +76,7 @@ class DatasetConfiguration:
 
         # Store private attributes
         self._seed_groups = list(seed_groups) if seed_groups is not None else None
-        self._max_dataset_size = max_dataset_size
+        self.max_dataset_size = max_dataset_size
         self._dataset_names = list(dataset_names) if dataset_names is not None else None
         self._scenario_composites = scenario_composites
 
@@ -181,7 +181,7 @@ class DatasetConfiguration:
         Returns:
             Optional[int]: The max_dataset_size if set, or None if not limited.
         """
-        return self._max_dataset_size
+        return self.max_dataset_size
 
     def _apply_max_dataset_size(self, seed_groups: List[SeedGroup]) -> List[SeedGroup]:
         """
@@ -194,9 +194,9 @@ class DatasetConfiguration:
             List[SeedGroup]: The original list if max_dataset_size is not set,
                 or a random sample of up to max_dataset_size items.
         """
-        if self._max_dataset_size is None or len(seed_groups) <= self._max_dataset_size:
+        if self.max_dataset_size is None or len(seed_groups) <= self.max_dataset_size:
             return seed_groups
-        return random.sample(seed_groups, self._max_dataset_size)
+        return random.sample(seed_groups, self.max_dataset_size)
 
     def has_data_source(self) -> bool:
         """

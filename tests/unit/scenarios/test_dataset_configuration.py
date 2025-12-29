@@ -57,7 +57,7 @@ class TestDatasetConfigurationInit:
 
         assert config._seed_groups == sample_seed_groups
         assert config._dataset_names is None
-        assert config._max_dataset_size is None
+        assert config.max_dataset_size is None
         assert config._scenario_composites is None
 
     def test_init_with_dataset_names_only(self) -> None:
@@ -67,7 +67,7 @@ class TestDatasetConfigurationInit:
 
         assert config._seed_groups is None
         assert config._dataset_names == dataset_names
-        assert config._max_dataset_size is None
+        assert config.max_dataset_size is None
 
     def test_init_with_both_seed_groups_and_dataset_names_raises_error(self, sample_seed_groups: list) -> None:
         """Test that setting both seed_groups and dataset_names raises ValueError."""
@@ -83,7 +83,7 @@ class TestDatasetConfigurationInit:
         """Test initialization with max_dataset_size."""
         config = DatasetConfiguration(seed_groups=sample_seed_groups, max_dataset_size=2)
 
-        assert config._max_dataset_size == 2
+        assert config.max_dataset_size == 2
 
     def test_init_with_max_dataset_size_zero_raises_error(self) -> None:
         """Test that max_dataset_size=0 raises ValueError."""
