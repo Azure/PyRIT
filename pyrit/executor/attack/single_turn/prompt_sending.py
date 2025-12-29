@@ -150,7 +150,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         # Process prepended conversation if provided
         await self._conversation_manager.update_conversation_state_async(
-            target=self._objective_target,
             conversation_id=context.conversation_id,
             prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,

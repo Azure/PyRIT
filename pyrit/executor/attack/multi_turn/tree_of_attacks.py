@@ -280,7 +280,6 @@ class _TreeOfAttacksNode:
         # Add to objective target conversation (handles system prompts and memory)
         await conversation_manager.update_conversation_state_async(
             conversation_id=self.objective_target_conversation_id,
-            target=self._objective_target,
             prepended_conversation=prepended_conversation,
         )
 

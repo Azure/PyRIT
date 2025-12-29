@@ -391,7 +391,6 @@ class TestConversationStateUpdate:
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
             request_converters=request_converter_config,
             response_converters=response_converter_config,
             max_turns=5,  # Multi-turn mode to trigger system prompt handling
@@ -402,8 +401,9 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_processes_system_prompts_multi_turn(
-        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
+        self, attack_identifier: dict[str, str], sample_system_piece: MessagePiece
     ):
+        """Test that system messages are added to memory like any other message."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -413,22 +413,19 @@ class TestConversationStateUpdate:
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
-            max_turns=5,  # Multi-turn mode to trigger system prompt handling
+            max_turns=5,  # Multi-turn mode
         )
 
-        # System prompt should be set on target
-        mock_chat_target.set_system_prompt.assert_called_once()
-
-        # System messages should not be added to memory in multi-turn mode
+        # System messages SHOULD be added to memory
         stored_conversation = manager.get_conversation(conversation_id)
-        assert len(stored_conversation) == 0
+        assert len(stored_conversation) == 1
+        assert stored_conversation[0].get_piece().role == "system"
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_processes_system_prompts_single_turn(
-        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
+        self, attack_identifier: dict[str, str], sample_system_piece: MessagePiece
     ):
-        """Test that system messages in single-turn mode are NOT added to memory"""
+        """Test that system messages in single-turn mode are added to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -438,23 +435,23 @@ class TestConversationStateUpdate:
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
             # No max_turns = single-turn mode
         )
 
-        # System prompt should be set on target
-        mock_chat_target.set_system_prompt.assert_called_once()
+        # System messages SHOULD be added to memory
+        stored_conversation = manager.get_conversation(conversation_id)
+        assert len(stored_conversation) == 1
+        assert stored_conversation[0].get_piece().role == "system"
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_single_turn_behavior_matches_legacy(
         self,
         attack_identifier: dict[str, str],
-        mock_chat_target: MagicMock,
         sample_user_piece: MessagePiece,
         sample_assistant_piece: MessagePiece,
         sample_system_piece: MessagePiece,
     ):
-        """Test that single-turn behavior correctly excludes system messages from memory"""
+        """Test that all message types are correctly saved to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -466,21 +463,20 @@ class TestConversationStateUpdate:
         ]
 
         # Store original IDs to verify they get updated
-        # Since we are mocking the target, the system piece won't be stored, so we only check user and assistant
         original_user_id = sample_user_piece.id
         original_assistant_id = sample_assistant_piece.id
 
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
             # No max_turns = single-turn mode
         )
 
+        # All messages including system should be stored
         stored_conversation = manager.get_conversation(conversation_id)
-        assert len(stored_conversation) == 2
+        assert len(stored_conversation) == 3
 
-        # Verify that user and assistant pieces have the correct conversation_id and attack_identifier
+        # Verify that all pieces have the correct conversation_id and attack_identifier
         for stored_response in stored_conversation:
             for piece in stored_response.message_pieces:
                 assert piece.conversation_id == conversation_id
@@ -488,61 +484,66 @@ class TestConversationStateUpdate:
                 # Verify that IDs were regenerated
                 assert piece.id != original_user_id
                 assert piece.id != original_assistant_id
-                # System piece should not be in memory, since we mocked the target
 
-        # Verify roles are preserved and in order (excluding system)
-        assert stored_conversation[0].get_piece().role == "user"
-        assert stored_conversation[1].get_piece().role == "assistant"
-
-        # System prompt should still be set on target even in single-turn mode
-        mock_chat_target.set_system_prompt.assert_called_once()
+        # Verify roles are preserved and in order
+        assert stored_conversation[0].get_piece().role == "system"
+        assert stored_conversation[1].get_piece().role == "user"
+        assert stored_conversation[2].get_piece().role == "assistant"
 
     @pytest.mark.asyncio
-    async def test_update_conversation_state_system_prompt_without_target_raises_error(
+    async def test_update_conversation_state_system_message_without_target_succeeds(
         self, attack_identifier: dict[str, str], sample_system_piece: MessagePiece
     ):
-        """Test that providing system prompts without a target raises an error"""
+        """Test that system messages work fine without a target - they're just saved to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
         conversation = [Message(message_pieces=[sample_system_piece])]
 
-        with pytest.raises(ValueError, match="Target must be provided to handle system prompts"):
-            await manager.update_conversation_state_async(
-                conversation_id=conversation_id,
-                prepended_conversation=conversation,
-                # No target provided
-            )
+        # Should succeed - no error expected
+        await manager.update_conversation_state_async(
+            conversation_id=conversation_id,
+            prepended_conversation=conversation,
+            # No target provided - that's fine
+        )
+
+        # System message should be in memory
+        stored_conversation = manager.get_conversation(conversation_id)
+        assert len(stored_conversation) == 1
+        assert stored_conversation[0].get_piece().role == "system"
 
     @pytest.mark.asyncio
-    async def test_update_conversation_state_system_prompt_with_non_chat_target_raises_error(
+    async def test_update_conversation_state_system_message_with_non_chat_target_succeeds(
         self, attack_identifier: dict[str, str], mock_prompt_target: MagicMock, sample_system_piece: MessagePiece
     ):
-        """Test that providing system prompts with non-chat target raises an error"""
+        """Test that system messages work fine with non-chat target - they're just saved to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
         conversation = [Message(message_pieces=[sample_system_piece])]
 
-        with pytest.raises(ValueError, match="Target must be a PromptChatTarget to set system prompts"):
-            await manager.update_conversation_state_async(
-                conversation_id=conversation_id,
-                prepended_conversation=conversation,
-                target=mock_prompt_target,  # Non-chat target
-            )
+        # Should succeed - no error expected
+        await manager.update_conversation_state_async(
+            conversation_id=conversation_id,
+            prepended_conversation=conversation,
+        )
+
+        # System message should be in memory
+        stored_conversation = manager.get_conversation(conversation_id)
+        assert len(stored_conversation) == 1
+        assert stored_conversation[0].get_piece().role == "system"
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_mixed_conversation_multi_turn(
         self,
         attack_identifier: dict[str, str],
-        mock_chat_target: MagicMock,
         sample_user_piece: MessagePiece,
         sample_assistant_piece: MessagePiece,
         sample_system_piece: MessagePiece,
     ):
-        """Test that in multi-turn mode, system prompts are excluded but other messages are added"""
+        """Test that in multi-turn mode, all messages including system are saved to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -556,19 +557,15 @@ class TestConversationStateUpdate:
         await manager.update_conversation_state_async(
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
             max_turns=5,  # Multi-turn mode
         )
 
-        # System prompt should be set on target
-        mock_chat_target.set_system_prompt.assert_called_once()
-
-        # Only user and assistant messages should be in memory
-        # Since the target is mocked, the system piece won't be stored
+        # All messages including system should be in memory
         stored_conversation = manager.get_conversation(conversation_id)
-        assert len(stored_conversation) == 2
-        assert stored_conversation[0].get_piece().role == "user"
-        assert stored_conversation[1].get_piece().role == "assistant"
+        assert len(stored_conversation) == 3
+        assert stored_conversation[0].get_piece().role == "system"
+        assert stored_conversation[1].get_piece().role == "user"
+        assert stored_conversation[2].get_piece().role == "assistant"
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_preserves_original_values_like_legacy(
@@ -743,33 +740,6 @@ class TestConversationStateUpdate:
             await manager.update_conversation_state_async(
                 conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
             )
-
-
-class TestPrivateMethods:
-    """Tests for private helper methods"""
-
-    def test_should_exclude_piece_from_memory_single_turn_mode(self, sample_system_piece: MessagePiece):
-        # System pieces should be excluded in both single-turn and multi-turn modes
-        # because set_system_prompt() is called on the target, which internally adds them to memory
-        assert ConversationManager._should_exclude_piece_from_memory(piece=sample_system_piece, max_turns=None)
-
-    def test_should_exclude_piece_from_memory_multi_turn_system_piece(self, sample_system_piece: MessagePiece):
-        # System pieces should be excluded in both single-turn and multi-turn modes
-        assert ConversationManager._should_exclude_piece_from_memory(piece=sample_system_piece, max_turns=5)
-
-    def test_should_exclude_piece_from_memory_single_turn_non_system_piece(
-        self, sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece
-    ):
-        # In single-turn mode, non-system pieces should not be excluded
-        assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_user_piece, max_turns=None)
-        assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_assistant_piece, max_turns=None)
-
-    def test_should_exclude_piece_from_memory_multi_turn_non_system_piece(
-        self, sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece
-    ):
-        # In multi-turn mode, non-system pieces should not be excluded
-        assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_user_piece, max_turns=5)
-        assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_assistant_piece, max_turns=5)
 
 
 @pytest.mark.usefixtures("patch_central_database")
