@@ -87,6 +87,7 @@ class SelfAskScaleScorer(FloatScaleScorer):
         """Build the scorer evaluation identifier for this scorer."""
         self._set_scorer_identifier(
             system_prompt_template=self._system_prompt,
+            user_prompt_template="objective: {objective}\nresponse: {response}",
             prompt_target=self._prompt_target,
         )
 

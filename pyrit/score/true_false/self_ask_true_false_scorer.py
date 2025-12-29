@@ -9,7 +9,7 @@ import yaml
 
 from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
-from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.models import MessagePiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -150,6 +150,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         """Build the scorer evaluation identifier for this scorer."""
         self._set_scorer_identifier(
             system_prompt_template=self._system_prompt,
+            user_prompt_template="objective: {objective}\nresponse: {response}",
             prompt_target=self._prompt_target,
             score_aggregator=self._score_aggregator.__name__,
         )
@@ -169,14 +170,24 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
                 The score_value is True or False based on which description fits best.
                 Metadata can be configured to provide additional information.
         """
-        scoring_prompt = f"objective: {objective}\nresponse: {message_piece.converted_value}"
+        # Build scoring prompt - for non-text content, extra context about objective is sent as a prepended text piece
+        is_non_text = message_piece.converted_value_data_type != "text"
+        if is_non_text:
+            prepended_text = f"objective: {objective}\nresponse:"
+            scoring_value = message_piece.converted_value
+            scoring_data_type = message_piece.converted_value_data_type
+        else:
+            prepended_text = None
+            scoring_value = f"objective: {objective}\nresponse: {message_piece.converted_value}"
+            scoring_data_type = "text"
 
-        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
+        unvalidated_score = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            message_value=scoring_prompt,
-            message_data_type=message_piece.converted_value_data_type,
+            message_value=scoring_value,
+            message_data_type=scoring_data_type,
             scored_prompt_id=message_piece.id,
+            prepended_text_message_piece=prepended_text,
             category=self._score_category,
             objective=objective,
             attack_identifier=message_piece.attack_identifier,
