@@ -18,6 +18,93 @@ from pyrit.prompt_target.common.prompt_target import PromptTarget
 logger = logging.getLogger(__name__)
 
 
+def format_conversation_context(messages: List[Message]) -> str:
+    """
+    Format a list of messages into a context string for adversarial chat system prompts.
+
+    This function converts conversation history into a formatted string that can be used
+    by TAP and Crescendo attacks to provide context about prior conversation turns.
+
+    For text pieces, includes both original_value and converted_value (if different).
+    For non-text pieces (images, audio, etc.), uses prompt_metadata["context_description"]
+    if available, otherwise uses a placeholder like [Image] or [Audio].
+
+    Args:
+        messages (List[Message]): The conversation messages to format.
+
+    Returns:
+        str: A formatted string representing the conversation context.
+            Returns empty string if no messages provided.
+
+    Example output:
+        Turn 1:
+        User: How do I make a cake?
+        Assistant: Here's a simple recipe for making a cake...
+
+        Turn 2:
+        User: [Image - A photo of baking ingredients]
+        Assistant: I can see flour, eggs, and sugar in your image...
+    """
+    if not messages:
+        return ""
+
+    context_parts: List[str] = []
+    turn_number = 0
+
+    for message in messages:
+        piece = message.get_piece()
+
+        # Skip system messages - they're handled separately
+        if piece.role == "system":
+            continue
+
+        # Start a new turn when we see a user message
+        if piece.role == "user":
+            turn_number += 1
+            context_parts.append(f"Turn {turn_number}:")
+
+        # Format the piece content
+        content = _format_piece_content(piece)
+        role_label = "User" if piece.role == "user" else "Assistant"
+        context_parts.append(f"{role_label}: {content}")
+
+    return "\n".join(context_parts)
+
+
+def _format_piece_content(piece: MessagePiece) -> str:
+    """
+    Format a single message piece into a content string.
+
+    For text pieces, shows original and converted values (if different).
+    For non-text pieces, uses context_description metadata or a placeholder.
+
+    Args:
+        piece (MessagePiece): The message piece to format.
+
+    Returns:
+        str: The formatted content string.
+    """
+    data_type = piece.converted_value_data_type or piece.original_value_data_type
+
+    # For non-text pieces, use metadata description or placeholder
+    if data_type != "text":
+        # Check for context_description in metadata
+        if piece.prompt_metadata and "context_description" in piece.prompt_metadata:
+            description = piece.prompt_metadata["context_description"]
+            return f"[{data_type.capitalize()} - {description}]"
+        else:
+            return f"[{data_type.capitalize()}]"
+
+    # For text pieces, include both original and converted if different
+    original = piece.original_value
+    converted = piece.converted_value
+
+    if original != converted:
+        return f"{converted} (original: {original})"
+    else:
+        return converted
+
+
 @dataclass
 class ConversationState:
     """Container for conversation state data shared between attack components."""
@@ -432,3 +519,73 @@ class ConversationManager:
                 raise ValueError(
                     "There must be a user message preceding the assistant message in prepended conversations."
                 )
+
+    async def prepend_to_adversarial_chat_async(
+        self,
+        *,
+        adversarial_chat: PromptChatTarget,
+        adversarial_chat_conversation_id: str,
+        prepended_conversation: List[Message],
+        labels: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """
+        Replay prepended conversation to the adversarial chat's memory with swapped roles.
+
+        This method takes a conversation history (typically between user and objective target)
+        and replays it to the adversarial chat so it has context of the established conversation.
+        Roles are swapped because from the adversarial chat's perspective:
+        - "user" messages in the original become "assistant" (what the adversarial chat said)
+        - "assistant" messages become "user" (responses it received)
+
+        This is useful when using prepended_conversation to establish context (e.g., role-play
+        scenarios) and wanting the adversarial chat to continue naturally from that context.
+
+        Args:
+            adversarial_chat (PromptChatTarget): The adversarial chat target to prepend to.
+            adversarial_chat_conversation_id (str): The conversation ID for the adversarial chat.
+            prepended_conversation (List[Message]): The conversation history to replay.
+            labels (Optional[Dict[str, str]]): Optional labels to associate with the messages.
+
+        Note:
+            - System messages are skipped (adversarial chat has its own system prompt)
+            - Messages are added to memory directly without LLM calls
+        """
+        if not prepended_conversation:
+            logger.debug("No prepended conversation to replay to adversarial chat")
+            return
+
+        # Role mapping: swap user <-> assistant for adversarial chat's perspective
+        role_swap: Dict[ChatMessageRole, ChatMessageRole] = {
+            "user": "assistant",
+            "assistant": "user",
+        }
+
+        for message in prepended_conversation:
+            for piece in message.message_pieces:
+                # Skip system messages - adversarial chat has its own system prompt
+                if piece.role == "system":
+                    continue
+
+                # Create a new piece with swapped role for adversarial chat
+                swapped_role = role_swap.get(piece.role, piece.role)
+
+                adversarial_piece = MessagePiece(
+                    id=uuid.uuid4(),
+                    role=swapped_role,
+                    original_value=piece.original_value,
+                    converted_value=piece.converted_value,
+                    original_value_data_type=piece.original_value_data_type,
+                    converted_value_data_type=piece.converted_value_data_type,
+                    conversation_id=adversarial_chat_conversation_id,
+                    attack_identifier=self._attack_identifier,
+                    prompt_target_identifier=adversarial_chat.get_identifier(),
+                    labels=labels,
+                )
+
+                # Add to memory
+                self._memory.add_message_to_memory(request=adversarial_piece.to_message())
+
+        logger.debug(
+            f"Replayed {len(prepended_conversation)} messages to adversarial chat "
+            f"conversation {adversarial_chat_conversation_id}"
+        )
