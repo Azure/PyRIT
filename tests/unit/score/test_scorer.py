@@ -304,8 +304,8 @@ async def test_scorer_remove_markdown_json_called(good_json):
 
 
 @pytest.mark.asyncio
-async def test_score_value_with_llm_additional_image_path_creates_multipiece_message(good_json):
-    """Test that additional_image_path creates a multi-piece message (text + image)."""
+async def test_score_value_with_llm_prepended_text_message_piece_creates_multipiece_message(good_json):
+    """Test that prepended_text_message_piece creates a multi-piece message (text context + main content)."""
     chat_target = MagicMock(PromptChatTarget)
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
@@ -317,10 +317,10 @@ async def test_score_value_with_llm_additional_image_path_creates_multipiece_mes
     await scorer._score_value_with_llm(
         prompt_target=chat_target,
         system_prompt="system_prompt",
-        message_value="objective: test\nresponse:",
-        message_data_type="text",
+        message_value="test_image.png",
+        message_data_type="image_path",
         scored_prompt_id="123",
-        additional_image_path="test_image.png",
+        prepended_text_message_piece="objective: test\nresponse:",
         category="category",
         objective="task",
     )
@@ -332,23 +332,23 @@ async def test_score_value_with_llm_additional_image_path_creates_multipiece_mes
     call_args = chat_target.send_prompt_async.call_args
     sent_message = call_args.kwargs["message"]
 
-    # Should have 2 pieces: text prompt + image
+    # Should have 2 pieces: text context first, then the main content being scored
     assert len(sent_message.message_pieces) == 2
 
-    # First piece should be text
+    # First piece should be the extra text context
     text_piece = sent_message.message_pieces[0]
     assert text_piece.converted_value_data_type == "text"
     assert "objective: test" in text_piece.original_value
 
-    # Second piece should be the image
-    image_piece = sent_message.message_pieces[1]
-    assert image_piece.converted_value_data_type == "image_path"
-    assert image_piece.original_value == "test_image.png"
+    # Second piece should be the main content (image in this case)
+    main_piece = sent_message.message_pieces[1]
+    assert main_piece.converted_value_data_type == "image_path"
+    assert main_piece.original_value == "test_image.png"
 
 
 @pytest.mark.asyncio
-async def test_score_value_with_llm_no_additional_image_creates_single_piece_message(good_json):
-    """Test that without additional_image_path, only a single piece message is created."""
+async def test_score_value_with_llm_no_prepended_text_creates_single_piece_message(good_json):
+    """Test that without prepended_text_message_piece, only a single piece message is created."""
     chat_target = MagicMock(PromptChatTarget)
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
@@ -379,6 +379,45 @@ async def test_score_value_with_llm_no_additional_image_creates_single_piece_mes
     assert text_piece.converted_value_data_type == "text"
     assert "objective: test" in text_piece.original_value
     assert "response: some text" in text_piece.original_value
+
+
+@pytest.mark.asyncio
+async def test_score_value_with_llm_prepended_text_works_with_audio(good_json):
+    """Test that prepended_text_message_piece works with audio content (type-independent)."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
+    scorer = MockScorer()
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="test_audio.wav",
+        message_data_type="audio_path",
+        scored_prompt_id="123",
+        prepended_text_message_piece="objective: transcribe and evaluate\nresponse:",
+        category="category",
+        objective="task",
+    )
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have 2 pieces: text context + audio
+    assert len(sent_message.message_pieces) == 2
+
+    # First piece should be text context
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+
+    # Second piece should be audio
+    audio_piece = sent_message.message_pieces[1]
+    assert audio_piece.converted_value_data_type == "audio_path"
+    assert audio_piece.original_value == "test_audio.wav"
 
 
 def test_scorer_extract_task_from_response(patch_central_database):

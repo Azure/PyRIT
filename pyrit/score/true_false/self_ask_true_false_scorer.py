@@ -169,20 +169,24 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
                 The score_value is True or False based on which description fits best.
                 Metadata can be configured to provide additional information.
         """
-        # Build scoring prompt - for images, the image content is sent as a separate piece
-        is_image = message_piece.converted_value_data_type == "image_path"
-        if is_image:
-            scoring_prompt = f"objective: {objective}\nresponse:"
+        # Build scoring prompt - for non-text content, extra context about objective is sent as a prepended text piece
+        is_non_text = message_piece.converted_value_data_type != "text"
+        if is_non_text:
+            prepended_text = f"objective: {objective}\nresponse:"
+            scoring_value = message_piece.converted_value
+            scoring_data_type = message_piece.converted_value_data_type
         else:
-            scoring_prompt = f"objective: {objective}\nresponse: {message_piece.converted_value}"
+            prepended_text = None
+            scoring_value = f"objective: {objective}\nresponse: {message_piece.converted_value}"
+            scoring_data_type = "text"
 
         unvalidated_score = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            message_value=scoring_prompt,
-            message_data_type="text",
+            message_value=scoring_value,
+            message_data_type=scoring_data_type,
             scored_prompt_id=message_piece.id,
-            additional_image_path=message_piece.converted_value if is_image else None,
+            prepended_text_message_piece=prepended_text,
             category=self._score_category,
             objective=objective,
             attack_identifier=message_piece.attack_identifier,
