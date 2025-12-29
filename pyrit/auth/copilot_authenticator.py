@@ -4,7 +4,7 @@
 import logging
 import asyncio
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 import json
@@ -21,8 +21,9 @@ class CopilotAuthenticator(Authenticator):
     """
     Playwright-based authenticator for Microsoft Copilot. Used by WebSocketCopilotTarget.
 
-    This authenticator automates browser login to obtain and refresh access tokens that are necessary for accessing
-    Microsoft Copilot via WebSocket connections. It uses Playwright to simulate user interactions for authentication, and msal-extensions for encrypted token persistence.
+    This authenticator automates browser login to obtain and refresh access tokens that are necessary
+    for accessing Microsoft Copilot via WebSocket connections. It uses Playwright to simulate user
+    interactions for authentication, and msal-extensions for encrypted token persistence.
 
     An access token acquired by this authenticator is usually valid for about 60 minutes.
 
@@ -35,14 +36,27 @@ class CopilotAuthenticator(Authenticator):
         ``pip install playwright && playwright install chromium``.
     """
 
+    # TODO: ensure login with account with MFA enabled work correctly
+
+    #: Name of the cache file to store tokens
     CACHE_FILE_NAME: str = "copilot_token_cache.bin"
+    #: Buffer before token expiry to avoid using tokens about to expire (in seconds)
+    EXPIRY_BUFFER_SECONDS: int = 300
+    #: Default timeout for capturing token via network monitoring (in seconds)
+    DEFAULT_TOKEN_CAPTURE_TIMEOUT: int = 60
+    #: Default timeout for waiting on page elements (in seconds)
+    DEFAULT_ELEMENT_TIMEOUT_SECONDS: int = 10
+    #: Number of retries for network operations
+    DEFAULT_NETWORK_RETRIES: int = 3
 
     def __init__(
         self,
         *,
         headless: bool = False,
         maximized: bool = True,
-        timeout_for_elements: int = 10,
+        timeout_for_elements_seconds: int = DEFAULT_ELEMENT_TIMEOUT_SECONDS,
+        token_capture_timeout_seconds: int = DEFAULT_TOKEN_CAPTURE_TIMEOUT,
+        network_retries: int = DEFAULT_NETWORK_RETRIES,
         fallback_to_plaintext: bool = False,
     ):
         """
@@ -51,9 +65,12 @@ class CopilotAuthenticator(Authenticator):
         Args:
             headless (bool): Whether to run the browser in headless mode. Default is False.
             maximized (bool): Whether to start the browser maximized. Default is True.
-            timeout_for_elements (int): Timeout used when waiting for page elements, in seconds. Default is 10.
+            timeout_for_elements_seconds (int): Timeout used when waiting for page elements, in seconds.
+            token_capture_timeout_seconds (int): Maximum time to wait for token capture via network monitoring.
+            network_retries (int): Number of retry attempts for network operations. Default is 3.
             fallback_to_plaintext (bool): Whether to fallback to plaintext storage if encryption is unavailable.
                 If set to False (default), an exception will be raised if encryption cannot be used.
+                WARNING: Setting to True stores tokens in plaintext.
 
         Raises:
             ValueError: If the required environment variables are not set.
@@ -65,7 +82,9 @@ class CopilotAuthenticator(Authenticator):
 
         self._headless = headless
         self._maximized = maximized
-        self._timeout = timeout_for_elements * 1000  # ms
+        self._elements_timeout = timeout_for_elements_seconds * 1000
+        self._token_capture_timeout = token_capture_timeout_seconds
+        self._network_retries = network_retries
         self._fallback_to_plaintext = fallback_to_plaintext
 
         self._cache_dir = PYRIT_CACHE_PATH
@@ -76,82 +95,10 @@ class CopilotAuthenticator(Authenticator):
             raise ValueError("COPILOT_USERNAME and COPILOT_PASSWORD environment variables must be set.")
 
         self._token_cache = self._create_persistent_cache(self._cache_file, self._fallback_to_plaintext)
-        self._current_claims = {}
+        self._current_claims = {}  # for easy access to claims without re-decoding token
 
-    @staticmethod
-    def _create_persistent_cache(cache_file: str, fallback_to_plaintext: bool = False):
-        # https://github.com/AzureAD/microsoft-authentication-extensions-for-python
-
-        try:
-            logger.info(f"Using encrypted persistent token cache: {cache_file}")
-            return build_encrypted_persistence(cache_file)
-        except Exception as e:
-            if fallback_to_plaintext:
-                logger.warning(f"Encryption unavailable ({e}). Opting in to plain text.")
-                return FilePersistence(cache_file)
-            logger.error("Encryption unavailable and fallback_to_plaintext is False.")
-            raise
-
-    def _get_cached_token_if_available_and_valid(self) -> Optional[dict]:
-        # TODO: make sure the cached token matches the proper user account
-        try:
-            cache_data = self._token_cache.load()
-            if not cache_data:
-                logger.info("No cached token data found.")
-                return None
-
-            token_data = json.loads(cache_data)
-            if "access_token" not in token_data:
-                logger.info("No access token in cache.")
-                return None
-
-            expires_at = token_data.get("expires_at")
-            if expires_at:
-                expiry_time = datetime.fromtimestamp(expires_at, tz=timezone.utc)
-                current_time = datetime.now(timezone.utc)
-
-                # TODO: add n-minute buffer to avoid using tokens about to expire
-                if current_time >= expiry_time:
-                    logger.info("Cached token has expired.")
-                    return None
-
-                minutes_left = (expiry_time - current_time).total_seconds() / 60
-                logger.info(f"Cached token is valid for another {minutes_left:.2f} minutes")
-
-            return token_data
-
-        except Exception as e:
-            error_name = type(e).__name__
-            if "PersistenceNotFound" in error_name or "FileNotFoundError" in error_name:
-                logger.info("Cache file does not exist yet. Will be created on first token save.")
-            else:
-                logger.error(f"Failed to load cached token ({error_name}): {e}")
-            return None
-
-    def _save_token_to_cache(self, *, token: str, expires_in: Optional[int] = None) -> None:
-        token_data = {
-            "access_token": token,
-            "token_type": "Bearer",
-            "cached_at": datetime.now(timezone.utc).timestamp(),
-        }
-
-        if expires_in:
-            expires_at = datetime.now(timezone.utc).timestamp() + expires_in
-            token_data["expires_at"] = expires_at
-            token_data["expires_in"] = expires_in
-
-        try:
-            self._token_cache.save(json.dumps(token_data))
-            logger.info("Token successfully cached.")
-        except Exception as e:
-            logger.error(f"Failed to cache token: {e}")
-
-    def _clear_token_cache(self) -> None:
-        try:
-            self._token_cache.save(json.dumps({}))
-            logger.info("Token cache cleared.")
-        except Exception as e:
-            logger.error(f"Failed to clear cache: {e}")
+        # Lock to prevent concurrent token fetches from launching multiple browsers
+        self._token_fetch_lock = asyncio.Lock()
 
     async def refresh_token(self) -> str:
         """
@@ -179,69 +126,183 @@ class CopilotAuthenticator(Authenticator):
         """
         Get the current authentication token.
 
-        This will check the cache first and only launch the browser if no valid token is found.
+        This checks the cache first and only launches the browser if no valid token is found.
+        If multiple calls are made concurrently, they will be serialized via an asyncio lock
+        to prevent launching multiple browser instances.
 
         Returns:
-            str: The current authentication token.
-
-        Raises:
-            RuntimeError: If token retrieval fails.
+            str: A valid Bearer token for Microsoft Copilot.
         """
-        # TODO: make sure multiple concurrent calls don't launch multiple browsers
-        cached_token = self._get_cached_token_if_available_and_valid()
-        if cached_token and "access_token" in cached_token:
-            logger.info("Using cached access token.")
-            return cached_token["access_token"]
+        async with self._token_fetch_lock:
+            cached_token = await self._get_cached_token_if_available_and_valid()
+            if cached_token and "access_token" in cached_token:
+                logger.info("Using cached access token.")
+                return cached_token["access_token"]
 
-        logger.info("No valid cached token found.")
-        return await self.refresh_token()
+            logger.info("No valid cached token found. Initiating browser authentication.")
+            return await self.refresh_token()
 
     async def get_claims(self) -> dict:
         """
         Get the JWT claims from the current authentication token.
 
         Returns:
-            dict: The JWT claims.
+            dict: The JWT claims decoded from the access token.
+        """
+        return self._current_claims or {}
+
+    @staticmethod
+    def _create_persistent_cache(cache_file: str, fallback_to_plaintext: bool = False):
+        """
+        Create a persistent cache for token storage with encryption.
+
+        Uses msal-extensions to provide encrypted storage. Falls back to plaintext
+        only if explicitly allowed and encryption is unavailable.
+
+        Args:
+            cache_file: Path to the cache file.
+            fallback_to_plaintext: Whether to allow plaintext fallback.
+
+        Returns:
+            A persistence object (encrypted or plaintext).
 
         Raises:
-            ValueError: If token decoding fails.
+            Exception: If encryption fails and fallback is not allowed.
         """
-        if self._current_claims:
-            return self._current_claims
+        # https://github.com/AzureAD/microsoft-authentication-extensions-for-python
 
-        token = await self.get_token()
-        if not token:
-            return {}
+        try:
+            logger.info(f"Using encrypted persistent token cache: {cache_file}")
+            return build_encrypted_persistence(cache_file)
+        except Exception as e:
+            if fallback_to_plaintext:
+                logger.warning(f"Encryption unavailable ({e}). Falling back to PLAINTEXT storage.")
+                return FilePersistence(cache_file)
+            logger.error(f"Encryption unavailable ({e}) and fallback_to_plaintext is False. Cannot proceed.")
+            raise
+
+    async def _get_cached_token_if_available_and_valid(self) -> Optional[dict]:
+        """
+        Retrieve and validate cached token.
+
+        Validates that:
+        - Token exists and is properly formatted.
+        - Token belongs to the current user (username match).
+        - Token has not expired (with safety buffer).
+
+        Returns:
+            Token data dictionary if valid, None otherwise.
+        """
+        try:
+            cache_data = self._token_cache.load()
+            if not cache_data:
+                logger.info("No cached token data found.")
+                return None
+
+            token_data = json.loads(cache_data)
+            if "access_token" not in token_data:
+                logger.info("No access token in cache.")
+                return None
+
+            cached_user = token_data.get("claims").get("upn")
+            if not cached_user:
+                logger.info("No user associated with cached token. Token invalidated.")
+                return None
+            elif cached_user != self._username:
+                logger.info(
+                    f"Cached token is for different user (cached: {cached_user}, current: {self._username}). "
+                    "Token invalidated."
+                )
+                return None
+
+            expires_at = token_data.get("expires_at")
+            if expires_at:
+                expiry_time = datetime.fromtimestamp(expires_at, tz=timezone.utc)
+                current_time = datetime.now(timezone.utc)
+
+                # This should prevent most mid-request failures due to token expiration
+                expiry_with_buffer = expiry_time - timedelta(seconds=self.EXPIRY_BUFFER_SECONDS)
+                if current_time >= expiry_with_buffer:
+                    minutes_until_expiry = (expiry_time - current_time).total_seconds() / 60
+                    logger.info(
+                        f"Cached token expires in {minutes_until_expiry:.2f} minutes, "
+                        f"within {self.EXPIRY_BUFFER_SECONDS}s safety buffer. Token invalidated."
+                    )
+                    return None
+
+                minutes_left = (expiry_time - current_time).total_seconds() / 60
+                logger.info(f"Cached token is valid for another {minutes_left:.2f} minutes")
+
+            return token_data
+
+        except Exception as e:
+            error_name = type(e).__name__
+            if "PersistenceNotFound" in error_name or "FileNotFoundError" in error_name:
+                logger.info("Cache file does not exist yet. Will be created on first token save.")
+            else:
+                logger.error(f"Failed to load cached token ({error_name}): {e}")
+            return None
+
+    def _save_token_to_cache(self, *, token: str, expires_in: Optional[int] = None) -> None:
+        """
+        Save token to persistent cache with metadata.
+
+        Args:
+            token: The access token to cache.
+            expires_in: Token lifetime in seconds (optional).
+        """
+        self._current_claims = {}
 
         try:
             import jwt
 
-            logger.info("Decoding JWT claims from access token...")
-
-            parsed_token = jwt.decode(token, algorithms=["RS256"], options={"verify_signature": False})
-            self._current_claims = parsed_token
-            return self._current_claims
+            self._current_claims = jwt.decode(token, algorithms=["RS256"], options={"verify_signature": False})
 
         except Exception as e:
-            raise ValueError(f"Failed to decode access token: {str(e)}") from e
+            logger.error(f"Failed to decode token for caching: {e}")
+
+        token_data = {
+            "access_token": token,
+            "token_type": "Bearer",
+            "claims": self._current_claims,
+            "cached_at": datetime.now(timezone.utc).timestamp(),
+        }
+
+        if expires_in:
+            expires_at = datetime.now(timezone.utc).timestamp() + expires_in
+            token_data["expires_at"] = expires_at
+            token_data["expires_in"] = expires_in
+
+        try:
+            self._token_cache.save(json.dumps(token_data))
+            logger.info("Token successfully cached.")
+        except Exception as e:
+            logger.error(f"Failed to cache token: {e}")
+
+    def _clear_token_cache(self) -> None:
+        try:
+            self._token_cache.save(json.dumps({}))
+            logger.info("Token cache cleared.")
+        except Exception as e:
+            logger.error(f"Failed to clear cache: {e}")
 
     async def _fetch_access_token_with_playwright(self) -> Optional[str]:
         """
         Fetch access token using Playwright browser automation.
 
-        Raises:
-            RuntimeError: If Playwright is not installed.
-
         Returns:
-            Optional[str]: The bearer token if successfully retrieved, else None.
+            Optional[str]: The bearer token if successfully retrieved, None otherwise.
+
+        Raises:
+            RuntimeError: If Playwright is not installed or browser launch fails.
         """
-        # TODO: it's a long function, maybe split into smaller ones?
         try:
             from playwright.async_api import async_playwright
-
-            pass
         except ImportError:
-            raise RuntimeError("Playwright is not installed. Please install it with 'pip install playwright'.")
+            raise RuntimeError(
+                "Playwright is not installed. Please install it with: "
+                "'pip install playwright && playwright install chromium'"
+            )
 
         bearer_token = None
         token_expires_in = None
@@ -278,20 +339,10 @@ class CopilotAuthenticator(Authenticator):
                                         if "access_token" in data:
                                             bearer_token = data["access_token"]
                                             token_expires_in = data.get("expires_in")
+                                            logger.info("Captured bearer token from JSON response.")
 
-                                    except json.JSONDecodeError:
-                                        logger.info("Response JSON decode failed, trying regex extraction...")
-
-                                        match = re.search(r'"access_token"\s*:\s*"([^"]+)"', text)
-                                        if match:
-                                            bearer_token = match.group(1)
-                                            logger.info("Captured bearer token using regex.")
-
-                                            expires_match = re.search(r'"expires_in"\s*:\s*(\d+)', text)
-                                            if expires_match:
-                                                token_expires_in = int(expires_match.group(1))
-                                        else:
-                                            logger.error("Failed to extract bearer token using regex.")
+                                    except Exception as e:
+                                        logger.error(f"Error parsing JSON token response: {e}")
 
                             except Exception as e:
                                 logger.error(f"Error reading response: {e}")
@@ -307,21 +358,21 @@ class CopilotAuthenticator(Authenticator):
                 await page.goto("https://www.office.com/")
 
                 logger.info("Waiting for profile icon...")
-                await page.wait_for_selector("#mectrl_headerPicture", timeout=self._timeout)
+                await page.wait_for_selector("#mectrl_headerPicture", timeout=self._elements_timeout)
                 await page.click("#mectrl_headerPicture")
 
                 logger.info("Waiting for email input...")
-                await page.wait_for_selector("#i0116", timeout=self._timeout)
+                await page.wait_for_selector("#i0116", timeout=self._elements_timeout)
                 await page.fill("#i0116", self._username)
                 await page.click("#idSIButton9")
 
                 logger.info("Waiting for password input...")
-                await page.wait_for_selector("#i0118", timeout=self._timeout)
+                await page.wait_for_selector("#i0118", timeout=self._elements_timeout)
                 await page.fill("#i0118", self._password)
                 await page.click("#idSIButton9")
 
                 logger.info("Waiting for 'Stay signed in?' prompt...")
-                await page.wait_for_selector("#idSIButton9", timeout=self._timeout)
+                await page.wait_for_selector("#idSIButton9", timeout=self._elements_timeout)
                 logger.info("Clicking 'Yes' to stay signed in...")
                 await page.click("#idSIButton9")
 
@@ -329,12 +380,13 @@ class CopilotAuthenticator(Authenticator):
                 logger.info("Navigating to Copilot...")
 
                 logger.info("Waiting for Copilot button and clicking it...")
-                await page.wait_for_selector('div[aria-label="M365 Copilot"]', timeout=self._timeout)
-                await page.click('div[aria-label="M365 Copilot"]', timeout=self._timeout)
+                await page.wait_for_selector('div[aria-label="M365 Copilot"]', timeout=self._elements_timeout)
+                await page.click('div[aria-label="M365 Copilot"]', timeout=self._elements_timeout)
 
-                logger.info("Waiting 60 seconds for bearer token to be captured...")
-                for _ in range(60):
+                logger.info(f"Waiting up to {self._token_capture_timeout}s for bearer token to be captured...")
+                for elapsed in range(self._token_capture_timeout):
                     if bearer_token:
+                        logger.info(f"Token captured after {elapsed}s")
                         break
                     await asyncio.sleep(1)
 
@@ -344,16 +396,20 @@ class CopilotAuthenticator(Authenticator):
                     )
                     self._save_token_to_cache(token=bearer_token, expires_in=token_expires_in)
                 else:
-                    logger.error("Failed to retrieve bearer token within 60 seconds.")
+                    logger.error(f"Failed to retrieve bearer token within {self._token_capture_timeout} seconds.")
 
                 return bearer_token
             except Exception as e:
                 logger.error("Failed to retrieve access token using Playwright.")
 
-                if str(e).startswith("BrowserType.launch"):
+                if "BrowserType.launch" in str(e):
                     logger.error("Playwright browser launch failed. Did you run 'playwright install chromium'?")
                 else:
-                    logger.error(f"Error details: {e}")
+                    # Sanitize error message to avoid leaking sensitive info
+                    error_msg = str(e)
+                    if self._password and self._password in error_msg:
+                        error_msg = error_msg.replace(self._password, "******")
+                    logger.error(f"Error details: {error_msg}")
 
                 return None
             finally:
