@@ -14,7 +14,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     RolePlayPaths,
 )
-from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
+from pyrit.models import SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -237,54 +237,41 @@ class ContentHarmsScenario(Scenario):
             attack_scoring_config=self._scorer_config,
         )
 
-        multi_prompt_sending_attack = MultiPromptSendingAttack(
-            objective_target=self._objective_target,
-            attack_scoring_config=self._scorer_config,
-        )
-
-        # Extract seed objectives and seed prompts from seed groups
-        strategy_seed_objectives = []
-        strategy_seed_group_prompt_only = []
-        # prompt sequence for multi prompt attack, includes objective followed by seed prompts
-        strategy_prompt_sequence = []
-        for seed_group in seed_groups:
-            objectives = [seed.value for seed in seed_group.seeds if isinstance(seed, SeedObjective)]
-            if objectives:
-                strategy_seed_objectives.extend(objectives)
-
-            # create new SeedGroup without the objective for PromptSendingAttack
-            seed_prompts = []
-            for prompt in seed_group.seeds:
-                seed_prompts.append(SeedPrompt(prompt.value))
-                strategy_prompt_sequence.append(prompt.value)
-            strategy_seed_group_prompt_only.append(SeedGroup(seeds=seed_prompts))
-
         attacks = [
             AtomicAttack(
                 atomic_attack_name=strategy,
                 attack=prompt_sending_attack,
-                objectives=strategy_seed_objectives,
+                seed_groups=list(seed_groups),
                 memory_labels=self._memory_labels,
-                seed_groups=strategy_seed_group_prompt_only,
             ),
             AtomicAttack(
                 atomic_attack_name=strategy,
                 attack=role_play_attack,
-                objectives=strategy_seed_objectives,
+                seed_groups=list(seed_groups),
                 memory_labels=self._memory_labels,
             ),
             AtomicAttack(
                 atomic_attack_name=strategy,
                 attack=many_shot_jailbreak_attack,
-                objectives=strategy_seed_objectives,
+                seed_groups=list(seed_groups),
                 memory_labels=self._memory_labels,
-            ),
-            AtomicAttack(
-                atomic_attack_name=strategy,
-                attack=multi_prompt_sending_attack,
-                objectives=strategy_seed_objectives,
-                memory_labels=self._memory_labels,
-                prompt_sequence=strategy_prompt_sequence,
             ),
         ]
+
+        # Only add MultiPromptSendingAttack for seed_groups that have user messages
+        seed_groups_with_messages = [sg for sg in seed_groups if sg.user_messages]
+        if seed_groups_with_messages:
+            multi_prompt_sending_attack = MultiPromptSendingAttack(
+                objective_target=self._objective_target,
+                attack_scoring_config=self._scorer_config,
+            )
+            attacks.append(
+                AtomicAttack(
+                    atomic_attack_name=strategy,
+                    attack=multi_prompt_sending_attack,
+                    seed_groups=seed_groups_with_messages,
+                    memory_labels=self._memory_labels,
+                ),
+            )
+
         return attacks
