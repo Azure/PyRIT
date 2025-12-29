@@ -170,7 +170,6 @@ class TestFlipAttackSetup:
 
         # Verify conversation manager was called with empty converter list
         flip_attack._conversation_manager.update_conversation_state_async.assert_called_once_with(
-            target=flip_attack._objective_target,
             conversation_id=basic_context.conversation_id,
             prepended_conversation=[flip_attack._system_prompt],
         )
