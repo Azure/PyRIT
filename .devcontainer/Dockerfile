@@ -3,7 +3,6 @@ FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 # Makes installation faster
 ENV UV_COMPILE_BYTECODE=1
-ENV UV_SYSTEM_PYTHON=1
 
 SHELL ["/bin/bash", "-c"]
 
@@ -18,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     xdg-utils \
+    build-essential \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install the Azure CLI, Microsoft ODBC Driver 18 & SQL tools
@@ -54,8 +54,9 @@ RUN groupadd $USERNAME \
     && useradd -g $USERNAME -m $USERNAME \
     && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Create venv using uv
-RUN uv venv /opt/venv --python 3.11 \
+# Create pyrit-dev venv at /opt/venv (reusing base image's VIRTUAL_ENV path) with pyrit-dev prompt
+RUN rm -rf /opt/venv \
+ && uv venv /opt/venv --python 3.11 --prompt pyrit-dev \
  && chown -R vscode:vscode /opt/venv \
  && ls -la /opt/venv/bin/activate
 ENV PATH="/opt/venv/bin:$PATH"
@@ -84,5 +85,6 @@ RUN git config --global core.preloadindex true \
  && git config --global status.showUntrackedFiles all \
  && git config --global core.fsmonitor true
 
-# Set uv’s cache directory so it can be mounted
+ # Set cache directories so they can be mounted
+ENV PIP_CACHE_DIR="/home/vscode/.cache/pip"
 ENV UV_CACHE_DIR="/home/vscode/.cache/uv"

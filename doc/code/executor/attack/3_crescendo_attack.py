@@ -54,7 +54,7 @@ converters = PromptConverterConfiguration.from_converters(converters=[EmojiConve
 converter_config = AttackConverterConfig(request_converters=converters)
 
 # Note that below we are looping through the objectives, because we want to set a separate scoring configuration for each attack execution.
-# If you are using the same configuration across multiple attacks, you can use the `AttackExecutor`'s `execute_multi_turn_attacks_async` method to run multiple objectives instead.
+# If you are using the same configuration across multiple attacks, you can use the `AttackExecutor`'s `execute_attack_async` method to run multiple objectives instead.
 for objective in conversation_objectives:
     scoring_config = AttackScoringConfig(
         objective_scorer=SelfAskTrueFalseScorer(
@@ -81,7 +81,7 @@ for objective in conversation_objectives:
 # How to call AttackExecutor's method if not changing the attack configuration for each objective
 """
 from pyrit.executor.attack import AttackExecutor
-results = AttackExecutor().execute_multi_turn_attacks_async(
+results = AttackExecutor().execute_attack_async(
     attack=attack,
     objectives=conversation_objectives,
 )
@@ -89,10 +89,3 @@ results = AttackExecutor().execute_multi_turn_attacks_async(
 for result in results:
     await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
 """
-
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

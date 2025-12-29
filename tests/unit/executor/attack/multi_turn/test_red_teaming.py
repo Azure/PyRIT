@@ -11,6 +11,7 @@ import pytest
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     ConversationSession,
     ConversationState,
@@ -69,7 +70,7 @@ def mock_prompt_normalizer() -> MagicMock:
 @pytest.fixture
 def basic_context() -> MultiTurnAttackContext:
     return MultiTurnAttackContext(
-        objective="Test objective",
+        params=AttackParameters(objective="Test objective"),
         session=ConversationSession(),
     )
 
@@ -419,7 +420,7 @@ class TestContextCreation:
     async def test_execute_async_invalid_message_type(
         self, mock_objective_target: MagicMock, mock_objective_scorer: MagicMock, mock_adversarial_chat: MagicMock
     ):
-        """Test that non-Message message parameter raises TypeError."""
+        """Test that non-Message message parameter causes an error during execution."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
@@ -429,8 +430,8 @@ class TestContextCreation:
             attack_scoring_config=scoring_config,
         )
 
-        # Should raise TypeError during parameter validation
-        with pytest.raises(TypeError, match="Parameter 'next_message' must be of type Message"):
+        # Should raise RuntimeError when trying to use invalid message type
+        with pytest.raises(RuntimeError):
             await attack.execute_async(
                 objective="Test objective",
                 next_message=123,  # Invalid type
@@ -469,7 +470,10 @@ class TestContextValidation:
             attack_scoring_config=scoring_config,
             max_turns=max_turns,
         )
-        context = MultiTurnAttackContext(objective=objective, executed_turns=executed_turns)
+        context = MultiTurnAttackContext(
+            params=AttackParameters(objective=objective),
+            executed_turns=executed_turns,
+        )
 
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
@@ -1069,7 +1073,7 @@ class TestResponseScoring:
         )
 
         basic_context.last_response = sample_response
-        basic_context.objective = "Test objective"
+        # basic_context fixture already has objective="Test objective"
 
         # Mock the Scorer.score_response_async method
         with patch(
@@ -1619,3 +1623,248 @@ class TestRedTeamingConversationTracking:
 
             # Verify it's still only one entry
             assert len(basic_context.related_conversations) == 1
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestScoreLastTurnOnly:
+    """Tests for the score_last_turn_only functionality."""
+
+    def test_init_score_last_turn_only_defaults_to_false(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test that score_last_turn_only defaults to False."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        assert attack._score_last_turn_only is False
+
+    def test_init_score_last_turn_only_can_be_set_to_true(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test that score_last_turn_only can be set to True."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            score_last_turn_only=True,
+        )
+
+        assert attack._score_last_turn_only is True
+
+    @pytest.mark.asyncio
+    async def test_score_last_turn_only_skips_intermediate_scoring(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        sample_response: Message,
+        failure_score: Score,
+    ):
+        """Test that intermediate turns are not scored when score_last_turn_only=True."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            max_turns=3,
+            score_last_turn_only=True,
+        )
+
+        # Mock methods
+        with patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_gen:
+            with patch.object(attack, "_send_prompt_to_objective_target_async", new_callable=AsyncMock) as mock_send:
+                with patch.object(attack, "_score_response_async", new_callable=AsyncMock) as mock_score:
+                    mock_gen.return_value = "test prompt"
+                    mock_send.return_value = sample_response
+                    mock_score.return_value = failure_score
+
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
+
+                    await attack._perform_async(context=context)
+
+                    # Should only score the last turn (turn 3)
+                    assert mock_score.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_score_last_turn_only_false_scores_every_turn(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        sample_response: Message,
+        failure_score: Score,
+    ):
+        """Test that all turns are scored when score_last_turn_only=False."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            max_turns=3,
+            score_last_turn_only=False,
+        )
+
+        # Mock methods
+        with patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_gen:
+            with patch.object(attack, "_send_prompt_to_objective_target_async", new_callable=AsyncMock) as mock_send:
+                with patch.object(attack, "_score_response_async", new_callable=AsyncMock) as mock_score:
+                    mock_gen.return_value = "test prompt"
+                    mock_send.return_value = sample_response
+                    mock_score.return_value = failure_score
+
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
+
+                    await attack._perform_async(context=context)
+
+                    # Should score all 3 turns
+                    assert mock_score.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_score_last_turn_only_runs_all_turns(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        sample_response: Message,
+        failure_score: Score,
+    ):
+        """Test that score_last_turn_only runs for exactly max_turns."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            max_turns=5,
+            score_last_turn_only=True,
+        )
+
+        # Mock methods
+        with patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_gen:
+            with patch.object(attack, "_send_prompt_to_objective_target_async", new_callable=AsyncMock) as mock_send:
+                with patch.object(attack, "_score_response_async", new_callable=AsyncMock) as mock_score:
+                    mock_gen.return_value = "test prompt"
+                    mock_send.return_value = sample_response
+                    mock_score.return_value = failure_score
+
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
+
+                    result = await attack._perform_async(context=context)
+
+                    # Should have executed all 5 turns
+                    assert result.executed_turns == 5
+                    # Prompt should have been sent 5 times
+                    assert mock_send.call_count == 5
+
+    @pytest.mark.asyncio
+    async def test_score_last_turn_only_sets_intermediate_scores_to_none(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        sample_response: Message,
+        failure_score: Score,
+    ):
+        """Test that intermediate turns have last_score set to None."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            max_turns=3,
+            score_last_turn_only=True,
+        )
+
+        # Track context.last_score values during execution
+        score_values = []
+
+        original_send = AsyncMock(return_value=sample_response)
+
+        async def capture_score(*args, **kwargs):
+            context = kwargs.get("context")
+            if context:
+                score_values.append(context.last_score)
+            return await original_send(*args, **kwargs)
+
+        # Mock methods
+        with patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_gen:
+            with patch.object(attack, "_send_prompt_to_objective_target_async", side_effect=capture_score):
+                with patch.object(attack, "_score_response_async", new_callable=AsyncMock) as mock_score:
+                    mock_gen.return_value = "test prompt"
+                    mock_score.return_value = failure_score
+
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
+
+                    result = await attack._perform_async(context=context)
+
+                    # The final result should have a score
+                    assert result.last_score == failure_score
+
+    @pytest.mark.asyncio
+    async def test_score_last_turn_only_can_still_succeed_on_last_turn(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        sample_response: Message,
+        success_score: Score,
+    ):
+        """Test that the attack can still succeed when scoring only the last turn."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            max_turns=3,
+            score_last_turn_only=True,
+        )
+
+        # Mock methods
+        with patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_gen:
+            with patch.object(attack, "_send_prompt_to_objective_target_async", new_callable=AsyncMock) as mock_send:
+                with patch.object(attack, "_score_response_async", new_callable=AsyncMock) as mock_score:
+                    mock_gen.return_value = "test prompt"
+                    mock_send.return_value = sample_response
+                    mock_score.return_value = success_score
+
+                    context = MultiTurnAttackContext(
+                        params=AttackParameters(objective="Test objective"), session=ConversationSession()
+                    )
+
+                    result = await attack._perform_async(context=context)
+
+                    # Should succeed based on final score
+                    assert result.outcome == AttackOutcome.SUCCESS
+                    assert result.last_score == success_score
