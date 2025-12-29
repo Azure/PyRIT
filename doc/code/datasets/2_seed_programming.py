@@ -50,16 +50,14 @@ seed_group = SeedGroup(
 
 # Now let's use this data for our attack
 
-attack_data = seed_group.to_attack_parameters()
-
 
 target = OpenAIChatTarget()
 
 attack = PromptSendingAttack(objective_target=target)
 result = await attack.execute_async(  # type: ignore
-    objective=attack_data.objective,
-    prepended_conversation=attack_data.prepended_conversation,
-    next_message=attack_data.current_turn_message,
+    objective=seed_group.objective.value,
+    prepended_conversation=seed_group.prepended_conversation,
+    next_message=seed_group.next_message,
 )
 
 printer = ConsoleAttackResultPrinter()

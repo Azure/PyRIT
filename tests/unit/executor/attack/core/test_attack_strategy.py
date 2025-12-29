@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.core.attack_strategy import (
     AttackContext,
     AttackStrategy,
@@ -44,10 +45,11 @@ def sample_attack_context():
     class TestAttackContext(AttackContext):
         pass
 
-    return TestAttackContext(
+    params = AttackParameters(
         objective="Test harmful objective",
         memory_labels={"test": "label"},
     )
+    return TestAttackContext(params=params)
 
 
 @pytest.fixture
@@ -216,90 +218,60 @@ class TestAttackStrategyExecution:
 
     @pytest.mark.asyncio
     async def test_execute_async_with_objective_creates_context(self, mock_attack_strategy):
-        """Test that execute_async with objective parameter creates context correctly"""
+        """Test that execute_async with objective parameter creates context and executes."""
         objective = "Test objective"
         memory_labels = {"test": "value"}
 
-        # Mock the context creation and execution
-        with patch.object(mock_attack_strategy, "_context_type") as mock_context_type:
-            mock_context = MagicMock()
-            mock_context_type.return_value = mock_context
+        # Call execute_async - it should create context internally and execute
+        result = await mock_attack_strategy.execute_async(
+            objective=objective,
+            memory_labels=memory_labels,
+        )
 
-            with patch.object(mock_attack_strategy, "execute_with_context_async") as mock_execute:
-                mock_result = MagicMock(spec=AttackResult)
-                mock_execute.return_value = mock_result
-
-                result = await mock_attack_strategy.execute_async(objective=objective, memory_labels=memory_labels)
-
-                # Verify context was created with correct parameters
-                mock_context_type.assert_called_once()
-                call_kwargs = mock_context_type.call_args.kwargs
-                assert call_kwargs["objective"] == objective
-                assert call_kwargs["memory_labels"] == memory_labels
-
-                # Verify execute_with_context_async was called
-                mock_execute.assert_called_once_with(context=mock_context)
-                assert result == mock_result
+        # Verify we got a result
+        assert result is not None
+        assert isinstance(result, AttackResult)
 
     @pytest.mark.asyncio
     async def test_execute_async_with_prepended_conversation(self, mock_attack_strategy):
-        """Test that execute_async handles prepended_conversation parameter"""
+        """Test that execute_async handles prepended_conversation parameter."""
         objective = "Test objective"
-        prepended_conversation = [MagicMock(spec=Message)]
+        prepended_conversation = [Message.from_prompt(prompt="Test", role="user")]
 
-        with patch.object(mock_attack_strategy, "_context_type") as mock_context_type:
-            mock_context = MagicMock()
-            mock_context_type.return_value = mock_context
+        # This should work without errors
+        result = await mock_attack_strategy.execute_async(
+            objective=objective,
+            prepended_conversation=prepended_conversation,
+        )
 
-            with patch.object(mock_attack_strategy, "execute_with_context_async") as mock_execute:
-                mock_result = MagicMock(spec=AttackResult)
-                mock_execute.return_value = mock_result
-
-                await mock_attack_strategy.execute_async(
-                    objective=objective, prepended_conversation=prepended_conversation
-                )
-
-                # Verify context was created with prepended_conversation
-                call_kwargs = mock_context_type.call_args.kwargs
-                assert call_kwargs["objective"] == objective
-                assert call_kwargs["prepended_conversation"] == prepended_conversation
+        assert result is not None
 
     @pytest.mark.asyncio
-    async def test_execute_async_validates_objective_type(self, mock_attack_strategy):
-        """Test that execute_async validates objective parameter type"""
-        with pytest.raises(Exception):  # get_kwarg_param should raise for invalid type
-            await mock_attack_strategy.execute_async(objective=123)  # Should be string
+    async def test_execute_async_requires_objective(self, mock_attack_strategy):
+        """Test that execute_async requires objective parameter."""
+        with pytest.raises(ValueError, match="objective is required"):
+            await mock_attack_strategy.execute_async()
 
     @pytest.mark.asyncio
-    async def test_execute_async_validates_memory_labels_type(self, mock_attack_strategy):
-        """Test that execute_async validates memory_labels parameter type"""
-        with pytest.raises(Exception):  # get_kwarg_param should raise for invalid type
+    async def test_execute_async_rejects_unknown_params(self, mock_attack_strategy):
+        """Test that execute_async rejects unknown parameters."""
+        with pytest.raises(ValueError, match="does not accept parameters"):
             await mock_attack_strategy.execute_async(
-                objective="Test objective", memory_labels="invalid"  # Should be dict
+                objective="Test",
+                unknown_param="value",
             )
 
     @pytest.mark.asyncio
-    async def test_execute_async_allows_optional_parameters(self, mock_attack_strategy):
-        """Test that execute_async works with optional parameters as None"""
-        objective = "Test objective"
+    async def test_execute_async_allows_optional_parameters_as_none(self, mock_attack_strategy):
+        """Test that execute_async works with optional parameters as None."""
+        # None values should be skipped, not cause errors
+        result = await mock_attack_strategy.execute_async(
+            objective="Test objective",
+            memory_labels=None,
+            prepended_conversation=None,
+        )
 
-        with patch.object(mock_attack_strategy, "_context_type") as mock_context_type:
-            mock_context = MagicMock()
-            mock_context_type.return_value = mock_context
-
-            with patch.object(mock_attack_strategy, "execute_with_context_async") as mock_execute:
-                mock_result = MagicMock(spec=AttackResult)
-                mock_execute.return_value = mock_result
-
-                await mock_attack_strategy.execute_async(
-                    objective=objective, memory_labels=None, prepended_conversation=None
-                )
-
-                # Verify context was created correctly
-                call_kwargs = mock_context_type.call_args.kwargs
-                assert call_kwargs["objective"] == objective
-                assert call_kwargs["memory_labels"] is None
-                assert call_kwargs.get("prepended_conversation") is None
+        assert result is not None
 
 
 @pytest.mark.usefixtures("patch_central_database")

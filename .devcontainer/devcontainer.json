@@ -11,6 +11,7 @@
   "customizations": {
     "vscode": {
       "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "python.analysis.extraPaths": [
           "/workspace"
@@ -67,7 +68,7 @@
           "**/build": true,
           "**/__pycache__": true
         },
-        "explorer.autoReveal": false,
+        "explorer.autoReveal": true,
         "files.maxMemoryForLargeFilesMB": 4096,
         "files.useExperimentalFileWatcher": true,
         "git.showUntrackedFiles": true

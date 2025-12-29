@@ -13,6 +13,7 @@ from pyrit.datasets.seed_datasets.remote.jailbreakv_28k_dataset import (
     _JailbreakV28KDataset,
 )
 from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedDataset, SeedObjective, SeedPrompt
 
 
 @pytest.fixture
@@ -170,7 +171,7 @@ class TestHarmBenchDataset:
 
             assert isinstance(dataset, SeedDataset)
             assert len(dataset.seeds) == 2
-            assert all(isinstance(p, SeedPrompt) for p in dataset.seeds)
+            assert all(isinstance(p, SeedObjective) for p in dataset.seeds)
 
             # Check first prompt
             first_prompt = dataset.seeds[0]
