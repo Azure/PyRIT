@@ -76,6 +76,7 @@ class CopilotAuthenticator(Authenticator):
             raise ValueError("COPILOT_USERNAME and COPILOT_PASSWORD environment variables must be set.")
 
         self._token_cache = self._create_persistent_cache(self._cache_file, self._fallback_to_plaintext)
+        self._current_claims = {}
 
     @staticmethod
     def _create_persistent_cache(cache_file: str, fallback_to_plaintext: bool = False):
@@ -166,6 +167,7 @@ class CopilotAuthenticator(Authenticator):
         """
         logger.info("Refreshing access token...")
         self._clear_token_cache()
+        self._current_claims = {}
         token = await self._fetch_access_token_with_playwright()
 
         if not token:
@@ -193,6 +195,35 @@ class CopilotAuthenticator(Authenticator):
 
         logger.info("No valid cached token found.")
         return await self.refresh_token()
+
+    async def get_claims(self) -> dict:
+        """
+        Get the JWT claims from the current authentication token.
+
+        Returns:
+            dict: The JWT claims.
+
+        Raises:
+            ValueError: If token decoding fails.
+        """
+        if self._current_claims:
+            return self._current_claims
+
+        token = await self.get_token()
+        if not token:
+            return {}
+
+        try:
+            import jwt
+
+            logger.info("Decoding JWT claims from access token...")
+
+            parsed_token = jwt.decode(token, algorithms=["RS256"], options={"verify_signature": False})
+            self._current_claims = parsed_token
+            return self._current_claims
+
+        except Exception as e:
+            raise ValueError(f"Failed to decode access token: {str(e)}") from e
 
     async def _fetch_access_token_with_playwright(self) -> Optional[str]:
         """

@@ -8,7 +8,6 @@ import uuid
 from enum import IntEnum
 from typing import Optional
 
-import jwt
 import websockets
 
 from pyrit.auth import CopilotAuthenticator
@@ -68,7 +67,7 @@ class WebSocketCopilotTarget(PromptTarget):
             ``pip install playwright && playwright install chromium``
     """
 
-    SUPPORTED_DATA_TYPES = {"text"}  # TODO: support more types?
+    SUPPORTED_DATA_TYPES = {"text"}
 
     WEBSOCKET_BASE_URL: str = "wss://substrate.office.com/m365Copilot/Chathub"
     RESPONSE_TIMEOUT_SECONDS: int = 60
@@ -115,7 +114,20 @@ class WebSocketCopilotTarget(PromptTarget):
 
     @staticmethod
     def _dict_to_websocket(data: dict) -> str:
-        # Produce the smallest possible JSON string, followed by record separator
+        """
+        Convert a dictionary to WebSocket message format.
+
+        SignalR protocol (used by Copilot) requires JSON messages terminated with
+        ASCII record separator (\\x1e). Minimal JSON formatting reduces bandwidth.
+
+        https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#json-encoding
+
+        Args:
+            data (dict): The data to serialize.
+
+        Returns:
+            str: JSON string with record separator appended.
+        """
         return json.dumps(data, separators=(",", ":")) + "\x1e"
 
     @staticmethod
@@ -132,8 +144,6 @@ class WebSocketCopilotTarget(PromptTarget):
                 message type and extracted content.
         """
         results: list[tuple[CopilotMessageType, str]] = []
-
-        # https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#json-encoding
         messages = message.split("\x1e")  # record separator
 
         for message in messages:
@@ -170,20 +180,25 @@ class WebSocketCopilotTarget(PromptTarget):
         return results if results else [(CopilotMessageType.UNKNOWN, "")]
 
     async def _build_websocket_url_async(self, *, session_id: str, copilot_conversation_id: str) -> str:
+        """
+        Build the WebSocket URL with all the required authentication and session parameters.
+
+        Returns:
+            str: Complete WebSocket URL with authentication and parameters.
+
+        Raises:
+            ValueError: If token cannot be decoded or required claims (tid, oid) are missing.
+        """
         access_token = await self._authenticator.get_token()
+        token_claims = await self._authenticator.get_claims()
 
-        try:
-            parsed_token = jwt.decode(access_token, algorithms=["RS256"], options={"verify_signature": False})
-        except Exception as e:
-            raise ValueError(f"Failed to decode access token: {str(e)}") from e
-
-        tenant_id = parsed_token.get("tid")
-        object_id = parsed_token.get("oid")
+        tenant_id = token_claims.get("tid")
+        object_id = token_claims.get("oid")
 
         if not tenant_id or not object_id:
             raise ValueError(
                 "Failed to extract tenant_id (tid) or object_id (oid) from bearer token. "
-                f"Token claims: {list(parsed_token.keys())}"
+                f"Token claims: {list(token_claims.keys())}"
             )
 
         client_request_id = str(uuid.uuid4())
@@ -209,6 +224,15 @@ class WebSocketCopilotTarget(PromptTarget):
     def _build_prompt_message(
         self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
     ) -> dict:
+        """
+        Construct the prompt message payload for Copilot WebSocket API.
+
+        Builds a comprehensive message structure following Copilot's expected format,
+        including session metadata, feature flags, and the user's prompt text.
+
+        Returns:
+            dict: The complete message payload ready to be sent via WebSocket.
+        """
         request_id = trace_id = uuid.uuid4().hex
         result = {
             "arguments": [
@@ -281,13 +305,33 @@ class WebSocketCopilotTarget(PromptTarget):
     async def _connect_and_send(
         self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
     ) -> str:
+        """
+        Establish WebSocket connection, send prompt, and await response.
+
+        The method polls for messages, ignoring PARTIAL_RESPONSE streaming updates
+        until it receives either FINAL_CONTENT (success), STREAM_END, or UNKNOWN (error).
+
+        Args:
+            prompt (str): The user prompt text to send.
+            session_id (str): Copilot session identifier.
+            copilot_conversation_id (str): Copilot conversation identifier.
+            is_start_of_session (bool): Whether this is the first message in the conversation.
+
+        Returns:
+            str: The final response text from Copilot.
+
+        Raises:
+            TimeoutError: If no response received within the specified timeout period.
+            RuntimeError: If WebSocket connection closes unexpectedly, protocol violation occurs,
+                or maximum message iterations exceeded.
+        """
         websocket_url = await self._build_websocket_url_async(
             session_id=session_id, copilot_conversation_id=copilot_conversation_id
         )
 
         inputs = [
-            {"protocol": "json", "version": 1},
-            self._build_prompt_message(
+            {"protocol": "json", "version": 1},  # the handshake message, we expect PING in response
+            self._build_prompt_message(  # the actual user prompt, we expect FINAL_CONTENT in response
                 prompt=prompt,
                 session_id=session_id,
                 copilot_conversation_id=copilot_conversation_id,
@@ -307,10 +351,21 @@ class WebSocketCopilotTarget(PromptTarget):
 
                 is_user_input = input_msg.get("type") == CopilotMessageType.USER_PROMPT
 
+                MAX_MESSAGE_ITERATIONS = 1000
+                iteration_count = 0
                 stop_polling = False
+
                 while not stop_polling:
+                    # Prevent infinite loops (e.g. if Copilot somehow never sends a terminating message)
+                    iteration_count += 1
+                    if iteration_count > MAX_MESSAGE_ITERATIONS:
+                        raise RuntimeError(
+                            f"Exceeded maximum message iterations ({MAX_MESSAGE_ITERATIONS}) "
+                            "while waiting for Copilot response."
+                        )
+
                     try:
-                        response = await asyncio.wait_for(
+                        raw_message = await asyncio.wait_for(
                             websocket.recv(),
                             timeout=self._response_timeout_seconds,
                         )
@@ -319,12 +374,12 @@ class WebSocketCopilotTarget(PromptTarget):
                             f"Timed out waiting for Copilot response after {self._response_timeout_seconds} seconds."
                         )
 
-                    if response is None:
+                    if raw_message is None:
                         raise RuntimeError(
                             "WebSocket connection closed unexpectedly: received None from websocket.recv()"
                         )
 
-                    parsed_messages = self._parse_raw_message(response)
+                    parsed_messages = self._parse_raw_message(raw_message)
 
                     for msg_type, content in parsed_messages:
                         if msg_type in (
@@ -333,18 +388,33 @@ class WebSocketCopilotTarget(PromptTarget):
                             CopilotMessageType.STREAM_END,
                         ):
                             stop_polling = True
+                            # Not breaking here to process all messages in this batch,
+                            # possibly including FINAL_CONTENT
 
                             if msg_type == CopilotMessageType.FINAL_CONTENT:
                                 response = content
                             elif msg_type == CopilotMessageType.UNKNOWN:
                                 logger.debug("Received unknown or empty message type.")
 
+                        # PING is Copilot's acknowledgment of the protocol handshake (first message in inputs[])
+                        # It should arrive after the handshake, not after a user prompt
+                        # If we're processing a user prompt and receive PING, something is wrong - ignore it
+                        # and keep polling for the actual FINAL_CONTENT response
                         elif msg_type == CopilotMessageType.PING and not is_user_input:
                             stop_polling = True
 
             return response
 
     def _validate_request(self, *, message: Message) -> None:
+        """
+        Validate that the message meets target requirements.
+
+        Args:
+            message (Message): The message to validate.
+
+        Raises:
+            ValueError: If message contains more than one piece or non-text content.
+        """
         n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
@@ -354,6 +424,18 @@ class WebSocketCopilotTarget(PromptTarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def _is_start_of_session(self, *, conversation_id: str) -> bool:
+        """
+        Determine if this is the first message in a PyRIT conversation.
+
+        Checks memory for existing conversation history to set the appropriate
+        flag for Copilot's server-side conversation initialization.
+
+        Args:
+            conversation_id (str): The PyRIT conversation ID.
+
+        Returns:
+            bool: True if no prior messages exist in this conversation, False otherwise.
+        """
         conversation_history = self._memory.get_conversation(conversation_id=conversation_id)
         return len(conversation_history) == 0
 
