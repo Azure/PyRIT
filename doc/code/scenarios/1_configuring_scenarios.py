@@ -54,8 +54,8 @@ from pyrit.datasets import SeedDatasetProvider
 from pyrit.models import SeedGroup
 from pyrit.scenario import DatasetConfiguration
 
-datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["harmbench"])
-seed_groups: list[SeedGroup] = datasets[0].seed_groups # type: ignore
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["harmbench"])  # type: ignore [top-level-await]
+seed_groups: list[SeedGroup] = datasets[0].seed_groups  # type: ignore
 dataset_config = DatasetConfiguration(seed_groups=seed_groups, max_dataset_size=2)
 
 # %% [markdown]

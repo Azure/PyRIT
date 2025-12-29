@@ -135,7 +135,7 @@ class DatasetConfiguration:
             List[SeedGroup]: Seed groups loaded from memory, or empty list if none found.
         """
         memory = CentralMemory.get_memory_instance()
-        return memory.get_seed_groups(dataset_name=dataset_name) or []
+        return list(memory.get_seed_groups(dataset_name=dataset_name) or [])
 
     def get_all_seed_groups(self) -> List[SeedGroup]:
         """

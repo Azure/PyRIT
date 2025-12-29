@@ -188,6 +188,9 @@ class EncodingScenario(Scenario):
 
         Returns:
             list[str]: List of seed prompt strings to be encoded and tested.
+
+        Raises:
+            ValueError: If both 'seed_prompts' parameter and 'dataset_config' are specified.
         """
         # Check for conflict between deprecated seed_prompts and dataset_config
         if self._deprecated_seed_prompts is not None and self._dataset_config_provided:

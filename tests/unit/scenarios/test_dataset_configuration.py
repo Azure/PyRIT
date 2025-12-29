@@ -69,9 +69,7 @@ class TestDatasetConfigurationInit:
         assert config._dataset_names == dataset_names
         assert config._max_dataset_size is None
 
-    def test_init_with_both_seed_groups_and_dataset_names_raises_error(
-        self, sample_seed_groups: list
-    ) -> None:
+    def test_init_with_both_seed_groups_and_dataset_names_raises_error(self, sample_seed_groups: list) -> None:
         """Test that setting both seed_groups and dataset_names raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
             DatasetConfiguration(
@@ -107,9 +105,7 @@ class TestDatasetConfigurationInit:
         config = DatasetConfiguration(seed_groups=sample_seed_groups)
 
         # Mutate the original list
-        sample_seed_groups.append(
-            SeedGroup(seeds=[SeedObjective(value="New objective")])
-        )
+        sample_seed_groups.append(SeedGroup(seeds=[SeedObjective(value="New objective")]))
 
         # Config should still have the original length
         assert len(config._seed_groups) == len(original_list)
@@ -203,9 +199,7 @@ class TestDatasetConfigurationGetSeedGroups:
 
         assert "DatasetConfiguration has no seed_groups" in str(exc_info.value)
 
-    def test_get_seed_groups_applies_max_dataset_size_per_dataset(
-        self, sample_seed_groups: list
-    ) -> None:
+    def test_get_seed_groups_applies_max_dataset_size_per_dataset(self, sample_seed_groups: list) -> None:
         """Test that max_dataset_size is applied per dataset."""
         config = DatasetConfiguration(seed_groups=sample_seed_groups, max_dataset_size=1)
 
@@ -322,9 +316,7 @@ class TestDatasetConfigurationGetDefaultDatasetNames:
         # Original should be unchanged
         assert len(config.get_default_dataset_names()) == 2
 
-    def test_get_default_dataset_names_returns_empty_with_seed_groups(
-        self, sample_seed_groups: list
-    ) -> None:
+    def test_get_default_dataset_names_returns_empty_with_seed_groups(self, sample_seed_groups: list) -> None:
         """Test that get_default_dataset_names returns empty list when using explicit seed_groups."""
         config = DatasetConfiguration(seed_groups=sample_seed_groups)
 
@@ -400,9 +392,7 @@ class TestDatasetConfigurationApplyMaxDatasetSize:
 
     def test_apply_max_returns_correct_sample_size(self) -> None:
         """Test that the sample size is exactly max_dataset_size."""
-        large_seed_groups = [
-            SeedGroup(seeds=[SeedObjective(value=f"obj{i}")]) for i in range(20)
-        ]
+        large_seed_groups = [SeedGroup(seeds=[SeedObjective(value=f"obj{i}")]) for i in range(20)]
         config = DatasetConfiguration(seed_groups=large_seed_groups, max_dataset_size=5)
 
         result = config._apply_max_dataset_size(large_seed_groups)

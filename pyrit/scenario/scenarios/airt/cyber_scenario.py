@@ -205,6 +205,9 @@ class CyberScenario(Scenario):
 
         Returns:
             List[SeedGroup]: List of seed groups with objectives to be tested.
+
+        Raises:
+            ValueError: If both 'objectives' parameter and 'dataset_config' are specified.
         """
         # Check for conflict between deprecated objectives and dataset_config
         if self._deprecated_objectives is not None and self._dataset_config_provided:
