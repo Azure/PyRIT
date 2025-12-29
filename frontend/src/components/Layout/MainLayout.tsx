@@ -59,9 +59,9 @@ interface MainLayoutProps {
   isDarkMode: boolean
 }
 
-export default function MainLayout({ 
-  children, 
-  onToggleTheme, 
+export default function MainLayout({
+  children,
+  onToggleTheme,
   isDarkMode,
 }: MainLayoutProps) {
   const styles = useStyles()
@@ -71,9 +71,9 @@ export default function MainLayout({
       <div className={styles.topBar}>
         <div className={styles.leftSection}>
           <Tooltip content="PyRIT" relationship="label">
-            <img 
-              src="/roakey.png" 
-              alt="Co-PyRIT Logo" 
+            <img
+              src="/roakey.png"
+              alt="Co-PyRIT Logo"
               className={styles.logo}
             />
           </Tooltip>

@@ -111,7 +111,7 @@ export default function MessageList({ messages }: MessageListProps) {
       {messages.map((message, index) => {
         const isUser = message.role === 'user'
         const timestamp = new Date(message.timestamp).toLocaleTimeString()
-        
+
         // Debug attachments
         if (message.attachments && message.attachments.length > 0) {
           console.log('Message has attachments:', message.attachments)
@@ -137,16 +137,16 @@ export default function MessageList({ messages }: MessageListProps) {
                   {message.attachments.map((att, attIndex) => (
                     <div key={attIndex}>
                       {att.type === 'image' && (
-                        <img 
-                          src={att.url} 
-                          alt={att.name} 
+                        <img
+                          src={att.url}
+                          alt={att.name}
                           className={styles.attachmentPreview}
                         />
                       )}
                       {att.type === 'video' && (
-                        <video 
-                          src={att.url} 
-                          controls 
+                        <video
+                          src={att.url}
+                          controls
                           className={styles.attachmentPreview}
                         />
                       )}

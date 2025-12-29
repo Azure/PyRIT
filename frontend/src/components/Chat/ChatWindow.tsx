@@ -94,8 +94,8 @@ export default function ChatWindow({
         </Button>
       </div>
       <MessageList messages={messages} />
-      <InputBox 
-        onSend={handleSend} 
+      <InputBox
+        onSend={handleSend}
         disabled={isSending}
       />
     </div>

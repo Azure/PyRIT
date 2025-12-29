@@ -1,12 +1,14 @@
-#!/usr/bin/env python3
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 """
 Minimal script to manage PyRIT frontend (no backend)
 """
 
-import sys
-import subprocess
-import time
 import platform
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 # Determine workspace root (parent of frontend directory)
@@ -46,10 +48,10 @@ def start_frontend():
     """Start the Vite frontend"""
     print("🎨 Starting minimal PyRIT frontend on port 3000...")
     print("    (No backend - this is a standalone demo)")
-    
+
     # Start frontend process
     npm_cmd = "npm.cmd" if is_windows() else "npm"
-    
+
     if is_windows():
         frontend = subprocess.Popen(
             [npm_cmd, "run", "dev"],
@@ -57,18 +59,15 @@ def start_frontend():
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
         )
     else:
-        frontend = subprocess.Popen(
-            [npm_cmd, "run", "dev"],
-            cwd=FRONTEND_DIR
-        )
-    
+        frontend = subprocess.Popen([npm_cmd, "run", "dev"], cwd=FRONTEND_DIR)
+
     time.sleep(2)
     print()
     print("✅ Frontend running!")
     print(f"   URL: http://localhost:3000 (PID: {frontend.pid})")
     print()
     print("Press Ctrl+C to stop")
-    
+
     return frontend
 
 
@@ -79,14 +78,14 @@ def wait_for_interrupt(frontend):
     except KeyboardInterrupt:
         print()
         print("🛑 Stopping frontend...")
-        
+
         try:
             if not is_windows():
                 frontend.terminate()
             frontend.wait(timeout=5)
-        except:
+        except:  # noqa: E722
             frontend.kill()
-        
+
         print("✅ Frontend stopped")
 
 
@@ -94,7 +93,7 @@ def main():
     """Main entry point"""
     if len(sys.argv) > 1:
         command = sys.argv[1].lower()
-        
+
         if command == "stop":
             stop_frontend()
             return
@@ -107,14 +106,13 @@ def main():
             print(f"Unknown command: {command}")
             print("Usage: python dev.py [start|stop|restart]")
             sys.exit(1)
-    
+
     # Start frontend
     frontend = start_frontend()
-    
+
     # Wait for interrupt
     wait_for_interrupt(frontend)
 
 
 if __name__ == "__main__":
     main()
-

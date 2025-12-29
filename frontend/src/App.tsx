@@ -26,8 +26,8 @@ function App() {
 
   return (
     <FluentProvider theme={isDarkMode ? webDarkTheme : webLightTheme}>
-      <MainLayout 
-        onToggleTheme={toggleTheme} 
+      <MainLayout
+        onToggleTheme={toggleTheme}
         isDarkMode={isDarkMode}
       >
         <ChatWindow

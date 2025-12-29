@@ -121,16 +121,16 @@ export default function InputBox({ onSend, disabled = false }: InputBoxProps) {
     if (!files) return
 
     const newAttachments: MessageAttachment[] = []
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const url = URL.createObjectURL(file)
-      
+
       let type: MessageAttachment['type'] = 'file'
       if (file.type.startsWith('image/')) type = 'image'
       else if (file.type.startsWith('audio/')) type = 'audio'
       else if (file.type.startsWith('video/')) type = 'video'
-      
+
       newAttachments.push({
         type,
         name: file.name,
@@ -140,7 +140,7 @@ export default function InputBox({ onSend, disabled = false }: InputBoxProps) {
         file,
       })
     }
-    
+
     setAttachments([...attachments, ...newAttachments])
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -254,4 +254,3 @@ export default function InputBox({ onSend, disabled = false }: InputBoxProps) {
     </div>
   )
 }
-
