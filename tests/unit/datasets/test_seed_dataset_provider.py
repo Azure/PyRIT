@@ -8,6 +8,10 @@ import pytest
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import _DarkBenchDataset
 from pyrit.datasets.seed_datasets.remote.harmbench_dataset import _HarmBenchDataset
+from pyrit.datasets.seed_datasets.remote.jailbreakv_28k_dataset import (
+    _JailbreakV28KDataset,
+    HarmCategory,
+)
 from pyrit.models import SeedDataset, SeedPrompt
 
 
@@ -37,6 +41,25 @@ def mock_darkbench_data():
         {
             "Example": "Test dark pattern example 2",
             "Deceptive Pattern": "forced_action",
+        },
+    ]
+
+
+@pytest.fixture
+def mock_jailbreakv_data():
+    """Mock data for JailbreakV-28K dataset."""
+    return [
+        {
+            "jailbreak_query": "Test jailbreak query 1",
+            "redteam_query": "Test redteam query 1",
+            "policy": "Hate Speech",
+            "image_path": "images/test_001.png",
+        },
+        {
+            "jailbreak_query": "Test jailbreak query 2",
+            "redteam_query": "Test redteam query 2",
+            "policy": "Violence",
+            "image_path": "images/test_002.png",
         },
     ]
 
@@ -236,3 +259,219 @@ class TestDarkBenchDataset:
             assert call_kwargs["dataset_name"] == "custom/darkbench"
             assert call_kwargs["config"] == "custom_config"
             assert call_kwargs["split"] == "test"
+
+
+class TestJailbreakV28KDataset:
+    """Test the JailbreakV-28K dataset loader."""
+
+    @pytest.mark.asyncio
+    async def test_fetch_dataset(self, mock_jailbreakv_data, tmp_path):
+        """Test fetching JailbreakV-28K dataset."""
+        # Create mock ZIP structure
+        zip_dir = tmp_path / "test_zip"
+        zip_dir.mkdir()
+        images_dir = zip_dir / "JailBreakV_28K" / "images"
+        images_dir.mkdir(parents=True)
+        
+        # Create mock image files
+        (images_dir / "test_001.png").touch()
+        (images_dir / "test_002.png").touch()
+
+        loader = _JailbreakV28KDataset(
+            zip_dir=str(zip_dir),
+        )
+
+        # Mock the ZIP extraction check
+        with patch("pathlib.Path.exists") as mock_exists:
+            # ZIP exists, extracted folder exists
+            mock_exists.side_effect = lambda: True
+            
+            with patch.object(loader, "_fetch_from_huggingface", return_value=mock_jailbreakv_data):
+                with patch.object(loader, "_resolve_image_path") as mock_resolve:
+                    # Mock image path resolution
+                    mock_resolve.side_effect = lambda rel_path, local_directory, call_cache: str(
+                        local_directory / rel_path
+                    )
+                    
+                    dataset = await loader.fetch_dataset()
+
+                    assert isinstance(dataset, SeedDataset)
+                    # 2 examples * 2 prompts each (text + image) = 4 total
+                    assert len(dataset.seeds) == 4
+                    assert all(isinstance(p, SeedPrompt) for p in dataset.seeds)
+
+                    # Check text prompts
+                    text_prompts = [p for p in dataset.seeds if p.data_type == "text"]
+                    assert len(text_prompts) == 2
+                    assert text_prompts[0].value == "Test redteam query 1"
+                    assert text_prompts[0].dataset_name == "jailbreakv_28k"
+                    assert text_prompts[0].harm_categories == ["hate_speech"]
+
+                    # Check image prompts
+                    image_prompts = [p for p in dataset.seeds if p.data_type == "image_path"]
+                    assert len(image_prompts) == 2
+
+    def test_dataset_name(self):
+        """Test dataset_name property."""
+        loader = _JailbreakV28KDataset()
+        assert loader.dataset_name == "jailbreakv_28k"
+
+    def test_harm_category_enum(self):
+        """Test HarmCategory enum values."""
+        assert HarmCategory.HATE_SPEECH.value == "Hate Speech"
+        assert HarmCategory.VIOLENCE.value == "Violence"
+        assert HarmCategory.FRAUD.value == "Fraud"
+
+    def test_initialization_with_harm_categories(self):
+        """Test initialization with harm category filtering."""
+        loader = _JailbreakV28KDataset(
+            harm_categories=[HarmCategory.HATE_SPEECH, HarmCategory.VIOLENCE],
+        )
+        assert loader.harm_categories is not None
+        assert len(loader.harm_categories) == 2
+        assert HarmCategory.HATE_SPEECH in loader.harm_categories
+
+    def test_initialization_invalid_harm_category(self):
+        """Test that invalid harm categories raise ValueError."""
+        with pytest.raises(ValueError, match="Invalid harm categories"):
+            _JailbreakV28KDataset(
+                harm_categories=["invalid_category"],  # type: ignore
+            )
+
+    @pytest.mark.asyncio
+    async def test_fetch_dataset_with_text_field(self, mock_jailbreakv_data, tmp_path):
+        """Test fetching with different text field."""
+        zip_dir = tmp_path / "test_zip"
+        zip_dir.mkdir()
+        images_dir = zip_dir / "JailBreakV_28K" / "images"
+        images_dir.mkdir(parents=True)
+        (images_dir / "test_001.png").touch()
+        (images_dir / "test_002.png").touch()
+
+        loader = _JailbreakV28KDataset(
+            zip_dir=str(zip_dir),
+            text_field="jailbreak_query",
+        )
+
+        with patch("pathlib.Path.exists", return_value=True):
+            with patch.object(loader, "_fetch_from_huggingface", return_value=mock_jailbreakv_data):
+                with patch.object(loader, "_resolve_image_path") as mock_resolve:
+                    mock_resolve.side_effect = lambda rel_path, local_directory, call_cache: str(
+                        local_directory / rel_path
+                    )
+                    
+                    dataset = await loader.fetch_dataset()
+
+                    text_prompts = [p for p in dataset.seeds if p.data_type == "text"]
+                    assert text_prompts[0].value == "Test jailbreak query 1"
+
+    @pytest.mark.asyncio
+    async def test_fetch_dataset_missing_zip(self):
+        """Test that missing ZIP file raises FileNotFoundError."""
+        loader = _JailbreakV28KDataset(
+            zip_dir="/nonexistent/path",
+        )
+
+        with patch("pathlib.Path.exists", return_value=False):
+            with pytest.raises(FileNotFoundError, match="ZIP file not found"):
+                await loader.fetch_dataset()
+
+    @pytest.mark.asyncio
+    async def test_fetch_dataset_filters_by_category(self, mock_jailbreakv_data, tmp_path):
+        """Test filtering by harm categories."""
+        zip_dir = tmp_path / "test_zip"
+        zip_dir.mkdir()
+        images_dir = zip_dir / "JailBreakV_28K" / "images"
+        images_dir.mkdir(parents=True)
+        (images_dir / "test_001.png").touch()
+
+        loader = _JailbreakV28KDataset(
+            zip_dir=str(zip_dir),
+            harm_categories=[HarmCategory.HATE_SPEECH],  # Only hate speech
+        )
+
+        with patch("pathlib.Path.exists", return_value=True):
+            with patch.object(loader, "_fetch_from_huggingface", return_value=mock_jailbreakv_data):
+                with patch.object(loader, "_resolve_image_path") as mock_resolve:
+                    mock_resolve.side_effect = lambda rel_path, local_directory, call_cache: str(
+                        local_directory / rel_path
+                    ) if "test_001" in rel_path else ""
+                    
+                    dataset = await loader.fetch_dataset()
+
+                    # Should only get first example (hate speech), not second (violence)
+                    text_prompts = [p for p in dataset.seeds if p.data_type == "text"]
+                    assert len(text_prompts) == 1
+                    assert text_prompts[0].harm_categories == ["hate_speech"]
+
+    def test_normalize_policy(self):
+        """Test policy normalization helper."""
+        loader = _JailbreakV28KDataset()
+        
+        assert loader._normalize_policy("Hate Speech") == "hate_speech"
+        assert loader._normalize_policy("Economic-Harm") == "economic_harm"
+        assert loader._normalize_policy("  Violence  ") == "violence"
+
+    @pytest.mark.asyncio
+    async def test_fetch_dataset_50_percent_threshold(self, tmp_path):
+        """Test that 50% or more missing images raises ValueError."""
+        zip_dir = tmp_path / "test_zip"
+        zip_dir.mkdir()
+        images_dir = zip_dir / "JailBreakV_28K" / "images"
+        images_dir.mkdir(parents=True)
+
+        # Mock data with 4 items
+        mock_data = [
+            {"policy": "Hate Speech", "image_path": "images/001.png", "redteam_query": "Query 1"},
+            {"policy": "Violence", "image_path": "images/002.png", "redteam_query": "Query 2"},
+            {"policy": "Fraud", "image_path": "images/003.png", "redteam_query": "Query 3"},
+            {"policy": "Malware", "image_path": "images/004.png", "redteam_query": "Query 4"},
+        ]
+
+        loader = _JailbreakV28KDataset(zip_dir=str(zip_dir))
+
+        with patch("pathlib.Path.exists", return_value=True):
+            with patch.object(loader, "_fetch_from_huggingface", return_value=mock_data):
+                with patch.object(loader, "_resolve_image_path") as mock_resolve:
+                    # Mock so that only 1 out of 4 images resolves (25% success = 75% unpaired)
+                    def resolve_side_effect(rel_path, local_directory, call_cache):
+                        return str(local_directory / rel_path) if "001" in rel_path else ""
+                    
+                    mock_resolve.side_effect = resolve_side_effect
+                    
+                    # Should raise because 75% are unpaired (>= 50%)
+                    with pytest.raises(ValueError, match="75.0% of items are missing images"):
+                        await loader.fetch_dataset()
+
+    @pytest.mark.asyncio
+    async def test_fetch_dataset_below_50_percent_threshold(self, tmp_path):
+        """Test that less than 50% missing images succeeds."""
+        zip_dir = tmp_path / "test_zip"
+        zip_dir.mkdir()
+        images_dir = zip_dir / "JailBreakV_28K" / "images"
+        images_dir.mkdir(parents=True)
+
+        # Mock data with 4 items
+        mock_data = [
+            {"policy": "Hate Speech", "image_path": "images/001.png", "redteam_query": "Query 1"},
+            {"policy": "Violence", "image_path": "images/002.png", "redteam_query": "Query 2"},
+            {"policy": "Fraud", "image_path": "images/003.png", "redteam_query": "Query 3"},
+            {"policy": "Malware", "image_path": "images/004.png", "redteam_query": "Query 4"},
+        ]
+
+        loader = _JailbreakV28KDataset(zip_dir=str(zip_dir))
+
+        with patch("pathlib.Path.exists", return_value=True):
+            with patch.object(loader, "_fetch_from_huggingface", return_value=mock_data):
+                with patch.object(loader, "_resolve_image_path") as mock_resolve:
+                    # Mock so that 3 out of 4 images resolve (75% success = 25% unpaired)
+                    def resolve_side_effect(rel_path, local_directory, call_cache):
+                        return "" if "004" in rel_path else str(local_directory / rel_path)
+                    
+                    mock_resolve.side_effect = resolve_side_effect
+                    
+                    # Should succeed because only 25% are unpaired (< 50%)
+                    dataset = await loader.fetch_dataset()
+                    
+                    # Should have 3 pairs (6 total prompts)
+                    assert len(dataset.seeds) == 6

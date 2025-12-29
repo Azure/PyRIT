@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 def get_dataset_providers():
     """Helper to get all registered providers for parameterization."""
     providers = SeedDatasetProvider.get_all_providers()
-    return [(name, cls) for name, cls in providers.items()]
+    # Exclude datasets that rely on external data sources
+    excluded = ["_JailbreakV28KDataset"]
+    return [(name, cls) for name, cls in providers.items() if name not in excluded]
 
 
 class TestSeedDatasetProviderIntegration:
