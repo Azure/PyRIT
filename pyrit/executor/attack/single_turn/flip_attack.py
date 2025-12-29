@@ -90,6 +90,7 @@ class FlipAttack(PromptSendingAttack):
         # System prompt should not be converted, and the new implementation correctly
         # skips converters for system messages
         await self._conversation_manager.update_conversation_state_async(
+            target=self._objective_target,
             conversation_id=context.conversation_id,
             prepended_conversation=context.prepended_conversation,
         )

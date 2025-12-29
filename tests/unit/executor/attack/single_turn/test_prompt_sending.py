@@ -264,6 +264,7 @@ class TestSetupPhase:
         await attack._setup_async(context=basic_context)
 
         attack._conversation_manager.update_conversation_state_async.assert_called_once_with(
+            target=mock_target,
             conversation_id=basic_context.conversation_id,
             prepended_conversation=basic_context.prepended_conversation,
             request_converters=converter_config,

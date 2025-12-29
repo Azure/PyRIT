@@ -12,6 +12,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -212,6 +213,7 @@ class ConversationManager:
     async def update_conversation_state_async(
         self,
         *,
+        target: PromptTarget,
         conversation_id: str,
         prepended_conversation: List[Message],
         request_converters: Optional[List[PromptConverterConfiguration]] = None,
@@ -235,6 +237,8 @@ class ConversationManager:
         and extracts per-session counters such as the current turn index.
 
         Args:
+            target (PromptTarget): The target for which the conversation is being prepared.
+                Used to validate that prepended_conversation is compatible with the target type.
             conversation_id (str): Unique identifier for the conversation to update or create.
             prepended_conversation (List[Message]):
                 List of messages to prepend to the conversation history.
@@ -250,11 +254,20 @@ class ConversationManager:
                 messages, including turn count and last user message.
 
         Raises:
-            ValueError: If `conversation_id` is empty or if the last message in a multi-turn
-                context is a user message (which should not be prepended).
+            ValueError: If `conversation_id` is empty, if the last message in a multi-turn
+                context is a user message (which should not be prepended), or if
+                prepended_conversation is provided with a non-PromptChatTarget target.
         """
         if not conversation_id:
             raise ValueError("conversation_id cannot be empty")
+
+        # Validate prepended_conversation compatibility with target type
+        # Non-chat targets do not read conversation history from memory
+        if prepended_conversation and not isinstance(target, PromptChatTarget):
+            raise ValueError(
+                "prepended_conversation requires target to be a PromptChatTarget. "
+                "Non-chat targets do not support explicit conversation history management."
+            )
 
         # Initialize conversation state
         state = ConversationState()

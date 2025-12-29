@@ -281,6 +281,7 @@ class TestSetupPhase:
 
             mock_update.assert_called_once()
             call_args = mock_update.call_args
+            assert call_args[1]["target"] == mock_target
             assert call_args[1]["conversation_id"] == basic_context.session.conversation_id
             assert call_args[1]["request_converters"] == attack._request_converters
             assert call_args[1]["response_converters"] == attack._response_converters

@@ -272,6 +272,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         # Update the conversation state
         conversation_state = await self._conversation_manager.update_conversation_state_async(
+            target=self._objective_target,
             max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
