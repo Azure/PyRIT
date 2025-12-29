@@ -107,7 +107,8 @@ class DatasetConfiguration:
         if self._seed_groups is not None:
             # Use explicit seed groups under a special key
             sampled = self._apply_max_dataset_size(list(self._seed_groups))
-            result[EXPLICIT_SEED_GROUPS_KEY] = sampled
+            if sampled:
+                result[EXPLICIT_SEED_GROUPS_KEY] = sampled
         elif self._dataset_names is not None:
             # Load from specified dataset names, applying max per dataset
             for name in self._dataset_names:
