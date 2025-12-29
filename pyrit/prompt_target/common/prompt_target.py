@@ -102,9 +102,9 @@ class PromptTarget(abc.ABC, Identifier):
             Dict[str, Any]: A dictionary containing identification attributes.
 
         Note:
-            If the underlying model is specified, either passed in during instantiation or via environment variable,
-            it is used as the model_name for the identifier. Otherwise, self._model_name (which is often the
-            deployment name in Azure) is used.
+            If the `self._underlying_model` is specified, either passed in during instantiation
+            or via environment variable, it is used as the "model_name" for the identifier.
+            Otherwise, `self._model_name` (which is often the deployment name in Azure) is used.
         """
         public_attributes: Dict[str, Any] = {}
         public_attributes["__type__"] = self.__class__.__name__
