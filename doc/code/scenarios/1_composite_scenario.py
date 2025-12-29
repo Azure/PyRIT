@@ -33,9 +33,7 @@ from pyrit.scenario import FoundryScenario, FoundryStrategy, ScenarioCompositeSt
 from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-await initialize_pyrit_async(  # type: ignore
-    memory_db_type=IN_MEMORY,
-)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY, initializers=[])  # type: ignore
 
 objective_target = OpenAIChatTarget()
 printer = ConsoleScenarioResultPrinter()

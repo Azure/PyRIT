@@ -9,6 +9,7 @@ from typing import Optional
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
@@ -22,6 +23,11 @@ from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormaliz
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 
 logger = logging.getLogger(__name__)
+
+
+# RolePlayAttack generates next_message and prepended_conversation internally,
+# so it does not accept these parameters from callers.
+RolePlayAttackParameters = AttackParameters.excluding("next_message", "prepended_conversation")
 
 
 class RolePlayPaths(enum.Enum):
@@ -91,6 +97,7 @@ class RolePlayAttack(PromptSendingAttack):
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
+            params_type=RolePlayAttackParameters,
         )
 
         # Store the adversarial chat for role-play rephrasing
@@ -133,28 +140,6 @@ class RolePlayAttack(PromptSendingAttack):
 
         # Call parent setup which handles conversation ID generation, memory labels, etc.
         await super()._setup_async(context=context)
-
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
-        """
-        Validate the context before executing the attack.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context containing parameters and objective.
-
-        Raises:
-            ValueError: If message or prepended_conversation are provided by the user.
-        """
-        if context.next_message is not None:
-            raise ValueError(
-                "RolePlayAttack does not accept a next_message parameter. "
-                "The message is generated internally by rephrasing the objective."
-            )
-        if context.prepended_conversation:
-            raise ValueError(
-                "RolePlayAttack does not accept prepended_conversation parameter. "
-                "The conversation start is generated internally from the role-play definition."
-            )
-        super()._validate_context(context=context)
 
     async def _rephrase_objective_async(self, *, objective: str) -> str:
         """
