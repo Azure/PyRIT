@@ -11,6 +11,11 @@ from pyrit.prompt_target import WebSocketCopilotTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 from pyrit.executor.attack import ConsoleAttackResultPrinter
 
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 
 async def main():
     await initialize_pyrit_async(memory_db_type=IN_MEMORY)

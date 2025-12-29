@@ -210,8 +210,7 @@ class WebSocketCopilotTarget(PromptTarget):
         self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
     ) -> dict:
         request_id = trace_id = uuid.uuid4().hex
-
-        return {
+        result = {
             "arguments": [
                 {
                     "source": "officeweb",
@@ -275,6 +274,9 @@ class WebSocketCopilotTarget(PromptTarget):
             "target": "chat",
             "type": CopilotMessageType.USER_PROMPT,
         }
+
+        logger.debug(f"Built prompt message: {result}")
+        return result
 
     async def _connect_and_send(
         self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
@@ -437,6 +439,9 @@ class WebSocketCopilotTarget(PromptTarget):
                 "Ensure that COPILOT_USERNAME and COPILOT_PASSWORD environment variables are set correctly."
                 " For more details about authentication, refer to the class documentation."
             )
+            raise
+
+        except EmptyResponseException:
             raise
 
         except Exception as e:
