@@ -15,7 +15,6 @@ from inspect import signature
 from typing import Any, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
-
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack import (
     CrescendoAttack,
@@ -239,7 +238,7 @@ class FoundryScenario(Scenario):
     @classmethod
     def default_dataset_config(cls) -> DatasetConfiguration:
         """Return the default dataset configuration for this scenario."""
-        return DatasetConfiguration(dataset_name="harmbench", max_dataset_size=4)
+        return DatasetConfiguration(dataset_names=["harmbench"], max_dataset_size=4)
 
     @apply_defaults
     def __init__(
@@ -329,7 +328,7 @@ class FoundryScenario(Scenario):
             return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in self._objectives]
 
         # Use dataset_config (always set by initialize_async)
-        return self._dataset_config.get_seed_groups()
+        return self._dataset_config.get_all_seed_groups()
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """

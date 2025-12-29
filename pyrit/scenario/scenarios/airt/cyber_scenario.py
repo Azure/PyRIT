@@ -32,8 +32,8 @@ from pyrit.score import (
     TrueFalseScorer,
 )
 
-
 logger = logging.getLogger(__name__)
+
 
 class CyberStrategy(ScenarioStrategy):
     """
@@ -89,7 +89,7 @@ class CyberScenario(Scenario):
         Returns:
             DatasetConfiguration: Configuration with airt_malware dataset.
         """
-        return DatasetConfiguration(dataset_name="airt_malware")
+        return DatasetConfiguration(dataset_names=["airt_malware"], max_dataset_size=4)
 
     @apply_defaults
     def __init__(
@@ -217,9 +217,8 @@ class CyberScenario(Scenario):
         if self._deprecated_objectives is not None:
             return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives]
 
-        # Use dataset_config (either provided or default)
-        config = self._dataset_config if self._dataset_config else self.default_dataset_config()
-        seed_groups = config.get_seed_groups()
+        # Use dataset_config (guaranteed to be set by initialize_async)
+        seed_groups = self._dataset_config.get_all_seed_groups()
 
         if not seed_groups:
             self._raise_dataset_exception()

@@ -13,7 +13,6 @@ should prefer using dataset_config in initialize_async for more flexibility.
 from typing import List
 
 from pyrit.common.apply_defaults import set_default_value
-from pyrit.models import SeedGroup, SeedObjective
 from pyrit.scenario import Scenario
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 

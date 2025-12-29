@@ -61,6 +61,7 @@ class ScenarioInfo(TypedDict):
     all_strategies: list[str]
     aggregate_strategies: list[str]
     default_datasets: list[str]
+    max_dataset_size: Optional[int]
 
 
 class FrontendCore:
@@ -404,8 +405,10 @@ def format_scenario_info(*, scenario_info: ScenarioInfo) -> None:
 
     if scenario_info.get("default_datasets"):
         datasets = scenario_info["default_datasets"]
+        max_size = scenario_info.get("max_dataset_size")
         if datasets:
-            print(f"    Default Datasets ({len(datasets)}):")
+            size_suffix = f", max {max_size} per dataset" if max_size else ""
+            print(f"    Default Datasets ({len(datasets)}{size_suffix}):")
             formatted = _format_wrapped_text(text=", ".join(datasets), indent="      ")
             print(formatted)
         else:
@@ -736,8 +739,10 @@ ARG_HELP = {
     "max_retries": "Maximum number of automatic retries on exception (must be >= 0)",
     "memory_labels": 'Additional labels as JSON string (e.g., \'{"experiment": "test1"}\')',
     "database": "Database type to use for memory storage",
-    "log_level": "Logging level",    "dataset_names": "List of dataset names to use instead of scenario defaults (e.g., harmbench advbench)",
-    "max_dataset_size": "Maximum number of items to use from the dataset (must be >= 1)",}
+    "log_level": "Logging level",
+    "dataset_names": "List of dataset names to use instead of scenario defaults (e.g., harmbench advbench)",
+    "max_dataset_size": "Maximum number of items to use from the dataset (must be >= 1)",
+}
 
 
 def parse_run_arguments(*, args_string: str) -> dict[str, Any]:

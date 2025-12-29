@@ -6,7 +6,6 @@ import logging
 from typing import List, Optional, Sequence
 
 from pyrit.common import apply_defaults
-
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
@@ -76,6 +75,7 @@ class EncodingStrategy(ScenarioStrategy):
     LeetSpeak = ("leet_speak", set[str]())
     AsciiSmuggler = ("ascii_smuggler", set[str]())
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -128,7 +128,7 @@ class EncodingScenario(Scenario):
         """
         return DatasetConfiguration(
             dataset_names=["garak_slur_terms_en", "garak_web_html_js"],
-            max_dataset_size=4,
+            max_dataset_size=3,
         )
 
     @apply_defaults
@@ -200,9 +200,8 @@ class EncodingScenario(Scenario):
         if self._deprecated_seed_prompts is not None:
             return self._deprecated_seed_prompts
 
-        # Use dataset_config (either provided or default)
-        config = self._dataset_config if self._dataset_config else self.default_dataset_config()
-        seed_groups = config.get_seed_groups()
+        # Use dataset_config (guaranteed to be set by initialize_async)
+        seed_groups = self._dataset_config.get_all_seed_groups()
 
         if not seed_groups:
             self._raise_dataset_exception()

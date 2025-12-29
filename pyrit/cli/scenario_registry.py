@@ -223,6 +223,7 @@ class ScenarioRegistry:
                 - all_strategies: All available strategy values
                 - aggregate_strategies: Aggregate strategy values
                 - default_datasets: Names of default datasets for this scenario
+                - max_dataset_size: Maximum seed groups per dataset (None if unlimited)
         """
         # If we already have metadata, return it
         if self._scenario_metadata is not None:
@@ -244,7 +245,9 @@ class ScenarioRegistry:
             # Get the strategy class for this scenario
             strategy_class = scenario_class.get_strategy_class()
 
-            default_datasets = scenario_class.default_dataset_config().get_default_dataset_names()
+            dataset_config = scenario_class.default_dataset_config()
+            default_datasets = dataset_config.get_default_dataset_names()
+            max_dataset_size = dataset_config.get_max_dataset_size()
 
             scenarios_info.append(
                 {
@@ -255,6 +258,7 @@ class ScenarioRegistry:
                     "all_strategies": [s.value for s in strategy_class.get_all_strategies()],
                     "aggregate_strategies": [s.value for s in strategy_class.get_aggregate_strategies()],
                     "default_datasets": default_datasets,
+                    "max_dataset_size": max_dataset_size,
                 }
             )
 
