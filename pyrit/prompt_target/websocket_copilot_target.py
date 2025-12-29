@@ -39,24 +39,33 @@ class CopilotMessageType(IntEnum):
 
 class WebSocketCopilotTarget(PromptTarget):
     """
-    A WebSocket-based prompt target for Microsoft Copilot integration.
+    A WebSocket-based prompt target for integrating with Microsoft Copilot.
 
-    This target enables communication with Microsoft Copilot through a WebSocket connection.
-    Authentication is handled automatically using CopilotAuthenticator, which uses Playwright
-    to automate browser login and obtain access tokens.
+    This class facilitates communication with Microsoft Copilot over a WebSocket connection.
+    Authentication is handled automatically via `CopilotAuthenticator`, which uses Playwright
+    to automate browser login and obtain the required access tokens.
 
-    Requirements:
-        Set the following environment variables:
-            - COPILOT_USERNAME: Your Microsoft account username (email).
-            - COPILOT_PASSWORD: Your Microsoft account password.
+    Once authenticated, the target supports multi-turn conversations through server-side
+    state management. For each PyRIT conversation, it automatically generates consistent
+    `session_id` and `conversation_id` values, enabling Copilot to preserve conversational
+    context across multiple turns.
 
-        Install Playwright and its browser dependencies:
-            pip install playwright
-            playwright install chromium
+    Because conversation state is managed entirely on the Copilot server, this target does
+    not resend conversation history with each request and does not support programmatic
+    inspection or manipulation of that history. At present, there appears to be no supported
+    mechanism for modifying Copilot's server-side conversation state.
 
     Note:
-        Only works with licensed Microsoft 365 Copilot. The free Copilot version is not compatible.
-        Each target instance creates a new conversation session with unique conversation and session IDs.
+        This integration only works with licensed Microsoft 365 Copilot.
+        The free version of Copilot is not compatible.
+
+    Important:
+        - Ensure the following environment variables are set:
+            - ``COPILOT_USERNAME`` - your Microsoft account username (email)
+            - ``COPILOT_PASSWORD`` - your Microsoft account password
+
+        - Install `Playwright` and its browser dependencies:
+            ``pip install playwright && playwright install chromium``
     """
 
     SUPPORTED_DATA_TYPES = {"text"}  # TODO: support more types?
@@ -93,10 +102,6 @@ class WebSocketCopilotTarget(PromptTarget):
 
         self._authenticator = authenticator or CopilotAuthenticator()
         self._response_timeout_seconds = response_timeout_seconds
-
-        # These will be generated fresh for each request
-        self._session_id: Optional[str] = None
-        self._conversation_id: Optional[str] = None
 
         super().__init__(
             verbose=verbose,
@@ -164,7 +169,7 @@ class WebSocketCopilotTarget(PromptTarget):
 
         return results if results else [(CopilotMessageType.UNKNOWN, "")]
 
-    async def _build_websocket_url_async(self) -> str:
+    async def _build_websocket_url_async(self, *, session_id: str, copilot_conversation_id: str) -> str:
         access_token = await self._authenticator.get_token()
 
         try:
@@ -181,15 +186,13 @@ class WebSocketCopilotTarget(PromptTarget):
                 f"Token claims: {list(parsed_token.keys())}"
             )
 
-        self._session_id = str(uuid.uuid4())
-        self._conversation_id = str(uuid.uuid4())
         client_request_id = str(uuid.uuid4())
 
         base_url = f"{self.WEBSOCKET_BASE_URL}/{object_id}@{tenant_id}"
         query_params = [
             f"ClientRequestId={client_request_id}",
-            f"X-SessionId={self._session_id}",
-            f"ConversationId={self._conversation_id}",
+            f"X-SessionId={session_id}",
+            f"ConversationId={copilot_conversation_id}",
             f"access_token={access_token}",
             "X-variants=feature.includeExternal,feature.AssistantConnectorsContentSources,"
             "3S.BizChatWprBoostAssistant,3S.EnableMEFromSkillDiscovery,feature.EnableAuthErrorMessage,"
@@ -203,7 +206,9 @@ class WebSocketCopilotTarget(PromptTarget):
         logger.debug(f"WebSocket URL: {websocket_url}")
         return websocket_url
 
-    def _build_prompt_message(self, prompt: str) -> dict:
+    def _build_prompt_message(
+        self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
+    ) -> dict:
         request_id = trace_id = uuid.uuid4().hex
 
         return {
@@ -211,7 +216,7 @@ class WebSocketCopilotTarget(PromptTarget):
                 {
                     "source": "officeweb",
                     "clientCorrelationId": uuid.uuid4().hex,
-                    "sessionId": self._session_id,
+                    "sessionId": session_id,
                     "optionsSets": [
                         "enterprise_flux_web",
                         "enterprise_flux_work",
@@ -247,9 +252,9 @@ class WebSocketCopilotTarget(PromptTarget):
                     ],
                     "sliceIds": [],
                     "threadLevelGptId": {},
-                    "conversationId": self._conversation_id,
+                    "conversationId": copilot_conversation_id,
                     "traceId": trace_id,
-                    "isStartOfSession": True,
+                    "isStartOfSession": is_start_of_session,
                     "productThreadType": "Office",
                     "clientInfo": {"clientPlatform": "web"},
                     "message": {
@@ -271,11 +276,22 @@ class WebSocketCopilotTarget(PromptTarget):
             "type": CopilotMessageType.USER_PROMPT,
         }
 
-    async def _connect_and_send(self, prompt: str) -> str:
-        websocket_url = await self._build_websocket_url_async()
+    async def _connect_and_send(
+        self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
+    ) -> str:
+        websocket_url = await self._build_websocket_url_async(
+            session_id=session_id, copilot_conversation_id=copilot_conversation_id
+        )
 
-        # TODO: explain why PING is not sent here
-        inputs = [{"protocol": "json", "version": 1}, self._build_prompt_message(prompt)]
+        inputs = [
+            {"protocol": "json", "version": 1},
+            self._build_prompt_message(
+                prompt=prompt,
+                session_id=session_id,
+                copilot_conversation_id=copilot_conversation_id,
+                is_start_of_session=is_start_of_session,
+            ),
+        ]
         response = ""
 
         async with websockets.connect(
@@ -335,11 +351,39 @@ class WebSocketCopilotTarget(PromptTarget):
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
+    def _is_start_of_session(self, *, conversation_id: str) -> bool:
+        conversation_history = self._memory.get_conversation(conversation_id=conversation_id)
+        return len(conversation_history) == 0
+
+    def _generate_consistent_copilot_ids(self, *, pyrit_conversation_id: str) -> tuple[str, str]:
+        """
+        Generate consistent Copilot session_id and conversation_id for a PyRIT conversation.
+
+        This uses a deterministic approach to ensure that the same PyRIT conversation_id
+        always maps to the same Copilot session identifiers. This enables multi-turn
+        conversations while keeping the target stateless.
+
+        Args:
+            pyrit_conversation_id (str): The PyRIT conversation ID from the Message.
+
+        Returns:
+            tuple[str, str]: A tuple of (session_id, copilot_conversation_id).
+        """
+        namespace = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # DNS namespace UUID
+        session_id = str(uuid.uuid5(namespace, f"session_{pyrit_conversation_id}"))
+        copilot_conversation_id = str(uuid.uuid5(namespace, f"copilot_{pyrit_conversation_id}"))
+
+        return session_id, copilot_conversation_id
+
     @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Asynchronously send a message to Microsoft Copilot using WebSocket.
+
+        This method enables multi-turn conversations by using consistent session and conversation
+        identifiers derived from the PyRIT conversation_id. The Copilot API maintains conversation
+        state server-side, so only the current message is sent (no explicit history required).
 
         Args:
             message (Message): A message to be sent to the target.
@@ -355,16 +399,31 @@ class WebSocketCopilotTarget(PromptTarget):
         self._validate_request(message=message)
         request_piece = message.message_pieces[0]
 
-        logger.info(f"Sending the following prompt to WebSocketCopilotTarget: {request_piece}")
+        pyrit_conversation_id = request_piece.conversation_id
+        is_start_of_session = self._is_start_of_session(conversation_id=pyrit_conversation_id)
+
+        session_id, copilot_conversation_id = self._generate_consistent_copilot_ids(
+            pyrit_conversation_id=pyrit_conversation_id
+        )
+
+        logger.info(
+            f"Sending prompt to WebSocketCopilotTarget: {request_piece.converted_value} "
+            f"(conversation_id={pyrit_conversation_id}, is_start={is_start_of_session})"
+        )
 
         try:
             prompt_text = request_piece.converted_value
-            response_text = await self._connect_and_send(prompt_text)
+            response_text = await self._connect_and_send(
+                prompt=prompt_text,
+                session_id=session_id,
+                copilot_conversation_id=copilot_conversation_id,
+                is_start_of_session=is_start_of_session,
+            )
 
             if not response_text or not response_text.strip():
                 logger.error("Empty response received from Copilot.")
                 raise EmptyResponseException(message="Copilot returned an empty response.")
-            logger.info(f"Received the following response from WebSocketCopilotTarget: \n{response_text}")
+            logger.info(f"Received response from WebSocketCopilotTarget (length: {len(response_text)} chars)")
 
             response_entry = construct_response_from_request(
                 request=request_piece, response_text_pieces=[response_text]

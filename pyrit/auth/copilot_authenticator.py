@@ -28,9 +28,8 @@ class CopilotAuthenticator(Authenticator):
 
     Note:
         To be able to use this authenticator, you must set the following environment variables:
-
-            - COPILOT_USERNAME: Your Microsoft account username (email).
-            - COPILOT_PASSWORD: Your Microsoft account password.
+            - COPILOT_USERNAME: your Microsoft account username (email)
+            - COPILOT_PASSWORD: your Microsoft account password
 
         Additionally, you need to have playwright installed and set up:
         ``pip install playwright && playwright install chromium``.
