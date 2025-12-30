@@ -2,6 +2,7 @@
 set -e
 
 MYPY_CACHE="/workspace/.mypy_cache"
+VIRTUAL_ENV="/opt/venv"
 # Create the mypy cache directory if it doesn't exist
 if [ ! -d "$MYPY_CACHE" ]; then
     echo "Creating mypy cache directory..."
@@ -30,16 +31,11 @@ fi
 sudo rm -rf /vscode/vscode-server/extensionsCache/github.copilot-*
 rm -rf /home/vscode/.vscode-server/extensions/{*,.[!.]*,..?*}
 
-# Path to store the hash
-HASH_FILE="/home/vscode/.cache/pip/pyproject_hash"
-
-# Make sure the hash file is writable if it exists; if not, it will be created
-if [ -f "$HASH_FILE" ]; then
-    chmod 666 "$HASH_FILE"
-fi
-
 # Activate the uv venv created in the Dockerfile
-source /opt/pyrit-dev/bin/activate
+source /opt/venv/bin/activate
+
+# Store hash inside venv so it's tied to the venv lifecycle
+HASH_FILE="/opt/venv/pyproject_hash"
 
 # Compute current hash
 CURRENT_HASH=$(sha256sum /workspace/pyproject.toml | awk '{print $1}')
@@ -51,6 +47,8 @@ if [ ! -f "$HASH_FILE" ] || [ "$(cat $HASH_FILE)" != "$CURRENT_HASH" ]; then
     # Install dependencies
     uv pip install ipykernel
     uv pip install -e ".[dev,all]"
+    # Register the kernel with Jupyter
+    python -m ipykernel install --user --name=pyrit-dev --display-name="Python (pyrit-dev)"
 
     # Save the new hash
     echo "$CURRENT_HASH" > "$HASH_FILE"

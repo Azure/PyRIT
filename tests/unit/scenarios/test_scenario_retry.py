@@ -105,9 +105,12 @@ def create_mock_atomic_attack(name: str, objectives: list[str], run_async_mock: 
 
     attack = MagicMock(spec=AtomicAttack)
     attack.atomic_attack_name = name
-    attack._objectives = objectives
     attack._attack = mock_attack_strategy
     type(attack).objectives = PropertyMock(return_value=objectives)
+
+    # Configure filter_seed_groups_by_objectives - needed for scenario retry filtering
+    attack.filter_seed_groups_by_objectives = MagicMock()
+
     if run_async_mock:
         attack.run_async = run_async_mock
     return attack

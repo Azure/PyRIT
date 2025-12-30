@@ -190,7 +190,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # Here, we are looking to achieve multiple objectives and introduce prompt converters on the input before sending to the objective target.
 #
 # Note that below we are looping through the objectives, because we want to set a separate scoring configuration for each attack execution.
-# If you are using the same configuration across multiple attacks, you can use the `AttackExecutor`'s `execute_multi_turn_attacks_async` method to run multiple objectives instead.
+# If you are using the same configuration across multiple attacks, you can use the `AttackExecutor`'s `execute_attack_async` method to run multiple objectives instead.
 
 # %%
 from pyrit.executor.attack import AttackConverterConfig
@@ -233,7 +233,7 @@ for objective in objectives:
 # How to call AttackExecutor's method if not changing the attack configuration for each objective
 """
 from pyrit.executor.attack import AttackExecutor
-results = AttackExecutor().execute_multi_turn_attacks_async(
+results = AttackExecutor().execute_attack_async(
     attack=red_teaming_attack,
     objectives=objectives,
 )

@@ -12,7 +12,7 @@
     "vscode": {
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash",
-        "python.defaultInterpreterPath": "/opt/pyrit-dev/bin/python",
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "python.analysis.extraPaths": [
           "/workspace"
         ],
@@ -33,7 +33,7 @@
           "pyrit/**"
         ],
         "python.analysis.exclude": [
-          "/opt/pyrit-dev/**",
+          "/opt/venv/**",
           "**/.venv/**",
           "**/site-packages/**",
           "**/doc/**",
@@ -71,7 +71,7 @@
           "**/build": true,
           "**/__pycache__": true
         },
-        "explorer.autoReveal": false,
+        "explorer.autoReveal": true,
         "files.maxMemoryForLargeFilesMB": 4096,
         "files.useExperimentalFileWatcher": true,
         "git.showUntrackedFiles": true

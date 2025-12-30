@@ -1,5 +1,4 @@
-# Use a Python image with uv pre-installed
-FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+FROM --platform=linux/amd64 mcr.microsoft.com/devcontainers/python:3.11
 
 # Makes installation faster
 ENV UV_COMPILE_BYTECODE=1
@@ -13,10 +12,11 @@ RUN apt-get update && apt-get install -y \
     sudo \
     unixodbc \
     unixodbc-dev \
-    libgl1-mesa-glx \
+    libgl1 \
     git \
     curl \
     xdg-utils \
+    build-essential \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install the Azure CLI, Microsoft ODBC Driver 18 & SQL tools
@@ -47,18 +47,17 @@ RUN apt-get update \
       libpulse0 \
  && rm -rf /var/lib/apt/lists/*
 
-ARG USERNAME=vscode
-# Create the user and grant passwordless sudo
-RUN groupadd $USERNAME \
-    && useradd -g $USERNAME -m $USERNAME \
-    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# Install uv system-wide and create pyrit-dev venv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+ && mv /root/.local/bin/uv /usr/local/bin/uv \
+ && rm -rf /opt/venv \
+ && uv venv /opt/venv --python 3.11 --prompt pyrit-dev \
+ && chown -R vscode:vscode /opt/venv \
+ && ls -la /opt/venv/bin/activate
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Remove any existing venv and create fresh uv venv
-RUN rm -rf /opt/pyrit-dev \
- && uv venv /opt/pyrit-dev --python 3.11 \
- && chown -R vscode:vscode /opt/pyrit-dev \
- && ls -la /opt/pyrit-dev/bin/activate
-ENV PATH="/opt/pyrit-dev/bin:$PATH"
+# vscode user already exists in the base image, just ensure sudo access
+RUN echo "vscode ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Install Node.js 20.x and npm for frontend development
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -81,8 +80,8 @@ RUN mkdir -p /home/vscode/.cache/pre-commit \
 USER vscode
 # Create bash configuration files and activate the venv in bash sessions
 RUN touch /home/vscode/.bashrc /home/vscode/.bash_profile \
- && echo "[ -f /opt/pyrit-dev/bin/activate ] && source /opt/pyrit-dev/bin/activate" >> /home/vscode/.bashrc \
- && echo "[ -f /opt/pyrit-dev/bin/activate ] && source /opt/pyrit-dev/bin/activate" >> /home/vscode/.bash_profile
+ && echo "[ -f /opt/venv/bin/activate ] && source /opt/venv/bin/activate" >> /home/vscode/.bashrc \
+ && echo "[ -f /opt/venv/bin/activate ] && source /opt/venv/bin/activate" >> /home/vscode/.bash_profile
 
 # Configure Git for better performance with bind mounts
 RUN git config --global core.preloadindex true \
@@ -91,5 +90,6 @@ RUN git config --global core.preloadindex true \
  && git config --global status.showUntrackedFiles all \
  && git config --global core.fsmonitor true
 
-# Set uv’s cache directory so it can be mounted
+ # Set cache directories so they can be mounted
+ENV PIP_CACHE_DIR="/home/vscode/.cache/pip"
 ENV UV_CACHE_DIR="/home/vscode/.cache/uv"
