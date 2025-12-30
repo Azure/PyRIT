@@ -38,7 +38,7 @@ from pyrit.executor.attack import (
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SubStringScorer, create_conversation_scorer
+from pyrit.score import LikertScalePaths, SubStringScorer, create_conversation_scorer
 from pyrit.score.float_scale.self_ask_likert_scorer import SelfAskLikertScorer
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
@@ -112,7 +112,9 @@ conversation_history = memory.get_conversation(conversation_id=result.conversati
 behavior_change_scale_path = Path(SCORER_LIKERT_PATH, "behavior_change.yaml").resolve()
 
 # Create a FloatScaleScorer (SelfAskLikertScorer) to evaluate behavior changes
-behavior_scale_scorer = SelfAskLikertScorer(chat_target=adversarial_chat, likert_scale_path=behavior_change_scale_path)
+behavior_scale_scorer = SelfAskLikertScorer(
+    chat_target=adversarial_chat, likert_scale=LikertScalePaths.BEHAVIOR_CHANGE_SCALE
+)
 
 # Wrap the FloatScaleScorer with ConversationScorer to score the entire conversation
 conversation_scorer = create_conversation_scorer(scorer=behavior_scale_scorer)

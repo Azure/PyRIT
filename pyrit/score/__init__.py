@@ -32,28 +32,37 @@ from pyrit.score.true_false.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.float_scale.plagiarism_scorer import PlagiarismScorer, PlagiarismMetric
 from pyrit.score.true_false.prompt_shield_scorer import PromptShieldScorer
 
-from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType, RegistryUpdateBehavior
+from pyrit.models.harm_definition import (
+    HarmDefinition,
+    ScaleDescription,
+    get_all_harm_definitions,
+)
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
     HumanLabeledEntry,
     ObjectiveHumanLabeledEntry,
 )
+from pyrit.score.scorer_evaluation.scorer_metrics import (
+    HarmScorerMetrics,
+    ObjectiveScorerMetrics,
+    ScorerMetrics,
+    ScorerMetricsWithIdentity,
+)
+from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+    get_all_harm_metrics,
+    get_all_objective_metrics,
+)
 from pyrit.score.scorer_evaluation.scorer_evaluator import (
     HarmScorerEvaluator,
-    HarmScorerMetrics,
     ObjectiveScorerEvaluator,
-    ObjectiveScorerMetrics,
+    ScorerEvalDatasetFiles,
     ScorerEvaluator,
-    ScorerMetrics,
-)
-from pyrit.score.scorer_evaluation.scorer_metrics_registry import (
-    ScorerMetricsEntry,
-    ScorerMetricsRegistry,
 )
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
-from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
+from pyrit.score.float_scale.self_ask_likert_scorer import LikertScaleEvalFiles, LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
 from pyrit.score.true_false.self_ask_true_false_scorer import (
@@ -68,11 +77,13 @@ from pyrit.score.true_false.self_ask_question_answer_scorer import SelfAskQuesti
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 from pyrit.score.true_false.question_answer_scorer import QuestionAnswerScorer
+from pyrit.score.printer import ConsoleScorerPrinter, ScorerPrinter
 
 __all__ = [
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
+    "ConsoleScorerPrinter",
     "ConversationScorer",
     "DecodingScorer",
     "create_conversation_scorer",
@@ -89,10 +100,9 @@ __all__ = [
     "HumanLabeledDataset",
     "HumanLabeledEntry",
     "InsecureCodeScorer",
+    "LikertScaleEvalFiles",
     "LikertScalePaths",
     "MarkdownInjectionScorer",
-    "ScorerMetricsEntry",
-    "ScorerMetricsRegistry",
     "MetricsType",
     "ObjectiveHumanLabeledEntry",
     "ObjectiveScorerEvaluator",
@@ -101,10 +111,15 @@ __all__ = [
     "PlagiarismScorer",
     "PromptShieldScorer",
     "QuestionAnswerScorer",
+    "RegistryUpdateBehavior",
     "Scorer",
     "ScorerIdentifier",
+    "ScorerEvalDatasetFiles",
     "ScorerEvaluator",
     "ScorerMetrics",
+    "ScorerMetricsWithIdentity",
+    "get_all_harm_metrics",
+    "get_all_objective_metrics",
     "ScorerPromptValidator",
     "SelfAskCategoryScorer",
     "SelfAskGeneralFloatScaleScorer",
@@ -114,6 +129,7 @@ __all__ = [
     "SelfAskRefusalScorer",
     "SelfAskScaleScorer",
     "SelfAskTrueFalseScorer",
+    "ScorerPrinter",
     "SubStringScorer",
     "TrueFalseCompositeScorer",
     "TrueFalseInverterScorer",
@@ -124,4 +140,7 @@ __all__ = [
     "TrueFalseScorer",
     "VideoFloatScaleScorer",
     "VideoTrueFalseScorer",
+    "HarmDefinition",
+    "ScaleDescription",
+    "get_all_harm_definitions",
 ]

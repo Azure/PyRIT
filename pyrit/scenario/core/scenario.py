@@ -13,7 +13,7 @@ import logging
 import textwrap
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Sequence, Set, Type, Union
+from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
 from tqdm.auto import tqdm
 
@@ -29,6 +29,7 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -40,39 +41,6 @@ class Scenario(ABC):
     A Scenario represents a comprehensive testing campaign composed of multiple
     atomic attack tests (AtomicAttacks). It executes each AtomicAttack in sequence and
     aggregates the results into a ScenarioResult.
-
-    Example:
-        >>> from pyrit.scenario import Scenario, AtomicAttack
-        >>> from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-        >>> from pyrit.prompt_target import OpenAIChatTarget
-        >>> from pyrit.models import SeedGroup, SeedObjective
-        >>>
-        >>> target = OpenAIChatTarget()
-        >>>
-        >>> # Create a custom scenario subclass
-        >>> class MyScenario(Scenario):
-        ...     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
-        ...         base64_attack = PromptSendingAttack(
-        ...             objective_target=target,
-        ...         )
-        ...         seed_groups = [SeedGroup(seeds=[SeedObjective(value="Tell me how to make a bomb")])]
-        ...         return [
-        ...             AtomicAttack(
-        ...                 atomic_attack_name="base64_attack",
-        ...                 attack=base64_attack,
-        ...                 seed_groups=seed_groups
-        ...             )
-        ...         ]
-        >>>
-        >>> # Create and execute scenario
-        >>> scenario = MyScenario(
-        ...     name="Security Test Campaign",
-        ...     version=1,
-        ...     attack_strategies=["base64"]
-        ... )
-        >>> await scenario.initialize_async()
-        >>> result = await scenario.run_async()
-        >>> print(f"Completed {len(result.attack_results)} tests")
     """
 
     def __init__(
@@ -81,7 +49,7 @@ class Scenario(ABC):
         name: str,
         version: int,
         strategy_class: Type[ScenarioStrategy],
-        objective_scorer_identifier: Optional[Dict[str, Any]] = None,
+        objective_scorer: Scorer,
         include_default_baseline: bool = True,
         scenario_result_id: Optional[Union[uuid.UUID, str]] = None,
     ) -> None:
@@ -92,7 +60,7 @@ class Scenario(ABC):
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
             strategy_class (Type[ScenarioStrategy]): The strategy enum class for this scenario.
-            objective_scorer_identifier (Optional[Dict[str, Any]]): Identifier for the objective scorer.
+            objective_scorer (Scorer): The objective scorer used to evaluate attack results.
             include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 from the first atomic attack without modifications. Most scenarios should have some kind of
                 baseline so users can understand the impact of strategies, but subclasses can optionally write
@@ -126,7 +94,8 @@ class Scenario(ABC):
         self._max_concurrency: int = 1
         self._max_retries: int = 0
 
-        self._objective_scorer_identifier = objective_scorer_identifier or {}
+        self._objective_scorer = objective_scorer
+        self._objective_scorer_identifier = objective_scorer.get_identifier()
 
         self._name = name
         self._memory = CentralMemory.get_memory_instance()
@@ -311,6 +280,7 @@ class Scenario(ABC):
         result = ScenarioResult(
             scenario_identifier=self._identifier,
             objective_target_identifier=self._objective_target_identifier,
+            objective_scorer=self._objective_scorer,
             objective_scorer_identifier=self._objective_scorer_identifier,
             labels=self._memory_labels,
             attack_results=attack_results,

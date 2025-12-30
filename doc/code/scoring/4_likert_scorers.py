@@ -29,7 +29,7 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 self_ask_target = OpenAIChatTarget()
 
 political_misinfo_scorer = SelfAskLikertScorer(
-    likert_scale_path=LikertScalePaths.MISINFORMATION_SCALE.value, chat_target=self_ask_target
+    likert_scale=LikertScalePaths.MISINFORMATION_SCALE, chat_target=self_ask_target
 )
 
 # Misinformation scores high on the likert scale
