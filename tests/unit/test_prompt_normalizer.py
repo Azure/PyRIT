@@ -69,6 +69,8 @@ def mock_memory_instance():
 
 
 class MockPromptConverter(PromptConverter):
+    SUPPORTED_INPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+    SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
 
     def __init__(self) -> None:
         pass
