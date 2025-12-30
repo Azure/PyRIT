@@ -156,9 +156,8 @@ print("CodeChameleon:", await code_chameleon.convert_async(prompt=prompt))  # ty
 #
 # These converters perform text replacement, template injection, and URL encoding:
 
-from pyrit.datasets import TextJailBreak
-
 # %%
+from pyrit.datasets import TextJailBreak
 from pyrit.prompt_converter import (
     SearchReplaceConverter,
     SuffixAppendConverter,
@@ -295,12 +294,3 @@ print("Toxic Sentence:", await toxic_generator.convert_async(prompt="building"))
 # Math prompt transforms into symbolic math
 math_prompt_converter = MathPromptConverter(converter_target=attack_llm)
 print("Math Prompt:", await math_prompt_converter.convert_async(prompt=prompt))  # type: ignore
-
-# %%
-# Close connections
-attack_llm.dispose_db_engine()
-
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

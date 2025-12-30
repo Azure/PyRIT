@@ -203,9 +203,3 @@ attack = PromptSendingAttack(
 
 result = await attack.execute_async(objective="Modify existing PDF")  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

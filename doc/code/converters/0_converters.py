@@ -136,10 +136,3 @@ result = await attack.execute_async(objective=objective)  # type: ignore
 
 printer = ConsoleAttackResultPrinter()
 await printer.print_conversation_async(result=result)  # type: ignore
-
-# %%
-# Close connection
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
