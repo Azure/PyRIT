@@ -257,7 +257,7 @@ print("Variation:", await variation_converter.convert_async(prompt=prompt))  # t
 noise_converter = NoiseConverter(converter_target=attack_llm)
 print("Noise:", await noise_converter.convert_async(prompt=prompt))  # type: ignore
 
-# Tone changes tone
+# Changes tone
 tone_converter = ToneConverter(converter_target=attack_llm, tone="angry")
 print("Tone (angry):", await tone_converter.convert_async(prompt=prompt))  # type: ignore
 
