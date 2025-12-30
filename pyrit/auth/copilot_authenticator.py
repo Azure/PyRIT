@@ -8,7 +8,6 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 import json
-import re
 from msal_extensions import build_encrypted_persistence, FilePersistence
 
 from pyrit.auth.authenticator import Authenticator
