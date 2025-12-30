@@ -95,7 +95,7 @@ class PromptChatTarget(PromptTarget):
                 include a "response_format" key.
 
         Returns:
-                bool: True if the response format is JSON, False otherwise.
+            bool: True if the response format is JSON, False otherwise.
 
         Raises:
             ValueError: If "json" response format is requested but unsupported.
