@@ -25,7 +25,8 @@
 # - model_name: The model to use (`OPENAI_RESPONSES_MODEL` environment variable). For OpenAI, these are any available model name and are listed here: "https://platform.openai.com/docs/models".
 
 # %%
-from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.executor.attack import (ConsoleAttackResultPrinter,
+                                   PromptSendingAttack)
 from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
@@ -55,6 +56,7 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 # %%
 import json
+
 import jsonschema
 
 from pyrit.models import Message, MessagePiece
