@@ -5,8 +5,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any, Dict, Optional
 
+class _MetaDataKeys(StrEnum):
+    RESPONSE_FORMAT = "response_format"
+    JSON_SCHEMA = "json_schema"
+    JSON_SCHEMA_NAME = "json_schema_name"
+    JSON_SCHEMA_STRICT = "json_schema_strict"
 
 @dataclass
 class JsonResponseConfig:
@@ -29,11 +35,11 @@ class JsonResponseConfig:
         if not metadata:
             return cls(enabled=False)
 
-        response_format = metadata.get("response_format")
+        response_format = metadata.get(_MetaDataKeys.RESPONSE_FORMAT)
         if response_format != "json":
             return cls(enabled=False)
 
-        schema_val = metadata.get("json_schema")
+        schema_val = metadata.get(_MetaDataKeys.JSON_SCHEMA)
         if schema_val:
             if isinstance(schema_val, str):
                 try:
@@ -46,8 +52,8 @@ class JsonResponseConfig:
             return cls(
                 enabled=True,
                 schema=schema,
-                schema_name=metadata.get("schema_name", "CustomSchema"),
-                strict=metadata.get("strict", True),
+                schema_name=metadata.get(_MetaDataKeys.JSON_SCHEMA_NAME, "CustomSchema"),
+                strict=metadata.get(_MetaDataKeys.JSON_SCHEMA_STRICT, True),
             )
 
         return cls(enabled=True)
