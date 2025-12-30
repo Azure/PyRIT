@@ -58,7 +58,6 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 import json
 
 import jsonschema
-
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
