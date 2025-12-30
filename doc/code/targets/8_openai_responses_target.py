@@ -47,6 +47,56 @@ result = await attack.execute_async(objective="Tell me a joke")  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 # %% [markdown]
+# ## JSON Generation
+#
+# We can use the OpenAI `Responses API` with a JSON schema to produce structured JSON output. In this example, we define a simple JSON schema that describes a person with `name` and `age` properties.
+
+# %%
+import json
+import jsonschema
+
+from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target import OpenAIResponseTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+
+# Define a simple JSON schema for a person
+person_schema = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "integer", "minimum": 0, "maximum": 150},
+    },
+    "required": ["name", "age"],
+    "additionalProperties": False,
+}
+
+prompt = "Create a JSON object describing a person named Alice who is 30 years old."
+# Create the message piece and message
+message_piece = MessagePiece(
+    role="user",
+    original_value=prompt,
+    original_value_data_type="text",
+    prompt_metadata={
+        "response_format": "json",
+        "json_schema": json.dumps(person_schema),
+    },
+)
+message = Message(message_pieces=[message_piece])
+
+# Create the OpenAI Responses target
+target = OpenAIResponseTarget()
+
+# Send the prompt, requesting JSON output
+response = await target.send_prompt_async(message=message)  # type: ignore
+
+# Validate and print the response
+response_json = json.loads(response[0].message_pieces[1].converted_value)
+print(json.dumps(response_json, indent=2))
+jsonschema.validate(instance=response_json, schema=person_schema)
+
+# %% [markdown]
 # ## Tool Use with Custom Functions
 #
 # In this example, we demonstrate how the OpenAI `Responses API` can be used to invoke a **custom-defined Python function** during a conversation. This is part of OpenAI’s support for "function calling", where the model decides to call a registered function, and the application executes it and passes the result back into the conversation loop.
