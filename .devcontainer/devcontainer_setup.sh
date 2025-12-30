@@ -47,6 +47,9 @@ if [ ! -f "$HASH_FILE" ] || [ "$(cat $HASH_FILE)" != "$CURRENT_HASH" ]; then
     # Install dependencies
     uv pip install ipykernel
     uv pip install -e ".[dev,all]"
+    
+    # Register the kernel with Jupyter
+    python -m ipykernel install --user --name=pyrit-dev --display-name="Python (pyrit-dev)"
 
     # Save the new hash
     echo "$CURRENT_HASH" > "$HASH_FILE"
