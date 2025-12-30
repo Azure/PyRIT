@@ -9,7 +9,7 @@ import uuid
 import jsonschema
 import pytest
 
-from pyrit.auth import get_azure_openai_auth
+# from pyrit.auth import get_azure_openai_auth
 from pyrit.models import MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget
 
@@ -20,8 +20,8 @@ def gpt5_args():
     return {
         "endpoint": endpoint_value,
         "model_name": os.getenv("AZURE_OPENAI_GPT5_MODEL"),
-        # "api_key": os.getenv("AZURE_OPENAI_GPT5_KEY"),
-        "api_key": get_azure_openai_auth(endpoint_value),
+        "api_key": os.getenv("AZURE_OPENAI_GPT5_KEY"),
+        # "api_key": get_azure_openai_auth(endpoint_value),
     }
 
 
