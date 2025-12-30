@@ -26,17 +26,14 @@ SystemMessageBehavior = Literal["keep", "squash", "ignore", "developer"]
 
 
 @dataclass
-class ModelConfig:
-    """Configuration for a model's chat template behavior."""
+class TokenizerModelConfig:
+    """Configuration for a HuggingFace model's chat template behavior."""
 
     model_name: str
-    """The full HuggingFace model name."""
+    """The full HuggingFace model name (e.g., 'meta-llama/Meta-Llama-3-8B-Instruct')."""
 
     system_message_behavior: SystemMessageBehavior = "keep"
     """How to handle system messages. See SystemMessageBehavior for options."""
-
-    supports_tools: bool = False
-    """Whether the model's chat template supports tool/function calling."""
 
 
 class TokenizerTemplateNormalizer(MessageStringNormalizer):
@@ -46,46 +43,43 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
     https://huggingface.co/docs/transformers/main/en/chat_templating.
     """
 
-    # Model configurations with alias mappings
-    MODEL_CONFIGS: ClassVar[Dict[str, ModelConfig]] = {
+    # Alias mappings for common HuggingFace models
+    MODEL_ALIASES: ClassVar[Dict[str, TokenizerModelConfig]] = {
         # No authentication required
-        "chatml": ModelConfig(
+        "chatml": TokenizerModelConfig(
             model_name="HuggingFaceH4/zephyr-7b-beta",
         ),
-        "phi3": ModelConfig(
+        "phi3": TokenizerModelConfig(
             model_name="microsoft/Phi-3-mini-4k-instruct",
         ),
-        "qwen": ModelConfig(
+        "qwen": TokenizerModelConfig(
             model_name="Qwen/Qwen2-7B-Instruct",
-            supports_tools=True,
         ),
-        "falcon": ModelConfig(
+        "falcon": TokenizerModelConfig(
             model_name="tiiuae/falcon-7b-instruct",
         ),
-        "openchat": ModelConfig(
+        "openchat": TokenizerModelConfig(
             model_name="openchat/openchat-3.5-0106",
         ),
-        "tinyllama": ModelConfig(
+        "tinyllama": TokenizerModelConfig(
             model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
         ),
         # Gated models (require token parameter)
-        "llama3": ModelConfig(
+        "llama3": TokenizerModelConfig(
             model_name="meta-llama/Meta-Llama-3-8B-Instruct",
-            supports_tools=True,
         ),
-        "llama2": ModelConfig(
+        "llama2": TokenizerModelConfig(
             model_name="meta-llama/Llama-2-7b-chat-hf",
         ),
-        "mistral": ModelConfig(
+        "mistral": TokenizerModelConfig(
             model_name="mistralai/Mistral-7B-Instruct-v0.2",
-            supports_tools=True,
         ),
-        "gemma": ModelConfig(
+        "gemma": TokenizerModelConfig(
             model_name="google/gemma-7b-it",
             system_message_behavior="squash",
         ),
         # Vision models
-        "llama3-vision": ModelConfig(
+        "llama3-vision": TokenizerModelConfig(
             model_name="meta-llama/Llama-3.2-11B-Vision-Instruct",
         ),
     }
@@ -95,7 +89,6 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         *,
         tokenizer: "PreTrainedTokenizerBase",
         system_message_behavior: SystemMessageBehavior = "keep",
-        supports_tools: bool = False,
     ) -> None:
         """
         Initialize an instance of the TokenizerTemplateNormalizer class.
@@ -107,11 +100,9 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
                 - "squash": Merge system into first user message
                 - "ignore": Drop system messages entirely
                 - "developer": Change system role to developer role
-            supports_tools: Whether to pass tools to the chat template.
         """
         self.tokenizer = tokenizer
         self.system_message_behavior = system_message_behavior
-        self.supports_tools = supports_tools
 
     @classmethod
     def from_model(
@@ -120,7 +111,6 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         *,
         token: Optional[str] = None,
         system_message_behavior: Optional[SystemMessageBehavior] = None,
-        supports_tools: Optional[bool] = None,
     ) -> "TokenizerTemplateNormalizer":
         """
         Create a normalizer from a model name or alias.
@@ -130,12 +120,11 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         HuggingFace model path.
 
         Args:
-            model_name_or_alias: Either a full HuggingFace model name or an alias.
+            model_name_or_alias: Either a full HuggingFace model name or an alias
+                (e.g., 'chatml', 'phi3', 'llama3'). See MODEL_ALIASES for available aliases.
             token: Optional HuggingFace token for gated models. If not provided,
                 falls back to HUGGINGFACE_TOKEN environment variable.
             system_message_behavior: Override how to handle system messages.
-                If not provided, uses the model's default config.
-            supports_tools: Override whether to pass tools to the template.
                 If not provided, uses the model's default config.
 
         Returns:
@@ -155,15 +144,13 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
 
         # Get config from alias or create default config for custom model
         alias_key = model_name_or_alias.lower()
-        if alias_key in cls.MODEL_CONFIGS:
-            config = cls.MODEL_CONFIGS[alias_key]
+        if alias_key in cls.MODEL_ALIASES:
+            config = cls.MODEL_ALIASES[alias_key]
             model_name = config.model_name
             default_behavior = config.system_message_behavior
-            default_supports_tools = config.supports_tools
         else:
             model_name = model_name_or_alias
             default_behavior = "keep"
-            default_supports_tools = False
 
         tokenizer = AutoTokenizer.from_pretrained(model_name, token=resolved_token or None)
 
@@ -176,7 +163,6 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         return cls(
             tokenizer=tokenizer,
             system_message_behavior=system_message_behavior if system_message_behavior is not None else default_behavior,
-            supports_tools=supports_tools if supports_tools is not None else default_supports_tools,
         )
 
     async def normalize_string_async(self, messages: List[Message]) -> str:

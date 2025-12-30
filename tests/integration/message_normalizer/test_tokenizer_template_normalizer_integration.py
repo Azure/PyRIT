@@ -14,7 +14,7 @@ def _make_message(role: str, content: str) -> Message:
 
 
 # Get all aliases from the class
-ALL_ALIASES = list(TokenizerTemplateNormalizer.MODEL_CONFIGS.keys())
+ALL_ALIASES = list(TokenizerTemplateNormalizer.MODEL_ALIASES.keys())
 
 
 @pytest.mark.parametrize("alias", ALL_ALIASES)

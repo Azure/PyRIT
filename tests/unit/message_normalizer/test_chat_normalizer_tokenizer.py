@@ -25,7 +25,6 @@ class TestTokenizerTemplateNormalizerInit:
         normalizer = TokenizerTemplateNormalizer(tokenizer=mock_tokenizer)
         assert normalizer.tokenizer == mock_tokenizer
         assert normalizer.system_message_behavior == "keep"
-        assert normalizer.supports_tools is False
 
     def test_init_with_custom_config(self):
         """Test initialization with custom config."""
@@ -33,18 +32,16 @@ class TestTokenizerTemplateNormalizerInit:
         normalizer = TokenizerTemplateNormalizer(
             tokenizer=mock_tokenizer,
             system_message_behavior="developer",
-            supports_tools=True,
         )
         assert normalizer.system_message_behavior == "developer"
-        assert normalizer.supports_tools is True
 
-    def test_model_configs_contains_expected_aliases(self):
-        """Test that MODEL_CONFIGS contains expected aliases."""
-        configs = TokenizerTemplateNormalizer.MODEL_CONFIGS
-        assert "chatml" in configs
-        assert "phi3" in configs
-        assert "qwen" in configs
-        assert "llama3" in configs
+    def test_model_aliases_contains_expected_aliases(self):
+        """Test that MODEL_ALIASES contains expected aliases."""
+        aliases = TokenizerTemplateNormalizer.MODEL_ALIASES
+        assert "chatml" in aliases
+        assert "phi3" in aliases
+        assert "qwen" in aliases
+        assert "llama3" in aliases
 
 
 class TestFromModel:
