@@ -683,3 +683,49 @@ class TestSimulatedConversationResult:
         """Test that score property can be None."""
         result = SimulatedConversationResult(conversation=[], score=None)
         assert result.score is None
+
+    def test_prepended_messages_returns_new_ids(self):
+        """Test that prepended_messages returns messages with new IDs to avoid database conflicts."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        prepended = result.prepended_messages
+
+        # Verify we got messages with different IDs than the originals
+        for i, prepended_msg in enumerate(prepended):
+            original_msg = messages[i]
+            # IDs should be different
+            for orig_piece, new_piece in zip(original_msg.message_pieces, prepended_msg.message_pieces):
+                assert new_piece.id != orig_piece.id, "prepended_messages should return messages with new IDs"
+            # But content should be the same
+            assert prepended_msg.get_value() == original_msg.get_value()
+
+    def test_next_message_returns_new_id(self):
+        """Test that next_message returns a message with a new ID to avoid database conflicts."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        next_msg = result.next_message
+        assert next_msg is not None
+
+        # The original is at index 4 (turn 3 user message)
+        original_msg = messages[4]
+
+        # IDs should be different
+        for orig_piece, new_piece in zip(original_msg.message_pieces, next_msg.message_pieces):
+            assert new_piece.id != orig_piece.id, "next_message should return a message with a new ID"
+        # But content should be the same
+        assert next_msg.get_value() == original_msg.get_value()
+
+    def test_prepended_messages_called_twice_returns_different_ids(self):
+        """Test that calling prepended_messages twice returns different IDs each time."""
+        messages = self._create_conversation(3)
+        result = SimulatedConversationResult(conversation=messages, score=None)
+
+        prepended1 = result.prepended_messages
+        prepended2 = result.prepended_messages
+
+        # Each call should generate new IDs
+        for msg1, msg2 in zip(prepended1, prepended2):
+            for piece1, piece2 in zip(msg1.message_pieces, msg2.message_pieces):
+                assert piece1.id != piece2.id, "Each call to prepended_messages should return new IDs"

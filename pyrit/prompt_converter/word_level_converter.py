@@ -25,6 +25,9 @@ class WordLevelConverter(PromptConverter):
         It defines the conversion logic for each word.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(
         self,
         *,
@@ -100,9 +103,3 @@ class WordLevelConverter(PromptConverter):
             words[idx] = await self.convert_word_async(words[idx])
 
         return ConverterResult(output_text=self.join_words(words), output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

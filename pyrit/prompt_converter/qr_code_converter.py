@@ -12,6 +12,9 @@ from pyrit.prompt_converter import ConverterResult, PromptConverter
 class QRCodeConverter(PromptConverter):
     """Converts a text string to a QR code image."""
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("image_path",)
+
     def __init__(
         self,
         scale: int = 3,
@@ -94,9 +97,3 @@ class QRCodeConverter(PromptConverter):
             quiet_zone=self._border_color,
         )
         return ConverterResult(output_text=img_serializer_file, output_type="image_path")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "image_path"
