@@ -50,6 +50,8 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # ## JSON Generation
 #
 # We can use the OpenAI `Responses API` with a JSON schema to produce structured JSON output. In this example, we define a simple JSON schema that describes a person with `name` and `age` properties.
+#
+# For more information about structured outputs with OpenAI, see [the OpenAI documentation](https://platform.openai.com/docs/guides/structured-outputs).
 
 # %%
 import json
