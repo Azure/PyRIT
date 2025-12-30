@@ -1,5 +1,4 @@
-# Use a Python image with uv pre-installed
-FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+FROM --platform=linux/amd64 mcr.microsoft.com/devcontainers/python:3.11
 
 # Makes installation faster
 ENV UV_COMPILE_BYTECODE=1
@@ -13,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     unixodbc \
     unixodbc-dev \
-    libgl1-mesa-glx \
+    libgl1 \
     git \
     curl \
     xdg-utils \
@@ -48,18 +47,17 @@ RUN apt-get update \
       libpulse0 \
  && rm -rf /var/lib/apt/lists/*
 
-ARG USERNAME=vscode
-# Create the user and grant passwordless sudo
-RUN groupadd $USERNAME \
-    && useradd -g $USERNAME -m $USERNAME \
-    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-# Create pyrit-dev venv at /opt/venv (reusing base image's VIRTUAL_ENV path) with pyrit-dev prompt
-RUN rm -rf /opt/venv \
+# Install uv system-wide and create pyrit-dev venv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+ && mv /root/.local/bin/uv /usr/local/bin/uv \
+ && rm -rf /opt/venv \
  && uv venv /opt/venv --python 3.11 --prompt pyrit-dev \
  && chown -R vscode:vscode /opt/venv \
  && ls -la /opt/venv/bin/activate
 ENV PATH="/opt/venv/bin:$PATH"
+
+# vscode user already exists in the base image, just ensure sudo access
+RUN echo "vscode ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Pre-create common user caches and fix permissions
 RUN mkdir -p /home/vscode/.cache/pre-commit \
