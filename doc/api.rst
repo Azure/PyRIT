@@ -396,6 +396,7 @@ API Reference
     EmojiConverter
     FirstLetterConverter
     FlipConverter
+    get_converter_modalities
     HumanInTheLoopConverter
     ImageCompressionConverter
     IndexSelectionStrategy

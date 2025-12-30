@@ -10,6 +10,9 @@ class UnicodeSubstitutionConverter(PromptConverter):
     Encodes the prompt using any unicode starting point.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(self, *, start_value=0xE0000):
         self.startValue = start_value
 
@@ -23,9 +26,3 @@ class UnicodeSubstitutionConverter(PromptConverter):
 
         ret_text = "".join(chr(self.startValue + ord(ch)) for ch in prompt)
         return ConverterResult(output_text=ret_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
