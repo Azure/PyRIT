@@ -73,7 +73,7 @@ person_schema = {
     "additionalProperties": False,
 }
 
-prompt = "Create a JSON object describing a person named Alice who is 30 years old."
+prompt = "Create a JSON object describing a person named Bob who is 32 years old."
 # Create the message piece and message
 message_piece = MessagePiece(
     role="user",
@@ -93,7 +93,7 @@ target = OpenAIChatTarget()
 response = await target.send_prompt_async(message=message)  # type: ignore
 
 # Validate and print the response
-response_json = json.loads(response[0].message_pieces[1].converted_value)
+response_json = json.loads(response[0].message_pieces[0].converted_value)
 print(json.dumps(response_json, indent=2))
 jsonschema.validate(instance=response_json, schema=person_schema)
 
