@@ -181,22 +181,17 @@ def get_converter_modalities() -> list[tuple[str, list[PromptDataType], list[Pro
         if name in ("ConverterResult", "PromptConverter") or "Strategy" in name:
             continue
 
-        try:
-            converter_class = getattr(prompt_converter, name)
+        converter_class = getattr(prompt_converter, name)
 
-            # Skip if not a class or not a subclass of PromptConverter
-            if not isinstance(converter_class, type) or not issubclass(converter_class, PromptConverter):
-                continue
-
-            # Read the class attributes
-            input_modalities = list(converter_class.SUPPORTED_INPUT_TYPES)
-            output_modalities = list(converter_class.SUPPORTED_OUTPUT_TYPES)
-
-            converter_modalities.append((name, input_modalities, output_modalities))
-
-        except (AttributeError, TypeError):
-            # Skip converters that don't have the attributes set
+        # Skip if not a class or not a subclass of PromptConverter
+        if not isinstance(converter_class, type) or not issubclass(converter_class, PromptConverter):
             continue
+
+        # Read the class attributes
+        input_modalities = list(converter_class.SUPPORTED_INPUT_TYPES)
+        output_modalities = list(converter_class.SUPPORTED_OUTPUT_TYPES)
+
+        converter_modalities.append((name, input_modalities, output_modalities))
 
     # Sort by input modality, then output modality, then converter name
     converter_modalities.sort(key=lambda x: (x[1][0] if x[1] else "", x[2][0] if x[2] else "", x[0]))
