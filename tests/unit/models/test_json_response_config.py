@@ -32,8 +32,8 @@ def test_with_json_string_schema():
     metadata = {
         "response_format": "json",
         "json_schema": json.dumps(schema),
-        "schema_name": "TestSchema",
-        "strict": False,
+        "json_schema_name": "TestSchema",
+        "json_schema_strict": False,
     }
     config = JsonResponseConfig.from_metadata(metadata=metadata)
     assert config.enabled is True
