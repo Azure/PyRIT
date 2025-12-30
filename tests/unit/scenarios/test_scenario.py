@@ -41,19 +41,16 @@ def mock_atomic_attacks():
 
     run1 = MagicMock(spec=AtomicAttack)
     run1.atomic_attack_name = "attack_run_1"
-    run1._objectives = ["objective1"]
     run1._attack = mock_attack
     type(run1).objectives = PropertyMock(return_value=["objective1"])
 
     run2 = MagicMock(spec=AtomicAttack)
     run2.atomic_attack_name = "attack_run_2"
-    run2._objectives = ["objective2"]
     run2._attack = mock_attack
     type(run2).objectives = PropertyMock(return_value=["objective2"])
 
     run3 = MagicMock(spec=AtomicAttack)
     run3.atomic_attack_name = "attack_run_3"
-    run3._objectives = ["objective3"]
     run3._attack = mock_attack
     type(run3).objectives = PropertyMock(return_value=["objective3"])
 
@@ -270,7 +267,7 @@ class TestScenarioInitialization2:
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         assert scenario._max_retries == 0
-        assert scenario._max_concurrency == 1
+        assert scenario._max_concurrency == 10
         assert scenario._memory_labels == {}
 
 
@@ -300,7 +297,7 @@ class TestScenarioExecution:
         # Verify all runs were executed with correct concurrency
         assert len(result.attack_results) == 3
         for run in mock_atomic_attacks:
-            run.run_async.assert_called_once_with(max_concurrency=1, return_partial_on_failure=True)
+            run.run_async.assert_called_once_with(max_concurrency=10, return_partial_on_failure=True)
 
         # Verify results are aggregated correctly by atomic attack name
         assert "attack_run_1" in result.attack_results
@@ -459,7 +456,6 @@ class TestScenarioProperties:
 
         single_run_mock = MagicMock(spec=AtomicAttack)
         single_run_mock.atomic_attack_name = "attack_1"
-        single_run_mock._objectives = ["obj1"]
         single_run_mock._attack = mock_attack
         type(single_run_mock).objectives = PropertyMock(return_value=["obj1"])
         single_run = [single_run_mock]
@@ -476,7 +472,6 @@ class TestScenarioProperties:
         for i in range(10):
             run = MagicMock(spec=AtomicAttack)
             run.atomic_attack_name = f"attack_{i}"
-            run._objectives = [f"obj{i}"]
             run._attack = mock_attack
             type(run).objectives = PropertyMock(return_value=[f"obj{i}"])
             many_runs.append(run)

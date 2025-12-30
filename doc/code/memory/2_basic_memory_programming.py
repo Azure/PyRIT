@@ -46,6 +46,3 @@ entries = memory.get_conversation(conversation_id=conversation_id)
 
 for entry in entries:
     print(entry)
-
-# Cleanup memory resources
-memory.dispose_engine()

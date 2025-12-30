@@ -4,7 +4,7 @@
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from pyrit.memory import CentralMemory
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
@@ -12,10 +12,97 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
+
+
+def format_conversation_context(messages: List[Message]) -> str:
+    """
+    Format a list of messages into a context string for adversarial chat system prompts.
+
+    This function converts conversation history into a formatted string that can be used
+    by TAP and Crescendo attacks to provide context about prior conversation turns.
+
+    For text pieces, includes both original_value and converted_value (if different).
+    For non-text pieces (images, audio, etc.), uses prompt_metadata["context_description"]
+    if available, otherwise uses a placeholder like [Image] or [Audio].
+
+    Args:
+        messages (List[Message]): The conversation messages to format.
+
+    Returns:
+        str: A formatted string representing the conversation context.
+            Returns empty string if no messages provided.
+
+    Example output:
+        Turn 1:
+        User: How do I make a cake?
+        Assistant: Here's a simple recipe for making a cake...
+
+        Turn 2:
+        User: [Image - A photo of baking ingredients]
+        Assistant: I can see flour, eggs, and sugar in your image...
+    """
+    if not messages:
+        return ""
+
+    context_parts: List[str] = []
+    turn_number = 0
+
+    for message in messages:
+        piece = message.get_piece()
+
+        # Skip system messages - they're handled separately
+        if piece.role == "system":
+            continue
+
+        # Start a new turn when we see a user message
+        if piece.role == "user":
+            turn_number += 1
+            context_parts.append(f"Turn {turn_number}:")
+
+        # Format the piece content
+        content = _format_piece_content(piece)
+        role_label = "User" if piece.role == "user" else "Assistant"
+        context_parts.append(f"{role_label}: {content}")
+
+    return "\n".join(context_parts)
+
+
+def _format_piece_content(piece: MessagePiece) -> str:
+    """
+    Format a single message piece into a content string.
+
+    For text pieces, shows original and converted values (if different).
+    For non-text pieces, uses context_description metadata or a placeholder.
+
+    Args:
+        piece (MessagePiece): The message piece to format.
+
+    Returns:
+        str: The formatted content string.
+    """
+    data_type = piece.converted_value_data_type or piece.original_value_data_type
+
+    # For non-text pieces, use metadata description or placeholder
+    if data_type != "text":
+        # Check for context_description in metadata
+        if piece.prompt_metadata and "context_description" in piece.prompt_metadata:
+            description = piece.prompt_metadata["context_description"]
+            return f"[{data_type.capitalize()} - {description}]"
+        else:
+            return f"[{data_type.capitalize()}]"
+
+    # For text pieces, include both original and converted if different
+    original = piece.original_value
+    converted = piece.converted_value
+
+    if original != converted:
+        return f"{converted} (original: {original})"
+    else:
+        return converted
 
 
 @dataclass
@@ -126,8 +213,8 @@ class ConversationManager:
     async def update_conversation_state_async(
         self,
         *,
+        target: PromptTarget,
         conversation_id: str,
-        target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
         prepended_conversation: List[Message],
         request_converters: Optional[List[PromptConverterConfiguration]] = None,
         response_converters: Optional[List[PromptConverterConfiguration]] = None,
@@ -150,9 +237,9 @@ class ConversationManager:
         and extracts per-session counters such as the current turn index.
 
         Args:
+            target (PromptTarget): The target for which the conversation is being prepared.
+                Used to validate that prepended_conversation is compatible with the target type.
             conversation_id (str): Unique identifier for the conversation to update or create.
-            target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on (if
-                applicable).
             prepended_conversation (List[Message]):
                 List of messages to prepend to the conversation history.
             request_converters (Optional[List[PromptConverterConfiguration]]):
@@ -167,11 +254,20 @@ class ConversationManager:
                 messages, including turn count and last user message.
 
         Raises:
-            ValueError: If `conversation_id` is empty or if the last message in a multi-turn
-                context is a user message (which should not be prepended).
+            ValueError: If `conversation_id` is empty, if the last message in a multi-turn
+                context is a user message (which should not be prepended), or if
+                prepended_conversation is provided with a non-PromptChatTarget target.
         """
         if not conversation_id:
             raise ValueError("conversation_id cannot be empty")
+
+        # Validate prepended_conversation compatibility with target type
+        # Non-chat targets do not read conversation history from memory
+        if prepended_conversation and not isinstance(target, PromptChatTarget):
+            raise ValueError(
+                "prepended_conversation requires target to be a PromptChatTarget. "
+                "Non-chat targets do not support explicit conversation history management."
+            )
 
         # Initialize conversation state
         state = ConversationState()
@@ -217,7 +313,6 @@ class ConversationManager:
                 request=request,
                 conversation_id=conversation_id,
                 conversation_state=state,
-                target=target,
                 max_turns=max_turns,
             )
 
@@ -277,7 +372,6 @@ class ConversationManager:
         request: Message,
         conversation_id: str,
         conversation_state: ConversationState,
-        target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
         max_turns: Optional[int] = None,
     ) -> None:
         """
@@ -289,39 +383,27 @@ class ConversationManager:
             request (Message): The request containing pieces to process.
             conversation_id (str): The ID of the conversation to update.
             conversation_state (ConversationState): The current state of the conversation.
-            target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on (if
-                applicable).
             max_turns (Optional[int]): Maximum allowed turns for the conversation.
-
-        Raises:
-            ValueError: If the request is invalid or if a system prompt is provided but target doesn't support it.
         """
         # Validate the request before processing
         if not request or not request.message_pieces:
             return
 
         # Set the conversation ID and attack ID for each piece in the request
-        save_to_memory = True
         for piece in request.message_pieces:
             piece.conversation_id = conversation_id
             piece.attack_identifier = self._attack_identifier
             piece.id = uuid.uuid4()
 
-            # Process the piece based on its role
+            # Process the piece based on its role (validates turn count for multi-turn)
             self._process_piece(
                 piece=piece,
                 conversation_state=conversation_state,
                 max_turns=max_turns,
-                target=target,
             )
 
-            if ConversationManager._should_exclude_piece_from_memory(piece=piece, max_turns=max_turns):
-                # it is excluded, so we don't want to save it to memory
-                save_to_memory = False
-
-        # Add the request to memory if it was not a system piece
-        if save_to_memory:
-            self._memory.add_message_to_memory(request=request)
+        # Add the request to memory
+        self._memory.add_message_to_memory(request=request)
 
     def _process_piece(
         self,
@@ -329,59 +411,34 @@ class ConversationManager:
         piece: MessagePiece,
         conversation_state: ConversationState,
         max_turns: Optional[int] = None,
-        target: Optional[Union[PromptTarget, PromptChatTarget]] = None,
     ) -> None:
         """
         Process a message piece based on its role and update conversation state.
+
+        For multi-turn conversations, this validates that the turn count doesn't exceed
+        max_turns. Only assistant messages count as turns.
 
         Args:
             piece (MessagePiece): The piece to process.
             conversation_state (ConversationState): The current state of the conversation.
             max_turns (Optional[int]): Maximum allowed turns (for validation).
-            target (Optional[Union[PromptTarget, PromptChatTarget]]): The target to set system prompts on.
 
         Raises:
             ValueError: If max_turns would be exceeded by this piece.
-            ValueError: If a system prompt is provided but target doesn't support it.
         """
-        # Check if multiturn
         is_multi_turn = max_turns is not None
 
-        # Handle system prompts (both single-turn and multi-turn)
-        if piece.role == "system":
-            if target is None:
-                raise ValueError("Target must be provided to handle system prompts")
-
-            if not isinstance(target, PromptChatTarget):
-                raise ValueError("Target must be a PromptChatTarget to set system prompts")
-
-            # Set system prompt and exclude from memory
-            self.set_system_prompt(
-                target=target,
-                conversation_id=piece.conversation_id,
-                system_prompt=piece.converted_value,
-                labels=piece.labels,
-            )
-
-        # Handle assistant messages (count turns for multi-turn only)
-        elif piece.role == "assistant" and is_multi_turn:
-            # Update turn count
+        # Only assistant messages count as turns
+        if piece.role == "assistant" and is_multi_turn:
             conversation_state.turn_count += 1
 
-            # Validate against max_turns
-            if max_turns and conversation_state.turn_count > max_turns:
+            if conversation_state.turn_count > max_turns:
                 raise ValueError(
                     f"The number of turns in the prepended conversation ({conversation_state.turn_count-1}) is equal to"
                     + f" or exceeds the maximum number of turns ({max_turns}), which means the"
                     + " conversation will not be able to continue. Please reduce the number of turns in"
                     + " the prepended conversation or increase the maximum number of turns and try again."
                 )
-
-    @staticmethod
-    def _should_exclude_piece_from_memory(*, piece: MessagePiece, max_turns: Optional[int] = None) -> bool:
-        # System pieces should always be excluded from memory because set_system_prompt function
-        # is called on the target, which internally adds them to memory
-        return piece.role == "system"
 
     async def _populate_conversation_state_async(
         self,
@@ -432,3 +489,73 @@ class ConversationManager:
                 raise ValueError(
                     "There must be a user message preceding the assistant message in prepended conversations."
                 )
+
+    async def prepend_to_adversarial_chat_async(
+        self,
+        *,
+        adversarial_chat: PromptChatTarget,
+        adversarial_chat_conversation_id: str,
+        prepended_conversation: List[Message],
+        labels: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """
+        Replay prepended conversation to the adversarial chat's memory with swapped roles.
+
+        This method takes a conversation history (typically between user and objective target)
+        and replays it to the adversarial chat so it has context of the established conversation.
+        Roles are swapped because from the adversarial chat's perspective:
+        - "user" messages in the original become "assistant" (what the adversarial chat said)
+        - "assistant" messages become "user" (responses it received)
+
+        This is useful when using prepended_conversation to establish context (e.g., role-play
+        scenarios) and wanting the adversarial chat to continue naturally from that context.
+
+        Args:
+            adversarial_chat (PromptChatTarget): The adversarial chat target to prepend to.
+            adversarial_chat_conversation_id (str): The conversation ID for the adversarial chat.
+            prepended_conversation (List[Message]): The conversation history to replay.
+            labels (Optional[Dict[str, str]]): Optional labels to associate with the messages.
+
+        Note:
+            - System messages are skipped (adversarial chat has its own system prompt)
+            - Messages are added to memory directly without LLM calls
+        """
+        if not prepended_conversation:
+            logger.debug("No prepended conversation to replay to adversarial chat")
+            return
+
+        # Role mapping: swap user <-> assistant for adversarial chat's perspective
+        role_swap: Dict[ChatMessageRole, ChatMessageRole] = {
+            "user": "assistant",
+            "assistant": "user",
+        }
+
+        for message in prepended_conversation:
+            for piece in message.message_pieces:
+                # Skip system messages - adversarial chat has its own system prompt
+                if piece.role == "system":
+                    continue
+
+                # Create a new piece with swapped role for adversarial chat
+                swapped_role = role_swap.get(piece.role, piece.role)
+
+                adversarial_piece = MessagePiece(
+                    id=uuid.uuid4(),
+                    role=swapped_role,
+                    original_value=piece.original_value,
+                    converted_value=piece.converted_value,
+                    original_value_data_type=piece.original_value_data_type,
+                    converted_value_data_type=piece.converted_value_data_type,
+                    conversation_id=adversarial_chat_conversation_id,
+                    attack_identifier=self._attack_identifier,
+                    prompt_target_identifier=adversarial_chat.get_identifier(),
+                    labels=labels,
+                )
+
+                # Add to memory
+                self._memory.add_message_to_memory(request=adversarial_piece.to_message())
+
+        logger.debug(
+            f"Replayed {len(prepended_conversation)} messages to adversarial chat "
+            f"conversation {adversarial_chat_conversation_id}"
+        )

@@ -7,6 +7,7 @@ from pyrit.executor.attack.core import (
     AttackStrategy,
     AttackContext,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     AttackAdversarialConfig,
     AttackExecutor,
@@ -30,7 +31,7 @@ from pyrit.executor.attack.multi_turn import (
     MultiTurnAttackStrategy,
     MultiTurnAttackContext,
     MultiPromptSendingAttack,
-    MultiPromptSendingAttackContext,
+    MultiPromptSendingAttackParameters,
     RedTeamingAttack,
     RTASystemPromptPaths,
     CrescendoAttack,
@@ -42,7 +43,14 @@ from pyrit.executor.attack.multi_turn import (
     TAPAttackResult,
 )
 
-from pyrit.executor.attack.component import ConversationManager, ConversationState, ObjectiveEvaluator
+from pyrit.executor.attack.component import (
+    ConversationManager,
+    ConversationState,
+    ObjectiveEvaluator,
+    generate_simulated_conversation_async,
+    SimulatedConversationResult,
+    SimulatedTargetSystemPromptPaths,
+)
 
 # Import printer modules last to avoid circular dependencies
 from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResultPrinter, MarkdownAttackResultPrinter
@@ -50,11 +58,12 @@ from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResu
 __all__ = [
     "AttackStrategy",
     "AttackContext",
+    "AttackParameters",
     "CrescendoAttack",
     "CrescendoAttackContext",
     "CrescendoAttackResult",
     "MultiPromptSendingAttack",
-    "MultiPromptSendingAttackContext",
+    "MultiPromptSendingAttackParameters",
     "TAPAttack",
     "TreeOfAttacksWithPruningAttack",
     "TAPAttackContext",
@@ -84,4 +93,7 @@ __all__ = [
     "AttackExecutor",
     "ObjectiveEvaluator",
     "AttackExecutorResult",
+    "generate_simulated_conversation_async",
+    "SimulatedConversationResult",
+    "SimulatedTargetSystemPromptPaths",
 ]
