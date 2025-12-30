@@ -85,7 +85,7 @@ class Message:
         """
         warnings.warn(
             "Message.role getter is deprecated. Use api_role for comparisons. "
-            "This property will be removed in a future version.",
+            "This property will be removed in 0.13.0.",
             DeprecationWarning,
             stacklevel=2,
         )
