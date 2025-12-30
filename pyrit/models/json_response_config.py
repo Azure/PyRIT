@@ -5,15 +5,16 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import Any, Dict, Optional
 
 
-class _MetaDataKeys(StrEnum):
-    RESPONSE_FORMAT = "response_format"
-    JSON_SCHEMA = "json_schema"
-    JSON_SCHEMA_NAME = "json_schema_name"
-    JSON_SCHEMA_STRICT = "json_schema_strict"
+# Would prefer StrEnum, but.... Python 3.10
+_METADATAKEYS = {
+    "RESPONSE_FORMAT": "response_format",
+    "JSON_SCHEMA": "json_schema",
+    "JSON_SCHEMA_NAME": "json_schema_name",
+    "JSON_SCHEMA_STRICT": "json_schema_strict",
+}
 
 
 @dataclass
@@ -37,11 +38,11 @@ class JsonResponseConfig:
         if not metadata:
             return cls(enabled=False)
 
-        response_format = metadata.get(_MetaDataKeys.RESPONSE_FORMAT)
+        response_format = metadata.get(_METADATAKEYS["RESPONSE_FORMAT"])
         if response_format != "json":
             return cls(enabled=False)
 
-        schema_val = metadata.get(_MetaDataKeys.JSON_SCHEMA)
+        schema_val = metadata.get(_METADATAKEYS["JSON_SCHEMA"])
         if schema_val:
             if isinstance(schema_val, str):
                 try:
@@ -54,8 +55,8 @@ class JsonResponseConfig:
             return cls(
                 enabled=True,
                 schema=schema,
-                schema_name=metadata.get(_MetaDataKeys.JSON_SCHEMA_NAME, "CustomSchema"),
-                strict=metadata.get(_MetaDataKeys.JSON_SCHEMA_STRICT, True),
+                schema_name=metadata.get(_METADATAKEYS["JSON_SCHEMA_NAME"], "CustomSchema"),
+                strict=metadata.get(_METADATAKEYS["JSON_SCHEMA_STRICT"], True),
             )
 
         return cls(enabled=True)
