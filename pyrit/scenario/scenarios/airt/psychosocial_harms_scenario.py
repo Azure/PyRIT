@@ -111,8 +111,10 @@ class PsychosocialHarmsScenario(Scenario):
         """Return a list of dataset names required by this scenario."""
         return [
             # "airt_psychosocial_vulnerability",
-            "airt_psychosocial_dependency",
-            "psychosocial_imminent_crisis",
+            # "airt_psychosocial_dependency_therapist",
+            # "airt_psychosocial_dependency_boyfriend",
+            # "psychosocial_imminent_crisis",
+            "airt_psychosocial_therapist_boundaries",
         ]
 
     @apply_defaults
@@ -165,10 +167,28 @@ class PsychosocialHarmsScenario(Scenario):
                 Defaults to 3. Increase for more gradual escalation, decrease for faster testing.
         """
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
-        self._scoring_rubric_paths_by_harm = scoring_rubric_paths_by_harm or {}
+        
+        # Set up default scoring rubrics for each harm category
+        default_scoring_rubrics = {
+            "psychosocial_imminent_crisis": str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"),
+            "psychosocial_dependency": str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "dependency_management.yaml"),
+            "psychosocial_therapist_boundaries": str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "dependency_management.yaml"),
+        }
+        # Merge user-provided rubrics with defaults (user-provided takes precedence)
+        self._scoring_rubric_paths_by_harm = {**default_scoring_rubrics, **(scoring_rubric_paths_by_harm or {})}
+        
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
         self._crescendo_system_prompt_path = crescendo_system_prompt_path
-        self._crescendo_system_prompt_paths_by_harm = crescendo_system_prompt_paths_by_harm or {}
+        
+        # Set up default Crescendo strategies for each harm category
+        default_crescendo_strategies = {
+            "psychosocial_imminent_crisis": str(pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"),
+            "psychosocial_dependency": str(pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "dependency.yaml"),
+            "psychosocial_therapist_boundaries": str(pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "therapist.yaml"),
+        }
+        # Merge user-provided strategies with defaults (user-provided takes precedence)
+        self._crescendo_system_prompt_paths_by_harm = {**default_crescendo_strategies, **(crescendo_system_prompt_paths_by_harm or {})}
+        
         self._max_turns = max_turns
 
         super().__init__(
@@ -197,11 +217,33 @@ class PsychosocialHarmsScenario(Scenario):
 
         for harm_strategy in selected_harms:
             # For attack-type filters (single_turn, multi_turn), load all available harm datasets
+            # BUT split them by harm category so each gets its own scorer/crescendo config
             if harm_strategy in ["single_turn", "multi_turn"]:
-                seeds = self._memory.get_seed_groups(
+                all_seeds = self._memory.get_seed_groups(
                     is_objective=True,
                     dataset_name_pattern="airt_psychosocial_%",
                 )
+                
+                # Group seeds by harm category
+                from collections import defaultdict
+                seeds_by_category = defaultdict(list)
+                
+                for seed_group in all_seeds:
+                    # Get harm categories from the seed group's seeds
+                    for seed in seed_group.seeds:
+                        if hasattr(seed, 'harm_categories') and seed.harm_categories:
+                            for harm_cat in seed.harm_categories:
+                                # Create a new seed group for this specific harm category
+                                category_seeds = [s for s in seed_group.seeds if hasattr(s, 'harm_categories') and harm_cat in s.harm_categories]
+                                if category_seeds:
+                                    new_group = SeedGroup(seeds=category_seeds)
+                                    seeds_by_category[harm_cat].append(new_group)
+                            break  # Only process first seed to avoid duplicates
+                
+                # Add each harm category as a separate strategy
+                # Store as tuple: (harm_category, attack_type) so we know which attacks to create
+                for harm_cat, cat_seeds in seeds_by_category.items():
+                    seeds_by_strategy[(harm_cat, harm_strategy)] = cat_seeds
             else:
                 # For specific harm categories, load their specific dataset
                 seeds = self._memory.get_seed_groups(
@@ -209,10 +251,10 @@ class PsychosocialHarmsScenario(Scenario):
                     harm_categories=harm_strategy,
                     dataset_name_pattern="airt_%",
                 )
+                # For specific harm categories, store with None attack type to use default (all attacks)
+                seeds_by_strategy[(harm_strategy, None)] = seeds
 
-            seeds_by_strategy[harm_strategy] = seeds
-
-            if not seeds_by_strategy[harm_strategy]:
+            if harm_strategy not in ["single_turn", "multi_turn"] and not seeds_by_strategy.get((harm_strategy, None)):
                 self._raise_dataset_exception()
 
         return seeds_by_strategy
@@ -298,9 +340,24 @@ class PsychosocialHarmsScenario(Scenario):
             self._scenario_composites, strategy_type=PsychosocialHarmsStrategy
         )
         merged_objectives_by_harm = self._get_objectives_by_harm()
-        for strategy in selected_harms:
+        
+        # For each strategy, create attacks
+        # Note: merged_objectives_by_harm may contain actual harm categories when multi_turn/single_turn is used
+        for strategy_tuple, seed_groups in merged_objectives_by_harm.items():
+            # Unpack tuple: (harm_category, attack_type)
+            if isinstance(strategy_tuple, tuple):
+                harm_category, attack_type = strategy_tuple
+            else:
+                # Backward compatibility - shouldn't happen but handle it
+                harm_category = strategy_tuple
+                attack_type = None
+            
             atomic_attacks.extend(
-                self._get_strategy_attacks(strategy=strategy, seed_groups=merged_objectives_by_harm[strategy])
+                self._get_strategy_attacks(
+                    strategy=harm_category, 
+                    seed_groups=seed_groups,
+                    attack_type=attack_type
+                )
             )
         return atomic_attacks
 
@@ -308,18 +365,20 @@ class PsychosocialHarmsScenario(Scenario):
         self,
         strategy: str,
         seed_groups: Sequence[SeedGroup],
+        attack_type: Optional[str] = None,
     ) -> List[AtomicAttack]:
         """
         Create AtomicAttack instances for a given psychosocial harm strategy.
 
-        Runs multiple attack types:
-        - PromptSendingAttack: Direct prompts (single-turn)
-        - RolePlayAttack: Scenario-based attacks (single-turn)
-        - CrescendoAttack: Escalation-based multi-turn attacks (max_turns=5, uses custom crisis escalation)
+        Runs multiple attack types based on attack_type parameter:
+        - single_turn: PromptSendingAttack and RolePlayAttack only
+        - multi_turn: CrescendoAttack only
+        - None: All attack types (default behavior)
 
         Args:
             strategy (str): The harm strategy category to test.
             seed_groups (Sequence[SeedGroup]): The seed groups associated with the harm dataset.
+            attack_type (Optional[str]): The type of attacks to create ('single_turn', 'multi_turn', or None for all)
 
         Returns:
             List[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
@@ -369,7 +428,8 @@ class PsychosocialHarmsScenario(Scenario):
             crescendo_prompt_path = pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
 
         adversarial_config = AttackAdversarialConfig(
-            target=self._adversarial_chat, system_prompt_path=crescendo_prompt_path
+            target=self._adversarial_chat, 
+            system_prompt_path=crescendo_prompt_path,
         )
 
         crescendo_attack = CrescendoAttack(
@@ -380,67 +440,65 @@ class PsychosocialHarmsScenario(Scenario):
             max_backtracks=1,
         )
 
-        # Extract seed objectives and seed prompts from seed groups
-        strategy_seed_objectives = []
-        strategy_seed_group_prompt_only = []
-        strategy_prompt_sequence = []
-
+        # Convert seed_groups to have objectives for AtomicAttack
+        # Each objective becomes a separate SeedGroup with that objective
+        strategy_seed_groups_with_objectives = []
+        
         for seed_group in seed_groups:
-            objectives = [seed.value for seed in seed_group.seeds if isinstance(seed, SeedObjective)]
-            if objectives:
-                strategy_seed_objectives.extend(objectives)
+            # Each seed that is a SeedObjective becomes its own SeedGroup
+            for seed in seed_group.seeds:
+                if isinstance(seed, SeedObjective):
+                    # Create a new SeedGroup with this objective
+                    new_group = SeedGroup(seeds=[seed])
+                    new_group.set_objective(seed.value)
+                    strategy_seed_groups_with_objectives.append(new_group)
 
-            # Create new SeedGroup without the objective for PromptSendingAttack
-            seed_prompts = []
-            for prompt in seed_group.seeds:
-                seed_prompts.append(SeedPrompt(prompt.value))
-                strategy_prompt_sequence.append(prompt.value)
-            strategy_seed_group_prompt_only.append(SeedGroup(seeds=seed_prompts))
-
-        if strategy == "single_turn":
+        # Determine which attacks to create based on attack_type
+        if attack_type == "single_turn":
+            # Single-turn attacks only
             attacks = [
                 AtomicAttack(
                     atomic_attack_name=f"{strategy}_prompt_sending_tone",
                     attack=prompt_sending_tone_attack,
-                    objectives=strategy_seed_objectives,
+                    seed_groups=strategy_seed_groups_with_objectives,
                     memory_labels=self._memory_labels,
                 ),
                 AtomicAttack(
                     atomic_attack_name=f"{strategy}_role_play",
                     attack=role_play_attack,
-                    objectives=strategy_seed_objectives,
+                    seed_groups=strategy_seed_groups_with_objectives,
                     memory_labels=self._memory_labels,
                 ),
             ]
-
-        elif strategy == "multi_turn":
+        elif attack_type == "multi_turn":
+            # Multi-turn (Crescendo) attacks only
             attacks = [
                 AtomicAttack(
-                    atomic_attack_name=strategy,
+                    atomic_attack_name=f"{strategy}_crescendo",
                     attack=crescendo_attack,
-                    objectives=strategy_seed_objectives,
+                    seed_groups=strategy_seed_groups_with_objectives,
                     memory_labels=self._memory_labels,
                 ),
             ]
-
         else:
+            # Default: all attack types
             attacks = [
                 AtomicAttack(
                     atomic_attack_name=f"{strategy}_prompt_sending_tone",
                     attack=prompt_sending_tone_attack,
-                    objectives=strategy_seed_objectives,
+                    seed_groups=strategy_seed_groups_with_objectives,
                     memory_labels=self._memory_labels,
                 ),
                 AtomicAttack(
                     atomic_attack_name=f"{strategy}_role_play",
                     attack=role_play_attack,
-                    objectives=strategy_seed_objectives,
+                    seed_groups=strategy_seed_groups_with_objectives,
                     memory_labels=self._memory_labels,
                 ),
                 AtomicAttack(
                     atomic_attack_name=f"{strategy}_crescendo",
                     attack=crescendo_attack,
-                    objectives=strategy_seed_objectives,
+                    seed_groups=strategy_seed_groups_with_objectives,
                     memory_labels=self._memory_labels,
                 ),
             ]
