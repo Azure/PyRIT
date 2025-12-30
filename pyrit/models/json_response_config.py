@@ -12,6 +12,11 @@ from typing import Any, Dict, Optional
 class JsonResponseConfig:
     """
     Configuration for JSON responses (with OpenAI).
+
+    For more details, see:
+    https://platform.openai.com/docs/api-reference/chat/create#chat_create-response_format-json_schema
+    and
+    https://platform.openai.com/docs/api-reference/responses/create#responses_create-text
     """
 
     enabled: bool = False
