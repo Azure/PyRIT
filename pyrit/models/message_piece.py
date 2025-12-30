@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Dict, List, Literal, Optional, Union, cast, get_args
 from uuid import uuid4
 
-from pyrit.models.chat_message import ChatMessage, ChatMessageRole
+from pyrit.models.chat_message import ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -163,9 +163,6 @@ class MessagePiece:
             value=self.converted_value,
         )
         self.converted_value_sha256 = await converted_serializer.get_sha256()
-
-    def to_chat_message(self) -> ChatMessage:
-        return ChatMessage(role=cast(ChatMessageRole, self.role), content=self.converted_value)
 
     def to_message(self) -> Message:  # type: ignore # noqa F821
         from pyrit.models.message import Message

@@ -546,7 +546,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "apply_prepended_conversation_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.session is not None
@@ -572,7 +572,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "apply_prepended_conversation_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         # Verify system prompt was set
@@ -607,7 +607,7 @@ class TestSetupPhase:
             last_user_message="Refused prompt",
             last_assistant_message_scores=[refusal_score],
         )
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "apply_prepended_conversation_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.refused_text == "Refused prompt"
@@ -634,7 +634,7 @@ class TestSetupPhase:
             last_user_message="Custom prepended prompt",
             last_assistant_message_scores=[],
         )
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "apply_prepended_conversation_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.next_message is not None
@@ -1776,7 +1776,7 @@ class TestIntegrationScenarios:
         mock_conversation_state = ConversationState(turn_count=0)
 
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+            attack._conversation_manager, "apply_prepended_conversation_async", return_value=mock_conversation_state
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal):
                 with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
@@ -1866,7 +1866,7 @@ class TestIntegrationScenarios:
         mock_conversation_state = ConversationState(turn_count=0)
 
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+            attack._conversation_manager, "apply_prepended_conversation_async", return_value=mock_conversation_state
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, side_effect=refusal_checks):
                 with patch.object(
@@ -1999,7 +1999,7 @@ class TestEdgeCases:
         mock_state2 = ConversationState(turn_count=0)
 
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", side_effect=[mock_state1, mock_state2]
+            attack._conversation_manager, "apply_prepended_conversation_async", side_effect=[mock_state1, mock_state2]
         ):
             # Simulate concurrent setup - both contexts use the same attack instance
             await attack._setup_async(context=context1)
@@ -2040,7 +2040,7 @@ class TestEdgeCases:
         mock_conversation_state = ConversationState(turn_count=0)
 
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+            attack._conversation_manager, "apply_prepended_conversation_async", return_value=mock_conversation_state
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score):
                 with patch(
@@ -2094,7 +2094,7 @@ class TestCrescendoConversationTracking:
             attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
         )
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", new_callable=AsyncMock
+            attack._conversation_manager, "apply_prepended_conversation_async", new_callable=AsyncMock
         ) as mock_update:
             mock_update.return_value = ConversationState(
                 turn_count=0, last_user_message="Test message", last_assistant_message_scores=[]

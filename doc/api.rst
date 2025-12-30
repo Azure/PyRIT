@@ -43,10 +43,10 @@ API Reference
     :toctree: _autosummary/
 
 
-:py:mod:`pyrit.chat_message_normalizer`
-=======================================
+:py:mod:`pyrit.message_normalizer`
+==================================
 
-.. automodule:: pyrit.chat_message_normalizer
+.. automodule:: pyrit.message_normalizer
     :no-members:
     :no-inherited-members:
 
@@ -54,11 +54,14 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    MessageListNormalizer
+    MessageStringNormalizer
+    MessageNop
+    GenericSystemSquashNormalizer
+    ChatMLNormalizer
+    TokenizerTemplateNormalizer
+    ConversationContextNormalizer
     ChatMessageNormalizer
-    ChatMessageNop
-    GenericSystemSquash
-    ChatMessageNormalizerChatML
-    ChatMessageNormalizerTokenizerTemplate
 
 
 :py:mod:`pyrit.cli`

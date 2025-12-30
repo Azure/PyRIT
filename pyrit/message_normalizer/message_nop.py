@@ -3,35 +3,31 @@
 
 from typing import List
 
-from pyrit.message_normalizer import MessageNormalizer
+from pyrit.message_normalizer.message_normalizer import MessageListNormalizer
 from pyrit.models import Message
 
 
-class MessageNop(MessageNormalizer[Message]):
+class MessageNop(MessageListNormalizer[Message]):
     """
-    A no-op message normalizer that returns the first message unchanged.
+    A no-op message normalizer that returns messages unchanged.
 
     This normalizer is useful when no transformation is needed but a normalizer
     interface is required.
     """
 
-    def normalize(self, messages: List[Message]) -> Message:
+    async def normalize_async(self, messages: List[Message]) -> List[Message]:
         """
-        Return the first message from the list.
+        Return the messages unchanged.
 
         Args:
             messages: The list of messages to normalize.
 
         Returns:
-            The first Message from the list.
+            The same list of Messages.
 
         Raises:
             ValueError: If the messages list is empty.
         """
         if not messages:
             raise ValueError("Messages list cannot be empty")
-        return messages[0]
-
-
-# Backward compatibility alias (deprecated)
-ChatMessageNop = MessageNop
+        return list(messages)

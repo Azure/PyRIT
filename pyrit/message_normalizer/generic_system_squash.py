@@ -3,16 +3,16 @@
 
 from typing import List
 
-from pyrit.message_normalizer import MessageNormalizer
-from pyrit.models import ChatMessageRole, Message, MessagePiece
+from pyrit.message_normalizer.message_normalizer import MessageListNormalizer
+from pyrit.models import Message
 
 
-class GenericSystemSquash(MessageNormalizer[Message]):
+class GenericSystemSquashNormalizer(MessageListNormalizer[Message]):
     """
     Normalizer that combines the first system message with the first user message using generic instruction tags.
     """
 
-    def normalize(self, messages: List[Message]) -> Message:
+    async def normalize_async(self, messages: List[Message]) -> List[Message]:
         """
         Return messages with the first system message combined into the first user message.
 
@@ -37,12 +37,12 @@ class GenericSystemSquash(MessageNormalizer[Message]):
         # Check if first message is a system message
         first_piece = messages[0].get_piece()
         if first_piece.role != "system":
-            # No system message to squash, return first message
-            return messages[0]
+            # No system message to squash, return messages unchanged
+            return list(messages)
 
         if len(messages) == 1:
             # Only system message, convert to user message
-            return Message.from_prompt(prompt=first_piece.converted_value, role="user")
+            return [Message.from_prompt(prompt=first_piece.converted_value, role="user")]
 
         # Combine system with first user message
         system_content = first_piece.converted_value
@@ -50,4 +50,6 @@ class GenericSystemSquash(MessageNormalizer[Message]):
         user_content = user_piece.converted_value
 
         combined_content = f"### Instructions ###\n\n{system_content}\n\n######\n\n{user_content}"
-        return Message.from_prompt(prompt=combined_content, role="user")
+        squashed_message = Message.from_prompt(prompt=combined_content, role="user")
+        # Return the squashed message followed by remaining messages (skip first two)
+        return [squashed_message] + list(messages[2:])

@@ -4,9 +4,10 @@
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from pyrit.memory import CentralMemory
+from pyrit.message_normalizer import ConversationContextNormalizer
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -15,10 +16,18 @@ from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 
+if TYPE_CHECKING:
+    from pyrit.executor.attack.core.prepended_conversation_configuration import (
+        PrependedConversationConfiguration,
+    )
+
 logger = logging.getLogger(__name__)
 
+# Default normalizer instance for conversation context formatting
+_default_context_normalizer = ConversationContextNormalizer()
 
-def format_conversation_context(messages: List[Message]) -> str:
+
+async def format_conversation_context_async(messages: List[Message]) -> str:
     """
     Format a list of messages into a context string for adversarial chat system prompts.
 
@@ -30,11 +39,11 @@ def format_conversation_context(messages: List[Message]) -> str:
     if available, otherwise uses a placeholder like [Image] or [Audio].
 
     Args:
-        messages (List[Message]): The conversation messages to format.
+        messages: The conversation messages to format.
 
     Returns:
-        str: A formatted string representing the conversation context.
-            Returns empty string if no messages provided.
+        A formatted string representing the conversation context.
+        Returns empty string if no messages provided.
 
     Example output:
         Turn 1:
@@ -47,62 +56,7 @@ def format_conversation_context(messages: List[Message]) -> str:
     """
     if not messages:
         return ""
-
-    context_parts: List[str] = []
-    turn_number = 0
-
-    for message in messages:
-        piece = message.get_piece()
-
-        # Skip system messages - they're handled separately
-        if piece.role == "system":
-            continue
-
-        # Start a new turn when we see a user message
-        if piece.role == "user":
-            turn_number += 1
-            context_parts.append(f"Turn {turn_number}:")
-
-        # Format the piece content
-        content = _format_piece_content(piece)
-        role_label = "User" if piece.role == "user" else "Assistant"
-        context_parts.append(f"{role_label}: {content}")
-
-    return "\n".join(context_parts)
-
-
-def _format_piece_content(piece: MessagePiece) -> str:
-    """
-    Format a single message piece into a content string.
-
-    For text pieces, shows original and converted values (if different).
-    For non-text pieces, uses context_description metadata or a placeholder.
-
-    Args:
-        piece (MessagePiece): The message piece to format.
-
-    Returns:
-        str: The formatted content string.
-    """
-    data_type = piece.converted_value_data_type or piece.original_value_data_type
-
-    # For non-text pieces, use metadata description or placeholder
-    if data_type != "text":
-        # Check for context_description in metadata
-        if piece.prompt_metadata and "context_description" in piece.prompt_metadata:
-            description = piece.prompt_metadata["context_description"]
-            return f"[{data_type.capitalize()} - {description}]"
-        else:
-            return f"[{data_type.capitalize()}]"
-
-    # For text pieces, include both original and converted if different
-    original = piece.original_value
-    converted = piece.converted_value
-
-    if original != converted:
-        return f"{converted} (original: {original})"
-    else:
-        return converted
+    return await _default_context_normalizer.normalize_string_async(messages)
 
 
 @dataclass
@@ -112,6 +66,11 @@ class ConversationState:
     turn_count: int = 0
     last_user_message: str = ""
     last_assistant_message_scores: List[Score] = field(default_factory=list)
+
+    # Normalized prepended conversation context as a string.
+    # Set when prepended_conversation is normalized for non-chat targets
+    # or when using a message_normalizer in PrependedConversationConfiguration.
+    normalized_prepended_context: Optional[str] = None
 
 
 class ConversationManager:
@@ -210,7 +169,7 @@ class ConversationManager:
             labels=labels,
         )
 
-    async def update_conversation_state_async(
+    async def apply_prepended_conversation_async(
         self,
         *,
         target: PromptTarget,
@@ -219,6 +178,7 @@ class ConversationManager:
         request_converters: Optional[List[PromptConverterConfiguration]] = None,
         response_converters: Optional[List[PromptConverterConfiguration]] = None,
         max_turns: Optional[int] = None,
+        prepended_conversation_config: Optional["PrependedConversationConfiguration"] = None,
     ) -> ConversationState:
         """
         Prepare a chat conversation by attaching history, enforcing
@@ -248,6 +208,9 @@ class ConversationManager:
                 List of configurations for converting assistant (response) messages.
             max_turns (Optional[int]): Maximum number of turns allowed in the conversation. If not provided,
                 the function assumes a single-turn context.
+            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
+                Configuration for how to process the prepended conversation. Controls converter
+                application by role, message normalization, and non-chat target behavior.
 
         Returns:
             ConversationState: A snapshot of the conversation state after processing the prepended
@@ -256,18 +219,11 @@ class ConversationManager:
         Raises:
             ValueError: If `conversation_id` is empty, if the last message in a multi-turn
                 context is a user message (which should not be prepended), or if
-                prepended_conversation is provided with a non-PromptChatTarget target.
+                prepended_conversation is provided with a non-PromptChatTarget target
+                and the config behavior is set to "raise".
         """
         if not conversation_id:
             raise ValueError("conversation_id cannot be empty")
-
-        # Validate prepended_conversation compatibility with target type
-        # Non-chat targets do not read conversation history from memory
-        if prepended_conversation and not isinstance(target, PromptChatTarget):
-            raise ValueError(
-                "prepended_conversation requires target to be a PromptChatTarget. "
-                "Non-chat targets do not support explicit conversation history management."
-            )
 
         # Initialize conversation state
         state = ConversationState()
@@ -277,6 +233,38 @@ class ConversationManager:
         if not prepended_conversation:
             logger.debug(f"No history provided for conversation initialization: {conversation_id}")
             return state
+
+        # Validate prepended_conversation compatibility with target type
+        # Non-chat targets do not read conversation history from memory
+        is_chat_target = isinstance(target, PromptChatTarget)
+        if prepended_conversation and not is_chat_target:
+            # Check configuration for how to handle non-chat targets
+            behavior = (
+                prepended_conversation_config.non_chat_target_behavior
+                if prepended_conversation_config
+                else "raise"
+            )
+            if behavior == "raise":
+                raise ValueError(
+                    "prepended_conversation requires target to be a PromptChatTarget. "
+                    "Non-chat targets do not support explicit conversation history management. "
+                    "Use PrependedConversationConfiguration with non_chat_target_behavior='normalize_first_turn' "
+                    "to normalize the conversation into the first message instead."
+                )
+            elif behavior == "normalize_first_turn":
+                # Normalize the prepended conversation into a string for inclusion in first message
+                normalized_context = await self._normalize_prepended_conversation_async(
+                    prepended_conversation=prepended_conversation,
+                    config=prepended_conversation_config,
+                    request_converters=request_converters,
+                    response_converters=response_converters,
+                )
+                state.normalized_prepended_context = normalized_context
+                logger.debug(
+                    f"Normalized prepended conversation for non-chat target: "
+                    f"{len(normalized_context)} characters"
+                )
+                return state
 
         # Filter out None values and empty requests
         valid_requests = [req for req in prepended_conversation if req is not None and req.message_pieces]
@@ -297,14 +285,20 @@ class ConversationManager:
                 logger.debug("Skipping last user message (will be added by attack)")
                 continue
 
-            # Apply converters if needed
-            if request_converters or response_converters:
+            # Apply converters if needed, respecting config's apply_converters_to_roles
+            should_apply_converters = request_converters or response_converters
+            if should_apply_converters:
                 logger.debug(f"Converting request {i + 1}/{len(valid_requests)} in conversation {conversation_id}")
-                # Apply role-specific converters
+                # Apply role-specific converters with optional role filtering from config
                 await self._apply_role_specific_converters_async(
                     request=request,
                     request_converters=request_converters,
                     response_converters=response_converters,
+                    apply_to_roles=(
+                        prepended_conversation_config.apply_converters_to_roles
+                        if prepended_conversation_config
+                        else None
+                    ),
                 )
 
             # Process the message piece
@@ -332,13 +326,18 @@ class ConversationManager:
         request: Message,
         request_converters: Optional[List[PromptConverterConfiguration]] = None,
         response_converters: Optional[List[PromptConverterConfiguration]] = None,
+        apply_to_roles: Optional[List[ChatMessageRole]] = None,
     ) -> None:
         """
         Apply role-specific converters to messages.
 
         - Request converters are applied to 'user' role messages
         - Response converters are applied to 'assistant' role messages
-        - No converters are applied to 'system' role messages
+        - No converters are applied to 'system' role messages by default
+
+        If apply_to_roles is provided, converters are only applied to messages
+        with roles in that list. This allows fine-grained control over which
+        prepended messages receive converter processing.
 
         Args:
             request (Message): The request containing pieces to convert.
@@ -346,9 +345,17 @@ class ConversationManager:
                 Converter configurations to apply to 'user' role messages.
             response_converters (Optional[List[PromptConverterConfiguration]]):
                 Converter configurations to apply to 'assistant' role messages.
+            apply_to_roles (Optional[List[ChatMessageRole]]):
+                If provided, only apply converters to messages with roles in this list.
+                If None, uses the default behavior (user gets request converters,
+                assistant gets response converters).
         """
         # Determine which converters to apply based on message roles
         for piece in request.message_pieces:
+            # If apply_to_roles is specified, check if this role should be processed
+            if apply_to_roles is not None and piece.role not in apply_to_roles:
+                continue
+
             applicable_converters: Optional[List[PromptConverterConfiguration]] = None
 
             if piece.role == "user" and request_converters:
@@ -365,6 +372,40 @@ class ConversationManager:
                     message=temp_request,
                     converter_configurations=applicable_converters,
                 )
+
+    async def _normalize_prepended_conversation_async(
+        self,
+        *,
+        prepended_conversation: List[Message],
+        config: Optional["PrependedConversationConfiguration"],
+        request_converters: Optional[List[PromptConverterConfiguration]] = None,
+        response_converters: Optional[List[PromptConverterConfiguration]] = None,
+    ) -> str:
+        """
+        Normalize a prepended conversation into a single text string.
+
+        This method uses the configured normalizer to convert the messages into a string.
+        If no normalizer is configured, it uses ConversationContextNormalizer as the
+        default for basic "Turn N: User/Assistant" formatting.
+
+        Args:
+            prepended_conversation: The list of messages to normalize.
+            config: The prepended conversation configuration with the normalizer.
+            request_converters: Converters for user messages (for role filtering).
+            response_converters: Converters for assistant messages (for role filtering).
+
+        Returns:
+            A string representation of the normalized conversation.
+        """
+        if not prepended_conversation:
+            return ""
+
+        # Use the configured normalizer if available
+        if config and config.message_normalizer:
+            return await config.message_normalizer.normalize_string_async(prepended_conversation)
+
+        # Fallback to default ConversationContextNormalizer
+        return await _default_context_normalizer.normalize_string_async(prepended_conversation)
 
     async def _process_prepended_message_async(
         self,

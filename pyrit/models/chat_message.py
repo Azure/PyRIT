@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Any, Optional
+import json
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 
@@ -18,21 +19,46 @@ class ToolCall(BaseModel):
 
 
 class ChatMessage(BaseModel):
+    """
+    Represents a chat message for API consumption.
+
+    The content field can be:
+    - A simple string for single-part text messages
+    - A list of dicts for multipart messages (e.g., text + images)
+    """
+
     model_config = ConfigDict(extra="forbid")
     role: ChatMessageRole
-    content: str
+    content: Union[str, list[dict[str, Any]]]
     name: Optional[str] = None
     tool_calls: Optional[list[ToolCall]] = None
     tool_call_id: Optional[str] = None
 
+    def to_json(self) -> str:
+        """
+        Serialize the ChatMessage to a JSON string.
 
-class ChatMessageListDictContent(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    role: ChatMessageRole
-    content: list[dict[str, Any]]  # type: ignore
-    name: Optional[str] = None
-    tool_calls: Optional[list[ToolCall]] = None
-    tool_call_id: Optional[str] = None
+        Returns:
+            A JSON string representation of the message.
+        """
+        return self.model_dump_json()
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "ChatMessage":
+        """
+        Deserialize a ChatMessage from a JSON string.
+
+        Args:
+            json_str: A JSON string representation of a ChatMessage.
+
+        Returns:
+            A ChatMessage instance.
+        """
+        return cls.model_validate_json(json_str)
+
+
+# Backward compatibility alias
+ChatMessageListDictContent = ChatMessage
 
 
 class ChatMessagesDataset(BaseModel):

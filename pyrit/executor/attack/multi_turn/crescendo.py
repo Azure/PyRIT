@@ -21,12 +21,15 @@ from pyrit.executor.attack.component import (
     ObjectiveEvaluator,
 )
 from pyrit.executor.attack.component.conversation_manager import (
-    format_conversation_context,
+    format_conversation_context_async,
 )
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
+)
+from pyrit.executor.attack.core.prepended_conversation_configuration import (
+    PrependedConversationConfiguration,
 )
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     ConversationSession,
@@ -126,6 +129,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_backtracks: int = 10,
         max_turns: int = 10,
+        prepended_conversation_config: Optional[PrependedConversationConfiguration] = None,
     ) -> None:
         """
         Initialize the Crescendo attack strategy.
@@ -140,6 +144,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for prompts.
             max_backtracks (int): Maximum number of backtracks allowed.
             max_turns (int): Maximum number of turns allowed.
+            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
+                Configuration for how to process prepended conversations. Controls converter
+                application by role, message normalization, and non-chat target behavior.
 
         Raises:
             ValueError: If objective_target is not a PromptChatTarget.
@@ -215,6 +222,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._max_backtracks = max_backtracks
         self._max_turns = max_turns
 
+        # Store the prepended conversation configuration
+        self._prepended_conversation_config = prepended_conversation_config
+
     def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
         """
         Get the attack scoring configuration used by this strategy.
@@ -271,13 +281,14 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
         # Update the conversation state
-        conversation_state = await self._conversation_manager.update_conversation_state_async(
+        conversation_state = await self._conversation_manager.apply_prepended_conversation_async(
             target=self._objective_target,
             max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
             response_converters=self._response_converters,
+            prepended_conversation_config=self._prepended_conversation_config,
         )
 
         # Update turns based on prepended conversation
@@ -300,7 +311,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         # Include conversation_context if we have prepended conversation history
         conversation_context = None
         if context.prepended_conversation:
-            conversation_context = format_conversation_context(context.prepended_conversation)
+            conversation_context = await format_conversation_context_async(context.prepended_conversation)
 
         system_prompt = self._adversarial_chat_system_prompt_template.render_template_value(
             objective=context.objective,

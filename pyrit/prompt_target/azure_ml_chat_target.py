@@ -6,7 +6,7 @@ from typing import Optional
 
 from httpx import HTTPStatusError
 
-from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
+from pyrit.message_normalizer import MessageNop, MessageListNormalizer, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.exceptions import (
     EmptyResponseException,
@@ -45,7 +45,7 @@ class AzureMLChatTarget(PromptChatTarget):
         *,
         endpoint: Optional[str] = None,
         api_key: Optional[str] = None,
-        chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
+        message_normalizer: MessageListNormalizer = MessageNop(),
         max_new_tokens: int = 400,
         temperature: float = 1.0,
         top_p: float = 1.0,
@@ -61,9 +61,9 @@ class AzureMLChatTarget(PromptChatTarget):
                 Defaults to the value of the AZURE_ML_MANAGED_ENDPOINT environment variable.
             api_key (str, Optional): The API key for accessing the Azure ML endpoint.
                 Defaults to the value of the `AZURE_ML_KEY` environment variable.
-            chat_message_normalizer (ChatMessageNormalizer, Optional): The chat message normalizer.
+            message_normalizer (MessageListNormalizer, Optional): The message normalizer.
                 For models that do not allow system prompts such as mistralai-Mixtral-8x7B-Instruct-v01,
-                GenericSystemSquash() can be passed in. Defaults to ChatMessageNop(), which does not
+                GenericSystemSquashNormalizer() can be passed in. Defaults to MessageNop(), which does not
                 alter the chat messages.
             max_new_tokens (int, Optional): The maximum number of tokens to generate in the response.
                 Defaults to 400.
@@ -93,7 +93,7 @@ class AzureMLChatTarget(PromptChatTarget):
         validate_temperature(temperature)
         validate_top_p(top_p)
 
-        self.chat_message_normalizer = chat_message_normalizer
+        self.message_normalizer = message_normalizer
         self._max_new_tokens = max_new_tokens
         self._temperature = temperature
         self._top_p = top_p
@@ -187,7 +187,9 @@ class AzureMLChatTarget(PromptChatTarget):
 
         # Get chat messages from memory and append the current message
         messages = list(self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id))
-        messages.append(request.to_chat_message())
+        # Convert the current message piece to ChatMessage format
+        current_chat_message = ChatMessage(role=request.role, content=request.converted_value)  # type: ignore
+        messages.append(current_chat_message)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -233,7 +235,7 @@ class AzureMLChatTarget(PromptChatTarget):
             str: The generated response message.
         """
         headers = self._get_headers()
-        payload = self._construct_http_body(messages)
+        payload = await self._construct_http_body_async(messages)
 
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=self._endpoint, method="POST", request_body=payload, headers=headers
@@ -249,7 +251,7 @@ class AzureMLChatTarget(PromptChatTarget):
                 + f"Exception: {str(e)}"  # type: ignore
             )
 
-    def _construct_http_body(
+    async def _construct_http_body_async(
         self,
         messages: list[ChatMessage],
     ) -> dict:
@@ -262,8 +264,17 @@ class AzureMLChatTarget(PromptChatTarget):
         Returns:
             dict: The constructed HTTP request body.
         """
-        squashed_messages = self.chat_message_normalizer.normalize(messages)
-        messages_dict = [message.model_dump() for message in squashed_messages]
+        # Convert ChatMessages to Messages for the normalizer
+        message_list = [
+            Message.from_prompt(prompt=msg.content or "", role=msg.role)
+            for msg in messages
+        ]
+        # Normalize messages (e.g., squash system message into first user message)
+        normalized_messages = await self.message_normalizer.normalize_async(message_list)
+        # Convert back to dict format for the API
+        messages_dict = [
+            {"role": m.role, "content": m.get_value()} for m in normalized_messages
+        ]
 
         # parameters include additional ones passed in through **kwargs. Those not accepted by the model will
         # be ignored.

@@ -204,7 +204,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, A
         context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
 
         # Process prepended conversation if provided
-        await self._conversation_manager.update_conversation_state_async(
+        await self._conversation_manager.apply_prepended_conversation_async(
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,

@@ -1,0 +1,222 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+import logging
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Literal, Optional
+
+from pyrit.common import get_non_required_value
+from pyrit.message_normalizer.chat_message_normalizer import ChatMessageNormalizer
+from pyrit.message_normalizer.generic_system_squash import GenericSystemSquashNormalizer
+from pyrit.message_normalizer.message_normalizer import MessageStringNormalizer
+from pyrit.models import Message
+
+if TYPE_CHECKING:
+    from transformers import PreTrainedTokenizerBase
+
+logger = logging.getLogger(__name__)
+
+# How to handle system messages in models with varying support
+SystemMessageBehavior = Literal["keep", "squash", "ignore", "developer"]
+"""
+- "keep": Keep system messages as-is (default for most models)
+- "squash": Merge system message into first user message using GenericSystemSquashNormalizer
+- "ignore": Drop system messages entirely
+- "developer": Change system role to developer role (for newer OpenAI models)
+"""
+
+
+@dataclass
+class ModelConfig:
+    """Configuration for a model's chat template behavior."""
+
+    model_name: str
+    """The full HuggingFace model name."""
+
+    system_message_behavior: SystemMessageBehavior = "keep"
+    """How to handle system messages. See SystemMessageBehavior for options."""
+
+    supports_tools: bool = False
+    """Whether the model's chat template supports tool/function calling."""
+
+
+class TokenizerTemplateNormalizer(MessageStringNormalizer):
+    """
+    Enable application of the chat template stored in a Hugging Face tokenizer
+    to a list of messages. For more details, see
+    https://huggingface.co/docs/transformers/main/en/chat_templating.
+    """
+
+    # Model configurations with alias mappings
+    MODEL_CONFIGS: ClassVar[Dict[str, ModelConfig]] = {
+        # No authentication required
+        "chatml": ModelConfig(
+            model_name="HuggingFaceH4/zephyr-7b-beta",
+        ),
+        "phi3": ModelConfig(
+            model_name="microsoft/Phi-3-mini-4k-instruct",
+        ),
+        "qwen": ModelConfig(
+            model_name="Qwen/Qwen2-7B-Instruct",
+            supports_tools=True,
+        ),
+        "falcon": ModelConfig(
+            model_name="tiiuae/falcon-7b-instruct",
+        ),
+        "openchat": ModelConfig(
+            model_name="openchat/openchat-3.5-0106",
+        ),
+        "tinyllama": ModelConfig(
+            model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        ),
+        # Gated models (require token parameter)
+        "llama3": ModelConfig(
+            model_name="meta-llama/Meta-Llama-3-8B-Instruct",
+            supports_tools=True,
+        ),
+        "llama2": ModelConfig(
+            model_name="meta-llama/Llama-2-7b-chat-hf",
+        ),
+        "mistral": ModelConfig(
+            model_name="mistralai/Mistral-7B-Instruct-v0.2",
+            supports_tools=True,
+        ),
+        "gemma": ModelConfig(
+            model_name="google/gemma-7b-it",
+            system_message_behavior="squash",
+        ),
+        # Vision models
+        "llama3-vision": ModelConfig(
+            model_name="meta-llama/Llama-3.2-11B-Vision-Instruct",
+        ),
+    }
+
+    def __init__(
+        self,
+        *,
+        tokenizer: "PreTrainedTokenizerBase",
+        system_message_behavior: SystemMessageBehavior = "keep",
+        supports_tools: bool = False,
+    ) -> None:
+        """
+        Initialize an instance of the TokenizerTemplateNormalizer class.
+
+        Args:
+            tokenizer: A Hugging Face tokenizer with a chat template.
+            system_message_behavior: How to handle system messages. Options:
+                - "keep": Keep system messages as-is (default)
+                - "squash": Merge system into first user message
+                - "ignore": Drop system messages entirely
+                - "developer": Change system role to developer role
+            supports_tools: Whether to pass tools to the chat template.
+        """
+        self.tokenizer = tokenizer
+        self.system_message_behavior = system_message_behavior
+        self.supports_tools = supports_tools
+
+    @classmethod
+    def from_model(
+        cls,
+        model_name_or_alias: str,
+        *,
+        token: Optional[str] = None,
+        system_message_behavior: Optional[SystemMessageBehavior] = None,
+        supports_tools: Optional[bool] = None,
+    ) -> "TokenizerTemplateNormalizer":
+        """
+        Create a normalizer from a model name or alias.
+
+        This factory method simplifies creating a normalizer by handling tokenizer
+        loading automatically. Use aliases for common models or provide a full
+        HuggingFace model path.
+
+        Args:
+            model_name_or_alias: Either a full HuggingFace model name or an alias.
+            token: Optional HuggingFace token for gated models. If not provided,
+                falls back to HUGGINGFACE_TOKEN environment variable.
+            system_message_behavior: Override how to handle system messages.
+                If not provided, uses the model's default config.
+            supports_tools: Override whether to pass tools to the template.
+                If not provided, uses the model's default config.
+
+        Returns:
+            TokenizerTemplateNormalizer configured with the model's tokenizer.
+
+        Raises:
+            ValueError: If the tokenizer doesn't have a chat_template.
+        """
+        from transformers import AutoTokenizer
+
+        resolved_token = get_non_required_value(env_var_name="HUGGINGFACE_TOKEN", passed_value=token)
+        if not resolved_token:
+            logger.warning(
+                "No HuggingFace token provided. "
+                "Gated models may fail to load without authentication."
+            )
+
+        # Get config from alias or create default config for custom model
+        alias_key = model_name_or_alias.lower()
+        if alias_key in cls.MODEL_CONFIGS:
+            config = cls.MODEL_CONFIGS[alias_key]
+            model_name = config.model_name
+            default_behavior = config.system_message_behavior
+            default_supports_tools = config.supports_tools
+        else:
+            model_name = model_name_or_alias
+            default_behavior = "keep"
+            default_supports_tools = False
+
+        tokenizer = AutoTokenizer.from_pretrained(model_name, token=resolved_token or None)
+
+        if tokenizer.chat_template is None:
+            raise ValueError(
+                f"Tokenizer for '{model_name}' does not have a chat_template. "
+                "Use a model with a built-in chat template or set one manually."
+            )
+
+        return cls(
+            tokenizer=tokenizer,
+            system_message_behavior=system_message_behavior if system_message_behavior is not None else default_behavior,
+            supports_tools=supports_tools if supports_tools is not None else default_supports_tools,
+        )
+
+    async def normalize_string_async(self, messages: List[Message]) -> str:
+        """
+        Apply the chat template stored in the tokenizer to a list of messages.
+
+        Handles system messages based on the configured system_message_behavior:
+        - "keep": Pass system messages as-is
+        - "squash": Merge system into first user message using GenericSystemSquashNormalizer
+        - "ignore": Drop system messages entirely
+        - "developer": Change system role to developer role
+
+        Args:
+            messages: A list of Message objects.
+
+        Returns:
+            The formatted chat messages as a string.
+        """
+        # Apply pre-processing based on system message behavior
+        processed_messages = messages
+
+        if self.system_message_behavior == "squash":
+            squash_normalizer = GenericSystemSquashNormalizer()
+            processed_messages = await squash_normalizer.normalize_async(messages)
+        elif self.system_message_behavior == "ignore":
+            processed_messages = [msg for msg in messages if msg.role != "system"]
+
+        # Use ChatMessageNormalizer with developer role if needed
+        use_developer = self.system_message_behavior == "developer"
+        chat_normalizer = ChatMessageNormalizer(use_developer_role=use_developer)
+        chat_messages = await chat_normalizer.normalize_async(processed_messages)
+
+        # Convert ChatMessage objects to dicts
+        messages_list = [msg.model_dump(exclude_none=True) for msg in chat_messages]
+
+        formatted_messages = str(
+            self.tokenizer.apply_chat_template(
+                messages_list,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+        )
+        return formatted_messages

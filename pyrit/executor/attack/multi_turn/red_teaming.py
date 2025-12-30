@@ -225,7 +225,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         )
 
         # Update the conversation state with the current context
-        conversation_state: ConversationState = await self._conversation_manager.update_conversation_state_async(
+        conversation_state: ConversationState = await self._conversation_manager.apply_prepended_conversation_async(
             target=self._objective_target,
             max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,

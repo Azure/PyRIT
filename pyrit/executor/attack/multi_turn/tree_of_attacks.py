@@ -21,13 +21,16 @@ from pyrit.exceptions import (
 )
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.component.conversation_manager import (
-    format_conversation_context,
+    format_conversation_context_async,
 )
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
     AttackStrategy,
+)
+from pyrit.executor.attack.core.prepended_conversation_configuration import (
+    PrependedConversationConfiguration,
 )
 from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
@@ -251,6 +254,7 @@ class _TreeOfAttacksNode:
         self,
         *,
         prepended_conversation: List[Message],
+        prepended_conversation_config: Optional["PrependedConversationConfiguration"] = None,
     ) -> None:
         """
         Initialize the node with a prepended conversation history.
@@ -267,6 +271,9 @@ class _TreeOfAttacksNode:
         Args:
             prepended_conversation (List[Message]): The conversation history to replay.
                 System messages are handled separately for each target.
+            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
+                Configuration for how to process the prepended conversation. Controls
+                converter application by role, message normalization, and non-chat target behavior.
 
         Note:
             - This should be called before `send_prompt_async` for first-level nodes
@@ -278,10 +285,11 @@ class _TreeOfAttacksNode:
         conversation_manager = ConversationManager(attack_identifier=self._attack_id)
 
         # Add to objective target conversation (handles system prompts and memory)
-        await conversation_manager.update_conversation_state_async(
+        await conversation_manager.apply_prepended_conversation_async(
             target=self._objective_target,
             conversation_id=self.objective_target_conversation_id,
             prepended_conversation=prepended_conversation,
+            prepended_conversation_config=prepended_conversation_config,
         )
 
         # Add to adversarial chat conversation (role-swapped)
@@ -294,7 +302,7 @@ class _TreeOfAttacksNode:
         )
 
         # Generate formatted context for adversarial chat system prompt
-        self._conversation_context = format_conversation_context(prepended_conversation)
+        self._conversation_context = await format_conversation_context_async(prepended_conversation)
 
         logger.debug(f"Node {self.node_id}: Initialized with {len(prepended_conversation)} prepended messages")
 
@@ -1008,6 +1016,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         on_topic_checking_enabled: bool = True,
         desired_response_prefix: str = "Sure, here is",
         batch_size: int = 10,
+        prepended_conversation_config: Optional[PrependedConversationConfiguration] = None,
     ):
         """
         Initialize the Tree of Attacks with Pruning attack strategy.
@@ -1026,6 +1035,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             on_topic_checking_enabled (bool): Whether to check if prompts are on-topic. Defaults to True.
             desired_response_prefix (str): Expected prefix for successful responses. Defaults to "Sure, here is".
             batch_size (int): Number of nodes to process in parallel per batch. Defaults to 10.
+            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
+                Configuration for how to process prepended conversations. Controls converter
+                application by role, message normalization, and non-chat target behavior.
 
         Raises:
             ValueError: If objective_scorer is not provided, if target is not PromptChatTarget, or
@@ -1101,6 +1113,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             raise ValueError("On-topic checking is enabled but no scoring target is available.")
 
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
+
+        # Store the prepended conversation configuration
+        self._prepended_conversation_config = prepended_conversation_config
 
     def _load_adversarial_prompts(self) -> None:
         """Load the adversarial chat prompts from the configured paths."""
@@ -1365,6 +1380,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             if context.prepended_conversation:
                 await node.initialize_with_prepended_conversation_async(
                     prepended_conversation=context.prepended_conversation,
+                    prepended_conversation_config=self._prepended_conversation_config,
                 )
 
             context.nodes.append(node)

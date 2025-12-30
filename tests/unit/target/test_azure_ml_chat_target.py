@@ -10,10 +10,10 @@ from httpx import HTTPStatusError
 from openai import RateLimitError
 from unit.mocks import get_image_message_piece, get_sample_conversations
 
-from pyrit.chat_message_normalizer import (
-    ChatMessageNop,
-    ChatMessageNormalizer,
-    GenericSystemSquash,
+from pyrit.message_normalizer import (
+    MessageNop,
+    MessageListNormalizer,
+    GenericSystemSquashNormalizer,
 )
 from pyrit.exceptions import EmptyResponseException, RateLimitException
 from pyrit.models import ChatMessage, Message, MessagePiece
@@ -128,14 +128,14 @@ async def test_complete_chat_async(aml_online_chat: AzureMLChatTarget):
         mock.assert_called_once()
 
 
-# The None parameter checks the default is the same as ChatMessageNop
+# The None parameter checks the default is the same as MessageNop
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message_normalizer", [None, ChatMessageNop()])
+@pytest.mark.parametrize("message_normalizer", [None, MessageNop()])
 async def test_complete_chat_async_with_nop_normalizer(
-    aml_online_chat: AzureMLChatTarget, message_normalizer: ChatMessageNormalizer
+    aml_online_chat: AzureMLChatTarget, message_normalizer: MessageListNormalizer
 ):
     if message_normalizer:
-        aml_online_chat.chat_message_normalizer = message_normalizer
+        aml_online_chat.message_normalizer = message_normalizer
 
     messages = [
         ChatMessage(role="system", content="system content"),
@@ -159,7 +159,7 @@ async def test_complete_chat_async_with_nop_normalizer(
 
 @pytest.mark.asyncio
 async def test_complete_chat_async_with_squashnormalizer(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat.chat_message_normalizer = GenericSystemSquash()
+    aml_online_chat.message_normalizer = GenericSystemSquashNormalizer()
 
     messages = [
         ChatMessage(role="system", content="system content"),

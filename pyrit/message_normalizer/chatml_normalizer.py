@@ -4,14 +4,14 @@
 import re
 from typing import List, cast
 
-from pyrit.message_normalizer import MessageNormalizer
-from pyrit.models import ALLOWED_CHAT_MESSAGE_ROLES, ChatMessage, ChatMessageRole, Message
+from pyrit.message_normalizer.message_normalizer import MessageStringNormalizer
+from pyrit.models import ALLOWED_CHAT_MESSAGE_ROLES, ChatMessageRole, Message
 
 
-class ChatMLNormalizer(MessageNormalizer[str]):
+class ChatMLNormalizer(MessageStringNormalizer):
     """A message normalizer that converts a list of messages to a ChatML string."""
 
-    def normalize(self, messages: List[Message]) -> str:
+    async def normalize_string_async(self, messages: List[Message]) -> str:
         """
         Convert a list of messages to a ChatML string.
 
@@ -59,7 +59,3 @@ class ChatMLNormalizer(MessageNormalizer[str]):
             message_content = "\n".join(lines[1:]).strip()
             messages.append(Message.from_prompt(prompt=message_content, role=cast(ChatMessageRole, role)))
         return messages
-
-
-# Backward compatibility alias (deprecated)
-ChatMessageNormalizerChatML = ChatMLNormalizer

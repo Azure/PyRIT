@@ -1,43 +1,46 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import List
+
 from transformers import PreTrainedTokenizerBase
 
-from pyrit.chat_message_normalizer import ChatMessageNormalizer
-from pyrit.models import ChatMessage
+from pyrit.message_normalizer import MessageNormalizer
+from pyrit.models import Message
 
 
-class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
+class TokenizerTemplateNormalizer(MessageNormalizer[str]):
     """
     Enable application of the chat template stored in a Hugging Face tokenizer
-    to a list of chat messages. For more details, see
+    to a list of messages. For more details, see
     https://huggingface.co/docs/transformers/main/en/chat_templating.
     """
 
-    def __init__(self, tokenizer: PreTrainedTokenizerBase):
+    def __init__(self, tokenizer: PreTrainedTokenizerBase) -> None:
         """
-        Initialize an instance of the ChatMessageNormalizerTokenizerTemplate class.
+        Initialize an instance of the TokenizerTemplateNormalizer class.
 
         Args:
-            tokenizer (PreTrainedTokenizerBase): A Hugging Face tokenizer.
+            tokenizer: A Hugging Face tokenizer with a chat template.
         """
         self.tokenizer = tokenizer
 
-    def normalize(self, messages: list[ChatMessage]) -> str:
+    def normalize(self, messages: List[Message]) -> str:
         """
-        Apply the chat template stored in the tokenizer to a list of chat messages.
+        Apply the chat template stored in the tokenizer to a list of messages.
 
         Args:
-            messages (list[ChatMessage]): A list of ChatMessage objects.
+            messages: A list of Message objects.
 
         Returns:
-            str: The formatted chat messages.
+            The formatted chat messages as a string.
         """
         messages_list = []
 
-        formatted_messages: str = ""
-        for m in messages:
-            messages_list.append({"role": m.role, "content": m.content})
+        for message in messages:
+            for piece in message.message_pieces:
+                content = piece.converted_value or piece.original_value
+                messages_list.append({"role": piece.role, "content": content})
 
         formatted_messages = str(
             self.tokenizer.apply_chat_template(
@@ -47,3 +50,7 @@ class ChatMessageNormalizerTokenizerTemplate(ChatMessageNormalizer[str]):
             )
         )
         return formatted_messages
+
+
+# Backward compatibility alias (deprecated)
+ChatMessageNormalizerTokenizerTemplate = TokenizerTemplateNormalizer

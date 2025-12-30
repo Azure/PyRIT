@@ -147,7 +147,7 @@ class TestPromptSendingAttackInitialization:
         attack = PromptSendingAttack(objective_target=mock_target)
 
         assert attack._conversation_manager is not None
-        assert hasattr(attack._conversation_manager, "update_conversation_state_async")
+        assert hasattr(attack._conversation_manager, "apply_prepended_conversation_async")
 
     def test_init_with_negative_max_attempts_raises_error(self, mock_target):
         with pytest.raises(ValueError, match="max_attempts_on_failure must be a non-negative integer"):
@@ -228,7 +228,7 @@ class TestSetupPhase:
         basic_context.memory_labels = {"context_label": "context_value", "common": "context"}
 
         attack._conversation_manager = MagicMock()
-        attack._conversation_manager.update_conversation_state_async = AsyncMock()
+        attack._conversation_manager.apply_prepended_conversation_async = AsyncMock()
 
         # Store original conversation_id
         original_conversation_id = basic_context.conversation_id
@@ -259,16 +259,17 @@ class TestSetupPhase:
         )
 
         attack._conversation_manager = MagicMock()
-        attack._conversation_manager.update_conversation_state_async = AsyncMock()
+        attack._conversation_manager.apply_prepended_conversation_async = AsyncMock()
 
         await attack._setup_async(context=basic_context)
 
-        attack._conversation_manager.update_conversation_state_async.assert_called_once_with(
+        attack._conversation_manager.apply_prepended_conversation_async.assert_called_once_with(
             target=mock_target,
             conversation_id=basic_context.conversation_id,
             prepended_conversation=basic_context.prepended_conversation,
             request_converters=converter_config,
             response_converters=[],
+            prepended_conversation_config=None,
         )
 
 
