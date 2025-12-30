@@ -1047,3 +1047,105 @@ async def test_construct_message_from_response(target: OpenAIChatTarget, dummy_t
     assert isinstance(result, Message)
     assert len(result.message_pieces) == 1
     assert result.message_pieces[0].converted_value == "Hello from AI"
+
+
+# Tests for underlying_model parameter and get_identifier
+
+
+def test_get_identifier_uses_model_name_when_no_underlying_model(patch_central_database):
+    """Test that get_identifier uses model_name when underlying_model is not provided."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["model_name"] == "my-deployment"
+    assert identifier["__type__"] == "OpenAIChatTarget"
+
+
+def test_get_identifier_uses_underlying_model_when_provided_as_param(patch_central_database):
+    """Test that get_identifier uses underlying_model when passed as a parameter."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        underlying_model="gpt-4o",
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["model_name"] == "gpt-4o"
+    assert identifier["__type__"] == "OpenAIChatTarget"
+
+
+def test_get_identifier_uses_underlying_model_from_env_var(patch_central_database):
+    """Test that get_identifier uses underlying_model from environment variable."""
+    with patch.dict(os.environ, {"OPENAI_CHAT_UNDERLYING_MODEL": "gpt-4o"}):
+        target = OpenAIChatTarget(
+            model_name="my-deployment",
+            endpoint="https://mock.azure.com/",
+            api_key="mock-api-key",
+        )
+
+        identifier = target.get_identifier()
+
+        assert identifier["model_name"] == "gpt-4o"
+
+
+def test_underlying_model_param_takes_precedence_over_env_var(patch_central_database):
+    """Test that underlying_model parameter takes precedence over environment variable."""
+    with patch.dict(os.environ, {"OPENAI_CHAT_UNDERLYING_MODEL": "gpt-4o-from-env"}):
+        target = OpenAIChatTarget(
+            model_name="my-deployment",
+            endpoint="https://mock.azure.com/",
+            api_key="mock-api-key",
+            underlying_model="gpt-4o-from-param",
+        )
+
+        identifier = target.get_identifier()
+
+        assert identifier["model_name"] == "gpt-4o-from-param"
+
+
+def test_get_identifier_includes_endpoint(patch_central_database):
+    """Test that get_identifier includes the endpoint."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["endpoint"] == "https://mock.azure.com/"
+
+
+def test_get_identifier_includes_temperature_when_set(patch_central_database):
+    """Test that get_identifier includes temperature when configured."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        temperature=0.7,
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["temperature"] == 0.7
+
+
+def test_get_identifier_includes_top_p_when_set(patch_central_database):
+    """Test that get_identifier includes top_p when configured."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        top_p=0.9,
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["top_p"] == 0.9

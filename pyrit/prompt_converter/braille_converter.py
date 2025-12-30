@@ -22,6 +22,9 @@ class BrailleConverter(PromptConverter):
     text, which can be used to obfuscate potentially harmful content.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given text into Braille Unicode representation.
@@ -42,12 +45,6 @@ class BrailleConverter(PromptConverter):
         brail_text = self._get_braile(prompt)
 
         return ConverterResult(output_text=brail_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def _get_braile(self, text) -> str:
         """

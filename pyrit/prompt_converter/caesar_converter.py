@@ -18,6 +18,9 @@ class CaesarConverter(PromptConverter):
     any numeric values will not be shifted.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(self, *, caesar_offset: int, append_description: bool = False) -> None:
         """
         Initializes the converter with a Caesar cipher offset and an option to append a description.
@@ -57,12 +60,6 @@ class CaesarConverter(PromptConverter):
         else:
             output_text = self._caesar(prompt)
         return ConverterResult(output_text=output_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def _caesar(self, text: str) -> str:
         def shift(alphabet: str) -> str:

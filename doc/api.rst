@@ -194,6 +194,7 @@ API Reference
     CrescendoAttackContext
     CrescendoAttackResult
     FlipAttack
+    generate_simulated_conversation_async
     ManyShotJailbreakAttack
     MarkdownAttackResultPrinter
     MultiPromptSendingAttack
@@ -205,6 +206,8 @@ API Reference
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
+    SimulatedConversationResult
+    SimulatedTargetSystemPromptPaths
     RolePlayPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
@@ -394,6 +397,7 @@ API Reference
     EmojiConverter
     FirstLetterConverter
     FlipConverter
+    get_converter_modalities
     HumanInTheLoopConverter
     ImageCompressionConverter
     IndexSelectionStrategy

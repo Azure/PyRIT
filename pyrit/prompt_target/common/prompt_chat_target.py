@@ -25,6 +25,7 @@ class PromptChatTarget(PromptTarget):
         max_requests_per_minute: Optional[int] = None,
         endpoint: str = "",
         model_name: str = "",
+        underlying_model: Optional[str] = None,
     ) -> None:
         """
         Initialize the PromptChatTarget.
@@ -33,8 +34,16 @@ class PromptChatTarget(PromptTarget):
             max_requests_per_minute (int, Optional): Maximum number of requests per minute.
             endpoint (str): The endpoint URL. Defaults to empty string.
             model_name (str): The model name. Defaults to empty string.
+            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
+                identification purposes. This is useful when the deployment name in Azure differs
+                from the actual model. Defaults to None.
         """
-        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
+        super().__init__(
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint,
+            model_name=model_name,
+            underlying_model=underlying_model,
+        )
 
     def set_system_prompt(
         self,
