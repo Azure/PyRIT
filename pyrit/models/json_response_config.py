@@ -8,11 +8,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Dict, Optional
 
+
 class _MetaDataKeys(StrEnum):
     RESPONSE_FORMAT = "response_format"
     JSON_SCHEMA = "json_schema"
     JSON_SCHEMA_NAME = "json_schema_name"
     JSON_SCHEMA_STRICT = "json_schema_strict"
+
 
 @dataclass
 class JsonResponseConfig:
