@@ -1,17 +1,14 @@
 """
-# TODO
-THIS WILL BE REMOVED after proper unit tests are in place :)
+# TODO: add notebook example instead of this
 """
 
 import asyncio
+import logging
 
-from pyrit.executor.attack import MultiPromptSendingAttack
+from pyrit.executor.attack import ConsoleAttackResultPrinter, MultiPromptSendingAttack
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import WebSocketCopilotTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
-from pyrit.executor.attack import ConsoleAttackResultPrinter
-
-import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

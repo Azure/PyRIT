@@ -308,6 +308,50 @@ class TestConnectAndSend:
                     is_start_of_session=True,
                 )
 
+    @pytest.mark.asyncio
+    async def test_connect_and_send_stream_end_without_final_content(self, mock_authenticator):
+        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+
+        mock_websocket = AsyncMock()
+        mock_websocket.send = AsyncMock()
+        mock_websocket.recv = AsyncMock(
+            side_effect=[
+                '{"type":6}\x1e',
+                '{"type":3}\x1e',
+            ]
+        )
+        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
+        mock_websocket.__aexit__ = AsyncMock(return_value=None)
+
+        with patch("websockets.connect", return_value=mock_websocket):
+            response = await target._connect_and_send(
+                prompt="Hello",
+                session_id="sid",
+                copilot_conversation_id="cid",
+                is_start_of_session=True,
+            )
+
+        assert response == ""
+
+    @pytest.mark.asyncio
+    async def test_connect_and_send_exceeds_max_iterations(self, mock_authenticator):
+        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+
+        mock_websocket = AsyncMock()
+        mock_websocket.send = AsyncMock()
+        mock_websocket.recv = AsyncMock(return_value='{"type":1}\x1e')
+        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
+        mock_websocket.__aexit__ = AsyncMock(return_value=None)
+
+        with patch("websockets.connect", return_value=mock_websocket):
+            with pytest.raises(RuntimeError, match="Exceeded maximum message iterations"):
+                await target._connect_and_send(
+                    prompt="Hello",
+                    session_id="sid",
+                    copilot_conversation_id="cid",
+                    is_start_of_session=True,
+                )
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestValidateRequest:

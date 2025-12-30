@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
 import asyncio
+import json
+import logging
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-import json
-from msal_extensions import build_encrypted_persistence, FilePersistence
+from msal_extensions import FilePersistence, build_encrypted_persistence
 
 from pyrit.auth.authenticator import Authenticator
 from pyrit.common.path import PYRIT_CACHE_PATH
@@ -34,8 +34,6 @@ class CopilotAuthenticator(Authenticator):
         Additionally, you need to have playwright installed and set up:
         ``pip install playwright && playwright install chromium``.
     """
-
-    # TODO: ensure login with account with MFA enabled work correctly
 
     #: Name of the cache file to store tokens
     CACHE_FILE_NAME: str = "copilot_token_cache.bin"
