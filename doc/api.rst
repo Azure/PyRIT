@@ -334,7 +334,6 @@ API Reference
     AllowedCategories
     AttackOutcome
     AttackResult
-    JsonResponseConfig
     Message
     MessagePiece
     PromptDataType

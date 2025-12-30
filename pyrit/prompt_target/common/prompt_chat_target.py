@@ -4,7 +4,8 @@
 import abc
 from typing import Optional
 
-from pyrit.models import JsonResponseConfig, MessagePiece
+from pyrit.models import MessagePiece
+from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target import PromptTarget
 
 
@@ -100,10 +101,10 @@ class PromptChatTarget(PromptTarget):
         Raises:
             ValueError: If "json" response format is requested but unsupported.
         """
-        config = self.get_json_response_config(message_piece=message_piece)
+        config = self._get_json_response_config(message_piece=message_piece)
         return config.enabled
 
-    def get_json_response_config(self, *, message_piece: MessagePiece) -> JsonResponseConfig:
+    def _get_json_response_config(self, *, message_piece: MessagePiece) -> _JsonResponseConfig:
         """
         Get the JSON response configuration from the message piece metadata.
 
@@ -112,12 +113,12 @@ class PromptChatTarget(PromptTarget):
                 include JSON response configuration.
 
         Returns:
-            JsonResponseConfig: The JSON response configuration.
+            _JsonResponseConfig: The JSON response configuration.
 
         Raises:
             ValueError: If JSON response format is requested but unsupported.
         """
-        config = JsonResponseConfig.from_metadata(metadata=message_piece.prompt_metadata)
+        config = _JsonResponseConfig.from_metadata(metadata=message_piece.prompt_metadata)
 
         if config.enabled and not self.is_json_response_supported():
             target_name = self.get_identifier()["__type__"]

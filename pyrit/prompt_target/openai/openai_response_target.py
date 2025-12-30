@@ -21,12 +21,12 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import (
-    JsonResponseConfig,
     Message,
     MessagePiece,
     PromptDataType,
     PromptResponseError,
 )
+from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target import (
     OpenAITarget,
     PromptChatTarget,
@@ -318,7 +318,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         return input_items
 
     async def _construct_request_body(
-        self, *, conversation: MutableSequence[Message], json_config: JsonResponseConfig
+        self, *, conversation: MutableSequence[Message], json_config: _JsonResponseConfig
     ) -> dict:
         """
         Construct the request body to send to the Responses API.
@@ -354,7 +354,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _build_text_format(self, json_config: JsonResponseConfig) -> Optional[Dict[str, Any]]:
+    def _build_text_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
         if not json_config.enabled:
             return None
 
@@ -468,10 +468,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
-        json_config = JsonResponseConfig(enabled=False)
+        json_config = _JsonResponseConfig(enabled=False)
         if message.message_pieces:
             last_piece = message.message_pieces[-1]
-            json_config = self.get_json_response_config(message_piece=last_piece)
+            json_config = self._get_json_response_config(message_piece=last_piece)
 
         # Get full conversation history from memory and append the current message
         conversation: MutableSequence[Message] = self._memory.get_conversation(

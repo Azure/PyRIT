@@ -23,7 +23,8 @@ from pyrit.exceptions.exception_classes import (
     RateLimitException,
 )
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import JsonResponseConfig, Message, MessagePiece
+from pyrit.models import Message, MessagePiece
+from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 
 
@@ -182,7 +183,7 @@ async def test_construct_request_body_includes_extra_body_params(
 
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
     body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["key"] == "value"
 
@@ -190,7 +191,7 @@ async def test_construct_request_body_includes_extra_body_params(
 @pytest.mark.asyncio
 async def test_construct_request_body_json_object(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
     request = Message(message_pieces=[dummy_text_message_piece])
-    jrc = JsonResponseConfig.from_metadata(metadata={"response_format": "json"})
+    jrc = _JsonResponseConfig.from_metadata(metadata={"response_format": "json"})
 
     body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["response_format"] == {"type": "json_object"}
@@ -200,7 +201,7 @@ async def test_construct_request_body_json_object(target: OpenAIChatTarget, dumm
 async def test_construct_request_body_json_schema(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
     schema_obj = {"type": "object", "properties": {"name": {"type": "string"}}}
     request = Message(message_pieces=[dummy_text_message_piece])
-    jrc = JsonResponseConfig.from_metadata(metadata={"response_format": "json", "json_schema": schema_obj})
+    jrc = _JsonResponseConfig.from_metadata(metadata={"response_format": "json", "json_schema": schema_obj})
 
     body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["response_format"] == {
@@ -215,7 +216,7 @@ async def test_construct_request_body_json_schema_optional_params(
 ):
     schema_obj = {"type": "object", "properties": {"name": {"type": "string"}}}
     request = Message(message_pieces=[dummy_text_message_piece])
-    jrc = JsonResponseConfig.from_metadata(
+    jrc = _JsonResponseConfig.from_metadata(
         metadata={
             "response_format": "json",
             "json_schema": schema_obj,
@@ -237,7 +238,7 @@ async def test_construct_request_body_removes_empty_values(
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
     body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert "max_completion_tokens" not in body
     assert "max_tokens" not in body
@@ -253,7 +254,7 @@ async def test_construct_request_body_serializes_text_message(
     target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
-    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
 
     body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert (
@@ -268,7 +269,7 @@ async def test_construct_request_body_serializes_complex_message(
     image_piece = get_image_message_piece()
     image_piece.conversation_id = dummy_text_message_piece.conversation_id  # Match conversation IDs
     request = Message(message_pieces=[dummy_text_message_piece, image_piece])
-    jrc = JsonResponseConfig.from_metadata(metadata=None)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
 
     body = await target._construct_request_body(conversation=[request], json_config=jrc)
     messages = body["messages"][0]["content"]

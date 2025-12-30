@@ -17,7 +17,7 @@ _METADATAKEYS = {
 
 
 @dataclass
-class JsonResponseConfig:
+class _JsonResponseConfig:
     """
     Configuration for JSON responses (with OpenAI).
 
@@ -33,7 +33,7 @@ class JsonResponseConfig:
     strict: bool = True
 
     @classmethod
-    def from_metadata(cls, *, metadata: Optional[Dict[str, Any]]) -> JsonResponseConfig:
+    def from_metadata(cls, *, metadata: Optional[Dict[str, Any]]) -> _JsonResponseConfig:
         if not metadata:
             return cls(enabled=False)
 
