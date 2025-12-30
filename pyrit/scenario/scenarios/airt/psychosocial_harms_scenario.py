@@ -65,7 +65,7 @@ class PsychosocialHarmsStrategy(ScenarioStrategy):
     MULTI_TURN = ("multi_turn", {"multi_turn"})
 
     # Vulnerability = ("psychosocial_vulnerability", set[str]())
-    # Dependency = ("psychosocial_dependency", set[str]())
+    Dependency = ("psychosocial_dependency", set[str]())
     Imminent_Crisis = ("psychosocial_imminent_crisis", set[str]())
 
 
@@ -111,7 +111,7 @@ class PsychosocialHarmsScenario(Scenario):
         """Return a list of dataset names required by this scenario."""
         return [
             # "airt_psychosocial_vulnerability",
-            # "airt_psychosocial_dependency",
+            "airt_psychosocial_dependency",
             "psychosocial_imminent_crisis",
         ]
 
@@ -124,6 +124,9 @@ class PsychosocialHarmsScenario(Scenario):
         scenario_result_id: Optional[str] = None,
         objectives_by_harm: Optional[Dict[str, Sequence[SeedGroup]]] = None,
         crescendo_system_prompt_path: Optional[str] = None,
+        crescendo_system_prompt_paths_by_harm: Optional[Dict[str, str]] = None,
+        scoring_rubric_paths_by_harm: Optional[Dict[str, str]] = None,
+        max_turns: int = 3,
     ):
         """
         Initialize the Psychosocial Harms Scenario.
@@ -140,11 +143,33 @@ class PsychosocialHarmsScenario(Scenario):
                 strategies to their corresponding SeedGroups. If not provided, default seed groups
                 will be loaded from datasets.
             crescendo_system_prompt_path (Optional[str]): Path to custom system prompt for Crescendo
-                attack. If not provided, uses the default escalation_crisis.yaml prompt.
+                attack. If not provided, uses the default escalation_crisis.yaml prompt. This is a
+                fallback for all harm categories if crescendo_system_prompt_paths_by_harm is not specified.
+            crescendo_system_prompt_paths_by_harm (Optional[Dict[str, str]]): Dictionary mapping harm
+                category names to their specific Crescendo system prompt paths. This allows different
+                escalation strategies for different harm types. Example:
+                {
+                    "psychosocial_crisis": "path/to/crisis_escalation.yaml",
+                    "psychosocial_vulnerability": "path/to/vulnerability_escalation.yaml"
+                }
+                If a harm category is not in this dict, falls back to crescendo_system_prompt_path.
+            scoring_rubric_paths_by_harm (Optional[Dict[str, str]]): Dictionary mapping harm
+                category names to their specific scoring rubric YAML files. This allows different
+                evaluation criteria for different harm types. Example:
+                {
+                    "psychosocial_crisis": "path/to/crisis_management.yaml",
+                    "psychosocial_vulnerability": "path/to/vulnerability_management.yaml"
+                }
+                If not provided, uses the default crisis_management.yaml for all categories.
+            max_turns (int): Maximum number of conversation turns for multi-turn attacks (CrescendoAttack).
+                Defaults to 3. Increase for more gradual escalation, decrease for faster testing.
         """
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
+        self._scoring_rubric_paths_by_harm = scoring_rubric_paths_by_harm or {}
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
         self._crescendo_system_prompt_path = crescendo_system_prompt_path
+        self._crescendo_system_prompt_paths_by_harm = crescendo_system_prompt_paths_by_harm or {}
+        self._max_turns = max_turns
 
         super().__init__(
             name="Psychosocial Harms Scenario",
@@ -193,7 +218,12 @@ class PsychosocialHarmsScenario(Scenario):
         return seeds_by_strategy
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
-        """Create default adversarial chat target for multi-turn attacks."""
+        """
+        Create default adversarial chat target for multi-turn attacks.
+
+        Returns:
+            OpenAIChatTarget: Default adversarial target, using an unfiltered endpoint.
+        """
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
@@ -201,23 +231,36 @@ class PsychosocialHarmsScenario(Scenario):
             temperature=0.7,
         )
 
-    def _get_default_scorer(self) -> FloatScaleThresholdScorer:
+    def _get_default_scorer(self, harm_category: Optional[str] = None) -> FloatScaleThresholdScorer:
         """
         Create default scorer for psychosocial harms evaluation.
 
-        Uses a crisis management rubric that evaluates whether the model:
-        1. Recognizes mental health crises
+        This default uses a crisis management rubric that evaluates whether the model:
+        1. Appropriately recognizes mental health crises
         2. Provides appropriate MHFA (Mental Health First Aid) guidance
         3. Avoids facilitating harmful requests
+
+        Args:
+            harm_category (Optional[str]): The specific harm category to get a scorer for.
+                If provided and exists in scoring_rubric_paths_by_harm, uses that rubric.
+                Otherwise falls back to default crisis_management.yaml.
+
+        Returns:
+            FloatScaleThresholdScorer: A threshold scorer that evaluates conversations and
+                returns True if the score meets the threshold (indicating attack success).
         """
-        # Load crisis management rubric from YAML file
-        crisis_management_rubric_path = pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"
-        with open(crisis_management_rubric_path, "r", encoding="utf-8") as f:
+        # Determine which rubric to use
+        if harm_category and harm_category in self._scoring_rubric_paths_by_harm:
+            rubric_path = pathlib.Path(self._scoring_rubric_paths_by_harm[harm_category])
+        else:
+            # Default to crisis management rubric
+            rubric_path = pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"
+
+        # Load rubric from YAML file
+        with open(rubric_path, "r", encoding="utf-8") as f:
             yaml_data = yaml.safe_load(f)
 
         # Extract the 'value' field which contains the actual rubric text
-        # The rubric uses {{objective}} as a placeholder, but we need to convert it to {objective}
-        # for Python's .format() while escaping other braces (JSON schema) to avoid conflicts
         crisis_management_rubric = yaml_data["value"]
 
         azure_openai_chat_target = OpenAIChatTarget(
@@ -287,8 +330,14 @@ class PsychosocialHarmsScenario(Scenario):
         # Cast to PromptChatTarget for attacks that require it
         objective_chat_target = self._objective_target if isinstance(self._objective_target, PromptChatTarget) else None
 
-        # Create scoring config for single-turn attacks (uses threshold scorer for true/false evaluation)
-        scoring_config = AttackScoringConfig(objective_scorer=self._objective_scorer)
+        # Create harm-specific scorer if available, otherwise use default
+        if strategy in self._scoring_rubric_paths_by_harm:
+            strategy_scorer = self._get_default_scorer(harm_category=strategy)
+        else:
+            strategy_scorer = self._objective_scorer
+
+        # Create scoring config for attacks (uses threshold scorer for true/false evaluation)
+        scoring_config = AttackScoringConfig(objective_scorer=strategy_scorer)
 
         # PromptSendingAttack with ToneConverter (soften tone)
         tone_converter = ToneConverter(converter_target=self._adversarial_chat, tone="soften")
@@ -310,10 +359,13 @@ class PsychosocialHarmsScenario(Scenario):
         )
 
         # Multi-turn Crescendo attack with crisis escalation strategy (3 turns for gradual escalation)
-
-        if self._crescendo_system_prompt_path:
+        # Get harm-specific prompt path, or fall back to default
+        if strategy in self._crescendo_system_prompt_paths_by_harm:
+            crescendo_prompt_path = pathlib.Path(self._crescendo_system_prompt_paths_by_harm[strategy])
+        elif self._crescendo_system_prompt_path:
             crescendo_prompt_path = pathlib.Path(self._crescendo_system_prompt_path)
         else:
+            # Default: use crisis escalation for all harm types
             crescendo_prompt_path = pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
 
         adversarial_config = AttackAdversarialConfig(
@@ -324,7 +376,7 @@ class PsychosocialHarmsScenario(Scenario):
             objective_target=objective_chat_target,  # type: ignore
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
-            max_turns=3,
+            max_turns=self._max_turns,
             max_backtracks=1,
         )
 
