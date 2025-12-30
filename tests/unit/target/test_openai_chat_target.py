@@ -208,18 +208,27 @@ async def test_construct_request_body_json_schema(target: OpenAIChatTarget, dumm
         "json_schema": {"name": "CustomSchema", "schema": schema_obj, "strict": True},
     }
 
+
 @pytest.mark.asyncio
-async def test_construct_request_body_json_schema_optional_params(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+async def test_construct_request_body_json_schema_optional_params(
+    target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
+):
     schema_obj = {"type": "object", "properties": {"name": {"type": "string"}}}
     request = Message(message_pieces=[dummy_text_message_piece])
-    jrc = JsonResponseConfig.from_metadata(metadata={"response_format": "json", "json_schema": schema_obj, "json_schema_name":"MySchema", "json_schema_strict": False})
+    jrc = JsonResponseConfig.from_metadata(
+        metadata={
+            "response_format": "json",
+            "json_schema": schema_obj,
+            "json_schema_name": "MySchema",
+            "json_schema_strict": False,
+        }
+    )
 
     body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["response_format"] == {
         "type": "json_schema",
         "json_schema": {"name": "MySchema", "schema": schema_obj, "strict": False},
     }
-
 
 
 @pytest.mark.asyncio
@@ -481,7 +490,6 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChat
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
-
     # Create proper mock request and response for BadRequestError (without content_filter)
     mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
     mock_response = httpx.Response(400, text="Bad Request Error", request=mock_request)
@@ -499,7 +507,6 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
-
     message = Message(
         message_pieces=[
             MessagePiece(
@@ -628,7 +635,6 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
         patch.object(target, "_validate_request"),
         patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
     ):
-
         mock_construct.return_value = {"model": "gpt-4", "messages": [], "stream": False}
 
         # Create proper mock request and response for BadRequestError with content_filter
