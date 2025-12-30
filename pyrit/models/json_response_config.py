@@ -20,7 +20,7 @@ class JsonResponseConfig:
     strict: bool = True
 
     @classmethod
-    def from_metadata(cls, *, metadata: Optional[Dict[str, Any]]) -> "JsonResponseConfig":
+    def from_metadata(cls, *, metadata: Optional[Dict[str, Any]]) -> JsonResponseConfig:
         if not metadata:
             return cls(enabled=False)
 
