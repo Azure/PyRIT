@@ -7,7 +7,6 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-
 # Would prefer StrEnum, but.... Python 3.10
 _METADATAKEYS = {
     "RESPONSE_FORMAT": "response_format",
