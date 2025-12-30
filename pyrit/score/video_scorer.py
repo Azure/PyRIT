@@ -91,7 +91,7 @@ class _BaseVideoScorer(ABC):
 
             piece = MessagePiece(
                 original_value=message_piece.converted_value,
-                role=message_piece.role,
+                role=message_piece.get_role_for_storage(),
                 original_prompt_id=original_prompt_id,
                 converted_value=frame,
                 converted_value_data_type="image_path",

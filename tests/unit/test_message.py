@@ -175,3 +175,37 @@ class TestMessageFromPrompt:
 
         assert len(message.message_pieces) == 1
         assert message.message_pieces[0].original_value == ""
+
+
+class TestMessageSimulatedAssistantRole:
+    """Tests for Message simulated_assistant role properties."""
+
+    def test_api_role_returns_assistant_for_simulated_assistant(self) -> None:
+        """Test that Message.api_role returns 'assistant' for simulated_assistant."""
+        piece = MessagePiece(role="simulated_assistant", original_value="Hello", conversation_id="test")
+        message = Message(message_pieces=[piece])
+        assert message.api_role == "assistant"
+
+    def test_api_role_returns_assistant_for_assistant(self) -> None:
+        """Test that Message.api_role returns 'assistant' for assistant."""
+        piece = MessagePiece(role="assistant", original_value="Hello", conversation_id="test")
+        message = Message(message_pieces=[piece])
+        assert message.api_role == "assistant"
+
+    def test_is_simulated_true_for_simulated_assistant(self) -> None:
+        """Test that Message.is_simulated returns True for simulated_assistant."""
+        piece = MessagePiece(role="simulated_assistant", original_value="Hello", conversation_id="test")
+        message = Message(message_pieces=[piece])
+        assert message.is_simulated is True
+
+    def test_is_simulated_false_for_assistant(self) -> None:
+        """Test that Message.is_simulated returns False for assistant."""
+        piece = MessagePiece(role="assistant", original_value="Hello", conversation_id="test")
+        message = Message(message_pieces=[piece])
+        assert message.is_simulated is False
+
+    def test_is_simulated_false_for_empty_pieces(self) -> None:
+        """Test that Message.is_simulated returns False for empty pieces (via skip_validation)."""
+        message = Message(message_pieces=[MessagePiece(role="user", original_value="x", conversation_id="test")])
+        message.message_pieces = []  # Manually empty for edge case test
+        assert message.is_simulated is False

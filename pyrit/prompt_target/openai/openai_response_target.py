@@ -189,7 +189,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         """
         if piece.converted_value_data_type == "text":
             return {
-                "type": "input_text" if piece.role in ["developer", "user"] else "output_text",
+                "type": "input_text" if piece.api_role in ["developer", "user"] else "output_text",
                 "text": piece.converted_value,
             }
         if piece.converted_value_data_type == "image_path":
@@ -230,7 +230,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 )
 
             # System message (remapped to developer)
-            if pieces[0].role == "system":
+            if pieces[0].api_role == "system":
                 system_content = []
                 for piece in pieces:
                     system_content.append({"type": "input_text", "text": piece.converted_value})
@@ -238,7 +238,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 continue
 
             # All pieces in a Message share the same role
-            role = pieces[0].role
+            role = pieces[0].api_role
             content: List[Dict[str, Any]] = []
 
             for piece in pieces:
@@ -644,7 +644,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             The tool-call section dict, or None if not found.
         """
         for piece in reversed(reply.message_pieces):
-            if piece.role == "assistant":
+            if piece.api_role == "assistant":
                 try:
                     section = json.loads(piece.original_value)
                 except Exception:
