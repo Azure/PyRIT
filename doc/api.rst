@@ -56,9 +56,7 @@ API Reference
 
     MessageListNormalizer
     MessageStringNormalizer
-    MessageNop
     GenericSystemSquashNormalizer
-    ChatMLNormalizer
     TokenizerTemplateNormalizer
     ConversationContextNormalizer
     ChatMessageNormalizer

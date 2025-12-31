@@ -21,7 +21,7 @@ from pyrit.exceptions import (
 )
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.component.conversation_manager import (
-    format_conversation_context_async,
+    build_conversation_context_string_async,
 )
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
@@ -285,7 +285,7 @@ class _TreeOfAttacksNode:
         conversation_manager = ConversationManager(attack_identifier=self._attack_id)
 
         # Add to objective target conversation (handles system prompts and memory)
-        await conversation_manager.apply_prepended_conversation_async(
+        await conversation_manager.apply_prepended_conversation_to_objective_async(
             target=self._objective_target,
             conversation_id=self.objective_target_conversation_id,
             prepended_conversation=prepended_conversation,
@@ -294,7 +294,7 @@ class _TreeOfAttacksNode:
 
         # Add to adversarial chat conversation (role-swapped)
         # Note: adversarial chat gets its own system prompt later in _generate_first_turn_prompt_async
-        await conversation_manager.prepend_to_adversarial_chat_async(
+        await conversation_manager.apply_prepended_conversation_to_adversarial_async(
             adversarial_chat=self._adversarial_chat,
             adversarial_chat_conversation_id=self.adversarial_chat_conversation_id,
             prepended_conversation=prepended_conversation,
@@ -302,7 +302,7 @@ class _TreeOfAttacksNode:
         )
 
         # Generate formatted context for adversarial chat system prompt
-        self._conversation_context = await format_conversation_context_async(prepended_conversation)
+        self._conversation_context = await build_conversation_context_string_async(prepended_conversation)
 
         logger.debug(f"Node {self.node_id}: Initialized with {len(prepended_conversation)} prepended messages")
 

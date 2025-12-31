@@ -271,7 +271,7 @@ class TestConversationStateUpdate:
         manager = ConversationManager(attack_identifier=attack_identifier)
 
         with pytest.raises(ValueError, match="conversation_id cannot be empty"):
-            await manager.apply_prepended_conversation_async(
+            await manager.apply_prepended_conversation_to_objective_async(
                 target=mock_chat_target, conversation_id="", prepended_conversation=[]
             )
 
@@ -282,7 +282,7 @@ class TestConversationStateUpdate:
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
-        state = await manager.apply_prepended_conversation_async(
+        state = await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=[]
         )
 
@@ -299,7 +299,7 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Single-turn mode (no max_turns)
-        state = await manager.apply_prepended_conversation_async(
+        state = await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=sample_conversation
         )
 
@@ -321,7 +321,7 @@ class TestConversationStateUpdate:
         # Create conversation ending with user message
         conversation = [Message(message_pieces=[sample_user_piece])]
 
-        state = await manager.apply_prepended_conversation_async(
+        state = await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
@@ -340,39 +340,26 @@ class TestConversationStateUpdate:
         mock_prompt_normalizer: MagicMock,
         sample_conversation: list[Message],
     ):
-        """Test that role-specific converters apply correctly"""
+        """Test that request converters apply correctly to user messages"""
         manager = ConversationManager(attack_identifier=attack_identifier, prompt_normalizer=mock_prompt_normalizer)
         conversation_id = str(uuid.uuid4())
 
         request_converter_config = [PromptConverterConfiguration(converters=[])]
-        response_converter_config = [PromptConverterConfiguration(converters=[])]
 
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=sample_conversation,
             request_converters=request_converter_config,
-            response_converters=response_converter_config,
         )
 
-        # Verify converters were applied to both user and assistant messages
-        assert mock_prompt_normalizer.convert_values.call_count == 2
+        # Verify converters were applied to user messages only
+        # Assistant messages in prepended conversation are not converted
+        assert mock_prompt_normalizer.convert_values.call_count == 1
 
-        # First call should be for user message with request converters
+        # The call should be for user message with request converters
         user_call = mock_prompt_normalizer.convert_values.call_args_list[0]
         assert user_call.kwargs["converter_configurations"] == request_converter_config
-
-        # Second call should be for assistant message with response converters
-        assistant_call = mock_prompt_normalizer.convert_values.call_args_list[1]
-        assert assistant_call.kwargs["converter_configurations"] == response_converter_config
-        assert mock_prompt_normalizer.convert_values.call_count == 2
-
-        # Check that the right converters were applied to the right roles
-        calls = mock_prompt_normalizer.convert_values.call_args_list
-        # First call should be for user message with request converters
-        assert calls[0].kwargs["converter_configurations"] == request_converter_config
-        # Second call should be for assistant message with response converters
-        assert calls[1].kwargs["converter_configurations"] == response_converter_config
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_system_messages_no_converters(
@@ -390,14 +377,12 @@ class TestConversationStateUpdate:
         conversation = [Message(message_pieces=[sample_system_piece])]
 
         request_converter_config = [PromptConverterConfiguration(converters=[])]
-        response_converter_config = [PromptConverterConfiguration(converters=[])]
 
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
             request_converters=request_converter_config,
-            response_converters=response_converter_config,
             max_turns=5,  # Multi-turn mode to trigger system prompt handling
         )
 
@@ -415,7 +400,7 @@ class TestConversationStateUpdate:
         # Create conversation with system message
         conversation = [Message(message_pieces=[sample_system_piece])]
 
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
@@ -438,7 +423,7 @@ class TestConversationStateUpdate:
         # Create conversation with system message
         conversation = [Message(message_pieces=[sample_system_piece])]
 
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
@@ -474,7 +459,7 @@ class TestConversationStateUpdate:
         original_user_id = sample_user_piece.id
         original_assistant_id = sample_assistant_piece.id
 
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
@@ -511,7 +496,7 @@ class TestConversationStateUpdate:
         conversation = [Message(message_pieces=[sample_system_piece])]
 
         # Should succeed with a chat target
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
@@ -531,7 +516,7 @@ class TestConversationStateUpdate:
         conversation_id = str(uuid.uuid4())
 
         # Should succeed with empty prepended_conversation
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_prompt_target,
             conversation_id=conversation_id,
             prepended_conversation=[],
@@ -554,7 +539,7 @@ class TestConversationStateUpdate:
 
         # Should raise ValueError because non-chat targets don't support conversation history
         with pytest.raises(ValueError, match="prepended_conversation requires target to be a PromptChatTarget"):
-            await manager.apply_prepended_conversation_async(
+            await manager.apply_prepended_conversation_to_objective_async(
                 target=mock_prompt_target,
                 conversation_id=conversation_id,
                 prepended_conversation=conversation,
@@ -580,7 +565,7 @@ class TestConversationStateUpdate:
             Message(message_pieces=[sample_assistant_piece]),
         ]
 
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
@@ -613,7 +598,7 @@ class TestConversationStateUpdate:
 
         conversation = [Message(message_pieces=[sample_user_piece])]
 
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
@@ -651,7 +636,7 @@ class TestConversationStateUpdate:
             Message(message_pieces=[sample_assistant_piece]),
         ]
 
-        state = await manager.apply_prepended_conversation_async(
+        state = await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
@@ -677,7 +662,7 @@ class TestConversationStateUpdate:
         ]
 
         with pytest.raises(ValueError, match="exceeds the maximum number of turns"):
-            await manager.apply_prepended_conversation_async(
+            await manager.apply_prepended_conversation_to_objective_async(
                 target=mock_chat_target,
                 conversation_id=conversation_id,
                 prepended_conversation=conversation,
@@ -719,7 +704,7 @@ class TestConversationStateUpdate:
             Message(message_pieces=[sample_assistant_piece]),
         ]
 
-        state = await manager.apply_prepended_conversation_async(
+        state = await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
@@ -739,7 +724,7 @@ class TestConversationStateUpdate:
             Message(message_pieces=[sample_assistant_piece]),
         ]
 
-        state = await manager.apply_prepended_conversation_async(
+        state = await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
@@ -774,7 +759,7 @@ class TestConversationStateUpdate:
         ]
 
         with pytest.raises(ValueError, match="There must be a user message preceding"):
-            await manager.apply_prepended_conversation_async(
+            await manager.apply_prepended_conversation_to_objective_async(
                 target=mock_chat_target,
                 conversation_id=conversation_id,
                 prepended_conversation=conversation,
@@ -803,7 +788,7 @@ class TestEdgeCasesAndErrorHandling:
         conversation = [None]  # This would be caught by type checking in real code
 
         # Should handle gracefully
-        state = await manager.apply_prepended_conversation_async(
+        state = await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,  # type: ignore
@@ -824,7 +809,7 @@ class TestEdgeCasesAndErrorHandling:
 
         conversation = [Message(message_pieces=[sample_user_piece])]
 
-        await manager.apply_prepended_conversation_async(
+        await manager.apply_prepended_conversation_to_objective_async(
             target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation
         )
 

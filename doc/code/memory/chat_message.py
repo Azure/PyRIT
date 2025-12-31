@@ -20,11 +20,11 @@
 # However, different models may require different formats. For example, certain models may use chatml, or may not support system messages. This is handled
 # in from `MessageNormalizer` and its subclasses.
 #
-# Below is an example that converts a list of messages to chatml format and back.
+# Below is an example that converts a list of messages to chatml format using `TokenizerTemplateNormalizer`.
 # %%
 import asyncio
 
-from pyrit.message_normalizer import ChatMLNormalizer
+from pyrit.message_normalizer import TokenizerTemplateNormalizer
 from pyrit.models import Message
 
 messages = [
@@ -33,40 +33,26 @@ messages = [
     Message.from_prompt(prompt="I'm doing well, thanks for asking.", role="assistant"),
 ]
 
-normalizer = ChatMLNormalizer()
+# Use the "chatml" alias to get a normalizer that applies ChatML format
+normalizer = TokenizerTemplateNormalizer.from_model("chatml")
 chatml_messages = asyncio.run(normalizer.normalize_string_async(messages))
 # chatml_messages is a string in chatml format
 
 print(chatml_messages)
 
 # %% [markdown]
-#
-# If you wish you load a chatml-format conversation, you can use the `from_chatml` method in the `ChatMLNormalizer`. This will return a list of `Message` objects that you can then use.
-
-# %%
-chat_messages = normalizer.from_chatml(
-    """\
-    <|im_start|>system
-    You are a helpful AI assistant<|im_end|>
-    <|im_start|>user
-    Hello, how are you?<|im_end|>
-    <|im_start|>assistant
-    I'm doing well, thanks for asking.<|im_end|>"""
-)
-
-print(chat_messages)
+# The `TokenizerTemplateNormalizer` supports various model aliases like "chatml", "llama3", "phi3", "mistral", and more.
+# You can also pass a full HuggingFace model name to use its chat template.
 
 # %% [markdown]
 # To see how to use this in action, check out the [aml endpoint](../targets/3_non_open_ai_chat_targets.ipynb) notebook. It takes a `message_normalizer` parameter so that an AML model can support various chat message formats.
 
 # %% [markdown]
-# Besides chatml, there are many other chat templates that a model might be trained on. If you would like to apply the template stored in a Hugging Face tokenizer,
-# you can utilize `TokenizerTemplateNormalizer`. In the example below, we load the tokenizer for Mistral-7B-Instruct-v0.1 and apply its chat template to
-# the messages. Note that this template only adds `[INST]` and `[/INST]` tokens to the user messages for instruction fine-tuning.
+# Besides chatml, there are many other chat templates that a model might be trained on. The `TokenizerTemplateNormalizer.from_model()` factory
+# method can load the tokenizer for a HuggingFace model and apply its chat template. In the example below, we use the "mistral" alias.
+# Note that this template only adds `[INST]` and `[/INST]` tokens to the user messages for instruction fine-tuning.
 # %%
 import os
-
-from transformers import AutoTokenizer
 
 from pyrit.message_normalizer import TokenizerTemplateNormalizer
 
@@ -76,14 +62,8 @@ messages = [
     Message.from_prompt(prompt="What is your favorite food?", role="user"),
 ]
 
-# Load the tokenizer. If you are not logged in via CLI (huggingface-cli login), you can pass in your access token here
-# via the HUGGINGFACE_TOKEN environment variable to access the gated model.
-tokenizer = AutoTokenizer.from_pretrained(
-    "mistralai/Mistral-7B-Instruct-v0.1", token=os.environ.get("HUGGINGFACE_TOKEN")
-)
-
-# create the normalizer and pass in the tokenizer
-tokenizer_normalizer = TokenizerTemplateNormalizer(tokenizer=tokenizer)
+# Use the "mistral" alias - requires HUGGINGFACE_TOKEN for gated models
+tokenizer_normalizer = TokenizerTemplateNormalizer.from_model("mistral")
 
 tokenizer_template_messages = asyncio.run(tokenizer_normalizer.normalize_string_async(messages))
 print(tokenizer_template_messages)

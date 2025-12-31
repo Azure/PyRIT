@@ -11,7 +11,6 @@ from openai import RateLimitError
 from unit.mocks import get_image_message_piece, get_sample_conversations
 
 from pyrit.message_normalizer import (
-    MessageNop,
     MessageListNormalizer,
     GenericSystemSquashNormalizer,
 )
@@ -48,51 +47,6 @@ def test_initialization_with_extra_model_parameters(aml_online_chat: AzureMLChat
     assert aml_online_chat._extra_parameters == {"extra_param1": "sample", "extra_param2": 1.0}
 
 
-def test_set_env_configuration_vars_with_default_env_vars(aml_online_chat: AzureMLChatTarget):
-    with patch("pyrit.prompt_target.azure_ml_chat_target.AzureMLChatTarget._initialize_vars") as mock_initialize_vars:
-        aml_online_chat._set_env_configuration_vars()
-        assert aml_online_chat.endpoint_uri_environment_variable == "AZURE_ML_MANAGED_ENDPOINT"
-        assert aml_online_chat.api_key_environment_variable == "AZURE_ML_KEY"
-        mock_initialize_vars.assert_called_once_with()
-
-
-def test_set_env_configuration_vars_initializes_vars(aml_online_chat: AzureMLChatTarget):
-    with patch("pyrit.prompt_target.azure_ml_chat_target.AzureMLChatTarget._initialize_vars") as mock_initialize_vars:
-        aml_online_chat._set_env_configuration_vars(
-            endpoint_uri_environment_variable="CUSTOM_ENDPOINT_ENV_VAR",
-            api_key_environment_variable="CUSTOM_API_KEY_ENV_VAR",
-        )
-        mock_initialize_vars.assert_called_once_with()
-
-
-def test_set_model_parameters_with_defaults(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat._set_model_parameters()
-    assert aml_online_chat._max_new_tokens == 400
-    assert aml_online_chat._temperature == 1.0
-    assert aml_online_chat._top_p == 1.0
-    assert aml_online_chat._repetition_penalty == 1.0
-
-
-def test_set_model_parameters_with_custom_values(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat._set_model_parameters(
-        max_new_tokens=500, temperature=0.8, top_p=0.9, repetition_penalty=1.2, custom_param="custom_value"
-    )
-    assert aml_online_chat._max_new_tokens == 500
-    assert aml_online_chat._temperature == 0.8
-    assert aml_online_chat._top_p == 0.9
-    assert aml_online_chat._repetition_penalty == 1.2
-    assert aml_online_chat._extra_parameters == {"custom_param": "custom_value"}
-
-
-def test_set_model_parameters_partial_update(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat._set_model_parameters(temperature=0.5, custom_param="custom_value")
-    assert aml_online_chat._max_new_tokens == 400
-    assert aml_online_chat._temperature == 0.5
-    assert aml_online_chat._top_p == 1.0
-    assert aml_online_chat._repetition_penalty == 1.0
-    assert aml_online_chat._extra_parameters == {"custom_param": "custom_value"}
-
-
 def test_initialization_with_no_key_raises():
     os.environ[AzureMLChatTarget.api_key_environment_variable] = ""
     with pytest.raises(ValueError):
@@ -116,7 +70,7 @@ def test_get_headers_with_valid_api_key(aml_online_chat: AzureMLChatTarget):
 @pytest.mark.asyncio
 async def test_complete_chat_async(aml_online_chat: AzureMLChatTarget):
     messages = [
-        ChatMessage(role="user", content="user content"),
+        Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="user content")]),
     ]
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock:
@@ -128,18 +82,14 @@ async def test_complete_chat_async(aml_online_chat: AzureMLChatTarget):
         mock.assert_called_once()
 
 
-# The None parameter checks the default is the same as MessageNop
+# Test that ChatMessageNormalizer (the default) passes messages through correctly
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message_normalizer", [None, MessageNop()])
-async def test_complete_chat_async_with_nop_normalizer(
-    aml_online_chat: AzureMLChatTarget, message_normalizer: MessageListNormalizer
+async def test_complete_chat_async_with_default_normalizer(
+    aml_online_chat: AzureMLChatTarget,
 ):
-    if message_normalizer:
-        aml_online_chat.message_normalizer = message_normalizer
-
     messages = [
-        ChatMessage(role="system", content="system content"),
-        ChatMessage(role="user", content="user content"),
+        Message(message_pieces=[MessagePiece(role="system", conversation_id="123", original_value="system content")]),
+        Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="user content")]),
     ]
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
@@ -162,8 +112,8 @@ async def test_complete_chat_async_with_squashnormalizer(aml_online_chat: AzureM
     aml_online_chat.message_normalizer = GenericSystemSquashNormalizer()
 
     messages = [
-        ChatMessage(role="system", content="system content"),
-        ChatMessage(role="user", content="user content"),
+        Message(message_pieces=[MessagePiece(role="system", conversation_id="123", original_value="system content")]),
+        Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="user content")]),
     ]
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:

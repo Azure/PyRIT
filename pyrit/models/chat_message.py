@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
+import warnings
 from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
@@ -57,8 +57,21 @@ class ChatMessage(BaseModel):
         return cls.model_validate_json(json_str)
 
 
-# Backward compatibility alias
-ChatMessageListDictContent = ChatMessage
+class ChatMessageListDictContent(ChatMessage):
+    """
+    Deprecated: Use ChatMessage instead.
+
+    This class exists for backward compatibility and will be removed in a future version.
+    """
+
+    def __init__(self, **data: Any) -> None:
+        warnings.warn(
+            "ChatMessageListDictContent is deprecated and will be removed in 0.13.0. "
+            "Use ChatMessage instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(**data)
 
 
 class ChatMessagesDataset(BaseModel):

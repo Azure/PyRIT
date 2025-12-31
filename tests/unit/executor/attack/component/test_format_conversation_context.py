@@ -4,7 +4,7 @@
 import pytest
 
 from pyrit.executor.attack.component.conversation_manager import (
-    format_conversation_context_async,
+    build_conversation_context_string_async,
 )
 from pyrit.message_normalizer import ConversationContextNormalizer
 from pyrit.models import Message, MessagePiece
@@ -89,12 +89,12 @@ class TestFormatPieceContent:
 
 
 class TestFormatConversationContext:
-    """Tests for the format_conversation_context_async function."""
+    """Tests for the build_conversation_context_string_async function."""
 
     @pytest.mark.asyncio
     async def test_empty_messages_returns_empty_string(self):
         """Test that empty message list returns empty string."""
-        result = await format_conversation_context_async([])
+        result = await build_conversation_context_string_async([])
 
         assert result == ""
 
@@ -109,7 +109,7 @@ class TestFormatConversationContext:
         )
         messages = [Message(message_pieces=[piece])]
 
-        result = await format_conversation_context_async(messages)
+        result = await build_conversation_context_string_async(messages)
 
         assert "Turn 1:" in result
         assert "User: What is the weather?" in result
@@ -134,7 +134,7 @@ class TestFormatConversationContext:
             Message(message_pieces=[assistant_piece]),
         ]
 
-        result = await format_conversation_context_async(messages)
+        result = await build_conversation_context_string_async(messages)
 
         assert "Turn 1:" in result
         assert "User: What is 2+2?" in result
@@ -160,7 +160,7 @@ class TestFormatConversationContext:
             messages.append(Message(message_pieces=[user_piece]))
             messages.append(Message(message_pieces=[assistant_piece]))
 
-        result = await format_conversation_context_async(messages)
+        result = await build_conversation_context_string_async(messages)
 
         assert "Turn 1:" in result
         assert "Turn 2:" in result
@@ -192,7 +192,7 @@ class TestFormatConversationContext:
             Message(message_pieces=[user_piece]),
         ]
 
-        result = await format_conversation_context_async(messages)
+        result = await build_conversation_context_string_async(messages)
 
         assert "system" not in result.lower()
         assert "You are a helpful assistant" not in result
@@ -220,7 +220,7 @@ class TestFormatConversationContext:
             Message(message_pieces=[assistant_piece]),
         ]
 
-        result = await format_conversation_context_async(messages)
+        result = await build_conversation_context_string_async(messages)
 
         assert "Turn 1:" in result
         assert "[Image_path - A cat sitting on a couch]" in result
@@ -237,7 +237,7 @@ class TestFormatConversationContext:
         )
         messages = [Message(message_pieces=[user_piece])]
 
-        result = await format_conversation_context_async(messages)
+        result = await build_conversation_context_string_async(messages)
 
         assert "Turn 1:" in result
         assert "User: [Audio_path]" in result
@@ -253,7 +253,7 @@ class TestFormatConversationContext:
         )
         messages = [Message(message_pieces=[user_piece])]
 
-        result = await format_conversation_context_async(messages)
+        result = await build_conversation_context_string_async(messages)
 
         assert "Turn 1:" in result
         assert "How do I protect a computer?" in result

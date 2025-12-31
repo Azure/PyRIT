@@ -3,27 +3,13 @@
 
 import pytest
 
-from pyrit.message_normalizer import MessageNop, GenericSystemSquashNormalizer
+from pyrit.message_normalizer import GenericSystemSquashNormalizer
 from pyrit.models import Message, MessagePiece
 
 
 def _make_message(role: str, content: str) -> Message:
     """Helper to create a Message from role and content."""
     return Message(message_pieces=[MessagePiece(role=role, original_value=content)])
-
-
-@pytest.mark.asyncio
-async def test_message_nop():
-    messages = [
-        _make_message("system", "System message"),
-        _make_message("user", "User message 1"),
-        _make_message("assistant", "Assistant message"),
-    ]
-    message_nop = MessageNop()
-    result = await message_nop.normalize_async(messages)
-    assert len(result) == 3
-    assert result[0].role == "system"
-    assert result[0].get_value() == "System message"
 
 
 @pytest.mark.asyncio

@@ -4,7 +4,7 @@
 from dataclasses import dataclass, field
 from typing import List, Literal, Optional
 
-from pyrit.message_normalizer import MessageStringNormalizer
+from pyrit.message_normalizer import ConversationContextNormalizer, MessageStringNormalizer
 from pyrit.models import ChatMessageRole
 
 
@@ -16,8 +16,7 @@ class PrependedConversationConfiguration:
 
     This class provides control over:
     - Which message roles should have request converters applied
-    - How to normalize/squash conversation history into a single text block
-    - How to handle text insertion when the first message piece is non-text
+    - How to normalize conversation history for non-chat targets
     - What to do when the target is not a PromptChatTarget
     """
 
@@ -26,32 +25,49 @@ class PrependedConversationConfiguration:
     # Example: ["user"] to apply converters only to user messages.
     apply_converters_to_roles: List[ChatMessageRole] = field(default_factory=list)
 
-    # Optional normalizer to squash conversation history into a single text block.
-    # Must implement MessageStringNormalizer (e.g., ChatMLNormalizer or ConversationContextNormalizer).
-    # When provided, the prepended conversation is normalized using this normalizer.
+    # Optional normalizer to format conversation history into a single text block.
+    # Must implement MessageStringNormalizer (e.g., TokenizerTemplateNormalizer or ConversationContextNormalizer).
     # When None and normalization is needed (e.g., for non-chat targets), a default
     # ConversationContextNormalizer is used that produces a readable "Turn N: User/Assistant" format.
-    message_normalizer: Optional[MessageStringNormalizer] = None
+    objective_target_context_normalizer: Optional[MessageStringNormalizer] = None
 
-    # Controls text insertion behavior when message_normalizer is used:
-    # - True: Prepend normalized text to the first text piece if one exists.
-    #   If no text piece exists, insert a new text piece at the beginning.
-    # - False: Always insert a new text piece at the beginning, even if a text piece exists.
-    prepend_to_first_text_piece: bool = True
+    # Optional normalizer for formatting conversation context for the adversarial chat's system prompt.
+    # When None, defaults to ConversationContextNormalizer for readable "Turn N: User/Assistant" format.
+    adversarial_chat_context_normalizer: Optional[MessageStringNormalizer] = None
 
     # Behavior when the target is a PromptTarget but not a PromptChatTarget:
     # - "normalize_first_turn": Normalize the prepended conversation into a string and
-    #   include it in the first message. Uses message_normalizer if provided, otherwise
-    #   falls back to a default "Turn N: User/Assistant" format. This allows using
-    #   prepended conversation context with non-chat targets that don't maintain history.
+    #   store it in ConversationState.normalized_prepended_context. This context will be
+    #   prepended to the first message sent to the target. Uses objective_target_context_normalizer
+    #   if provided, otherwise falls back to ConversationContextNormalizer.
     # - "raise": Raise a ValueError. Use this when prepended conversation history must be
     #   maintained by the target (i.e., target must be a PromptChatTarget).
     non_chat_target_behavior: Literal["normalize_first_turn", "raise"] = "normalize_first_turn"
 
+    def get_objective_target_normalizer(self) -> MessageStringNormalizer:
+        """
+        Get the normalizer for objective target context, with a default fallback.
+
+        Returns:
+            The configured objective_target_context_normalizer, or a default
+            ConversationContextNormalizer if none was configured.
+        """
+        return self.objective_target_context_normalizer or ConversationContextNormalizer()
+
+    def get_adversarial_chat_normalizer(self) -> MessageStringNormalizer:
+        """
+        Get the normalizer for adversarial chat context, with a default fallback.
+
+        Returns:
+            The configured adversarial_chat_context_normalizer, or a default
+            ConversationContextNormalizer if none was configured.
+        """
+        return self.adversarial_chat_context_normalizer or ConversationContextNormalizer()
+
     @classmethod
     def default(cls) -> "PrependedConversationConfiguration":
         """
-        Create a default configuration with no converters applied and no normalization.
+        Create a default configuration with no converters applied.
 
         Returns:
             A configuration that passes prepended conversation through without
@@ -59,39 +75,39 @@ class PrependedConversationConfiguration:
         """
         return cls(
             apply_converters_to_roles=[],
-            message_normalizer=None,
+            objective_target_context_normalizer=None,
+            adversarial_chat_context_normalizer=None,
             non_chat_target_behavior="raise",
         )
 
     @classmethod
-    def with_normalizer(
+    def for_non_chat_target(
         cls,
         *,
-        normalizer: MessageStringNormalizer,
+        objective_target_context_normalizer: Optional[MessageStringNormalizer] = None,
+        adversarial_chat_context_normalizer: Optional[MessageStringNormalizer] = None,
         apply_converters_to_roles: Optional[List[ChatMessageRole]] = None,
-        prepend_to_first_text_piece: bool = True,
     ) -> "PrependedConversationConfiguration":
         """
-        Create a configuration that normalizes prepended conversation into a text block.
+        Create a configuration for use with non-chat targets.
 
-        This is useful for targets that don't support conversation history natively,
-        allowing the context to be included in the first message.
+        This configuration normalizes the prepended conversation into a text block
+        that will be prepended to the first message sent to the target.
 
         Args:
-            normalizer: A MessageStringNormalizer (e.g., ChatMLNormalizer, ConversationContextNormalizer)
-                to format the conversation into a single text block.
+            objective_target_context_normalizer: Normalizer for formatting context for the objective target.
+                Defaults to ConversationContextNormalizer.
+            adversarial_chat_context_normalizer: Normalizer for formatting context for adversarial chat
+                system prompts. Defaults to ConversationContextNormalizer.
             apply_converters_to_roles: Roles to apply converters to before normalization.
                 Defaults to empty list (no converters applied).
-            prepend_to_first_text_piece: Whether to prepend to an existing text piece
-                or insert a new one. Defaults to True.
 
         Returns:
-            A configuration that normalizes the prepended conversation and handles
-            non-chat targets gracefully.
+            A configuration that normalizes the prepended conversation for non-chat targets.
         """
         return cls(
             apply_converters_to_roles=apply_converters_to_roles or [],
-            message_normalizer=normalizer,
-            prepend_to_first_text_piece=prepend_to_first_text_piece,
+            objective_target_context_normalizer=objective_target_context_normalizer,
+            adversarial_chat_context_normalizer=adversarial_chat_context_normalizer,
             non_chat_target_behavior="normalize_first_turn",
         )

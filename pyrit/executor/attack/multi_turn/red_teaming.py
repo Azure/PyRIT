@@ -225,13 +225,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         )
 
         # Update the conversation state with the current context
-        conversation_state: ConversationState = await self._conversation_manager.apply_prepended_conversation_async(
+        conversation_state: ConversationState = await self._conversation_manager.apply_prepended_conversation_to_objective_async(
             target=self._objective_target,
             max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
             prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
-            response_converters=self._response_converters,
         )
 
         # update the turns based on prepend conversation
@@ -247,6 +246,16 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         # update the memory labels
         context.memory_labels = combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels or {})
+
+        # Apply prepended conversation to adversarial chat - builds context AND replays messages
+        if context.prepended_conversation:
+            conversation_state = await self._conversation_manager.apply_prepended_conversation_to_adversarial_async(
+                adversarial_chat=self._adversarial_chat,
+                adversarial_chat_conversation_id=context.session.adversarial_chat_conversation_id,
+                prepended_conversation=context.prepended_conversation,
+                state=conversation_state,
+                labels=context.memory_labels,
+            )
 
         # set the system prompt for the adversarial chat
         # Pass max_turns as well for templates that need it (e.g., Crescendo prompts)
@@ -264,16 +273,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
-
-        # Replay prepended conversation to adversarial chat so it has context
-        # This allows the adversarial chat to continue naturally from established context
-        if context.prepended_conversation:
-            await self._conversation_manager.prepend_to_adversarial_chat_async(
-                adversarial_chat=self._adversarial_chat,
-                adversarial_chat_conversation_id=context.session.adversarial_chat_conversation_id,
-                prepended_conversation=context.prepended_conversation,
-                labels=context.memory_labels,
-            )
 
     async def _perform_async(self, *, context: MultiTurnAttackContext) -> AttackResult:
         """
