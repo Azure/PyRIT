@@ -106,6 +106,3 @@ class TestConversationContextNormalizerNormalizeStringAsync:
 
         assert "converted text" in result
         assert "(original: original text)" in result
-
-
-
