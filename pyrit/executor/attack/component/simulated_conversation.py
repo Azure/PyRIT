@@ -73,31 +73,35 @@ class SimulatedConversationResult:
     @property
     def prepended_messages(self) -> List[Message]:
         """
-        Get all messages before the selected turn.
+        Get all messages before the selected turn with new IDs.
 
         This returns completed turns before the turn specified by `turn_index`,
         suitable for use as `prepended_conversation` in attack strategies.
+        Each message is duplicated with new IDs to avoid database conflicts
+        when the messages are inserted into memory by a subsequent attack.
 
         Returns:
-            List[Message]: All messages before the selected turn.
+            List[Message]: All messages before the selected turn with fresh IDs.
         """
         turn = self._effective_turn_index
         if turn <= 1:
             return []
         # Each complete turn is 2 messages (user + assistant)
         # Messages before turn N: first (N-1) * 2 messages
-        return self.conversation[: (turn - 1) * 2]
+        messages = self.conversation[: (turn - 1) * 2]
+        return [msg.duplicate_message() for msg in messages]
 
     @property
     def next_message(self) -> Optional[Message]:
         """
-        Get the user message at the selected turn.
+        Get the user message at the selected turn with a new ID.
 
         This is the user message from the turn specified by `turn_index`, which
         can be used as the initial prompt/next_message for an attack strategy.
+        The message is duplicated with a new ID to avoid database conflicts.
 
         Returns:
-            Optional[Message]: The user message at the selected turn, or None if not found.
+            Optional[Message]: The user message at the selected turn with a fresh ID, or None if not found.
         """
         turn = self._effective_turn_index
         if turn < 1:
@@ -105,7 +109,7 @@ class SimulatedConversationResult:
         # User message for turn N is at index (N-1) * 2
         user_idx = (turn - 1) * 2
         if user_idx < len(self.conversation) and self.conversation[user_idx].api_role == "user":
-            return self.conversation[user_idx]
+            return self.conversation[user_idx].duplicate_message()
         return None
 
 

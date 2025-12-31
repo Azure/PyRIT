@@ -22,6 +22,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("audio_path",)
+
     #: The name of the Azure region.
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
     #: The API key for accessing the service.
@@ -90,12 +93,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._synthesis_language = synthesis_language
         self._synthesis_voice_name = synthesis_voice_name
         self._output_format = output_format
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "audio_path"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
