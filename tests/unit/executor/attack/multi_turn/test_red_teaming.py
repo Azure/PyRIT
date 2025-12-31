@@ -540,7 +540,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.session is not None
@@ -566,7 +566,7 @@ class TestSetupPhase:
 
         # Mock conversation state with existing turns
         mock_state = ConversationState(turn_count=3)
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.executed_turns == 3
@@ -595,7 +595,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         # Context labels should override strategy labels for common keys
@@ -625,7 +625,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         # Verify system prompt was set
@@ -669,7 +669,7 @@ class TestSetupPhase:
             turn_count=1,
             last_assistant_message_scores=[other_score, success_score],
         )
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.last_score == success_score
@@ -1516,7 +1516,7 @@ class TestRedTeamingConversationTracking:
         )
 
         # Mock the conversation manager to return a state
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async") as mock_update:
+        with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
             mock_update.return_value = ConversationState(
                 turn_count=0, last_user_message="", last_assistant_message_scores=[]
             )
@@ -1551,7 +1551,7 @@ class TestRedTeamingConversationTracking:
         )
 
         with (
-            patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async") as mock_update,
+            patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update,
             patch.object(attack._prompt_normalizer, "send_prompt_async", new_callable=AsyncMock) as mock_send,
             patch.object(Scorer, "score_response_async", new_callable=AsyncMock) as mock_score,
             patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_generate,
@@ -1592,7 +1592,7 @@ class TestRedTeamingConversationTracking:
         )
 
         # Mock the conversation manager
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async") as mock_update:
+        with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
             mock_update.return_value = ConversationState(
                 turn_count=0, last_user_message="", last_assistant_message_scores=[]
             )

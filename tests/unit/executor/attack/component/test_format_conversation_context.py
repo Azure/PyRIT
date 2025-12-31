@@ -1,12 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-
 from pyrit.executor.attack.component.conversation_manager import (
-    build_conversation_context_string_async,
+    _format_piece_content,
+    format_conversation_context,
 )
-from pyrit.message_normalizer import ConversationContextNormalizer
 from pyrit.models import Message, MessagePiece
 
 
@@ -15,7 +13,6 @@ class TestFormatPieceContent:
 
     def test_text_piece_same_original_and_converted(self):
         """Test formatting a text piece where original equals converted."""
-        normalizer = ConversationContextNormalizer()
         piece = MessagePiece(
             role="user",
             original_value="Hello, world!",
@@ -24,13 +21,12 @@ class TestFormatPieceContent:
             converted_value_data_type="text",
         )
 
-        result = normalizer._format_piece_content(piece)
+        result = _format_piece_content(piece)
 
         assert result == "Hello, world!"
 
     def test_text_piece_different_original_and_converted(self):
         """Test formatting a text piece where original differs from converted."""
-        normalizer = ConversationContextNormalizer()
         piece = MessagePiece(
             role="user",
             original_value="Hello, world!",
@@ -39,13 +35,12 @@ class TestFormatPieceContent:
             converted_value_data_type="text",
         )
 
-        result = normalizer._format_piece_content(piece)
+        result = _format_piece_content(piece)
 
         assert result == "HELLO, WORLD! (original: Hello, world!)"
 
     def test_image_piece_with_context_description(self):
         """Test formatting an image piece with context_description metadata."""
-        normalizer = ConversationContextNormalizer()
         piece = MessagePiece(
             role="user",
             original_value="image_path.png",
@@ -54,13 +49,12 @@ class TestFormatPieceContent:
             prompt_metadata={"context_description": "A photo of a red car"},
         )
 
-        result = normalizer._format_piece_content(piece)
+        result = _format_piece_content(piece)
 
         assert result == "[Image_path - A photo of a red car]"
 
     def test_image_piece_without_context_description(self):
         """Test formatting an image piece without context_description metadata."""
-        normalizer = ConversationContextNormalizer()
         piece = MessagePiece(
             role="user",
             original_value="image_path.png",
@@ -68,13 +62,12 @@ class TestFormatPieceContent:
             converted_value_data_type="image_path",
         )
 
-        result = normalizer._format_piece_content(piece)
+        result = _format_piece_content(piece)
 
         assert result == "[Image_path]"
 
     def test_audio_piece_with_context_description(self):
         """Test formatting an audio piece with context_description metadata."""
-        normalizer = ConversationContextNormalizer()
         piece = MessagePiece(
             role="user",
             original_value="audio.mp3",
@@ -83,23 +76,21 @@ class TestFormatPieceContent:
             prompt_metadata={"context_description": "A recording of someone saying hello"},
         )
 
-        result = normalizer._format_piece_content(piece)
+        result = _format_piece_content(piece)
 
         assert result == "[Audio_path - A recording of someone saying hello]"
 
 
 class TestFormatConversationContext:
-    """Tests for the build_conversation_context_string_async function."""
+    """Tests for the format_conversation_context function."""
 
-    @pytest.mark.asyncio
-    async def test_empty_messages_returns_empty_string(self):
+    def test_empty_messages_returns_empty_string(self):
         """Test that empty message list returns empty string."""
-        result = await build_conversation_context_string_async([])
+        result = format_conversation_context([])
 
         assert result == ""
 
-    @pytest.mark.asyncio
-    async def test_single_user_message(self):
+    def test_single_user_message(self):
         """Test formatting a single user message."""
         piece = MessagePiece(
             role="user",
@@ -109,13 +100,12 @@ class TestFormatConversationContext:
         )
         messages = [Message(message_pieces=[piece])]
 
-        result = await build_conversation_context_string_async(messages)
+        result = format_conversation_context(messages)
 
         assert "Turn 1:" in result
         assert "User: What is the weather?" in result
 
-    @pytest.mark.asyncio
-    async def test_user_and_assistant_messages(self):
+    def test_user_and_assistant_messages(self):
         """Test formatting a conversation with user and assistant messages."""
         user_piece = MessagePiece(
             role="user",
@@ -134,14 +124,13 @@ class TestFormatConversationContext:
             Message(message_pieces=[assistant_piece]),
         ]
 
-        result = await build_conversation_context_string_async(messages)
+        result = format_conversation_context(messages)
 
         assert "Turn 1:" in result
         assert "User: What is 2+2?" in result
         assert "Assistant: 4" in result
 
-    @pytest.mark.asyncio
-    async def test_multiple_turns(self):
+    def test_multiple_turns(self):
         """Test formatting multiple conversation turns."""
         messages = []
         for i in range(3):
@@ -160,7 +149,7 @@ class TestFormatConversationContext:
             messages.append(Message(message_pieces=[user_piece]))
             messages.append(Message(message_pieces=[assistant_piece]))
 
-        result = await build_conversation_context_string_async(messages)
+        result = format_conversation_context(messages)
 
         assert "Turn 1:" in result
         assert "Turn 2:" in result
@@ -172,8 +161,7 @@ class TestFormatConversationContext:
         assert "Assistant response 2" in result
         assert "Assistant response 3" in result
 
-    @pytest.mark.asyncio
-    async def test_skips_system_messages(self):
+    def test_skips_system_messages(self):
         """Test that system messages are skipped in the context."""
         system_piece = MessagePiece(
             role="system",
@@ -192,15 +180,14 @@ class TestFormatConversationContext:
             Message(message_pieces=[user_piece]),
         ]
 
-        result = await build_conversation_context_string_async(messages)
+        result = format_conversation_context(messages)
 
         assert "system" not in result.lower()
         assert "You are a helpful assistant" not in result
         assert "Turn 1:" in result
         assert "User: Hello!" in result
 
-    @pytest.mark.asyncio
-    async def test_multimodal_with_context_description(self):
+    def test_multimodal_with_context_description(self):
         """Test formatting conversation with multimodal content that has description."""
         user_piece = MessagePiece(
             role="user",
@@ -220,14 +207,13 @@ class TestFormatConversationContext:
             Message(message_pieces=[assistant_piece]),
         ]
 
-        result = await build_conversation_context_string_async(messages)
+        result = format_conversation_context(messages)
 
         assert "Turn 1:" in result
         assert "[Image_path - A cat sitting on a couch]" in result
         assert "Assistant: That's a cute cat!" in result
 
-    @pytest.mark.asyncio
-    async def test_multimodal_without_context_description(self):
+    def test_multimodal_without_context_description(self):
         """Test formatting conversation with multimodal content without description."""
         user_piece = MessagePiece(
             role="user",
@@ -237,13 +223,12 @@ class TestFormatConversationContext:
         )
         messages = [Message(message_pieces=[user_piece])]
 
-        result = await build_conversation_context_string_async(messages)
+        result = format_conversation_context(messages)
 
         assert "Turn 1:" in result
         assert "User: [Audio_path]" in result
 
-    @pytest.mark.asyncio
-    async def test_converted_value_differs_from_original(self):
+    def test_converted_value_differs_from_original(self):
         """Test that both original and converted are shown when different."""
         user_piece = MessagePiece(
             role="user",
@@ -253,7 +238,7 @@ class TestFormatConversationContext:
         )
         messages = [Message(message_pieces=[user_piece])]
 
-        result = await build_conversation_context_string_async(messages)
+        result = format_conversation_context(messages)
 
         assert "Turn 1:" in result
         assert "How do I protect a computer?" in result

@@ -10,9 +10,6 @@ from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
-from pyrit.executor.attack.core.prepended_conversation_configuration import (
-    PrependedConversationConfiguration,
-)
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
@@ -61,7 +58,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
         params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
-        prepended_conversation_config: Optional[PrependedConversationConfiguration] = None,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -75,9 +71,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             params_type (Type[AttackParamsT]): The type of parameters this strategy accepts.
                 Defaults to AttackParameters. Use AttackParameters.excluding() to create
                 a params type that rejects certain fields.
-            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
-                Configuration for how to process prepended conversations. Controls converter
-                application by role, message normalization, and non-chat target behavior.
 
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
@@ -116,9 +109,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             raise ValueError("max_attempts_on_failure must be a non-negative integer")
 
         self._max_attempts_on_failure = max_attempts_on_failure
-
-        # Store the prepended conversation configuration
-        self._prepended_conversation_config = prepended_conversation_config
 
     def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
         """
@@ -159,12 +149,12 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
 
         # Process prepended conversation if provided
-        await self._conversation_manager.apply_prepended_conversation_to_objective_async(
+        await self._conversation_manager.update_conversation_state_async(
             target=self._objective_target,
             conversation_id=context.conversation_id,
             prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
-            prepended_conversation_config=self._prepended_conversation_config,
+            response_converters=self._response_converters,
         )
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:

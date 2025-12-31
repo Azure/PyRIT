@@ -82,7 +82,7 @@ def sample_prepended_conversation(
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestPrependToAdversarialChat:
-    """Tests for apply_prepended_conversation_to_adversarial_async functionality."""
+    """Tests for prepend_to_adversarial_chat_async functionality."""
 
     @pytest.mark.asyncio
     async def test_prepend_empty_conversation_does_nothing(
@@ -94,7 +94,7 @@ class TestPrependToAdversarialChat:
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=[],
@@ -117,7 +117,7 @@ class TestPrependToAdversarialChat:
 
         prepended = [Message(message_pieces=[sample_user_piece])]
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=prepended,
@@ -142,7 +142,7 @@ class TestPrependToAdversarialChat:
 
         prepended = [Message(message_pieces=[sample_assistant_piece])]
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=prepended,
@@ -171,7 +171,7 @@ class TestPrependToAdversarialChat:
             Message(message_pieces=[sample_user_piece]),
         ]
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=prepended,
@@ -193,7 +193,7 @@ class TestPrependToAdversarialChat:
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=sample_prepended_conversation,
@@ -219,7 +219,7 @@ class TestPrependToAdversarialChat:
 
         original_values = [msg.message_pieces[0].original_value for msg in sample_prepended_conversation]
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=sample_prepended_conversation,
@@ -242,7 +242,7 @@ class TestPrependToAdversarialChat:
 
         prepended = [Message(message_pieces=[sample_user_piece])]
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=prepended,
@@ -265,7 +265,7 @@ class TestPrependToAdversarialChat:
 
         prepended = [Message(message_pieces=[sample_user_piece])]
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=prepended,
@@ -289,7 +289,7 @@ class TestPrependToAdversarialChat:
 
         prepended = [Message(message_pieces=[sample_user_piece])]
 
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=prepended,
@@ -311,7 +311,7 @@ class TestPrependToAdversarialChat:
         conversation_id = str(uuid.uuid4())
 
         # Should not raise, just return early
-        await manager.apply_prepended_conversation_to_adversarial_async(
+        await manager.prepend_to_adversarial_chat_async(
             adversarial_chat=mock_adversarial_chat,
             adversarial_chat_conversation_id=conversation_id,
             prepended_conversation=None,  # type: ignore
