@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, MutableSequence, Optional
+from typing import Any, Dict, MutableSequence, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -17,6 +17,7 @@ from pyrit.models import (
     MessagePiece,
     construct_response_from_request,
 )
+from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target import (
     OpenAITarget,
     PromptChatTarget,
@@ -36,8 +37,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     Args:
         api_key (str): The api key for the OpenAI API
         endpoint (str): The endpoint for the OpenAI API
-        model_name (str): The model name for the OpenAI API
-        deployment_name (str): For Azure, the deployment name
+        model_name (str): The model name for the OpenAI API (or deployment name in Azure)
         temperature (float): The temperature for the completion
         max_completion_tokens (int): The maximum number of tokens to be returned by the model.
             The total length of input tokens and generated tokens is limited by
@@ -149,10 +149,15 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._n = n
         self._extra_body_parameters = extra_body_parameters
 
-    def _set_openai_env_configuration_vars(self):
+    def _set_openai_env_configuration_vars(self) -> None:
+        """
+        Set deployment_environment_variable, endpoint_environment_variable,
+        and api_key_environment_variable which are read from .env file.
+        """
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+        self.underlying_model_environment_variable = "OPENAI_CHAT_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -182,8 +187,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
-
-        is_json_response = self.is_response_format_json(message_piece)
+        json_config = self._get_json_response_config(message_piece=message_piece)
 
         # Get conversation from memory and append the current message
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
@@ -191,7 +195,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {message}")
 
-        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+        body = await self._construct_request_body(conversation=conversation, json_config=json_config)
 
         # Use unified error handling - automatically detects ChatCompletion and validates
         response = await self._handle_openai_request(
@@ -397,8 +401,11 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: _JsonResponseConfig
+    ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
+        response_format = self._build_response_format(json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -412,7 +419,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             "seed": self._seed,
             "n": self._n,
             "messages": messages,
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "response_format": response_format,
         }
 
         if self._extra_body_parameters:
@@ -440,3 +447,19 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
+
+    def _build_response_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+
+        if json_config.schema:
+            return {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
+                },
+            }
+
+        return {"type": "json_object"}

@@ -83,18 +83,13 @@ chapters:
       - file: code/targets/realtime_target
     - file: code/converters/0_converters
       sections:
-        - file: code/converters/1_llm_converters
-        - file: code/converters/2_using_converters
-        - file: code/converters/3_audio_converters
-        - file: code/converters/4_image_converters
-        - file: code/converters/5_selectively_converting
-        - file: code/converters/6_human_converter
-        - file: code/converters/7_video_converters
-        - file: code/converters/ansi_attack_converter
-        - file: code/converters/char_swap_attack_converter
-        - file: code/converters/pdf_converter
-        - file: code/converters/math_prompt_converter
-        - file: code/converters/transparency_attack_converter
+        - file: code/converters/1_text_to_text_converters
+        - file: code/converters/2_audio_converters
+        - file: code/converters/3_image_converters
+        - file: code/converters/4_video_converters
+        - file: code/converters/5_file_converters
+        - file: code/converters/6_selectively_converting
+        - file: code/converters/7_human_converter
     - file: code/scoring/0_scoring
       sections:
       - file: code/scoring/1_azure_content_safety_scorers

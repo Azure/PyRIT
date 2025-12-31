@@ -8,7 +8,7 @@ from unit.mocks import MockPromptTarget
 
 from pyrit.executor.promptgen.fuzzer import FuzzerConverter
 from pyrit.memory import CentralMemory, SQLiteMemory
-from pyrit.models import SeedPrompt
+from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter import (
     AddImageTextConverter,
     AddTextImageConverter,
@@ -26,6 +26,7 @@ from pyrit.prompt_converter import (
     CharSwapConverter,
     CodeChameleonConverter,
     ColloquialWordswapConverter,
+    ConverterResult,
     DiacriticConverter,
     EmojiConverter,
     FlipConverter,
@@ -37,6 +38,7 @@ from pyrit.prompt_converter import (
     MorseConverter,
     PDFConverter,
     PersuasionConverter,
+    PromptConverter,
     QRCodeConverter,
     RandomCapitalLettersConverter,
     RepeatTokenConverter,
@@ -51,6 +53,37 @@ from pyrit.prompt_converter import (
     UrlConverter,
     VariationConverter,
 )
+
+
+def test_prompt_converter_requires_supported_input_types() -> None:
+    """Test that concrete subclasses must define SUPPORTED_INPUT_TYPES."""
+    with pytest.raises(TypeError, match="must define non-empty SUPPORTED_INPUT_TYPES tuple"):
+
+        class InvalidConverter(PromptConverter):
+            SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+
+            async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+                return ConverterResult(output_text=prompt, output_type="text")
+
+
+def test_prompt_converter_requires_supported_output_types() -> None:
+    """Test that concrete subclasses must define SUPPORTED_OUTPUT_TYPES."""
+    with pytest.raises(TypeError, match="must define non-empty SUPPORTED_OUTPUT_TYPES tuple"):
+
+        class InvalidConverter(PromptConverter):
+            SUPPORTED_INPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+
+            async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+                return ConverterResult(output_text=prompt, output_type="text")
+
+
+def test_prompt_converter_requires_both_modality_attributes() -> None:
+    """Test that concrete subclasses must define both SUPPORTED_INPUT_TYPES and SUPPORTED_OUTPUT_TYPES."""
+    with pytest.raises(TypeError, match="must define non-empty SUPPORTED_INPUT_TYPES tuple"):
+
+        class InvalidConverter(PromptConverter):
+            async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+                return ConverterResult(output_text=prompt, output_type="text")
 
 
 @pytest.mark.asyncio
@@ -503,7 +536,7 @@ def is_speechsdk_installed():
         (DiacriticConverter(), ["text"], ["text"]),
         (EmojiConverter(), ["text"], ["text"]),
         (FlipConverter(), ["text"], ["text"]),
-        (HumanInTheLoopConverter(), [], []),
+        (HumanInTheLoopConverter(), ["text"], ["text"]),
         (LeetspeakConverter(), ["text"], ["text"]),
         (MorseConverter(), ["text"], ["text"]),
         (PDFConverter(), ["text"], ["url"]),
