@@ -4,13 +4,6 @@ FastAPI-based REST API for PyRIT.
 
 ## Quick Start
 
-### Install Dependencies
-
-```bash
-# Install with FastAPI support
-pip install -e ".[fastapi]"
-```
-
 ### Run the Server
 
 ```bash

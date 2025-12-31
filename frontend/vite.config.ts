@@ -58,8 +58,8 @@ export default defineConfig({
   optimizeDeps: {
     // Force pre-bundling of large dependencies
     include: [
-      'react', 
-      'react-dom', 
+      'react',
+      'react-dom',
       'react/jsx-runtime',
       '@fluentui/react-components',
       '@fluentui/react-icons',

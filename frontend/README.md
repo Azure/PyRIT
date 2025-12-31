@@ -2,42 +2,31 @@
 
 Modern TypeScript + React frontend for PyRIT, built with Fluent UI.
 
-## Development
+## Quick Start
+
+### Installation
 
 ```bash
-# Install dependencies
 npm install
-
-# Start both backend and frontend (cross-platform)
-python dev.py start
-# OR use npm script
-npm run start
-
-# Restart both servers
-python dev.py restart
-# OR
-npm run restart
-
-# Stop all servers
-python dev.py stop
-# OR
-npm run stop
-
-# Run Vite dev server only (backend must be started separately)
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
 ```
 
-**Development Mode**: The `dev.py` script sets `PYRIT_DEV_MODE=true` so the backend expects the frontend to run separately on port 3000.
+### Running the Frontend
 
-**Production Mode**: When installed from PyPI, the backend serves the bundled frontend and will exit if frontend files are missing.
+```bash
+# Start the frontend server
+python dev.py start
 
-## Stack
+# Stop the frontend server
+python dev.py stop
+
+# Restart the frontend server
+python dev.py restart
+```
+
+The frontend will be available at `http://localhost:3000`
+
+
+## Tech Stack
 
 - **React 18** - UI framework
 - **TypeScript** - Type safety
@@ -45,20 +34,4 @@ npm run preview
 - **Vite** - Fast build tool
 - **Axios** - HTTP client
 
-## Project Structure
-
-```
-src/
-├── components/     # React components
-│   ├── Chat/      # Chat interface
-│   ├── Layout/    # Layout components
-│   └── Sidebar/   # Navigation sidebar
-├── services/      # API client
-├── types/         # TypeScript types
-└── styles/        # Global styles
-```
-
-## Configuration
-
-The frontend proxies API requests to `http://localhost:8000` in development.
 Configure this in `vite.config.ts` if needed.
