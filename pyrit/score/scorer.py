@@ -460,6 +460,7 @@ class Scorer(abc.ABC):
         message_value: str,
         message_data_type: PromptDataType,
         scored_prompt_id: str,
+        prepended_text_message_piece: Optional[str] = None,
         category: Optional[Sequence[str] | str] = None,
         objective: Optional[str] = None,
         score_value_output_key: str = "score_value",
@@ -478,9 +479,15 @@ class Scorer(abc.ABC):
         Args:
             prompt_target (PromptChatTarget): The target LLM to send the message to.
             system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
-            message_value (str): The actual value or content to be scored by the LLM.
-            message_data_type (PromptDataType): The type of the data being sent in the message.
+            message_value (str): The actual value or content to be scored by the LLM (e.g., text, image path,
+                audio path).
+            message_data_type (PromptDataType): The type of the data being sent in the message (e.g., "text",
+                "image_path", "audio_path").
             scored_prompt_id (str): The ID of the scored prompt.
+            prepended_text_message_piece (Optional[str]): Text context to prepend before the main
+                message_value. When provided, creates a multi-piece message with this text first, followed
+                by the message_value. Useful for adding objective/context when scoring non-text content.
+                Defaults to None.
             category (Optional[Sequence[str] | str]): The category of the score. Can also be parsed from
                 the JSON response if not provided. Defaults to None.
             objective (Optional[str]): A description of the objective that is associated with the score,
@@ -518,19 +525,38 @@ class Scorer(abc.ABC):
             attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        scorer_llm_request = Message(
-            [
+
+        # Build message pieces - prepended text context first (if provided), then the main message being scored
+        message_pieces: list[MessagePiece] = []
+
+        # Add prepended text context piece if provided (e.g., objective context for non-text scoring)
+        if prepended_text_message_piece:
+            message_pieces.append(
                 MessagePiece(
                     role="user",
-                    original_value=message_value,
-                    original_value_data_type=message_data_type,
-                    converted_value_data_type=message_data_type,
+                    original_value=prepended_text_message_piece,
+                    original_value_data_type="text",
+                    converted_value_data_type="text",
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                     prompt_metadata=prompt_metadata,
                 )
-            ]
+            )
+
+        # Add the main message piece being scored
+        message_pieces.append(
+            MessagePiece(
+                role="user",
+                original_value=message_value,
+                original_value_data_type=message_data_type,
+                converted_value_data_type=message_data_type,
+                conversation_id=conversation_id,
+                prompt_target_identifier=prompt_target.get_identifier(),
+                prompt_metadata=prompt_metadata,
+            )
         )
+
+        scorer_llm_request = Message(message_pieces)
         try:
             response = await prompt_target.send_prompt_async(message=scorer_llm_request)
         except Exception as ex:

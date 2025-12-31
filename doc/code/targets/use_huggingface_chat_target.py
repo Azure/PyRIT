@@ -74,7 +74,7 @@ try:
     start_time = time.time()
 
     # Send prompts asynchronously
-    responses = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+    responses = await AttackExecutor().execute_attack_async(  # type: ignore
         attack=attack,
         objectives=prompt_list,
     )

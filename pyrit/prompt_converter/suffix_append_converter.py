@@ -13,6 +13,9 @@ class SuffixAppendConverter(PromptConverter):
     See https://github.com/Azure/PyRIT/tree/main/pyrit/auxiliary_attacks/gcg for adversarial suffix generation.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(self, *, suffix: str):
         if not suffix:
             raise ValueError("Please specify a suffix (str) to be appended to the prompt.")
@@ -24,9 +27,3 @@ class SuffixAppendConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         return ConverterResult(output_text=prompt + " " + self.suffix, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit (3.13.5)
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -35,14 +39,6 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 objective = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 
 img_prompt_target = OpenAIImageTarget()
-# For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# from pyrit.auth import get_azure_openai_auth
-# endpoint = "https://your-endpoint.openai.azure.com"
-# target = OpenAIChatTarget(
-#     endpoint=endpoint,
-#     api_key=get_azure_openai_auth(endpoint),
-#     model_name="your-deployment-name"
-# )
 
 image_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
@@ -98,56 +94,59 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 #
 # This example demonstrates how to use the video target to create a video from a text-based prompt.
 #
-# from pyrit.executor.attack import (
-#     AttackExecutor,
-#     AttackScoringConfig,
-#     ConsoleAttackResultPrinter,
-#     PromptSendingAttack,
-# )
-# from pyrit.prompt_target import OpenAIChatTarget, OpenAIVideoTarget
-# from pyrit.score import (
-#     AzureContentFilterScorer,
-#     SelfAskTrueFalseScorer,
-#     TrueFalseQuestion,
-#     VideoFloatScaleScorer,
-#     VideoTrueFalseScorer,
-# )
-# from pyrit.setup import IN_MEMORY, initialize_pyrit_async
-#
-# await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
-#
-# objectives = [
-#     "Video of a raccoon pirate eating flan at a cafe in Spain",
-#     "Video of a raccoon pirate eating a croissant at a cafe in France",
-# ]
-#
-# video_target = OpenAIVideoTarget()
-# objective_scorer = SelfAskTrueFalseScorer(
-#     chat_target=OpenAIChatTarget(),
-#     true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
-# )
-#
-# video_scorer = VideoTrueFalseScorer(
-#     image_capable_scorer=objective_scorer,
-#     num_sampled_frames=10,
-# )
-#
-# attack = PromptSendingAttack(
-#     objective_target=video_target,
-#     attack_scoring_config=AttackScoringConfig(
-#         objective_scorer=video_scorer,
-#         auxiliary_scorers=[VideoFloatScaleScorer(image_capable_scorer=AzureContentFilterScorer())],
-#     ),
-# )
-#
-# results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
-#     attack=attack,
-#     objectives=objectives,
-# )
-#
-# for result in results:
-#     await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
+
+# %%
+
+from pyrit.executor.attack import (
+    AttackExecutor,
+    AttackScoringConfig,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIVideoTarget
+from pyrit.score import (
+    AzureContentFilterScorer,
+    SelfAskTrueFalseScorer,
+    TrueFalseQuestion,
+    VideoFloatScaleScorer,
+    VideoTrueFalseScorer,
+)
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+
+objectives = [
+    "Video of a raccoon pirate eating flan at a cafe in Spain",
+    "Video of a raccoon pirate eating a croissant at a cafe in France",
+]
+
+video_target = OpenAIVideoTarget()
+objective_scorer = SelfAskTrueFalseScorer(
+    chat_target=OpenAIChatTarget(),
+    true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
+)
+
+video_scorer = VideoTrueFalseScorer(
+    image_capable_scorer=objective_scorer,
+    num_sampled_frames=10,
+)
+
+attack = PromptSendingAttack(
+    objective_target=video_target,
+    attack_scoring_config=AttackScoringConfig(
+        objective_scorer=video_scorer,
+        auxiliary_scorers=[VideoFloatScaleScorer(image_capable_scorer=AzureContentFilterScorer())],
+    ),
+)
+
+results = await AttackExecutor().execute_attack_async(  # type: ignore
+    attack=attack,
+    objectives=objectives,
+)
+
+for result in results:
+    await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
 # %% [markdown]
 # ## OpenAI Chat Target (Text + Image --> Text)
@@ -156,7 +155,6 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # %%
 import pathlib
 
-from pyrit.executor.attack import SingleTurnAttackContext
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
@@ -180,8 +178,7 @@ scoring_config = AttackScoringConfig(objective_scorer=scorer)
 image_path = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png")
 
 # This is a single request with two parts, one image and one text
-
-seed_group = SeedGroup(
+seed = SeedGroup(
     seeds=[
         SeedPrompt(
             value="Describe this picture:",
@@ -194,17 +191,12 @@ seed_group = SeedGroup(
     ]
 )
 
-decomposed = seed_group.to_attack_parameters()
-context = SingleTurnAttackContext(
-    objective="Describe the picture",
-    next_message=decomposed.current_turn_message,
-)
 
 attack = PromptSendingAttack(
     objective_target=azure_openai_gpt4o_chat_target,
     attack_scoring_config=scoring_config,
 )
 
-result = await attack.execute_with_context_async(context=context)  # type: ignore
+result = await attack.execute_async(objective="Describe the picture", next_message=seed.next_message)  # type: ignore
 
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore

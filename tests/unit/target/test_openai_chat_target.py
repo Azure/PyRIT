@@ -24,6 +24,7 @@ from pyrit.exceptions.exception_classes import (
 )
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
+from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 
 
@@ -130,7 +131,6 @@ def test_init_is_json_supported_can_be_set_to_true(patch_central_database):
 
 @pytest.mark.asyncio()
 async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
-
     image_request = get_image_message_piece()
     entries = [
         Message(
@@ -183,23 +183,53 @@ async def test_construct_request_body_includes_extra_body_params(
 
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["key"] == "value"
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("is_json", [True, False])
-async def test_construct_request_body_includes_json(
-    is_json, target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
-):
-
+async def test_construct_request_body_json_object(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
     request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata={"response_format": "json"})
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
-    if is_json:
-        assert body["response_format"] == {"type": "json_object"}
-    else:
-        assert "response_format" not in body
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["response_format"] == {"type": "json_object"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_json_schema(target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece):
+    schema_obj = {"type": "object", "properties": {"name": {"type": "string"}}}
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata={"response_format": "json", "json_schema": schema_obj})
+
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "CustomSchema", "schema": schema_obj, "strict": True},
+    }
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_json_schema_optional_params(
+    target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
+):
+    schema_obj = {"type": "object", "properties": {"name": {"type": "string"}}}
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(
+        metadata={
+            "response_format": "json",
+            "json_schema": schema_obj,
+            "json_schema_name": "MySchema",
+            "json_schema_strict": False,
+        }
+    )
+
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "MySchema", "schema": schema_obj, "strict": False},
+    }
 
 
 @pytest.mark.asyncio
@@ -208,13 +238,15 @@ async def test_construct_request_body_removes_empty_values(
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert "max_completion_tokens" not in body
     assert "max_tokens" not in body
     assert "temperature" not in body
     assert "top_p" not in body
     assert "frequency_penalty" not in body
     assert "presence_penalty" not in body
+    assert "response_format" not in body
 
 
 @pytest.mark.asyncio
@@ -222,8 +254,9 @@ async def test_construct_request_body_serializes_text_message(
     target: OpenAIChatTarget, dummy_text_message_piece: MessagePiece
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert (
         body["messages"][0]["content"] == "dummy text"
     ), "Text messages are serialized in a simple way that's more broadly supported"
@@ -236,8 +269,9 @@ async def test_construct_request_body_serializes_complex_message(
     image_piece = get_image_message_piece()
     image_piece.conversation_id = dummy_text_message_piece.conversation_id  # Match conversation IDs
     request = Message(message_pieces=[dummy_text_message_piece, image_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     messages = body["messages"][0]["content"]
     assert len(messages) == 2, "Complex messages are serialized as a list"
     assert messages[0]["type"] == "text", "Text messages are serialized properly when multi-modal"
@@ -441,7 +475,6 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChatTarget):
-
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     # Create proper mock request and response for RateLimitError
@@ -458,7 +491,6 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIChat
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
-
     # Create proper mock request and response for BadRequestError (without content_filter)
     mock_request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
     mock_response = httpx.Response(400, text="Bad Request Error", request=mock_request)
@@ -476,7 +508,6 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
-
     message = Message(
         message_pieces=[
             MessagePiece(
@@ -503,7 +534,6 @@ async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
 
 
 def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
-
     image_piece = get_image_message_piece()
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
     message = Message(
@@ -548,7 +578,6 @@ def test_inheritance_from_prompt_chat_target_base():
 
 
 def test_is_response_format_json_supported(target: OpenAIChatTarget):
-
     message_piece = MessagePiece(
         role="user",
         original_value="original prompt text",
@@ -559,8 +588,26 @@ def test_is_response_format_json_supported(target: OpenAIChatTarget):
     )
 
     result = target.is_response_format_json(message_piece)
-
+    assert isinstance(result, bool)
     assert result is True
+
+
+def test_is_response_format_json_schema_supported(target: OpenAIChatTarget):
+    schema = {"type": "object", "properties": {"name": {"type": "string"}}}
+    message_piece = MessagePiece(
+        role="user",
+        original_value="original prompt text",
+        converted_value="Hello, how are you?",
+        conversation_id="conversation_1",
+        sequence=0,
+        prompt_metadata={
+            "response_format": "json",
+            "json_schema": json.dumps(schema),
+        },
+    )
+
+    result = target.is_response_format_json(message_piece)
+    assert result
 
 
 def test_is_response_format_json_no_metadata(target: OpenAIChatTarget):
@@ -589,7 +636,6 @@ async def test_send_prompt_async_content_filter_400(target: OpenAIChatTarget):
         patch.object(target, "_validate_request"),
         patch.object(target, "_construct_request_body", new_callable=AsyncMock) as mock_construct,
     ):
-
         mock_construct.return_value = {"model": "gpt-4", "messages": [], "stream": False}
 
         # Create proper mock request and response for BadRequestError with content_filter
@@ -1021,3 +1067,105 @@ async def test_construct_message_from_response(target: OpenAIChatTarget, dummy_t
     assert isinstance(result, Message)
     assert len(result.message_pieces) == 1
     assert result.message_pieces[0].converted_value == "Hello from AI"
+
+
+# Tests for underlying_model parameter and get_identifier
+
+
+def test_get_identifier_uses_model_name_when_no_underlying_model(patch_central_database):
+    """Test that get_identifier uses model_name when underlying_model is not provided."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["model_name"] == "my-deployment"
+    assert identifier["__type__"] == "OpenAIChatTarget"
+
+
+def test_get_identifier_uses_underlying_model_when_provided_as_param(patch_central_database):
+    """Test that get_identifier uses underlying_model when passed as a parameter."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        underlying_model="gpt-4o",
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["model_name"] == "gpt-4o"
+    assert identifier["__type__"] == "OpenAIChatTarget"
+
+
+def test_get_identifier_uses_underlying_model_from_env_var(patch_central_database):
+    """Test that get_identifier uses underlying_model from environment variable."""
+    with patch.dict(os.environ, {"OPENAI_CHAT_UNDERLYING_MODEL": "gpt-4o"}):
+        target = OpenAIChatTarget(
+            model_name="my-deployment",
+            endpoint="https://mock.azure.com/",
+            api_key="mock-api-key",
+        )
+
+        identifier = target.get_identifier()
+
+        assert identifier["model_name"] == "gpt-4o"
+
+
+def test_underlying_model_param_takes_precedence_over_env_var(patch_central_database):
+    """Test that underlying_model parameter takes precedence over environment variable."""
+    with patch.dict(os.environ, {"OPENAI_CHAT_UNDERLYING_MODEL": "gpt-4o-from-env"}):
+        target = OpenAIChatTarget(
+            model_name="my-deployment",
+            endpoint="https://mock.azure.com/",
+            api_key="mock-api-key",
+            underlying_model="gpt-4o-from-param",
+        )
+
+        identifier = target.get_identifier()
+
+        assert identifier["model_name"] == "gpt-4o-from-param"
+
+
+def test_get_identifier_includes_endpoint(patch_central_database):
+    """Test that get_identifier includes the endpoint."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["endpoint"] == "https://mock.azure.com/"
+
+
+def test_get_identifier_includes_temperature_when_set(patch_central_database):
+    """Test that get_identifier includes temperature when configured."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        temperature=0.7,
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["temperature"] == 0.7
+
+
+def test_get_identifier_includes_top_p_when_set(patch_central_database):
+    """Test that get_identifier includes top_p when configured."""
+    target = OpenAIChatTarget(
+        model_name="my-deployment",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        top_p=0.9,
+    )
+
+    identifier = target.get_identifier()
+
+    assert identifier["top_p"] == 0.9

@@ -32,6 +32,9 @@ class FuzzerConverter(PromptConverter):
     GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
     """
 
+    SUPPORTED_INPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+    SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+
     @apply_defaults
     def __init__(
         self,

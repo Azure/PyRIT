@@ -17,6 +17,7 @@ services:
       - mypy-cache:/workspace/.mypy_cache:cached
       - pylance-cache:/home/vscode/.cache/pylance:cached
       - node-modules:/workspace/frontend/node_modules:cached
+      - ~/.pyrit:/home/vscode/.pyrit:cached
     network_mode: "host"
     # Note: ports section is not needed with host network mode
     # The container will have direct access to all host network interfaces

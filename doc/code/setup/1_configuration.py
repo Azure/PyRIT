@@ -166,7 +166,7 @@ attack = PromptSendingAttack(
 )
 
 # Execute the attack - all components use sensible defaults
-results = await AttackExecutor().execute_single_turn_attacks_async(attack=attack, objectives=objectives)  # type: ignore
+results = await AttackExecutor().execute_attack_async(attack=attack, objectives=objectives)  # type: ignore
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
