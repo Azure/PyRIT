@@ -153,6 +153,29 @@ class Message:
             ret += str(message_piece) + "\n"
         return "\n".join([str(message_piece) for message_piece in self.message_pieces])
 
+    def to_dict(self) -> dict:
+        """
+        Convert the message to a dictionary representation.
+
+        Returns:
+            dict: A dictionary with 'role', 'converted_value', 'conversation_id', 'sequence',
+                and 'converted_value_data_type' keys.
+        """
+        if len(self.message_pieces) == 1:
+            converted_value: str | list[str] = self.message_pieces[0].converted_value
+            converted_value_data_type: str | list[str] = self.message_pieces[0].converted_value_data_type
+        else:
+            converted_value = [piece.converted_value for piece in self.message_pieces]
+            converted_value_data_type = [piece.converted_value_data_type for piece in self.message_pieces]
+
+        return {
+            "role": self.role,
+            "converted_value": converted_value,
+            "conversation_id": self.conversation_id,
+            "sequence": self.sequence,
+            "converted_value_data_type": converted_value_data_type,
+        }
+
     @staticmethod
     def get_all_values(messages: Sequence[Message]) -> list[str]:
         """Return all converted values across the provided messages."""

@@ -177,6 +177,18 @@ class TestMessageFromPrompt:
         assert message.message_pieces[0].original_value == ""
 
 
+def test_message_to_dict() -> None:
+    """Test that to_dict returns the expected dictionary structure."""
+    message = Message.from_prompt(prompt="Hello world", role="user")
+    result = message.to_dict()
+
+    assert result["role"] == "user"
+    assert result["converted_value"] == "Hello world"
+    assert "conversation_id" in result
+    assert "sequence" in result
+    assert result["converted_value_data_type"] == "text"
+
+
 class TestMessageSimulatedAssistantRole:
     """Tests for Message simulated_assistant role properties."""
 

@@ -4,12 +4,11 @@
 from __future__ import annotations
 
 import uuid
-import warnings
 from datetime import datetime
 from typing import Dict, List, Literal, Optional, Union, cast, get_args
 from uuid import uuid4
 
-from pyrit.models.chat_message import ChatMessage, ChatMessageRole
+from pyrit.models.chat_message import ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -205,6 +204,8 @@ class MessagePiece:
         This property is deprecated and will be removed in a future version.
         Returns api_role for backward compatibility.
         """
+        import warnings
+
         warnings.warn(
             "MessagePiece.role getter is deprecated. Use api_role for comparisons. "
             "This property will be removed in 0.13.0.",
@@ -228,12 +229,14 @@ class MessagePiece:
             raise ValueError(f"Role {value} is not a valid role.")
         self._role = value
 
-    def to_chat_message(self) -> ChatMessage:
+    def to_chat_message(self):
         """
         Convert to a ChatMessage for API calls.
 
         Uses api_role to ensure simulated_assistant is mapped to assistant.
         """
+        from pyrit.models.chat_message import ChatMessage
+
         return ChatMessage(role=cast(ChatMessageRole, self.api_role), content=self.converted_value)
 
     def to_message(self) -> Message:  # type: ignore # noqa F821

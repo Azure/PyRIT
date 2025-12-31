@@ -32,7 +32,6 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AttackResult,
-    ChatMessage,
     DataTypeSerializer,
     Message,
     MessagePiece,
@@ -766,19 +765,6 @@ class MemoryInterface(abc.ABC):
 
         # Ensure cleanup happens even if the object is garbage collected before process exits
         weakref.finalize(self, self.dispose_engine)
-
-    def get_chat_messages_with_conversation_id(self, *, conversation_id: str) -> Sequence[ChatMessage]:
-        """
-        Return the memory for a given conversation_id.
-
-        Args:
-            conversation_id (str): The conversation ID.
-
-        Returns:
-            Sequence[ChatMessage]: The list of chat messages.
-        """
-        memory_entries = self.get_message_pieces(conversation_id=conversation_id)
-        return [ChatMessage(role=me.api_role, content=me.converted_value) for me in memory_entries]  # type: ignore
 
     def get_seeds(
         self,
