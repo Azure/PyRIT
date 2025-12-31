@@ -1,11 +1,11 @@
-import { useState, KeyboardEvent, useRef, useEffect } from 'react'
+import { useState, KeyboardEvent, useRef } from 'react'
 import {
   makeStyles,
   Button,
   tokens,
   Caption1,
 } from '@fluentui/react-components'
-import { SendRegular, AttachRegular, DismissRegular, MicRegular, ArrowSwapRegular } from '@fluentui/react-icons'
+import { SendRegular, AttachRegular, DismissRegular } from '@fluentui/react-icons'
 import { MessageAttachment } from '../../types'
 
 const useStyles = makeStyles({
@@ -105,60 +105,42 @@ const useStyles = makeStyles({
 })
 
 interface InputBoxProps {
-  onSend: (originalValue: string, convertedValue: string | undefined, attachments: MessageAttachment[], converterIdentifiers?: Array<Record<string, string>>) => void
+  onSend: (originalValue: string, convertedValue: string | undefined, attachments: MessageAttachment[]) => void
   disabled?: boolean
-  onConverterToggle?: (isOpen: boolean, text: string) => void
-  registerApplyCallback?: (callback: (text: string, identifiers: Array<Record<string, string>>) => void) => void
 }
 
-export default function InputBox({ onSend, disabled = false, onConverterToggle, registerApplyCallback }: InputBoxProps) {
+export default function InputBox({ onSend, disabled = false }: InputBoxProps) {
   const styles = useStyles()
-  const [input, setInput] = useState('')  // Current text (converted if converters applied)
-  const [originalInput, setOriginalInput] = useState('')  // Original before conversion
+  const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<MessageAttachment[]>([])
-  const [converterIdentifiers, setConverterIdentifiers] = useState<Array<Record<string, string>>>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  // Register callback with parent so ConverterDrawer can update our state
-  useEffect(() => {
-    if (registerApplyCallback) {
-      registerApplyCallback((convertedText: string, identifiers: Array<Record<string, string>>) => {
-        // Store original if this is first conversion
-        if (identifiers.length > 0 && !originalInput) {
-          setOriginalInput(input || '')
-        }
-        setInput(convertedText)
-        setConverterIdentifiers(identifiers)
-      })
-    }
-  }, [registerApplyCallback, input, originalInput])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
 
     const newAttachments: MessageAttachment[] = []
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const url = URL.createObjectURL(file)
-      
+
       let type: MessageAttachment['type'] = 'file'
       if (file.type.startsWith('image/')) type = 'image'
       else if (file.type.startsWith('audio/')) type = 'audio'
       else if (file.type.startsWith('video/')) type = 'video'
-      
+
       newAttachments.push({
         type,
         name: file.name,
         url,
         mimeType: file.type,
         size: file.size,
-        file,  // Store the actual File object
+        file,
       })
     }
-    
+
     setAttachments([...attachments, ...newAttachments])
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -174,18 +156,9 @@ export default function InputBox({ onSend, disabled = false, onConverterToggle, 
 
   const handleSend = () => {
     if ((input.trim() || attachments.length > 0) && !disabled) {
-      // Send both original (pre-conversion) and converted (post-conversion) values
-      // Trim whitespace when there's no actual text content
-      const trimmedInput = input.trim()
-      const trimmedOriginal = originalInput?.trim()
-      const original = trimmedOriginal || trimmedInput  // Use original if set, otherwise current input
-      const converted = trimmedOriginal ? trimmedInput : undefined  // Only set if conversion happened
-      onSend(original, converted, attachments, converterIdentifiers.length > 0 ? converterIdentifiers : undefined)
+      onSend(input.trim(), undefined, attachments)
       setInput('')
-      setOriginalInput('')
-      setConverterIdentifiers([])
       setAttachments([])
-      // Keep converters active - user might want to send multiple messages with same converters
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
@@ -255,14 +228,6 @@ export default function InputBox({ onSend, disabled = false, onConverterToggle, 
               disabled={disabled}
               title="Attach files"
             />
-            <Button
-              className={styles.iconButton}
-              appearance="subtle"
-              icon={<ArrowSwapRegular />}
-              onClick={() => onConverterToggle?.(true, input)}
-              disabled={disabled}
-              title="Convert prompt"
-            />
           </div>
           <textarea
             ref={textareaRef}
@@ -275,13 +240,6 @@ export default function InputBox({ onSend, disabled = false, onConverterToggle, 
             rows={1}
           />
           <div className={styles.iconButtonsRight}>
-            <Button
-              className={styles.iconButton}
-              appearance="subtle"
-              icon={<MicRegular />}
-              disabled={true}
-              title="Voice input (coming soon)"
-            />
             <Button
               className={styles.sendButton}
               appearance="primary"

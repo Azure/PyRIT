@@ -3,10 +3,9 @@ import {
   tokens,
   Text,
   Tooltip,
+  Button,
 } from '@fluentui/react-components'
-import { useEffect, useState } from 'react'
-import Navigation from '../Sidebar/Navigation'
-import { apiClient } from '../../services/api'
+import { WeatherMoonRegular, WeatherSunnyRegular } from '@fluentui/react-icons'
 
 const useStyles = makeStyles({
   root: {
@@ -22,7 +21,13 @@ const useStyles = makeStyles({
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: `0 ${tokens.spacingHorizontalL}`,
+    gap: tokens.spacingHorizontalM,
+  },
+  leftSection: {
+    display: 'flex',
+    alignItems: 'center',
     gap: tokens.spacingHorizontalM,
   },
   logo: {
@@ -40,18 +45,6 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     marginLeft: tokens.spacingHorizontalXS,
   },
-  contentArea: {
-    display: 'flex',
-    flex: 1,
-    overflow: 'hidden',
-  },
-  sidebar: {
-    width: '60px',
-    backgroundColor: tokens.colorNeutralBackground3,
-    borderRight: `1px solid ${tokens.colorNeutralStroke1}`,
-    display: 'flex',
-    flexDirection: 'column',
-  },
   main: {
     flex: 1,
     display: 'flex',
@@ -64,58 +57,36 @@ interface MainLayoutProps {
   children: React.ReactNode
   onToggleTheme: () => void
   isDarkMode: boolean
-  onReturnToChat: () => void
-  onShowHistory: () => void
-  currentView: 'chat' | 'history'
 }
 
-export default function MainLayout({ 
-  children, 
-  onToggleTheme, 
-  isDarkMode, 
-  onReturnToChat, 
-  onShowHistory, 
-  currentView 
+export default function MainLayout({
+  children,
+  onToggleTheme,
+  isDarkMode,
 }: MainLayoutProps) {
   const styles = useStyles()
-  const [version, setVersion] = useState<string>('Loading...')
-
-  useEffect(() => {
-    // Fetch version information
-    apiClient.get<{version: string, display?: string}>('/api/version')
-      .then((response) => {
-        setVersion(response.data.display || response.data.version)
-      })
-      .catch(() => {
-        setVersion('Unknown')
-      })
-  }, [])
 
   return (
     <div className={styles.root}>
       <div className={styles.topBar}>
-        <Tooltip content={`PyRIT Version: ${version}`} relationship="label">
-          <img 
-            src="/roakey.png" 
-            alt="Co-PyRIT Logo" 
-            className={styles.logo}
-          />
-        </Tooltip>
-        <Text className={styles.title}>Co-PyRIT</Text>
-        <Text className={styles.subtitle}>Python Risk Identification Tool</Text>
+        <div className={styles.leftSection}>
+          <Tooltip content="PyRIT" relationship="label">
+            <img
+              src="/roakey.png"
+              alt="Co-PyRIT Logo"
+              className={styles.logo}
+            />
+          </Tooltip>
+          <Text className={styles.title}>Co-PyRIT</Text>
+          <Text className={styles.subtitle}>Minimal Demo</Text>
+        </div>
+        <Button
+          appearance="subtle"
+          icon={isDarkMode ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
+          onClick={onToggleTheme}
+        />
       </div>
-      <div className={styles.contentArea}>
-        <aside className={styles.sidebar}>
-          <Navigation 
-            onToggleTheme={onToggleTheme} 
-            isDarkMode={isDarkMode} 
-            onReturnToChat={onReturnToChat}
-            onShowHistory={onShowHistory}
-            currentView={currentView}
-          />
-        </aside>
-        <main className={styles.main}>{children}</main>
-      </div>
+      <main className={styles.main}>{children}</main>
     </div>
   )
 }

@@ -11,7 +11,6 @@ potentially harmful outputs, which can take many forms, including harmful conten
 incitement or glorification of violence, or sexual content." Additionally, a variety of security risks
 can be introduced by the deployment of an AI system.
 
-(installation-guide)=
 ## Installation Guide
 
 PyRIT offers flexible installation options to suit different needs. Choose the path that best fits your use case:
@@ -40,7 +39,7 @@ Get started immediately with a pre-configured environment:
 
 - ✅ All dependencies included
 - ✅ No Python setup needed
-- ✅ Web GUI or JupyterLab
+- ✅ JupyterLab built-in
 - ✅ Works on all platforms
 
 +++

@@ -1,6 +1,6 @@
 .PHONY: all pre-commit mypy test test-cov-html test-cov-xml
 
-CMD:=uv run --active -m
+CMD:=uv run -m
 PYMODULE:=pyrit
 TESTS:=tests
 UNIT_TESTS:=tests/unit
@@ -17,8 +17,8 @@ mypy:
 	$(CMD) mypy $(PYMODULE) $(UNIT_TESTS)
 
 docs-build:
-	uv run --active jb build -W -v ./doc
-	uv run --active ./build_scripts/generate_rss.py
+	uv run jb build -W -v ./doc
+	uv run ./build_scripts/generate_rss.py
 
 # Because of import time, "auto" seemed to actually go slower than just using 4 processes
 unit-test:
@@ -33,11 +33,6 @@ unit-test-cov-xml:
 integration-test:
 	$(CMD) pytest $(INTEGRATION_TESTS) --cov=$(PYMODULE) $(INTEGRATION_TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
 
-prepare-package:
-	python build_scripts/prepare_package.py
-
-build: prepare-package
-	python -m build
 end-to-end-test:
 	$(CMD) pytest $(END_TO_END_TESTS) -v --junitxml=junit/test-results.xml
 

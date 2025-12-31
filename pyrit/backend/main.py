@@ -43,11 +43,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["health"])
-app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(targets.router, prefix="/api", tags=["targets"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
-app.include_router(converters.router, tags=["converters"])
-app.include_router(convert.router, tags=["convert"])
 app.include_router(version.router, tags=["version"])
 
 
