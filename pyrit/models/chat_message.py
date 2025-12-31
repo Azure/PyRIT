@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 from pyrit.models.literals import ChatMessageRole
 
-ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "tool", "developer"]
+ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "simulated_assistant", "tool", "developer"]
 
 
 class ToolCall(BaseModel):

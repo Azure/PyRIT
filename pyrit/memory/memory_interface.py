@@ -470,7 +470,7 @@ class MemoryInterface(abc.ABC):
         Raises:
             ValueError: If the response is not from an assistant role or has no preceding request.
         """
-        if response.role != "assistant":
+        if response.api_role != "assistant":
             raise ValueError("The provided request is not a response (role must be 'assistant').")
         if response.sequence < 1:
             raise ValueError("The provided request does not have a preceding request (sequence < 1).")
@@ -627,7 +627,7 @@ class MemoryInterface(abc.ABC):
 
         length_of_sequence_to_remove = 0
 
-        if last_message.role == "system" or last_message.role == "user":
+        if last_message.api_role == "system" or last_message.api_role == "user":
             length_of_sequence_to_remove = 1
         else:
             length_of_sequence_to_remove = 2

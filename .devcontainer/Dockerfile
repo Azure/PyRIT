@@ -59,6 +59,13 @@ ENV PATH="/opt/venv/bin:$PATH"
 # vscode user already exists in the base image, just ensure sudo access
 RUN echo "vscode ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+# Install Node.js 20.x and npm for frontend development
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+ && apt-get install -y nodejs \
+ && npm install -g npm@latest \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
 # Pre-create common user caches and fix permissions
 RUN mkdir -p /home/vscode/.cache/pre-commit \
  && mkdir -p /home/vscode/.vscode-server \

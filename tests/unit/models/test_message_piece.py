@@ -918,3 +918,65 @@ def test_message_piece_harm_categories_with_labels():
     result = entry.to_dict()
     assert result["targeted_harm_categories"] == harm_categories
     assert result["labels"] == labels
+
+
+class TestSimulatedAssistantRole:
+    """Tests for simulated_assistant role properties."""
+
+    def test_api_role_returns_assistant_for_assistant(self):
+        """Test that api_role returns 'assistant' for assistant role."""
+        piece = MessagePiece(role="assistant", original_value="Hello")
+        assert piece.api_role == "assistant"
+
+    def test_api_role_returns_assistant_for_simulated_assistant(self):
+        """Test that api_role returns 'assistant' for simulated_assistant role."""
+        piece = MessagePiece(role="simulated_assistant", original_value="Hello")
+        assert piece.api_role == "assistant"
+
+    def test_api_role_returns_user_for_user(self):
+        """Test that api_role returns 'user' for user role."""
+        piece = MessagePiece(role="user", original_value="Hello")
+        assert piece.api_role == "user"
+
+    def test_api_role_returns_system_for_system(self):
+        """Test that api_role returns 'system' for system role."""
+        piece = MessagePiece(role="system", original_value="Hello")
+        assert piece.api_role == "system"
+
+    def test_is_simulated_true_for_simulated_assistant(self):
+        """Test that is_simulated returns True for simulated_assistant."""
+        piece = MessagePiece(role="simulated_assistant", original_value="Hello")
+        assert piece.is_simulated is True
+
+    def test_is_simulated_false_for_assistant(self):
+        """Test that is_simulated returns False for assistant."""
+        piece = MessagePiece(role="assistant", original_value="Hello")
+        assert piece.is_simulated is False
+
+    def test_is_simulated_false_for_user(self):
+        """Test that is_simulated returns False for user."""
+        piece = MessagePiece(role="user", original_value="Hello")
+        assert piece.is_simulated is False
+
+    def test_get_role_for_storage_returns_simulated_assistant(self):
+        """Test that get_role_for_storage returns the actual stored role."""
+        piece = MessagePiece(role="simulated_assistant", original_value="Hello")
+        assert piece.get_role_for_storage() == "simulated_assistant"
+
+    def test_get_role_for_storage_returns_assistant(self):
+        """Test that get_role_for_storage returns assistant for assistant role."""
+        piece = MessagePiece(role="assistant", original_value="Hello")
+        assert piece.get_role_for_storage() == "assistant"
+
+    def test_get_role_for_storage_returns_user(self):
+        """Test that get_role_for_storage returns user for user role."""
+        piece = MessagePiece(role="user", original_value="Hello")
+        assert piece.get_role_for_storage() == "user"
+
+    def test_role_setter_sets_simulated_assistant(self):
+        """Test that role setter can set simulated_assistant."""
+        piece = MessagePiece(role="assistant", original_value="Hello")
+        piece.role = "simulated_assistant"
+        assert piece.get_role_for_storage() == "simulated_assistant"
+        assert piece.api_role == "assistant"
+        assert piece.is_simulated is True

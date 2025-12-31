@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from datetime import datetime
 from typing import Dict, List, Literal, Optional, Union, cast, get_args
 from uuid import uuid4
@@ -86,7 +87,7 @@ class MessagePiece:
         if role not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {role} is not a valid role.")
 
-        self.role: ChatMessageRole = role
+        self._role: ChatMessageRole = role
 
         if converted_value is None:
             converted_value = original_value
@@ -192,7 +193,7 @@ class MessagePiece:
     def to_dict(self) -> dict:
         return {
             "id": str(self.id),
-            "role": self.role,
+            "role": self._role,
             "conversation_id": self.conversation_id,
             "sequence": self.sequence,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
@@ -216,14 +217,14 @@ class MessagePiece:
         }
 
     def __str__(self):
-        return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"
+        return f"{self.prompt_target_identifier}: {self._role}: {self.converted_value}"
 
     __repr__ = __str__
 
     def __eq__(self, other) -> bool:
         return (
             self.id == other.id
-            and self.role == other.role
+            and self._role == other._role
             and self.original_value == other.original_value
             and self.original_value_data_type == other.original_value_data_type
             and self.original_value_sha256 == other.original_value_sha256
