@@ -777,7 +777,7 @@ class _TreeOfAttacksNode:
         target_messages = self._memory.get_conversation(conversation_id=self.objective_target_conversation_id)
 
         # Extract the last assistant response
-        assistant_responses = [r for r in target_messages if r.get_piece().role == "assistant"]
+        assistant_responses = [r for r in target_messages if r.get_piece().api_role == "assistant"]
         if not assistant_responses:
             logger.error(f"No assistant responses found in the conversation {self.objective_target_conversation_id}.")
             raise RuntimeError("Cannot proceed without an assistant response.")

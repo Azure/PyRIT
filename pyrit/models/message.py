@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import copy
 import uuid
+import warnings
 from datetime import datetime
 from typing import Dict, MutableSequence, Optional, Sequence, Union
 
@@ -51,11 +52,44 @@ class Message:
         return self.message_pieces[n]
 
     @property
-    def role(self) -> ChatMessageRole:
-        """Return the role of the first request piece (they should all be the same)."""
+    def api_role(self) -> ChatMessageRole:
+        """
+        Return the API-compatible role of the first message piece.
+
+        Maps simulated_assistant to assistant for API compatibility.
+        All message pieces in a Message should have the same role.
+        """
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
-        return self.message_pieces[0].role
+        return self.message_pieces[0].api_role
+
+    @property
+    def is_simulated(self) -> bool:
+        """
+        Check if this is a simulated assistant response.
+
+        Simulated responses come from prepended conversations or generated
+        simulated conversations, not from actual target responses.
+        """
+        if len(self.message_pieces) == 0:
+            return False
+        return self.message_pieces[0].is_simulated
+
+    @property
+    def role(self) -> ChatMessageRole:
+        """
+        Deprecated: Use api_role for comparisons or _role for internal storage.
+
+        This property is deprecated and will be removed in a future version.
+        Returns api_role for backward compatibility.
+        """
+        warnings.warn(
+            "Message.role getter is deprecated. Use api_role for comparisons. "
+            "This property will be removed in 0.13.0.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.api_role
 
     @property
     def conversation_id(self) -> str:
@@ -98,7 +132,7 @@ class Message:
 
         conversation_id = self.message_pieces[0].conversation_id
         sequence = self.message_pieces[0].sequence
-        role = self.message_pieces[0].role
+        role = self.message_pieces[0]._role
         for message_piece in self.message_pieces:
 
             if message_piece.conversation_id != conversation_id:
@@ -110,7 +144,7 @@ class Message:
             if message_piece.converted_value is None:
                 raise ValueError("Converted prompt text is None.")
 
-            if message_piece.role != role:
+            if message_piece._role != role:
                 raise ValueError("Inconsistent roles within the same message entry.")
 
     def __str__(self):
