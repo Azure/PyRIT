@@ -75,7 +75,7 @@ class ChatMessageListDictContent(ChatMessage):
 
     def __init__(self, **data: Any) -> None:
         warnings.warn(
-            "ChatMessageListDictContent is deprecated and will be removed in 0.13.0. " "Use ChatMessage instead.",
+            "ChatMessageListDictContent is deprecated and will be removed in 0.13.0. Use ChatMessage instead.",
             DeprecationWarning,
             stacklevel=2,
         )

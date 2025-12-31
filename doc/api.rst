@@ -43,24 +43,6 @@ API Reference
     :toctree: _autosummary/
 
 
-:py:mod:`pyrit.message_normalizer`
-==================================
-
-.. automodule:: pyrit.message_normalizer
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    MessageListNormalizer
-    MessageStringNormalizer
-    GenericSystemSquashNormalizer
-    TokenizerTemplateNormalizer
-    ConversationContextNormalizer
-    ChatMessageNormalizer
-
 
 :py:mod:`pyrit.cli`
 =======================================
@@ -297,6 +279,24 @@ API Reference
     PromptMemoryEntry
     SeedEntry
     SQLiteMemory
+
+:py:mod:`pyrit.message_normalizer`
+==================================
+
+.. automodule:: pyrit.message_normalizer
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    MessageListNormalizer
+    MessageStringNormalizer
+    GenericSystemSquashNormalizer
+    TokenizerTemplateNormalizer
+    ConversationContextNormalizer
+    ChatMessageNormalizer
 
 :py:mod:`pyrit.models`
 ======================
