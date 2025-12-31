@@ -13,8 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from pyrit.setup.initialization import initialize_pyrit
-from pyrit.backend.routes import health, chat, targets, config, converters, convert, version
+from pyrit.setup.initialization import initialize_pyrit_async
+from pyrit.backend.routes import health, targets, config, version
 
 # Check for development mode from environment variable
 DEV_MODE = os.getenv("PYRIT_DEV_MODE", "false").lower() == "true"
@@ -29,7 +29,7 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event():
     # Use in-memory to avoid database initialization delays
-    initialize_pyrit(memory_db_type="SQLite")
+    await initialize_pyrit_async(memory_db_type="SQLite")
 
 # Configure CORS
 app.add_middleware(
