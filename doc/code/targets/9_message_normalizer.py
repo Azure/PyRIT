@@ -62,7 +62,7 @@ from pyrit.message_normalizer import ChatMessageNormalizer
 
 # Standard usage
 normalizer = ChatMessageNormalizer()
-chat_messages = await normalizer.normalize_async(messages)
+chat_messages = await normalizer.normalize_async(messages)  # type: ignore[top-level-await]
 
 print("ChatMessage output:")
 for msg in chat_messages:  # type: ignore[assignment]
@@ -71,7 +71,7 @@ for msg in chat_messages:  # type: ignore[assignment]
 # %%
 # With developer role for newer OpenAI models (o1, o3, gpt-4.1+)
 dev_normalizer = ChatMessageNormalizer(use_developer_role=True)
-dev_chat_messages = await dev_normalizer.normalize_async(messages)
+dev_chat_messages = await dev_normalizer.normalize_async(messages)  # type: ignore[top-level-await]
 
 print("ChatMessage with developer role:")
 for msg in dev_chat_messages:  # type: ignore[assignment]
@@ -79,7 +79,7 @@ for msg in dev_chat_messages:  # type: ignore[assignment]
 
 # %%
 # ChatMessageNormalizer also implements MessageStringNormalizer for JSON output
-json_output = await normalizer.normalize_string_async(messages)
+json_output = await normalizer.normalize_string_async(messages)  # type: ignore[top-level-await]
 print("JSON string output:")
 print(json_output)
 
@@ -103,7 +103,7 @@ print(json_output)
 from pyrit.message_normalizer import GenericSystemSquashNormalizer
 
 squash_normalizer = GenericSystemSquashNormalizer()
-squashed_messages = await squash_normalizer.normalize_async(messages)
+squashed_messages = await squash_normalizer.normalize_async(messages)  # type: ignore[top-level-await]
 
 print(f"Original message count: {len(messages)}")
 print(f"Squashed message count: {len(squashed_messages)}")
@@ -133,7 +133,7 @@ print(squashed_messages[0].get_piece().converted_value)
 from pyrit.message_normalizer import ConversationContextNormalizer
 
 context_normalizer = ConversationContextNormalizer()
-context_string = await context_normalizer.normalize_string_async(messages)
+context_string = await context_normalizer.normalize_string_async(messages)  # type: ignore[top-level-await]
 
 print("Conversation context format:")
 print(context_string)
@@ -164,7 +164,7 @@ from pyrit.message_normalizer import TokenizerTemplateNormalizer
 
 # Using an alias (no auth required for this model)
 template_normalizer = TokenizerTemplateNormalizer.from_model("chatml")
-formatted = await template_normalizer.normalize_string_async(messages)
+formatted = await template_normalizer.normalize_string_async(messages)  # type: ignore[top-level-await]
 
 print("ChatML formatted output:")
 print(formatted)
@@ -182,7 +182,7 @@ print(formatted)
 # %%
 # Using squash behavior for models that don't support system messages
 squash_template_normalizer = TokenizerTemplateNormalizer.from_model("chatml", system_message_behavior="squash")
-squashed_formatted = await squash_template_normalizer.normalize_string_async(messages)
+squashed_formatted = await squash_template_normalizer.normalize_string_async(messages)  # type: ignore[top-level-await]
 
 print("ChatML with squashed system message:")
 print(squashed_formatted)
@@ -196,7 +196,7 @@ print(squashed_formatted)
 # Using a custom HuggingFace model
 # Note: Some models require authentication via HUGGINGFACE_TOKEN env var or token parameter
 custom_normalizer = TokenizerTemplateNormalizer.from_model("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
-custom_formatted = await custom_normalizer.normalize_string_async(messages)
+custom_formatted = await custom_normalizer.normalize_string_async(messages)  # type: ignore[top-level-await]
 
 print("TinyLlama formatted output:")
 print(custom_formatted)
@@ -228,7 +228,7 @@ class SimpleMarkdownNormalizer(MessageStringNormalizer):
 
 # Use the custom normalizer
 md_normalizer = SimpleMarkdownNormalizer()
-md_output = await md_normalizer.normalize_string_async(messages)
+md_output = await md_normalizer.normalize_string_async(messages)  # type: ignore[top-level-await]
 
 print("Markdown formatted output:")
 print(md_output)

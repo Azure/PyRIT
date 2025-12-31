@@ -11,7 +11,7 @@ import pytest
 
 from pyrit.message_normalizer import ChatMessageNormalizer
 from pyrit.models import ChatMessage, Message, MessagePiece
-from pyrit.models.literals import ChatMessageRole
+from pyrit.models.literals import ChatMessageRole, PromptDataType
 
 
 def _make_message(role: ChatMessageRole, content: str) -> Message:
@@ -19,7 +19,7 @@ def _make_message(role: ChatMessageRole, content: str) -> Message:
     return Message(message_pieces=[MessagePiece(role=role, original_value=content)])
 
 
-def _make_multipart_message(role: ChatMessageRole, pieces_data: list[tuple[str, str]]) -> Message:
+def _make_multipart_message(role: ChatMessageRole, pieces_data: list[tuple[str, PromptDataType]]) -> Message:
     """Helper to create a multipart Message.
 
     Args:
@@ -94,6 +94,23 @@ class TestChatMessageNormalizerNormalizeAsync:
 
         assert result[0].role == "developer"
         assert result[1].role == "user"
+
+    @pytest.mark.asyncio
+    async def test_system_message_behavior_squash(self):
+        """Test that system_message_behavior='squash' merges system into user message."""
+        normalizer = ChatMessageNormalizer(system_message_behavior="squash")
+        messages = [
+            _make_message("system", "You are helpful"),
+            _make_message("user", "Hello"),
+        ]
+
+        result = await normalizer.normalize_async(messages)
+
+        # System message should be squashed into first user message
+        assert len(result) == 1
+        assert result[0].role == "user"
+        assert "You are helpful" in result[0].content
+        assert "Hello" in result[0].content
 
     @pytest.mark.asyncio
     async def test_multipart_text_message(self):

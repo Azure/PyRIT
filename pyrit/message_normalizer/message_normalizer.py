@@ -2,9 +2,18 @@
 # Licensed under the MIT license.
 
 import abc
-from typing import Any, Generic, List, Protocol, TypeVar
+from typing import Any, Generic, List, Literal, Protocol, TypeVar
 
 from pyrit.models import Message
+
+# Type alias for system message handling strategies
+SystemMessageBehavior = Literal["keep", "squash", "ignore"]
+"""
+How to handle system messages in models with varying support:
+- "keep": Keep system messages as-is (default for most models)
+- "squash": Merge system message into first user message
+- "ignore": Drop system messages entirely
+"""
 
 
 class DictConvertible(Protocol):
@@ -72,3 +81,39 @@ class MessageStringNormalizer(abc.ABC):
         Returns:
             A string representation of the messages.
         """
+
+
+async def apply_system_message_behavior(messages: List[Message], behavior: SystemMessageBehavior) -> List[Message]:
+    """
+    Apply a system message behavior to a list of messages.
+
+    This is a helper function used by normalizers to preprocess messages
+    based on how the target handles system messages.
+
+    Args:
+        messages: The list of Message objects to process.
+        behavior: How to handle system messages:
+            - "keep": Return messages unchanged
+            - "squash": Merge system into first user message
+            - "ignore": Remove system messages
+
+    Returns:
+        The processed list of Message objects.
+
+    Raises:
+        ValueError: If an unknown behavior is provided.
+    """
+    if behavior == "keep":
+        return messages
+    elif behavior == "squash":
+        # Import here to avoid circular imports
+        from pyrit.message_normalizer.generic_system_squash import (
+            GenericSystemSquashNormalizer,
+        )
+
+        return await GenericSystemSquashNormalizer().normalize_async(messages)
+    elif behavior == "ignore":
+        return [msg for msg in messages if msg.role != "system"]
+    else:
+        # This should never happen due to Literal type, but handle it gracefully
+        raise ValueError(f"Unknown system message behavior: {behavior}")

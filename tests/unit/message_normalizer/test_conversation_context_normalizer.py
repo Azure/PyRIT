@@ -5,7 +5,7 @@ import pytest
 
 from pyrit.message_normalizer import ConversationContextNormalizer
 from pyrit.models import Message, MessagePiece
-from pyrit.models.literals import ChatMessageRole
+from pyrit.models.literals import ChatMessageRole, PromptDataType
 
 
 def _make_message(role: ChatMessageRole, content: str) -> Message:
@@ -19,10 +19,12 @@ def _make_message_with_converted(role: ChatMessageRole, original: str, converted
 
 
 def _make_non_text_message(
-    role: ChatMessageRole, value: str, data_type: str, context_description: str | None = None
+    role: ChatMessageRole, value: str, data_type: PromptDataType, context_description: str | None = None
 ) -> Message:
     """Helper to create a non-text Message."""
-    metadata = {"context_description": context_description} if context_description else None
+    metadata: dict[str, str | int] | None = (
+        {"context_description": context_description} if context_description else None
+    )
     return Message(
         message_pieces=[
             MessagePiece(
