@@ -346,7 +346,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             if message_piece.converted_value_data_type != "text":
                 raise ValueError("_build_chat_messages_for_text only supports text.")
 
-            chat_message = ChatMessage(role=message_piece.role, content=message_piece.converted_value)
+            chat_message = ChatMessage(role=message_piece.api_role, content=message_piece.converted_value)
             chat_messages.append(chat_message.model_dump(exclude_none=True))
 
         return chat_messages
@@ -372,7 +372,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             content = []
             role = None
             for message_piece in message_pieces:
-                role = message_piece.role
+                role = message_piece.api_role
                 if message_piece.converted_value_data_type == "text":
                     entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)

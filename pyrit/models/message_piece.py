@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Dict, List, Literal, Optional, Union, cast, get_args
 from uuid import uuid4
 
-from pyrit.models.chat_message import ChatMessage, ChatMessageRole
+from pyrit.models.chat_message import ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -86,7 +86,7 @@ class MessagePiece:
         if role not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {role} is not a valid role.")
 
-        self.role: ChatMessageRole = role
+        self._role: ChatMessageRole = role
 
         if converted_value is None:
             converted_value = original_value
@@ -164,8 +164,80 @@ class MessagePiece:
         )
         self.converted_value_sha256 = await converted_serializer.get_sha256()
 
-    def to_chat_message(self) -> ChatMessage:
-        return ChatMessage(role=cast(ChatMessageRole, self.role), content=self.converted_value)
+    @property
+    def api_role(self) -> ChatMessageRole:
+        """
+        Role to use for API calls.
+
+        Maps simulated_assistant to assistant for API compatibility.
+        Use this property when sending messages to external APIs.
+        """
+        return "assistant" if self._role == "simulated_assistant" else self._role
+
+    @property
+    def is_simulated(self) -> bool:
+        """
+        Check if this is a simulated assistant response.
+
+        Simulated responses come from prepended conversations or generated
+        simulated conversations, not from actual target responses.
+        """
+        return self._role == "simulated_assistant"
+
+    def get_role_for_storage(self) -> ChatMessageRole:
+        """
+        Get the actual stored role, including simulated_assistant.
+
+        Use this when duplicating messages or preserving role information
+        for storage. For API calls or comparisons, use api_role instead.
+
+        Returns:
+            The actual role stored (may be simulated_assistant).
+        """
+        return self._role
+
+    @property
+    def role(self) -> ChatMessageRole:
+        """
+        Deprecated: Use api_role for comparisons or _role for internal storage.
+
+        This property is deprecated and will be removed in a future version.
+        Returns api_role for backward compatibility.
+        """
+        import warnings
+
+        warnings.warn(
+            "MessagePiece.role getter is deprecated. Use api_role for comparisons. "
+            "This property will be removed in 0.13.0.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.api_role
+
+    @role.setter
+    def role(self, value: ChatMessageRole) -> None:
+        """
+        Set the role for this message piece.
+
+        Args:
+            value: The role to set (system, user, assistant, simulated_assistant, tool, developer).
+
+        Raises:
+            ValueError: If the role is not a valid ChatMessageRole.
+        """
+        if value not in ChatMessageRole.__args__:  # type: ignore
+            raise ValueError(f"Role {value} is not a valid role.")
+        self._role = value
+
+    def to_chat_message(self):
+        """
+        Convert to a ChatMessage for API calls.
+
+        Uses api_role to ensure simulated_assistant is mapped to assistant.
+        """
+        from pyrit.models.chat_message import ChatMessage
+
+        return ChatMessage(role=cast(ChatMessageRole, self.api_role), content=self.converted_value)
 
     def to_message(self) -> Message:  # type: ignore # noqa F821
         from pyrit.models.message import Message
@@ -195,7 +267,7 @@ class MessagePiece:
     def to_dict(self) -> dict:
         return {
             "id": str(self.id),
-            "role": self.role,
+            "role": self._role,
             "conversation_id": self.conversation_id,
             "sequence": self.sequence,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
@@ -219,14 +291,14 @@ class MessagePiece:
         }
 
     def __str__(self):
-        return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"
+        return f"{self.prompt_target_identifier}: {self._role}: {self.converted_value}"
 
     __repr__ = __str__
 
     def __eq__(self, other) -> bool:
         return (
             self.id == other.id
-            and self.role == other.role
+            and self._role == other._role
             and self.original_value == other.original_value
             and self.original_value_data_type == other.original_value_data_type
             and self.original_value_sha256 == other.original_value_sha256

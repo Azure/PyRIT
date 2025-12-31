@@ -4,7 +4,7 @@
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from pyrit.memory import CentralMemory
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
@@ -16,6 +16,29 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
+
+
+def mark_messages_as_simulated(messages: Sequence[Message]) -> List[Message]:
+    """
+    Mark assistant messages as simulated_assistant for traceability.
+
+    This function converts all assistant roles to simulated_assistant in the
+    provided messages. This is useful when loading conversations from YAML files
+    or other sources where the responses are not from actual targets.
+
+    Args:
+        messages (Sequence[Message]): The messages to mark as simulated.
+
+    Returns:
+        List[Message]: The same messages with assistant roles converted to simulated_assistant.
+            Modifies the messages in place and also returns them for convenience.
+    """
+    result = list(messages)
+    for message in result:
+        for piece in message.message_pieces:
+            if piece._role == "assistant":
+                piece._role = "simulated_assistant"
+    return result
 
 
 def format_conversation_context(messages: List[Message]) -> str:
@@ -55,17 +78,22 @@ def format_conversation_context(messages: List[Message]) -> str:
         piece = message.get_piece()
 
         # Skip system messages - they're handled separately
-        if piece.role == "system":
+        if piece.api_role == "system":
             continue
 
         # Start a new turn when we see a user message
-        if piece.role == "user":
+        if piece.api_role == "user":
             turn_number += 1
             context_parts.append(f"Turn {turn_number}:")
 
         # Format the piece content
         content = _format_piece_content(piece)
-        role_label = "User" if piece.role == "user" else "Assistant"
+        if piece.api_role == "user":
+            role_label = "User"
+        elif piece.is_simulated:
+            role_label = "Assistant (simulated)"
+        else:
+            role_label = "Assistant"
         context_parts.append(f"{role_label}: {content}")
 
     return "\n".join(context_parts)
@@ -175,7 +203,7 @@ class ConversationManager:
         if role:
             for m in reversed(conversation):
                 piece = m.get_piece()
-                if piece.role == role:
+                if piece.api_role == role:
                     return piece
             return None
 
@@ -288,7 +316,7 @@ class ConversationManager:
         # Determine if we should exclude the last message (if it's a user message in multi-turn context)
         last_message = valid_requests[-1].message_pieces[0]
         is_multi_turn = max_turns is not None
-        should_exclude_last = is_multi_turn and last_message.role == "user"
+        should_exclude_last = is_multi_turn and last_message.api_role == "user"
 
         # Process all messages except potentially the last one
         for i, request in enumerate(valid_requests):
@@ -351,9 +379,9 @@ class ConversationManager:
         for piece in request.message_pieces:
             applicable_converters: Optional[List[PromptConverterConfiguration]] = None
 
-            if piece.role == "user" and request_converters:
+            if piece.api_role == "user" and request_converters:
                 applicable_converters = request_converters
-            elif piece.role == "assistant" and response_converters:
+            elif piece.api_role == "assistant" and response_converters:
                 applicable_converters = response_converters
             # System messages get no converters (applicable_converters remains None)
 
@@ -429,7 +457,7 @@ class ConversationManager:
         is_multi_turn = max_turns is not None
 
         # Only assistant messages count as turns
-        if piece.role == "assistant" and is_multi_turn:
+        if piece.api_role == "assistant" and is_multi_turn:
             conversation_state.turn_count += 1
 
             if conversation_state.turn_count > max_turns:
@@ -466,11 +494,11 @@ class ConversationManager:
             return  # Nothing to extract from empty history
 
         # Extract the last user message and assistant message scores from the last message
-        if last_message.role == "user":
+        if last_message.api_role == "user":
             conversation_state.last_user_message = last_message.converted_value
             logger.debug(f"Extracted last user message: {conversation_state.last_user_message[:50]}...")
 
-        elif last_message.role == "assistant":
+        elif last_message.api_role == "assistant":
             # Get scores for the last assistant message based off of the original id
             conversation_state.last_assistant_message_scores = list(
                 self._memory.get_prompt_scores(prompt_ids=[str(last_message.original_prompt_id)])
@@ -482,7 +510,7 @@ class ConversationManager:
                 return
 
             # Check assumption that there will be a user message preceding the assistant message
-            if len(prepended_conversation) > 1 and prepended_conversation[-2].get_piece().role == "user":
+            if len(prepended_conversation) > 1 and prepended_conversation[-2].get_piece().api_role == "user":
                 conversation_state.last_user_message = prepended_conversation[-2].get_value()
                 logger.debug(f"Extracted preceding user message: {conversation_state.last_user_message[:50]}...")
             else:
@@ -533,11 +561,11 @@ class ConversationManager:
         for message in prepended_conversation:
             for piece in message.message_pieces:
                 # Skip system messages - adversarial chat has its own system prompt
-                if piece.role == "system":
+                if piece.api_role == "system":
                     continue
 
                 # Create a new piece with swapped role for adversarial chat
-                swapped_role = role_swap.get(piece.role, piece.role)
+                swapped_role = role_swap.get(piece.api_role, piece.api_role)
 
                 adversarial_piece = MessagePiece(
                     id=uuid.uuid4(),
