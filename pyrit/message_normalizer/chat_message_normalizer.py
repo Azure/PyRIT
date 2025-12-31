@@ -7,7 +7,10 @@ import os
 from typing import Any, List, Union, cast
 
 from pyrit.common import convert_local_image_to_data_url
-from pyrit.message_normalizer.message_normalizer import MessageListNormalizer, MessageStringNormalizer
+from pyrit.message_normalizer.message_normalizer import (
+    MessageListNormalizer,
+    MessageStringNormalizer,
+)
 from pyrit.models import ChatMessage, ChatMessageRole, DataTypeSerializer, Message
 from pyrit.models.message_piece import MessagePiece
 
@@ -141,6 +144,7 @@ class ChatMessageNormalizer(MessageListNormalizer[ChatMessage], MessageStringNor
 
         Raises:
             ValueError: If the audio format is not supported.
+            FileNotFoundError: If the audio file does not exist.
         """
         ext = DataTypeSerializer.get_extension(audio_path).lower()
         if ext not in SUPPORTED_AUDIO_FORMATS:

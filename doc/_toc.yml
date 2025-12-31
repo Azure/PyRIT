@@ -75,6 +75,7 @@ chapters:
       - file: code/targets/6_rate_limiting
       - file: code/targets/7_http_target
       - file: code/targets/8_openai_responses_target
+      - file: code/targets/9_message_normalizer
       - file: code/targets/open_ai_completions
       - file: code/targets/playwright_target
       - file: code/targets/playwright_target_copilot
@@ -117,7 +118,6 @@ chapters:
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md
       - file: code/memory/embeddings
-      - file: code/memory/chat_message
     - file: code/setup/0_setup
       sections:
       - file: code/setup/1_configuration

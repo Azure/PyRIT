@@ -32,7 +32,6 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AttackResult,
-    ChatMessage,
     DataTypeSerializer,
     Message,
     MessagePiece,

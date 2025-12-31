@@ -137,10 +137,7 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
 
         resolved_token = get_non_required_value(env_var_name="HUGGINGFACE_TOKEN", passed_value=token)
         if not resolved_token:
-            logger.warning(
-                "No HuggingFace token provided. "
-                "Gated models may fail to load without authentication."
-            )
+            logger.warning("No HuggingFace token provided. " "Gated models may fail to load without authentication.")
 
         # Get config from alias or create default config for custom model
         alias_key = model_name_or_alias.lower()
@@ -162,7 +159,9 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
 
         return cls(
             tokenizer=tokenizer,
-            system_message_behavior=system_message_behavior if system_message_behavior is not None else default_behavior,
+            system_message_behavior=(
+                system_message_behavior if system_message_behavior is not None else default_behavior
+            ),
         )
 
     async def normalize_string_async(self, messages: List[Message]) -> str:

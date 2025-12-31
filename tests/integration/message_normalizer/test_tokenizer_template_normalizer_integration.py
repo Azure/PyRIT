@@ -6,9 +6,10 @@ import pytest
 from pyrit.common.path import HOME_PATH
 from pyrit.message_normalizer import TokenizerTemplateNormalizer
 from pyrit.models import Message, MessagePiece
+from pyrit.models.literals import ChatMessageRole
 
 
-def _make_message(role: str, content: str) -> Message:
+def _make_message(role: ChatMessageRole, content: str) -> Message:
     """Helper to create a Message from role and content."""
     return Message(message_pieces=[MessagePiece(role=role, original_value=content)])
 

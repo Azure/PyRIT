@@ -6,7 +6,6 @@ from typing import Optional
 
 from httpx import HTTPStatusError
 
-from pyrit.message_normalizer import MessageListNormalizer, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.exceptions import (
     EmptyResponseException,
@@ -14,8 +13,8 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
+from pyrit.message_normalizer import ChatMessageNormalizer, MessageListNormalizer
 from pyrit.models import (
-    ChatMessage,
     Message,
     construct_response_from_request,
 )

@@ -106,7 +106,6 @@ API Reference
     get_required_value
     is_in_ipython_session
     make_request_and_raise_if_error_async
-    print_chat_messages_with_color
     reset_default_values
     set_default_value
     Singleton
