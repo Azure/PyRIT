@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit (3.13.5)
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -46,13 +50,14 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 # %% [markdown]
 # ## JSON Output
-
+#
 # You can also get the output in JSON format for further processing or storage. In this example, we define a simple JSON schema that describes a person with `name` and `age` properties.
 #
 # For more information about structured outputs with OpenAI, see [the OpenAI documentation](https://platform.openai.com/docs/guides/structured-outputs).
 
 # %%
 import json
+import os
 
 import jsonschema
 
@@ -87,7 +92,11 @@ message_piece = MessagePiece(
 message = Message(message_pieces=[message_piece])
 
 # Create the OpenAI Chat target
-target = OpenAIChatTarget()
+target = OpenAIChatTarget(
+    endpoint=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_ENDPOINT"),
+    api_key=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_KEY"),
+    model_name=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_MODEL"),
+)
 
 # Send the prompt, requesting JSON output
 response = await target.send_prompt_async(message=message)  # type: ignore
