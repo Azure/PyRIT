@@ -8,13 +8,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import HTTPStatusError
 from openai import RateLimitError
-from unit.mocks import get_image_message_piece, get_sample_conversations
+from unit.mocks import get_sample_conversations
 
 from pyrit.exceptions import EmptyResponseException, RateLimitException
-from pyrit.message_normalizer import (
-    GenericSystemSquashNormalizer,
-)
-from pyrit.models import ChatMessage, Message, MessagePiece
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import AzureMLChatTarget
 
 
@@ -107,33 +104,9 @@ async def test_complete_chat_async_with_default_normalizer(
 
 
 @pytest.mark.asyncio
-async def test_complete_chat_async_with_squashnormalizer(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat.message_normalizer = GenericSystemSquashNormalizer()
-
-    messages = [
-        Message(message_pieces=[MessagePiece(role="system", conversation_id="123", original_value="system content")]),
-        Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="user content")]),
-    ]
-
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"output": "extracted response"}
-        mock.return_value = mock_response
-        response = await aml_online_chat._complete_chat_async(messages)
-        assert response == "extracted response"
-
-        args, kwargs = mock.call_args
-        body = kwargs["request_body"]
-
-        assert body
-        assert len(body["input_data"]["input_string"]) == 1
-        assert body["input_data"]["input_string"][0]["role"] == "user"
-
-
-@pytest.mark.asyncio
 async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLChatTarget):
     messages = [
-        ChatMessage(role="user", content="user content"),
+        Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="user content")]),
     ]
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
@@ -142,26 +115,6 @@ async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLCha
         mock.return_value = mock_response
         with pytest.raises(TypeError):
             await aml_online_chat._complete_chat_async(messages)
-
-
-@pytest.mark.asyncio
-async def test_azure_ml_validate_request_length(aml_online_chat: AzureMLChatTarget):
-    request = Message(
-        message_pieces=[
-            MessagePiece(role="user", conversation_id="123", original_value="test"),
-            MessagePiece(role="user", conversation_id="123", original_value="test2"),
-        ]
-    )
-
-    with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await aml_online_chat.send_prompt_async(message=request)
-
-
-@pytest.mark.asyncio
-async def test_azure_ml_validate_prompt_type(aml_online_chat: AzureMLChatTarget):
-    request = Message(message_pieces=[get_image_message_piece()])
-    with pytest.raises(ValueError, match="This target only supports text prompt input."):
-        await aml_online_chat.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio

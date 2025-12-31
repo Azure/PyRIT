@@ -43,6 +43,15 @@ class ChatMessage(BaseModel):
         """
         return self.model_dump_json()
 
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the ChatMessage to a dictionary.
+
+        Returns:
+            A dictionary representation of the message, excluding None values.
+        """
+        return self.model_dump(exclude_none=True)
+
     @classmethod
     def from_json(cls, json_str: str) -> "ChatMessage":
         """

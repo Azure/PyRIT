@@ -65,8 +65,8 @@ normalizer = ChatMessageNormalizer()
 chat_messages = await normalizer.normalize_async(messages)
 
 print("ChatMessage output:")
-for msg in chat_messages:
-    print(f"  Role: {msg.role}, Content: {msg.content}")
+for msg in chat_messages:  # type: ignore[assignment]
+    print(f"  Role: {msg.role}, Content: {msg.content}")  # type: ignore[attr-defined]
 
 # %%
 # With developer role for newer OpenAI models (o1, o3, gpt-4.1+)
@@ -74,8 +74,8 @@ dev_normalizer = ChatMessageNormalizer(use_developer_role=True)
 dev_chat_messages = await dev_normalizer.normalize_async(messages)
 
 print("ChatMessage with developer role:")
-for msg in dev_chat_messages:
-    print(f"  Role: {msg.role}, Content: {msg.content}")
+for msg in dev_chat_messages:  # type: ignore[assignment]
+    print(f"  Role: {msg.role}, Content: {msg.content}")  # type: ignore[attr-defined]
 
 # %%
 # ChatMessageNormalizer also implements MessageStringNormalizer for JSON output
@@ -181,10 +181,7 @@ print(formatted)
 
 # %%
 # Using squash behavior for models that don't support system messages
-squash_template_normalizer = TokenizerTemplateNormalizer.from_model(
-    "chatml",
-    system_message_behavior="squash"
-)
+squash_template_normalizer = TokenizerTemplateNormalizer.from_model("chatml", system_message_behavior="squash")
 squashed_formatted = await squash_template_normalizer.normalize_string_async(messages)
 
 print("ChatML with squashed system message:")
@@ -198,9 +195,7 @@ print(squashed_formatted)
 # %%
 # Using a custom HuggingFace model
 # Note: Some models require authentication via HUGGINGFACE_TOKEN env var or token parameter
-custom_normalizer = TokenizerTemplateNormalizer.from_model(
-    "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-)
+custom_normalizer = TokenizerTemplateNormalizer.from_model("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 custom_formatted = await custom_normalizer.normalize_string_async(messages)
 
 print("TinyLlama formatted output:")
@@ -213,6 +208,7 @@ print(custom_formatted)
 
 # %%
 from typing import List
+
 from pyrit.message_normalizer import MessageStringNormalizer
 from pyrit.models import Message
 
