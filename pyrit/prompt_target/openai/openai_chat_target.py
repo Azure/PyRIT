@@ -241,10 +241,9 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             PyritException: For unexpected response structures or finish reasons.
             EmptyResponseException: When the API returns an empty response.
         """
-
-# Check for missing choices
-if not hasattr(response, "choices") or not response.choices:
-raise PyritException(message="No choices returned in the completion response.")
+        # Check for missing choices
+        if not hasattr(response, "choices") or not response.choices:
+            raise PyritException(message="No choices returned in the completion response.")
 
         choice = response.choices[0]
         finish_reason = choice.finish_reason

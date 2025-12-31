@@ -34,7 +34,7 @@ class DatasetConfiguration:
         seed_groups (Optional[List[SeedGroup]]): Explicit list of SeedGroups to use.
         dataset_names (Optional[List[str]]): Names of datasets to load from memory.
         max_dataset_size (Optional[int]): If set, randomly samples up to this many SeedGroups
-            from the configured dataset source.
+            from the configured dataset source (without replacement, so no duplicates).
         scenario_composites (Optional[Sequence[ScenarioCompositeStrategy]]): The scenario
             strategies being executed. Subclasses can use this to filter or customize
             which seed groups are loaded based on the selected strategies.
@@ -54,7 +54,8 @@ class DatasetConfiguration:
         Args:
             seed_groups (Optional[List[SeedGroup]]): Explicit list of SeedGroups to use.
             dataset_names (Optional[List[str]]): Names of datasets to load from memory.
-            max_dataset_size (Optional[int]): If set, randomly samples up to this many SeedGroups.
+            max_dataset_size (Optional[int]): If set, randomly samples up to this many SeedGroups
+                (without replacement).
             scenario_composites (Optional[Sequence[ScenarioCompositeStrategy]]): The scenario
                 strategies being executed. Subclasses can use this to filter or customize
                 which seed groups are loaded.
@@ -187,12 +188,14 @@ class DatasetConfiguration:
         """
         Apply max_dataset_size sampling to a list of seed groups.
 
+        Uses random sampling without replacement (no duplicates in the result).
+
         Args:
             seed_groups (List[SeedGroup]): The seed groups to potentially sample from.
 
         Returns:
             List[SeedGroup]: The original list if max_dataset_size is not set,
-                or a random sample of up to max_dataset_size items.
+                or a random sample of up to max_dataset_size unique items.
         """
         if self.max_dataset_size is None or len(seed_groups) <= self.max_dataset_size:
             return seed_groups
