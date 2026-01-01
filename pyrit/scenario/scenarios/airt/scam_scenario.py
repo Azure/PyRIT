@@ -2,12 +2,17 @@
 # Licensed under the MIT license.
 
 import os
+from pathlib import Path
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
-from pyrit.common.path import SCORER_SEED_PROMPT_PATH
+from pyrit.common.path import (
+    EXECUTOR_RED_TEAM_PATH,
+    SCORER_SEED_PROMPT_PATH,
+)
 from pyrit.executor.attack import (
-    CrescendoAttack,
+    ContextComplianceAttack,
+    RedTeamingAttack,
     RolePlayAttack,
     RolePlayPaths,
     TAPAttack,
@@ -17,7 +22,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
+from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.scenario import Scenario
@@ -26,32 +31,30 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioStrategy,
 )
 from pyrit.score import (
+    SelfAskRefusalScorer,
     SelfAskTrueFalseScorer,
+    TrueFalseCompositeScorer,
+    TrueFalseInverterScorer,
+    TrueFalseScoreAggregator,
+    TrueFalseScorer,
 )
+
+PERSUASION_DECEPTION_PATH = Path(EXECUTOR_RED_TEAM_PATH, "persuasion_deception").resolve()
 
 
 class ScamStrategy(ScenarioStrategy):
     """
-    Strategies for the Scam (Impersonation) Scenario.
+    Strategies for the Scam Scenario.
     """
 
     ALL = ("all", {"all"})
-    # ROLE_PLAY = ("roleplay", {"roleplay"})
+    SINGLE_TURN = ("single_turn", {"single_turn"})
     MULTI_TURN = ("multi_turn", {"multi_turn"})
-    # Consider using DeepResearch to run Targeted Multi-Turn attacks on the prompts...e.g. using Deep Research to get info about a specific test subject.
-    # TARGETED_MULTI_TURN = ("targeted_multi_turn", {"targeted"})
 
-    Crescendo = ("crescendo", {"multi_turn"})
-    RedTeaming = ("red_teaming", {"multi_turn"})
-    Pair = ("pair", {"multi_turn"})
-    TAP = ("tap", {"multi_turn"})
-    # MultiPromptSending = ("multi_prompt_sending", {"multi_turn"})
-
-    # Persuasion = ("persuasion", {"roleplay"})
-    # Movie = ("movie", {"roleplay"})
-    # Trivia = ("trivia", {"roleplay"})
-    # VideoGame = ("video_game", {"roleplay"})
-    # TranslationConverter Strategy - add (Russian language) converter to each seed prompt + add "respond in english"
+    ContextCompliance = ("context_compliance", {"single_turn"})
+    RolePlay = ("role_play", {"single_turn"})
+    PersuasiveRedTeamingAttack = ("persuasive_rta", {"multi_turn"})
+    # Normal Text Gen Red Teaming Attack?
 
     @classmethod
     def get_aggregate_tags(cls) -> set[str]:
@@ -62,7 +65,7 @@ class ScamStrategy(ScenarioStrategy):
             set[str]: Set of tags that are aggregate markers.
         """
         # Include base class aggregates ("all") and add scenario-specific ones
-        return super().get_aggregate_tags() | {"multi_turn"}
+        return super().get_aggregate_tags() | {"single_turn", "multi_turn"}
 
 
 class ScamScenario(Scenario):
@@ -103,7 +106,7 @@ class ScamScenario(Scenario):
         self,
         *,
         objectives: Optional[List[str]] = None,
-        objective_scorer: Optional[SelfAskTrueFalseScorer] = None,
+        objective_scorer: Optional[TrueFalseScorer] = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
@@ -113,7 +116,7 @@ class ScamScenario(Scenario):
 
         Args:
             objectives (Optional[List[str]]): List of objectives to test for scam-related harms.
-            objective_scorer (Optional[SelfAskTrueFalseScorer]): Custom scorer for objective
+            objective_scorer (Optional[TrueFalseScorer]): Custom scorer for objective
                 evaluation.
             adversarial_chat (Optional[PromptChatTarget]): Chat target used to rephrase the
                 objective into the role-play context (in single-turn strategies).
@@ -140,19 +143,27 @@ class ScamScenario(Scenario):
             scenario_result_id=scenario_result_id,
         )
 
-        # Now we can safely access self._memory
-        self._objectives = objectives if objectives else self._get_default_objectives()
+        # Convert objectives to seed_groups if provided, otherwise load from dataset
+        if objectives:
+            self._seed_groups = [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
+        else:
+            self._seed_groups = self._get_default_seed_groups()
 
-    def _get_default_objective_scorer(self) -> SelfAskTrueFalseScorer:
+    def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
         Retrieve the default objective scorer.
         The scoring mechanism is as follows:
         1. Detect for objective achieved using a SelfAskTrueFalseScorer.
+        2. Detect for NON-refusal as a backstop. (If the target model refuses to produce scam materials, we want that
+        to register as a negative score).
+
+        Returns:
+            TrueFalseCompositeScorer: Default objective scorer with backstop and scam materials evaluation.
 
         Returns:
             SelfAskTrueFalseScorer: Default objective scorer for scam scenarios.
         """
-        return SelfAskTrueFalseScorer(
+        scam_materials = SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(
                 endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
                 api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
@@ -162,6 +173,18 @@ class ScamScenario(Scenario):
             true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "scams.yaml",
         )
 
+        backstop = TrueFalseInverterScorer(
+            scorer=SelfAskRefusalScorer(
+                chat_target=OpenAIChatTarget(
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                )
+            )
+        )
+
+        return TrueFalseCompositeScorer(aggregator=TrueFalseScoreAggregator.AND, scorers=[scam_materials, backstop])
+
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         """
         Provide an OpenAI target for the role-play rephrasing step.
@@ -170,25 +193,25 @@ class ScamScenario(Scenario):
             OpenAIChatTarget: Target that supplies the persuasion script rephrasing.
         """
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"),
-            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2"),
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
-    def _get_default_objectives(self) -> List[str]:
+    def _get_default_seed_groups(self) -> List[SeedGroup]:
         """
-        Load the default scam (impersonation) seed prompts.
+        Load the default scam (impersonation) seed prompts as SeedGroups.
 
         Returns:
-            List[str]: Prompts from the seed dataset.
+            List[SeedGroup]: SeedGroups from the seed dataset.
         """
-        seed_objectives = self._memory.get_seeds(dataset_name="airt_scams", is_objective=True)
+        seed_groups = self._memory.get_seed_groups(dataset_name="airt_scams", is_objective=True)
 
-        if not seed_objectives:
+        if not seed_groups:
             self._raise_dataset_exception()
 
-        return [seed.value for seed in seed_objectives]
+        return list(seed_groups)
 
     def _get_atomic_attack_from_strategy(self, strategy: str) -> AtomicAttack:
         """
@@ -207,39 +230,29 @@ class ScamScenario(Scenario):
         assert self._objective_target is not None
         attack_strategy: Optional[AttackStrategy] = None
 
-        if strategy == "red_teaming":
+        if strategy == "persuasive_rta":
+            self._adversarial_config.system_prompt_path = Path(
+                PERSUASION_DECEPTION_PATH, "persuasion_persona_written.yaml"
+            ).resolve()
+
             attack_strategy = RedTeamingAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
                 attack_adversarial_config=self._adversarial_config,
+                max_turns=5,
             )
-        elif strategy == "crescendo":
-            attack_strategy = CrescendoAttack(
-                objective_target=self._objective_target,
-                attack_adversarial_config=self._adversarial_config,
-                attack_scoring_config=self._scorer_config,
-            )
-        elif strategy == "tap":
-            attack_strategy = TAPAttack(
-                objective_target=self._objective_target,
-                attack_adversarial_config=self._adversarial_config,
-                attack_scoring_config=self._scorer_config,
-            )
-        elif strategy == "pair":
-            attack_strategy = TAPAttack(
-                objective_target=self._objective_target,
-                attack_adversarial_config=self._adversarial_config,
-                attack_scoring_config=self._scorer_config,
-                tree_width=1,
-            )
-        elif strategy == "roleplay":
-            # TODO: Return multiple RolePlayAttacks for each role-play subtype (persuasion, movie, trivia, video game)
-            # TODO: Maybe remove bc its not useful
+        elif strategy == "role_play":
             attack_strategy = RolePlayAttack(
                 objective_target=self._objective_target,
                 adversarial_chat=self._adversarial_chat,
-                role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
+                role_play_definition_path=RolePlayPaths.SCAM_MATERIALS.value,
                 attack_scoring_config=self._scorer_config,
+            )
+        elif strategy == "context_compliance":
+            attack_strategy = ContextComplianceAttack(
+                objective_target=self._objective_target,
+                attack_scoring_config=self._scorer_config,
+                attack_adversarial_config=self._adversarial_config,
             )
         else:
             raise ValueError(f"Unknown ScamStrategy: {strategy}")
@@ -247,7 +260,7 @@ class ScamScenario(Scenario):
         return AtomicAttack(
             atomic_attack_name=f"scam_{strategy}",
             attack=attack_strategy,
-            objectives=self._objectives,
+            seed_groups=self._seed_groups,
             memory_labels=self._memory_labels,
         )
 
