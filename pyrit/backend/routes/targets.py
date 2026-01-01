@@ -2,45 +2,86 @@
 # Licensed under the MIT license.
 
 """
-Target configuration endpoints
+Target configuration endpoints.
 """
 
-from fastapi import APIRouter, HTTPException
-from typing import List
+from typing import Any, Dict, List
 
-from pyrit.backend.models.responses import TargetInfo
-from pyrit.backend.services.target_registry import TargetRegistry
+from fastapi import APIRouter
 
 router = APIRouter()
 
 
-@router.get("/targets", response_model=List[TargetInfo])
-async def list_targets():
+@router.get("/types")
+async def get_target_types() -> List[Dict[str, Any]]:
     """
-    List all available prompt targets from environment configuration
+    Get available PyRIT target types with their default environment variables.
+
+    Returns:
+        List[Dict[str, Any]]: List of target type configurations with default env vars.
     """
-    targets = TargetRegistry.get_available_targets()
-    return [
-        TargetInfo(
-            id=t["id"],
-            name=t["name"],
-            type=t["type"],
-            description=t["description"],
-            status=t["status"],
-        )
-        for t in targets
+    # Return OpenAI-compatible targets with their default environment variable names
+    target_types = [
+        {
+            "id": "OpenAIChatTarget",
+            "name": "OpenAI Chat",
+            "description": "OpenAI API-compatible chat endpoint (works with Azure OpenAI, OpenAI, and compatible APIs)",
+            "default_env_vars": {
+                "endpoint": "OPENAI_CHAT_ENDPOINT",
+                "api_key": "OPENAI_CHAT_KEY",
+                "model": "OPENAI_CHAT_MODEL",
+            },
+        },
+        {
+            "id": "OpenAIImageTarget",
+            "name": "OpenAI Image",
+            "description": "OpenAI API-compatible image generation endpoint",
+            "default_env_vars": {
+                "endpoint": "OPENAI_IMAGE_ENDPOINT",
+                "api_key": "OPENAI_IMAGE_API_KEY",
+                "model": "OPENAI_IMAGE_MODEL",
+            },
+        },
+        {
+            "id": "OpenAITTSTarget",
+            "name": "OpenAI Text-to-Speech",
+            "description": "OpenAI API-compatible text-to-speech endpoint",
+            "default_env_vars": {
+                "endpoint": "OPENAI_TTS_ENDPOINT",
+                "api_key": "OPENAI_TTS_KEY",
+                "model": "OPENAI_TTS_MODEL",
+            },
+        },
+        {
+            "id": "OpenAIVideoTarget",
+            "name": "OpenAI Video",
+            "description": "OpenAI API-compatible video generation endpoint",
+            "default_env_vars": {
+                "endpoint": "OPENAI_VIDEO_ENDPOINT",
+                "api_key": "OPENAI_VIDEO_KEY",
+                "model": "OPENAI_VIDEO_MODEL",
+            },
+        },
+        {
+            "id": "RealtimeTarget",
+            "name": "OpenAI Realtime",
+            "description": "OpenAI API-compatible realtime API endpoint",
+            "default_env_vars": {
+                "endpoint": "OPENAI_REALTIME_ENDPOINT",
+                "api_key": "OPENAI_REALTIME_API_KEY",
+                "model": "OPENAI_REALTIME_MODEL",
+            },
+        },
+        {
+            "id": "OpenAIResponseTarget",
+            "name": "OpenAI Response",
+            "description": "OpenAI API-compatible response endpoint for structured outputs",
+            "default_env_vars": {
+                "endpoint": "OPENAI_RESPONSES_ENDPOINT",
+                "api_key": "OPENAI_RESPONSES_KEY",
+                "model": "OPENAI_RESPONSES_MODEL",
+            },
+        },
     ]
 
-
-@router.get("/targets/{target_id}", response_model=TargetInfo)
-async def get_target(target_id: str):
-    """
-    Get information about a specific target
-    """
-    targets = await list_targets()
-    target = next((t for t in targets if t.id == target_id), None)
-    
-    if not target:
-        raise HTTPException(status_code=404, detail="Target not found")
-    
-    return target
+    return target_types

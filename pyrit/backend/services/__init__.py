@@ -2,5 +2,5 @@
 # Licensed under the MIT license.
 
 """
-Business logic services for backend operations
+Business logic services for backend operations.
 """

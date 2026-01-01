@@ -2,5 +2,5 @@
 # Licensed under the MIT license.
 
 """
-API route handlers
+API route handlers.
 """

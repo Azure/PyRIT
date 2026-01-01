@@ -5,12 +5,13 @@
 Cross-platform script to manage PyRIT UI development servers
 """
 
+import json
 import os
-import sys
+import platform
 import signal
 import subprocess
+import sys
 import time
-import platform
 from pathlib import Path
 
 # Determine workspace root (parent of frontend directory)
@@ -20,6 +21,34 @@ WORKSPACE_ROOT = FRONTEND_DIR.parent
 
 def is_windows():
     return platform.system() == "Windows"
+
+
+def sync_version():
+    """Sync package.json version with PyRIT version"""
+    try:
+        # Get PyRIT version
+        import pyrit
+
+        pyrit_version = pyrit.__version__
+
+        # Convert Python version format to npm format
+        # e.g., "0.10.1.dev0" -> "0.10.1-dev.0"
+        npm_version = pyrit_version.replace(".dev", "-dev.")
+
+        # Read package.json
+        package_json_path = FRONTEND_DIR / "package.json"
+        with open(package_json_path, "r") as f:
+            package_data = json.load(f)
+
+        # Update version if different
+        if package_data.get("version") != npm_version:
+            package_data["version"] = npm_version
+            with open(package_json_path, "w") as f:
+                json.dump(package_data, f, indent=2)
+                f.write("\n")  # Add trailing newline
+            print(f"📦 Updated frontend version to {npm_version}")
+    except Exception as e:
+        print(f"⚠️  Warning: Could not sync version: {e}")
 
 
 def kill_process_by_pattern(pattern):
@@ -51,42 +80,62 @@ def stop_servers():
 def start_backend():
     """Start the FastAPI backend"""
     print("🚀 Starting backend on port 8000...")
-    
+
     # Change to workspace root
     os.chdir(WORKSPACE_ROOT)
-    
+
     # Set development mode environment variable
     env = os.environ.copy()
     env["PYRIT_DEV_MODE"] = "true"
-    
+
     # Start backend with uvicorn
     if is_windows():
         backend = subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "pyrit.backend.main:app", 
-             "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"],
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "pyrit.backend.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--log-level",
+                "info",
+            ],
             env=env,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0,
         )
     else:
         backend = subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "pyrit.backend.main:app", 
-             "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"],
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "pyrit.backend.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--log-level",
+                "info",
+            ],
             env=env,
         )
-    
+
     return backend
 
 
 def start_frontend():
     """Start the Vite frontend"""
     print("🎨 Starting frontend on port 3000...")
-    
+
     # Change to frontend directory
     os.chdir(FRONTEND_DIR)
-    
+
     # Start frontend process
     npm_cmd = "npm.cmd" if is_windows() else "npm"
-    
+
     if is_windows():
         frontend = subprocess.Popen(
             [npm_cmd, "run", "dev"],
@@ -94,7 +143,7 @@ def start_frontend():
         )
     else:
         frontend = subprocess.Popen([npm_cmd, "run", "dev"])
-    
+
     return frontend
 
 
@@ -102,14 +151,14 @@ def start_servers():
     """Start both backend and frontend servers"""
     print("🚀 Starting PyRIT UI servers...")
     print()
-    
+
     backend = start_backend()
     print("⏳ Waiting for backend to initialize...")
     time.sleep(5)  # Give backend more time to fully start up
-    
+
     frontend = start_frontend()
     time.sleep(2)
-    
+
     print()
     print("✅ Servers running!")
     print(f"   Backend:  http://localhost:8000 (PID: {backend.pid})")
@@ -117,7 +166,7 @@ def start_servers():
     print("   API Docs: http://localhost:8000/docs")
     print()
     print("Press Ctrl+C to stop")
-    
+
     return backend, frontend
 
 
@@ -130,7 +179,7 @@ def wait_for_interrupt(backend, frontend):
     except KeyboardInterrupt:
         print()
         print("🛑 Stopping servers...")
-        
+
         # Terminate processes
         try:
             if is_windows():
@@ -139,23 +188,26 @@ def wait_for_interrupt(backend, frontend):
             else:
                 backend.terminate()
                 frontend.terminate()
-            
+
             # Wait for clean shutdown
             backend.wait(timeout=5)
             frontend.wait(timeout=5)
-        except:
+        except Exception:
             # Force kill if needed
             backend.kill()
             frontend.kill()
-        
+
         print("✅ Servers stopped")
 
 
 def main():
     """Main entry point"""
+    # Sync version before any operation
+    sync_version()
+
     if len(sys.argv) > 1:
         command = sys.argv[1].lower()
-        
+
         if command == "stop":
             stop_servers()
             return
@@ -195,10 +247,10 @@ def main():
             print(f"Unknown command: {command}")
             print("Usage: python dev.py [start|stop|restart|backend|frontend]")
             sys.exit(1)
-    
+
     # Start servers
     backend, frontend = start_servers()
-    
+
     # Wait for interrupt
     wait_for_interrupt(backend, frontend)
 

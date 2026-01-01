@@ -2,11 +2,12 @@
 # Licensed under the MIT license.
 
 """
-Health check endpoints
+Health check endpoints.
 """
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter
-from datetime import datetime
 
 router = APIRouter()
 
@@ -14,21 +15,13 @@ router = APIRouter()
 @router.get("/health")
 async def health_check():
     """
-    Basic health check endpoint
+    Check the health status of the backend service.
+
+    Returns:
+        dict: Health status information including timestamp.
     """
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "pyrit-backend",
-    }
-
-
-@router.get("/version")
-async def version():
-    """
-    Get API version information
-    """
-    return {
-        "version": "0.10.0",
-        "api_version": "v1",
     }

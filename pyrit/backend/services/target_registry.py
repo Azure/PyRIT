@@ -2,20 +2,19 @@
 # Licensed under the MIT license.
 
 """
-Target registry service for managing available PyRIT targets
+Target registry service for managing available PyRIT targets.
 """
 
 import os
-import re
-from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 import pyrit.prompt_target as pt
 
 
 @dataclass
 class TargetConfig:
-    """Configuration for a target from environment variables"""
+    """Configuration for a target from environment variables."""
 
     target_type: str
     endpoint: Optional[str] = None
@@ -25,60 +24,45 @@ class TargetConfig:
 
 
 class TargetRegistry:
-    """Registry of available PyRIT targets based on environment configuration"""
+    """Registry of available PyRIT targets based on environment configuration."""
 
     @classmethod
-    def get_available_targets(cls) -> List[Dict[str, Any]]:
+    def get_available_endpoints(cls) -> List[Dict[str, str]]:
         """
-        Get list of available targets from environment variables.
-        Returns simple filtered lists of endpoint/key/model env vars.
+        Get list of available endpoint environment variables.
+
+        Returns:
+            List[Dict[str, str]]: List of dicts with 'name' (env var name) and 'value' (endpoint URL).
         """
         all_vars = list(os.environ.keys())
-        
         endpoint_vars = sorted([v for v in all_vars if "ENDPOINT" in v and os.getenv(v)])
-        key_vars = sorted([v for v in all_vars if ("KEY" in v or "API" in v) and os.getenv(v)])
-        model_vars = sorted([v for v in all_vars if "MODEL" in v and os.getenv(v)])
-        
-        # Return as targets for compatibility
-        targets = []
-        for endpoint_var in endpoint_vars:
-            endpoint_value = os.getenv(endpoint_var)
-            # Simple name from var name
-            name = endpoint_var.replace("_ENDPOINT", "").replace("_", " ").title()
-            
-            targets.append({
-                "id": endpoint_var,
-                "name": name,
-                "type": "OpenAIChatTarget",
-                "description": f"Endpoint: {endpoint_value}",
-                "status": "available",
-                "endpoint": endpoint_value,
-                "endpoint_var": endpoint_var,
-            })
-        
-        return targets
+
+        return [{"name": var, "value": os.environ[var]} for var in endpoint_vars]
 
     @classmethod
     def create_target_instance(
-        cls, 
+        cls,
         target_type: str = "OpenAIChatTarget",
         endpoint_var: Optional[str] = None,
         key_var: Optional[str] = None,
         model_var: Optional[str] = None,
-        **overrides
+        **overrides,
     ) -> Optional[Any]:
         """
-        Create an instance of a target from user-selected environment variables
+        Create an instance of a target from user-selected environment variables.
 
         Args:
-            target_type: The target class type (currently only OpenAIChatTarget supported)
-            endpoint_var: Name of environment variable containing the endpoint
-            key_var: Name of environment variable containing the API key
-            model_var: Name of environment variable containing the model name
-            **overrides: Direct override values (endpoint, api_key, model_name)
+            target_type: The target class type (currently only OpenAIChatTarget supported).
+            endpoint_var: Name of environment variable containing the endpoint.
+            key_var: Name of environment variable containing the API key.
+            model_var: Name of environment variable containing the model name.
+            **overrides: Direct override values (endpoint, api_key, model_name).
 
         Returns:
-            Target instance or None if not available
+            Optional[Any]: Target instance or None if not available.
+
+        Raises:
+            ValueError: If target_type is not supported.
         """
         # Get values from environment variables or overrides
         endpoint = overrides.get("endpoint") or (os.getenv(endpoint_var) if endpoint_var else None)
@@ -106,13 +90,16 @@ class TargetRegistry:
     @classmethod
     def get_default_attack_target(cls):
         """
-        Get the default target for attacks (converters, scorers, adversarial_chat)
-        Uses OpenAIChatTarget with OPENAI_CHAT_* environment variables
+        Get the default target for attacks (converters, scorers, adversarial_chat).
+
+        Uses OpenAIChatTarget with OPENAI_CHAT_* environment variables.
+
+        Returns:
+            Target instance for attacks.
         """
         return cls.create_target_instance(
             target_type="OpenAIChatTarget",
             endpoint_var="OPENAI_CHAT_ENDPOINT",
             key_var="OPENAI_CHAT_KEY",
-            model_var="OPENAI_CHAT_MODEL"
+            model_var="OPENAI_CHAT_MODEL",
         )
-

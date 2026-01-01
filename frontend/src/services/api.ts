@@ -29,6 +29,9 @@ export const healthApi = {
     const response = await apiClient.get('/health')
     return response.data
   },
+}
+
+export const versionApi = {
   getVersion: async () => {
     const response = await apiClient.get('/version')
     return response.data
@@ -45,8 +48,7 @@ export const configApi = {
     return response.data
   },
   getTargetTypes: async () => {
-    const response = await apiClient.get('/config/target-types')
+    const response = await apiClient.get('/targets/types')
     return response.data
   },
 }
-

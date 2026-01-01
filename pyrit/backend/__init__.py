@@ -2,9 +2,10 @@
 # Licensed under the MIT license.
 
 """
-PyRIT FastAPI Backend
+PyRIT FastAPI Backend.
 """
 
-from pyrit.backend.main import app
+# Don't import app here - it triggers full FastAPI setup
+# Users should import directly: from pyrit.backend.main import app
 
-__all__ = ["app"]
+__all__ = []
