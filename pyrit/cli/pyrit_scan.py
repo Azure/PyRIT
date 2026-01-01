@@ -128,6 +128,19 @@ Examples:
         help=frontend_core.ARG_HELP["memory_labels"],
     )
 
+    parser.add_argument(
+        "--dataset-names",
+        type=str,
+        nargs="+",
+        help=frontend_core.ARG_HELP["dataset_names"],
+    )
+
+    parser.add_argument(
+        "--max-dataset-size",
+        type=frontend_core.positive_int,
+        help=frontend_core.ARG_HELP["max_dataset_size"],
+    )
+
     return parser.parse_args(args)
 
 
@@ -225,6 +238,8 @@ def main(args=None) -> int:
                 max_concurrency=parsed_args.max_concurrency,
                 max_retries=parsed_args.max_retries,
                 memory_labels=memory_labels,
+                dataset_names=parsed_args.dataset_names,
+                max_dataset_size=parsed_args.max_dataset_size,
             )
         )
         return 0

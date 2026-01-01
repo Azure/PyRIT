@@ -32,7 +32,6 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AttackResult,
-    ChatMessage,
     DataTypeSerializer,
     Message,
     MessagePiece,
@@ -471,7 +470,7 @@ class MemoryInterface(abc.ABC):
         Raises:
             ValueError: If the response is not from an assistant role or has no preceding request.
         """
-        if response.role != "assistant":
+        if response.api_role != "assistant":
             raise ValueError("The provided request is not a response (role must be 'assistant').")
         if response.sequence < 1:
             raise ValueError("The provided request does not have a preceding request (sequence < 1).")
@@ -628,7 +627,7 @@ class MemoryInterface(abc.ABC):
 
         length_of_sequence_to_remove = 0
 
-        if last_message.role == "system" or last_message.role == "user":
+        if last_message.api_role == "system" or last_message.api_role == "user":
             length_of_sequence_to_remove = 1
         else:
             length_of_sequence_to_remove = 2
@@ -1398,7 +1397,10 @@ class MemoryInterface(abc.ABC):
             conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))  # type: ignore
 
         if scenario_name:
-            conditions.append(ScenarioResultEntry.scenario_name.contains(scenario_name))  # type: ignore
+            # Normalize CLI snake_case names (e.g., "foundry_scenario") to class names (e.g., "FoundryScenario")
+            # This allows users to query with either format
+            normalized_name = ScenarioResult.normalize_scenario_name(scenario_name)
+            conditions.append(ScenarioResultEntry.scenario_name.contains(normalized_name))  # type: ignore
 
         if scenario_version is not None:
             conditions.append(ScenarioResultEntry.scenario_version == scenario_version)  # type: ignore

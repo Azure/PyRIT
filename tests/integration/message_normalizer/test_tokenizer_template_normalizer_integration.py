@@ -6,9 +6,10 @@ import pytest
 from pyrit.common.path import HOME_PATH
 from pyrit.message_normalizer import TokenizerTemplateNormalizer
 from pyrit.models import Message, MessagePiece
+from pyrit.models.literals import ChatMessageRole
 
 
-def _make_message(role: str, content: str) -> Message:
+def _make_message(role: ChatMessageRole, content: str) -> Message:
     """Helper to create a Message from role and content."""
     return Message(message_pieces=[MessagePiece(role=role, original_value=content)])
 
@@ -54,11 +55,14 @@ async def test_llama3_vision_with_image():
     image_path = HOME_PATH / "assets" / "pyrit_architecture.png"
 
     # Create a message with both text and image pieces
-    text_piece = MessagePiece(role="user", original_value="What is in this image?")
+    # Both pieces need the same conversation_id to be part of the same message
+    conversation_id = "test-conversation"
+    text_piece = MessagePiece(role="user", original_value="What is in this image?", conversation_id=conversation_id)
     image_piece = MessagePiece(
         role="user",
         original_value=str(image_path),
         converted_value_data_type="image_path",
+        conversation_id=conversation_id,
     )
     message = Message(message_pieces=[text_piece, image_piece])
 

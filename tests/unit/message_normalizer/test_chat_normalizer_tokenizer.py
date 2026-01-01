@@ -2,16 +2,17 @@
 # Licensed under the MIT license.
 
 import textwrap
+from unittest.mock import MagicMock, patch
 
 import pytest
 from transformers import AutoTokenizer
-from unittest.mock import MagicMock, patch
 
 from pyrit.message_normalizer import TokenizerTemplateNormalizer
 from pyrit.models import Message, MessagePiece
+from pyrit.models.literals import ChatMessageRole
 
 
-def _make_message(role: str, content: str) -> Message:
+def _make_message(role: ChatMessageRole, content: str) -> Message:
     """Helper to create a Message from role and content."""
     return Message(message_pieces=[MessagePiece(role=role, original_value=content)])
 
@@ -56,9 +57,7 @@ class TestFromModel:
 
             normalizer = TokenizerTemplateNormalizer.from_model("chatml")
 
-            mock_from_pretrained.assert_called_once_with(
-                "HuggingFaceH4/zephyr-7b-beta", token=None
-            )
+            mock_from_pretrained.assert_called_once_with("HuggingFaceH4/zephyr-7b-beta", token=None)
             assert normalizer.tokenizer == mock_tokenizer
 
     def test_from_model_with_full_name(self):
@@ -103,9 +102,7 @@ class TestFromModel:
 
             TokenizerTemplateNormalizer.from_model("CHATML")
 
-            mock_from_pretrained.assert_called_once_with(
-                "HuggingFaceH4/zephyr-7b-beta", token=None
-            )
+            mock_from_pretrained.assert_called_once_with("HuggingFaceH4/zephyr-7b-beta", token=None)
 
 
 class TestNormalizeStringAsync:

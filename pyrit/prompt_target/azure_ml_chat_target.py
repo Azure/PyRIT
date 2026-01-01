@@ -6,7 +6,6 @@ from typing import Optional
 
 from httpx import HTTPStatusError
 
-from pyrit.message_normalizer import MessageListNormalizer, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.exceptions import (
     EmptyResponseException,
@@ -14,8 +13,8 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
+from pyrit.message_normalizer import ChatMessageNormalizer, MessageListNormalizer
 from pyrit.models import (
-    ChatMessage,
     Message,
     construct_response_from_request,
 )
@@ -220,11 +219,8 @@ class AzureMLChatTarget(PromptChatTarget):
         Returns:
             dict: The constructed HTTP request body.
         """
-        # Use the message normalizer to convert Messages to the expected format
-        chat_messages = await self.message_normalizer.normalize_async(messages)
-
-        # Convert to dict format for the API, excluding None fields
-        messages_dict = [m.model_dump(exclude_none=True) for m in chat_messages]
+        # Use the message normalizer to convert Messages to dict format
+        messages_dict = await self.message_normalizer.normalize_to_dicts_async(messages)
 
         # Parameters include additional ones passed in through **kwargs. Those not accepted by the model will
         # be ignored. We only include commonly supported parameters here - model-specific parameters like

@@ -41,8 +41,10 @@ class MockScenario(Scenario):
         return MockStrategy.ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        return []
+    def default_dataset_config(cls):
+        from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
+
+        return DatasetConfiguration(dataset_names=[])
 
 
 class TestScenarioRegistry:
@@ -155,8 +157,12 @@ class TestScenarioRegistry:
                 return MockStrategy.ALL
 
             @classmethod
-            def required_datasets(cls) -> list[str]:
-                return ["test_dataset_1", "test_dataset_2"]
+            def default_dataset_config(cls):
+                from pyrit.scenario.core.dataset_configuration import (
+                    DatasetConfiguration,
+                )
+
+                return DatasetConfiguration(dataset_names=["test_dataset_1", "test_dataset_2"])
 
         registry = ScenarioRegistry()
         registry._scenarios = {
@@ -170,7 +176,7 @@ class TestScenarioRegistry:
         assert scenarios[0]["name"] == "test_scenario"
         assert scenarios[0]["class_name"] == "DocumentedScenario"
         assert "test scenario" in scenarios[0]["description"].lower()
-        assert scenarios[0]["required_datasets"] == ["test_dataset_1", "test_dataset_2"]
+        assert scenarios[0]["default_datasets"] == ["test_dataset_1", "test_dataset_2"]
 
     def test_list_scenarios_no_description(self):
         """Test list_scenarios with scenario lacking docstring."""
@@ -188,8 +194,12 @@ class TestScenarioRegistry:
                 return MockStrategy.ALL
 
             @classmethod
-            def required_datasets(cls) -> list[str]:
-                return []
+            def default_dataset_config(cls):
+                from pyrit.scenario.core.dataset_configuration import (
+                    DatasetConfiguration,
+                )
+
+                return DatasetConfiguration(dataset_names=[])
 
         # Remove docstring
         UndocumentedScenario.__doc__ = None
@@ -204,10 +214,10 @@ class TestScenarioRegistry:
         assert scenarios[0]["description"] == "No description available"
 
     def test_list_scenarios_with_required_datasets_error(self):
-        """Test list_scenarios raises error when required_datasets fails."""
+        """Test list_scenarios raises error when default_dataset_config fails."""
 
         class BrokenScenario(Scenario):
-            """Scenario that raises error on required_datasets."""
+            """Scenario that raises error on default_dataset_config."""
 
             async def _get_atomic_attacks_async(self):
                 return []
@@ -221,7 +231,7 @@ class TestScenarioRegistry:
                 return MockStrategy.ALL
 
             @classmethod
-            def required_datasets(cls) -> list[str]:
+            def default_dataset_config(cls):
                 raise ValueError("Cannot get datasets")
 
         registry = ScenarioRegistry()
@@ -281,6 +291,14 @@ class TestScenarioRegistry:
             @classmethod
             def get_default_strategy(cls) -> ScenarioStrategy:
                 return MockStrategy.ALL
+
+            @classmethod
+            def default_dataset_config(cls):
+                from pyrit.scenario.core.dataset_configuration import (
+                    DatasetConfiguration,
+                )
+
+                return DatasetConfiguration(dataset_names=[])
 
         UserScenario.__module__ = "user_module"
 

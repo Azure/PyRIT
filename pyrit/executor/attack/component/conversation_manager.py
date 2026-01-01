@@ -4,10 +4,9 @@
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from pyrit.memory import CentralMemory
-from pyrit.message_normalizer import ConversationContextNormalizer, MessageStringNormalizer
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -16,20 +15,33 @@ from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 
-if TYPE_CHECKING:
-    from pyrit.executor.attack.core.attack_strategy import AttackContext
-    from pyrit.executor.attack.core.prepended_conversation_configuration import (
-        PrependedConversationConfiguration,
-    )
-
 logger = logging.getLogger(__name__)
 
 
-async def build_conversation_context_string_async(
-    messages: List[Message],
-    *,
-    normalizer: Optional[MessageStringNormalizer] = None,
-) -> str:
+def mark_messages_as_simulated(messages: Sequence[Message]) -> List[Message]:
+    """
+    Mark assistant messages as simulated_assistant for traceability.
+
+    This function converts all assistant roles to simulated_assistant in the
+    provided messages. This is useful when loading conversations from YAML files
+    or other sources where the responses are not from actual targets.
+
+    Args:
+        messages (Sequence[Message]): The messages to mark as simulated.
+
+    Returns:
+        List[Message]: The same messages with assistant roles converted to simulated_assistant.
+            Modifies the messages in place and also returns them for convenience.
+    """
+    result = list(messages)
+    for message in result:
+        for piece in message.message_pieces:
+            if piece._role == "assistant":
+                piece._role = "simulated_assistant"
+    return result
+
+
+def format_conversation_context(messages: List[Message]) -> str:
     """
     Format a list of messages into a context string for adversarial chat system prompts.
 
@@ -42,8 +54,6 @@ async def build_conversation_context_string_async(
 
     Args:
         messages: The conversation messages to format.
-        normalizer: Optional normalizer to use. If not provided, a new
-            MessageStringNormalizer instance is created.
 
     Returns:
         A formatted string representing the conversation context.
@@ -51,9 +61,78 @@ async def build_conversation_context_string_async(
     """
     if not messages:
         return ""
-    if normalizer is None:
-        normalizer = ConversationContextNormalizer()
-    return await normalizer.normalize_string_async(messages)
+
+    context_parts: List[str] = []
+    turn_number = 0
+
+    for message in messages:
+        piece = message.get_piece()
+
+        # Skip system messages - they're handled separately
+        if piece.api_role == "system":
+            continue
+
+        # Start a new turn when we see a user message
+        if piece.api_role == "user":
+            turn_number += 1
+            context_parts.append(f"Turn {turn_number}:")
+
+        # Format the piece content
+        content = _format_piece_content(piece)
+        if piece.api_role == "user":
+            role_label = "User"
+        elif piece.is_simulated:
+            role_label = "Assistant (simulated)"
+        else:
+            role_label = "Assistant"
+        context_parts.append(f"{role_label}: {content}")
+
+    return "\n".join(context_parts)
+
+
+def _format_piece_content(piece: MessagePiece) -> str:
+    """
+    Format a single message piece into a content string.
+
+    For text pieces, shows original and converted values (if different).
+    For non-text pieces, uses context_description metadata or a placeholder.
+
+    Args:
+        piece (MessagePiece): The message piece to format.
+
+    Returns:
+        str: The formatted content string.
+    """
+    data_type = piece.converted_value_data_type or piece.original_value_data_type
+
+    # For non-text pieces, use metadata description or placeholder
+    if data_type != "text":
+        # Check for context_description in metadata
+        if piece.prompt_metadata and "context_description" in piece.prompt_metadata:
+            description = piece.prompt_metadata["context_description"]
+            return f"[{data_type.capitalize()} - {description}]"
+        else:
+            return f"[{data_type.capitalize()}]"
+
+    # For text pieces, include both original and converted if different
+    original = piece.original_value
+    converted = piece.converted_value
+
+    if original != converted:
+        return f"{converted} (original: {original})"
+    else:
+        return converted
+        else:
+            return f"[{data_type.capitalize()}]"
+
+    # For text pieces, include both original and converted if different
+    original = piece.original_value
+    converted = piece.converted_value
+
+    if original != converted:
+        return f"{converted} (original: {original})"
+    else:
+        return converted
 
 
 @dataclass
@@ -138,7 +217,7 @@ class ConversationManager:
         if role:
             for m in reversed(conversation):
                 piece = m.get_piece()
-                if piece.role == role:
+                if piece.api_role == role:
                     return piece
             return None
 
@@ -261,7 +340,7 @@ class ConversationManager:
         # Determine if we should exclude the last message (if it's a user message in multi-turn context)
         last_message = valid_requests[-1].message_pieces[0]
         is_multi_turn = max_turns is not None
-        should_exclude_last = is_multi_turn and last_message.role == "user"
+        should_exclude_last = is_multi_turn and last_message.api_role == "user"
 
         # Process all messages except potentially the last one
         for i, request in enumerate(valid_requests):
@@ -485,7 +564,7 @@ class ConversationManager:
         is_multi_turn = max_turns is not None
 
         # Only assistant messages count as turns
-        if piece.role == "assistant" and is_multi_turn:
+        if piece.api_role == "assistant" and is_multi_turn:
             conversation_state.turn_count += 1
 
             if conversation_state.turn_count > max_turns:
@@ -525,11 +604,11 @@ class ConversationManager:
             return  # Nothing to extract from empty history
 
         # If last message is a user message that was excluded, preserve the original Message
-        if last_message.role == "user" and last_user_message is not None:
+        if last_message.api_role == "user" and last_user_message is not None:
             conversation_state.last_unanswered_user_message = last_user_message
             logger.debug(f"Preserved last unanswered user message: {last_message.converted_value[:50]}...")
 
-        elif last_message.role == "assistant":
+        elif last_message.api_role == "assistant":
             # Get scores for the last assistant message based off of the original id
             conversation_state.last_assistant_message_scores = list(
                 self._memory.get_prompt_scores(prompt_ids=[str(last_message.original_prompt_id)])
@@ -539,8 +618,11 @@ class ConversationManager:
                 logger.debug("No scores found for last assistant message")
                 return
 
-            # Validate that there's a user message preceding the assistant message
-            if len(prepended_conversation) < 2 or prepended_conversation[-2].get_piece().role != "user":
+            # Check assumption that there will be a user message preceding the assistant message
+            if len(prepended_conversation) > 1 and prepended_conversation[-2].get_piece().api_role == "user":
+                conversation_state.last_user_message = prepended_conversation[-2].get_value()
+                logger.debug(f"Extracted preceding user message: {conversation_state.last_user_message[:50]}...")
+            else:
                 raise ValueError(
                     "There must be a user message preceding the assistant message in prepended conversations."
                 )
@@ -636,10 +718,11 @@ class ConversationManager:
         for message in prepended_conversation:
             for piece in message.message_pieces:
                 # Skip system messages - adversarial chat has its own system prompt
-                if piece.role == "system":
+                if piece.api_role == "system":
                     continue
 
-                swapped_role = role_swap.get(piece.role, piece.role)
+                # Create a new piece with swapped role for adversarial chat
+                swapped_role = role_swap.get(piece.api_role, piece.api_role)
 
                 adversarial_piece = MessagePiece(
                     id=uuid.uuid4(),

@@ -63,7 +63,7 @@ class SimulatedConversationResult:
         # Calculate total complete turns (user+assistant pairs)
         total_turns = len(self.conversation) // 2
         # Account for trailing user message (incomplete turn)
-        if len(self.conversation) % 2 == 1 and self.conversation[-1].role == "user":
+        if len(self.conversation) % 2 == 1 and self.conversation[-1].api_role == "user":
             total_turns += 1
 
         if self.turn_index is None:
@@ -108,7 +108,7 @@ class SimulatedConversationResult:
             return None
         # User message for turn N is at index (N-1) * 2
         user_idx = (turn - 1) * 2
-        if user_idx < len(self.conversation) and self.conversation[user_idx].role == "user":
+        if user_idx < len(self.conversation) and self.conversation[user_idx].api_role == "user":
             return self.conversation[user_idx].duplicate_message()
         return None
 
@@ -229,9 +229,14 @@ async def generate_simulated_conversation_async(
 
     # Filter out system messages - prepended_conversation should only have user/assistant turns
     # System prompts are set separately on each target during attack execution
+    # Also mark assistant messages as simulated for traceability
     filtered_messages: List[Message] = []
     for message in raw_messages:
-        if message.role != "system":
+        if message.api_role != "system":
+            # Mark assistant responses as simulated since this is a simulated conversation
+            if message.api_role == "assistant":
+                for piece in message.message_pieces:
+                    piece._role = "simulated_assistant"
             filtered_messages.append(message)
 
     # Get the score from the result (there should be one score for the last turn)

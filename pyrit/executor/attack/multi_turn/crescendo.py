@@ -752,7 +752,8 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         # If custom message is set, use it and bypass adversarial chat generation
         if context.next_message:
             self._logger.debug("Using custom message, bypassing adversarial chat")
-            message = context.next_message
+            # Duplicate to ensure fresh IDs (avoids conflicts if message was already in memory)
+            message = context.next_message.duplicate_message()
             context.next_message = None  # Clear for future turns
             return message
 

@@ -34,10 +34,10 @@ from pyrit.prompt_target import (
         ("AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT", "AZURE_OPENAI_GPT4O_STRICT_FILTER_MODEL", True),
         ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_MODEL", True),
         ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_MODEL", True),
+        ("AZURE_OPENAI_GPT5_COMPLETIONS_ENDPOINT", "AZURE_OPENAI_GPT5_COMPLETIONS_MODEL", True),
         ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_MODEL", True),
         ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "", True),
         ("AZURE_FOUNDRY_PHI4_ENDPOINT", "", True),
-        ("AZURE_FOUNDRY_MISTRAL_LARGE_ENDPOINT", "", False),
     ],
 )
 async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_name, supports_seed):

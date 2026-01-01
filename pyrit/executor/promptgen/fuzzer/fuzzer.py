@@ -452,11 +452,11 @@ class FuzzerResultPrinter:
                 continue
 
             for message in target_messages:
-                if message.role == "user":
+                if message.api_role == "user":
                     self._print_colored(f"{self._indent * 2} USER:", Style.BRIGHT, Fore.BLUE)
                     self._print_wrapped_text(message.converted_value, Fore.BLUE)
                 else:
-                    self._print_colored(f"{self._indent * 2} {message.role.upper()}:", Style.BRIGHT, Fore.YELLOW)
+                    self._print_colored(f"{self._indent * 2} {message.api_role.upper()}:", Style.BRIGHT, Fore.YELLOW)
                     self._print_wrapped_text(message.converted_value, Fore.YELLOW)
 
                 # Print scores if available

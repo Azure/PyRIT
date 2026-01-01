@@ -7,7 +7,12 @@ import os
 from typing import Any, List, Union, cast
 
 from pyrit.common import convert_local_image_to_data_url
-from pyrit.message_normalizer.message_normalizer import MessageListNormalizer, MessageStringNormalizer
+from pyrit.message_normalizer.message_normalizer import (
+    MessageListNormalizer,
+    MessageStringNormalizer,
+    SystemMessageBehavior,
+    apply_system_message_behavior,
+)
 from pyrit.models import ChatMessage, ChatMessageRole, DataTypeSerializer, Message
 from pyrit.models.message_piece import MessagePiece
 
@@ -28,16 +33,27 @@ class ChatMessageNormalizer(MessageListNormalizer[ChatMessage], MessageStringNor
         use_developer_role: If True, translates "system" role to "developer" role
             for compatibility with newer OpenAI models (o1, o3, gpt-4.1+).
             Defaults to False for backward compatibility.
+        system_message_behavior: How to handle system messages before conversion.
+            - "keep": Keep system messages as-is (default)
+            - "squash": Merge system message into first user message
+            - "ignore": Drop system messages entirely
     """
 
-    def __init__(self, *, use_developer_role: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        use_developer_role: bool = False,
+        system_message_behavior: SystemMessageBehavior = "keep",
+    ) -> None:
         """
         Initialize the ChatMessageNormalizer.
 
         Args:
             use_developer_role: If True, translates "system" role to "developer" role.
+            system_message_behavior: How to handle system messages. Defaults to "keep".
         """
         self.use_developer_role = use_developer_role
+        self.system_message_behavior = system_message_behavior
 
     async def normalize_async(self, messages: List[Message]) -> List[ChatMessage]:
         """
@@ -58,8 +74,11 @@ class ChatMessageNormalizer(MessageListNormalizer[ChatMessage], MessageStringNor
         if not messages:
             raise ValueError("Messages list cannot be empty")
 
+        # Apply system message preprocessing
+        processed_messages = await apply_system_message_behavior(messages, self.system_message_behavior)
+
         chat_messages: List[ChatMessage] = []
-        for message in messages:
+        for message in processed_messages:
             pieces = message.message_pieces
             role = cast(ChatMessageRole, pieces[0].role)
 
@@ -141,6 +160,7 @@ class ChatMessageNormalizer(MessageListNormalizer[ChatMessage], MessageStringNor
 
         Raises:
             ValueError: If the audio format is not supported.
+            FileNotFoundError: If the audio file does not exist.
         """
         ext = DataTypeSerializer.get_extension(audio_path).lower()
         if ext not in SUPPORTED_AUDIO_FORMATS:

@@ -77,7 +77,7 @@ class TestFoundryScenarioInitialization:
         self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test initialization with a single attack strategy."""
-        with patch.object(FoundryScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(FoundryScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = FoundryScenario(
                 attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             )
@@ -108,7 +108,7 @@ class TestFoundryScenarioInitialization:
             FoundryStrategy.Leetspeak,
         ]
 
-        with patch.object(FoundryScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(FoundryScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = FoundryScenario(
                 attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             )
@@ -134,7 +134,8 @@ class TestFoundryScenarioInitialization:
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
-        assert len(scenario._seed_groups) == len(sample_objectives)
+        # objectives are stored but _seed_groups is resolved lazily
+        assert scenario._objectives == sample_objectives
 
     @patch.dict(
         "os.environ",
@@ -219,14 +220,14 @@ class TestFoundryScenarioInitialization:
         mock_composite_instance = MagicMock(spec=TrueFalseScorer)
         mock_composite.return_value = mock_composite_instance
 
-        with patch.object(FoundryScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(FoundryScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = FoundryScenario()
 
             # Verify default scorer was created
             mock_composite.assert_called_once()
 
-            # Verify seed groups were loaded from memory
-            assert len(scenario._seed_groups) == 4
+            # seed_groups are resolved lazily during _get_atomic_attacks_async
+            assert scenario._objectives is None
 
     @patch.dict(
         "os.environ",
@@ -236,11 +237,15 @@ class TestFoundryScenarioInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
-    def test_init_raises_exception_when_no_datasets_available(self, mock_objective_scorer):
+    @pytest.mark.asyncio
+    async def test_init_raises_exception_when_no_datasets_available(self, mock_objective_target, mock_objective_scorer):
         """Test that initialization raises ValueError when datasets are not available in memory."""
-        # Don't mock _get_default_seed_groups, let it try to load from empty memory
-        with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
-            FoundryScenario(attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer))
+        # Don't mock _resolve_seed_groups, let it try to load from empty memory
+        scenario = FoundryScenario(attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer))
+
+        # Error should occur during initialize_async when _get_atomic_attacks_async resolves seed groups
+        with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
+            await scenario.initialize_async(objective_target=mock_objective_target)
 
 
 @pytest.mark.usefixtures("patch_central_database")

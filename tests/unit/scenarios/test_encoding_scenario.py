@@ -59,7 +59,7 @@ class TestEncodingScenarioInitialization:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario._seed_prompts == sample_seeds
+        assert scenario._deprecated_seed_prompts == sample_seeds
         assert scenario.name == "Encoding Scenario"
         assert scenario.version == 1
 
@@ -68,14 +68,14 @@ class TestEncodingScenarioInitialization:
         from unittest.mock import patch
 
         with patch.object(
-            EncodingScenario, "_get_default_dataset", return_value=[seed.value for seed in mock_memory_seeds]
+            EncodingScenario, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]
         ):
             scenario = EncodingScenario(
                 objective_scorer=mock_objective_scorer,
             )
 
-            # Should load default datasets from Garak
-            assert len(scenario._seed_prompts) > 0
+            # _deprecated_seed_prompts should be None when using defaults
+            assert scenario._deprecated_seed_prompts is None
 
     def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with custom objective scorer."""
@@ -96,12 +96,16 @@ class TestEncodingScenarioInitialization:
         assert scenario._scorer_config.objective_scorer is not None
         assert isinstance(scenario._scorer_config.objective_scorer, DecodingScorer)
 
-    def test_init_raises_exception_when_no_datasets_available(self, mock_objective_scorer):
+    @pytest.mark.asyncio
+    async def test_init_raises_exception_when_no_datasets_available(self, mock_objective_target, mock_objective_scorer):
         """Test that initialization raises ValueError when datasets are not available in memory."""
 
-        # Don't mock _get_default_dataset, let it try to load from empty memory
-        with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
-            EncodingScenario(objective_scorer=mock_objective_scorer)
+        # Don't mock _resolve_seed_prompts, let it try to load from empty memory
+        scenario = EncodingScenario(objective_scorer=mock_objective_scorer)
+
+        # Error should occur during initialize_async when _get_atomic_attacks_async resolves seed prompts
+        with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
+            await scenario.initialize_async(objective_target=mock_objective_target)
 
     def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with memory labels."""
@@ -258,22 +262,26 @@ class TestEncodingScenarioExecution:
         assert scenario.atomic_attack_count > 0
 
     @pytest.mark.asyncio
-    async def test_get_default_dataset_loads_garak_data(
+    async def test_resolve_seed_prompts_loads_garak_data(
         self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
     ):
-        """Test that _get_default_dataset loads data from Garak datasets."""
+        """Test that _resolve_seed_prompts loads data from Garak datasets."""
         from unittest.mock import patch
 
         with patch.object(
-            EncodingScenario, "_get_default_dataset", return_value=[seed.value for seed in mock_memory_seeds]
+            EncodingScenario, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]
         ):
             scenario = EncodingScenario(
                 objective_scorer=mock_objective_scorer,
             )
 
-            # Should load slur_terms_en and web_html_js from Garak
-            assert len(scenario._seed_prompts) > 0
+            # _deprecated_seed_prompts should be None when using defaults
+            assert scenario._deprecated_seed_prompts is None
+
+            # After resolve, should have seed prompts
+            resolved = scenario._resolve_seed_prompts()
+            assert len(resolved) > 0
 
             # Verify it's loading actual data (not empty)
-            assert all(isinstance(prompt, str) for prompt in scenario._seed_prompts)
-            assert all(len(prompt) > 0 for prompt in scenario._seed_prompts)
+            assert all(isinstance(prompt, str) for prompt in resolved)
+            assert all(len(prompt) > 0 for prompt in resolved)

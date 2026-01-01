@@ -111,8 +111,6 @@ class PyRITShell(cmd.Cmd):
 
     def _background_init(self):
         """Initialize PyRIT modules in the background. This dramatically speeds up shell startup."""
-        import asyncio
-
         asyncio.run(self.context.initialize_async())
         self._init_complete.set()
 
@@ -252,6 +250,8 @@ class PyRITShell(cmd.Cmd):
                     max_concurrency=args["max_concurrency"],
                     max_retries=args["max_retries"],
                     memory_labels=args["memory_labels"],
+                    dataset_names=args["dataset_names"],
+                    max_dataset_size=args["max_dataset_size"],
                 )
             )
             # Store the command and result in history

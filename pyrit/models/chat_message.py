@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 from pyrit.models.literals import ChatMessageRole
 
-ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "tool", "developer"]
+ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "simulated_assistant", "tool", "developer"]
 
 
 class ToolCall(BaseModel):
@@ -43,6 +43,15 @@ class ChatMessage(BaseModel):
         """
         return self.model_dump_json()
 
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the ChatMessage to a dictionary.
+
+        Returns:
+            A dictionary representation of the message, excluding None values.
+        """
+        return self.model_dump(exclude_none=True)
+
     @classmethod
     def from_json(cls, json_str: str) -> "ChatMessage":
         """
@@ -66,8 +75,7 @@ class ChatMessageListDictContent(ChatMessage):
 
     def __init__(self, **data: Any) -> None:
         warnings.warn(
-            "ChatMessageListDictContent is deprecated and will be removed in 0.13.0. "
-            "Use ChatMessage instead.",
+            "ChatMessageListDictContent is deprecated and will be removed in 0.13.0. Use ChatMessage instead.",
             DeprecationWarning,
             stacklevel=2,
         )

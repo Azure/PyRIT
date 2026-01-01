@@ -837,3 +837,78 @@ class TestEdgeCasesAndErrorHandling:
         assert state.turn_count == 5
         assert state.last_user_message == "Test message"
         assert state.last_assistant_message_scores == [sample_score]
+
+
+class TestMarkMessagesAsSimulated:
+    """Tests for the mark_messages_as_simulated helper function."""
+
+    def test_mark_messages_as_simulated_converts_assistant(self):
+        """Test that assistant role is converted to simulated_assistant."""
+        from pyrit.executor.attack.component.conversation_manager import (
+            mark_messages_as_simulated,
+        )
+
+        piece = MessagePiece(role="assistant", original_value="Hello", conversation_id="test")
+        message = Message(message_pieces=[piece])
+
+        result = mark_messages_as_simulated([message])
+
+        assert len(result) == 1
+        assert result[0].message_pieces[0].get_role_for_storage() == "simulated_assistant"
+        assert result[0].message_pieces[0].api_role == "assistant"
+        assert result[0].message_pieces[0].is_simulated is True
+
+    def test_mark_messages_as_simulated_leaves_user_unchanged(self):
+        """Test that user role is not changed."""
+        from pyrit.executor.attack.component.conversation_manager import (
+            mark_messages_as_simulated,
+        )
+
+        piece = MessagePiece(role="user", original_value="Hello", conversation_id="test")
+        message = Message(message_pieces=[piece])
+
+        result = mark_messages_as_simulated([message])
+
+        assert len(result) == 1
+        assert result[0].message_pieces[0].get_role_for_storage() == "user"
+        assert result[0].message_pieces[0].is_simulated is False
+
+    def test_mark_messages_as_simulated_leaves_system_unchanged(self):
+        """Test that system role is not changed."""
+        from pyrit.executor.attack.component.conversation_manager import (
+            mark_messages_as_simulated,
+        )
+
+        piece = MessagePiece(role="system", original_value="You are helpful", conversation_id="test")
+        message = Message(message_pieces=[piece])
+
+        result = mark_messages_as_simulated([message])
+
+        assert len(result) == 1
+        assert result[0].message_pieces[0].get_role_for_storage() == "system"
+        assert result[0].message_pieces[0].is_simulated is False
+
+    def test_mark_messages_as_simulated_mixed_conversation(self):
+        """Test marking a conversation with mixed roles."""
+        from pyrit.executor.attack.component.conversation_manager import (
+            mark_messages_as_simulated,
+        )
+
+        user_piece = MessagePiece(role="user", original_value="Hello", conversation_id="test", sequence=1)
+        assistant_piece = MessagePiece(role="assistant", original_value="Hi there", conversation_id="test", sequence=2)
+
+        messages = [
+            Message(message_pieces=[user_piece]),
+            Message(message_pieces=[assistant_piece]),
+        ]
+
+        result = mark_messages_as_simulated(messages)
+
+        assert len(result) == 2
+        # User should be unchanged
+        assert result[0].message_pieces[0].get_role_for_storage() == "user"
+        assert result[0].is_simulated is False
+        # Assistant should be converted
+        assert result[1].message_pieces[0].get_role_for_storage() == "simulated_assistant"
+        assert result[1].is_simulated is True
+        assert result[1].api_role == "assistant"
