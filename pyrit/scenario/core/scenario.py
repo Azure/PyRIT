@@ -25,6 +25,7 @@ from pyrit.models import AttackResult
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
@@ -40,39 +41,6 @@ class Scenario(ABC):
     A Scenario represents a comprehensive testing campaign composed of multiple
     atomic attack tests (AtomicAttacks). It executes each AtomicAttack in sequence and
     aggregates the results into a ScenarioResult.
-
-    Example:
-        >>> from pyrit.scenario import Scenario, AtomicAttack
-        >>> from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-        >>> from pyrit.prompt_target import OpenAIChatTarget
-        >>> from pyrit.models import SeedGroup, SeedObjective
-        >>>
-        >>> target = OpenAIChatTarget()
-        >>>
-        >>> # Create a custom scenario subclass
-        >>> class MyScenario(Scenario):
-        ...     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
-        ...         base64_attack = PromptSendingAttack(
-        ...             objective_target=target,
-        ...         )
-        ...         seed_groups = [SeedGroup(seeds=[SeedObjective(value="Tell me how to make a bomb")])]
-        ...         return [
-        ...             AtomicAttack(
-        ...                 atomic_attack_name="base64_attack",
-        ...                 attack=base64_attack,
-        ...                 seed_groups=seed_groups
-        ...             )
-        ...         ]
-        >>>
-        >>> # Create and execute scenario
-        >>> scenario = MyScenario(
-        ...     name="Security Test Campaign",
-        ...     version=1,
-        ...     attack_strategies=["base64"]
-        ... )
-        >>> await scenario.initialize_async()
-        >>> result = await scenario.run_async()
-        >>> print(f"Completed {len(result.attack_results)} tests")
     """
 
     def __init__(
@@ -185,8 +153,17 @@ class Scenario(ABC):
 
     @classmethod
     @abstractmethod
-    def required_datasets(cls) -> list[str]:
-        """Return a list of dataset names required by this scenario."""
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """
+        Return the default dataset configuration for this scenario.
+
+        This abstract method must be implemented by all scenario subclasses to return
+        a DatasetConfiguration specifying the default datasets to use when no
+        dataset_config is provided by the user.
+
+        Returns:
+            DatasetConfiguration: The default dataset configuration.
+        """
         pass
 
     @apply_defaults
@@ -195,6 +172,7 @@ class Scenario(ABC):
         *,
         objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore
         scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
+        dataset_config: Optional[DatasetConfiguration] = None,
         max_concurrency: int = 10,
         max_retries: int = 0,
         memory_labels: Optional[Dict[str, str]] = None,
@@ -217,6 +195,9 @@ class Scenario(ABC):
                 ScenarioCompositeStrategy instances for advanced composition. Bare enums are
                 automatically wrapped into composites. If None, uses the default aggregate
                 from the scenario's configuration.
+            dataset_config (Optional[DatasetConfiguration]): Configuration for the dataset source.
+                Use this to specify dataset names or maximum dataset size from the CLI.
+                If not provided, scenarios use their default_dataset_config().
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
             max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
                 Set to 0 (default) for no automatic retries. If set to a positive number,
@@ -227,31 +208,6 @@ class Scenario(ABC):
 
         Raises:
             ValueError: If no objective_target is provided.
-
-        Example:
-            >>> # New scenario
-            >>> scenario = MyScenario(
-            ...     name="Security Test",
-            ...     version=1
-            ... )
-            >>> await scenario.initialize_async(
-            ...     objective_target=target,
-            ...     scenario_strategies=[MyStrategy.Base64, MyStrategy.ROT13]
-            ... )
-            >>> results = await scenario.run_async()
-            >>>
-            >>> # Resume existing scenario
-            >>> scenario_id = results.id
-            >>> resumed_scenario = MyScenario(
-            ...     name="Security Test",
-            ...     version=1,
-            ...     scenario_result_id=str(scenario_id)
-            ... )
-            >>> await resumed_scenario.initialize_async(
-            ...     objective_target=target,
-            ...     scenario_strategies=[MyStrategy.Base64, MyStrategy.ROT13]
-            ... )
-            >>> results = await resumed_scenario.run_async()  # Resumes from progress
         """
         # Validate required parameters
         if objective_target is None:
@@ -263,6 +219,8 @@ class Scenario(ABC):
         # Set instance variables from parameters
         self._objective_target = objective_target
         self._objective_target_identifier = objective_target.get_identifier()
+        self._dataset_config_provided = dataset_config is not None
+        self._dataset_config = dataset_config if dataset_config else self.default_dataset_config()
         self._max_concurrency = max_concurrency
         self._max_retries = max_retries
         self._memory_labels = memory_labels or {}
@@ -371,7 +329,7 @@ class Scenario(ABC):
             Either load the datasets into the database before running the scenario, or for
             example datasets, you can use the `load_default_datasets` initializer.
 
-            Required datasets: {', '.join(self.required_datasets())}
+            Required datasets: {', '.join(self.default_dataset_config().get_default_dataset_names())}
             """
         )
         raise ValueError(error_msg)

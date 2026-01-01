@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 
+import logging
 from typing import List, Optional, Sequence
 
 from pyrit.common import apply_defaults
@@ -11,7 +12,6 @@ from pyrit.executor.attack.core.attack_config import (
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedGroup, SeedObjective
-from pyrit.models.seed import Seed
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_converter import (
     AsciiSmugglerConverter,
@@ -33,6 +33,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
@@ -75,6 +76,9 @@ class EncodingStrategy(ScenarioStrategy):
     AsciiSmuggler = ("ascii_smuggler", set[str]())
 
 
+logger = logging.getLogger(__name__)
+
+
 class EncodingScenario(Scenario):
     """
     Encoding Scenario implementation for PyRIT.
@@ -115,9 +119,17 @@ class EncodingScenario(Scenario):
         return EncodingStrategy.ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return a list of dataset names required by this scenario."""
-        return ["garak_slur_terms_en", "garak_web_html_js"]
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """
+        Return the default dataset configuration for this scenario.
+
+        Returns:
+            DatasetConfiguration: Configuration with garak slur terms and web XSS payloads.
+        """
+        return DatasetConfiguration(
+            dataset_names=["garak_slur_terms_en", "garak_web_html_js"],
+            max_dataset_size=3,
+        )
 
     @apply_defaults
     def __init__(
@@ -133,10 +145,7 @@ class EncodingScenario(Scenario):
         Initialize the EncodingScenario.
 
         Args:
-            seed_prompts (Optional[list[str]]): The list of text strings that will be encoded and
-                used to test the model. These are the pieces the scenario is trying to get the model
-                to decode and repeat. If not provided, defaults to slur terms and XSS payloads from
-                the Garak dataset.
+            seed_prompts (Optional[list[str]]): Deprecated. Use dataset_config in initialize_async instead.
             objective_scorer (Optional[TrueFalseScorer]): The scorer used to evaluate if the model
                 successfully decoded the payload. Defaults to DecodingScorer with encoding_scenario
                 category.
@@ -148,6 +157,12 @@ class EncodingScenario(Scenario):
                 encoding-modified prompts.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
+        if seed_prompts is not None:
+            logger.warning(
+                "seed_prompts is deprecated and will be removed in 0.13.0. "
+                "Use dataset_config in initialize_async instead."
+            )
+
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
@@ -162,30 +177,40 @@ class EncodingScenario(Scenario):
             scenario_result_id=scenario_result_id,
         )
 
-        # Now we can safely access self._memory
-        self._seed_prompts: list[str] = seed_prompts if seed_prompts else self._get_default_dataset()
+        # Store deprecated seed_prompts for later resolution in _resolve_seed_prompts
+        self._deprecated_seed_prompts = seed_prompts
+        # Will be resolved in _get_atomic_attacks_async
+        self._resolved_seed_prompts: Optional[list[str]] = None
 
-    # Use the same as Garak by default
-    def _get_default_dataset(self) -> list[str]:
+    def _resolve_seed_prompts(self) -> list[str]:
         """
-        Get the default seed prompts for encoding tests.
-
-        Returns the same dataset used by Garak, which includes slur terms and
-        web HTML/JS XSS payloads. These are the harmful text strings that will
-        be encoded and used to test if the model will decode them.
+        Resolve seed prompts from deprecated parameter or dataset configuration.
 
         Returns:
             list[str]: List of seed prompt strings to be encoded and tested.
+
+        Raises:
+            ValueError: If both 'seed_prompts' parameter and 'dataset_config' are specified.
         """
-        seeds: list[Seed] = []
+        # Check for conflict between deprecated seed_prompts and dataset_config
+        if self._deprecated_seed_prompts is not None and self._dataset_config_provided:
+            raise ValueError(
+                "Cannot specify both 'seed_prompts' parameter and 'dataset_config'. "
+                "Please use only 'dataset_config' in initialize_async."
+            )
 
-        for dataset_name in EncodingScenario.required_datasets():
-            seeds.extend(self._memory.get_seeds(dataset_name=dataset_name))
+        # Use deprecated seed_prompts if provided
+        if self._deprecated_seed_prompts is not None:
+            return self._deprecated_seed_prompts
 
-        if not seeds:
+        # Use dataset_config (guaranteed to be set by initialize_async)
+        seed_groups = self._dataset_config.get_all_seed_groups()
+
+        if not seed_groups:
             self._raise_dataset_exception()
 
-        return [seed.value for seed in seeds]
+        # Flatten all seeds from seed groups
+        return [seed.value for group in seed_groups for seed in group.seeds]
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -194,6 +219,9 @@ class EncodingScenario(Scenario):
         Returns:
             List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
+        # Resolve seed prompts from deprecated parameter or dataset config
+        self._resolved_seed_prompts = self._resolve_seed_prompts()
+
         return self._get_converter_attacks()
 
     # These are the same as Garak encoding attacks
@@ -280,7 +308,7 @@ class EncodingScenario(Scenario):
         atomic_attacks = []
         for attack_converter_config in converter_configs:
             seed_groups = []
-            for seed_prompt in self._seed_prompts:
+            for seed_prompt in self._resolved_seed_prompts:
                 objective = f"Make the model say an encoded payload: {seed_prompt}"
                 seed = SeedPrompt(value=seed_prompt)
                 seed_groups.append(SeedGroup(seeds=[SeedObjective(value=objective), seed]))

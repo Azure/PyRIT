@@ -104,38 +104,38 @@ class TestCyberScenarioInitialization:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert len(scenario._seed_groups) == len(sample_objectives)
+        # objectives are stored as _deprecated_objectives; _seed_groups is resolved lazily
+        assert scenario._deprecated_objectives == sample_objectives
         assert scenario.name == "Cyber Scenario"
         assert scenario.version == 1
 
     def test_init_with_default_objectives(self, mock_objective_scorer, malware_prompts, mock_memory_seed_groups):
         """Test initialization with default objectives."""
 
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(objective_scorer=mock_objective_scorer)
 
-            # Check that seed_groups were loaded and have correct objectives
-            objectives = [sg.objective.value for sg in scenario._seed_groups]
-            assert objectives == malware_prompts
+            # seed_groups are resolved lazily; _deprecated_objectives should be None
+            assert scenario._deprecated_objectives is None
             assert scenario.name == "Cyber Scenario"
             assert scenario.version == 1
 
     def test_init_with_default_scorer(self, mock_memory_seed_groups):
         """Test initialization with default scorer."""
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario()
             assert scenario._objective_scorer_identifier
 
     def test_init_with_custom_scorer(self, mock_objective_scorer, mock_memory_seed_groups):
         """Test initialization with custom scorer."""
         scorer = MagicMock(TrueFalseCompositeScorer)
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(objective_scorer=scorer)
             assert isinstance(scenario._scorer_config, AttackScoringConfig)
 
     def test_init_default_adversarial_chat(self, mock_objective_scorer, mock_memory_seed_groups):
         """Test initialization with default adversarial chat."""
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(
                 objective_scorer=mock_objective_scorer,
             )
@@ -148,7 +148,7 @@ class TestCyberScenarioInitialization:
         adversarial_chat = MagicMock(OpenAIChatTarget)
         adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
 
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(
                 adversarial_chat=adversarial_chat,
                 objective_scorer=mock_objective_scorer,
@@ -156,11 +156,15 @@ class TestCyberScenarioInitialization:
             assert scenario._adversarial_chat == adversarial_chat
             assert scenario._adversarial_config.target == adversarial_chat
 
-    def test_init_raises_exception_when_no_datasets_available(self, mock_objective_scorer):
+    @pytest.mark.asyncio
+    async def test_init_raises_exception_when_no_datasets_available(self, mock_objective_target, mock_objective_scorer):
         """Test that initialization raises ValueError when datasets are not available in memory."""
-        # Don't mock _get_default_seed_groups, let it try to load from empty memory
-        with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
-            CyberScenario(objective_scorer=mock_objective_scorer)
+        # Don't mock _resolve_seed_groups, let it try to load from empty memory
+        scenario = CyberScenario(objective_scorer=mock_objective_scorer)
+
+        # Error should occur during initialize_async when _get_atomic_attacks_async resolves seed groups
+        with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
+            await scenario.initialize_async(objective_target=mock_objective_target)
 
 
 @pytest.mark.usefixtures(*FIXTURES)
@@ -172,7 +176,7 @@ class TestCyberScenarioAttackGeneration:
         self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(objective_target=mock_objective_target)
@@ -257,22 +261,24 @@ class TestCyberScenarioLifecycle:
     Tests for CyberScenario lifecycle, including initialize_async and execution.
     """
 
+    @pytest.mark.asyncio
     async def test_initialize_async_with_max_concurrency(
         self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test initialization with custom max_concurrency."""
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(objective_scorer=mock_objective_scorer)
             await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20)
             assert scenario._max_concurrency == 20
 
+    @pytest.mark.asyncio
     async def test_initialize_async_with_memory_labels(
         self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test initialization with memory labels."""
         memory_labels = {"test": "cyber", "category": "scenario"}
 
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario(
                 objective_scorer=mock_objective_scorer,
             )
@@ -302,7 +308,7 @@ class TestCyberScenarioProperties:
     @pytest.mark.asyncio
     async def test_no_target_duplication(self, mock_objective_target, mock_memory_seed_groups):
         """Test that all three targets (adversarial, object, scorer) are distinct."""
-        with patch.object(CyberScenario, "_get_default_seed_groups", return_value=mock_memory_seed_groups):
+        with patch.object(CyberScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = CyberScenario()
             await scenario.initialize_async(objective_target=mock_objective_target)
 

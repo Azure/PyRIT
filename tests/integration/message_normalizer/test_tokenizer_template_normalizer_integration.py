@@ -55,11 +55,14 @@ async def test_llama3_vision_with_image():
     image_path = HOME_PATH / "assets" / "pyrit_architecture.png"
 
     # Create a message with both text and image pieces
-    text_piece = MessagePiece(role="user", original_value="What is in this image?")
+    # Both pieces need the same conversation_id to be part of the same message
+    conversation_id = "test-conversation"
+    text_piece = MessagePiece(role="user", original_value="What is in this image?", conversation_id=conversation_id)
     image_piece = MessagePiece(
         role="user",
         original_value=str(image_path),
         converted_value_data_type="image_path",
+        conversation_id=conversation_id,
     )
     message = Message(message_pieces=[text_piece, image_piece])
 

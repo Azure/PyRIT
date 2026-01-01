@@ -129,7 +129,7 @@ chapters:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
     - file: code/scenarios/0_scenarios
       sections:
-      - file: code/scenarios/1_composite_scenario
+      - file: code/scenarios/1_configuring_scenarios
     - file: code/front_end/0_front_end
       sections:
       - file: code/front_end/1_pyrit_scan
