@@ -661,12 +661,15 @@ class TestPromptGeneration:
         )
 
         custom_message = Message.from_prompt(prompt="Custom prompt", role="user")
+        original_id = custom_message.message_pieces[0].id
         basic_context.next_message = custom_message
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
-        assert result is custom_message  # Should return the same Message object
+        # Should return a duplicated message with the same content but a new ID
+        assert result is not custom_message  # Should be a duplicate, not the same object
         assert result.get_value() == "Custom prompt"
+        assert result.message_pieces[0].id != original_id  # Should have a new ID
         assert basic_context.next_message is None  # Should be cleared
 
     @pytest.mark.asyncio

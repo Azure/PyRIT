@@ -312,8 +312,14 @@ class SeedGroup(YamlLoadable):
             # Convert each prompt to a MessagePiece
             message_pieces = []
             for prompt in sequence_prompts:
+                # Convert assistant to simulated_assistant for YAML-loaded conversations
+                # since these represent simulated/prepended content, not actual target responses
+                role = prompt.role or "user"
+                if role == "assistant":
+                    role = "simulated_assistant"
+
                 piece = MessagePiece(
-                    role=prompt.role or "user",
+                    role=role,
                     original_value=prompt.value,
                     original_value_data_type=prompt.data_type or "text",
                     prompt_target_identifier=None,

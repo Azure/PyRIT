@@ -213,7 +213,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             if not message.message_pieces:
                 continue
 
-            message_role = message.get_piece().role
+            message_role = message.get_piece().api_role
 
             if message_role == "system":
                 markdown_lines.extend(self._format_system_message(message))
@@ -284,7 +284,8 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             List[str]: List of markdown strings representing the response message.
         """
         lines = []
-        role_name = message.message_pieces[0].role.capitalize()
+        piece = message.message_pieces[0]
+        role_name = "Assistant (Simulated)" if piece.is_simulated else piece.api_role.capitalize()
 
         lines.append(f"\n#### {role_name}\n")
 

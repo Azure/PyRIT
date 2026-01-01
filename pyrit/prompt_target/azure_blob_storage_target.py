@@ -192,7 +192,7 @@ class AzureBlobStorageTarget(PromptTarget):
             raise ValueError(f"This target only supports text and url prompt input. Received: {piece_type}.")
 
         request = message.message_pieces[0]
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages = self._memory.get_message_pieces(conversation_id=request.conversation_id)
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")

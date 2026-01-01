@@ -152,7 +152,9 @@ class Scorer(abc.ABC):
             message (Message): The message to be scored.
             objective (Optional[str]): The task or objective based on which the message should be scored.
                 Defaults to None.
-            role_filter (Optional[ChatMessageRole]): Only score messages with this role. Defaults to None.
+            role_filter (Optional[ChatMessageRole]): Only score messages with this exact stored role.
+                Use "assistant" to score only real assistant responses, or "simulated_assistant"
+                to score only simulated responses. Defaults to None (no filtering).
             skip_on_error_result (bool): If True, skip scoring if the message contains an error. Defaults to False.
             infer_objective_from_request (bool): If True, infer the objective from the message's previous request
                 when objective is not provided. Defaults to False.
@@ -166,7 +168,7 @@ class Scorer(abc.ABC):
         """
         self._validator.validate(message, objective=objective)
 
-        if role_filter is not None and message.role != role_filter:
+        if role_filter is not None and message.get_piece().get_role_for_storage() != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
 
@@ -638,7 +640,7 @@ class Scorer(abc.ABC):
 
         piece = response.get_piece()
 
-        if piece.role != "assistant":
+        if piece.api_role != "assistant":
             return ""
 
         conversation = self._memory.get_message_pieces(conversation_id=piece.conversation_id)
@@ -672,7 +674,8 @@ class Scorer(abc.ABC):
             response (Message): Response containing pieces to score.
             objective_scorer (Optional[Scorer]): The main scorer to determine success. Defaults to None.
             auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply. Defaults to None.
-            role_filter (ChatMessageRole): Only score pieces with this role. Defaults to "assistant".
+            role_filter (ChatMessageRole): Only score pieces with this exact stored role.
+                Defaults to "assistant" (real responses only, not simulated).
             objective (Optional[str]): Task/objective for scoring context. Defaults to None.
             skip_on_error_result (bool): If True, skip scoring pieces that have errors. Defaults to True.
 
@@ -748,7 +751,8 @@ class Scorer(abc.ABC):
         Args:
             response (Message): The response containing pieces to score.
             scorers (List[Scorer]): List of scorers to apply.
-            role_filter (ChatMessageRole): Only score pieces with this role (default: "assistant").
+            role_filter (ChatMessageRole): Only score pieces with this exact stored role.
+                Defaults to "assistant" (real responses only, not simulated).
             objective (Optional[str]): Optional objective description for scoring context.
             skip_on_error_result (bool): If True, skip scoring pieces that have errors (default: True).
 
