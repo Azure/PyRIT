@@ -677,4 +677,4 @@ class TestContentHarmsDatasetConfiguration:
         """Test that default_dataset_config has max_dataset_size set to 4."""
         config = ContentHarmsScenario.default_dataset_config()
 
-        assert config.get_max_dataset_size() == 4
+        assert config.max_dataset_size == 4

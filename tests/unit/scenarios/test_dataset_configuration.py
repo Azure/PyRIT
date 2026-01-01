@@ -333,22 +333,6 @@ class TestDatasetConfigurationGetDefaultDatasetNames:
         assert result == []
 
 
-class TestDatasetConfigurationGetMaxDatasetSize:
-    """Tests for DatasetConfiguration.get_max_dataset_size method."""
-
-    def test_get_max_dataset_size_returns_value_when_set(self) -> None:
-        """Test that get_max_dataset_size returns the configured value."""
-        config = DatasetConfiguration(dataset_names=["dataset1"], max_dataset_size=10)
-
-        assert config.get_max_dataset_size() == 10
-
-    def test_get_max_dataset_size_returns_none_when_not_set(self) -> None:
-        """Test that get_max_dataset_size returns None when not configured."""
-        config = DatasetConfiguration(dataset_names=["dataset1"])
-
-        assert config.get_max_dataset_size() is None
-
-
 class TestDatasetConfigurationApplyMaxDatasetSize:
     """Tests for DatasetConfiguration._apply_max_dataset_size method."""
 

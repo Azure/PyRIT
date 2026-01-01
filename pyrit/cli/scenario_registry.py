@@ -247,7 +247,7 @@ class ScenarioRegistry:
 
             dataset_config = scenario_class.default_dataset_config()
             default_datasets = dataset_config.get_default_dataset_names()
-            max_dataset_size = dataset_config.get_max_dataset_size()
+            max_dataset_size = dataset_config.max_dataset_size
 
             scenarios_info.append(
                 {

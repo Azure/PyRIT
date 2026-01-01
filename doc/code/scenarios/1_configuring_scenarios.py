@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: pyrit (3.13.5)
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -47,14 +43,14 @@ printer = ConsoleScenarioResultPrinter()
 # %% [markdown]
 # ## Define Seed Groups
 #
-# By default, `FoundryScenario` selects four random objectives from HarmBench. Here we'll retrieve only one for demonstration.
+# By default, `FoundryScenario` selects four random objectives from HarmBench. Here we'll retrieve only two for demonstration. If you didn't pass any `seed_groups`, the default would be almost the same except with `max_dataset_size=4`.
 
 # %%
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.models import SeedGroup
 from pyrit.scenario import DatasetConfiguration
 
-datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["harmbench"])  # type: ignore [top-level-await]
+datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["harmbench"])  # type: ignore
 seed_groups: list[SeedGroup] = datasets[0].seed_groups  # type: ignore
 dataset_config = DatasetConfiguration(seed_groups=seed_groups, max_dataset_size=2)
 
@@ -67,6 +63,8 @@ dataset_config = DatasetConfiguration(seed_groups=seed_groups, max_dataset_size=
 # 1. **Simple strategies**: Individual converter or attack strategies (e.g., `FoundryStrategy.Base64`)
 # 2. **Aggregate strategies**: Tag-based groups (e.g., `FoundryStrategy.EASY` expands to all easy strategies)
 # 3. **Composite strategies**: Multiple converters applied together (e.g., Caesar + CharSwap)
+#
+# If not selected, there are always defaults. In this case, the default is `FoundryStrategy.EASY`.
 
 # %%
 scenario_strategies = [
@@ -78,7 +76,7 @@ scenario_strategies = [
 # %% [markdown]
 # ## Create and Initialize the Scenario
 #
-# The scenario needs to be initialized before execution. This builds the atomic attacks based on the selected strategies.
+# The scenario needs to be initialized before execution. This builds the atomic attacks based on the selected strategies. Most of these have defaults, but the one thing that needs to be supplied is an `objective_target` so the scenario knows what we're attacking.
 
 # %%
 foundry_scenario = FoundryScenario()
@@ -100,10 +98,43 @@ print(f"Number of atomic attacks: {foundry_scenario.atomic_attack_count}")
 # 2. Apply the attack strategy to all objectives
 # 3. Score the results using the configured scorer
 # 4. Aggregate all results into a `ScenarioResult`
+#
+# The below example actually executes the scenario, and stores the result.
 
 # %%
-foundry_results = await foundry_scenario.run_async()  # type: ignore
-await printer.print_summary_async(foundry_results)  # type: ignore
+scenario_result = await foundry_scenario.run_async()  # type: ignore
+
+# %% [markdown]
+# ## Printing Scenarios
+#
+# The `ScenarioResult` object aggregates all results from a scenario execution. It contains a `scenario_identifier` (with name, description, and version), an `objective_target_identifier` describing the target tested, and an `attack_results` dictionary that maps each atomic attack strategy name to a list of `AttackResult` objects. Key properties include `scenario_run_state` (which can be "CREATED", "IN_PROGRESS", "COMPLETED", or "FAILED"), `labels` for metadata tagging, and `completion_time`. The class provides helper methods like `get_strategies_used()` to list all attack strategies, `get_objectives()` to retrieve unique objectives tested, and `objective_achieved_rate()` to calculate the success rate as a percentage. You can filter these methods by a specific `atomic_attack_name` or aggregate across all attacks.
+
+# %%
+await printer.print_summary_async(scenario_result)  # type: ignore
+
+# %% [markdown]
+# Then to look at all the individual results, you can look at the `attack_results` property of the `ScenarioResult`. Additionally, although, the scenario result is returned from `run_async`, you can also retrieve it from memory.
+
+# %%
+from pyrit.executor.attack import ConsoleAttackResultPrinter
+from pyrit.memory.central_memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+scenario_result_from_memory = memory.get_scenario_results(scenario_name="FoundryScenario")[0]
+
+# Flatten all attack results from all strategies
+all_results = [result for results in scenario_result_from_memory.attack_results.values() for result in results]
+
+successful_attacks = [r for r in all_results if r.outcome == "success"]
+non_successful_attacks = [r for r in all_results if r.outcome != "success"]
+
+if len(successful_attacks) > 0:
+    print("\nSuccessful Attacks:")
+    for result in successful_attacks:
+        await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
+else:
+    print("\nNo successful attacks. Here is the first non success...\n")
+    await ConsoleAttackResultPrinter().print_result_async(result=non_successful_attacks[0])  # type: ignore
 
 # %% [markdown]
 # ## Alternative: Using Difficulty Levels

@@ -153,7 +153,7 @@ class Scenario(ABC):
 
     @classmethod
     @abstractmethod
-    def default_dataset_config(cls) -> "DatasetConfiguration":
+    def default_dataset_config(cls) -> DatasetConfiguration:
         """
         Return the default dataset configuration for this scenario.
 
@@ -196,7 +196,7 @@ class Scenario(ABC):
                 automatically wrapped into composites. If None, uses the default aggregate
                 from the scenario's configuration.
             dataset_config (Optional[DatasetConfiguration]): Configuration for the dataset source.
-                Use this to specify dataset names or max_dataset_size from the CLI.
+                Use this to specify dataset names or maximum dataset size from the CLI.
                 If not provided, scenarios use their default_dataset_config().
             max_concurrency (int): Maximum number of concurrent attack executions. Defaults to 1.
             max_retries (int): Maximum number of automatic retries if the scenario raises an exception.
@@ -220,7 +220,7 @@ class Scenario(ABC):
         self._objective_target = objective_target
         self._objective_target_identifier = objective_target.get_identifier()
         self._dataset_config_provided = dataset_config is not None
-        self._dataset_config = dataset_config if dataset_config is not None else self.default_dataset_config()
+        self._dataset_config = dataset_config if dataset_config else self.default_dataset_config()
         self._max_concurrency = max_concurrency
         self._max_retries = max_retries
         self._memory_labels = memory_labels or {}

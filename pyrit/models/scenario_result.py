@@ -136,3 +136,31 @@ class ScenarioResult:
 
         successful_results = sum(1 for result in all_results if result.outcome == AttackOutcome.SUCCESS)
         return int((successful_results / total_results) * 100)
+
+    @staticmethod
+    def normalize_scenario_name(scenario_name: str) -> str:
+        """
+        Normalize a scenario name to match the stored class name format.
+
+        Converts CLI-style snake_case names (e.g., "foundry_scenario") to
+        PascalCase class names (e.g., "FoundryScenario") for database queries.
+        If the input is already in PascalCase or doesn't match the snake_case pattern,
+        it is returned unchanged.
+
+        This is the inverse of ScenarioRegistry._class_name_to_scenario_name().
+
+        Args:
+            scenario_name: The scenario name to normalize.
+
+        Returns:
+            The normalized scenario name suitable for database queries.
+        """
+        # Check if it looks like snake_case (contains underscore and is lowercase)
+        if "_" in scenario_name and scenario_name == scenario_name.lower():
+            # Convert snake_case to PascalCase
+            # e.g., "foundry_scenario" -> "FoundryScenario"
+            parts = scenario_name.split("_")
+            pascal_name = "".join(part.capitalize() for part in parts)
+            return pascal_name
+        # Already PascalCase or other format, return as-is
+        return scenario_name

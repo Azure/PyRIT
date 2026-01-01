@@ -46,7 +46,7 @@ class DatasetConfiguration:
         seed_groups: Optional[List[SeedGroup]] = None,
         dataset_names: Optional[List[str]] = None,
         max_dataset_size: Optional[int] = None,
-        scenario_composites: Optional[Sequence["ScenarioCompositeStrategy"]] = None,
+        scenario_composites: Optional[Sequence[ScenarioCompositeStrategy]] = None,
     ) -> None:
         """
         Initialize a DatasetConfiguration.
@@ -113,6 +113,11 @@ class DatasetConfiguration:
         elif self._dataset_names is not None:
             # Load from specified dataset names, applying max per dataset
             for name in self._dataset_names:
+                if name == EXPLICIT_SEED_GROUPS_KEY:
+                    raise ValueError(
+                        f"Dataset name '{EXPLICIT_SEED_GROUPS_KEY}' is reserved for internal use. "
+                        "Please rename your dataset."
+                    )
                 loaded = self._load_seed_groups_for_dataset(dataset_name=name)
                 if loaded:
                     sampled = self._apply_max_dataset_size(loaded)
@@ -172,17 +177,6 @@ class DatasetConfiguration:
         if self._dataset_names is not None:
             return list(self._dataset_names)
         return []
-
-    def get_max_dataset_size(self) -> Optional[int]:
-        """
-        Get the max_dataset_size setting for this configuration.
-
-        This is the maximum number of seed groups to sample from each dataset.
-
-        Returns:
-            Optional[int]: The max_dataset_size if set, or None if not limited.
-        """
-        return self.max_dataset_size
 
     def _apply_max_dataset_size(self, seed_groups: List[SeedGroup]) -> List[SeedGroup]:
         """

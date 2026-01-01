@@ -230,7 +230,11 @@ async def run_scenario_async(
         max_retries: Max retry attempts.
         memory_labels: Labels to attach to memory entries.
         dataset_names: Optional list of dataset names to use instead of scenario defaults.
+            If provided, creates a new dataset configuration (fetches all items unless
+            max_dataset_size is also specified).
         max_dataset_size: Optional maximum number of items to use from the dataset.
+            If dataset_names is provided, limits items from the new datasets.
+            If only max_dataset_size is provided, overrides the scenario's default limit.
         print_summary: Whether to print the summary after execution. Defaults to True.
 
     Returns:
@@ -302,9 +306,13 @@ async def run_scenario_async(
     if memory_labels is not None:
         init_kwargs["memory_labels"] = memory_labels
 
-    # Build dataset_config if CLI args provided
+    # Build dataset_config based on CLI args:
+    # - No args: scenario uses its default_dataset_config()
+    # - dataset_names only: new config with those datasets, fetches all items
+    # - dataset_names + max_dataset_size: new config with limited items
+    # - max_dataset_size only: default datasets with overridden limit
     if dataset_names:
-        # User specified dataset names - create new config
+        # User specified dataset names - create new config (fetches all unless max_dataset_size set)
         from pyrit.scenario import DatasetConfiguration
 
         init_kwargs["dataset_config"] = DatasetConfiguration(
@@ -312,7 +320,7 @@ async def run_scenario_async(
             max_dataset_size=max_dataset_size,
         )
     elif max_dataset_size is not None:
-        # User only specified max_dataset_size - use scenario's default datasets with custom size
+        # User only specified max_dataset_size - override default config's limit
         default_config = scenario_class.default_dataset_config()
         default_config.max_dataset_size = max_dataset_size
         init_kwargs["dataset_config"] = default_config
@@ -746,8 +754,10 @@ ARG_HELP = {
     "memory_labels": 'Additional labels as JSON string (e.g., \'{"experiment": "test1"}\')',
     "database": "Database type to use for memory storage",
     "log_level": "Logging level",
-    "dataset_names": "List of dataset names to use instead of scenario defaults (e.g., harmbench advbench)",
-    "max_dataset_size": "Maximum number of items to use from the dataset (must be >= 1)",
+    "dataset_names": "List of dataset names to use instead of scenario defaults (e.g., harmbench advbench). "
+    "Creates a new dataset config; fetches all items unless --max-dataset-size is also specified",
+    "max_dataset_size": "Maximum number of items to use from the dataset (must be >= 1). "
+    "Limits new datasets if --dataset-names provided, otherwise overrides scenario's default limit",
 }
 
 
