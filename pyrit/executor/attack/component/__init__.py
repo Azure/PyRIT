@@ -6,7 +6,9 @@
 from pyrit.executor.attack.component.conversation_manager import (
     ConversationManager,
     ConversationState,
-    format_conversation_context,
+    build_conversation_context_string_async,
+    get_adversarial_chat_messages,
+    get_prepended_turn_count,
     mark_messages_as_simulated,
 )
 from pyrit.executor.attack.component.objective_evaluator import ObjectiveEvaluator
@@ -17,9 +19,11 @@ from pyrit.executor.attack.component.simulated_conversation import (
 )
 
 __all__ = [
+    "build_conversation_context_string_async",
     "ConversationManager",
     "ConversationState",
-    "format_conversation_context",
+    "get_adversarial_chat_messages",
+    "get_prepended_turn_count",
     "mark_messages_as_simulated",
     "ObjectiveEvaluator",
     "generate_simulated_conversation_async",

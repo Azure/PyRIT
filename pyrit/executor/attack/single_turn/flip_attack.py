@@ -8,7 +8,6 @@ from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
-from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
@@ -84,15 +83,12 @@ class FlipAttack(PromptSendingAttack):
         context.conversation_id = str(uuid.uuid4())
         context.prepended_conversation = [self._system_prompt]
 
-        # Combine memory labels from context and attack strategy
-        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
-
-        # System prompt should not be converted, and the new implementation correctly
-        # skips converters for system messages
-        await self._conversation_manager.update_conversation_state_async(
+        # Initialize context with prepended conversation (system prompt) and merged labels
+        await self._conversation_manager.initialize_context_async(
+            context=context,
             target=self._objective_target,
             conversation_id=context.conversation_id,
-            prepended_conversation=context.prepended_conversation,
+            memory_labels=self._memory_labels,
         )
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:

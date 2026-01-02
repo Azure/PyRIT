@@ -161,7 +161,7 @@ class TestMultiPromptSendingAttackInitialization:
         attack = MultiPromptSendingAttack(objective_target=mock_target)
 
         assert attack._conversation_manager is not None
-        assert hasattr(attack._conversation_manager, "update_conversation_state_async")
+        assert hasattr(attack._conversation_manager, "initialize_context_async")
 
     def test_get_objective_target_returns_correct_target(self, mock_target):
         """Test that get_objective_target returns the target passed during initialization."""
@@ -245,7 +245,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.session is not None
@@ -257,9 +257,14 @@ class TestSetupPhase:
         attack._memory_labels = {"strategy_label": "strategy_value", "common": "strategy"}
         basic_context.memory_labels = {"context_label": "context_value", "common": "context"}
 
-        # Mock conversation manager
-        mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        # Mock that simulates initialize_context_async merging labels
+        async def mock_initialize(*, context, memory_labels=None, **kwargs):
+            from pyrit.common.utils import combine_dict
+
+            context.memory_labels = combine_dict(existing_dict=memory_labels, new_dict=context.memory_labels)
+            return ConversationState(turn_count=0)
+
+        with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.memory_labels == {
@@ -276,15 +281,15 @@ class TestSetupPhase:
             attack_converter_config=AttackConverterConfig(request_converters=converter_config),
         )
 
-        with patch.object(attack._conversation_manager, "update_conversation_state_async") as mock_update:
+        with patch.object(attack._conversation_manager, "initialize_context_async") as mock_update:
             await attack._setup_async(context=basic_context)
 
             mock_update.assert_called_once()
             call_args = mock_update.call_args
+            assert call_args[1]["context"] == basic_context
             assert call_args[1]["target"] == mock_target
             assert call_args[1]["conversation_id"] == basic_context.session.conversation_id
             assert call_args[1]["request_converters"] == attack._request_converters
-            assert call_args[1]["response_converters"] == attack._response_converters
 
 
 @pytest.mark.usefixtures("patch_central_database")
