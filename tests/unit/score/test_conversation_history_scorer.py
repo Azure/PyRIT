@@ -61,6 +61,9 @@ class MockUnsupportedScorer(Scorer):
     def validate_return_scores(self, scores: list[Score]):
         pass
 
+    def get_scorer_metrics(self):
+        return None
+
 
 @pytest.mark.asyncio
 async def test_conversation_history_scorer_score_async_success(patch_central_database):

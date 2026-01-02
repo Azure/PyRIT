@@ -69,7 +69,10 @@ class PlaywrightTarget(PromptTarget):
                 will be capped at the value provided.
         """
         endpoint = page.url if page else ""
-        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
+        super().__init__(
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint,
+        )
         self._interaction_func = interaction_func
         self._page = page
 

@@ -327,8 +327,10 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
+    get_all_harm_definitions
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
+    HarmDefinition
     Identifier
     ImagePathDataTypeSerializer
     AllowedCategories
@@ -341,6 +343,7 @@ API Reference
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
+    ScaleDescription
     ScenarioIdentifier
     ScenarioResult
     Score
@@ -519,6 +522,7 @@ API Reference
 
     AzureContentFilterScorer
     BatchScorer
+    ConsoleScorerPrinter
     ContentClassifierPaths
     ConversationScorer
     create_conversation_scorer
@@ -529,6 +533,8 @@ API Reference
     FloatScaleScorerByCategory
     FloatScaleThresholdScorer
     GandalfScorer
+    get_all_harm_definitions
+    HarmDefinition
     HarmHumanLabeledEntry
     HarmScorerEvaluator
     HarmScorerMetrics
@@ -536,6 +542,7 @@ API Reference
     HumanLabeledDataset
     HumanLabeledEntry
     InsecureCodeScorer
+    LikertScaleEvalFiles
     LikertScalePaths
     MarkdownInjectionScorer
     MetricsType
@@ -546,11 +553,18 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RegistryUpdateBehavior
     Scorer
+    ScorerEvalDatasetFiles
     ScorerEvaluator
     ScorerIdentifier
     ScorerMetrics
+    ScorerMetricsWithIdentity
+    ScorerPrinter
     ScorerPromptValidator
+    ScaleDescription
+    get_all_harm_metrics
+    get_all_objective_metrics
     SelfAskCategoryScorer
     SelfAskGeneralFloatScaleScorer
     SelfAskGeneralTrueFalseScorer

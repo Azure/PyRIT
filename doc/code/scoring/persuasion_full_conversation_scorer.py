@@ -28,7 +28,7 @@
 # %%
 from pathlib import Path
 
-from pyrit.common.path import EXECUTOR_RED_TEAM_PATH, SCORER_LIKERT_PATH
+from pyrit.common.path import EXECUTOR_RED_TEAM_PATH, HARM_DEFINITION_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -38,7 +38,7 @@ from pyrit.executor.attack import (
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SubStringScorer, create_conversation_scorer
+from pyrit.score import LikertScalePaths, SubStringScorer, create_conversation_scorer
 from pyrit.score.float_scale.self_ask_likert_scorer import SelfAskLikertScorer
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
@@ -109,10 +109,12 @@ memory = CentralMemory.get_memory_instance()
 conversation_history = memory.get_conversation(conversation_id=result.conversation_id)
 
 # Load the behavior change scale configuration
-behavior_change_scale_path = Path(SCORER_LIKERT_PATH, "behavior_change.yaml").resolve()
+behavior_change_scale_path = Path(HARM_DEFINITION_PATH, "behavior_change.yaml").resolve()
 
 # Create a FloatScaleScorer (SelfAskLikertScorer) to evaluate behavior changes
-behavior_scale_scorer = SelfAskLikertScorer(chat_target=adversarial_chat, likert_scale_path=behavior_change_scale_path)
+behavior_scale_scorer = SelfAskLikertScorer(
+    chat_target=adversarial_chat, likert_scale=LikertScalePaths.BEHAVIOR_CHANGE_SCALE
+)
 
 # Wrap the FloatScaleScorer with ConversationScorer to score the entire conversation
 conversation_scorer = create_conversation_scorer(scorer=behavior_scale_scorer)

@@ -41,7 +41,7 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 prompt_target = OpenAIChatTarget()
 
 # Set up the Harm Scorer with the same prompt target to ensure consistency
-harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
+harm_scorer = SelfAskLikertScorer(likert_scale=LikertScalePaths.HARM_SCALE, chat_target=prompt_target)
 scoring_config = AttackScoringConfig(
     auxiliary_scorers=[harm_scorer],
 )

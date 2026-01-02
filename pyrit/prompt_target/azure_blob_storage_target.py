@@ -76,7 +76,10 @@ class AzureBlobStorageTarget(PromptTarget):
         self._sas_token = sas_token
         self._client_async: AsyncContainerClient = None
 
-        super().__init__(endpoint=self._container_url, max_requests_per_minute=max_requests_per_minute)
+        super().__init__(
+            endpoint=self._container_url,
+            max_requests_per_minute=max_requests_per_minute,
+        )
 
     async def _create_container_client_async(self) -> None:
         """
