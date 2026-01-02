@@ -17,6 +17,7 @@ from pyrit.score import (
     ObjectiveHumanLabeledEntry,
     ObjectiveScorerEvaluator,
     ObjectiveScorerMetrics,
+    RegistryUpdateBehavior,
     ScorerEvaluator,
     ScorerIdentifier,
     TrueFalseScorer,
@@ -74,6 +75,7 @@ async def test__run_evaluation_async_harm(mock_harm_scorer):
         entries=[entry1, entry2],
         version="1.0",
         harm_definition="hate_speech.yaml",
+        harm_definition_version="1.0",
     )
     # Patch scorer to return fixed scores
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
@@ -428,3 +430,226 @@ def test_should_skip_evaluation_exception_handling(mock_find, mock_objective_sco
         assert should_skip is False
         assert result is None
         mock_find.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test__run_evaluation_async_harm_passes_harm_definition_version(mock_harm_scorer):
+    """Test that harm_definition_version from dataset is passed through to metrics."""
+    responses = [
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
+    ]
+    entry = HarmHumanLabeledEntry(responses, [0.2, 0.4], "hate_speech")
+    mock_dataset = HumanLabeledDataset(
+        name="test_dataset",
+        metrics_type=MetricsType.HARM,
+        entries=[entry],
+        version="1.0",
+        harm_definition="hate_speech.yaml",
+        harm_definition_version="1.0",
+    )
+    entry_values = [MagicMock(get_value=lambda: 0.3)]
+    mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
+    evaluator = HarmScorerEvaluator(mock_harm_scorer)
+
+    metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=1)
+
+    assert isinstance(metrics, HarmScorerMetrics)
+    assert metrics.harm_definition == "hate_speech.yaml"
+    assert metrics.harm_definition_version == "1.0"
+    assert metrics.dataset_version == "1.0"
+
+
+@pytest.mark.asyncio
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.HumanLabeledDataset.from_csv")
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.SCORER_EVALS_PATH")
+async def test_run_evaluation_async_combines_dataset_versions_with_duplicates(
+    mock_evals_path, mock_from_csv, mock_harm_scorer, tmp_path
+):
+    """Test that run_evaluation_async concatenates all dataset versions including duplicates."""
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
+
+    # Create mock CSV files
+    csv1 = tmp_path / "harm" / "file1.csv"
+    csv2 = tmp_path / "harm" / "file2.csv"
+    csv3 = tmp_path / "harm" / "file3.csv"
+    (tmp_path / "harm").mkdir(parents=True)
+    csv1.touch()
+    csv2.touch()
+    csv3.touch()
+
+    mock_evals_path.__truediv__ = lambda self, x: tmp_path / x
+    mock_evals_path.glob = lambda pattern: [csv1, csv2, csv3]
+
+    # Create mock datasets with same versions (to test duplicate concatenation)
+    responses = [
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
+    ]
+    entry = HarmHumanLabeledEntry(responses, [0.2], "hate_speech")
+
+    def make_dataset(version, harm_def_version):
+        dataset = HumanLabeledDataset(
+            name="test",
+            metrics_type=MetricsType.HARM,
+            entries=[entry],
+            version=version,
+            harm_definition="hate_speech.yaml",
+            harm_definition_version=harm_def_version,
+        )
+        return dataset
+
+    # All three files have dataset_version "1.0" - should concatenate to "1.0_1.0_1.0"
+    # All have same harm_definition_version "1.0" - should stay as "1.0" (unique)
+    mock_from_csv.side_effect = [
+        make_dataset("1.0", "1.0"),
+        make_dataset("1.0", "1.0"),
+        make_dataset("1.0", "1.0"),
+    ]
+
+    mock_harm_scorer.score_prompts_batch_async = AsyncMock(
+        return_value=[
+            MagicMock(get_value=lambda: 0.2),
+            MagicMock(get_value=lambda: 0.2),
+            MagicMock(get_value=lambda: 0.2),
+        ]
+    )
+
+    evaluator = HarmScorerEvaluator(mock_harm_scorer)
+    dataset_files = ScorerEvalDatasetFiles(
+        human_labeled_datasets_files=["harm/*.csv"],
+        result_file="harm/test_metrics.jsonl",
+        harm_category="hate_speech",
+    )
+
+    # Mock validate to skip YAML file check (validation already happened per-CSV)
+    with patch.object(HumanLabeledDataset, "validate"):
+        metrics = await evaluator.run_evaluation_async(
+            dataset_files=dataset_files,
+            num_scorer_trials=1,
+            update_registry_behavior=RegistryUpdateBehavior.NEVER_UPDATE,
+        )
+
+    assert metrics is not None
+    # dataset_version includes duplicates
+    assert metrics.dataset_version == "1.0_1.0_1.0"
+    # harm_definition_version is unique (all same, so just "1.0")
+    assert metrics.harm_definition_version == "1.0"
+
+
+@pytest.mark.asyncio
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.HumanLabeledDataset.from_csv")
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.SCORER_EVALS_PATH")
+async def test_run_evaluation_async_combines_mixed_dataset_versions(
+    mock_evals_path, mock_from_csv, mock_harm_scorer, tmp_path
+):
+    """Test that run_evaluation_async concatenates mixed dataset versions in sorted file order."""
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
+
+    # Create mock CSV files (named to control sort order)
+    csv1 = tmp_path / "harm" / "a_file.csv"
+    csv2 = tmp_path / "harm" / "b_file.csv"
+    (tmp_path / "harm").mkdir(parents=True)
+    csv1.touch()
+    csv2.touch()
+
+    mock_evals_path.__truediv__ = lambda self, x: tmp_path / x
+    mock_evals_path.glob = lambda pattern: [csv2, csv1]  # Return out of order to test sorting
+
+    responses = [
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
+    ]
+    entry = HarmHumanLabeledEntry(responses, [0.2], "violence")
+
+    def make_dataset(version, harm_def_version):
+        return HumanLabeledDataset(
+            name="test",
+            metrics_type=MetricsType.HARM,
+            entries=[entry],
+            version=version,
+            harm_definition="violence.yaml",
+            harm_definition_version=harm_def_version,
+        )
+
+    # Files have different dataset versions but same harm_definition_version
+    mock_from_csv.side_effect = [
+        make_dataset("1.0", "1.0"),  # a_file.csv (first after sorting)
+        make_dataset("2.0", "1.0"),  # b_file.csv (second after sorting)
+    ]
+
+    mock_harm_scorer.score_prompts_batch_async = AsyncMock(
+        return_value=[MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.2)]
+    )
+
+    evaluator = HarmScorerEvaluator(mock_harm_scorer)
+    dataset_files = ScorerEvalDatasetFiles(
+        human_labeled_datasets_files=["harm/*.csv"],
+        result_file="harm/test_metrics.jsonl",
+        harm_category="violence",
+    )
+
+    # Mock validate to skip YAML file check
+    with patch.object(HumanLabeledDataset, "validate"):
+        metrics = await evaluator.run_evaluation_async(
+            dataset_files=dataset_files,
+            num_scorer_trials=1,
+            update_registry_behavior=RegistryUpdateBehavior.NEVER_UPDATE,
+        )
+
+    assert metrics is not None
+    # Sorted by filename: a_file.csv (1.0) then b_file.csv (2.0)
+    assert metrics.dataset_version == "1.0_2.0"
+    # harm_definition_version is unique (both same)
+    assert metrics.harm_definition_version == "1.0"
+
+
+@pytest.mark.asyncio
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.HumanLabeledDataset.from_csv")
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.SCORER_EVALS_PATH")
+async def test_run_evaluation_async_raises_on_mismatched_harm_definition_versions(
+    mock_evals_path, mock_from_csv, mock_harm_scorer, tmp_path
+):
+    """Test that run_evaluation_async raises error when harm_definition_versions differ."""
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
+
+    csv1 = tmp_path / "harm" / "file1.csv"
+    csv2 = tmp_path / "harm" / "file2.csv"
+    (tmp_path / "harm").mkdir(parents=True)
+    csv1.touch()
+    csv2.touch()
+
+    mock_evals_path.__truediv__ = lambda self, x: tmp_path / x
+    mock_evals_path.glob = lambda pattern: [csv1, csv2]
+
+    responses = [
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
+    ]
+    entry = HarmHumanLabeledEntry(responses, [0.2], "violence")
+
+    def make_dataset(version, harm_def_version):
+        return HumanLabeledDataset(
+            name="test",
+            metrics_type=MetricsType.HARM,
+            entries=[entry],
+            version=version,
+            harm_definition="violence.yaml",
+            harm_definition_version=harm_def_version,
+        )
+
+    # Files have DIFFERENT harm_definition_versions - should raise error
+    mock_from_csv.side_effect = [
+        make_dataset("1.0", "1.0"),
+        make_dataset("1.0", "2.0"),  # Different harm_definition_version!
+    ]
+
+    evaluator = HarmScorerEvaluator(mock_harm_scorer)
+    dataset_files = ScorerEvalDatasetFiles(
+        human_labeled_datasets_files=["harm/*.csv"],
+        result_file="harm/test_metrics.jsonl",
+        harm_category="violence",
+    )
+
+    with pytest.raises(ValueError, match="All CSVs in a harm evaluation must use the same harm_definition_version"):
+        await evaluator.run_evaluation_async(
+            dataset_files=dataset_files,
+            num_scorer_trials=1,
+            update_registry_behavior=RegistryUpdateBehavior.NEVER_UPDATE,
+        )

@@ -102,15 +102,20 @@ class ScorerIdentifier:
         """
         Create a ScorerIdentifier from a compact dictionary (as stored in JSONL).
 
-        This is the inverse of to_compact_dict() (without the hash field).
         Handles the __type__ -> type field mapping and recursively reconstructs
         nested sub_identifiers.
+
+        Note:
+            This is a LOSSY reconstruction. Long prompts (>100 chars) are stored as
+            "sha256:{hash[:16]}" and the original text is not recoverable. Hash-based
+            lookups still work correctly since compute_hash() is deterministic and uses
+            the same hashing logic for long prompts before computing the hash.
 
         Args:
             data (Dict[str, Any]): The compact dictionary representation.
 
         Returns:
-            ScorerIdentifier: A new ScorerIdentifier instance.
+            ScorerIdentifier: A new ScorerIdentifier instance (with possibly hashed prompt fields).
         """
         # Handle __type__ -> type mapping
         scorer_type = data.get("__type__") or data.get("type", "")

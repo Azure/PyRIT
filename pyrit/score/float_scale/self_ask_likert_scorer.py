@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 import yaml
 
-from pyrit.common.path import SCORER_LIKERT_PATH
+from pyrit.common.path import HARM_DEFINITION_PATH, SCORER_LIKERT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -46,7 +46,7 @@ class LikertScalePaths(enum.Enum):
 
     # Scales WITH evaluation datasets
     EXPLOITS_SCALE = (
-        Path(SCORER_LIKERT_PATH, "exploits.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "exploits.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/exploit.csv"],
             result_file="harm/exploits_metrics.jsonl",
@@ -54,7 +54,7 @@ class LikertScalePaths(enum.Enum):
         ),
     )
     HATE_SPEECH_SCALE = (
-        Path(SCORER_LIKERT_PATH, "hate_speech.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "hate_speech.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/hate_speech.csv"],
             result_file="harm/hate_speech_metrics.jsonl",
@@ -62,7 +62,7 @@ class LikertScalePaths(enum.Enum):
         ),
     )
     INFORMATION_INTEGRITY_SCALE = (
-        Path(SCORER_LIKERT_PATH, "information_integrity.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "information_integrity.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/info_integrity.csv"],
             result_file="harm/information_integrity_metrics.jsonl",
@@ -70,7 +70,7 @@ class LikertScalePaths(enum.Enum):
         ),
     )
     PRIVACY_SCALE = (
-        Path(SCORER_LIKERT_PATH, "privacy.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "privacy.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/privacy.csv"],
             result_file="harm/privacy_metrics.jsonl",
@@ -78,7 +78,7 @@ class LikertScalePaths(enum.Enum):
         ),
     )
     SELF_HARM_SCALE = (
-        Path(SCORER_LIKERT_PATH, "self_harm.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "self_harm.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/self_harm.csv"],
             result_file="harm/self_harm_metrics.jsonl",
@@ -86,7 +86,7 @@ class LikertScalePaths(enum.Enum):
         ),
     )
     SEXUAL_SCALE = (
-        Path(SCORER_LIKERT_PATH, "sexual.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "sexual.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/sexual.csv"],
             result_file="harm/sexual_metrics.jsonl",
@@ -94,7 +94,7 @@ class LikertScalePaths(enum.Enum):
         ),
     )
     VIOLENCE_SCALE = (
-        Path(SCORER_LIKERT_PATH, "violence.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "violence.yaml").resolve(),
         LikertScaleEvalFiles(
             human_labeled_datasets_files=["harm/violence.csv"],
             result_file="harm/violence_metrics.jsonl",
@@ -104,35 +104,35 @@ class LikertScalePaths(enum.Enum):
 
     # Scales WITHOUT evaluation datasets (evaluation_files = None)
     BEHAVIOR_CHANGE_SCALE = (
-        Path(SCORER_LIKERT_PATH, "behavior_change.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "behavior_change.yaml").resolve(),
         None,
     )
     CYBER_SCALE = (
-        Path(SCORER_LIKERT_PATH, "cyber.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "cyber.yaml").resolve(),
         None,
     )
     DECEPTION_SCALE = (
-        Path(SCORER_LIKERT_PATH, "deception.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "deception.yaml").resolve(),
         None,
     )
     FAIRNESS_BIAS_SCALE = (
-        Path(SCORER_LIKERT_PATH, "fairness_bias.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "fairness_bias.yaml").resolve(),
         None,
     )
     HARM_SCALE = (
-        Path(SCORER_LIKERT_PATH, "harm.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "harm.yaml").resolve(),
         None,
     )
     MISINFORMATION_SCALE = (
-        Path(SCORER_LIKERT_PATH, "misinformation.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "misinformation.yaml").resolve(),
         None,
     )
     PERSUASION_SCALE = (
-        Path(SCORER_LIKERT_PATH, "persuasion.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "persuasion.yaml").resolve(),
         None,
     )
     PHISHING_SCALE = (
-        Path(SCORER_LIKERT_PATH, "phishing.yaml").resolve(),
+        Path(HARM_DEFINITION_PATH, "phishing.yaml").resolve(),
         None,
     )
 

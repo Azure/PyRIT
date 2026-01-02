@@ -33,6 +33,25 @@ _file_write_locks: Dict[str, threading.Lock] = {}
 M = TypeVar("M", bound=ScorerMetrics)
 
 
+def _metrics_to_registry_dict(metrics: ScorerMetrics) -> Dict:
+    """
+    Convert metrics to a dictionary suitable for registry storage.
+
+    Excludes:
+    - trial_scores (too large for registry storage)
+    - Internal fields starting with '_'
+
+    Args:
+        metrics (ScorerMetrics): The metrics object to convert.
+
+    Returns:
+        Dict: A dictionary with excluded fields removed.
+    """
+    metrics_dict = asdict(metrics)
+    excluded_keys = {"trial_scores"}
+    return {k: v for k, v in metrics_dict.items() if k not in excluded_keys and v is not None and not k.startswith("_")}
+
+
 def get_all_objective_metrics(
     file_path: Optional[Path] = None,
 ) -> List[ScorerMetricsWithIdentity[ObjectiveScorerMetrics]]:
@@ -211,8 +230,6 @@ def add_evaluation_results(
     file_path: Path,
     scorer_identifier: ScorerIdentifier,
     metrics: "ScorerMetrics",
-    dataset_version: str,
-    harm_category: Optional[str] = None,
 ) -> None:
     """
     Append scorer metrics entry to the specified evaluation results file (thread-safe).
@@ -224,20 +241,7 @@ def add_evaluation_results(
         file_path (Path): The full path to the JSONL file to append to.
         scorer_identifier (ScorerIdentifier): The scorer's configuration identifier.
         metrics (ScorerMetrics): The computed metrics (ObjectiveScorerMetrics or HarmScorerMetrics).
-        dataset_version (str): The version of the dataset used for evaluation.
-        harm_category (Optional[str]): The harm category (required for HarmScorerMetrics).
-
-    Raises:
-        ValueError: If metrics is HarmScorerMetrics but harm_category is None.
     """
-    from pyrit.score.scorer_evaluation.scorer_evaluator import (
-        HarmScorerMetrics,
-    )
-
-    # Validate harm_category for HarmScorerMetrics
-    if isinstance(metrics, HarmScorerMetrics) and harm_category is None:
-        raise ValueError("harm_category must be provided when metrics is HarmScorerMetrics")
-
     # Get or create lock for this file path
     file_path_str = str(file_path)
     if file_path_str not in _file_write_locks:
@@ -245,11 +249,7 @@ def add_evaluation_results(
 
     # Build entry dictionary
     entry = scorer_identifier.to_compact_dict()
-
-    if harm_category is not None:
-        entry["harm_category"] = harm_category
-
-    entry["metrics"] = asdict(metrics)
+    entry["metrics"] = _metrics_to_registry_dict(metrics)
 
     # Write to file with thread safety
     _append_jsonl_entry(
@@ -315,8 +315,6 @@ def replace_evaluation_results(
     file_path: Path,
     scorer_identifier: ScorerIdentifier,
     metrics: "ScorerMetrics",
-    dataset_version: str,
-    harm_category: Optional[str] = None,
 ) -> None:
     """
     Replace existing scorer metrics entry (by hash) with new metrics, or add if not exists.
@@ -329,18 +327,7 @@ def replace_evaluation_results(
         file_path (Path): The full path to the JSONL file.
         scorer_identifier (ScorerIdentifier): The scorer's configuration identifier.
         metrics (ScorerMetrics): The computed metrics (ObjectiveScorerMetrics or HarmScorerMetrics).
-        dataset_version (str): The version of the dataset used for evaluation.
-        harm_category (Optional[str]): The harm category (required for HarmScorerMetrics).
-
-    Raises:
-        ValueError: If metrics is HarmScorerMetrics but harm_category is None.
     """
-    from pyrit.score.scorer_evaluation.scorer_evaluator import HarmScorerMetrics
-
-    # Validate harm_category for HarmScorerMetrics
-    if isinstance(metrics, HarmScorerMetrics) and harm_category is None:
-        raise ValueError("harm_category must be provided when metrics is HarmScorerMetrics")
-
     # Get or create lock for this file path
     file_path_str = str(file_path)
     if file_path_str not in _file_write_locks:
@@ -350,9 +337,7 @@ def replace_evaluation_results(
 
     # Build new entry dictionary
     new_entry = scorer_identifier.to_compact_dict()
-    if harm_category is not None:
-        new_entry["harm_category"] = harm_category
-    new_entry["metrics"] = asdict(metrics)
+    new_entry["metrics"] = _metrics_to_registry_dict(metrics)
 
     with _file_write_locks[file_path_str]:
         try:

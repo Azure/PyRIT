@@ -101,8 +101,10 @@ class HarmScorerMetrics(ScorerMetrics):
             and ranges between -1.0 to 1.0 where 1.0 indicates perfect agreement, 0.0 indicates no agreement, and
             negative values indicate systematic disagreement.
         harm_category (str, optional): The harm category being evaluated (e.g., "hate_speech", "violence").
-        harm_category_definition (str, optional): Path to the YAML file containing the harm category definition.
+        harm_definition (str, optional): Path to the YAML file containing the harm definition (scale descriptions).
             Use get_harm_definition() to load the full HarmDefinition object.
+        harm_definition_version (str, optional): Version of the harm definition YAML file that the human labels
+            were created against. Used for reproducibility and to ensure scoring criteria consistency.
         krippendorff_alpha_humans (float, Optional): Krippendorff's alpha for human scores, if there are
             multiple human raters. This measures the agreement between human raters.
         krippendorff_alpha_model (float, Optional): Krippendorff's alpha for model scores, if there are
@@ -115,7 +117,8 @@ class HarmScorerMetrics(ScorerMetrics):
     p_value: float
     krippendorff_alpha_combined: float
     harm_category: Optional[str] = field(default=None, kw_only=True)
-    harm_category_definition: Optional[str] = field(default=None, kw_only=True)
+    harm_definition: Optional[str] = field(default=None, kw_only=True)
+    harm_definition_version: Optional[str] = field(default=None, kw_only=True)
     krippendorff_alpha_humans: Optional[float] = None
     krippendorff_alpha_model: Optional[float] = None
     _harm_definition_obj: Optional["HarmDefinition"] = field(default=None, init=False, repr=False)
@@ -124,25 +127,25 @@ class HarmScorerMetrics(ScorerMetrics):
         """
         Load and return the HarmDefinition object for this metrics instance.
 
-        Loads the harm definition YAML file specified in harm_category_definition
+        Loads the harm definition YAML file specified in harm_definition
         and returns it as a HarmDefinition object. The result is cached after
         the first load.
 
         Returns:
             HarmDefinition: The loaded harm definition object, or None if
-                harm_category_definition is not set.
+                harm_definition is not set.
 
         Raises:
             FileNotFoundError: If the harm definition file does not exist.
             ValueError: If the harm definition file is invalid.
         """
-        if not self.harm_category_definition:
+        if not self.harm_definition:
             return None
 
         if self._harm_definition_obj is None:
             from pyrit.models.harm_definition import HarmDefinition
 
-            self._harm_definition_obj = HarmDefinition.from_yaml(self.harm_category_definition)
+            self._harm_definition_obj = HarmDefinition.from_yaml(self.harm_definition)
 
         return self._harm_definition_obj
 

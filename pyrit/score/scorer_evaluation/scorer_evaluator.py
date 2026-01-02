@@ -4,7 +4,7 @@
 import abc
 import logging
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple, cast
 
@@ -150,7 +150,7 @@ class ScorerEvaluator(abc.ABC):
                 )
 
         # Collect all matching files
-        csv_files = []
+        csv_files: List[Path] = []
         for pattern in dataset_files.human_labeled_datasets_files:
             matched = list(SCORER_EVALS_PATH.glob(pattern))
             csv_files.extend(matched)
@@ -160,29 +160,49 @@ class ScorerEvaluator(abc.ABC):
             return None
 
         # Load each CSV as a HumanLabeledDataset and combine entries
+        # Sort csv_files for deterministic ordering when concatenating versions
+        csv_files = sorted(csv_files)
         all_entries = []
-        dataset_versions = set()
+        dataset_versions = []
+        harm_definition_versions = set()
         for csv_file in csv_files:
             dataset = HumanLabeledDataset.from_csv(
                 csv_path=csv_file,
                 metrics_type=metrics_type,
             )
             all_entries.extend(dataset.entries)
-            dataset_versions.add(dataset.version)
+            dataset_versions.append(dataset.version)
+            if dataset.harm_definition_version:
+                harm_definition_versions.add(dataset.harm_definition_version)
 
-        # Concatenate unique versions, sorted for consistency
-        combined_version = "_".join(sorted(dataset_versions))
+        # Concatenate all dataset versions (including duplicates) for full traceability
+        # e.g., combining 3 CSVs all at v1.0 yields "1.0_1.0_1.0"
+        combined_version = "_".join(dataset_versions)
+
+        # Validate harm_definition_version consistency across all CSVs within a harm category.
+        # Since each harm category evaluation uses a single harm definition YAML file,
+        # all CSVs for that harm must have been labeled against the same version of that definition.
+        if len(harm_definition_versions) > 1:
+            raise ValueError(
+                f"All CSVs in a harm evaluation must use the same harm_definition_version, "
+                f"but found multiple versions: {sorted(harm_definition_versions)}."
+            )
+        combined_harm_definition_version = next(iter(harm_definition_versions)) if harm_definition_versions else None
 
         # Derive harm_definition from harm_category for harm datasets
         harm_definition = f"{dataset_files.harm_category}.yaml" if dataset_files.harm_category else None
+
+        # Build dataset name from input CSV files
+        dataset_name = "_".join(sorted(csv_file.name for csv_file in csv_files))
 
         # Create combined dataset
         combined_dataset = HumanLabeledDataset(
             entries=all_entries,
             metrics_type=metrics_type,
-            name=dataset_files.result_file,
+            name=dataset_name,
             version=combined_version,
             harm_definition=harm_definition,
+            harm_definition_version=combined_harm_definition_version,
         )
 
         # Check for existing metrics only in SKIP_IF_EXISTS mode
@@ -211,7 +231,6 @@ class ScorerEvaluator(abc.ABC):
         if update_registry_behavior != RegistryUpdateBehavior.NEVER_UPDATE:
             self._write_metrics_to_registry(
                 metrics=metrics,
-                labeled_dataset=combined_dataset,
                 result_file_path=SCORER_EVALS_PATH / dataset_files.result_file,
             )
 
@@ -307,7 +326,6 @@ class ScorerEvaluator(abc.ABC):
         Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
 
         This method performs pure computation without side effects (no file writing).
-        Use run_evaluation_async with add_to_registry=True to write results to files.
 
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate the scorer against.
@@ -317,6 +335,9 @@ class ScorerEvaluator(abc.ABC):
         Returns:
             ScorerMetrics: The metrics for the scorer. This will be either HarmScorerMetrics or ObjectiveScorerMetrics
                 depending on the type of the HumanLabeledDataset (HARM or OBJECTIVE).
+
+        Raises:
+            ValueError: If the labeled_dataset is invalid.
         """
         # Validate dataset and extract data
         assistant_responses, human_scores_list, objectives = self._validate_and_extract_data(labeled_dataset)
@@ -352,6 +373,11 @@ class ScorerEvaluator(abc.ABC):
             first_entry = labeled_dataset.entries[0]
             if isinstance(first_entry, HarmHumanLabeledEntry):
                 harm_category = first_entry.harm_category
+            if harm_category is None:
+                raise ValueError(
+                    "harm_category must be set in HarmHumanLabeledEntry for HARM datasets. "
+                    "Ensure all entries have a valid harm_category."
+                )
 
         # Compute metrics using subclass implementation
         metrics = self._compute_metrics(
@@ -361,9 +387,12 @@ class ScorerEvaluator(abc.ABC):
             dataset_name=labeled_dataset.name,
             dataset_version=labeled_dataset.version,
             harm_category=harm_category,
+            harm_definition=labeled_dataset.harm_definition,
+            harm_definition_version=labeled_dataset.harm_definition_version,
         )
 
-        # Include trial scores for debugging and analysis
+        # Include trial scores for debugging and future mismatch analysis
+        # (not persisted to registry - use returned metrics object for detailed analysis)
         metrics.trial_scores = all_model_scores
         # Include average scoring time per item
         metrics.average_score_time_seconds = average_score_time
@@ -400,6 +429,8 @@ class ScorerEvaluator(abc.ABC):
         dataset_name: Optional[str] = None,
         dataset_version: Optional[str] = None,
         harm_category: Optional[str] = None,
+        harm_definition: Optional[str] = None,
+        harm_definition_version: Optional[str] = None,
     ) -> ScorerMetrics:
         """
         Compute evaluation metrics from human and model scores.
@@ -411,6 +442,8 @@ class ScorerEvaluator(abc.ABC):
             dataset_name: Name of the dataset being evaluated.
             dataset_version: Version of the dataset.
             harm_category: Harm category for harm metrics (ignored for objective metrics).
+            harm_definition: Path to the harm definition YAML file (for harm metrics).
+            harm_definition_version: Version of the harm definition YAML file (for harm metrics).
 
         Returns:
             ScorerMetrics subclass with computed metrics.
@@ -421,49 +454,20 @@ class ScorerEvaluator(abc.ABC):
         self,
         *,
         metrics: ScorerMetrics,
-        labeled_dataset: HumanLabeledDataset,
         result_file_path: Path,
     ) -> None:
         """
         Write metrics to the evaluation registry file.
 
-        Creates a version of metrics without trial_scores (too large for registry)
-        and writes to the specified file path.
-
         Args:
             metrics (ScorerMetrics): The computed metrics.
-            labeled_dataset (HumanLabeledDataset): The dataset that was evaluated.
             result_file_path (Path): The full path to the result file.
-
-        Raises:
-            ValueError: If harm_category cannot be extracted from HarmScorerMetrics dataset.
         """
         try:
-            # Extract harm_category if this is a HarmScorerMetrics
-            harm_category = None
-            if isinstance(metrics, HarmScorerMetrics):
-                for entry in labeled_dataset.entries:
-                    if isinstance(entry, HarmHumanLabeledEntry):
-                        harm_category = entry.harm_category
-                        break
-
-                if harm_category is None:
-                    raise ValueError("Could not extract harm_category from HarmScorerMetrics dataset")
-
-            # Create metrics without trial_scores (too large for registry)
-            # and without internal fields (those starting with _)
-            metrics_dict = asdict(metrics)
-            metrics_dict.pop("trial_scores", None)
-            # Filter out internal fields that have init=False (e.g., _harm_definition_obj)
-            metrics_dict = {k: v for k, v in metrics_dict.items() if not k.startswith("_")}
-            registry_metrics = type(metrics)(**metrics_dict)
-
             replace_evaluation_results(
                 file_path=result_file_path,
                 scorer_identifier=self.scorer.scorer_identifier,
-                metrics=registry_metrics,
-                dataset_version=labeled_dataset.version,
-                harm_category=harm_category,
+                metrics=metrics,
             )
         except Exception as e:
             logger.warning(f"Failed to write metrics to evaluation results: {e}")
@@ -519,6 +523,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
         dataset_name: Optional[str] = None,
         dataset_version: Optional[str] = None,
         harm_category: Optional[str] = None,
+        harm_definition: Optional[str] = None,
+        harm_definition_version: Optional[str] = None,
     ) -> HarmScorerMetrics:
         reliability_data = np.concatenate((all_human_scores, all_model_scores))
         # Calculate the mean of human scores for each response, which is considered the gold label
@@ -563,6 +569,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
             dataset_name=dataset_name,
             dataset_version=dataset_version,
             harm_category=harm_category,
+            harm_definition=harm_definition,
+            harm_definition_version=harm_definition_version,
         )
 
 
@@ -617,6 +625,8 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         dataset_name: Optional[str] = None,
         dataset_version: Optional[str] = None,
         harm_category: Optional[str] = None,
+        harm_definition: Optional[str] = None,
+        harm_definition_version: Optional[str] = None,
     ) -> ObjectiveScorerMetrics:
         # Calculate the majority vote of human scores for each response, which is considered the gold label.
         # If the vote is split, the resulting gold score will be 0 (i.e. False). Same logic is applied to model trials.

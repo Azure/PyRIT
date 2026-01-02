@@ -417,7 +417,6 @@ class TestReplaceEvaluationResults:
                 file_path=result_file,
                 scorer_identifier=scorer_identifier,
                 metrics=metrics,
-                dataset_version="1.0",
             )
 
         # Verify the file contains the entry
@@ -457,7 +456,6 @@ class TestReplaceEvaluationResults:
                 file_path=result_file,
                 scorer_identifier=scorer_identifier,
                 metrics=initial_metrics,
-                dataset_version="1.0",
             )
 
             # Replace with updated metrics
@@ -477,7 +475,6 @@ class TestReplaceEvaluationResults:
                 file_path=result_file,
                 scorer_identifier=scorer_identifier,
                 metrics=updated_metrics,
-                dataset_version="1.0",
             )
 
         # Verify only one entry exists with updated values
@@ -516,7 +513,6 @@ class TestReplaceEvaluationResults:
                 file_path=result_file,
                 scorer_identifier=scorer1,
                 metrics=metrics1,
-                dataset_version="1.0",
             )
 
         # Add second scorer
@@ -541,7 +537,6 @@ class TestReplaceEvaluationResults:
                 file_path=result_file,
                 scorer_identifier=scorer2,
                 metrics=metrics2,
-                dataset_version="1.0",
             )
 
         # Now replace scorer1 with updated metrics
@@ -561,7 +556,6 @@ class TestReplaceEvaluationResults:
                 file_path=result_file,
                 scorer_identifier=scorer1,
                 metrics=updated_metrics1,
-                dataset_version="2.0",
             )
 
         # Verify both entries exist, scorer1 updated, scorer2 preserved

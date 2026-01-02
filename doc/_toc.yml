@@ -109,7 +109,6 @@ chapters:
       - file: code/scoring/prompt_shield_scorer
       - file: code/scoring/generic_scorers
       - file: code/scoring/8_scorer_metrics
-      - file: code/scoring/9_printing_scorers
     - file: code/memory/0_memory
       sections:
       - file: code/memory/1_sqlite_memory

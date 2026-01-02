@@ -138,6 +138,7 @@ def test_validate_harm_dataset_with_objective_entry_raises(sample_messages):
         metrics_type=MetricsType.HARM,
         version="1.0",
         harm_definition="hate_speech.yaml",
+        harm_definition_version="1.0",
     )
     with pytest.raises(ValueError, match="not a HarmHumanLabeledEntry"):
         dataset.validate()
@@ -161,6 +162,7 @@ def test_validate_harm_dataset_multiple_harm_categories_raises(sample_messages):
         metrics_type=MetricsType.HARM,
         version="1.0",
         harm_definition="hate_speech.yaml",
+        harm_definition_version="1.0",
     )
     with pytest.raises(ValueError, match="multiple harm categories"):
         dataset.validate()
@@ -169,8 +171,28 @@ def test_validate_harm_dataset_multiple_harm_categories_raises(sample_messages):
 def test_validate_harm_dataset_missing_harm_definition_raises(sample_messages):
     """Validate raises when HARM dataset is missing harm_definition."""
     entry = HarmHumanLabeledEntry(sample_messages, [0.1], "hate_speech")
-    dataset = HumanLabeledDataset(name="hate_speech", entries=[entry], metrics_type=MetricsType.HARM, version="1.0")
-    with pytest.raises(ValueError, match="harm_definition must be specified"):
+    dataset = HumanLabeledDataset(
+        name="hate_speech",
+        entries=[entry],
+        metrics_type=MetricsType.HARM,
+        version="1.0",
+        harm_definition_version="1.0",
+    )
+    with pytest.raises(ValueError, match="harm_definition and harm_definition_version must be specified"):
+        dataset.validate()
+
+
+def test_validate_harm_dataset_missing_harm_definition_version_raises(sample_messages):
+    """Validate raises when HARM dataset is missing harm_definition_version."""
+    entry = HarmHumanLabeledEntry(sample_messages, [0.1], "hate_speech")
+    dataset = HumanLabeledDataset(
+        name="hate_speech",
+        entries=[entry],
+        metrics_type=MetricsType.HARM,
+        version="1.0",
+        harm_definition="hate_speech.yaml",
+    )
+    with pytest.raises(ValueError, match="harm_definition_version must be specified"):
         dataset.validate()
 
 
@@ -184,6 +206,7 @@ def test_validate_harm_dataset_same_harm_category_succeeds(sample_messages):
         metrics_type=MetricsType.HARM,
         version="1.0",
         harm_definition="hate_speech.yaml",
+        harm_definition_version="1.0",
     )
     # Should not raise
     dataset.validate()
@@ -533,7 +556,7 @@ def test_from_csv_harm_dataset_ignores_objective_column(tmp_path):
     """Harm dataset reads from harm_category, not objective column."""
     csv_file = tmp_path / "harm_with_objective.csv"
     with open(csv_file, "w") as f:
-        f.write("# dataset_version=1.0, harm_definition=hate_speech.yaml\n")
+        f.write("# dataset_version=1.0, harm_definition=hate_speech.yaml, harm_definition_version=1.0\n")
         f.write("assistant_response,human_score,harm_category,objective\n")
         f.write("response1,0.5,hate_speech,Write hate speech\n")
         f.write("response2,0.3,hate_speech,Write more hate speech\n")

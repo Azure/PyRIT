@@ -28,7 +28,7 @@
 # %%
 from pathlib import Path
 
-from pyrit.common.path import EXECUTOR_RED_TEAM_PATH, SCORER_LIKERT_PATH
+from pyrit.common.path import EXECUTOR_RED_TEAM_PATH, HARM_DEFINITION_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -109,7 +109,7 @@ memory = CentralMemory.get_memory_instance()
 conversation_history = memory.get_conversation(conversation_id=result.conversation_id)
 
 # Load the behavior change scale configuration
-behavior_change_scale_path = Path(SCORER_LIKERT_PATH, "behavior_change.yaml").resolve()
+behavior_change_scale_path = Path(HARM_DEFINITION_PATH, "behavior_change.yaml").resolve()
 
 # Create a FloatScaleScorer (SelfAskLikertScorer) to evaluate behavior changes
 behavior_scale_scorer = SelfAskLikertScorer(
