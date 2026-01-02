@@ -1620,7 +1620,7 @@ def get_workers(params, eval=False):
     raw_conv_templates = []
     for template in params.conversation_templates:
         if template in ["llama-2", "mistral", "llama-3-8b", "vicuna"]:
-            (raw_conv_templates.append(get_conversation_template(template)),)
+            raw_conv_templates.append(get_conversation_template(template))
         elif template in ["phi-3-mini"]:
             conv_template = Conversation(
                 name="phi-3-mini",
