@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -15,7 +16,6 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     RolePlayAttack,
     RolePlayPaths,
-    TAPAttack,
 )
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
@@ -25,6 +25,7 @@ from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
@@ -39,6 +40,7 @@ from pyrit.score import (
     TrueFalseScorer,
 )
 
+logger = logging.getLogger(__name__)
 PERSUASION_DECEPTION_PATH = Path(EXECUTOR_RED_TEAM_PATH, "persuasion_deception").resolve()
 
 
@@ -54,7 +56,6 @@ class ScamStrategy(ScenarioStrategy):
     ContextCompliance = ("context_compliance", {"single_turn"})
     RolePlay = ("role_play", {"single_turn"})
     PersuasiveRedTeamingAttack = ("persuasive_rta", {"multi_turn"})
-    # Normal Text Gen Red Teaming Attack?
 
     @classmethod
     def get_aggregate_tags(cls) -> set[str]:
@@ -68,10 +69,10 @@ class ScamStrategy(ScenarioStrategy):
         return super().get_aggregate_tags() | {"single_turn", "multi_turn"}
 
 
-class ScamScenario(Scenario):
+class Scam(Scenario):
     """
-    ScamScenario is a preconfigured scenario which evaluates a model's ability
-    to facilitate various kinds of scams.
+    Scam scenario evaluates an endpoint's ability to generate scam-related materials
+    (e.g., phishing emails, fraudulent messages) with primarily persuasion-oriented techniques.
     """
 
     version: int = 1
@@ -100,6 +101,16 @@ class ScamScenario(Scenario):
     def required_datasets(cls) -> list[str]:
         """Return a list of dataset names required by this scenario."""
         return ["airt_scams"]
+    
+    @classmethod
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """
+        Return the default dataset configuration for this scenario.
+
+        Returns:
+            DatasetConfiguration: Configuration with airt_scams dataset.
+        """
+        return DatasetConfiguration(dataset_names=["airt_scams"], max_dataset_size=4)
 
     @apply_defaults
     def __init__(
@@ -126,16 +137,23 @@ class ScamScenario(Scenario):
                 encoding-modified prompts.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
+        if objectives is not None:
+            logger.warning(
+                "objectives is deprecated and will be removed in 0.13.0. "
+                "Use dataset_config in initialize_async instead."
+            )
+
+
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
+        # Used for multiturn strategies and RolePlayAttack rephrasing
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
-        # Call super().__init__() first to initialize self._memory
         super().__init__(
-            name="Scam Scenario",
+            name="Scam",
             version=self.version,
             strategy_class=ScamStrategy,
             objective_scorer_identifier=objective_scorer.get_identifier(),
@@ -143,17 +161,16 @@ class ScamScenario(Scenario):
             scenario_result_id=scenario_result_id,
         )
 
-        # Convert objectives to seed_groups if provided, otherwise load from dataset
-        if objectives:
-            self._seed_groups = [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
-        else:
-            self._seed_groups = self._get_default_seed_groups()
+        # Store deprecated objectives for later resolution in _resolve_seed_groups
+        self._deprecated_objectives = objectives
+        # Will be resolved in _get_atomic_attacks_async
+        self._seed_groups: Optional[List[SeedGroup]] = None
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
         Retrieve the default objective scorer.
         The scoring mechanism is as follows:
-        1. Detect for objective achieved using a SelfAskTrueFalseScorer.
+        1. Detect for objective achieved using a SelfAskTrueFalseScorer with a custom true/false question path.
         2. Detect for NON-refusal as a backstop. (If the target model refuses to produce scam materials, we want that
         to register as a negative score).
 
@@ -170,7 +187,7 @@ class ScamScenario(Scenario):
                 model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 temperature=0.9,
             ),
-            true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "scam_materials.yaml",
+            true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "scams.yaml",
         )
 
         backstop = TrueFalseInverterScorer(
@@ -199,14 +216,29 @@ class ScamScenario(Scenario):
             temperature=1.2,
         )
 
-    def _get_default_seed_groups(self) -> List[SeedGroup]:
+    def _resolve_seed_groups(self) -> List[SeedGroup]:
         """
-        Load the default scam (impersonation) seed prompts as SeedGroups.
+        Resolve seed groups from deprecated objectives or dataset configuration.
 
         Returns:
-            List[SeedGroup]: SeedGroups from the seed dataset.
+            List[SeedGroup]: List of seed groups with objectives to be tested.
+
+        Raises:
+            ValueError: If both 'objectives' parameter and 'dataset_config' are specified.
         """
-        seed_groups = self._memory.get_seed_groups(dataset_name="airt_scams", is_objective=True)
+        # Check for conflict between deprecated objectives and dataset_config
+        if self._deprecated_objectives is not None and self._dataset_config_provided:
+            raise ValueError(
+                "Cannot specify both 'objectives' parameter and 'dataset_config'. "
+                "Please use only 'dataset_config' in initialize_async."
+            )
+
+        # Use deprecated objectives if provided
+        if self._deprecated_objectives is not None:
+            return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives]
+
+        # Use dataset_config (guaranteed to be set by initialize_async)
+        seed_groups = self._dataset_config.get_all_seed_groups()
 
         if not seed_groups:
             self._raise_dataset_exception()
@@ -271,6 +303,9 @@ class ScamScenario(Scenario):
         Returns:
             List[AtomicAttack]: List of atomic attacks to execute.
         """
+        # Resolve seed groups from deprecated objectives or dataset config
+        self._seed_groups = self._resolve_seed_groups()
+
         atomic_attacks: List[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=ScamStrategy
