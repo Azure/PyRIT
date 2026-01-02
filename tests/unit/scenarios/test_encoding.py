@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Tests for the EncodingScenario class."""
+"""Tests for the Encoding class."""
 
 from unittest.mock import MagicMock
 
@@ -11,7 +11,7 @@ from pyrit.executor.attack import PromptSendingAttack
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
-from pyrit.scenario import EncodingScenario, EncodingStrategy
+from pyrit.scenario.garak import Encoding, EncodingStrategy
 from pyrit.score import DecodingScorer, TrueFalseScorer
 
 
@@ -49,28 +49,26 @@ def sample_seeds():
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestEncodingScenarioInitialization:
-    """Tests for EncodingScenario initialization."""
+class TestEncodingInitialization:
+    """Tests for Encoding initialization."""
 
     def test_init_with_custom_seed_prompts(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with custom seed prompts."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
 
         assert scenario._deprecated_seed_prompts == sample_seeds
-        assert scenario.name == "Encoding Scenario"
+        assert scenario.name == "Encoding"
         assert scenario.version == 1
 
     def test_init_with_default_seed_prompts(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with default seed prompts (Garak dataset)."""
         from unittest.mock import patch
 
-        with patch.object(
-            EncodingScenario, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
-            scenario = EncodingScenario(
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
                 objective_scorer=mock_objective_scorer,
             )
 
@@ -79,7 +77,7 @@ class TestEncodingScenarioInitialization:
 
     def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with custom objective scorer."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -88,7 +86,7 @@ class TestEncodingScenarioInitialization:
 
     def test_init_creates_default_scorer_when_not_provided(self, mock_objective_target, sample_seeds):
         """Test that initialization creates default DecodingScorer when not provided."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
         )
 
@@ -101,7 +99,7 @@ class TestEncodingScenarioInitialization:
         """Test that initialization raises ValueError when datasets are not available in memory."""
 
         # Don't mock _resolve_seed_prompts, let it try to load from empty memory
-        scenario = EncodingScenario(objective_scorer=mock_objective_scorer)
+        scenario = Encoding(objective_scorer=mock_objective_scorer)
 
         # Error should occur during initialize_async when _get_atomic_attacks_async resolves seed prompts
         with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
@@ -109,7 +107,7 @@ class TestEncodingScenarioInitialization:
 
     def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with memory labels."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -121,7 +119,7 @@ class TestEncodingScenarioInitialization:
         """Test initialization with custom encoding templates."""
         custom_templates = ["template1", "template2"]
 
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             encoding_templates=custom_templates,
             objective_scorer=mock_objective_scorer,
@@ -131,7 +129,7 @@ class TestEncodingScenarioInitialization:
 
     def test_init_with_max_concurrency(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test initialization with custom max_concurrency."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -142,7 +140,7 @@ class TestEncodingScenarioInitialization:
     @pytest.mark.asyncio
     async def test_init_attack_strategies(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test that attack strategies are set correctly."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -164,15 +162,15 @@ class TestEncodingScenarioInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestEncodingScenarioAtomicAttacks:
-    """Tests for EncodingScenario atomic attack generation."""
+class TestEncodingAtomicAttacks:
+    """Tests for Encoding atomic attack generation."""
 
     @pytest.mark.asyncio
     async def test_get_atomic_attacks_async_returns_attacks(
         self, mock_objective_target, mock_objective_scorer, sample_seeds
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -189,7 +187,7 @@ class TestEncodingScenarioAtomicAttacks:
         self, mock_objective_target, mock_objective_scorer, sample_seeds
     ):
         """Test that _get_converter_attacks returns attacks for multiple encoding types."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -207,7 +205,7 @@ class TestEncodingScenarioAtomicAttacks:
         self, mock_objective_target, mock_objective_scorer, sample_seeds
     ):
         """Test that _get_prompt_attacks creates attack runs with correct structure."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -228,7 +226,7 @@ class TestEncodingScenarioAtomicAttacks:
     @pytest.mark.asyncio
     async def test_attack_runs_include_objectives(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test that attack runs include objectives for each seed prompt."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -245,13 +243,13 @@ class TestEncodingScenarioAtomicAttacks:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestEncodingScenarioExecution:
-    """Tests for EncodingScenario execution."""
+class TestEncodingExecution:
+    """Tests for Encoding execution."""
 
     @pytest.mark.asyncio
     async def test_scenario_initialization(self, mock_objective_target, mock_objective_scorer, sample_seeds):
         """Test that scenario can be initialized successfully."""
-        scenario = EncodingScenario(
+        scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,
         )
@@ -268,10 +266,8 @@ class TestEncodingScenarioExecution:
         """Test that _resolve_seed_prompts loads data from Garak datasets."""
         from unittest.mock import patch
 
-        with patch.object(
-            EncodingScenario, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
-            scenario = EncodingScenario(
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
                 objective_scorer=mock_objective_scorer,
             )
 

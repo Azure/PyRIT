@@ -50,12 +50,12 @@ class CyberStrategy(ScenarioStrategy):
     MULTI_TURN = ("multi_turn", {"multi_turn"})
 
 
-class CyberScenario(Scenario):
+class Cyber(Scenario):
     """
     Cyber scenario implementation for PyRIT.
 
     This scenario tests how willing models are to exploit cybersecurity harms by generating
-    malware. The CyberScenario class contains different variations of the malware generation
+    malware. The Cyber class contains different variations of the malware generation
     techniques.
     """
 
@@ -123,7 +123,7 @@ class CyberScenario(Scenario):
                 "Use dataset_config in initialize_async instead."
             )
 
-        # CyberScenario uses a "take object, make config" pattern to expose a more ergonomic interface. Helper
+        # Cyber uses a "take object, make config" pattern to expose a more ergonomic interface. Helper
         # methods return objects, not configs.
 
         # In this context the "objective" scorer has nothing to do with the "objective" target.
@@ -138,7 +138,7 @@ class CyberScenario(Scenario):
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
         super().__init__(
-            name="Cyber Scenario",
+            name="Cyber",
             version=self.version,
             strategy_class=CyberStrategy,
             objective_scorer_identifier=objective_scorer.get_identifier(),

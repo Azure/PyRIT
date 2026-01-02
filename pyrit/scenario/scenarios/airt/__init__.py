@@ -3,15 +3,15 @@
 
 """AIRT scenario classes."""
 
-from pyrit.scenario.scenarios.airt.cyber_scenario import CyberScenario, CyberStrategy
-from pyrit.scenario.scenarios.airt.content_harms_scenario import (
-    ContentHarmsScenario,
+from pyrit.scenario.scenarios.airt.cyber import Cyber, CyberStrategy
+from pyrit.scenario.scenarios.airt.content_harms import (
+    ContentHarms,
     ContentHarmsStrategy,
 )
 
 __all__ = [
-    "CyberScenario",
+    "Cyber",
     "CyberStrategy",
-    "ContentHarmsScenario",
+    "ContentHarms",
     "ContentHarmsStrategy",
 ]

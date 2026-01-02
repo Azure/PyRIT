@@ -1397,7 +1397,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))  # type: ignore
 
         if scenario_name:
-            # Normalize CLI snake_case names (e.g., "foundry_scenario") to class names (e.g., "FoundryScenario")
+            # Normalize CLI snake_case names (e.g., "foundry" or "content_harms")
+            # to class names (e.g., "Foundry" or "ContentHarms")
             # This allows users to query with either format
             normalized_name = ScenarioResult.normalize_scenario_name(scenario_name)
             conditions.append(ScenarioResultEntry.scenario_name.contains(normalized_name))  # type: ignore

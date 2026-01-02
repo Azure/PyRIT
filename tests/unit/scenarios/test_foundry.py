@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Tests for the FoundryScenario class."""
+"""Tests for the Foundry class."""
 
 from unittest.mock import MagicMock, patch
 
@@ -14,7 +14,8 @@ from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenario import AtomicAttack, FoundryScenario, FoundryStrategy
+from pyrit.scenario import AtomicAttack
+from pyrit.scenario.foundry import Foundry, FoundryStrategy
 from pyrit.score import TrueFalseScorer
 
 
@@ -61,8 +62,8 @@ def sample_objectives():
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestFoundryScenarioInitialization:
-    """Tests for FoundryScenario initialization."""
+class TestFoundryInitialization:
+    """Tests for Foundry initialization."""
 
     @patch.dict(
         "os.environ",
@@ -77,8 +78,8 @@ class TestFoundryScenarioInitialization:
         self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test initialization with a single attack strategy."""
-        with patch.object(FoundryScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
-            scenario = FoundryScenario(
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
                 attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             )
 
@@ -87,7 +88,7 @@ class TestFoundryScenarioInitialization:
                 scenario_strategies=[FoundryStrategy.Base64],
             )
             assert scenario.atomic_attack_count > 0
-            assert scenario.name == "Foundry Scenario"
+            assert scenario.name == "Foundry"
 
     @patch.dict(
         "os.environ",
@@ -108,8 +109,8 @@ class TestFoundryScenarioInitialization:
             FoundryStrategy.Leetspeak,
         ]
 
-        with patch.object(FoundryScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
-            scenario = FoundryScenario(
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
                 attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             )
 
@@ -129,7 +130,7 @@ class TestFoundryScenarioInitialization:
     )
     def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objectives."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -149,7 +150,7 @@ class TestFoundryScenarioInitialization:
         self, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
     ):
         """Test initialization with custom adversarial target."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
@@ -167,7 +168,7 @@ class TestFoundryScenarioInitialization:
     )
     def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test initialization with custom objective scorer."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             objectives=sample_objectives,
         )
@@ -187,7 +188,7 @@ class TestFoundryScenarioInitialization:
         """Test initialization with memory labels."""
         memory_labels = {"test": "foundry", "category": "attack"}
 
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -201,7 +202,7 @@ class TestFoundryScenarioInitialization:
 
         assert scenario._memory_labels == memory_labels
 
-    @patch("pyrit.scenario.scenarios.foundry_scenario.TrueFalseCompositeScorer")
+    @patch("pyrit.scenario.scenarios.foundry.TrueFalseCompositeScorer")
     @patch.dict(
         "os.environ",
         {
@@ -220,8 +221,8 @@ class TestFoundryScenarioInitialization:
         mock_composite_instance = MagicMock(spec=TrueFalseScorer)
         mock_composite.return_value = mock_composite_instance
 
-        with patch.object(FoundryScenario, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
-            scenario = FoundryScenario()
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry()
 
             # Verify default scorer was created
             mock_composite.assert_called_once()
@@ -241,7 +242,7 @@ class TestFoundryScenarioInitialization:
     async def test_init_raises_exception_when_no_datasets_available(self, mock_objective_target, mock_objective_scorer):
         """Test that initialization raises ValueError when datasets are not available in memory."""
         # Don't mock _resolve_seed_groups, let it try to load from empty memory
-        scenario = FoundryScenario(attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer))
+        scenario = Foundry(attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer))
 
         # Error should occur during initialize_async when _get_atomic_attacks_async resolves seed groups
         with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
@@ -249,7 +250,7 @@ class TestFoundryScenarioInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestFoundryScenarioStrategyNormalization:
+class TestFoundryStrategyNormalization:
     """Tests for attack strategy normalization."""
 
     @patch.dict(
@@ -263,7 +264,7 @@ class TestFoundryScenarioStrategyNormalization:
     @pytest.mark.asyncio
     async def test_normalize_easy_strategies(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that EASY strategy expands to easy attack strategies."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -286,7 +287,7 @@ class TestFoundryScenarioStrategyNormalization:
     @pytest.mark.asyncio
     async def test_normalize_moderate_strategies(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that MODERATE strategy expands to moderate attack strategies."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -311,7 +312,7 @@ class TestFoundryScenarioStrategyNormalization:
         self, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that DIFFICULT strategy expands to difficult attack strategies."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -336,7 +337,7 @@ class TestFoundryScenarioStrategyNormalization:
         self, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that multiple difficulty levels expand correctly."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -361,7 +362,7 @@ class TestFoundryScenarioStrategyNormalization:
         self, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test that specific strategies combined with difficulty levels work correctly."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -378,7 +379,7 @@ class TestFoundryScenarioStrategyNormalization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestFoundryScenarioAttackCreation:
+class TestFoundryAttackCreation:
     """Tests for attack creation from strategies."""
 
     @patch.dict(
@@ -394,7 +395,7 @@ class TestFoundryScenarioAttackCreation:
         self, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating an attack from a single-turn strategy."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -424,7 +425,7 @@ class TestFoundryScenarioAttackCreation:
         self, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating a multi-turn attack strategy."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
@@ -444,7 +445,7 @@ class TestFoundryScenarioAttackCreation:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestFoundryScenarioGetAttack:
+class TestFoundryGetAttack:
     """Tests for the _get_attack method."""
 
     @patch.dict(
@@ -460,7 +461,7 @@ class TestFoundryScenarioGetAttack:
         self, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating a single-turn attack with converters."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -490,7 +491,7 @@ class TestFoundryScenarioGetAttack:
         self, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
     ):
         """Test creating a multi-turn attack."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
@@ -510,7 +511,7 @@ class TestFoundryScenarioGetAttack:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestFoundryScenarioAllStrategies:
+class TestFoundryAllStrategies:
     """Tests that all strategies can be instantiated."""
 
     @patch.dict(
@@ -552,7 +553,7 @@ class TestFoundryScenarioAllStrategies:
         self, mock_objective_target, mock_objective_scorer, sample_objectives, strategy
     ):
         """Test that all single-turn strategies can create attack runs."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -592,7 +593,7 @@ class TestFoundryScenarioAllStrategies:
         strategy,
     ):
         """Test that all multi-turn strategies can create attack runs."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             adversarial_chat=mock_adversarial_target,
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
@@ -610,8 +611,8 @@ class TestFoundryScenarioAllStrategies:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestFoundryScenarioProperties:
-    """Tests for FoundryScenario properties and attributes."""
+class TestFoundryProperties:
+    """Tests for Foundry properties and attributes."""
 
     @patch.dict(
         "os.environ",
@@ -628,7 +629,7 @@ class TestFoundryScenarioProperties:
         """Test that scenario composites are set after initialize_async."""
         strategies = [FoundryStrategy.Base64, FoundryStrategy.ROT13]
 
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
             include_baseline=False,
@@ -656,7 +657,7 @@ class TestFoundryScenarioProperties:
     )
     def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer, sample_objectives):
         """Test that scenario version is properly set."""
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
@@ -682,7 +683,7 @@ class TestFoundryScenarioProperties:
             FoundryStrategy.Leetspeak,
         ]
 
-        scenario = FoundryScenario(
+        scenario = Foundry(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )

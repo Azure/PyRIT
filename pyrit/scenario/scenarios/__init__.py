@@ -3,17 +3,18 @@
 
 """All scenario classes."""
 
-from pyrit.scenario.scenarios.garak.encoding_scenario import EncodingScenario, EncodingStrategy
-from pyrit.scenario.scenarios.foundry_scenario import FoundryScenario, FoundryStrategy
-from pyrit.scenario.scenarios.airt import CyberScenario, CyberStrategy, ContentHarmsScenario, ContentHarmsStrategy
+from pyrit.scenario.scenarios.garak.encoding import Encoding, EncodingStrategy
+from pyrit.scenario.scenarios.foundry import Foundry, FoundryScenario, FoundryStrategy
+from pyrit.scenario.scenarios.airt import Cyber, CyberStrategy, ContentHarms, ContentHarmsStrategy
 
 __all__ = [
-    "CyberScenario",
+    "Cyber",
     "CyberStrategy",
-    "EncodingScenario",
+    "Encoding",
     "EncodingStrategy",
+    "Foundry",
     "FoundryScenario",
     "FoundryStrategy",
-    "ContentHarmsScenario",
+    "ContentHarms",
     "ContentHarmsStrategy",
 ]

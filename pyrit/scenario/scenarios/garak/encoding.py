@@ -79,7 +79,7 @@ class EncodingStrategy(ScenarioStrategy):
 logger = logging.getLogger(__name__)
 
 
-class EncodingScenario(Scenario):
+class Encoding(Scenario):
     """
     Encoding Scenario implementation for PyRIT.
 
@@ -142,7 +142,7 @@ class EncodingScenario(Scenario):
         scenario_result_id: Optional[str] = None,
     ):
         """
-        Initialize the EncodingScenario.
+        Initialize the Encoding.
 
         Args:
             seed_prompts (Optional[list[str]]): Deprecated. Use dataset_config in initialize_async instead.
@@ -169,7 +169,7 @@ class EncodingScenario(Scenario):
         self._encoding_templates = encoding_templates or AskToDecodeConverter.garak_templates
 
         super().__init__(
-            name="Encoding Scenario",
+            name="Encoding",
             version=self.version,
             strategy_class=EncodingStrategy,
             objective_scorer_identifier=objective_scorer.get_identifier(),
