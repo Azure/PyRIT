@@ -136,14 +136,14 @@ class TestFormatConversationContext:
         for i in range(3):
             user_piece = MessagePiece(
                 role="user",
-                original_value=f"User message {i+1}",
-                converted_value=f"User message {i+1}",
+                original_value=f"User message {i + 1}",
+                converted_value=f"User message {i + 1}",
                 original_value_data_type="text",
             )
             assistant_piece = MessagePiece(
                 role="assistant",
-                original_value=f"Assistant response {i+1}",
-                converted_value=f"Assistant response {i+1}",
+                original_value=f"Assistant response {i + 1}",
+                converted_value=f"Assistant response {i + 1}",
                 original_value_data_type="text",
             )
             messages.append(Message(message_pieces=[user_piece]))

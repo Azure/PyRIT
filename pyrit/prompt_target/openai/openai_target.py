@@ -437,8 +437,7 @@ class OpenAITarget(PromptChatTarget):
                 payload_str = str(payload)[:200]
 
             logger.warning(
-                f"BadRequestError request_id={request_id} is_content_filter={is_content_filter} "
-                f"payload={payload_str}"
+                f"BadRequestError request_id={request_id} is_content_filter={is_content_filter} payload={payload_str}"
             )
 
             request_piece = request.message_pieces[0] if request.message_pieces else None

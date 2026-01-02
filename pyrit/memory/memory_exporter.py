@@ -29,9 +29,7 @@ class MemoryExporter:
             # Future formats can be added here
         }
 
-    def export_data(
-        self, data: list[MessagePiece], *, file_path: Optional[Path] = None, export_type: str = "json"
-    ):  # type: ignore
+    def export_data(self, data: list[MessagePiece], *, file_path: Optional[Path] = None, export_type: str = "json"):  # type: ignore
         """
         Export the provided data to a file in the specified format.
 

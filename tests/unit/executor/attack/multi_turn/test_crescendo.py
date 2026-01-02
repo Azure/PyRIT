@@ -265,7 +265,6 @@ class CrescendoTestHelper:
 
     @staticmethod
     def mock_memory_for_attack(attack: CrescendoAttack) -> MagicMock:
-
         mock_memory = MagicMock()
         attack._memory = mock_memory
         return mock_memory

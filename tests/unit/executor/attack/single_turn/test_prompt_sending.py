@@ -439,7 +439,6 @@ class TestResponseEvaluation:
             new_callable=AsyncMock,
             return_value={"auxiliary_scores": [], "objective_scores": [success_score]},
         ) as mock_score_method:
-
             result = await attack._evaluate_response_async(response=sample_response, objective="Test objective")
 
             assert result == success_score
@@ -504,7 +503,6 @@ class TestResponseEvaluation:
             new_callable=AsyncMock,
             return_value={"auxiliary_scores": [auxiliary_score], "objective_scores": [success_score]},
         ) as mock_score_method:
-
             result = await attack._evaluate_response_async(response=sample_response, objective="Test objective")
 
             # Only objective score is returned
@@ -1122,7 +1120,6 @@ class TestEdgeCasesAndErrorHandling:
             new_callable=AsyncMock,
             side_effect=RuntimeError("Scorer error"),
         ):
-
             # Should propagate the exception
             with pytest.raises(RuntimeError, match="Scorer error"):
                 await attack._evaluate_response_async(response=sample_response, objective="Test")

@@ -462,7 +462,7 @@ class ConversationManager:
 
             if conversation_state.turn_count > max_turns:
                 raise ValueError(
-                    f"The number of turns in the prepended conversation ({conversation_state.turn_count-1}) is equal to"
+                    f"The number of turns in the prepended conversation ({conversation_state.turn_count - 1}) is equal to"
                     + f" or exceeds the maximum number of turns ({max_turns}), which means the"
                     + " conversation will not be able to continue. Please reduce the number of turns in"
                     + " the prepended conversation or increase the maximum number of turns and try again."

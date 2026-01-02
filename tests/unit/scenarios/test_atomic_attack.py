@@ -424,7 +424,7 @@ class TestAtomicAttackIntegration:
         mock_results = [
             AttackResult(
                 conversation_id=f"conv-{i}",
-                objective=f"objective{i+1}",
+                objective=f"objective{i + 1}",
                 attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
@@ -439,7 +439,7 @@ class TestAtomicAttackIntegration:
 
             assert len(attack_run_result.completed_results) == 3
             for i, result in enumerate(attack_run_result.completed_results):
-                assert result.objective == f"objective{i+1}"
+                assert result.objective == f"objective{i + 1}"
                 assert result.outcome == AttackOutcome.SUCCESS
 
             call_kwargs = mock_exec.call_args.kwargs
@@ -550,9 +550,9 @@ class TestAtomicAttackExecutorParamCompatibility:
         }
 
         # All required params should be in the executor method signature
-        assert required_from_atomic_attack.issubset(
-            expected_params
-        ), f"Missing expected params in executor: {required_from_atomic_attack - expected_params}"
+        assert required_from_atomic_attack.issubset(expected_params), (
+            f"Missing expected params in executor: {required_from_atomic_attack - expected_params}"
+        )
 
         # Verify that the executor accepts **broadcast_fields (e.g., for memory_labels)
         assert "broadcast_fields" in expected_params, "Executor should accept **broadcast_fields for dynamic params"

@@ -186,7 +186,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         # Execute with retries
         for attempt in range(self._max_attempts_on_failure + 1):
-            self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
+            self._logger.debug(f"Attempt {attempt + 1}/{self._max_attempts_on_failure + 1}")
 
             # Prepare a fresh message for each attempt to avoid duplicate ID errors in database
             message = self._get_message(context)
@@ -194,7 +194,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             # Send the prompt
             response = await self._send_prompt_to_objective_target_async(message=message, context=context)
             if not response:
-                self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
+                self._logger.warning(f"No response received on attempt {attempt + 1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
 
             # Score the response including auxiliary and objective scoring

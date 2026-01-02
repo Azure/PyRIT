@@ -23,7 +23,6 @@ class ConcreteRemoteLoader(_RemoteDatasetLoader):
 
 
 class TestRemoteDatasetLoader:
-
     def test_get_cache_file_name(self):
         loader = ConcreteRemoteLoader()
         name = loader._get_cache_file_name(source="http://example.com", file_type="json")

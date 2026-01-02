@@ -84,7 +84,7 @@ class HumanInTheLoopConverter(PromptConverter):
                         input(
                             f"The available converters are {converters_str}. \
                                                 Enter the index of the converter you would like to run on \
-                                                the input (0 to {len(self._converters)-1})"
+                                                the input (0 to {len(self._converters) - 1})"
                         ).strip()
                     )
                 converter = self._converters[converter_index]

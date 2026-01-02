@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 """Tests for the Cyber class."""
+
 import pathlib
 from typing import List
 from unittest.mock import MagicMock, patch

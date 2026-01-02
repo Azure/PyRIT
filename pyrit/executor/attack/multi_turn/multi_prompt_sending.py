@@ -79,8 +79,7 @@ class MultiPromptSendingAttackParameters(AttackParameters):
         invalid_fields = set(overrides.keys()) - valid_fields
         if invalid_fields:
             raise ValueError(
-                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. "
-                f"Only accepts: {valid_fields}"
+                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. Only accepts: {valid_fields}"
             )
 
         # Build parameters with only objective, user_messages, and memory_labels

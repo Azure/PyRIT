@@ -77,7 +77,6 @@ class LLMGenericTextConverter(PromptConverter):
         kwargs = self._prompt_kwargs.copy()
 
         if self._system_prompt_template:
-
             system_prompt = self._system_prompt_template.render_template_value(**kwargs)
 
             self._converter_target.set_system_prompt(

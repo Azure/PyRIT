@@ -94,7 +94,6 @@ def get_embeddings(model, input_ids):
 
 
 def get_nonascii_toks(tokenizer, device="cpu"):
-
     def is_ascii(s):
         return s.isascii() and s.isprintable()
 
@@ -165,7 +164,6 @@ class AttackPrompt(object):
         self._update_ids()
 
     def _update_ids(self):
-
         self.conv_template.append_message(self.conv_template.roles[0], f"{self.goal} {self.control}")
         self.conv_template.append_message(self.conv_template.roles[1], f"{self.target}")
         prompt = self.conv_template.get_prompt()
@@ -299,7 +297,6 @@ class AttackPrompt(object):
         return self.target_loss(logits, ids).mean().item()
 
     def grad(self, model):
-
         raise NotImplementedError("Gradient function not yet implemented")
 
     @torch.no_grad()
@@ -541,7 +538,6 @@ class PromptManager(object):
         ).mean(dim=1)
 
     def sample_control(self, *args, **kwargs):
-
         raise NotImplementedError("Sampling control tokens not yet implemented")
 
     def __len__(self):
@@ -685,7 +681,6 @@ class MultiPromptAttack(object):
         return cands
 
     def step(self, *args, **kwargs):
-
         raise NotImplementedError("Attack step function not yet implemented")
 
     def run(
@@ -706,7 +701,6 @@ class MultiPromptAttack(object):
         filter_cand=True,
         verbose=True,
     ):
-
         def P(e, e_prime, k):
             T = max(1 - float(k + 1) / (n_steps + anneal_from), 1.0e-7)
             return True if e_prime < e else math.exp(-(e_prime - e) / T) >= random.random()
@@ -741,7 +735,6 @@ class MultiPromptAttack(object):
             self.log(anneal_from, n_steps + anneal_from, self.control_str, loss, runtime, model_tests, verbose=verbose)
 
         for i in range(n_steps):
-
             if stop_on_success:
                 model_tests_jb, model_tests_mb, _ = self.test(self.workers, self.prompts)
                 if all(all(tests for tests in model_test) for model_test in model_tests_jb):
@@ -830,7 +823,6 @@ class MultiPromptAttack(object):
         return id_id, id_od, od_id, od_od
 
     def log(self, step_num, n_steps, control, loss, runtime, model_tests, verbose=True):
-
         prompt_tests_jb, prompt_tests_mb, model_tests_loss = list(map(np.array, model_tests))
         all_goal_strs = self.goals + self.test_goals
         all_workers = self.workers + self.test_workers
@@ -1309,7 +1301,7 @@ class IndividualPromptAttack(object):
         stop_inner_on_success = stop_on_success
 
         for i in range(len(self.goals)):
-            logger.info(f"Goal {i+1}/{len(self.goals)}")
+            logger.info(f"Goal {i + 1}/{len(self.goals)}")
 
             attack = self.managers["MPA"](
                 self.goals[i : i + 1],
@@ -1449,7 +1441,6 @@ class EvaluateAttack(object):
 
     @torch.no_grad()
     def run(self, steps, controls, batch_size, max_new_len=60, verbose=True):
-
         model, tokenizer = self.workers[0].model, self.workers[0].tokenizer
         tokenizer.padding_side = "left"
 
@@ -1531,7 +1522,7 @@ class EvaluateAttack(object):
 
                 if verbose:
                     logger.info(
-                        f"{mode} Step {step+1}/{len(controls)} | "
+                        f"{mode} Step {step + 1}/{len(controls)} | "
                         f"Jailbroken {sum(curr_jb)}/{len(all_outputs)} | "
                         f"EM {sum(curr_em)}/{len(all_outputs)}"
                     )
@@ -1542,7 +1533,6 @@ class EvaluateAttack(object):
 
 
 class ModelWorker(object):
-
     def __init__(self, model_path, token, model_kwargs, tokenizer, conv_template, device):
         self.model = (
             AutoModelForCausalLM.from_pretrained(
@@ -1630,7 +1620,7 @@ def get_workers(params, eval=False):
     raw_conv_templates = []
     for template in params.conversation_templates:
         if template in ["llama-2", "mistral", "llama-3-8b", "vicuna"]:
-            raw_conv_templates.append(get_conversation_template(template)),
+            (raw_conv_templates.append(get_conversation_template(template)),)
         elif template in ["phi-3-mini"]:
             conv_template = Conversation(
                 name="phi-3-mini",
@@ -1678,14 +1668,12 @@ def get_workers(params, eval=False):
 
 
 def get_goals_and_targets(params):
-
     train_goals = getattr(params, "goals", [])
     train_targets = getattr(params, "targets", [])
     test_goals = getattr(params, "test_goals", [])
     test_targets = getattr(params, "test_targets", [])
 
     if params.train_data:
-
         train_data = pd.read_csv(params.train_data)
 
         # this line shuffles the rows of train data randomly with a random seed
