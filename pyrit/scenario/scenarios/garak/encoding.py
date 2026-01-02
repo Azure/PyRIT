@@ -142,7 +142,7 @@ class Encoding(Scenario):
         scenario_result_id: Optional[str] = None,
     ):
         """
-        Initialize the Encoding.
+        Initialize the Encoding Scenario.
 
         Args:
             seed_prompts (Optional[list[str]]): Deprecated. Use dataset_config in initialize_async instead.

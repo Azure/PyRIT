@@ -251,7 +251,7 @@ class Foundry(Scenario):
         scenario_result_id: Optional[str] = None,
     ):
         """
-        Initialize a Foundry with the specified attack strategies.
+        Initialize a Foundry Scenario with the specified attack strategies.
 
         Args:
             adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
