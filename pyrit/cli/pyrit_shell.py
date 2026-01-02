@@ -79,7 +79,7 @@ class PyRITShell(cmd.Cmd):
 ║                                                                                              ║
 ║  Quick Start:                                                                                ║
 ║    pyrit> list-scenarios                                                                     ║
-║    pyrit> run foundry_scenario --initializers openai_objective_target load_default_datasets  ║
+║    pyrit> run foundry --initializers openai_objective_target load_default_datasets           ║
 ║                                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════╝
 """
@@ -160,13 +160,13 @@ class PyRITShell(cmd.Cmd):
             --log-level <level>             Override default log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
         Examples:
-            run garak.encoding_scenario --initializers openai_objective_target load_default_datasets
-            run garak.encoding_scenario --initializers custom_target load_default_datasets --strategies base64 rot13
-            run foundry_scenario --initializers openai_objective_target load_default_datasets --max-concurrency 10 --max-retries 3
-            run garak.encoding_scenario --initializers custom_target load_default_datasets --memory-labels '{"run_id":"test123","env":"dev"}'
-            run foundry_scenario --initializers openai_objective_target load_default_datasets -s jailbreak crescendo
-            run garak.encoding_scenario --initializers openai_objective_target load_default_datasets --database InMemory --log-level DEBUG
-            run foundry_scenario --initialization-scripts ./my_custom_init.py -s all
+            run garak.encoding --initializers openai_objective_target load_default_datasets
+            run garak.encoding --initializers custom_target load_default_datasets --strategies base64 rot13
+            run foundry --initializers openai_objective_target load_default_datasets --max-concurrency 10 --max-retries 3
+            run garak.encoding --initializers custom_target load_default_datasets --memory-labels '{"run_id":"test123","env":"dev"}'
+            run foundry --initializers openai_objective_target load_default_datasets -s jailbreak crescendo
+            run garak.encoding --initializers openai_objective_target load_default_datasets --database InMemory --log-level DEBUG
+            run foundry --initialization-scripts ./my_custom_init.py -s all
 
         Note:
             Every scenario requires an initializer (--initializers or --initialization-scripts).
@@ -194,7 +194,7 @@ class PyRITShell(cmd.Cmd):
                 f"  --log-level <level>             Override default log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
             )
             print("\nExample:")
-            print("  run foundry_scenario --initializers openai_objective_target load_default_datasets")
+            print("  run foundry --initializers openai_objective_target load_default_datasets")
             print("\nType 'help run' for more details and examples")
             return
 
@@ -364,15 +364,15 @@ class PyRITShell(cmd.Cmd):
             print("  --initializers <name> [<name> ...]  (REQUIRED)")
             print(f"      {frontend_core.ARG_HELP['initializers']}")
             print("      Every scenario requires at least one initializer")
-            print("      Example: run foundry_scenario --initializers openai_objective_target load_default_datasets")
+            print("      Example: run foundry --initializers openai_objective_target load_default_datasets")
             print()
             print("  --initialization-scripts <path> [<path> ...]  (Alternative to --initializers)")
             print(f"      {frontend_core.ARG_HELP['initialization_scripts']}")
-            print("      Example: run foundry_scenario --initialization-scripts ./my_init.py")
+            print("      Example: run foundry --initialization-scripts ./my_init.py")
             print()
             print("  --strategies, -s <s1> [<s2> ...]")
             print(f"      {frontend_core.ARG_HELP['scenario_strategies']}")
-            print("      Example: run garak.encoding_scenario --strategies base64 rot13")
+            print("      Example: run garak.encoding --strategies base64 rot13")
             print()
             print("  --max-concurrency <N>")
             print(f"      {frontend_core.ARG_HELP['max_concurrency']}")
@@ -382,7 +382,7 @@ class PyRITShell(cmd.Cmd):
             print()
             print("  --memory-labels <JSON>")
             print(f"      {frontend_core.ARG_HELP['memory_labels']}")
-            print('      Example: run foundry_scenario --memory-labels \'{"env":"test"}\'')
+            print('      Example: run foundry --memory-labels \'{"env":"test"}\'')
             print()
             print("Start the shell like:")
             print("  pyrit_shell")

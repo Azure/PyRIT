@@ -79,7 +79,21 @@ def validate_api_rst_modules(modules: List[Tuple[str, List[str]]], repo_root: Pa
             repo_root / module_path / "__init__.py",
         ]
 
+        # For pyrit.scenario.* modules, also check in pyrit.scenario.scenarios.*
+        # These are virtual modules registered via sys.modules aliasing
+        if module_name.startswith("pyrit.scenario.") and module_name != "pyrit.scenario.scenarios":
+            # e.g., pyrit.scenario.airt -> pyrit.scenario.scenarios.airt
+            scenarios_path = module_name.replace("pyrit.scenario.", "pyrit.scenario.scenarios.", 1)
+            scenarios_module_path = scenarios_path.replace(".", os.sep)
+            possible_paths.extend(
+                [
+                    repo_root / f"{scenarios_module_path}.py",
+                    repo_root / scenarios_module_path / "__init__.py",
+                ]
+            )
+
         module_exists = any(p.exists() for p in possible_paths)
+
         if not module_exists:
             errors.append(f"Module file not found for '{module_name}': checked {[str(p) for p in possible_paths]}")
             continue

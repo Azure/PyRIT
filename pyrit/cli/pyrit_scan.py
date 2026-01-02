@@ -31,15 +31,15 @@ Examples:
   pyrit_scan --list-initializers
 
   # Run a scenario with built-in initializers
-  pyrit_scan foundry_scenario --initializers openai_objective_target load_default_datasets
+  pyrit_scan foundry --initializers openai_objective_target load_default_datasets
 
   # Run with custom initialization scripts
-  pyrit_scan garak.encoding_scenario --initialization-scripts ./my_config.py
+  pyrit_scan garak.encoding --initialization-scripts ./my_config.py
 
   # Run specific strategies or options
-  pyrit scan foundry_scenario --strategies base64 rot13 --initializers openai_objective_target
-  pyrit_scan foundry_scenario --initializers openai_objective_target --max-concurrency 10 --max-retries 3
-  pyrit_scan garak.encoding_scenario --initializers openai_objective_target --memory-labels '{"run_id":"test123"}'
+  pyrit scan foundry --strategies base64 rot13 --initializers openai_objective_target
+  pyrit_scan foundry --initializers openai_objective_target --max-concurrency 10 --max-retries 3
+  pyrit_scan garak.encoding --initializers openai_objective_target --memory-labels '{"run_id":"test123"}'
 """,
         formatter_class=RawDescriptionHelpFormatter,
     )

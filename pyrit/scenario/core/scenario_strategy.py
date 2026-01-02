@@ -330,10 +330,6 @@ class ScenarioCompositeStrategy:
     - Single strategy: Uses the strategy's value (e.g., "base64")
     - Multiple strategies: Generates "ComposedStrategy(base64, rot13)"
 
-    Attributes:
-        name (str): The auto-generated name of the composite strategy.
-        strategies (List[ScenarioStrategy]): The list of strategies in this composition.
-
     Example:
         >>> # Single strategy composition
         >>> single = ScenarioCompositeStrategy(strategies=[FoundryStrategy.Base64])
@@ -494,10 +490,11 @@ class ScenarioCompositeStrategy:
 
         Raises:
             ValueError: If compositions is empty, contains empty compositions,
-                       mixes aggregates with concrete strategies in the same composition,
-                       has multiple aggregates in one composition, or violates validate_composition() rules.
+                mixes aggregates with concrete strategies in the same composition,
+                has multiple aggregates in one composition, or violates validate_composition() rules.
 
-        Examples:
+        Example::
+
             # Aggregate expands to individual strategies
             [ScenarioCompositeStrategy(strategies=[EASY])]
             -> [ScenarioCompositeStrategy(strategies=[Base64]),

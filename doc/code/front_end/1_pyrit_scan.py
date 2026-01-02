@@ -78,29 +78,29 @@
 # Or concretely:
 #
 # ```shell
-# !pyrit_scan foundry_scenario --initializers simple openai_objective_target --scenario-strategies base64
+# !pyrit_scan foundry --initializers simple openai_objective_target --scenario-strategies base64
 # ```
 #
 # Example with a basic configuration that runs the Foundry scenario against the objective target defined in `openai_objective_target` (which just is an OpenAIChatTarget with `DEFAULT_OPENAI_FRONTEND_ENDPOINT` and `DEFAULT_OPENAI_FRONTEND_KEY`).
 
 # %%
-# !pyrit_scan foundry_scenario --initializers openai_objective_target --strategies base64
+# !pyrit_scan foundry --initializers openai_objective_target --strategies base64
 
 # %% [markdown]
 # Or with all options and multiple initializers and multiple strategies:
 #
 # ```shell
-# pyrit_scan foundry_scenario --database InMemory --initializers simple objective_target objective_list --scenario-strategies easy crescendo
+# pyrit_scan foundry --database InMemory --initializers simple objective_target objective_list --scenario-strategies easy crescendo
 # ```
 #
 # You can also override scenario execution parameters:
 #
 # ```shell
 # # Override concurrency and retry settings
-# pyrit_scan foundry_scenario --initializers simple objective_target --max-concurrency 10 --max-retries 3
+# pyrit_scan foundry --initializers simple objective_target --max-concurrency 10 --max-retries 3
 #
 # # Add custom memory labels for tracking (must be valid JSON)
-# pyrit_scan foundry_scenario --initializers simple objective_target --memory-labels '{"experiment": "test1", "version": "v2", "researcher": "alice"}'
+# pyrit_scan foundry --initializers simple objective_target --memory-labels '{"experiment": "test1", "version": "v2", "researcher": "alice"}'
 # ```
 #
 # Available CLI parameter overrides:
@@ -120,11 +120,13 @@
 # You can define your own scenarios in initialization scripts. The CLI will automatically discover any `Scenario` subclasses and make them available:
 #
 
+from pyrit.common import apply_defaults
+from pyrit.scenario import DatasetConfiguration, Scenario
+from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
+
 # %%
 # my_custom_scenarios.py
-from pyrit.common.apply_defaults import apply_defaults
-from pyrit.scenario import Scenario
-from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
+from pyrit.setup import initialize_pyrit_async
 
 
 class MyCustomStrategy(ScenarioStrategy):
@@ -135,7 +137,6 @@ class MyCustomStrategy(ScenarioStrategy):
     Strategy2 = ("strategy2", set[str]())
 
 
-@apply_defaults
 class MyCustomScenario(Scenario):
     """My custom scenario that does XYZ."""
 
@@ -147,6 +148,12 @@ class MyCustomScenario(Scenario):
     def get_default_strategy(cls):
         return MyCustomStrategy.ALL
 
+    @classmethod
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        # Return default dataset configuration for this scenario
+        return DatasetConfiguration(dataset_names=["harmbench"])
+
+    @apply_defaults
     def __init__(self, *, scenario_result_id=None, **kwargs):
         # Scenario-specific configuration only - no runtime parameters
         super().__init__(
@@ -158,8 +165,13 @@ class MyCustomScenario(Scenario):
         # ... your scenario-specific initialization code
 
     async def _get_atomic_attacks_async(self):
-        # Build and return your atomic attacks
+        # Build and return your atomic attacks based on self._scenario_composites
+        # Example: create attacks for each strategy composite
         return []
+
+
+await initialize_pyrit_async(memory_db_type="InMemory")  # type: ignore
+MyCustomScenario()
 
 
 # %% [markdown]

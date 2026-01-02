@@ -142,8 +142,8 @@ class ScenarioResult:
         """
         Normalize a scenario name to match the stored class name format.
 
-        Converts CLI-style snake_case names (e.g., "foundry_scenario") to
-        PascalCase class names (e.g., "FoundryScenario") for database queries.
+        Converts CLI-style snake_case names (e.g., "foundry" or "content_harms") to
+        PascalCase class names (e.g., "Foundry" or "ContentHarms") for database queries.
         If the input is already in PascalCase or doesn't match the snake_case pattern,
         it is returned unchanged.
 
@@ -158,7 +158,7 @@ class ScenarioResult:
         # Check if it looks like snake_case (contains underscore and is lowercase)
         if "_" in scenario_name and scenario_name == scenario_name.lower():
             # Convert snake_case to PascalCase
-            # e.g., "foundry_scenario" -> "FoundryScenario"
+            # e.g., "content_harms" -> "ContentHarms"
             parts = scenario_name.split("_")
             pascal_name = "".join(part.capitalize() for part in parts)
             return pascal_name
