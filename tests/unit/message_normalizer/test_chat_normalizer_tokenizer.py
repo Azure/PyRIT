@@ -48,61 +48,61 @@ class TestTokenizerTemplateNormalizerInit:
 class TestFromModel:
     """Tests for the from_model factory method."""
 
-    def test_from_model_with_alias(self):
+    @patch.object(AutoTokenizer, "from_pretrained")
+    def test_from_model_with_alias(self, mock_from_pretrained):
         """Test from_model resolves alias to full model name."""
-        with patch("transformers.AutoTokenizer.from_pretrained") as mock_from_pretrained:
-            mock_tokenizer = MagicMock()
-            mock_tokenizer.chat_template = "some template"
-            mock_from_pretrained.return_value = mock_tokenizer
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.chat_template = "some template"
+        mock_from_pretrained.return_value = mock_tokenizer
 
-            normalizer = TokenizerTemplateNormalizer.from_model("chatml")
+        normalizer = TokenizerTemplateNormalizer.from_model("chatml")
 
-            mock_from_pretrained.assert_called_once_with("HuggingFaceH4/zephyr-7b-beta", token=None)
-            assert normalizer.tokenizer == mock_tokenizer
+        mock_from_pretrained.assert_called_once_with("HuggingFaceH4/zephyr-7b-beta", token=None)
+        assert normalizer.tokenizer == mock_tokenizer
 
-    def test_from_model_with_full_name(self):
+    @patch.object(AutoTokenizer, "from_pretrained")
+    def test_from_model_with_full_name(self, mock_from_pretrained):
         """Test from_model works with full model name."""
-        with patch("transformers.AutoTokenizer.from_pretrained") as mock_from_pretrained:
-            mock_tokenizer = MagicMock()
-            mock_tokenizer.chat_template = "some template"
-            mock_from_pretrained.return_value = mock_tokenizer
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.chat_template = "some template"
+        mock_from_pretrained.return_value = mock_tokenizer
 
-            normalizer = TokenizerTemplateNormalizer.from_model("custom/model-name")
+        normalizer = TokenizerTemplateNormalizer.from_model("custom/model-name")
 
-            mock_from_pretrained.assert_called_once_with("custom/model-name", token=None)
-            assert normalizer.tokenizer == mock_tokenizer
+        mock_from_pretrained.assert_called_once_with("custom/model-name", token=None)
+        assert normalizer.tokenizer == mock_tokenizer
 
-    def test_from_model_with_token(self):
+    @patch.object(AutoTokenizer, "from_pretrained")
+    def test_from_model_with_token(self, mock_from_pretrained):
         """Test from_model passes token for gated models."""
-        with patch("transformers.AutoTokenizer.from_pretrained") as mock_from_pretrained:
-            mock_tokenizer = MagicMock()
-            mock_tokenizer.chat_template = "some template"
-            mock_from_pretrained.return_value = mock_tokenizer
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.chat_template = "some template"
+        mock_from_pretrained.return_value = mock_tokenizer
 
-            TokenizerTemplateNormalizer.from_model("some-model", token="hf_token123")
+        TokenizerTemplateNormalizer.from_model("some-model", token="hf_token123")
 
-            mock_from_pretrained.assert_called_once_with("some-model", token="hf_token123")
+        mock_from_pretrained.assert_called_once_with("some-model", token="hf_token123")
 
-    def test_from_model_raises_when_no_chat_template(self):
+    @patch.object(AutoTokenizer, "from_pretrained")
+    def test_from_model_raises_when_no_chat_template(self, mock_from_pretrained):
         """Test from_model raises ValueError if tokenizer has no chat_template."""
-        with patch("transformers.AutoTokenizer.from_pretrained") as mock_from_pretrained:
-            mock_tokenizer = MagicMock()
-            mock_tokenizer.chat_template = None
-            mock_from_pretrained.return_value = mock_tokenizer
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.chat_template = None
+        mock_from_pretrained.return_value = mock_tokenizer
 
-            with pytest.raises(ValueError, match="does not have a chat_template"):
-                TokenizerTemplateNormalizer.from_model("model-without-template")
+        with pytest.raises(ValueError, match="does not have a chat_template"):
+            TokenizerTemplateNormalizer.from_model("model-without-template")
 
-    def test_from_model_case_insensitive_alias(self):
+    @patch.object(AutoTokenizer, "from_pretrained")
+    def test_from_model_case_insensitive_alias(self, mock_from_pretrained):
         """Test from_model aliases are case-insensitive."""
-        with patch("transformers.AutoTokenizer.from_pretrained") as mock_from_pretrained:
-            mock_tokenizer = MagicMock()
-            mock_tokenizer.chat_template = "some template"
-            mock_from_pretrained.return_value = mock_tokenizer
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.chat_template = "some template"
+        mock_from_pretrained.return_value = mock_tokenizer
 
-            TokenizerTemplateNormalizer.from_model("CHATML")
+        TokenizerTemplateNormalizer.from_model("CHATML")
 
-            mock_from_pretrained.assert_called_once_with("HuggingFaceH4/zephyr-7b-beta", token=None)
+        mock_from_pretrained.assert_called_once_with("HuggingFaceH4/zephyr-7b-beta", token=None)
 
 
 class TestNormalizeStringAsync:

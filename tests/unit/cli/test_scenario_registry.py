@@ -95,13 +95,10 @@ class TestScenarioRegistry:
             ), f"Scenario name has duplicated 'scenarios': {scenario_name}"
 
         # Verify that nested scenarios use dot notation (e.g., "airt.content_harms")
-        # and top-level scenarios use just the module name (e.g., "encoding")
         nested_scenarios = [name for name in discovered_names if "." in name]
-        top_level_scenarios = [name for name in discovered_names if "." not in name]
 
-        # Should have both nested and top-level scenarios
+        # Should have nested scenarios (all scenarios are now in subdirectories)
         assert len(nested_scenarios) > 0, "No nested scenarios found"
-        assert len(top_level_scenarios) > 0, "No top-level scenarios found"
 
     def test_get_scenario_existing(self):
         """Test getting an existing scenario."""

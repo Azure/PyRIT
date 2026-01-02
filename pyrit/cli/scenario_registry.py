@@ -48,7 +48,7 @@ class ScenarioRegistry:
     1. Built-in scenarios in pyrit.scenario.scenarios module
     2. User-defined scenarios from initialization scripts (set via globals)
 
-    Scenarios are identified by their simple name (e.g., "encoding_scenario", "foundry_scenario").
+    Scenarios are identified by their simple name (e.g., "encoding", "foundry").
     """
 
     def __init__(self) -> None:
@@ -180,12 +180,12 @@ class ScenarioRegistry:
         Convert a class name to a scenario identifier.
 
         Args:
-            class_name (str): Class name (e.g., "EncodingScenario", "MyCustomScenario")
+            class_name (str): Class name (e.g., "Encoding", "MyCustom")
 
         Returns:
-            str: Scenario identifier (e.g., "encoding_scenario", "my_custom_scenario")
+            str: Scenario identifier (e.g., "encoding", "my_custom")
         """
-        # Remove "Scenario" suffix if present
+        # Remove "Scenario" suffix if present (for backwards compatibility)
         if class_name.endswith("Scenario"):
             class_name = class_name[:-8]
 
@@ -202,7 +202,7 @@ class ScenarioRegistry:
         Get a scenario class by name.
 
         Args:
-            name (str): Scenario identifier (e.g., "encoding_scenario", "foundry_scenario")
+            name (str): Scenario identifier (e.g., "encoding", "foundry")
 
         Returns:
             Optional[Type[Scenario]]: The scenario class, or None if not found.
