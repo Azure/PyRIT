@@ -330,10 +330,6 @@ class ScenarioCompositeStrategy:
     - Single strategy: Uses the strategy's value (e.g., "base64")
     - Multiple strategies: Generates "ComposedStrategy(base64, rot13)"
 
-    Attributes:
-        name (str): The auto-generated name of the composite strategy.
-        strategies (List[ScenarioStrategy]): The list of strategies in this composition.
-
     Example:
         >>> # Single strategy composition
         >>> single = ScenarioCompositeStrategy(strategies=[FoundryStrategy.Base64])
