@@ -10,7 +10,7 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenario import ScenarioIdentifier, ScenarioResult
+from pyrit.scenario import DatasetConfiguration, ScenarioIdentifier, ScenarioResult
 from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
 from pyrit.score import Scorer
 
@@ -141,9 +141,9 @@ class ConcreteScenario(Scenario):
         return cls.get_strategy_class().ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return the list of required datasets for testing."""
-        return []
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """Return the default dataset configuration for testing."""
+        return DatasetConfiguration()
 
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return

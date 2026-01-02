@@ -17,6 +17,7 @@ from pyrit.executor.attack import (
 from pyrit.models import SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
@@ -25,6 +26,46 @@ from pyrit.scenario.core.scenario_strategy import (
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer, TrueFalseScorer
 
 AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
+
+
+class ContentHarmsDatasetConfiguration(DatasetConfiguration):
+    """
+    Dataset configuration for content harms that loads seed groups by harm category.
+
+    This subclass overrides the default loading behavior to use harm category pattern
+    matching instead of exact dataset name matching. When scenario_composites are provided,
+    it filters datasets to only those matching the selected harm strategies.
+    """
+
+    def get_seed_groups(self) -> Dict[str, List[SeedGroup]]:
+        """
+        Get seed groups filtered by harm strategies from stored scenario_composites.
+
+        When scenario_composites are set, this filters to only include datasets
+        matching the selected harm strategies and returns harm strategy names as keys.
+
+        Returns:
+            Dict[str, List[SeedGroup]]: Dictionary mapping harm strategy names to their
+                seed groups, filtered by the selected harm strategies.
+        """
+        result = super().get_seed_groups()
+
+        if self._scenario_composites is None:
+            return result
+
+        # Extract selected harm strategies
+        selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
+            self._scenario_composites, strategy_type=ContentHarmsStrategy
+        )
+
+        # Filter to matching datasets and map keys to harm names
+        mapped_result: Dict[str, List[SeedGroup]] = {}
+        for name, groups in result.items():
+            matched_harm = next((harm for harm in selected_harms if harm in name), None)
+            if matched_harm:
+                mapped_result[matched_harm] = groups
+
+        return mapped_result
 
 
 class ContentHarmsStrategy(ScenarioStrategy):
@@ -86,17 +127,25 @@ class ContentHarmsScenario(Scenario):
         return ContentHarmsStrategy.ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return a list of dataset names required by this scenario."""
-        return [
-            "airt_hate",
-            "airt_fairness",
-            "airt_violence",
-            "airt_sexual",
-            "airt_harassment",
-            "airt_misinformation",
-            "airt_leakage",
-        ]
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """
+        Return the default dataset configuration for this scenario.
+
+        Returns:
+            DatasetConfiguration: Configuration with all content harm datasets.
+        """
+        return ContentHarmsDatasetConfiguration(
+            dataset_names=[
+                "airt_hate",
+                "airt_fairness",
+                "airt_violence",
+                "airt_sexual",
+                "airt_harassment",
+                "airt_misinformation",
+                "airt_leakage",
+            ],
+            max_dataset_size=4,
+        )
 
     @apply_defaults
     def __init__(
@@ -137,33 +186,6 @@ class ContentHarmsScenario(Scenario):
         )
         self._objectives_by_harm = objectives_by_harm
 
-    def _get_objectives_by_harm(self) -> Dict[str, Sequence[SeedGroup]]:
-        """
-        Retrieve SeedGroups for each harm strategy. If objectives_by_harm is provided for a given harm strategy,
-        use that directly.
-        Otherwise, load the default seed groups from datasets.
-
-        Returns:
-            Dict[str, Sequence[SeedGroup]]: A dictionary mapping harm strategies to their corresponding SeedGroups.
-        """
-        seeds_by_strategy = {}
-
-        selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
-            self._scenario_composites, strategy_type=ContentHarmsStrategy
-        )
-        for harm_strategy in selected_harms:
-            seeds = self._memory.get_seed_groups(
-                is_objective=True,
-                harm_categories=harm_strategy,
-                dataset_name_pattern="airt_%",
-            )
-            seeds_by_strategy[harm_strategy] = seeds
-
-            if not seeds_by_strategy[harm_strategy]:
-                self._raise_dataset_exception()
-
-        return seeds_by_strategy
-
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
@@ -191,15 +213,15 @@ class ContentHarmsScenario(Scenario):
         Returns:
             List[AtomicAttack]: The list of AtomicAttack instances for harm strategies.
         """
+        # Set scenario_composites on the config so get_seed_groups can filter by strategy
+        self._dataset_config._scenario_composites = self._scenario_composites
+
+        # Get seed groups by harm strategy, already filtered by scenario_composites
+        seed_groups_by_harm = self._dataset_config.get_seed_groups()
+
         atomic_attacks: List[AtomicAttack] = []
-        selected_harms = ScenarioCompositeStrategy.extract_single_strategy_values(
-            self._scenario_composites, strategy_type=ContentHarmsStrategy
-        )
-        merged_objectives_by_harm = self._get_objectives_by_harm()
-        for strategy in selected_harms:
-            atomic_attacks.extend(
-                self._get_strategy_attacks(strategy=strategy, seed_groups=merged_objectives_by_harm[strategy])
-            )
+        for strategy, seed_groups in seed_groups_by_harm.items():
+            atomic_attacks.extend(self._get_strategy_attacks(strategy=strategy, seed_groups=seed_groups))
         return atomic_attacks
 
     def _get_strategy_attacks(

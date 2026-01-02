@@ -161,7 +161,9 @@ class Scorer(abc.ABC):
             message (Message): The message to be scored.
             objective (Optional[str]): The task or objective based on which the message should be scored.
                 Defaults to None.
-            role_filter (Optional[ChatMessageRole]): Only score messages with this role. Defaults to None.
+            role_filter (Optional[ChatMessageRole]): Only score messages with this exact stored role.
+                Use "assistant" to score only real assistant responses, or "simulated_assistant"
+                to score only simulated responses. Defaults to None (no filtering).
             skip_on_error_result (bool): If True, skip scoring if the message contains an error. Defaults to False.
             infer_objective_from_request (bool): If True, infer the objective from the message's previous request
                 when objective is not provided. Defaults to False.
@@ -175,7 +177,7 @@ class Scorer(abc.ABC):
         """
         self._validator.validate(message, objective=objective)
 
-        if role_filter is not None and message.role != role_filter:
+        if role_filter is not None and message.get_piece().get_role_for_storage() != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
 
@@ -513,6 +515,7 @@ class Scorer(abc.ABC):
         message_value: str,
         message_data_type: PromptDataType,
         scored_prompt_id: str,
+        prepended_text_message_piece: Optional[str] = None,
         category: Optional[Sequence[str] | str] = None,
         objective: Optional[str] = None,
         score_value_output_key: str = "score_value",
@@ -531,9 +534,15 @@ class Scorer(abc.ABC):
         Args:
             prompt_target (PromptChatTarget): The target LLM to send the message to.
             system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
-            message_value (str): The actual value or content to be scored by the LLM.
-            message_data_type (PromptDataType): The type of the data being sent in the message.
+            message_value (str): The actual value or content to be scored by the LLM (e.g., text, image path,
+                audio path).
+            message_data_type (PromptDataType): The type of the data being sent in the message (e.g., "text",
+                "image_path", "audio_path").
             scored_prompt_id (str): The ID of the scored prompt.
+            prepended_text_message_piece (Optional[str]): Text context to prepend before the main
+                message_value. When provided, creates a multi-piece message with this text first, followed
+                by the message_value. Useful for adding objective/context when scoring non-text content.
+                Defaults to None.
             category (Optional[Sequence[str] | str]): The category of the score. Can also be parsed from
                 the JSON response if not provided. Defaults to None.
             objective (Optional[str]): A description of the objective that is associated with the score,
@@ -571,19 +580,38 @@ class Scorer(abc.ABC):
             attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        scorer_llm_request = Message(
-            [
+
+        # Build message pieces - prepended text context first (if provided), then the main message being scored
+        message_pieces: list[MessagePiece] = []
+
+        # Add prepended text context piece if provided (e.g., objective context for non-text scoring)
+        if prepended_text_message_piece:
+            message_pieces.append(
                 MessagePiece(
                     role="user",
-                    original_value=message_value,
-                    original_value_data_type=message_data_type,
-                    converted_value_data_type=message_data_type,
+                    original_value=prepended_text_message_piece,
+                    original_value_data_type="text",
+                    converted_value_data_type="text",
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                     prompt_metadata=prompt_metadata,
                 )
-            ]
+            )
+
+        # Add the main message piece being scored
+        message_pieces.append(
+            MessagePiece(
+                role="user",
+                original_value=message_value,
+                original_value_data_type=message_data_type,
+                converted_value_data_type=message_data_type,
+                conversation_id=conversation_id,
+                prompt_target_identifier=prompt_target.get_identifier(),
+                prompt_metadata=prompt_metadata,
+            )
         )
+
+        scorer_llm_request = Message(message_pieces)
         try:
             response = await prompt_target.send_prompt_async(message=scorer_llm_request)
         except Exception as ex:
@@ -665,7 +693,7 @@ class Scorer(abc.ABC):
 
         piece = response.get_piece()
 
-        if piece.role != "assistant":
+        if piece.api_role != "assistant":
             return ""
 
         conversation = self._memory.get_message_pieces(conversation_id=piece.conversation_id)
@@ -699,7 +727,8 @@ class Scorer(abc.ABC):
             response (Message): Response containing pieces to score.
             objective_scorer (Optional[Scorer]): The main scorer to determine success. Defaults to None.
             auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply. Defaults to None.
-            role_filter (ChatMessageRole): Only score pieces with this role. Defaults to "assistant".
+            role_filter (ChatMessageRole): Only score pieces with this exact stored role.
+                Defaults to "assistant" (real responses only, not simulated).
             objective (Optional[str]): Task/objective for scoring context. Defaults to None.
             skip_on_error_result (bool): If True, skip scoring pieces that have errors. Defaults to True.
 
@@ -775,7 +804,8 @@ class Scorer(abc.ABC):
         Args:
             response (Message): The response containing pieces to score.
             scorers (List[Scorer]): List of scorers to apply.
-            role_filter (ChatMessageRole): Only score pieces with this role (default: "assistant").
+            role_filter (ChatMessageRole): Only score pieces with this exact stored role.
+                Defaults to "assistant" (real responses only, not simulated).
             objective (Optional[str]): Optional objective description for scoring context.
             skip_on_error_result (bool): If True, skip scoring pieces that have errors (default: True).
 

@@ -266,22 +266,24 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_with_empty_conversation_id_raises_error(
-        self, attack_identifier: dict[str, str]
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
 
         with pytest.raises(ValueError, match="conversation_id cannot be empty"):
-            await manager.update_conversation_state_async(conversation_id="", prepended_conversation=[])
+            await manager.update_conversation_state_async(
+                target=mock_chat_target, conversation_id="", prepended_conversation=[]
+            )
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_with_empty_history_returns_default_state(
-        self, attack_identifier: dict[str, str]
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         state = await manager.update_conversation_state_async(
-            conversation_id=conversation_id, prepended_conversation=[]
+            target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=[]
         )
 
         assert isinstance(state, ConversationState)
@@ -291,14 +293,14 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_single_turn_mode(
-        self, attack_identifier: dict[str, str], sample_conversation: list[Message]
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_conversation: list[Message]
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Single-turn mode (no max_turns)
         state = await manager.update_conversation_state_async(
-            conversation_id=conversation_id, prepended_conversation=sample_conversation
+            target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=sample_conversation
         )
 
         # Verify all messages were added to memory
@@ -311,7 +313,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_multi_turn_mode_excludes_last_user_message(
-        self, attack_identifier: dict[str, str], sample_user_piece: MessagePiece
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_user_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -320,7 +322,7 @@ class TestConversationStateUpdate:
         conversation = [Message(message_pieces=[sample_user_piece])]
 
         state = await manager.update_conversation_state_async(
-            conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
+            target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
         # Last user message should be excluded from memory in multi-turn mode
@@ -334,6 +336,7 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_with_role_specific_converters(
         self,
         attack_identifier: dict[str, str],
+        mock_chat_target: MagicMock,
         mock_prompt_normalizer: MagicMock,
         sample_conversation: list[Message],
     ):
@@ -345,6 +348,7 @@ class TestConversationStateUpdate:
         response_converter_config = [PromptConverterConfiguration(converters=[])]
 
         await manager.update_conversation_state_async(
+            target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=sample_conversation,
             request_converters=request_converter_config,
@@ -389,9 +393,9 @@ class TestConversationStateUpdate:
         response_converter_config = [PromptConverterConfiguration(converters=[])]
 
         await manager.update_conversation_state_async(
+            target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
             request_converters=request_converter_config,
             response_converters=response_converter_config,
             max_turns=5,  # Multi-turn mode to trigger system prompt handling
@@ -404,6 +408,7 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_processes_system_prompts_multi_turn(
         self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
     ):
+        """Test that system messages are added to memory like any other message."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -411,24 +416,22 @@ class TestConversationStateUpdate:
         conversation = [Message(message_pieces=[sample_system_piece])]
 
         await manager.update_conversation_state_async(
+            target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
-            max_turns=5,  # Multi-turn mode to trigger system prompt handling
+            max_turns=5,  # Multi-turn mode
         )
 
-        # System prompt should be set on target
-        mock_chat_target.set_system_prompt.assert_called_once()
-
-        # System messages should not be added to memory in multi-turn mode
+        # System messages SHOULD be added to memory
         stored_conversation = manager.get_conversation(conversation_id)
-        assert len(stored_conversation) == 0
+        assert len(stored_conversation) == 1
+        assert stored_conversation[0].get_piece().role == "system"
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_processes_system_prompts_single_turn(
         self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
     ):
-        """Test that system messages in single-turn mode are NOT added to memory"""
+        """Test that system messages in single-turn mode are added to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -436,14 +439,16 @@ class TestConversationStateUpdate:
         conversation = [Message(message_pieces=[sample_system_piece])]
 
         await manager.update_conversation_state_async(
+            target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
             # No max_turns = single-turn mode
         )
 
-        # System prompt should be set on target
-        mock_chat_target.set_system_prompt.assert_called_once()
+        # System messages SHOULD be added to memory
+        stored_conversation = manager.get_conversation(conversation_id)
+        assert len(stored_conversation) == 1
+        assert stored_conversation[0].get_piece().role == "system"
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_single_turn_behavior_matches_legacy(
@@ -454,7 +459,7 @@ class TestConversationStateUpdate:
         sample_assistant_piece: MessagePiece,
         sample_system_piece: MessagePiece,
     ):
-        """Test that single-turn behavior correctly excludes system messages from memory"""
+        """Test that all message types are correctly saved to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -466,21 +471,21 @@ class TestConversationStateUpdate:
         ]
 
         # Store original IDs to verify they get updated
-        # Since we are mocking the target, the system piece won't be stored, so we only check user and assistant
         original_user_id = sample_user_piece.id
         original_assistant_id = sample_assistant_piece.id
 
         await manager.update_conversation_state_async(
+            target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
             # No max_turns = single-turn mode
         )
 
+        # All messages including system should be stored
         stored_conversation = manager.get_conversation(conversation_id)
-        assert len(stored_conversation) == 2
+        assert len(stored_conversation) == 3
 
-        # Verify that user and assistant pieces have the correct conversation_id and attack_identifier
+        # Verify that all pieces have the correct conversation_id and attack_identifier
         for stored_response in stored_conversation:
             for piece in stored_response.message_pieces:
                 assert piece.conversation_id == conversation_id
@@ -488,49 +493,71 @@ class TestConversationStateUpdate:
                 # Verify that IDs were regenerated
                 assert piece.id != original_user_id
                 assert piece.id != original_assistant_id
-                # System piece should not be in memory, since we mocked the target
 
-        # Verify roles are preserved and in order (excluding system)
-        assert stored_conversation[0].get_piece().role == "user"
-        assert stored_conversation[1].get_piece().role == "assistant"
-
-        # System prompt should still be set on target even in single-turn mode
-        mock_chat_target.set_system_prompt.assert_called_once()
+        # Verify roles are preserved and in order
+        assert stored_conversation[0].get_piece().role == "system"
+        assert stored_conversation[1].get_piece().role == "user"
+        assert stored_conversation[2].get_piece().role == "assistant"
 
     @pytest.mark.asyncio
-    async def test_update_conversation_state_system_prompt_without_target_raises_error(
-        self, attack_identifier: dict[str, str], sample_system_piece: MessagePiece
+    async def test_update_conversation_state_system_message_without_target_succeeds(
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_system_piece: MessagePiece
     ):
-        """Test that providing system prompts without a target raises an error"""
+        """Test that system messages work fine with a chat target - they're saved to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
         # Create conversation with system message
         conversation = [Message(message_pieces=[sample_system_piece])]
 
-        with pytest.raises(ValueError, match="Target must be provided to handle system prompts"):
-            await manager.update_conversation_state_async(
-                conversation_id=conversation_id,
-                prepended_conversation=conversation,
-                # No target provided
-            )
+        # Should succeed with a chat target
+        await manager.update_conversation_state_async(
+            target=mock_chat_target,
+            conversation_id=conversation_id,
+            prepended_conversation=conversation,
+        )
+
+        # System message should be in memory
+        stored_conversation = manager.get_conversation(conversation_id)
+        assert len(stored_conversation) == 1
+        assert stored_conversation[0].get_piece().role == "system"
 
     @pytest.mark.asyncio
-    async def test_update_conversation_state_system_prompt_with_non_chat_target_raises_error(
+    async def test_update_conversation_state_system_message_with_non_chat_target_succeeds(
         self, attack_identifier: dict[str, str], mock_prompt_target: MagicMock, sample_system_piece: MessagePiece
     ):
-        """Test that providing system prompts with non-chat target raises an error"""
+        """Test that empty prepended_conversation works fine with non-chat target."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
-        # Create conversation with system message
-        conversation = [Message(message_pieces=[sample_system_piece])]
+        # Should succeed with empty prepended_conversation
+        await manager.update_conversation_state_async(
+            target=mock_prompt_target,
+            conversation_id=conversation_id,
+            prepended_conversation=[],
+        )
 
-        with pytest.raises(ValueError, match="Target must be a PromptChatTarget to set system prompts"):
+        # Empty prepended_conversation means no messages stored
+        stored_conversation = manager.get_conversation(conversation_id)
+        assert len(stored_conversation) == 0
+
+    @pytest.mark.asyncio
+    async def test_update_conversation_state_with_non_chat_target_and_prepended_conversation_raises_error(
+        self, attack_identifier: dict[str, str], mock_prompt_target: MagicMock, sample_user_piece: MessagePiece
+    ):
+        """Test that prepended_conversation with non-chat target raises ValueError."""
+        manager = ConversationManager(attack_identifier=attack_identifier)
+        conversation_id = str(uuid.uuid4())
+
+        # Create conversation with messages
+        conversation = [Message(message_pieces=[sample_user_piece])]
+
+        # Should raise ValueError because non-chat targets don't support conversation history
+        with pytest.raises(ValueError, match="prepended_conversation requires target to be a PromptChatTarget"):
             await manager.update_conversation_state_async(
+                target=mock_prompt_target,
                 conversation_id=conversation_id,
                 prepended_conversation=conversation,
-                target=mock_prompt_target,  # Non-chat target
             )
 
     @pytest.mark.asyncio
@@ -542,7 +569,7 @@ class TestConversationStateUpdate:
         sample_assistant_piece: MessagePiece,
         sample_system_piece: MessagePiece,
     ):
-        """Test that in multi-turn mode, system prompts are excluded but other messages are added"""
+        """Test that in multi-turn mode, all messages including system are saved to memory."""
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -554,26 +581,24 @@ class TestConversationStateUpdate:
         ]
 
         await manager.update_conversation_state_async(
+            target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
-            target=mock_chat_target,
             max_turns=5,  # Multi-turn mode
         )
 
-        # System prompt should be set on target
-        mock_chat_target.set_system_prompt.assert_called_once()
-
-        # Only user and assistant messages should be in memory
-        # Since the target is mocked, the system piece won't be stored
+        # All messages including system should be in memory
         stored_conversation = manager.get_conversation(conversation_id)
-        assert len(stored_conversation) == 2
-        assert stored_conversation[0].get_piece().role == "user"
-        assert stored_conversation[1].get_piece().role == "assistant"
+        assert len(stored_conversation) == 3
+        assert stored_conversation[0].get_piece().role == "system"
+        assert stored_conversation[1].get_piece().role == "user"
+        assert stored_conversation[2].get_piece().role == "assistant"
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_preserves_original_values_like_legacy(
         self,
         attack_identifier: dict[str, str],
+        mock_chat_target: MagicMock,
         sample_user_piece: MessagePiece,
     ):
         """Test that original values and other piece properties are preserved like the legacy function"""
@@ -589,6 +614,7 @@ class TestConversationStateUpdate:
         conversation = [Message(message_pieces=[sample_user_piece])]
 
         await manager.update_conversation_state_async(
+            target=mock_chat_target,
             conversation_id=conversation_id,
             prepended_conversation=conversation,
             # Single-turn mode
@@ -610,6 +636,7 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_counts_turns_correctly(
         self,
         attack_identifier: dict[str, str],
+        mock_chat_target: MagicMock,
         sample_user_piece: MessagePiece,
         sample_assistant_piece: MessagePiece,
     ):
@@ -625,7 +652,7 @@ class TestConversationStateUpdate:
         ]
 
         state = await manager.update_conversation_state_async(
-            conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
+            target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
         assert state.turn_count == 2
@@ -634,6 +661,7 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_exceeds_max_turns_raises_error(
         self,
         attack_identifier: dict[str, str],
+        mock_chat_target: MagicMock,
         sample_user_piece: MessagePiece,
         sample_assistant_piece: MessagePiece,
     ):
@@ -650,6 +678,7 @@ class TestConversationStateUpdate:
 
         with pytest.raises(ValueError, match="exceeds the maximum number of turns"):
             await manager.update_conversation_state_async(
+                target=mock_chat_target,
                 conversation_id=conversation_id,
                 prepended_conversation=conversation,
                 max_turns=1,  # Only allow 1 turn
@@ -659,6 +688,7 @@ class TestConversationStateUpdate:
     async def test_update_conversation_state_extracts_assistant_scores(
         self,
         attack_identifier: dict[str, str],
+        mock_chat_target: MagicMock,
         sample_user_piece: MessagePiece,
         sample_assistant_piece: MessagePiece,
         sample_score: Score,
@@ -690,7 +720,7 @@ class TestConversationStateUpdate:
         ]
 
         state = await manager.update_conversation_state_async(
-            conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
+            target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
         # Should extract scores for last assistant message
@@ -699,7 +729,7 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_no_scores_for_assistant_message(
-        self, attack_identifier: dict[str, str], sample_assistant_piece: MessagePiece
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_assistant_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -710,7 +740,7 @@ class TestConversationStateUpdate:
         ]
 
         state = await manager.update_conversation_state_async(
-            conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
+            target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
         )
 
         # Should not set last_user_message when no scores found
@@ -719,7 +749,11 @@ class TestConversationStateUpdate:
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_assistant_without_preceding_user_raises_error(
-        self, attack_identifier: dict[str, str], sample_assistant_piece: MessagePiece, sample_score: Score
+        self,
+        attack_identifier: dict[str, str],
+        mock_chat_target: MagicMock,
+        sample_assistant_piece: MessagePiece,
+        sample_score: Score,
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -741,35 +775,11 @@ class TestConversationStateUpdate:
 
         with pytest.raises(ValueError, match="There must be a user message preceding"):
             await manager.update_conversation_state_async(
-                conversation_id=conversation_id, prepended_conversation=conversation, max_turns=5
+                target=mock_chat_target,
+                conversation_id=conversation_id,
+                prepended_conversation=conversation,
+                max_turns=5,
             )
-
-
-class TestPrivateMethods:
-    """Tests for private helper methods"""
-
-    def test_should_exclude_piece_from_memory_single_turn_mode(self, sample_system_piece: MessagePiece):
-        # System pieces should be excluded in both single-turn and multi-turn modes
-        # because set_system_prompt() is called on the target, which internally adds them to memory
-        assert ConversationManager._should_exclude_piece_from_memory(piece=sample_system_piece, max_turns=None)
-
-    def test_should_exclude_piece_from_memory_multi_turn_system_piece(self, sample_system_piece: MessagePiece):
-        # System pieces should be excluded in both single-turn and multi-turn modes
-        assert ConversationManager._should_exclude_piece_from_memory(piece=sample_system_piece, max_turns=5)
-
-    def test_should_exclude_piece_from_memory_single_turn_non_system_piece(
-        self, sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece
-    ):
-        # In single-turn mode, non-system pieces should not be excluded
-        assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_user_piece, max_turns=None)
-        assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_assistant_piece, max_turns=None)
-
-    def test_should_exclude_piece_from_memory_multi_turn_non_system_piece(
-        self, sample_user_piece: MessagePiece, sample_assistant_piece: MessagePiece
-    ):
-        # In multi-turn mode, non-system pieces should not be excluded
-        assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_user_piece, max_turns=5)
-        assert not ConversationManager._should_exclude_piece_from_memory(piece=sample_assistant_piece, max_turns=5)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -783,7 +793,9 @@ class TestEdgeCasesAndErrorHandling:
             Message(message_pieces=[])
 
     @pytest.mark.asyncio
-    async def test_update_conversation_state_with_none_request(self, attack_identifier: dict[str, str]):
+    async def test_update_conversation_state_with_none_request(
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock
+    ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
 
@@ -792,14 +804,16 @@ class TestEdgeCasesAndErrorHandling:
 
         # Should handle gracefully
         state = await manager.update_conversation_state_async(
-            conversation_id=conversation_id, prepended_conversation=conversation  # type: ignore
+            target=mock_chat_target,
+            conversation_id=conversation_id,
+            prepended_conversation=conversation,  # type: ignore
         )
 
         assert state.turn_count == 0
 
     @pytest.mark.asyncio
     async def test_update_conversation_state_preserves_piece_metadata(
-        self, attack_identifier: dict[str, str], sample_user_piece: MessagePiece
+        self, attack_identifier: dict[str, str], mock_chat_target: MagicMock, sample_user_piece: MessagePiece
     ):
         manager = ConversationManager(attack_identifier=attack_identifier)
         conversation_id = str(uuid.uuid4())
@@ -811,7 +825,7 @@ class TestEdgeCasesAndErrorHandling:
         conversation = [Message(message_pieces=[sample_user_piece])]
 
         await manager.update_conversation_state_async(
-            conversation_id=conversation_id, prepended_conversation=conversation
+            target=mock_chat_target, conversation_id=conversation_id, prepended_conversation=conversation
         )
 
         # Verify piece was processed with metadata intact
@@ -838,3 +852,78 @@ class TestEdgeCasesAndErrorHandling:
         assert state.turn_count == 5
         assert state.last_user_message == "Test message"
         assert state.last_assistant_message_scores == [sample_score]
+
+
+class TestMarkMessagesAsSimulated:
+    """Tests for the mark_messages_as_simulated helper function."""
+
+    def test_mark_messages_as_simulated_converts_assistant(self):
+        """Test that assistant role is converted to simulated_assistant."""
+        from pyrit.executor.attack.component.conversation_manager import (
+            mark_messages_as_simulated,
+        )
+
+        piece = MessagePiece(role="assistant", original_value="Hello", conversation_id="test")
+        message = Message(message_pieces=[piece])
+
+        result = mark_messages_as_simulated([message])
+
+        assert len(result) == 1
+        assert result[0].message_pieces[0].get_role_for_storage() == "simulated_assistant"
+        assert result[0].message_pieces[0].api_role == "assistant"
+        assert result[0].message_pieces[0].is_simulated is True
+
+    def test_mark_messages_as_simulated_leaves_user_unchanged(self):
+        """Test that user role is not changed."""
+        from pyrit.executor.attack.component.conversation_manager import (
+            mark_messages_as_simulated,
+        )
+
+        piece = MessagePiece(role="user", original_value="Hello", conversation_id="test")
+        message = Message(message_pieces=[piece])
+
+        result = mark_messages_as_simulated([message])
+
+        assert len(result) == 1
+        assert result[0].message_pieces[0].get_role_for_storage() == "user"
+        assert result[0].message_pieces[0].is_simulated is False
+
+    def test_mark_messages_as_simulated_leaves_system_unchanged(self):
+        """Test that system role is not changed."""
+        from pyrit.executor.attack.component.conversation_manager import (
+            mark_messages_as_simulated,
+        )
+
+        piece = MessagePiece(role="system", original_value="You are helpful", conversation_id="test")
+        message = Message(message_pieces=[piece])
+
+        result = mark_messages_as_simulated([message])
+
+        assert len(result) == 1
+        assert result[0].message_pieces[0].get_role_for_storage() == "system"
+        assert result[0].message_pieces[0].is_simulated is False
+
+    def test_mark_messages_as_simulated_mixed_conversation(self):
+        """Test marking a conversation with mixed roles."""
+        from pyrit.executor.attack.component.conversation_manager import (
+            mark_messages_as_simulated,
+        )
+
+        user_piece = MessagePiece(role="user", original_value="Hello", conversation_id="test", sequence=1)
+        assistant_piece = MessagePiece(role="assistant", original_value="Hi there", conversation_id="test", sequence=2)
+
+        messages = [
+            Message(message_pieces=[user_piece]),
+            Message(message_pieces=[assistant_piece]),
+        ]
+
+        result = mark_messages_as_simulated(messages)
+
+        assert len(result) == 2
+        # User should be unchanged
+        assert result[0].message_pieces[0].get_role_for_storage() == "user"
+        assert result[0].is_simulated is False
+        # Assistant should be converted
+        assert result[1].message_pieces[0].get_role_for_storage() == "simulated_assistant"
+        assert result[1].is_simulated is True
+        assert result[1].api_role == "assistant"

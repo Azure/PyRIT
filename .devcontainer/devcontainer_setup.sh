@@ -47,11 +47,29 @@ if [ ! -f "$HASH_FILE" ] || [ "$(cat $HASH_FILE)" != "$CURRENT_HASH" ]; then
     # Install dependencies
     uv pip install ipykernel
     uv pip install -e ".[dev,all]"
+    # Register the kernel with Jupyter
+    python -m ipykernel install --user --name=pyrit-dev --display-name="Python (pyrit-dev)"
 
     # Save the new hash
     echo "$CURRENT_HASH" > "$HASH_FILE"
 else
     echo "✅ pyproject.toml has not changed, skipping installation."
 fi
+
+# Install frontend dependencies
+echo "📦 Installing frontend dependencies..."
+
+# Fix node_modules permissions (volume is owned by root)
+if [ -d "/workspace/frontend/node_modules" ]; then
+    echo "Fixing node_modules permissions..."
+    sudo chown -R vscode:vscode /workspace/frontend/node_modules
+fi
+
+cd /workspace/frontend
+if [ -f "package.json" ]; then
+    npm install
+    echo "✅ Frontend dependencies installed."
+fi
+cd /workspace
 
 echo "🚀 Dev container setup complete!"

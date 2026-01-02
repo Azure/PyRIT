@@ -60,7 +60,8 @@ class ScenarioInfo(TypedDict):
     default_strategy: str
     all_strategies: list[str]
     aggregate_strategies: list[str]
-    required_datasets: list[str]
+    default_datasets: list[str]
+    max_dataset_size: Optional[int]
 
 
 class FrontendCore:
@@ -214,6 +215,8 @@ async def run_scenario_async(
     max_concurrency: Optional[int] = None,
     max_retries: Optional[int] = None,
     memory_labels: Optional[dict[str, str]] = None,
+    dataset_names: Optional[list[str]] = None,
+    max_dataset_size: Optional[int] = None,
     print_summary: bool = True,
 ) -> "ScenarioResult":
     """
@@ -226,6 +229,12 @@ async def run_scenario_async(
         max_concurrency: Max concurrent operations.
         max_retries: Max retry attempts.
         memory_labels: Labels to attach to memory entries.
+        dataset_names: Optional list of dataset names to use instead of scenario defaults.
+            If provided, creates a new dataset configuration (fetches all items unless
+            max_dataset_size is also specified).
+        max_dataset_size: Optional maximum number of items to use from the dataset.
+            If dataset_names is provided, limits items from the new datasets.
+            If only max_dataset_size is provided, overrides the scenario's default limit.
         print_summary: Whether to print the summary after execution. Defaults to True.
 
     Returns:
@@ -296,6 +305,25 @@ async def run_scenario_async(
         init_kwargs["max_retries"] = max_retries
     if memory_labels is not None:
         init_kwargs["memory_labels"] = memory_labels
+
+    # Build dataset_config based on CLI args:
+    # - No args: scenario uses its default_dataset_config()
+    # - dataset_names only: new config with those datasets, fetches all items
+    # - dataset_names + max_dataset_size: new config with limited items
+    # - max_dataset_size only: default datasets with overridden limit
+    if dataset_names:
+        # User specified dataset names - create new config (fetches all unless max_dataset_size set)
+        from pyrit.scenario import DatasetConfiguration
+
+        init_kwargs["dataset_config"] = DatasetConfiguration(
+            dataset_names=dataset_names,
+            max_dataset_size=max_dataset_size,
+        )
+    elif max_dataset_size is not None:
+        # User only specified max_dataset_size - override default config's limit
+        default_config = scenario_class.default_dataset_config()
+        default_config.max_dataset_size = max_dataset_size
+        init_kwargs["dataset_config"] = default_config
 
     # Instantiate and run
     print(f"\nRunning scenario: {scenario_name}")
@@ -389,14 +417,16 @@ def format_scenario_info(*, scenario_info: ScenarioInfo) -> None:
     if scenario_info.get("default_strategy"):
         print(f"    Default Strategy: {scenario_info['default_strategy']}")
 
-    if scenario_info.get("required_datasets"):
-        datasets = scenario_info["required_datasets"]
+    if scenario_info.get("default_datasets"):
+        datasets = scenario_info["default_datasets"]
+        max_size = scenario_info.get("max_dataset_size")
         if datasets:
-            print(f"    Required Datasets ({len(datasets)}):")
+            size_suffix = f", max {max_size} per dataset" if max_size else ""
+            print(f"    Default Datasets ({len(datasets)}{size_suffix}):")
             formatted = _format_wrapped_text(text=", ".join(datasets), indent="      ")
             print(formatted)
         else:
-            print("    Required Datasets: None")
+            print("    Default Datasets: None")
 
 
 def format_initializer_info(*, initializer_info: "InitializerInfo") -> None:
@@ -724,6 +754,10 @@ ARG_HELP = {
     "memory_labels": 'Additional labels as JSON string (e.g., \'{"experiment": "test1"}\')',
     "database": "Database type to use for memory storage",
     "log_level": "Logging level",
+    "dataset_names": "List of dataset names to use instead of scenario defaults (e.g., harmbench advbench). "
+    "Creates a new dataset config; fetches all items unless --max-dataset-size is also specified",
+    "max_dataset_size": "Maximum number of items to use from the dataset (must be >= 1). "
+    "Limits new datasets if --dataset-names provided, otherwise overrides scenario's default limit",
 }
 
 
@@ -745,6 +779,8 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             - memory_labels: Optional[dict[str, str]]
             - database: Optional[str]
             - log_level: Optional[str]
+            - dataset_names: Optional[list[str]]
+            - max_dataset_size: Optional[int]
 
     Raises:
         ValueError: If parsing or validation fails.
@@ -765,6 +801,8 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
         "memory_labels": None,
         "database": None,
         "log_level": None,
+        "dataset_names": None,
+        "max_dataset_size": None,
     }
 
     i = 1
@@ -826,6 +864,19 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             if i >= len(parts):
                 raise ValueError("--log-level requires a value")
             result["log_level"] = validate_log_level(log_level=parts[i])
+            i += 1
+        elif parts[i] == "--dataset-names":
+            # Collect dataset names until next flag
+            result["dataset_names"] = []
+            i += 1
+            while i < len(parts) and not parts[i].startswith("--"):
+                result["dataset_names"].append(parts[i])
+                i += 1
+        elif parts[i] == "--max-dataset-size":
+            i += 1
+            if i >= len(parts):
+                raise ValueError("--max-dataset-size requires a value")
+            result["max_dataset_size"] = validate_integer(parts[i], name="--max-dataset-size", min_value=1)
             i += 1
         else:
             logger.warning(f"Unknown argument: {parts[i]}")

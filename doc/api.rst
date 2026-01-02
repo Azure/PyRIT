@@ -43,23 +43,6 @@ API Reference
     :toctree: _autosummary/
 
 
-:py:mod:`pyrit.chat_message_normalizer`
-=======================================
-
-.. automodule:: pyrit.chat_message_normalizer
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    ChatMessageNormalizer
-    ChatMessageNop
-    GenericSystemSquash
-    ChatMessageNormalizerChatML
-    ChatMessageNormalizerTokenizerTemplate
-
 
 :py:mod:`pyrit.cli`
 =======================================
@@ -105,7 +88,6 @@ API Reference
     get_required_value
     is_in_ipython_session
     make_request_and_raise_if_error_async
-    print_chat_messages_with_color
     reset_default_values
     set_default_value
     Singleton
@@ -194,6 +176,7 @@ API Reference
     CrescendoAttackContext
     CrescendoAttackResult
     FlipAttack
+    generate_simulated_conversation_async
     ManyShotJailbreakAttack
     MarkdownAttackResultPrinter
     MultiPromptSendingAttack
@@ -205,6 +188,8 @@ API Reference
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
+    SimulatedConversationResult
+    SimulatedTargetSystemPromptPaths
     RolePlayPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
@@ -294,6 +279,24 @@ API Reference
     PromptMemoryEntry
     SeedEntry
     SQLiteMemory
+
+:py:mod:`pyrit.message_normalizer`
+==================================
+
+.. automodule:: pyrit.message_normalizer
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    MessageListNormalizer
+    MessageStringNormalizer
+    GenericSystemSquashNormalizer
+    TokenizerTemplateNormalizer
+    ConversationContextNormalizer
+    ChatMessageNormalizer
 
 :py:mod:`pyrit.models`
 ======================
@@ -396,6 +399,7 @@ API Reference
     EmojiConverter
     FirstLetterConverter
     FlipConverter
+    get_converter_modalities
     HumanInTheLoopConverter
     ImageCompressionConverter
     IndexSelectionStrategy
