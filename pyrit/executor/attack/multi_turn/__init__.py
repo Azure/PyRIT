@@ -9,6 +9,10 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     MultiTurnAttackStrategy,
 )
 
+from pyrit.executor.attack.multi_turn.chunked_request_attack import (
+    ChunkedRequestAttack,
+    ChunkedRequestAttackContext,
+)
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack, CrescendoAttackContext, CrescendoAttackResult
 from pyrit.executor.attack.multi_turn.multi_prompt_sending import (
     MultiPromptSendingAttack,
@@ -26,6 +30,8 @@ __all__ = [
     "ConversationSession",
     "MultiTurnAttackContext",
     "MultiTurnAttackStrategy",
+    "ChunkedRequestAttack",
+    "ChunkedRequestAttackContext",
     "MultiPromptSendingAttack",
     "MultiPromptSendingAttackContext",
     "CrescendoAttack",

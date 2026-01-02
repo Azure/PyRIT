@@ -29,6 +29,8 @@ from pyrit.executor.attack.multi_turn import (
     ConversationSession,
     MultiTurnAttackStrategy,
     MultiTurnAttackContext,
+    ChunkedRequestAttack,
+    ChunkedRequestAttackContext,
     MultiPromptSendingAttack,
     MultiPromptSendingAttackContext,
     RedTeamingAttack,
@@ -50,6 +52,8 @@ from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResu
 __all__ = [
     "AttackStrategy",
     "AttackContext",
+    "ChunkedRequestAttack",
+    "ChunkedRequestAttackContext",
     "CrescendoAttack",
     "CrescendoAttackContext",
     "CrescendoAttackResult",
