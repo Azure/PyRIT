@@ -152,7 +152,7 @@ class TestFlipAttackSetup:
     async def test_setup_adds_system_prompt_to_context(self, flip_attack, basic_context):
         """Test that setup adds the system prompt to prepended conversation"""
         flip_attack._conversation_manager = MagicMock()
-        flip_attack._conversation_manager.apply_prepended_conversation_to_objective_async = AsyncMock()
+        flip_attack._conversation_manager.initialize_context_async = AsyncMock()
 
         await flip_attack._setup_async(context=basic_context)
 
@@ -164,15 +164,20 @@ class TestFlipAttackSetup:
     async def test_setup_updates_conversation_without_converters(self, flip_attack, basic_context):
         """Test that conversation state is updated without converters for system prompt"""
         flip_attack._conversation_manager = MagicMock()
-        flip_attack._conversation_manager.apply_prepended_conversation_to_objective_async = AsyncMock()
+        flip_attack._conversation_manager.initialize_context_async = AsyncMock()
 
         await flip_attack._setup_async(context=basic_context)
 
-        # Verify conversation manager was called with empty converter list
-        flip_attack._conversation_manager.apply_prepended_conversation_to_objective_async.assert_called_once_with(
+        # Verify prepended_conversation was set on context (system prompt)
+        assert len(basic_context.prepended_conversation) == 1
+        assert basic_context.prepended_conversation[0] == flip_attack._system_prompt
+
+        # Verify conversation manager was called with correct parameters
+        flip_attack._conversation_manager.initialize_context_async.assert_called_once_with(
+            context=basic_context,
             target=flip_attack._objective_target,
             conversation_id=basic_context.conversation_id,
-            prepended_conversation=[flip_attack._system_prompt],
+            memory_labels={},
         )
 
 

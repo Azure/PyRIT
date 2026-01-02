@@ -184,6 +184,7 @@ API Reference
     MultiTurnAttackContext
     MultiTurnAttackStrategy
     ObjectiveEvaluator
+    PrependedConversationConfig
     PromptSendingAttack
     RTASystemPromptPaths
     RedTeamingAttack

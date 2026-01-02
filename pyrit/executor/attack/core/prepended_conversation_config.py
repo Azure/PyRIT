@@ -2,14 +2,14 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, get_args
 
 from pyrit.message_normalizer import ConversationContextNormalizer, MessageStringNormalizer
 from pyrit.models import ChatMessageRole
 
 
 @dataclass
-class PrependedConversationConfiguration:
+class PrependedConversationConfig:
     """
     Configuration for controlling how prepended conversations are processed before
     being sent to targets.
@@ -21,19 +21,17 @@ class PrependedConversationConfiguration:
     """
 
     # Roles for which request converters should be applied to prepended messages.
-    # By default, no converters are applied (empty list).
+    # By default, converters are applied to all roles.
     # Example: ["user"] to apply converters only to user messages.
-    apply_converters_to_roles: List[ChatMessageRole] = field(default_factory=list)
+    apply_converters_to_roles: List[ChatMessageRole] = field(
+        default_factory=lambda: list(get_args(ChatMessageRole))
+    )
 
     # Optional normalizer to format conversation history into a single text block.
     # Must implement MessageStringNormalizer (e.g., TokenizerTemplateNormalizer or ConversationContextNormalizer).
     # When None and normalization is needed (e.g., for non-chat targets), a default
-    # ConversationContextNormalizer is used that produces a readable "Turn N: User/Assistant" format.
-    objective_target_context_normalizer: Optional[MessageStringNormalizer] = None
-
-    # Optional normalizer for formatting conversation context for the adversarial chat's system prompt.
-    # When None, defaults to ConversationContextNormalizer for readable "Turn N: User/Assistant" format.
-    adversarial_chat_context_normalizer: Optional[MessageStringNormalizer] = None
+    # ConversationContextNormalizer is used that produces "Turn N: User/Assistant" format.
+    message_normalizer: Optional[MessageStringNormalizer] = None
 
     # Behavior when the target is a PromptTarget but not a PromptChatTarget:
     # - "normalize_first_turn": Normalize the prepended conversation into a string and
@@ -44,7 +42,7 @@ class PrependedConversationConfiguration:
     #   maintained by the target (i.e., target must be a PromptChatTarget).
     non_chat_target_behavior: Literal["normalize_first_turn", "raise"] = "normalize_first_turn"
 
-    def get_objective_target_normalizer(self) -> MessageStringNormalizer:
+    def get_message_normalizer(self) -> MessageStringNormalizer:
         """
         Get the normalizer for objective target context, with a default fallback.
 
@@ -52,31 +50,20 @@ class PrependedConversationConfiguration:
             The configured objective_target_context_normalizer, or a default
             ConversationContextNormalizer if none was configured.
         """
-        return self.objective_target_context_normalizer or ConversationContextNormalizer()
-
-    def get_adversarial_chat_normalizer(self) -> MessageStringNormalizer:
-        """
-        Get the normalizer for adversarial chat context, with a default fallback.
-
-        Returns:
-            The configured adversarial_chat_context_normalizer, or a default
-            ConversationContextNormalizer if none was configured.
-        """
-        return self.adversarial_chat_context_normalizer or ConversationContextNormalizer()
+        return self.message_normalizer or ConversationContextNormalizer()
 
     @classmethod
-    def default(cls) -> "PrependedConversationConfiguration":
+    def default(cls) -> "PrependedConversationConfig":
         """
-        Create a default configuration with no converters applied.
+        Create a default configuration with converters applied to all roles.
 
         Returns:
-            A configuration that passes prepended conversation through without
-            modification, raising an error for non-chat targets.
+            A configuration that applies converters to all prepended messages,
+            raising an error for non-chat targets.
         """
         return cls(
-            apply_converters_to_roles=[],
-            objective_target_context_normalizer=None,
-            adversarial_chat_context_normalizer=None,
+            apply_converters_to_roles=list(get_args(ChatMessageRole)),
+            message_normalizer=None,
             non_chat_target_behavior="raise",
         )
 
@@ -84,10 +71,9 @@ class PrependedConversationConfiguration:
     def for_non_chat_target(
         cls,
         *,
-        objective_target_context_normalizer: Optional[MessageStringNormalizer] = None,
-        adversarial_chat_context_normalizer: Optional[MessageStringNormalizer] = None,
+        message_normalizer: Optional[MessageStringNormalizer] = None,
         apply_converters_to_roles: Optional[List[ChatMessageRole]] = None,
-    ) -> "PrependedConversationConfiguration":
+    ) -> "PrependedConversationConfig":
         """
         Create a configuration for use with non-chat targets.
 
@@ -100,14 +86,13 @@ class PrependedConversationConfiguration:
             adversarial_chat_context_normalizer: Normalizer for formatting context for adversarial chat
                 system prompts. Defaults to ConversationContextNormalizer.
             apply_converters_to_roles: Roles to apply converters to before normalization.
-                Defaults to empty list (no converters applied).
+                Defaults to all roles.
 
         Returns:
             A configuration that normalizes the prepended conversation for non-chat targets.
         """
         return cls(
-            apply_converters_to_roles=apply_converters_to_roles or [],
-            objective_target_context_normalizer=objective_target_context_normalizer,
-            adversarial_chat_context_normalizer=adversarial_chat_context_normalizer,
+            apply_converters_to_roles=apply_converters_to_roles if apply_converters_to_roles is not None else list(get_args(ChatMessageRole)),
+            message_normalizer=message_normalizer,
             non_chat_target_behavior="normalize_first_turn",
         )

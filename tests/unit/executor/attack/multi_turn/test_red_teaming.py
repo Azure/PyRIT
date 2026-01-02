@@ -515,6 +515,47 @@ class TestContextValidation:
                 max_turns=0,
             )
 
+    @pytest.mark.asyncio
+    async def test_max_turns_validation_with_prepended_conversation(
+        self,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test that prepended conversation turns are validated against max_turns."""
+        # Create a separate chat target for objective since prepended_conversation requires PromptChatTarget
+        mock_chat_objective_target = MagicMock(spec=PromptChatTarget)
+        mock_chat_objective_target.send_prompt_async = AsyncMock()
+        mock_chat_objective_target.set_system_prompt = MagicMock()
+        mock_chat_objective_target.get_identifier.return_value = {
+            "__type__": "MockChatTarget",
+            "__module__": "test_module",
+        }
+
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_chat_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            max_turns=1,  # Less than prepended turns (2)
+        )
+
+        # Create prepended conversation with 2 assistant messages
+        prepended = [
+            Message.from_prompt(prompt="Hello", role="user"),
+            Message.from_prompt(prompt="Hi there!", role="assistant"),
+            Message.from_prompt(prompt="How are you?", role="user"),
+            Message.from_prompt(prompt="I'm fine!", role="assistant"),
+        ]
+
+        # Should raise RuntimeError wrapping ValueError because prepended turns (2) exceed max_turns (1)
+        with pytest.raises(RuntimeError, match="exceeding max_turns"):
+            await attack.execute_async(
+                objective="Test objective",
+                prepended_conversation=prepended,
+            )
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestSetupPhase:
@@ -540,7 +581,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.session is not None
@@ -564,9 +605,12 @@ class TestSetupPhase:
             attack_scoring_config=scoring_config,
         )
 
-        # Mock conversation state with existing turns
-        mock_state = ConversationState(turn_count=3)
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        # Mock that simulates initialize_context_async setting executed_turns
+        async def mock_initialize(*, context, **kwargs):
+            context.executed_turns = 3
+            return ConversationState(turn_count=3)
+
+        with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.executed_turns == 3
@@ -593,9 +637,14 @@ class TestSetupPhase:
         attack._memory_labels = {"strategy_label": "strategy_value", "common": "strategy"}
         basic_context.memory_labels = {"context_label": "context_value", "common": "context"}
 
-        # Mock conversation manager
-        mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        # Mock that simulates initialize_context_async merging labels
+        async def mock_initialize(*, context, memory_labels=None, **kwargs):
+            from pyrit.common.utils import combine_dict
+
+            context.memory_labels = combine_dict(existing_dict=memory_labels, new_dict=context.memory_labels)
+            return ConversationState(turn_count=0)
+
+        with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
             await attack._setup_async(context=basic_context)
 
         # Context labels should override strategy labels for common keys
@@ -625,7 +674,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         # Verify system prompt was set
@@ -669,7 +718,7 @@ class TestSetupPhase:
             turn_count=1,
             last_assistant_message_scores=[other_score, success_score],
         )
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.last_score == success_score
@@ -705,7 +754,7 @@ class TestPromptGeneration:
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
-        assert result == first_prompt
+        assert result.get_value() == first_prompt
         assert basic_context.next_message is None  # Should be cleared after use
         # Should not call adversarial chat
         mock_prompt_normalizer.send_prompt_async.assert_not_called()
@@ -736,7 +785,7 @@ class TestPromptGeneration:
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
-        assert result == custom_prompt
+        assert result.get_value() == custom_prompt
         assert basic_context.next_message is None  # Should be cleared after use
         # Should not call adversarial chat
         mock_prompt_normalizer.send_prompt_async.assert_not_called()
@@ -770,7 +819,7 @@ class TestPromptGeneration:
         with patch.object(attack, "_build_adversarial_prompt", new_callable=AsyncMock, return_value="Built prompt"):
             result = await attack._generate_next_prompt_async(context=basic_context)
 
-        assert result == sample_response.get_value()
+        assert result.get_value() == sample_response.get_value()
         mock_prompt_normalizer.send_prompt_async.assert_called_once()
 
     @pytest.mark.asyncio
@@ -1516,10 +1565,8 @@ class TestRedTeamingConversationTracking:
         )
 
         # Mock the conversation manager to return a state
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async") as mock_update:
-            mock_update.return_value = ConversationState(
-                turn_count=0, last_user_message="", last_assistant_message_scores=[]
-            )
+        with patch.object(attack._conversation_manager, "initialize_context_async") as mock_update:
+            mock_update.return_value = ConversationState(turn_count=0, last_assistant_message_scores=[])
 
             # Run setup
             await attack._setup_async(context=basic_context)
@@ -1550,18 +1597,19 @@ class TestRedTeamingConversationTracking:
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
+        # Create a Message for the generated prompt
+        generated_message = Message.from_prompt(prompt="Test prompt", role="user")
+
         with (
-            patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async") as mock_update,
+            patch.object(attack._conversation_manager, "initialize_context_async") as mock_update,
             patch.object(attack._prompt_normalizer, "send_prompt_async", new_callable=AsyncMock) as mock_send,
             patch.object(Scorer, "score_response_async", new_callable=AsyncMock) as mock_score,
             patch.object(attack, "_generate_next_prompt_async", new_callable=AsyncMock) as mock_generate,
         ):
-            mock_update.return_value = ConversationState(
-                turn_count=0, last_user_message="", last_assistant_message_scores=[]
-            )
+            mock_update.return_value = ConversationState(turn_count=0, last_assistant_message_scores=[])
             mock_send.return_value = sample_response
             mock_score.return_value = {"objective_scores": [success_score]}
-            mock_generate.return_value = "Test prompt"
+            mock_generate.return_value = generated_message
 
             # Run setup and attack
             await attack._setup_async(context=basic_context)
@@ -1592,10 +1640,8 @@ class TestRedTeamingConversationTracking:
         )
 
         # Mock the conversation manager
-        with patch.object(attack._conversation_manager, "apply_prepended_conversation_to_objective_async") as mock_update:
-            mock_update.return_value = ConversationState(
-                turn_count=0, last_user_message="", last_assistant_message_scores=[]
-            )
+        with patch.object(attack._conversation_manager, "initialize_context_async") as mock_update:
+            mock_update.return_value = ConversationState(turn_count=0, last_assistant_message_scores=[])
 
             # Run setup
             await attack._setup_async(context=basic_context)

@@ -23,8 +23,8 @@ from pyrit.executor.attack.core.attack_config import (
 
 from pyrit.executor.attack.core.attack_executor import AttackExecutor, AttackExecutorResult
 
-from pyrit.executor.attack.core.prepended_conversation_configuration import (
-    PrependedConversationConfiguration,
+from pyrit.executor.attack.core.prepended_conversation_config import (
+    PrependedConversationConfig,
 )
 
 __all__ = [
@@ -39,5 +39,5 @@ __all__ = [
     "AttackStrategyResultT",
     "AttackExecutor",
     "AttackExecutorResult",
-    "PrependedConversationConfiguration",
+    "PrependedConversationConfig",
 ]

@@ -6,12 +6,12 @@ import uuid
 from typing import Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.utils import combine_dict, warn_if_set
+from pyrit.common.utils import warn_if_set
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
-from pyrit.executor.attack.core.prepended_conversation_configuration import (
-    PrependedConversationConfiguration,
+from pyrit.executor.attack.core.prepended_conversation_config import (
+    PrependedConversationConfig,
 )
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
@@ -61,7 +61,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
         params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
-        prepended_conversation_config: Optional[PrependedConversationConfiguration] = None,
+        prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -155,16 +155,14 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Ensure the context has a conversation ID
         context.conversation_id = str(uuid.uuid4())
 
-        # Combine memory labels from context and attack strategy
-        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
-
-        # Process prepended conversation if provided
-        await self._conversation_manager.apply_prepended_conversation_to_objective_async(
+        # Initialize context with prepended conversation and merged labels
+        await self._conversation_manager.initialize_context_async(
+            context=context,
             target=self._objective_target,
             conversation_id=context.conversation_id,
-            prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
             prepended_conversation_config=self._prepended_conversation_config,
+            memory_labels=self._memory_labels,
         )
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
