@@ -34,11 +34,22 @@ from pyrit.models.message import (
 )
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
-from pyrit.models.seed import Seed
-from pyrit.models.seed_objective import SeedObjective
-from pyrit.models.seed_prompt import SeedPrompt
-from pyrit.models.seed_dataset import SeedDataset
-from pyrit.models.seed_group import SeedGroup
+
+# Seeds - import from new seeds submodule for forward compatibility
+# Also keep imports from old locations for backward compatibility
+from pyrit.models.seeds import (
+    Seed,
+    SeedPrompt,
+    SeedObjective,
+    SeedGroup,
+    SeedAttackGroup,
+    SeedSimulatedConversation,
+    SeedDataset,
+)
+from pyrit.models.simulated_conversation_generation_result import SimulatedConversationGenerationResult
+
+# Keep old module-level imports working (deprecated, will be removed)
+# These are re-exported from the seeds submodule
 from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
@@ -80,10 +91,13 @@ __all__ = [
     "ScenarioIdentifier",
     "ScenarioResult",
     "Seed",
+    "SeedAttackGroup",
     "SeedObjective",
     "SeedPrompt",
     "SeedDataset",
     "SeedGroup",
+    "SeedSimulatedConversation",
+    "SimulatedConversationGenerationResult",
     "sort_message_pieces",
     "StorageIO",
     "StrategyResult",

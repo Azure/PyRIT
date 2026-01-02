@@ -1,51 +1,23 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
+"""
+Backward compatibility module - imports from pyrit.models.seeds.seed_objective
 
-import logging
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, Union
+.. deprecated::
+    Import from pyrit.models.seeds instead: `from pyrit.models.seeds import SeedObjective`
+"""
 
-from pyrit.common.path import PATHS_DICT
-from pyrit.models.seed import Seed
+import warnings
 
-logger = logging.getLogger(__name__)
+# Re-export from new location
+from pyrit.models.seeds.seed_objective import SeedObjective
 
+warnings.warn(
+    "Importing from pyrit.models.seed_objective is deprecated and will be removed in 0.13.0. "
+    "Use 'from pyrit.models.seeds import SeedObjective' or 'from pyrit.models import SeedObjective' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-@dataclass
-class SeedObjective(Seed):
-    """Represents a seed objective with various attributes and metadata."""
-
-    def __post_init__(self) -> None:
-        """Post-initialization to render the template to replace existing values."""
-        self.value = super().render_template_value_silent(**PATHS_DICT)
-        self.data_type = "text"
-
-    def set_encoding_metadata(self):
-        """
-        This method sets the encoding data for the prompt within metadata dictionary.
-        """
-        return  # No encoding metadata for text
-
-    @classmethod
-    def from_yaml_with_required_parameters(
-        cls,
-        template_path: Union[str, Path],
-        required_parameters: list[str],
-        error_message: Optional[str] = None,
-    ) -> SeedObjective:
-        """
-        Load a Seed from a YAML file. Because SeedObjectives do not have any parameters, the required_parameters
-        and error_message arguments are unused.
-
-        Args:
-            template_path: Path to the YAML file containing the template.
-            required_parameters: List of parameter names that must exist in the template.
-            error_message: Custom error message if validation fails. If None, a default message is used.
-
-        Returns:
-            SeedObjective: The loaded and validated seed of the specific subclass type.
-        """
-        return cls.from_yaml_file(template_path)
+__all__ = ["SeedObjective"]
