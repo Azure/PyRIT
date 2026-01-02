@@ -170,7 +170,7 @@ class ScamScenario(Scenario):
                 model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 temperature=0.9,
             ),
-            true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "scams.yaml",
+            true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "scam_materials.yaml",
         )
 
         backstop = TrueFalseInverterScorer(
@@ -232,7 +232,7 @@ class ScamScenario(Scenario):
 
         if strategy == "persuasive_rta":
             self._adversarial_config.system_prompt_path = Path(
-                PERSUASION_DECEPTION_PATH, "persuasion_persona_written.yaml"
+                PERSUASION_DECEPTION_PATH, "persuasion_persona_generic.yaml"
             ).resolve()
 
             attack_strategy = RedTeamingAttack(
@@ -245,7 +245,7 @@ class ScamScenario(Scenario):
             attack_strategy = RolePlayAttack(
                 objective_target=self._objective_target,
                 adversarial_chat=self._adversarial_chat,
-                role_play_definition_path=RolePlayPaths.SCAM_MATERIALS.value,
+                role_play_definition_path=RolePlayPaths.PERSUASION_SCRIPT_WRITTEN.value,
                 attack_scoring_config=self._scorer_config,
             )
         elif strategy == "context_compliance":

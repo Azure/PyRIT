@@ -1,6 +1,6 @@
 name: persuasion_persona
 description: |
-  This gets the target to take on a persuasive persona.
+  This gets the target to take on a persuasive persona in a conversational style, as an experimenter named Michael who is trying to persuade a subject named Camilla to perform a specific objective.
 groups:
   - AI Red Team
 authors:
