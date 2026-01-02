@@ -1122,6 +1122,7 @@ class TestPrependedConversationConfigSettings:
         )
 
         # Default ConversationContextNormalizer produces "Turn N:" format
+        assert context.next_message is not None
         text_value = context.next_message.get_piece().original_value
         assert "Turn 1" in text_value or "turn 1" in text_value.lower()
 
@@ -1160,6 +1161,7 @@ class TestPrependedConversationConfigSettings:
         # Verify custom normalizer was called
         mock_normalizer.normalize_string_async.assert_called_once()
         # Verify the custom format is in the message
+        assert context.next_message is not None
         text_value = context.next_message.get_piece().original_value
         assert "CUSTOM_FORMAT: test content" in text_value
 

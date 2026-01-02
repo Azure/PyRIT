@@ -24,14 +24,15 @@ from pyrit.executor.attack import (
 )
 from pyrit.memory import CentralMemory
 from pyrit.models import (
+    ChatMessageRole,
     Message,
     MessagePiece,
+    PromptDataType,
     Score,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import TrueFalseScorer
-
 
 # =============================================================================
 # Multi-Modal Message Fixtures
@@ -40,9 +41,9 @@ from pyrit.score import TrueFalseScorer
 
 def _create_message_piece(
     *,
-    role: str = "user",
+    role: ChatMessageRole = "user",
     value: str,
-    data_type: str = "text",
+    data_type: PromptDataType = "text",
     conversation_id: str = "",
 ) -> MessagePiece:
     """Helper to create a message piece with consistent settings."""
@@ -69,9 +70,7 @@ def multimodal_image_message() -> Message:
     return Message(
         message_pieces=[
             _create_message_piece(value="Describe the following image:", conversation_id=conv_id),
-            _create_message_piece(
-                value="base64encodedimagedata", data_type="image_path", conversation_id=conv_id
-            ),
+            _create_message_piece(value="base64encodedimagedata", data_type="image_path", conversation_id=conv_id),
         ]
     )
 
@@ -269,9 +268,7 @@ def crescendo_attack(
     mock_objective_scorer.score_async.return_value = [success_score]
 
     adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-    scoring_config = AttackScoringConfig(
-        objective_scorer=mock_objective_scorer, refusal_scorer=mock_refusal_scorer
-    )
+    scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, refusal_scorer=mock_refusal_scorer)
 
     attack = CrescendoAttack(
         objective_target=mock_chat_target,
@@ -397,7 +394,9 @@ class TestNextMessageSentFirst:
         assert sent_message is not None, "No message was sent to the target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces (text + image)"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
-        assert sent_message.message_pieces[1].original_value_data_type == "image_path", "Image content must be preserved"
+        assert (
+            sent_message.message_pieces[1].original_value_data_type == "image_path"
+        ), "Image content must be preserved"
 
     @pytest.mark.asyncio
     async def test_crescendo_attack_uses_next_message_first_turn(
@@ -434,9 +433,7 @@ class TestNextMessageSentFirst:
         }
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(
-            objective_scorer=mock_objective_scorer, refusal_scorer=mock_refusal_scorer
-        )
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, refusal_scorer=mock_refusal_scorer)
 
         attack = CrescendoAttack(
             objective_target=mock_chat_target,
@@ -461,7 +458,9 @@ class TestNextMessageSentFirst:
         assert sent_message is not None, "No message was sent to the target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces (text + image)"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
-        assert sent_message.message_pieces[1].original_value_data_type == "image_path", "Image content must be preserved"
+        assert (
+            sent_message.message_pieces[1].original_value_data_type == "image_path"
+        ), "Image content must be preserved"
 
     @pytest.mark.asyncio
     async def test_tree_of_attacks_uses_next_message_first_turn(
@@ -501,7 +500,8 @@ class TestNextMessageSentFirst:
         # Find the call that sent the message to the objective target (not adversarial chat)
         # The objective target is mock_chat_target
         target_calls = [
-            call for call in mock_normalizer.send_prompt_async.call_args_list
+            call
+            for call in mock_normalizer.send_prompt_async.call_args_list
             if call.kwargs.get("target") == mock_chat_target
         ]
 
@@ -512,7 +512,9 @@ class TestNextMessageSentFirst:
         assert sent_message is not None, "No message was sent to the objective target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces (text + image)"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
-        assert sent_message.message_pieces[1].original_value_data_type == "image_path", "Image content must be preserved"
+        assert (
+            sent_message.message_pieces[1].original_value_data_type == "image_path"
+        ), "Image content must be preserved"
 
 
 # =============================================================================
@@ -548,14 +550,11 @@ class TestPrependedConversationInMemory:
 
         # Verify at least one simulated assistant exists (use is_simulated property)
         simulated_assistant_pieces = [
-            piece
-            for msg in prepended_in_memory
-            for piece in msg.message_pieces
-            if piece.is_simulated
+            piece for msg in prepended_in_memory for piece in msg.message_pieces if piece.is_simulated
         ]
-        assert len(simulated_assistant_pieces) >= 1, (
-            "Assistant messages should be translated to simulated_assistant (is_simulated=True)"
-        )
+        assert (
+            len(simulated_assistant_pieces) >= 1
+        ), "Assistant messages should be translated to simulated_assistant (is_simulated=True)"
 
         # Verify no raw non-simulated "assistant" role remains in prepended messages
         raw_assistant_in_prepended = [
@@ -564,9 +563,7 @@ class TestPrependedConversationInMemory:
             for piece in msg.message_pieces
             if piece.api_role == "assistant" and not piece.is_simulated
         ]
-        assert len(raw_assistant_in_prepended) == 0, (
-            "Prepended assistant messages should have is_simulated=True"
-        )
+        assert len(raw_assistant_in_prepended) == 0, "Prepended assistant messages should have is_simulated=True"
 
     @pytest.mark.asyncio
     async def test_prompt_sending_attack_adds_prepended_to_memory(
@@ -745,6 +742,7 @@ class TestPrependedConversationInMemory:
 # =============================================================================
 # Test Class: prepended_conversation executed_turns counting
 # =============================================================================
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestMultiTurnTurnCounting:
@@ -1015,8 +1013,3 @@ class TestAdversarialChatContextInjection:
             adversarial_chat_conversation_id="",  # Empty - will fall back to mock check
             adversarial_chat_mock=mock_adversarial_chat,
         )
-
-
-# =============================================================================
-# Test Class TODO: Check prependedConversationConfig applied
-# =============================================================================

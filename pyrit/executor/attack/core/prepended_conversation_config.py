@@ -4,7 +4,10 @@
 from dataclasses import dataclass, field
 from typing import List, Literal, Optional, get_args
 
-from pyrit.message_normalizer import ConversationContextNormalizer, MessageStringNormalizer
+from pyrit.message_normalizer import (
+    ConversationContextNormalizer,
+    MessageStringNormalizer,
+)
 from pyrit.models import ChatMessageRole
 
 
@@ -23,9 +26,7 @@ class PrependedConversationConfig:
     # Roles for which request converters should be applied to prepended messages.
     # By default, converters are applied to all roles.
     # Example: ["user"] to apply converters only to user messages.
-    apply_converters_to_roles: List[ChatMessageRole] = field(
-        default_factory=lambda: list(get_args(ChatMessageRole))
-    )
+    apply_converters_to_roles: List[ChatMessageRole] = field(default_factory=lambda: list(get_args(ChatMessageRole)))
 
     # Optional normalizer to format conversation history into a single text block.
     # Must implement MessageStringNormalizer (e.g., TokenizerTemplateNormalizer or ConversationContextNormalizer).
@@ -81,10 +82,8 @@ class PrependedConversationConfig:
         that will be prepended to the first message sent to the target.
 
         Args:
-            objective_target_context_normalizer: Normalizer for formatting context for the objective target.
-                Defaults to ConversationContextNormalizer.
-            adversarial_chat_context_normalizer: Normalizer for formatting context for adversarial chat
-                system prompts. Defaults to ConversationContextNormalizer.
+            message_normalizer: Normalizer for formatting the prepended conversation into a string.
+                Defaults to ConversationContextNormalizer if not provided.
             apply_converters_to_roles: Roles to apply converters to before normalization.
                 Defaults to all roles.
 
@@ -92,7 +91,9 @@ class PrependedConversationConfig:
             A configuration that normalizes the prepended conversation for non-chat targets.
         """
         return cls(
-            apply_converters_to_roles=apply_converters_to_roles if apply_converters_to_roles is not None else list(get_args(ChatMessageRole)),
+            apply_converters_to_roles=(
+                apply_converters_to_roles if apply_converters_to_roles is not None else list(get_args(ChatMessageRole))
+            ),
             message_normalizer=message_normalizer,
             non_chat_target_behavior="normalize_first_turn",
         )
