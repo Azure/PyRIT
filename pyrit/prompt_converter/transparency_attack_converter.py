@@ -102,6 +102,9 @@ class TransparencyAttackConverter(PromptConverter):
         and the vision algorithm."`
     """
 
+    SUPPORTED_INPUT_TYPES = ("image_path",)
+    SUPPORTED_OUTPUT_TYPES = ("image_path",)
+
     @staticmethod
     def _validate_input_image(path: str) -> None:
         """Validates input image to ensure it is a valid JPEG file."""
@@ -275,9 +278,3 @@ class TransparencyAttackConverter(PromptConverter):
 
         image_path = await self._save_blended_image(background_tensor, alpha)
         return ConverterResult(output_text=image_path, output_type="image_path")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "image_path"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "image_path"

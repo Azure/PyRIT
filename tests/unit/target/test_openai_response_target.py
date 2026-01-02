@@ -23,6 +23,7 @@ from pyrit.exceptions.exception_classes import (
 )
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
+from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target import OpenAIResponseTarget, PromptChatTarget
 
 
@@ -138,7 +139,6 @@ def test_init_with_no_additional_request_headers_var_raises():
 
 @pytest.mark.asyncio()
 async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
-
     image_request = get_image_message_piece()
     conversation_id = image_request.conversation_id
     entries = [
@@ -217,23 +217,37 @@ async def test_construct_request_body_includes_extra_body_params(
 
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["key"] == "value"
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("is_json", [True, False])
-async def test_construct_request_body_includes_json(
-    is_json, target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
-):
-
+async def test_construct_request_body_json_object(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    json_response_config = _JsonResponseConfig(enabled=True)
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=is_json)
-    if is_json:
-        assert body["response_format"] == {"type": "json_object"}
-    else:
-        assert "response_format" not in body
+    body = await target._construct_request_body(conversation=[request], json_config=json_response_config)
+    assert body["text"] == {"format": {"type": "json_object"}}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_json_schema(target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece):
+    schema_object = {"type": "object", "properties": {"name": {"type": "string"}}}
+    json_response_config = _JsonResponseConfig.from_metadata(
+        metadata={"response_format": "json", "json_schema": schema_object}
+    )
+    request = Message(message_pieces=[dummy_text_message_piece])
+
+    body = await target._construct_request_body(conversation=[request], json_config=json_response_config)
+    assert body["text"] == {
+        "format": {
+            "type": "json_schema",
+            "schema": schema_object,
+            "name": "CustomSchema",
+            "strict": True,
+        }
+    }
 
 
 @pytest.mark.asyncio
@@ -242,13 +256,15 @@ async def test_construct_request_body_removes_empty_values(
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    json_response_config = _JsonResponseConfig(enabled=False)
+    body = await target._construct_request_body(conversation=[request], json_config=json_response_config)
     assert "max_completion_tokens" not in body
     assert "max_tokens" not in body
     assert "temperature" not in body
     assert "top_p" not in body
     assert "frequency_penalty" not in body
     assert "presence_penalty" not in body
+    assert "text" not in body
 
 
 @pytest.mark.asyncio
@@ -257,7 +273,8 @@ async def test_construct_request_body_serializes_text_message(
 ):
     request = Message(message_pieces=[dummy_text_message_piece])
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     assert body["input"][0]["content"][0]["text"] == "dummy text"
 
 
@@ -265,13 +282,13 @@ async def test_construct_request_body_serializes_text_message(
 async def test_construct_request_body_serializes_complex_message(
     target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
 ):
-
     image_piece = get_image_message_piece()
     dummy_text_message_piece.conversation_id = image_piece.conversation_id
 
     request = Message(message_pieces=[dummy_text_message_piece, image_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
 
-    body = await target._construct_request_body(conversation=[request], is_json_response=False)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
     messages = body["input"][0]["content"]
     assert len(messages) == 2
     assert messages[0]["type"] == "input_text"
@@ -479,7 +496,6 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResponseTarget):
-
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="12345", original_value="Hello")])
 
     # Mock SDK to raise RateLimitError
@@ -556,7 +572,6 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
 
 
 def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
-
     image_piece = get_image_message_piece()
     image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
     message = Message(
@@ -589,7 +604,6 @@ def test_inheritance_from_prompt_chat_target(target: OpenAIResponseTarget):
 
 
 def test_is_response_format_json_supported(target: OpenAIResponseTarget):
-
     message_piece = MessagePiece(
         role="user",
         original_value="original prompt text",
@@ -601,7 +615,26 @@ def test_is_response_format_json_supported(target: OpenAIResponseTarget):
 
     result = target.is_response_format_json(message_piece)
 
+    assert isinstance(result, bool)
     assert result is True
+
+
+def test_is_response_format_json_schema_supported(target: OpenAIResponseTarget):
+    schema = {"type": "object", "properties": {"name": {"type": "string"}}}
+    message_piece = MessagePiece(
+        role="user",
+        original_value="original prompt text",
+        converted_value="Hello, how are you?",
+        conversation_id="conversation_1",
+        sequence=0,
+        prompt_metadata={
+            "response_format": "json",
+            "json_schema": json.dumps(schema),
+        },
+    )
+
+    result = target.is_response_format_json(message_piece)
+    assert result
 
 
 def test_is_response_format_json_no_metadata(target: OpenAIResponseTarget):
@@ -683,7 +716,8 @@ async def test_construct_request_body_filters_none(
     target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
 ):
     req = Message(message_pieces=[dummy_text_message_piece])
-    body = await target._construct_request_body([req], is_json_response=False)
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[req], json_config=jrc)
     assert "max_output_tokens" not in body or body["max_output_tokens"] is None
     assert "temperature" not in body or body["temperature"] is None
     assert "top_p" not in body or body["top_p"] is None

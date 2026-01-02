@@ -31,6 +31,7 @@ class PromptTarget(abc.ABC, Identifier):
         max_requests_per_minute: Optional[int] = None,
         endpoint: str = "",
         model_name: str = "",
+        underlying_model: Optional[str] = None,
     ) -> None:
         """
         Initialize the PromptTarget.
@@ -40,12 +41,17 @@ class PromptTarget(abc.ABC, Identifier):
             max_requests_per_minute (int, Optional): Maximum number of requests per minute.
             endpoint (str): The endpoint URL. Defaults to empty string.
             model_name (str): The model name. Defaults to empty string.
+            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
+                identification purposes. This is useful when the deployment name in Azure differs
+                from the actual model. If not provided, `model_name` will be used for the identifier.
+                Defaults to None.
         """
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._max_requests_per_minute = max_requests_per_minute
         self._endpoint = endpoint
         self._model_name = model_name
+        self._underlying_model = underlying_model
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -94,13 +100,22 @@ class PromptTarget(abc.ABC, Identifier):
 
         Returns:
             Dict[str, Any]: A dictionary containing identification attributes.
+
+        Note:
+            If the `self._underlying_model` is specified, either passed in during instantiation
+            or via environment variable, it is used as the "model_name" for the identifier.
+            Otherwise, `self._model_name` (which is often the deployment name in Azure) is used.
         """
         public_attributes: Dict[str, Any] = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         if self._endpoint:
             public_attributes["endpoint"] = self._endpoint
-        if self._model_name:
+        # if the underlying model is specified, use it as the model name for identification
+        # otherwise, use self._model_name (which is often the deployment name in Azure)
+        if self._underlying_model:
+            public_attributes["model_name"] = self._underlying_model
+        elif self._model_name:
             public_attributes["model_name"] = self._model_name
         # Include temperature and top_p if available (set by subclasses)
         if hasattr(self, "_temperature") and self._temperature is not None:

@@ -32,7 +32,6 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AttackResult,
-    ChatMessage,
     DataTypeSerializer,
     Message,
     MessagePiece,
@@ -471,7 +470,7 @@ class MemoryInterface(abc.ABC):
         Raises:
             ValueError: If the response is not from an assistant role or has no preceding request.
         """
-        if response.role != "assistant":
+        if response.api_role != "assistant":
             raise ValueError("The provided request is not a response (role must be 'assistant').")
         if response.sequence < 1:
             raise ValueError("The provided request does not have a preceding request (sequence < 1).")
@@ -628,7 +627,7 @@ class MemoryInterface(abc.ABC):
 
         length_of_sequence_to_remove = 0
 
-        if last_message.role == "system" or last_message.role == "user":
+        if last_message.api_role == "system" or last_message.api_role == "user":
             length_of_sequence_to_remove = 1
         else:
             length_of_sequence_to_remove = 2
@@ -766,19 +765,6 @@ class MemoryInterface(abc.ABC):
 
         # Ensure cleanup happens even if the object is garbage collected before process exits
         weakref.finalize(self, self.dispose_engine)
-
-    def get_chat_messages_with_conversation_id(self, *, conversation_id: str) -> Sequence[ChatMessage]:
-        """
-        Return the memory for a given conversation_id.
-
-        Args:
-            conversation_id (str): The conversation ID.
-
-        Returns:
-            Sequence[ChatMessage]: The list of chat messages.
-        """
-        memory_entries = self.get_message_pieces(conversation_id=conversation_id)
-        return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
 
     def get_seeds(
         self,
@@ -1411,7 +1397,11 @@ class MemoryInterface(abc.ABC):
             conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))  # type: ignore
 
         if scenario_name:
-            conditions.append(ScenarioResultEntry.scenario_name.contains(scenario_name))  # type: ignore
+            # Normalize CLI snake_case names (e.g., "foundry" or "content_harms")
+            # to class names (e.g., "Foundry" or "ContentHarms")
+            # This allows users to query with either format
+            normalized_name = ScenarioResult.normalize_scenario_name(scenario_name)
+            conditions.append(ScenarioResultEntry.scenario_name.contains(normalized_name))  # type: ignore
 
         if scenario_version is not None:
             conditions.append(ScenarioResultEntry.scenario_version == scenario_version)  # type: ignore
