@@ -28,7 +28,7 @@ class VersionResponse(BaseModel):
 
 
 @router.get("", response_model=VersionResponse)
-async def get_version():
+async def get_version_async():
     """
     Get version information for the PyRIT installation.
 

@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/health")
-async def health_check():
+async def health_check_async():
     """
     Check the health status of the backend service.
 

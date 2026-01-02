@@ -13,6 +13,7 @@ exclude =
     *lib/python*,
     *egg,
     build,
+    pyrit/backend/main.py,
     pyrit/cli/pyrit_shell.py,
     pyrit/prompt_converter/morse_converter.py,
     pyrit/prompt_converter/emoji_converter.py,

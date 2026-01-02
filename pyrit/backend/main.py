@@ -30,7 +30,7 @@ app = FastAPI(
 
 # Initialize PyRIT on startup to load .env and .env.local files
 @app.on_event("startup")
-async def startup_event():
+async def startup_event_async():
     """Initialize PyRIT on application startup."""
     # Use in-memory to avoid database initialization delays
     await initialize_pyrit_async(memory_db_type="SQLite")
@@ -72,7 +72,7 @@ def setup_frontend():
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
+async def global_exception_handler_async(request, exc):
     """
     Handle all unhandled exceptions globally.
 
