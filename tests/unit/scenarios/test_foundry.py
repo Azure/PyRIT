@@ -202,7 +202,7 @@ class TestFoundryInitialization:
 
         assert scenario._memory_labels == memory_labels
 
-    @patch("pyrit.scenario.scenarios.foundry.TrueFalseCompositeScorer")
+    @patch("pyrit.scenario.scenarios.foundry.foundry.TrueFalseCompositeScorer")
     @patch.dict(
         "os.environ",
         {

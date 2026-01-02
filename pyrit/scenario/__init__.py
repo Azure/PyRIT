@@ -13,6 +13,8 @@ Specific scenarios should be imported from their subpackages:
     from pyrit.scenario.foundry import Foundry
 """
 
+import sys
+
 from pyrit.scenario.core import (
     AtomicAttack,
     DatasetConfiguration,
@@ -22,6 +24,22 @@ from pyrit.scenario.core import (
 )
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 
+# Import scenario submodules directly and register them as virtual subpackages
+# This allows: from pyrit.scenario.airt import ContentHarms
+# without needing separate pyrit/scenario/airt/ directories
+from pyrit.scenario.scenarios import airt as _airt_module
+from pyrit.scenario.scenarios import garak as _garak_module
+from pyrit.scenario.scenarios import foundry as _foundry_module
+
+sys.modules["pyrit.scenario.airt"] = _airt_module
+sys.modules["pyrit.scenario.garak"] = _garak_module
+sys.modules["pyrit.scenario.foundry"] = _foundry_module
+
+# Also expose as attributes for IDE support
+airt = _airt_module
+garak = _garak_module
+foundry = _foundry_module
+
 __all__ = [
     "AtomicAttack",
     "DatasetConfiguration",
@@ -30,4 +48,7 @@ __all__ = [
     "ScenarioStrategy",
     "ScenarioIdentifier",
     "ScenarioResult",
+    "airt",
+    "garak",
+    "foundry",
 ]
