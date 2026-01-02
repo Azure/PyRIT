@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 import pyrit
-from pyrit.backend.routes import config, health, targets, version
+from pyrit.backend.routes import health, version
 from pyrit.setup.initialization import initialize_pyrit_async
 
 # Check for development mode from environment variable
@@ -48,8 +48,6 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["health"])
-app.include_router(targets.router, prefix="/api/targets", tags=["targets"])
-app.include_router(config.router, prefix="/api/config", tags=["config"])
 app.include_router(version.router, tags=["version"])
 
 

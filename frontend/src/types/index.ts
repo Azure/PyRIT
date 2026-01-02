@@ -13,11 +13,3 @@ export interface Message {
   timestamp: string
   attachments?: MessageAttachment[]
 }
-
-export interface TargetInfo {
-  id: string
-  name: string
-  type: string
-  description: string
-  status: string
-}
