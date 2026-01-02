@@ -490,10 +490,11 @@ class ScenarioCompositeStrategy:
 
         Raises:
             ValueError: If compositions is empty, contains empty compositions,
-                       mixes aggregates with concrete strategies in the same composition,
-                       has multiple aggregates in one composition, or violates validate_composition() rules.
+                mixes aggregates with concrete strategies in the same composition,
+                has multiple aggregates in one composition, or violates validate_composition() rules.
 
-        Examples:
+        Example::
+
             # Aggregate expands to individual strategies
             [ScenarioCompositeStrategy(strategies=[EASY])]
             -> [ScenarioCompositeStrategy(strategies=[Base64]),

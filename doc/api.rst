@@ -586,8 +586,6 @@ API Reference
     Scenario
     ScenarioCompositeStrategy
     ScenarioStrategy
-    ScenarioIdentifier
-    ScenarioResult
 
 :py:mod:`pyrit.scenario.airt`
 =============================
