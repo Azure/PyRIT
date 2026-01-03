@@ -166,15 +166,18 @@ class AttackExecutor:
 
         params_type = attack.params_type
 
-        # Build params list using from_seed_group
-        params_list: List[AttackParameters] = []
-        for i, sg in enumerate(seed_groups):
-            # Start with broadcast fields, then layer on per-seed-group overrides
-            combined_overrides = dict(broadcast_fields)
-            if field_overrides:
-                combined_overrides.update(field_overrides[i])
-            params = await params_type.from_seed_group_async(sg, **combined_overrides)
-            params_list.append(params)
+        # Build params list using from_seed_group_async with concurrency control
+        # This can take time if the SeedSimulatedConversation generation is included
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def build_params(i: int, sg: SeedGroup) -> AttackParameters:
+            async with semaphore:
+                combined_overrides = dict(broadcast_fields)
+                if field_overrides:
+                    combined_overrides.update(field_overrides[i])
+                return await params_type.from_seed_group_async(sg, **combined_overrides)
+
+        params_list = list(await asyncio.gather(*[build_params(i, sg) for i, sg in enumerate(seed_groups)]))
 
         return await self._execute_with_params_list_async(
             attack=attack,
