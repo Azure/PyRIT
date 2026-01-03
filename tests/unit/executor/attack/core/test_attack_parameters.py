@@ -271,7 +271,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         with patch.object(
             seed_group_with_simulated_conv,
             "set_simulated_conversation_result",
-            wraps=seed_group_with_simulated_conv.set_simulated_conversation_result
+            wraps=seed_group_with_simulated_conv.set_simulated_conversation_result,
         ) as mock_set_result:
             await AttackParameters.from_seed_group_async(
                 seed_group_with_simulated_conv,

@@ -49,6 +49,4 @@ class SeedAttackGroup(SeedGroup):
         """Ensure exactly one objective is present."""
         objective_count = len([s for s in self.seeds if isinstance(s, SeedObjective)])
         if objective_count != 1:
-            raise ValueError(
-                f"SeedAttackGroup must have exactly one objective. Found {objective_count}."
-            )
+            raise ValueError(f"SeedAttackGroup must have exactly one objective. Found {objective_count}.")
