@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit (3.13.5)
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -33,6 +37,10 @@
 # - **CustomCompliance**: Tests against specific compliance requirements with curated datasets and attacks
 #
 # These Scenarios can be updated and added to as you refine what you are testing for.
+#
+# ## How to Run Scenarios
+#
+# Scenarios should take almost no effort to run with default values. [pyrit_scan](../front_end/1_pyrit_scan.ipynb) and [pyrit_shell](../front_end/2_pyrit_shell.md) both use scenarios to execute.
 #
 # ## How It Works
 #
@@ -80,10 +88,17 @@ from typing import List, Optional, Type
 
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import AttackScoringConfig, PromptSendingAttack
-from pyrit.models import SeedGroup, SeedObjective
-from pyrit.scenario import AtomicAttack, Scenario, ScenarioStrategy
+from pyrit.scenario import (
+    AtomicAttack,
+    DatasetConfiguration,
+    Scenario,
+    ScenarioStrategy,
+)
 from pyrit.scenario.core.scenario_strategy import ScenarioCompositeStrategy
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+from pyrit.setup import initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type="InMemory")  # type: ignore [top-level-await]
 
 
 class MyStrategy(ScenarioStrategy):
@@ -95,6 +110,7 @@ class MyStrategy(ScenarioStrategy):
 class MyScenario(Scenario):
     version: int = 1
 
+    # A strategy defintion helps callers define how to run your scenario (e.g. from the front_end)
     @classmethod
     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
         return MyStrategy
@@ -102,6 +118,11 @@ class MyScenario(Scenario):
     @classmethod
     def get_default_strategy(cls) -> ScenarioStrategy:
         return MyStrategy.ALL
+
+    # This is the default dataset configuration for this scenario (e.g. prompts to send)
+    @classmethod
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        return DatasetConfiguration(dataset_names=["dataset_name"])
 
     @apply_defaults
     def __init__(
@@ -140,11 +161,8 @@ class MyScenario(Scenario):
         )
 
         for strategy in selected_strategies:
-            # Create seed groups with objectives
-            seed_groups = [
-                SeedGroup(seeds=[SeedObjective(value="objective1")]),
-                SeedGroup(seeds=[SeedObjective(value="objective2")]),
-            ]
+            # self._dataset_config is set by the parent class
+            seed_groups = self._dataset_config.get_all_seed_groups()
 
             # Create attack instances based on strategy
             attack = PromptSendingAttack(
@@ -161,6 +179,8 @@ class MyScenario(Scenario):
             )
         return atomic_attacks
 
+
+scenario = MyScenario()
 
 # %% [markdown]
 #

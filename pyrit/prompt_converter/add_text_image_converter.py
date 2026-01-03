@@ -23,6 +23,9 @@ class AddTextImageConverter(PromptConverter):
     we pass in text as an argument to the constructor as opposed to an image file path.
     """
 
+    SUPPORTED_INPUT_TYPES = ("image_path",)
+    SUPPORTED_OUTPUT_TYPES = ("image_path",)
+
     def __init__(
         self,
         text_to_add: str,
@@ -146,9 +149,3 @@ class AddTextImageConverter(PromptConverter):
         # Save image as generated UUID filename
         await img_serializer.save_b64_image(data=image_str)
         return ConverterResult(output_text=str(img_serializer.value), output_type="image_path")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "image_path"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "image_path"
