@@ -44,9 +44,12 @@ class MultiPromptSendingAttackParameters(AttackParameters):
     user_messages: Optional[List[Message]] = None
 
     @classmethod
-    def from_seed_group(
+    async def from_seed_group_async(
         cls: Type["MultiPromptSendingAttackParameters"],
         seed_group: SeedGroup,
+        *,
+        adversarial_chat: Optional["PromptChatTarget"] = None,
+        objective_scorer: Optional["TrueFalseScorer"] = None,
         **overrides: Any,
     ) -> "MultiPromptSendingAttackParameters":
         """
@@ -54,6 +57,8 @@ class MultiPromptSendingAttackParameters(AttackParameters):
 
         Args:
             seed_group: The seed group to extract parameters from.
+            adversarial_chat: Not used by this attack type.
+            objective_scorer: Not used by this attack type.
             **overrides: Field overrides to apply.
 
         Returns:

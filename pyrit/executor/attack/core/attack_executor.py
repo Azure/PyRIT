@@ -173,7 +173,7 @@ class AttackExecutor:
             combined_overrides = dict(broadcast_fields)
             if field_overrides:
                 combined_overrides.update(field_overrides[i])
-            params = params_type.from_seed_group(sg, **combined_overrides)
+            params = await params_type.from_seed_group_async(sg, **combined_overrides)
             params_list.append(params)
 
         return await self._execute_with_params_list_async(
