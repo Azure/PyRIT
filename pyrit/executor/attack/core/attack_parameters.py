@@ -5,9 +5,13 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar
 
-from pyrit.models import Message, SeedGroup
+from pyrit.models import Message, SeedAttackGroup
+
+if TYPE_CHECKING:
+    from pyrit.prompt_target import PromptChatTarget
+    from pyrit.score import TrueFalseScorer
 
 AttackParamsT = TypeVar("AttackParamsT", bound="AttackParameters")
 
@@ -38,19 +42,27 @@ class AttackParameters:
     memory_labels: Optional[Dict[str, str]] = field(default_factory=dict)
 
     @classmethod
-    def from_seed_group(
+    async def from_seed_group_async(
         cls: Type[AttackParamsT],
-        seed_group: SeedGroup,
+        seed_group: SeedAttackGroup,
+        *,
+        adversarial_chat: Optional["PromptChatTarget"] = None,
+        objective_scorer: Optional["TrueFalseScorer"] = None,
         **overrides: Any,
     ) -> AttackParamsT:
         """
-        Create an AttackParameters instance from a SeedGroup.
+        Create an AttackParameters instance from a SeedAttackGroup.
 
         Extracts standard fields from the seed group and applies any overrides.
-        Raises ValueError if overrides contain fields not accepted by this params type.
+        If the seed_group has a simulated conversation config,
+        generates the simulated conversation using the provided adversarial_chat and scorer.
 
         Args:
-            seed_group: The seed group to extract parameters from.
+            seed_group: The seed attack group to extract parameters from.
+            adversarial_chat: The adversarial chat target for generating simulated conversations.
+                Required if seed_group has a simulated conversation config.
+            objective_scorer: The scorer for evaluating simulated conversations.
+                Required if seed_group has a simulated conversation config.
             **overrides: Field overrides to apply. Must be valid fields for this params type.
 
         Returns:
@@ -58,40 +70,15 @@ class AttackParameters:
 
         Raises:
             ValueError: If seed_group has no objective or if overrides contain invalid fields.
+            ValueError: If seed_group has simulated conversation but adversarial_chat/scorer not provided.
         """
-        # Get valid field names for this params type
-        valid_fields = {f.name for f in dataclasses.fields(cls)}
-
-        # Validate overrides don't contain invalid fields
-        invalid_fields = set(overrides.keys()) - valid_fields
-        if invalid_fields:
-            raise ValueError(
-                f"{cls.__name__} does not accept parameters: {invalid_fields}. " f"Accepted parameters: {valid_fields}"
-            )
-
-        # Extract objective (required)
-        if seed_group.objective is None:
-            raise ValueError("SeedGroup must have an objective")
-
-        # Build params dict, only including fields this class accepts
-        params: Dict[str, Any] = {}
-
-        if "objective" in valid_fields:
-            params["objective"] = seed_group.objective.value
-
-        if "next_message" in valid_fields:
-            params["next_message"] = seed_group.next_message
-
-        if "prepended_conversation" in valid_fields:
-            params["prepended_conversation"] = seed_group.prepended_conversation
-
-        if "memory_labels" in valid_fields:
-            params["memory_labels"] = {}
-
-        # Apply overrides (already validated above)
-        params.update(overrides)
-
-        return cls(**params)
+        return await _build_params_from_seed_group_async(
+            cls,
+            seed_group,
+            adversarial_chat=adversarial_chat,
+            objective_scorer=objective_scorer,
+            **overrides,
+        )
 
     @classmethod
     def excluding(cls, *field_names: str) -> Type["AttackParameters"]:
@@ -136,73 +123,113 @@ class AttackParameters:
         excluded_str = "_".join(sorted(field_names))
         class_name = f"{cls.__name__}Excluding_{excluded_str}"
 
-        # Create the new dataclass
+        # Create the new dataclass WITHOUT inheritance
+        # This ensures dataclasses.fields() only returns the new class's fields
         new_cls = dataclasses.make_dataclass(
             class_name,
             new_fields,
             frozen=True,
         )
 
-        # Copy the from_seed_group method to the new class
-        # We need to bind it as a classmethod on the new class
-        new_cls.from_seed_group = classmethod(  # type: ignore[attr-defined,method-assign]
-            lambda c, sg, **ov: cls._from_seed_group_impl(c, sg, **ov)
-        )
+        # Attach from_seed_group_async that delegates to the helper function
+        async def from_seed_group_async_wrapper(c, sg, *, adversarial_chat=None, objective_scorer=None, **ov):
+            return await _build_params_from_seed_group_async(
+                c, sg, adversarial_chat=adversarial_chat, objective_scorer=objective_scorer, **ov
+            )
+
+        new_cls.from_seed_group_async = classmethod(from_seed_group_async_wrapper)  # type: ignore[attr-defined]
 
         return new_cls  # type: ignore[return-value]
 
-    @classmethod
-    def _from_seed_group_impl(
-        cls: Type[AttackParamsT],
-        target_cls: Type[AttackParamsT],
-        seed_group: SeedGroup,
-        **overrides: Any,
-    ) -> AttackParamsT:
-        """
-        Implement from_seed_group for dynamically created classes.
 
-        Args:
-            target_cls: The actual class to instantiate (may be a dynamically created subclass).
-            seed_group: The seed group to extract parameters from.
-            **overrides: Field overrides to apply.
+async def _build_params_from_seed_group_async(
+    params_cls: Type[AttackParamsT],
+    seed_group: SeedAttackGroup,
+    *,
+    adversarial_chat: Optional["PromptChatTarget"] = None,
+    objective_scorer: Optional["TrueFalseScorer"] = None,
+    **overrides: Any,
+) -> AttackParamsT:
+    """
+    Build attack parameters from a SeedAttackGroup.
 
-        Returns:
-            An instance of target_cls.
+    This helper function contains the core logic for extracting parameters from a seed group.
+    It is used by both AttackParameters.from_seed_group_async and dynamically created
+    excluded parameter classes.
 
-        Raises:
-            ValueError: If seed_group has no objective or if overrides contain invalid fields.
-        """
-        # Get valid field names for the target class
-        valid_fields = {f.name for f in dataclasses.fields(target_cls)}
+    Args:
+        params_cls: The parameters class to instantiate.
+        seed_group: The seed attack group to extract parameters from.
+        adversarial_chat: The adversarial chat target for generating simulated conversations.
+        objective_scorer: The scorer for evaluating simulated conversations.
+        **overrides: Field overrides to apply.
 
-        # Validate overrides don't contain invalid fields
-        invalid_fields = set(overrides.keys()) - valid_fields
-        if invalid_fields:
-            raise ValueError(
-                f"{target_cls.__name__} does not accept parameters: {invalid_fields}. "
-                f"Accepted parameters: {valid_fields}"
-            )
+    Returns:
+        An instance of params_cls.
 
-        # Extract objective (required)
-        if seed_group.objective is None:
-            raise ValueError("SeedGroup must have an objective")
+    Raises:
+        ValueError: If seed_group has no objective or if overrides contain invalid fields.
+    """
+    # Import here to avoid circular imports
+    from pyrit.executor.attack.component.simulated_conversation import (
+        generate_simulated_conversation_async,
+    )
 
-        # Build params dict, only including fields the target class accepts
-        params: Dict[str, Any] = {}
+    # Get valid field names for this params type
+    valid_fields = {f.name for f in dataclasses.fields(params_cls)}
 
-        if "objective" in valid_fields:
-            params["objective"] = seed_group.objective.value
+    # Validate overrides don't contain invalid fields
+    invalid_fields = set(overrides.keys()) - valid_fields
+    if invalid_fields:
+        raise ValueError(
+            f"{params_cls.__name__} does not accept parameters: {invalid_fields}. "
+            f"Accepted parameters: {valid_fields}"
+        )
 
-        if "next_message" in valid_fields:
-            params["next_message"] = seed_group.next_message
+    # SeedAttackGroup validates in __init__ that objective is set
+    assert seed_group.objective is not None
 
-        if "prepended_conversation" in valid_fields:
-            params["prepended_conversation"] = seed_group.prepended_conversation
+    # Build params dict, only including fields this class accepts
+    params: Dict[str, Any] = {}
 
-        if "memory_labels" in valid_fields:
-            params["memory_labels"] = {}
+    if "objective" in valid_fields:
+        params["objective"] = seed_group.objective.value
 
-        # Apply overrides (already validated above)
-        params.update(overrides)
+    if "memory_labels" in valid_fields:
+        params["memory_labels"] = {}
 
-        return target_cls(**params)
+    # Handle simulated conversation generation if configured but not yet generated
+    # Note if simulated conversation has been called on this seed_group, it is cached there
+    if seed_group.has_simulated_conversation and not seed_group.simulated_conversation_generated:
+        config = seed_group.simulated_conversation_config
+        assert config is not None  # Guaranteed by has_simulated_conversation
+
+        if adversarial_chat is None:
+            raise ValueError("adversarial_chat is required when seed_group has a simulated conversation config")
+        if objective_scorer is None:
+            raise ValueError("objective_scorer is required when seed_group has a simulated conversation config")
+
+        # Generate the simulated conversation
+        result = await generate_simulated_conversation_async(
+            objective=seed_group.objective.value,
+            adversarial_chat=adversarial_chat,
+            objective_scorer=objective_scorer,
+            num_turns=config.num_turns,
+            adversarial_chat_system_prompt_path=config.adversarial_system_prompt,
+            simulated_target_system_prompt_path=config.simulated_target_system_prompt,
+        )
+
+        # Cache the result in the seed_group for later access
+        seed_group.set_simulated_conversation_result(result)
+
+    # Use seed_group properties - they handle both cached simulated and static prompts
+    if "next_message" in valid_fields:
+        params["next_message"] = seed_group.next_message
+
+    if "prepended_conversation" in valid_fields:
+        params["prepended_conversation"] = seed_group.prepended_conversation
+
+    # Apply overrides (already validated above)
+    params.update(overrides)
+
+    return params_cls(**params)

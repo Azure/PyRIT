@@ -13,7 +13,7 @@ import pytest
 from pyrit.cli.scenario_registry import ScenarioRegistry
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory import CentralMemory
-from pyrit.models.seed_dataset import SeedDataset
+from pyrit.models import SeedDataset
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.setup.initializers.scenarios.load_default_datasets import LoadDefaultDatasets
 

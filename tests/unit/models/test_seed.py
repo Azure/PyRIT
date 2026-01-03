@@ -145,7 +145,7 @@ def test_seed_group_with_multiple_objectives():
     with pytest.raises(ValueError) as exc_info:
         SeedGroup(seeds=prompts)
 
-    assert ("SeedGroups can only have one objective.") in str(exc_info.value)
+    assert ("SeedGroup can only have one objective.") in str(exc_info.value)
 
 
 def test_seed_group_sequence_default():
@@ -497,7 +497,7 @@ async def test_memory_encoding_metadata_image(sqlite_instance):
 
 
 @pytest.mark.asyncio
-@patch("pyrit.models.seed_prompt.TinyTag")
+@patch("pyrit.models.seeds.seed_prompt.TinyTag")
 async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     # Simulate WAV data
     sample_rate = 44100
@@ -531,8 +531,8 @@ async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     os.remove(original_wav_path)
 
 
-@patch("pyrit.models.seed_prompt.logger")
-@patch("pyrit.models.seed_prompt.TinyTag")
+@patch("pyrit.models.seeds.seed_prompt.logger")
+@patch("pyrit.models.seeds.seed_prompt.TinyTag")
 def test_set_encoding_metadata_tinytag_exception(mock_tinytag, mock_logger):
     mock_tinytag.get.side_effect = Exception("Tinytag error")
     sp = SeedPrompt(
@@ -547,7 +547,7 @@ def test_set_encoding_metadata_tinytag_exception(mock_tinytag, mock_logger):
     mock_logger.error.assert_called_once()
 
 
-@patch("pyrit.models.seed_prompt.logger")
+@patch("pyrit.models.seeds.seed_prompt.logger")
 def test_set_encoding_metadata_unsupported_audio(mock_logger):
     sp = SeedPrompt(
         value="unsupported_audio.xyz",
@@ -779,7 +779,7 @@ def test_seed_group_mixed_objective_types():
     objective = SeedObjective(value="Seed objective")
     dict_objective = {"value": "Dict objective", "data_type": "text", "is_objective": True}
 
-    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
+    with pytest.raises(ValueError, match="SeedGroup can only have one objective."):
         SeedGroup(seeds=[objective, dict_objective])
 
 

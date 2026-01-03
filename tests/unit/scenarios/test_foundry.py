@@ -10,7 +10,7 @@ import pytest
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
@@ -28,7 +28,7 @@ def mock_memory_seed_groups():
         "test objective 3",
         "test objective 4",
     ]
-    return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
+    return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in objectives]
 
 
 @pytest.fixture

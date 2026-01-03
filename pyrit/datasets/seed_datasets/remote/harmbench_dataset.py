@@ -6,8 +6,7 @@ from typing import Literal
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
 )
-from pyrit.models import SeedDataset
-from pyrit.models.seed_objective import SeedObjective
+from pyrit.models import SeedDataset, SeedObjective
 
 
 class _HarmBenchDataset(_RemoteDatasetLoader):

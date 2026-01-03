@@ -13,6 +13,7 @@ from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    SeedAttackGroup,
     SeedGroup,
     SeedObjective,
     SeedPrompt,
@@ -30,19 +31,19 @@ def mock_attack():
 def sample_seed_groups():
     """Create sample seed groups with objectives for testing."""
     return [
-        SeedGroup(
+        SeedAttackGroup(
             seeds=[
                 SeedObjective(value="objective1"),
                 SeedPrompt(value="prompt1"),
             ]
         ),
-        SeedGroup(
+        SeedAttackGroup(
             seeds=[
                 SeedObjective(value="objective2"),
                 SeedPrompt(value="prompt2"),
             ]
         ),
-        SeedGroup(
+        SeedAttackGroup(
             seeds=[
                 SeedObjective(value="objective3"),
                 SeedPrompt(value="prompt3"),
@@ -53,7 +54,11 @@ def sample_seed_groups():
 
 @pytest.fixture
 def sample_seed_groups_without_objectives():
-    """Create sample seed groups without objectives for testing."""
+    """Create sample seed groups without objectives for testing.
+
+    Note: SeedAttackGroup now validates exactly one objective at construction,
+    so we use SeedGroup here which doesn't have that requirement.
+    """
     return [
         SeedGroup(
             seeds=[
@@ -167,14 +172,15 @@ class TestAtomicAttackInitialization:
                 atomic_attack_name="Test Attack Run",
             )
 
-    def test_init_fails_with_seed_group_missing_objective(self, mock_attack, sample_seed_groups_without_objectives):
-        """Test that initialization fails when a seed group is missing an objective."""
-        with pytest.raises(ValueError, match="SeedGroup at index 0 is missing an objective"):
-            AtomicAttack(
-                attack=mock_attack,
-                seed_groups=sample_seed_groups_without_objectives,
-                atomic_attack_name="Test Attack Run",
-            )
+    def test_init_fails_with_seed_group_missing_objective(self, mock_attack):
+        """Test that SeedAttackGroup without objective cannot be created.
+
+        SeedAttackGroup now validates exactly one objective at construction time,
+        so we can't even create one without an objective.
+        """
+        # SeedAttackGroup now validates exactly one objective at construction
+        with pytest.raises(ValueError, match="must have exactly one objective"):
+            SeedAttackGroup(seeds=[SeedPrompt(value="prompt1")])
 
     def test_objectives_property_returns_values_from_seed_groups(self, mock_attack, sample_seed_groups):
         """Test that the objectives property returns values from seed groups."""
@@ -452,7 +458,7 @@ class TestAtomicAttackIntegration:
     async def test_atomic_attack_with_single_seed_group(self, mock_attack):
         """Test atomic attack with a single seed group."""
         single_seed_group = [
-            SeedGroup(
+            SeedAttackGroup(
                 seeds=[
                     SeedObjective(value="single_objective"),
                     SeedPrompt(value="single_prompt"),
@@ -488,7 +494,7 @@ class TestAtomicAttackIntegration:
     async def test_atomic_attack_with_many_seed_groups(self, mock_attack):
         """Test atomic attack with many seed groups."""
         many_seed_groups = [
-            SeedGroup(
+            SeedAttackGroup(
                 seeds=[
                     SeedObjective(value=f"objective_{i}"),
                     SeedPrompt(value=f"prompt_{i}"),
@@ -593,7 +599,7 @@ class TestAtomicAttackWithMessages:
     def seed_groups_with_messages(self):
         """Create seed groups with multi-turn message sequences for testing."""
         return [
-            SeedGroup(
+            SeedAttackGroup(
                 seeds=[
                     SeedObjective(value="multi_turn_objective_1"),
                     SeedPrompt(value="First message", data_type="text", sequence=0, role="user"),
@@ -601,7 +607,7 @@ class TestAtomicAttackWithMessages:
                     SeedPrompt(value="Third message", data_type="text", sequence=2, role="user"),
                 ]
             ),
-            SeedGroup(
+            SeedAttackGroup(
                 seeds=[
                     SeedObjective(value="multi_turn_objective_2"),
                     SeedPrompt(value="Message A", data_type="text", sequence=0, role="user"),
@@ -615,9 +621,9 @@ class TestAtomicAttackWithMessages:
         """Create seed groups where some have messages and some don't."""
         return [
             # No messages (just objective)
-            SeedGroup(seeds=[SeedObjective(value="simple_objective")]),
+            SeedAttackGroup(seeds=[SeedObjective(value="simple_objective")]),
             # With messages - roles required for multi-sequence
-            SeedGroup(
+            SeedAttackGroup(
                 seeds=[
                     SeedObjective(value="objective_with_messages"),
                     SeedPrompt(value="Message 1", data_type="text", sequence=0, role="user"),

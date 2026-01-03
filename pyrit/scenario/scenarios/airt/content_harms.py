@@ -14,7 +14,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     RolePlayPaths,
 )
-from pyrit.models import SeedGroup
+from pyrit.models import SeedAttackGroup, SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
@@ -213,11 +213,11 @@ class ContentHarms(Scenario):
         Returns:
             List[AtomicAttack]: The list of AtomicAttack instances for harm strategies.
         """
-        # Set scenario_composites on the config so get_seed_groups can filter by strategy
+        # Set scenario_composites on the config so get_seed_attack_groups can filter by strategy
         self._dataset_config._scenario_composites = self._scenario_composites
 
-        # Get seed groups by harm strategy, already filtered by scenario_composites
-        seed_groups_by_harm = self._dataset_config.get_seed_groups()
+        # Get seed attack groups by harm strategy, already filtered by scenario_composites
+        seed_groups_by_harm = self._dataset_config.get_seed_attack_groups()
 
         atomic_attacks: List[AtomicAttack] = []
         for strategy, seed_groups in seed_groups_by_harm.items():
@@ -227,7 +227,7 @@ class ContentHarms(Scenario):
     def _get_strategy_attacks(
         self,
         strategy: str,
-        seed_groups: Sequence[SeedGroup],
+        seed_groups: Sequence[SeedAttackGroup],
     ) -> List[AtomicAttack]:
         """
         Create AtomicAttack instances for a given harm strategy. RolePlayAttack, ManyShotJailbreakAttack,
@@ -235,7 +235,7 @@ class ContentHarms(Scenario):
 
         Args:
             strategy (ScenarioCompositeStrategy): The strategy to create the attack from.
-            seed_groups (List[SeedGroup]): The seed groups associated with the harm dataset.
+            seed_groups (List[SeedAttackGroup]): The seed attack groups associated with the harm dataset.
 
         Returns:
             List[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
@@ -264,18 +264,24 @@ class ContentHarms(Scenario):
                 atomic_attack_name=strategy,
                 attack=prompt_sending_attack,
                 seed_groups=list(seed_groups),
+                adversarial_chat=self._adversarial_chat,
+                objective_scorer=self._objective_scorer,
                 memory_labels=self._memory_labels,
             ),
             AtomicAttack(
                 atomic_attack_name=strategy,
                 attack=role_play_attack,
                 seed_groups=list(seed_groups),
+                adversarial_chat=self._adversarial_chat,
+                objective_scorer=self._objective_scorer,
                 memory_labels=self._memory_labels,
             ),
             AtomicAttack(
                 atomic_attack_name=strategy,
                 attack=many_shot_jailbreak_attack,
                 seed_groups=list(seed_groups),
+                adversarial_chat=self._adversarial_chat,
+                objective_scorer=self._objective_scorer,
                 memory_labels=self._memory_labels,
             ),
         ]
@@ -292,6 +298,8 @@ class ContentHarms(Scenario):
                     atomic_attack_name=strategy,
                     attack=multi_prompt_sending_attack,
                     seed_groups=seed_groups_with_messages,
+                    adversarial_chat=self._adversarial_chat,
+                    objective_scorer=self._objective_scorer,
                     memory_labels=self._memory_labels,
                 ),
             )

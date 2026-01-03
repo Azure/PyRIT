@@ -40,6 +40,7 @@ from pyrit.models import (
     Seed,
     SeedDataset,
     SeedGroup,
+    SeedPrompt,
     StorageIO,
     data_serializer_factory,
     group_conversation_message_pieces_by_sequence,
@@ -780,6 +781,7 @@ class MemoryInterface(abc.ABC):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
         is_objective: Optional[bool] = None,
+        is_simulated_conversation: Optional[bool] = None,
         parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
         prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
@@ -807,6 +809,7 @@ class MemoryInterface(abc.ABC):
             groups (Sequence[str]): A list of groups to filter by. If None, all groups are considered.
             source (str): The source to filter by. If None, all sources are considered.
             is_objective (bool): Whether to filter by prompts that are used as objectives.
+            is_simulated_conversation (bool): Whether to filter by simulated conversation configurations.
             parameters (Sequence[str]): A list of parameters to filter by. Specifying parameters effectively returns
                 prompt templates instead of prompts.
             metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
@@ -837,6 +840,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedEntry.source == source)
         if is_objective is not None:
             conditions.append(SeedEntry.is_objective == is_objective)
+        if is_simulated_conversation is not None:
+            conditions.append(SeedEntry.is_simulated_conversation == is_simulated_conversation)
 
         self._add_list_conditions(field=SeedEntry.harm_categories, values=harm_categories, conditions=conditions)
         self._add_list_conditions(field=SeedEntry.authors, values=authors, conditions=conditions)
@@ -921,7 +926,9 @@ class MemoryInterface(abc.ABC):
             if prompt.date_added is None:
                 prompt.date_added = current_time
 
-            prompt.set_encoding_metadata()
+            # Only SeedPrompt has set_encoding_metadata for audio/video/image files
+            if isinstance(prompt, SeedPrompt):
+                prompt.set_encoding_metadata()
 
             # Handle serialization for image, audio & video SeedPrompts
             if prompt.data_type in ["image_path", "audio_path", "video_path"]:
@@ -969,7 +976,7 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             raise
 
-    async def add_seed_groups_to_memory(
+    async def add_seed_groups_to_memory_async(
         self, *, prompt_groups: Sequence[SeedGroup], added_by: Optional[str] = None
     ) -> None:
         """
@@ -980,35 +987,32 @@ class MemoryInterface(abc.ABC):
             added_by (str): The user who added the prompt groups.
 
         Raises:
-            ValueError: If a prompt group does not have at least one prompt.
-            ValueError: If prompt group IDs are inconsistent within the same prompt group.
+            ValueError: If a seed group does not have at least one seed.
+            ValueError: If seed group IDs are inconsistent within the same seed group.
         """
         if not prompt_groups:
             raise ValueError("At least one prompt group must be provided.")
         # Validates the prompt group IDs and sets them if possible before leveraging
-        # the add_seed_prompts_to_memory method.
-        all_prompts: MutableSequence[Seed] = []
+        # the add_seeds_to_memory_async method.
+        all_seeds: MutableSequence[Seed] = []
         for prompt_group in prompt_groups:
-            if not prompt_group.prompts:
-                raise ValueError("Prompt group must have at least one prompt.")
+            if not prompt_group.seeds:
+                raise ValueError("Seed group must have at least one seed.")
             # Determine the prompt group ID.
             # It should either be set uniformly or generated if not set.
             # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
+            group_id_set = set(seed.prompt_group_id for seed in prompt_group.seeds)
             if len(group_id_set) > 1:
                 raise ValueError(
                     f"""Inconsistent 'prompt_group_id' attribute between members of the
-                    same prompt group. Found {group_id_set}"""
+                    same seed group. Found {group_id_set}"""
                 )
             prompt_group_id = group_id_set.pop() or uuid.uuid4()
-            for prompt in prompt_group.prompts:
-                prompt.prompt_group_id = prompt_group_id
+            for seed in prompt_group.seeds:
+                seed.prompt_group_id = prompt_group_id
 
-            all_prompts.extend(prompt_group.prompts)
-            if prompt_group.objective:
-                prompt_group.objective.prompt_group_id = prompt_group_id
-                all_prompts.append(prompt_group.objective)
-        await self.add_seeds_to_memory_async(seeds=all_prompts, added_by=added_by)
+            all_seeds.extend(prompt_group.seeds)
+        await self.add_seeds_to_memory_async(seeds=all_seeds, added_by=added_by)
 
     def get_seed_groups(
         self,

@@ -14,7 +14,7 @@ import random
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
 
 from pyrit.memory import CentralMemory
-from pyrit.models import SeedGroup
+from pyrit.models import SeedAttackGroup, SeedGroup
 
 if TYPE_CHECKING:
     from pyrit.scenario.core.scenario_strategy import ScenarioCompositeStrategy
@@ -31,7 +31,7 @@ class DatasetConfiguration:
     Only ONE of `seed_groups` or `dataset_names` can be set.
 
     Args:
-        seed_groups (Optional[List[SeedGroup]]): Explicit list of SeedGroups to use.
+        seed_groups (Optional[List[SeedGroup]]): Explicit list of SeedGroup to use.
         dataset_names (Optional[List[str]]): Names of datasets to load from memory.
         max_dataset_size (Optional[int]): If set, randomly samples up to this many SeedGroups
             from the configured dataset source (without replacement, so no duplicates).
@@ -52,7 +52,7 @@ class DatasetConfiguration:
         Initialize a DatasetConfiguration.
 
         Args:
-            seed_groups (Optional[List[SeedGroup]]): Explicit list of SeedGroups to use.
+            seed_groups (Optional[List[SeedGroup]]): Explicit list of SeedGroup to use.
             dataset_names (Optional[List[str]]): Names of datasets to load from memory.
             max_dataset_size (Optional[int]): If set, randomly samples up to this many SeedGroups
                 (without replacement).
@@ -162,6 +162,47 @@ class DatasetConfiguration:
         seed_groups_by_dataset = self.get_seed_groups()
         all_groups: List[SeedGroup] = []
         for groups in seed_groups_by_dataset.values():
+            all_groups.extend(groups)
+        return all_groups
+
+    def get_seed_attack_groups(self) -> Dict[str, List[SeedAttackGroup]]:
+        """
+        Resolve and return seed groups as SeedAttackGroups, grouped by dataset.
+
+        This wraps get_seed_groups() and converts each SeedGroup to a SeedAttackGroup.
+        Use this when you need attack-specific functionality like objectives,
+        prepended conversations, or simulated conversation configuration.
+
+        Returns:
+            Dict[str, List[SeedAttackGroup]]: Dictionary mapping dataset names to their
+                seed attack groups.
+
+        Raises:
+            ValueError: If no seed groups could be resolved from the configuration.
+        """
+        seed_groups_by_dataset = self.get_seed_groups()
+        result: Dict[str, List[SeedAttackGroup]] = {}
+        for dataset_name, groups in seed_groups_by_dataset.items():
+            result[dataset_name] = [SeedAttackGroup(seeds=list(sg.seeds)) for sg in groups]
+        return result
+
+    def get_all_seed_attack_groups(self) -> List[SeedAttackGroup]:
+        """
+        Resolve and return all seed groups as SeedAttackGroups in a flat list.
+
+        This is a convenience method that calls get_seed_attack_groups() and flattens
+        the results into a single list. Use this for attack scenarios that need
+        SeedAttackGroup functionality.
+
+        Returns:
+            List[SeedAttackGroup]: All resolved seed attack groups from all datasets.
+
+        Raises:
+            ValueError: If no seed groups could be resolved from the configuration.
+        """
+        attack_groups_by_dataset = self.get_seed_attack_groups()
+        all_groups: List[SeedAttackGroup] = []
+        for groups in attack_groups_by_dataset.values():
             all_groups.extend(groups)
         return all_groups
 
