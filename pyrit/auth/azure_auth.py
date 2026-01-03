@@ -1,9 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import logging
 import time
-from typing import Callable, Union
+from typing import TYPE_CHECKING, Any, Callable, Union, cast
 from urllib.parse import urlparse
 
 import msal
@@ -20,6 +22,9 @@ from azure.identity.aio import (
     get_bearer_token_provider as get_async_bearer_token_provider,
 )
 
+if TYPE_CHECKING:
+    import azure.cognitiveservices.speech as speechsdk
+
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
 from pyrit.auth.authenticator import Authenticator
 
@@ -34,7 +39,7 @@ class TokenProviderCredential:
     get_azure_token_provider) and Azure SDK clients that require a TokenCredential object.
     """
 
-    def __init__(self, token_provider: Callable[[], Union[str, Callable]]) -> None:
+    def __init__(self, token_provider: Callable[[], Union[str, Callable[..., Any]]]) -> None:
         """
         Initialize TokenProviderCredential.
 
@@ -43,7 +48,7 @@ class TokenProviderCredential:
         """
         self._token_provider = token_provider
 
-    def get_token(self, *scopes, **kwargs) -> AccessToken:
+    def get_token(self, *scopes: str, **kwargs: Any) -> AccessToken:
         """
         Get an access token.
 
@@ -116,7 +121,7 @@ class AzureAuth(Authenticator):
         return self.token
 
 
-def get_access_token_from_azure_cli(*, scope: str, tenant_id: str = ""):
+def get_access_token_from_azure_cli(*, scope: str, tenant_id: str = "") -> str:
     """
     Get access token from Azure CLI.
 
@@ -130,13 +135,13 @@ def get_access_token_from_azure_cli(*, scope: str, tenant_id: str = ""):
     try:
         credential = AzureCliCredential(tenant_id=tenant_id)
         token = credential.get_token(scope)
-        return token.token
+        return cast(str, token.token)
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}' with tenant ID '{tenant_id}': {e}")
         raise
 
 
-def get_access_token_from_azure_msi(*, client_id: str, scope: str):
+def get_access_token_from_azure_msi(*, client_id: str, scope: str) -> str:
     """
     Connect to an AOAI endpoint via managed identity credential attached to an Azure resource.
     For proper setup and configuration of MSI
@@ -152,13 +157,13 @@ def get_access_token_from_azure_msi(*, client_id: str, scope: str):
     try:
         credential = ManagedIdentityCredential(client_id=client_id)
         token = credential.get_token(scope)
-        return token.token
+        return cast(str, token.token)
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}' with client ID '{client_id}': {e}")
         raise
 
 
-def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
+def get_access_token_from_msa_public_client(*, client_id: str, scope: str) -> str:
     """
     Use MSA account to connect to an AOAI endpoint via interactive login. A browser window
     will open and ask for login credentials.
@@ -173,7 +178,7 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str):
     try:
         app = msal.PublicClientApplication(client_id)
         result = app.acquire_token_interactive(scopes=[scope])
-        return result["access_token"]
+        return cast(str, result["access_token"])
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}' with client ID '{client_id}': {e}")
         raise
@@ -298,7 +303,7 @@ def get_azure_openai_auth(endpoint: str):  # type: ignore[no-untyped-def]
     return get_azure_async_token_provider(scope)
 
 
-def get_speech_config(resource_id: Union[str, None], key: Union[str, None], region: str):
+def get_speech_config(resource_id: Union[str, None], key: Union[str, None], region: str) -> speechsdk.SpeechConfig:
     """
     Get the speech config using key/region pair (for key auth scenarios) or resource_id/region pair
     (for Entra auth scenarios).
@@ -338,7 +343,7 @@ def get_speech_config(resource_id: Union[str, None], key: Union[str, None], regi
         raise ValueError("Insufficient information provided for Azure Speech service.")
 
 
-def get_speech_config_from_default_azure_credential(resource_id: str, region: str):
+def get_speech_config_from_default_azure_credential(resource_id: str, region: str) -> speechsdk.SpeechConfig:
     """
     Get the speech config for the given resource ID and region.
 

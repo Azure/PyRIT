@@ -31,7 +31,7 @@ def _compute_stats(successes: int, failures: int, undetermined: int) -> AttackSt
     )
 
 
-def analyze_results(attack_results: list[AttackResult]) -> dict:
+def analyze_results(attack_results: list[AttackResult]) -> dict[str, AttackStats | dict[str, AttackStats]]:
     """
     Analyze a list of AttackResult objects and return overall and grouped statistics.
 

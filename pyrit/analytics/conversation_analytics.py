@@ -83,22 +83,29 @@ class ConversationAnalytics:
             if similarity_score >= threshold:
                 similar_messages.append(
                     EmbeddingMessageWithSimilarity(
-                        score=similarity_score, uuid=memory.id, metric="cosine_similarity"  # type: ignore
+                        score=similarity_score, uuid=memory.id, metric="cosine_similarity"
                     )
                 )
 
         return similar_messages
 
 
-def cosine_similarity(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     """
-    Calculate the cosine similarity between two vectors.
+    Calculate the cosine similarity between two 1D vectors.
 
     Args:
         a (np.ndarray): The first vector.
         b (np.ndarray): The second vector.
 
     Returns:
-        np.ndarray: The cosine similarity between the two vectors.
+        float: The cosine similarity between the two 1D vectors.
     """
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    # Ensure we are dealing with 1D vectors
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("Inputs must be 1D vectors")
+
+    dot_product = np.dot(a, b)
+    norms = np.linalg.norm(a) * np.linalg.norm(b)
+
+    return float(dot_product / norms)

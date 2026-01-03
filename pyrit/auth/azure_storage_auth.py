@@ -3,6 +3,7 @@
 
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
+from typing import cast
 
 from azure.identity.aio import DefaultAzureCredential
 from azure.storage.blob import (
@@ -89,11 +90,11 @@ class AzureStorageAuth:
                     account_name=storage_account_name,
                     container_name=container_name,
                     user_delegation_key=user_delegation_key,
-                    permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True),
+                    permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True), # type: ignore
                     expiry=expiry_time,
                     start=start_time,
                 )
         finally:
             await credential.close()
 
-        return sas_token
+        return cast(str, sas_token)
