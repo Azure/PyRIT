@@ -18,7 +18,7 @@ from pyrit.common.path import (
 )
 from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message
-from pyrit.score import Scorer
+from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,

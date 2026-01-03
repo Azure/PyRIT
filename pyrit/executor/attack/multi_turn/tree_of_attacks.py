@@ -23,13 +23,13 @@ from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.component.conversation_manager import (
     format_conversation_context,
 )
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
-    AttackStrategy,
 )
-from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
+from pyrit.executor.attack.core.attack_strategy import AttackStrategy
+from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,

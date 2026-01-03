@@ -16,7 +16,7 @@ from pyrit.executor.attack.component import (
     ConversationState,
     ObjectiveEvaluator,
 )
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,

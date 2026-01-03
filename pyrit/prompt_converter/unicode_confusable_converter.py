@@ -9,7 +9,7 @@ from typing import Literal
 from confusable_homoglyphs.confusables import is_confusable
 from confusables import confusable_characters
 
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 

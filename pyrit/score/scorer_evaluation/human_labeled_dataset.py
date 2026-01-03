@@ -11,7 +11,7 @@ import pandas as pd
 
 from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message, MessagePiece, PromptDataType
-from pyrit.score import MetricsType
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
 

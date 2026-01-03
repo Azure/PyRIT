@@ -12,12 +12,12 @@ from dataclasses import dataclass
 from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, cast
 
 from pyrit.common.logger import logger
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
+from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategy,
     AttackStrategyContextT,
     AttackStrategyResultT,
 )
-from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     MultiTurnAttackContext,
 )
