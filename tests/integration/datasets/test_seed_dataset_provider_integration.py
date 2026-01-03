@@ -45,9 +45,9 @@ class TestSeedDatasetProviderIntegration:
             # Verify seeds have required fields
             for seed in dataset.seeds:
                 assert seed.value, f"Seed in {name} has no value"
-                assert (
-                    seed.dataset_name == dataset.dataset_name
-                ), f"Seed dataset_name mismatch in {name}: {seed.dataset_name} != {dataset.dataset_name}"
+                assert seed.dataset_name == dataset.dataset_name, (
+                    f"Seed dataset_name mismatch in {name}: {seed.dataset_name} != {dataset.dataset_name}"
+                )
 
             logger.info(f"Successfully verified {name} with {len(dataset.seeds)} seeds")
 

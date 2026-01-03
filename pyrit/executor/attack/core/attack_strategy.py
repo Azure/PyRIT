@@ -370,8 +370,6 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         # Create context with params and context-specific kwargs
         # Note: We use cast here because the type checker doesn't know that _context_type
         # (which is AttackContext or a subclass) always accepts 'params' as a keyword argument.
-        context = cast(
-            AttackStrategyContextT, self._context_type(params=params, **context_kwargs)
-        )  # type: ignore[call-arg]
+        context = cast(AttackStrategyContextT, self._context_type(params=params, **context_kwargs))  # type: ignore[call-arg]
 
         return await self.execute_with_context_async(context=context)

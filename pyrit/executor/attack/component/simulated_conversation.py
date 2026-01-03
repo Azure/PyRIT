@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from pyrit.common.path import EXECUTOR_SIMULATED_TARGET_PATH
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
@@ -243,7 +243,7 @@ async def generate_simulated_conversation_async(
     final_score = result.last_score
 
     logger.info(
-        f"Generated simulated conversation with {len(filtered_messages)} messages " f"(outcome: {result.outcome.name})"
+        f"Generated simulated conversation with {len(filtered_messages)} messages (outcome: {result.outcome.name})"
     )
 
     return SimulatedConversationResult(

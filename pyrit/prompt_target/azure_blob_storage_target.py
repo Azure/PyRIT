@@ -13,7 +13,8 @@ from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
 from pyrit.models import Message, construct_response_from_request
-from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 

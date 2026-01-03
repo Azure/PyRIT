@@ -10,7 +10,6 @@ GRADIO_POLLING_RATE = 0.5  # Polling Rate by the Gradio UI
 
 
 class GradioApp:
-
     connect_status: ConnectionStatusHandler
 
     def __init__(self):

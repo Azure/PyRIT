@@ -4,7 +4,7 @@
 import asyncio
 from typing import Any, Callable, Optional, Sequence
 
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 
 def _get_chunks(*args, batch_size: int):

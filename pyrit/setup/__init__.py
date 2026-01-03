@@ -3,8 +3,7 @@
 
 """Module containing initialization PyRIT."""
 
-from pyrit.setup.initialization import initialize_pyrit_async, AZURE_SQL, SQLITE, IN_MEMORY, MemoryDatabaseType
-
+from pyrit.setup.initialization import AZURE_SQL, IN_MEMORY, SQLITE, MemoryDatabaseType, initialize_pyrit_async
 
 __all__ = [
     "AZURE_SQL",

@@ -57,7 +57,6 @@ def test_prompt_persuasion_init_misrepresentation_template_not_null(sqlite_insta
     ],
 )
 async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(converted_value, sqlite_instance):
-
     prompt_target = MockPromptTarget()
 
     prompt_persuasion = PersuasionConverter(
@@ -65,7 +64,6 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
     )
 
     with patch("unit.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
-
         message = Message(
             message_pieces=[
                 MessagePiece(

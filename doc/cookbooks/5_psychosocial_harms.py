@@ -213,7 +213,6 @@ print(f"Found {len(conversations)} conversations to score")
 
 # Score each complete conversation
 for conv_id, prompts in conversations.items():
-
     # Sort prompts by sequence to get the conversation flow
     prompts.sort(key=lambda x: x.sequence)  # type: ignore
 

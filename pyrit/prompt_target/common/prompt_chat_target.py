@@ -6,7 +6,7 @@ from typing import Optional
 
 from pyrit.models import MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 
 class PromptChatTarget(PromptTarget):

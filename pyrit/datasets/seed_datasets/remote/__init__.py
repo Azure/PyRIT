@@ -7,8 +7,8 @@ Remote dataset loaders with automatic discovery.
 Import concrete implementations to trigger registration.
 """
 
-from pyrit.datasets.seed_datasets.remote.aya_redteaming_dataset import _AyaRedteamingDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.aegis_ai_content_safety_dataset import _AegisContentSafetyDataset  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.aya_redteaming_dataset import _AyaRedteamingDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.babelscape_alert_dataset import _BabelscapeAlertDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.ccp_sensitive_prompts_dataset import _CCPSensitivePromptsDataset  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import _DarkBenchDataset  # noqa: F401

@@ -212,7 +212,7 @@ def get_kwarg_param(
 
     if not isinstance(value, expected_type):
         raise TypeError(
-            f"Parameter '{param_name}' must be of type {expected_type.__name__}, " f"got {type(value).__name__}"
+            f"Parameter '{param_name}' must be of type {expected_type.__name__}, got {type(value).__name__}"
         )
 
     return value

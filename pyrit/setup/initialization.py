@@ -203,15 +203,13 @@ async def _execute_initializers_async(*, initializers: Sequence["PyRITInitialize
     for initializer in initializers:
         if not isinstance(initializer, PyRITInitializer):
             raise ValueError(
-                f"All initializers must be PyRITInitializer instances. "
-                f"Got {type(initializer).__name__}: {initializer}"
+                f"All initializers must be PyRITInitializer instances. Got {type(initializer).__name__}: {initializer}"
             )
 
     # Sort initializers by execution_order (lower numbers first)
     sorted_initializers = sorted(initializers, key=lambda x: x.execution_order)
 
     for initializer in sorted_initializers:
-
         logger.info(f"Executing initializer: {initializer.name}")
         logger.debug(f"Description: {initializer.description}")
 

@@ -5,7 +5,6 @@ from abc import abstractmethod
 
 
 class Identifier:
-
     @abstractmethod
     def get_identifier(self) -> dict[str, str]:
         pass

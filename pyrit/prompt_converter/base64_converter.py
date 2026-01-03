@@ -6,7 +6,7 @@ import binascii
 from typing import Literal
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class Base64Converter(PromptConverter):

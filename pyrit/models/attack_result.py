@@ -84,4 +84,4 @@ class AttackResult(StrategyResult):
         return [ref for ref in self.related_conversations if ref.conversation_type == conversation_type]
 
     def __str__(self):
-        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: " f"{self.objective[:50]}..."
+        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: {self.objective[:50]}..."

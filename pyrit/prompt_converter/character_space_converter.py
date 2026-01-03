@@ -4,7 +4,7 @@
 import re
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class CharacterSpaceConverter(PromptConverter):

@@ -3,15 +3,14 @@
 
 """Core executor module."""
 
+from pyrit.executor.core.config import StrategyConverterConfig
 from pyrit.executor.core.strategy import (
     Strategy,
-    StrategyEventHandler,
+    StrategyContext,
     StrategyEvent,
     StrategyEventData,
-    StrategyContext,
+    StrategyEventHandler,
 )
-
-from pyrit.executor.core.config import StrategyConverterConfig
 
 __all__ = [
     "Strategy",

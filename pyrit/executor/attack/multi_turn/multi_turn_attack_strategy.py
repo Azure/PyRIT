@@ -10,12 +10,12 @@ from dataclasses import dataclass, field
 from typing import Optional, Type, TypeVar
 
 from pyrit.common.logger import logger
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
+from pyrit.executor.attack.core.attack_strategy import (
     AttackContext,
     AttackStrategy,
     AttackStrategyResultT,
 )
-from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.models import (
     Message,
     Score,

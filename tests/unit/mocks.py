@@ -176,7 +176,6 @@ def get_audio_message_piece() -> MessagePiece:
 
 
 def get_test_message_piece() -> MessagePiece:
-
     return MessagePiece(
         role="user",
         original_value="some text",
@@ -188,7 +187,6 @@ def get_test_message_piece() -> MessagePiece:
 
 def get_sample_conversations() -> MutableSequence[Message]:
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-
         conversation_1 = str(uuid.uuid4())
         attack_identifier = {
             "__type__": "MockPromptTarget",

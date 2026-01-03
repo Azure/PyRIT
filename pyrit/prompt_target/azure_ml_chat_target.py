@@ -18,8 +18,8 @@ from pyrit.models import (
     Message,
     construct_response_from_request,
 )
-from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
-from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute, validate_temperature, validate_top_p
 
 logger = logging.getLogger(__name__)
 

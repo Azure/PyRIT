@@ -70,7 +70,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
 
         scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
         inv_score.score_rationale = (
-            f"Inverted score from {scorer_type} result: {inv_score.score_value}\n" f"{inv_score.score_rationale}"
+            f"Inverted score from {scorer_type} result: {inv_score.score_value}\n{inv_score.score_rationale}"
         )
 
         inv_score.id = uuid.uuid4()

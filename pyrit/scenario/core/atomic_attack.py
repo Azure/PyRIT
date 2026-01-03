@@ -95,8 +95,7 @@ class AtomicAttack:
         for i, sg in enumerate(seed_groups):
             if sg.objective is None:
                 raise ValueError(
-                    f"SeedGroup at index {i} is missing an objective. "
-                    "Use seed_group.set_objective(value) to set one."
+                    f"SeedGroup at index {i} is missing an objective. Use seed_group.set_objective(value) to set one."
                 )
 
         self._seed_groups = seed_groups
@@ -104,8 +103,7 @@ class AtomicAttack:
         self._attack_execute_params = attack_execute_params
 
         logger.info(
-            f"Initialized atomic attack with {len(self._seed_groups)} seed groups, "
-            f"attack type: {type(attack).__name__}"
+            f"Initialized atomic attack with {len(self._seed_groups)} seed groups, attack type: {type(attack).__name__}"
         )
 
     @property

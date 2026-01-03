@@ -27,7 +27,7 @@ from pyrit.exceptions.exception_classes import (
     handle_bad_request_exception,
 )
 from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_error_handling import (
     _extract_error_payload,
     _extract_request_id_from_exception,
@@ -437,8 +437,7 @@ class OpenAITarget(PromptChatTarget):
                 payload_str = str(payload)[:200]
 
             logger.warning(
-                f"BadRequestError request_id={request_id} is_content_filter={is_content_filter} "
-                f"payload={payload_str}"
+                f"BadRequestError request_id={request_id} is_content_filter={is_content_filter} payload={payload_str}"
             )
 
             request_piece = request.message_pieces[0] if request.message_pieces else None

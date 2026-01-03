@@ -553,7 +553,7 @@ class FoundryScenario(Foundry):
         import warnings
 
         warnings.warn(
-            "FoundryScenario is deprecated and will be removed in version 0.13.0. " "Use 'Foundry' instead.",
+            "FoundryScenario is deprecated and will be removed in version 0.13.0. Use 'Foundry' instead.",
             DeprecationWarning,
             stacklevel=2,
         )

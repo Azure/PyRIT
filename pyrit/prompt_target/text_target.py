@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import IO
 
 from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 
 class TextTarget(PromptTarget):

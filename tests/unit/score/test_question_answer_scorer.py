@@ -34,7 +34,6 @@ def text_message_piece(patch_central_database) -> MessagePiece:
 
 @pytest.mark.asyncio
 async def test_question_answer_scorer_validate_image(image_message_piece: MessagePiece):
-
     scorer = QuestionAnswerScorer(category=["new_category"])
     message = Message(message_pieces=[image_message_piece])
     with pytest.raises(ValueError, match="There are no valid pieces to score."):

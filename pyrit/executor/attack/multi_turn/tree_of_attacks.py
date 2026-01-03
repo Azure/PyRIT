@@ -23,13 +23,13 @@ from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.component.conversation_manager import (
     format_conversation_context,
 )
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
-    AttackStrategy,
 )
-from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
+from pyrit.executor.attack.core.attack_strategy import AttackStrategy
+from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -1207,8 +1207,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             f"Branching factor: {self._branching_factor}"
         )
         self._logger.info(
-            f"Execution settings - Batch size: {self._batch_size}, "
-            f"On-topic checking: {self._on_topic_checking_enabled}"
+            f"Execution settings - Batch size: {self._batch_size}, On-topic checking: {self._on_topic_checking_enabled}"
         )
 
         # TAP Attack Execution Algorithm:
@@ -1424,7 +1423,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             batch_nodes = context.nodes[batch_start:batch_end]
 
             self._logger.debug(
-                f"Processing batch {batch_start//self._batch_size + 1} "
+                f"Processing batch {batch_start // self._batch_size + 1} "
                 f"(nodes {batch_start + 1}-{batch_end} of {len(context.nodes)})"
             )
 
@@ -1689,7 +1688,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             TAPAttackResult: The success result indicating the attack achieved its objective.
         """
         score_value = context.best_objective_score.get_value() if context.best_objective_score else 0
-        outcome_reason = f"Achieved score {score_value:.2f} >= " f"threshold {self._successful_objective_threshold}"
+        outcome_reason = f"Achieved score {score_value:.2f} >= threshold {self._successful_objective_threshold}"
 
         return self._create_attack_result(
             context=context,

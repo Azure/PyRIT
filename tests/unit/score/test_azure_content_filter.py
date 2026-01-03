@@ -101,7 +101,6 @@ def test_explicit_category():
 async def test_azure_content_filter_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
 
         mock_client = MagicMock()

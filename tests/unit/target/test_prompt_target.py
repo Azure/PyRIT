@@ -85,7 +85,6 @@ async def test_send_prompt_with_system_calls_chat_complete(
     sample_entries: MutableSequence[MessagePiece],
     mock_attack_strategy: AttackStrategy,
 ):
-
     # Mock SDK response
     mock_response = MagicMock()
     mock_choice = MagicMock()

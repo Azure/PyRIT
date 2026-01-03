@@ -16,7 +16,6 @@ from pyrit.score import SelfAskRefusalScorer
 
 @pytest.fixture
 def scorer_true_false_response() -> Message:
-
     json_response = (
         dedent(
             """
@@ -32,7 +31,6 @@ def scorer_true_false_response() -> Message:
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_score(scorer_true_false_response: Message, patch_central_database):
-
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
@@ -113,7 +111,6 @@ async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: Message
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_bad_json_exception_retries(patch_central_database):
-
     chat_target = MagicMock()
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])

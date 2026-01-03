@@ -7,7 +7,7 @@ import string
 from typing import List, Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class InsertPunctuationConverter(PromptConverter):

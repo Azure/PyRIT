@@ -58,6 +58,6 @@ async def test_likert_scorer_mae(memory, scale_path: Path, dataset_name: str) ->
             save_results=False,
         )
 
-        assert (
-            metrics.mean_absolute_error <= mae_threshold
-        ), f"MAE {metrics.mean_absolute_error} exceeds threshold {mae_threshold}. Full metrics: {asdict(metrics)}"
+        assert metrics.mean_absolute_error <= mae_threshold, (
+            f"MAE {metrics.mean_absolute_error} exceeds threshold {mae_threshold}. Full metrics: {asdict(metrics)}"
+        )

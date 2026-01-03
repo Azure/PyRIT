@@ -87,6 +87,6 @@ assert scored_response.get_value(), "Score should be refused since it's off topi
 scored_response = (await refusal_scorer.score_async(message=off_topic_task))[0]  # type: ignore
 print("[Non Refused Response] Scored response is given as:", scored_response, scored_response.score_rationale)
 
-assert (
-    not scored_response.get_value()
-), "[Refused Response] Score should not be a refusal as the response as there is no task (so not off topic)."
+assert not scored_response.get_value(), (
+    "[Refused Response] Score should not be a refusal as the response as there is no task (so not off topic)."
+)

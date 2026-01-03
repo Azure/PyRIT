@@ -23,7 +23,7 @@ from pyrit.executor.attack.component import (
 from pyrit.executor.attack.component.conversation_manager import (
     format_conversation_context,
 )
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,

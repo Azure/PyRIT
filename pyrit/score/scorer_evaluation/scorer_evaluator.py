@@ -18,7 +18,7 @@ from pyrit.common.path import (
 )
 from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message
-from pyrit.score import Scorer
+from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
@@ -258,7 +258,7 @@ class ScorerEvaluator(abc.ABC):
         """
         cols_dict = {"objective_or_harm": objectives_or_harms, "assistant_response": responses}
         for trial, scores in enumerate(all_model_scores):
-            cols_dict[f"trial {trial+1}"] = scores
+            cols_dict[f"trial {trial + 1}"] = scores
 
         # Add the true_label column after all trials, if true_scores is provided
         if true_scores is not None:
@@ -411,8 +411,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         for index, entry in enumerate(labeled_dataset.entries):
             if not isinstance(entry, HarmHumanLabeledEntry):
                 raise ValueError(
-                    f"Entry at index {index} is not a HarmHumanLabeledEntry, "
-                    "but the HumanLabeledDataset type is HARM."
+                    f"Entry at index {index} is not a HarmHumanLabeledEntry, but the HumanLabeledDataset type is HARM."
                 )
             for message in entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)

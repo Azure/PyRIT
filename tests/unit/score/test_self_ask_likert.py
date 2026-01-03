@@ -14,7 +14,6 @@ from pyrit.score import ContentClassifierPaths, LikertScalePaths, SelfAskLikertS
 
 @pytest.fixture
 def scorer_likert_response() -> Message:
-
     json_response = (
         dedent(
             """
@@ -57,7 +56,6 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
 
 @pytest.mark.asyncio
 async def test_likert_scorer_must_have_category():
-
     chat_target = MagicMock()
     with pytest.raises(KeyError, match="category"):
         SelfAskLikertScorer(
@@ -81,7 +79,6 @@ async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
 
 @pytest.mark.asyncio
 async def test_likert_scorer_score(patch_central_database, scorer_likert_response: Message):
-
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
@@ -103,7 +100,6 @@ async def test_likert_scorer_score(patch_central_database, scorer_likert_respons
 
 @pytest.mark.asyncio
 async def test_self_ask_scorer_bad_json_exception_retries():
-
     chat_target = MagicMock()
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
@@ -118,7 +114,6 @@ async def test_self_ask_scorer_bad_json_exception_retries():
 
 @pytest.mark.asyncio
 async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
-
     chat_target = MagicMock()
 
     json_response = (

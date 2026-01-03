@@ -387,7 +387,6 @@ class TestPlaywrightCopilotTarget:
             patch.object(target, "_upload_image_async") as mock_upload_image,
             patch.object(target, "_wait_for_response_async", return_value="AI response") as mock_wait,
         ):
-
             result = await target._interact_with_copilot_async(multimodal_request)
 
         # Verify text and image handling

@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 """API routes for version information."""
+
 import json
 import logging
 from pathlib import Path

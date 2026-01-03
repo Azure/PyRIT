@@ -198,7 +198,12 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         return Base.__subclasses__()
 
     def _query_entries(
-        self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
+        self,
+        Model,
+        *,
+        conditions: Optional[Any] = None,
+        distinct: bool = False,
+        join_scores: bool = False,  # type: ignore
     ) -> MutableSequence[Model]:
         """
         Fetch data from the specified table model with optional conditions.

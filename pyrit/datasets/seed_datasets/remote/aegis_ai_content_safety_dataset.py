@@ -110,7 +110,7 @@ class _AegisContentSafetyDataset(_RemoteDatasetLoader):
             invalid_categories = {cat for cat in harm_categories if cat not in self.HARM_CATEGORIES}
             if invalid_categories:
                 raise ValueError(
-                    f"Invalid harm categories: {invalid_categories}. " f"Valid categories are: {self.HARM_CATEGORIES}"
+                    f"Invalid harm categories: {invalid_categories}. Valid categories are: {self.HARM_CATEGORIES}"
                 )
 
         self.source = "https://huggingface.co/datasets/nvidia/Aegis-AI-Content-Safety-Dataset-2.0"

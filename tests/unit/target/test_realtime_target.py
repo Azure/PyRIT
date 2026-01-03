@@ -169,7 +169,6 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_invalid_request(target):
-
     # Create a mock Message with an invalid data type
     message_piece = MessagePiece(
         original_value="Invalid",

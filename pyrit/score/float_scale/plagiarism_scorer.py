@@ -126,7 +126,6 @@ class PlagiarismScorer(FloatScaleScorer):
         metric: PlagiarismMetric = PlagiarismMetric.LCS,
         n: int = 5,
     ) -> float:
-
         tokens_response = self._tokenize(response)
         tokens_reference = self._tokenize(reference)
         response_len = len(tokens_response)

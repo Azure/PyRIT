@@ -53,7 +53,7 @@ results = await AttackExecutor().execute_attack_async(  # type: ignore
 )
 end = time.time()
 
-print(f"Elapsed time for operation: {end-start}")
+print(f"Elapsed time for operation: {end - start}")
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore

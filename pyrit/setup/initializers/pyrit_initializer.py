@@ -210,7 +210,6 @@ class PyRITInitializer(ABC):
                 del sys.modules["__main__"].__dict__[var_name]
 
         try:
-
             # Run initialization in sandbox with tracking (starting from empty state)
             with self._track_initialization_changes() as tracking_info:
                 await self.initialize_async()

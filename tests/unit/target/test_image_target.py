@@ -171,7 +171,6 @@ async def test_send_prompt_async_empty_response_adds_memory(
     image_target: OpenAIImageTarget,
     sample_conversations: MutableSequence[MessagePiece],
 ) -> None:
-
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_message_to_memory = AsyncMock()
@@ -222,7 +221,6 @@ async def test_send_prompt_async_bad_request_content_filter(
     image_target: OpenAIImageTarget,
     sample_conversations: MutableSequence[MessagePiece],
 ) -> None:
-
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
 
@@ -253,7 +251,6 @@ async def test_send_prompt_async_bad_request_content_policy_violation(
     image_target: OpenAIImageTarget,
     sample_conversations: MutableSequence[MessagePiece],
 ) -> None:
-
     request = sample_conversations[0]
     request.conversation_id = str(uuid.uuid4())
 

@@ -65,9 +65,7 @@ def token_gradients(model, input_ids, input_slice, target_slice, loss_slice):
 
 
 class GCGAttackPrompt(AttackPrompt):
-
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
 
     def grad(self, model):
@@ -77,13 +75,10 @@ class GCGAttackPrompt(AttackPrompt):
 
 
 class GCGPromptManager(PromptManager):
-
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
 
     def sample_control(self, grad, batch_size, topk=256, temp=1, allow_non_ascii=True):
-
         if not allow_non_ascii:
             grad[:, self._nonascii_toks.to(grad.device)] = np.inf
         top_indices = (-grad).topk(topk, dim=1).indices
@@ -100,9 +95,7 @@ class GCGPromptManager(PromptManager):
 
 
 class GCGMultiPromptAttack(MultiPromptAttack):
-
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
 
     def step(
@@ -116,7 +109,6 @@ class GCGMultiPromptAttack(MultiPromptAttack):
         verbose=False,
         filter_cand=True,
     ):
-
         main_device = self.models[0].device
         control_cands = []
 
@@ -182,7 +174,9 @@ class GCGMultiPromptAttack(MultiPromptAttack):
                     gc.collect()
 
                     if verbose:
-                        progress.set_description(f"loss={loss[j*batch_size:(j+1)*batch_size].min().item()/(i+1):.4f}")
+                        progress.set_description(
+                            f"loss={loss[j * batch_size : (j + 1) * batch_size].min().item() / (i + 1):.4f}"
+                        )
 
             min_idx = loss.argmin()
             model_idx = min_idx // batch_size
