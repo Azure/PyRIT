@@ -123,7 +123,7 @@ class TestPyRITShell:
     def test_do_run_basic_scenario(
         self,
         mock_parse_args: MagicMock,
-        mock_run_scenario: AsyncMock,
+        _mock_run_scenario: AsyncMock,
         mock_asyncio_run: MagicMock,
     ):
         """Test do_run with basic scenario."""
@@ -138,12 +138,15 @@ class TestPyRITShell:
             "scenario_name": "test_scenario",
             "initializers": ["test_init"],
             "initialization_scripts": None,
+            "env_files": None,
             "scenario_strategies": None,
             "max_concurrency": None,
             "max_retries": None,
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         mock_result = MagicMock()
@@ -197,12 +200,15 @@ class TestPyRITShell:
             "scenario_name": "test_scenario",
             "initializers": None,
             "initialization_scripts": ["script.py"],
+            "env_files": None,
             "scenario_strategies": None,
             "max_concurrency": None,
             "max_retries": None,
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         mock_resolve_scripts.return_value = [Path("/test/script.py")]
@@ -231,12 +237,15 @@ class TestPyRITShell:
             "scenario_name": "test_scenario",
             "initializers": None,
             "initialization_scripts": ["missing.py"],
+            "env_files": None,
             "scenario_strategies": None,
             "max_concurrency": None,
             "max_retries": None,
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         mock_resolve_scripts.side_effect = FileNotFoundError("Script not found")
@@ -266,12 +275,15 @@ class TestPyRITShell:
             "scenario_name": "test_scenario",
             "initializers": ["test_init"],
             "initialization_scripts": None,
+            "env_files": None,
             "scenario_strategies": None,
             "max_concurrency": None,
             "max_retries": None,
             "memory_labels": None,
             "database": "InMemory",
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         # First call is background init, second call is the actual test
@@ -306,12 +318,15 @@ class TestPyRITShell:
             "scenario_name": "test_scenario",
             "initializers": ["test_init"],
             "initialization_scripts": None,
+            "env_files": None,
             "scenario_strategies": None,
             "max_concurrency": None,
             "max_retries": None,
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         # First call succeeds (background init), second call raises error (the actual test)
@@ -683,12 +698,15 @@ class TestPyRITShellRunCommand:
             "scenario_name": "test_scenario",
             "initializers": ["init1"],
             "initialization_scripts": None,
+            "env_files": None,
             "scenario_strategies": ["s1", "s2"],
             "max_concurrency": 10,
             "max_retries": 5,
             "memory_labels": {"key": "value"},
             "database": "InMemory",
             "log_level": "DEBUG",
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         # First call is background init, second call is the actual test
@@ -723,12 +741,15 @@ class TestPyRITShellRunCommand:
             "scenario_name": "test_scenario",
             "initializers": ["test_init"],
             "initialization_scripts": None,
+            "env_files": None,
             "scenario_strategies": None,
             "max_concurrency": None,
             "max_retries": None,
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         mock_result1 = MagicMock()

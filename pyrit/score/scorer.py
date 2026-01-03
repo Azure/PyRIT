@@ -9,9 +9,17 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Union, cast
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 
+import pyrit
 from pyrit.exceptions import (
     InvalidJsonException,
     PyritException,
@@ -31,6 +39,7 @@ from pyrit.models import (
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
@@ -43,6 +52,8 @@ class Scorer(abc.ABC):
 
     scorer_type: ScoreType
 
+    _scorer_identifier: Optional[ScorerIdentifier] = None
+
     def __init__(self, *, validator: ScorerPromptValidator):
         """
         Initialize the Scorer.
@@ -52,30 +63,78 @@ class Scorer(abc.ABC):
         """
         self._validator = validator
 
+    @abstractmethod
+    def _build_scorer_identifier(self) -> None:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Subclasses must implement this method to call `_set_scorer_identifier()` with their
+        specific parameters (system_prompt_template, sub_scorers, scorer_specific_params, prompt_target).
+        """
+        raise NotImplementedError("Subclasses must implement _build_scorer_identifier")
+
+    @property
+    def scorer_identifier(self) -> ScorerIdentifier:
+        """
+        Get the scorer identifier. Built lazily on first access.
+
+        Returns:
+            ScorerIdentifier: The identifier containing all configuration parameters.
+        """
+        if self._scorer_identifier is None:
+            self._build_scorer_identifier()
+        return self._scorer_identifier  # type: ignore[return-value]
+
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def _verify_and_resolve_path(self, path: Union[str, Path]) -> Path:
+    def _set_scorer_identifier(
+        self,
+        *,
+        system_prompt_template: Optional[str] = None,
+        user_prompt_template: Optional[str] = None,
+        sub_scorers: Optional[Sequence["Scorer"]] = None,
+        score_aggregator: Optional[str] = None,
+        scorer_specific_params: Optional[Dict[str, Any]] = None,
+        prompt_target: Optional[PromptTarget] = None,
+    ) -> None:
         """
-        Verify that a path passed to a Scorer on its creation is valid before beginning the scoring logic.
+        Construct the scorer evaluation identifier.
 
         Args:
-            path (Union[str, Path]): A pathlike argument passed to the Scorer.
-
-        Returns:
-            Path: The resolved Path object.
-
-        Raises:
-            ValueError: If the path is not a string or Path object, or if the path does not exist.
+            system_prompt_template (Optional[str]): The system prompt template used by this scorer. Defaults to None.
+            user_prompt_template (Optional[str]): The user prompt template used by this scorer. Defaults to None.
+            sub_scorers (Optional[Sequence[Scorer]]): List of sub-scorers for composite scorers. Defaults to None.
+            score_aggregator (Optional[str]): The name of the score aggregator function. Defaults to None.
+            scorer_specific_params (Optional[Dict[str, Any]]): Additional scorer-specific parameters.
+                Defaults to None.
+            prompt_target (Optional[PromptTarget]): The prompt target used by this scorer. Defaults to None.
         """
-        if not isinstance(path, (str, Path)):
-            raise ValueError(f"Path must be a string or Path object. Got type(path): {type(path).__name__}")
+        # Build sub_identifier from sub_scorers
+        sub_identifier: Optional[List[ScorerIdentifier]] = None
+        if sub_scorers:
+            sub_identifier = [scorer.scorer_identifier for scorer in sub_scorers]
+        # Extract target_info from prompt_target
+        target_info: Optional[Dict[str, Any]] = None
+        if prompt_target:
+            target_id = prompt_target.get_identifier()
+            # Extract standard fields for scorer evaluation
+            target_info = {}
+            for key in ["__type__", "model_name", "temperature", "top_p"]:
+                if key in target_id:
+                    target_info[key] = target_id[key]
 
-        path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
-        if not path_obj.exists():
-            raise ValueError(f"Path not found: {str(path_obj)}")
-        return path_obj
+        self._scorer_identifier = ScorerIdentifier(
+            type=self.__class__.__name__,
+            system_prompt_template=system_prompt_template,
+            user_prompt_template=user_prompt_template,
+            sub_identifier=sub_identifier,
+            target_info=target_info,
+            score_aggregator=score_aggregator,
+            scorer_specific_params=scorer_specific_params,
+            pyrit_version=pyrit.__version__,
+        )
 
     async def score_async(
         self,
@@ -93,7 +152,9 @@ class Scorer(abc.ABC):
             message (Message): The message to be scored.
             objective (Optional[str]): The task or objective based on which the message should be scored.
                 Defaults to None.
-            role_filter (Optional[ChatMessageRole]): Only score messages with this role. Defaults to None.
+            role_filter (Optional[ChatMessageRole]): Only score messages with this exact stored role.
+                Use "assistant" to score only real assistant responses, or "simulated_assistant"
+                to score only simulated responses. Defaults to None (no filtering).
             skip_on_error_result (bool): If True, skip scoring if the message contains an error. Defaults to False.
             infer_objective_from_request (bool): If True, infer the objective from the message's previous request
                 when objective is not provided. Defaults to False.
@@ -107,7 +168,7 @@ class Scorer(abc.ABC):
         """
         self._validator.validate(message, objective=objective)
 
-        if role_filter is not None and message.role != role_filter:
+        if role_filter is not None and message.get_piece().get_role_for_storage() != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
 
@@ -229,7 +290,7 @@ class Scorer(abc.ABC):
 
         Args:
             text (str): The text to be scored.
-            objective (str): The task based on which the text should be scored
+            objective (Optional[str]): The task based on which the text should be scored
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -380,29 +441,17 @@ class Scorer(abc.ABC):
         normalized_value = (value - min_value) / (max_value - min_value)
         return normalized_value
 
-    def get_identifier(self):
+    def get_identifier(self) -> Dict[str, Any]:
         """
-        Get an identifier dictionary for the scorer.
+        Get an identifier dictionary for the scorer for database storage.
+
+        Large fields (system_prompt_template, user_prompt_template) are shortened for compact storage.
+        Includes the computed hash of the configuration.
 
         Returns:
-            dict: The identifier dictionary containing class type, module, and sub-identifiers.
+            dict: The identifier dictionary containing configuration details and hash.
         """
-        identifier = {}
-        identifier["__type__"] = self.__class__.__name__
-        identifier["__module__"] = self.__class__.__module__
-        identifier["sub_identifier"] = self._get_sub_identifier()
-        return identifier
-
-    def _get_sub_identifier(self) -> Optional[Union[Dict, List[Dict]]]:
-        """
-        Get the sub-identifier for composite scorers.
-
-        Override this method in subclasses that wrap other scorers.
-
-        Returns:
-            None, dict, or list[dict]: The sub-identifier(s) of wrapped scorer(s), or None for non-composite scorers.
-        """
-        return None
+        return self.scorer_identifier.to_compact_dict()
 
     @pyrit_json_retry
     async def _score_value_with_llm(
@@ -413,6 +462,7 @@ class Scorer(abc.ABC):
         message_value: str,
         message_data_type: PromptDataType,
         scored_prompt_id: str,
+        prepended_text_message_piece: Optional[str] = None,
         category: Optional[Sequence[str] | str] = None,
         objective: Optional[str] = None,
         score_value_output_key: str = "score_value",
@@ -431,9 +481,15 @@ class Scorer(abc.ABC):
         Args:
             prompt_target (PromptChatTarget): The target LLM to send the message to.
             system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
-            message_value (str): The actual value or content to be scored by the LLM.
-            message_data_type (PromptDataType): The type of the data being sent in the message.
+            message_value (str): The actual value or content to be scored by the LLM (e.g., text, image path,
+                audio path).
+            message_data_type (PromptDataType): The type of the data being sent in the message (e.g., "text",
+                "image_path", "audio_path").
             scored_prompt_id (str): The ID of the scored prompt.
+            prepended_text_message_piece (Optional[str]): Text context to prepend before the main
+                message_value. When provided, creates a multi-piece message with this text first, followed
+                by the message_value. Useful for adding objective/context when scoring non-text content.
+                Defaults to None.
             category (Optional[Sequence[str] | str]): The category of the score. Can also be parsed from
                 the JSON response if not provided. Defaults to None.
             objective (Optional[str]): A description of the objective that is associated with the score,
@@ -471,19 +527,38 @@ class Scorer(abc.ABC):
             attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        scorer_llm_request = Message(
-            [
+
+        # Build message pieces - prepended text context first (if provided), then the main message being scored
+        message_pieces: list[MessagePiece] = []
+
+        # Add prepended text context piece if provided (e.g., objective context for non-text scoring)
+        if prepended_text_message_piece:
+            message_pieces.append(
                 MessagePiece(
                     role="user",
-                    original_value=message_value,
-                    original_value_data_type=message_data_type,
-                    converted_value_data_type=message_data_type,
+                    original_value=prepended_text_message_piece,
+                    original_value_data_type="text",
+                    converted_value_data_type="text",
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                     prompt_metadata=prompt_metadata,
                 )
-            ]
+            )
+
+        # Add the main message piece being scored
+        message_pieces.append(
+            MessagePiece(
+                role="user",
+                original_value=message_value,
+                original_value_data_type=message_data_type,
+                converted_value_data_type=message_data_type,
+                conversation_id=conversation_id,
+                prompt_target_identifier=prompt_target.get_identifier(),
+                prompt_metadata=prompt_metadata,
+            )
         )
+
+        scorer_llm_request = Message(message_pieces)
         try:
             response = await prompt_target.send_prompt_async(message=scorer_llm_request)
         except Exception as ex:
@@ -565,7 +640,7 @@ class Scorer(abc.ABC):
 
         piece = response.get_piece()
 
-        if piece.role != "assistant":
+        if piece.api_role != "assistant":
             return ""
 
         conversation = self._memory.get_message_pieces(conversation_id=piece.conversation_id)
@@ -599,12 +674,13 @@ class Scorer(abc.ABC):
             response (Message): Response containing pieces to score.
             objective_scorer (Optional[Scorer]): The main scorer to determine success. Defaults to None.
             auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply. Defaults to None.
-            role_filter (ChatMessageRole): Only score pieces with this role. Defaults to "assistant".
+            role_filter (ChatMessageRole): Only score pieces with this exact stored role.
+                Defaults to "assistant" (real responses only, not simulated).
             objective (Optional[str]): Task/objective for scoring context. Defaults to None.
             skip_on_error_result (bool): If True, skip scoring pieces that have errors. Defaults to True.
 
         Returns:
-            Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
+            Dict[str, List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
                 containing lists of scores from each type of scorer.
 
         Raises:
@@ -675,7 +751,8 @@ class Scorer(abc.ABC):
         Args:
             response (Message): The response containing pieces to score.
             scorers (List[Scorer]): List of scorers to apply.
-            role_filter (ChatMessageRole): Only score pieces with this role (default: "assistant").
+            role_filter (ChatMessageRole): Only score pieces with this exact stored role.
+                Defaults to "assistant" (real responses only, not simulated).
             objective (Optional[str]): Optional objective description for scoring context.
             skip_on_error_result (bool): If True, skip scoring pieces that have errors (default: True).
 

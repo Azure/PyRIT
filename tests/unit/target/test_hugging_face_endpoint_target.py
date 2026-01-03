@@ -82,5 +82,5 @@ def test_valid_temperature_and_top_p(patch_central_database):
         temperature=1.5,
         top_p=0.9,
     )
-    assert target.temperature == 1.5
-    assert target.top_p == 0.9
+    assert target._temperature == 1.5
+    assert target._top_p == 0.9

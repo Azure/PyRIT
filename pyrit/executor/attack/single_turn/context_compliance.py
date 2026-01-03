@@ -12,6 +12,7 @@ from pyrit.executor.attack.core import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
@@ -20,13 +21,15 @@ from pyrit.models import (
     Message,
     MessagePiece,
     SeedDataset,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
+
+# ContextComplianceAttack generates prepended_conversation internally
+# by building a benign context conversation.
+ContextComplianceAttackParameters = AttackParameters.excluding("prepended_conversation", "next_message")
 
 
 class ContextComplianceAttack(PromptSendingAttack):
@@ -90,6 +93,7 @@ class ContextComplianceAttack(PromptSendingAttack):
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
+            params_type=ContextComplianceAttackParameters,
         )
 
         # Store adversarial chat target
@@ -127,26 +131,6 @@ class ContextComplianceAttack(PromptSendingAttack):
         self._answer_user_turn = context_description_instructions.prompts[1]
         self._rephrase_objective_to_question = context_description_instructions.prompts[2]
 
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
-        """
-        Validate the context for the attack.
-        This attack does not support prepended conversations, so it raises an error if one exists.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context to validate.
-
-        Raises:
-            ValueError: If the context has a prepended conversation.
-        """
-        # Call parent validation first
-        super()._validate_context(context=context)
-
-        if context.prepended_conversation:
-            raise ValueError(
-                "This attack does not support prepended conversations. "
-                "Please clear the prepended conversation before starting the attack."
-            )
-
     async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
         """
         Set up the context compliance attack.
@@ -171,18 +155,11 @@ class ContextComplianceAttack(PromptSendingAttack):
         # Update context with the prepended conversation
         context.prepended_conversation = prepended_conversation
 
-        # Create the affirmative seed group
-        affirmative_seed_prompt = SeedGroup(
-            seeds=[
-                SeedPrompt(
-                    value=self._affirmative_response,
-                    data_type="text",
-                )
-            ]
+        # Create the affirmative message
+        context.next_message = Message.from_prompt(
+            prompt=self._affirmative_response,
+            role="user",
         )
-
-        # Set the seed group in context
-        context.seed_group = affirmative_seed_prompt
 
         await super()._setup_async(context=context)
 
@@ -247,17 +224,13 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The objective rephrased as a benign question.
         """
-        seed_group = SeedGroup(
-            seeds=[
-                SeedPrompt(
-                    value=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
-                    data_type="text",
-                )
-            ]
+        message = Message.from_prompt(
+            prompt=self._rephrase_objective_to_user_turn.render_template_value(objective=objective),
+            role="user",
         )
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
@@ -278,17 +251,13 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The answer to the benign question.
         """
-        seed_group = SeedGroup(
-            seeds=[
-                SeedPrompt(
-                    value=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
-                    data_type="text",
-                )
-            ]
+        message = Message.from_prompt(
+            prompt=self._answer_user_turn.render_template_value(benign_request=benign_user_query),
+            role="user",
         )
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
@@ -307,17 +276,13 @@ class ContextComplianceAttack(PromptSendingAttack):
         Returns:
             str: The objective rephrased as a question.
         """
-        seed_group = SeedGroup(
-            seeds=[
-                SeedPrompt(
-                    value=self._rephrase_objective_to_question.render_template_value(objective=objective),
-                    data_type="text",
-                )
-            ]
+        message = Message.from_prompt(
+            prompt=self._rephrase_objective_to_question.render_template_value(objective=objective),
+            role="user",
         )
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,

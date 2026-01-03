@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.18.1
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit (3.13.5)
 #     language: python
 #     name: python3
 # ---
@@ -39,14 +39,6 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 objective = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 
 img_prompt_target = OpenAIImageTarget()
-# For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# from pyrit.auth import get_azure_openai_auth
-# endpoint = "https://your-endpoint.openai.azure.com"
-# target = OpenAIChatTarget(
-#     endpoint=endpoint,
-#     api_key=get_azure_openai_auth(endpoint),
-#     model_name="your-deployment-name"
-# )
 
 image_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
@@ -101,6 +93,10 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 # ## Video Target (Text --> Video)
 #
 # This example demonstrates how to use the video target to create a video from a text-based prompt.
+#
+
+
+# %%
 
 from pyrit.executor.attack import (
     AttackExecutor,
@@ -144,14 +140,13 @@ attack = PromptSendingAttack(
     ),
 )
 
-results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+results = await AttackExecutor().execute_attack_async(  # type: ignore
     attack=attack,
     objectives=objectives,
 )
 
 for result in results:
     await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
-
 
 # %% [markdown]
 # ## OpenAI Chat Target (Text + Image --> Text)
@@ -160,7 +155,6 @@ for result in results:
 # %%
 import pathlib
 
-from pyrit.executor.attack import SingleTurnAttackContext
 from pyrit.models import SeedGroup, SeedPrompt
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
@@ -184,8 +178,7 @@ scoring_config = AttackScoringConfig(objective_scorer=scorer)
 image_path = str(pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png")
 
 # This is a single request with two parts, one image and one text
-
-seed_group = SeedGroup(
+seed = SeedGroup(
     seeds=[
         SeedPrompt(
             value="Describe this picture:",
@@ -198,16 +191,12 @@ seed_group = SeedGroup(
     ]
 )
 
-context = SingleTurnAttackContext(
-    objective="Describe the picture",
-    seed_group=seed_group,
-)
 
 attack = PromptSendingAttack(
     objective_target=azure_openai_gpt4o_chat_target,
     attack_scoring_config=scoring_config,
 )
 
-result = await attack.execute_with_context_async(context=context)  # type: ignore
+result = await attack.execute_async(objective="Describe the picture", next_message=seed.next_message)  # type: ignore
 
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore

@@ -2,15 +2,12 @@
 # Licensed under the MIT license.
 
 import asyncio
-import os
-from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
@@ -65,6 +62,10 @@ class MockScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this mock scorer."""
+        self._set_scorer_identifier()
+
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return [
             Score(
@@ -113,8 +114,12 @@ class MockFloatScorer(Scorer):
     """Mock scorer that tracks which pieces were scored."""
 
     def __init__(self, *, validator: ScorerPromptValidator):
-        super().__init__(validator=validator)
         self.scored_piece_ids: list[str] = []
+        super().__init__(validator=validator)
+
+    def _build_scorer_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this mock scorer."""
+        self._set_scorer_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         # Track which pieces get scored
@@ -159,7 +164,8 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
             objective="task",
         )
 
-    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+    # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+    assert chat_target.send_prompt_async.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -297,30 +303,121 @@ async def test_scorer_remove_markdown_json_called(good_json):
         mock_remove_markdown_json.assert_called_once()
 
 
-def test_scorer_path_verification_rejection() -> None:
-    """
-    Test that the scorer correctly refuses to verify a non-existent path.
-    """
+@pytest.mark.asyncio
+async def test_score_value_with_llm_prepended_text_message_piece_creates_multipiece_message(good_json):
+    """Test that prepended_text_message_piece creates a multi-piece message (text context + main content)."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
     scorer = MockScorer()
-    mock_path: str = "this/does/not/exist.yaml"
-    with pytest.raises(ValueError, match="Path not found"):
-        scorer._verify_and_resolve_path(mock_path)
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="test_image.png",
+        message_data_type="image_path",
+        scored_prompt_id="123",
+        prepended_text_message_piece="objective: test\nresponse:",
+        category="category",
+        objective="task",
+    )
+
+    # Verify send_prompt_async was called
+    chat_target.send_prompt_async.assert_called_once()
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have 2 pieces: text context first, then the main content being scored
+    assert len(sent_message.message_pieces) == 2
+
+    # First piece should be the extra text context
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+    assert "objective: test" in text_piece.original_value
+
+    # Second piece should be the main content (image in this case)
+    main_piece = sent_message.message_pieces[1]
+    assert main_piece.converted_value_data_type == "image_path"
+    assert main_piece.original_value == "test_image.png"
 
 
-def test_scorer_path_verification_confirmation() -> None:
-    """
-    Test that the scorer verifies the paths that currently exist
-    under the scorer configs.
-    """
+@pytest.mark.asyncio
+async def test_score_value_with_llm_no_prepended_text_creates_single_piece_message(good_json):
+    """Test that without prepended_text_message_piece, only a single piece message is created."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
     scorer = MockScorer()
-    all_yamls_as_str: list[str] = []
-    full_paths: list[str] = []
-    for root, dirs, files in os.walk(SCORER_SEED_PROMPT_PATH):
-        full_paths.extend([os.path.join(root, f) for f in files if f.endswith(".yaml")])
-        all_yamls_as_str.extend([f for f in files if f.endswith(".yaml")])
-    resolved_paths = [Path(p).resolve() for p in full_paths]
-    attempted_paths = [scorer._verify_and_resolve_path(p) for p in full_paths]
-    assert attempted_paths == resolved_paths
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="objective: test\nresponse: some text",
+        message_data_type="text",
+        scored_prompt_id="123",
+        category="category",
+        objective="task",
+    )
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have only 1 piece
+    assert len(sent_message.message_pieces) == 1
+
+    # The piece should be text with the full message
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+    assert "objective: test" in text_piece.original_value
+    assert "response: some text" in text_piece.original_value
+
+
+@pytest.mark.asyncio
+async def test_score_value_with_llm_prepended_text_works_with_audio(good_json):
+    """Test that prepended_text_message_piece works with audio content (type-independent)."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
+    scorer = MockScorer()
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="test_audio.wav",
+        message_data_type="audio_path",
+        scored_prompt_id="123",
+        prepended_text_message_piece="objective: transcribe and evaluate\nresponse:",
+        category="category",
+        objective="task",
+    )
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have 2 pieces: text context + audio
+    assert len(sent_message.message_pieces) == 2
+
+    # First piece should be text context
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+
+    # Second piece should be audio
+    audio_piece = sent_message.message_pieces[1]
+    assert audio_piece.converted_value_data_type == "audio_path"
+    assert audio_piece.original_value == "test_audio.wav"
 
 
 def test_scorer_extract_task_from_response(patch_central_database):
@@ -1042,8 +1139,12 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
 
     class TestTrueFalseScorer(TrueFalseScorer):
         def __init__(self):
-            super().__init__(validator=validator)
             self.scored_piece_ids = []
+            super().__init__(validator=validator)
+
+        def _build_scorer_identifier(self) -> None:
+            """Build the scorer evaluation identifier for this test scorer."""
+            self._set_scorer_identifier()
 
         async def _score_piece_async(
             self, message_piece: MessagePiece, *, objective: Optional[str] = None
@@ -1126,3 +1227,79 @@ async def test_base_scorer_score_async_implementation(patch_central_database):
     assert "text-1" in scorer.scored_piece_ids
     assert "text-2" in scorer.scored_piece_ids
     assert len(scores) == 2
+
+
+# Tests for get_identifier and scorer_identifier
+
+
+def test_mock_scorer_get_identifier_returns_type():
+    """Test that get_identifier returns the correct __type__ key."""
+    scorer = MockScorer()
+    identifier = scorer.get_identifier()
+
+    assert "__type__" in identifier
+    assert identifier["__type__"] == "MockScorer"
+
+
+def test_mock_scorer_get_identifier_includes_hash():
+    """Test that get_identifier includes a hash field."""
+    scorer = MockScorer()
+    identifier = scorer.get_identifier()
+
+    assert "hash" in identifier
+    assert isinstance(identifier["hash"], str)
+    assert len(identifier["hash"]) == 64  # SHA256 hex digest length
+
+
+def test_mock_scorer_get_identifier_deterministic():
+    """Test that get_identifier returns the same values for the same scorer."""
+    scorer = MockScorer()
+
+    id1 = scorer.get_identifier()
+    id2 = scorer.get_identifier()
+
+    assert id1 == id2
+
+
+def test_mock_scorer_get_identifier_hash_deterministic():
+    """Test that the hash is consistent across multiple calls."""
+    scorer = MockScorer()
+
+    hash1 = scorer.get_identifier()["hash"]
+    hash2 = scorer.get_identifier()["hash"]
+
+    assert hash1 == hash2
+
+
+def test_mock_scorer_scorer_identifier_property():
+    """Test that scorer_identifier property returns a ScorerIdentifier."""
+    from pyrit.score.scorer_identifier import ScorerIdentifier
+
+    scorer = MockScorer()
+    sid = scorer.scorer_identifier
+
+    assert isinstance(sid, ScorerIdentifier)
+    assert sid.type == "MockScorer"
+
+
+def test_mock_scorer_scorer_identifier_lazy_build():
+    """Test that scorer_identifier is built lazily on first access."""
+    scorer = MockScorer()
+
+    # Before accessing, _scorer_identifier should be None
+    assert scorer._scorer_identifier is None
+
+    # After accessing, it should be built
+    _ = scorer.scorer_identifier
+    assert scorer._scorer_identifier is not None
+
+
+def test_mock_float_scorer_get_identifier():
+    """Test get_identifier for MockFloatScorer."""
+    validator = DummyValidator()
+    scorer = MockFloatScorer(validator=validator)
+
+    identifier = scorer.get_identifier()
+
+    assert identifier["__type__"] == "MockFloatScorer"
+    assert "hash" in identifier

@@ -452,11 +452,11 @@ class FuzzerResultPrinter:
                 continue
 
             for message in target_messages:
-                if message.role == "user":
+                if message.api_role == "user":
                     self._print_colored(f"{self._indent * 2} USER:", Style.BRIGHT, Fore.BLUE)
                     self._print_wrapped_text(message.converted_value, Fore.BLUE)
                 else:
-                    self._print_colored(f"{self._indent * 2} {message.role.upper()}:", Style.BRIGHT, Fore.YELLOW)
+                    self._print_colored(f"{self._indent * 2} {message.api_role.upper()}:", Style.BRIGHT, Fore.YELLOW)
                     self._print_wrapped_text(message.converted_value, Fore.YELLOW)
 
                 # Print scores if available
@@ -984,8 +984,9 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
         requests: List[NormalizerRequest] = []
 
         for prompt in prompts:
+            seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")])
             request = NormalizerRequest(
-                seed_group=SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")]),
+                message=seed_group.next_message,
                 request_converter_configurations=self._request_converters,
                 response_converter_configurations=self._response_converters,
             )

@@ -6,7 +6,6 @@ from __future__ import annotations
 import logging
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from pyrit.common.yaml_loadable import YamlLoadable
@@ -18,27 +17,6 @@ from pyrit.models.seed_prompt import SeedPrompt
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class DecomposedSeedGroup:
-    """
-    A decomposed representation of a SeedGroup, useful for attacks that expect specific arguments.
-
-    This structure separates a SeedGroup into its constituent parts:
-    - The objective as a string (if present)
-    - Prepended conversation history (all turns except the last)
-    - Current turn seed group (only the last turn)
-    """
-
-    # The objective as a string, if a SeedObjective exists in the original group
-    objective: Optional[str] = None
-
-    # Messages representing prior conversation turns (excludes the current/last turn)
-    prepended_conversation: Optional[List["Message"]] = None
-
-    # SeedGroup containing only SeedPrompts from the last turn
-    current_turn_seed_group: Optional["SeedGroup"] = None
-
-
 class SeedGroup(YamlLoadable):
     """
     A group of prompts that need to be sent together, along with an objective. This can include multiturn and multimodal
@@ -47,7 +25,7 @@ class SeedGroup(YamlLoadable):
     All prompts in the group should share the same `prompt_group_id`.
     """
 
-    seeds: Sequence[Seed]
+    seeds: List[Seed]
 
     def __init__(
         self,
@@ -87,6 +65,25 @@ class SeedGroup(YamlLoadable):
             if isinstance(seed, SeedObjective):
                 return seed
         return None
+
+    def set_objective(self, value: str) -> None:
+        """
+        Set or update the objective for this SeedGroup.
+
+        If an objective already exists, updates its value.
+        If not, creates a new SeedObjective and inserts it at the beginning.
+
+        Args:
+            value (str): The objective value to set.
+        """
+        if self.objective is not None:
+            self.objective.value = value
+        else:
+            new_objective = SeedObjective(value=value)
+            # Match the group ID from existing seeds
+            if self.seeds:
+                new_objective.prompt_group_id = self.seeds[0].prompt_group_id
+            self.seeds.insert(0, new_objective)
 
     @property
     def prompts(self) -> Sequence[SeedPrompt]:
@@ -194,57 +191,104 @@ class SeedGroup(YamlLoadable):
     def is_single_part_single_text_request(self) -> bool:
         return len(self.prompts) == 1 and self.prompts[0].data_type == "text"
 
-    def to_attack_parameters(self, raise_on_missing_objective: bool = False) -> DecomposedSeedGroup:
+    @property
+    def prepended_conversation(self) -> Optional[List[Message]]:
         """
-        Decomposes this SeedGroup into parts commonly used by attack strategies.
+        Returns Messages that should be prepended as conversation history.
 
-        This method extracts:
-        - objective: The string value from SeedObjective (if present)
-        - prepended_conversation: Messages from all sequences except the last turn
-        - current_turn_seed_group: A new SeedGroup containing only the last turn's prompts
-
-        Args:
-            raise_on_missing_objective: If True, raises ValueError when no objective is present.
-                                       If False (default), allows None objective.
+        If the last message in the sequence is a user message, returns all messages
+        except the last one. If the last message is not a user message, returns
+        the entire sequence as conversation history.
 
         Returns:
-            DecomposedSeedGroup: Object containing the decomposed parts.
-
-        Raises:
-            ValueError: If conversion to Messages fails or if raise_on_missing_objective is True
-                       and no objective is present.
+            Optional[List[Message]]: Messages for conversation history, or None if empty.
         """
-        result = DecomposedSeedGroup()
+        if not self.prompts:
+            return None
 
-        # Extract objective if present
-        if self.objective:
-            result.objective = self.objective.value
-        elif raise_on_missing_objective:
-            raise ValueError("SeedGroup must have an objective to decompose for attack parameters.")
+        last_role = self._get_last_sequence_role()
+        unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
 
-        # Get unique sequences and determine if we have multiple turns
-        unique_sequences = sorted({prompt.sequence for prompt in self.prompts if prompt.sequence is not None})
+        if last_role == "user":
+            # Last message is user - prepend everything except the last sequence
+            if len(unique_sequences) <= 1:
+                return None
 
-        if len(unique_sequences) > 1:
-            # Multiple turns exist - split into prepended and current
             last_sequence = unique_sequences[-1]
-
-            # Create prepended_conversation from all but the last sequence
             prepended_prompts = [p for p in self.prompts if p.sequence != last_sequence]
-            if prepended_prompts:
-                result.prepended_conversation = self._prompts_to_messages(prepended_prompts)
 
-            # Create current_turn_seed_group from last sequence only
-            current_turn_prompts = [p for p in self.prompts if p.sequence == last_sequence]
-            if current_turn_prompts:
-                result.current_turn_seed_group = SeedGroup(seeds=current_turn_prompts)
-        elif len(unique_sequences) == 1:
-            # Single turn - everything goes to current_turn_seed_group
-            result.current_turn_seed_group = SeedGroup(seeds=list(self.prompts))
+            if not prepended_prompts:
+                return None
 
-        return result
+            return self._prompts_to_messages(prepended_prompts)
+        else:
+            # Last message is not user - entire sequence is prepended conversation
+            return self._prompts_to_messages(list(self.prompts))
 
-    def _prompts_to_messages(self, prompts: Sequence[SeedPrompt]) -> List["Message"]:
+    @property
+    def next_message(self) -> Optional[Message]:
+        """
+        Returns a Message containing only the last turn's prompts if it's a user message.
+
+        If the last message in the sequence is a user message, returns that message.
+        If the last message is not a user message, returns None.
+
+        Returns:
+            Optional[Message]: Message for the current/last turn if user role, or None otherwise.
+        """
+        if not self.prompts:
+            return None
+
+        last_role = self._get_last_sequence_role()
+
+        if last_role != "user":
+            # Last message is not a user message - no next_message
+            return None
+
+        unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
+        last_sequence = unique_sequences[-1]
+        current_turn_prompts = [p for p in self.prompts if p.sequence == last_sequence]
+
+        if not current_turn_prompts:
+            return None
+
+        messages = self._prompts_to_messages(current_turn_prompts)
+        return messages[0] if messages else None
+
+    @property
+    def user_messages(self) -> List[Message]:
+        """
+        Returns all prompts as user Messages, one per sequence.
+
+        This is used by MultiPromptSendingAttack to get user messages for multi-turn attacks.
+        Only returns messages from prompts (not objectives).
+
+        Returns:
+            List[Message]: All user messages in sequence order, or empty list if no prompts.
+        """
+        if not self.prompts:
+            return []
+
+        return self._prompts_to_messages(list(self.prompts))
+
+    def _get_last_sequence_role(self) -> Optional[str]:
+        """
+        Get the role of the last sequence in this SeedGroup.
+
+        Returns:
+            Optional[str]: The role of the last sequence, or None if no prompts exist.
+        """
+        if not self.prompts:
+            return None
+
+        unique_sequences = sorted({prompt.sequence for prompt in self.prompts})
+        last_sequence = unique_sequences[-1]
+        last_sequence_prompts = [p for p in self.prompts if p.sequence == last_sequence]
+
+        # Role should be consistent within a sequence (enforced by _enforce_consistent_role)
+        return last_sequence_prompts[0].role if last_sequence_prompts else None
+
+    def _prompts_to_messages(self, prompts: Sequence[SeedPrompt]) -> List[Message]:
         """
         Convert a sequence of SeedPrompts to Messages.
 
@@ -268,13 +312,20 @@ class SeedGroup(YamlLoadable):
             # Convert each prompt to a MessagePiece
             message_pieces = []
             for prompt in sequence_prompts:
+                # Convert assistant to simulated_assistant for YAML-loaded conversations
+                # since these represent simulated/prepended content, not actual target responses
+                role = prompt.role or "user"
+                if role == "assistant":
+                    role = "simulated_assistant"
+
                 piece = MessagePiece(
-                    role=prompt.role or "user",
+                    role=role,
                     original_value=prompt.value,
-                    converted_value_data_type=prompt.data_type or "text",
+                    original_value_data_type=prompt.data_type or "text",
                     prompt_target_identifier=None,
                     conversation_id=str(prompt.prompt_group_id),
                     sequence=sequence,
+                    prompt_metadata=prompt.metadata,
                 )
                 message_pieces.append(piece)
 

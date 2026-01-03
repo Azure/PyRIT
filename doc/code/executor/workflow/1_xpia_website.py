@@ -169,6 +169,3 @@ processing_response = memory.get_message_pieces(conversation_id=result.processin
 
 print(f"Attack result status: {result.status}")
 print(f"Response from processing callback: {processing_response}")
-
-# %%
-memory.dispose_engine()

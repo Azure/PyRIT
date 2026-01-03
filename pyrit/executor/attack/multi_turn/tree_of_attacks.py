@@ -19,13 +19,17 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
+from pyrit.executor.attack.component import ConversationManager
+from pyrit.executor.attack.component.conversation_manager import (
+    format_conversation_context,
+)
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
-    AttackContext,
     AttackConverterConfig,
     AttackScoringConfig,
     AttackStrategy,
 )
+from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -35,7 +39,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -51,7 +54,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class TAPAttackContext(AttackContext):
+class TAPAttackContext(MultiTurnAttackContext):
     """
     Context for the Tree of Attacks with Pruning (TAP) attack strategy.
 
@@ -241,6 +244,60 @@ class _TreeOfAttacksNode:
         self.last_response: Optional[str] = None
         self.error_message: Optional[str] = None
 
+        # Context from prepended conversation (for adversarial chat system prompt)
+        self._conversation_context: Optional[str] = None
+
+    async def initialize_with_prepended_conversation_async(
+        self,
+        *,
+        prepended_conversation: List[Message],
+    ) -> None:
+        """
+        Initialize the node with a prepended conversation history.
+
+        This method replays an existing conversation to both the objective target and
+        adversarial chat conversations. This is useful when starting an attack from
+        an established context (e.g., role-play scenarios, simulated conversations).
+
+        For the objective target: Messages are replayed as-is to establish context.
+        For the adversarial chat: Roles are swapped (user↔assistant) since from the
+        adversarial chat's perspective, "user" messages are what it generated and
+        "assistant" messages are responses it received.
+
+        Args:
+            prepended_conversation (List[Message]): The conversation history to replay.
+                System messages are handled separately for each target.
+
+        Note:
+            - This should be called before `send_prompt_async` for first-level nodes
+            - Duplicated nodes inherit conversation history automatically via `duplicate()`
+        """
+        if not prepended_conversation:
+            return
+
+        conversation_manager = ConversationManager(attack_identifier=self._attack_id)
+
+        # Add to objective target conversation (handles system prompts and memory)
+        await conversation_manager.update_conversation_state_async(
+            target=self._objective_target,
+            conversation_id=self.objective_target_conversation_id,
+            prepended_conversation=prepended_conversation,
+        )
+
+        # Add to adversarial chat conversation (role-swapped)
+        # Note: adversarial chat gets its own system prompt later in _generate_first_turn_prompt_async
+        await conversation_manager.prepend_to_adversarial_chat_async(
+            adversarial_chat=self._adversarial_chat,
+            adversarial_chat_conversation_id=self.adversarial_chat_conversation_id,
+            prepended_conversation=prepended_conversation,
+            labels=self._memory_labels,
+        )
+
+        # Generate formatted context for adversarial chat system prompt
+        self._conversation_context = format_conversation_context(prepended_conversation)
+
+        logger.debug(f"Node {self.node_id}: Initialized with {len(prepended_conversation)} prepended messages")
+
     async def send_prompt_async(self, objective: str) -> None:
         """
         Execute one turn of the attack for this node.
@@ -397,12 +454,12 @@ class _TreeOfAttacksNode:
         Side Effects:
             - Sets self.last_response to the target's response text
         """
-        # Create seed group from the generated prompt
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt, data_type="text")])
+        # Create message from the generated prompt
+        message = Message.from_prompt(prompt=prompt, role="user")
 
         # Send prompt with configured converters
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
             conversation_id=self.objective_target_conversation_id,
@@ -587,6 +644,9 @@ class _TreeOfAttacksNode:
             conversation_id=self.adversarial_chat_conversation_id
         )
 
+        # Copy conversation context for adversarial chat system prompt
+        duplicate_node._conversation_context = self._conversation_context
+
         logger.debug(f"Node {self.node_id}: Created duplicate node {duplicate_node.node_id}")
 
         return duplicate_node
@@ -667,8 +727,11 @@ class _TreeOfAttacksNode:
                 to generate the first attack prompt.
         """
         # Initialize system prompt for adversarial chat
+        # Include conversation_context if we have prepended conversation history
         system_prompt = self._adversarial_chat_system_seed_prompt.render_template_value(
-            objective=objective, desired_prefix=self._desired_response_prefix
+            objective=objective,
+            desired_prefix=self._desired_response_prefix,
+            conversation_context=self._conversation_context,
         )
 
         self._adversarial_chat.set_system_prompt(
@@ -714,7 +777,7 @@ class _TreeOfAttacksNode:
         target_messages = self._memory.get_conversation(conversation_id=self.objective_target_conversation_id)
 
         # Extract the last assistant response
-        assistant_responses = [r for r in target_messages if r.get_piece().role == "assistant"]
+        assistant_responses = [r for r in target_messages if r.get_piece().api_role == "assistant"]
         if not assistant_responses:
             logger.error(f"No assistant responses found in the conversation {self.objective_target_conversation_id}.")
             raise RuntimeError("Cannot proceed without an assistant response.")
@@ -782,12 +845,12 @@ class _TreeOfAttacksNode:
                 attack prompt.
         """
         # Configure for JSON response
-        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
+        message = Message.from_prompt(prompt=prompt_text, role="user")
+        message.message_pieces[0].prompt_metadata = {"response_format": "json"}
 
         # Send and get response
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             conversation_id=self.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             labels=self._memory_labels,
@@ -1287,6 +1350,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Each node represents an independent attack path that will generate its own
         adversarial prompts. All first-level nodes are created as children of the root.
 
+        If prepended_conversation is provided in the context, it is replayed to each
+        first-level node to establish conversation context before the attack begins.
+
         Args:
             context (TAPAttackContext): The attack context containing configuration and state.
         """
@@ -1294,6 +1360,13 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         for i in range(self._tree_width):
             node = self._create_attack_node(context=context, parent_id=None)
+
+            # Initialize node with prepended conversation if provided
+            if context.prepended_conversation:
+                await node.initialize_with_prepended_conversation_async(
+                    prepended_conversation=context.prepended_conversation,
+                )
+
             context.nodes.append(node)
             context.tree_visualization.create_node("1: ", node.node_id, parent="root")
 

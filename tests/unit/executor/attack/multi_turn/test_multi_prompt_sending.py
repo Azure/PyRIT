@@ -12,7 +12,8 @@ from pyrit.executor.attack import (
     ConversationSession,
     ConversationState,
     MultiPromptSendingAttack,
-    MultiPromptSendingAttackContext,
+    MultiPromptSendingAttackParameters,
+    MultiTurnAttackContext,
 )
 from pyrit.models import (
     AttackOutcome,
@@ -20,8 +21,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -64,10 +63,16 @@ def mock_prompt_normalizer():
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return MultiPromptSendingAttackContext(
-        objective="Test objective",
+    return MultiTurnAttackContext(
+        params=MultiPromptSendingAttackParameters(
+            objective="Test objective",
+            user_messages=[
+                Message.from_prompt(prompt="First prompt", role="user"),
+                Message.from_prompt(prompt="Second prompt", role="user"),
+                Message.from_prompt(prompt="Third prompt", role="user"),
+            ],
+        ),
         session=ConversationSession(),
-        prompt_sequence=["First prompt", "Second prompt", "Third prompt"],
     )
 
 
@@ -185,23 +190,43 @@ class TestMultiPromptSendingAttackInitialization:
 class TestContextValidation:
     """Tests for context validation logic"""
 
-    @pytest.mark.parametrize(
-        "objective,prompt_sequence,expected_error",
-        [
-            ("", ["prompt1", "prompt2"], "Attack objective must be provided and non-empty in the context"),
-            ("   ", ["prompt1", "prompt2"], "Attack objective must be provided and non-empty in the context"),
-            ("Valid objective", [], "Prompt sequence must be provided and non-empty in the context"),
-            ("Valid objective", ["prompt1", "", "prompt3"], "Prompt sequence must not contain empty prompts"),
-            ("Valid objective", ["prompt1", "   ", "prompt3"], "Prompt sequence must not contain empty prompts"),
-        ],
-    )
-    def test_validate_context_raises_errors(self, mock_target, objective, prompt_sequence, expected_error):
+    def test_validate_context_raises_for_empty_objective(self, mock_target):
         attack = MultiPromptSendingAttack(objective_target=mock_target)
-        context = MultiPromptSendingAttackContext(
-            objective=objective, session=ConversationSession(), prompt_sequence=prompt_sequence
+        context = MultiTurnAttackContext(
+            params=MultiPromptSendingAttackParameters(
+                objective="",
+                user_messages=[Message.from_prompt(prompt="prompt1", role="user")],
+            ),
+            session=ConversationSession(),
         )
 
-        with pytest.raises(ValueError, match=expected_error):
+        with pytest.raises(ValueError, match="Attack objective must be provided and non-empty in the context"):
+            attack._validate_context(context=context)
+
+    def test_validate_context_raises_for_whitespace_objective(self, mock_target):
+        attack = MultiPromptSendingAttack(objective_target=mock_target)
+        context = MultiTurnAttackContext(
+            params=MultiPromptSendingAttackParameters(
+                objective="   ",
+                user_messages=[Message.from_prompt(prompt="prompt1", role="user")],
+            ),
+            session=ConversationSession(),
+        )
+
+        with pytest.raises(ValueError, match="Attack objective must be provided and non-empty in the context"):
+            attack._validate_context(context=context)
+
+    def test_validate_context_raises_for_empty_messages(self, mock_target):
+        attack = MultiPromptSendingAttack(objective_target=mock_target)
+        context = MultiTurnAttackContext(
+            params=MultiPromptSendingAttackParameters(
+                objective="Valid objective",
+                user_messages=[],
+            ),
+            session=ConversationSession(),
+        )
+
+        with pytest.raises(ValueError, match="User messages must be provided and non-empty in the params"):
             attack._validate_context(context=context)
 
     def test_validate_context_with_complete_valid_context(self, mock_target, basic_context):
@@ -282,10 +307,12 @@ class TestPromptSending:
             ),
         )
 
-        prompt_group = SeedGroup(seeds=[SeedPrompt(value="test prompt", data_type="text")])
+        test_message = Message.from_prompt(prompt="test prompt", role="user")
         mock_prompt_normalizer.send_prompt_async.return_value = sample_response
 
-        result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
+        result = await attack._send_prompt_to_objective_target_async(
+            current_message=test_message, context=basic_context
+        )
 
         assert result == sample_response
         mock_prompt_normalizer.send_prompt_async.assert_called_once()
@@ -296,9 +323,11 @@ class TestPromptSending:
 
         attack = MultiPromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
-        prompt_group = SeedGroup(seeds=[SeedPrompt(value="test prompt", data_type="text")])
+        test_message = Message.from_prompt(prompt="test prompt", role="user")
 
-        result = await attack._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=basic_context)
+        result = await attack._send_prompt_to_objective_target_async(
+            current_message=test_message, context=basic_context
+        )
 
         assert result is None
 
@@ -366,9 +395,9 @@ class TestAttackExecution:
 
         result = await attack._perform_async(context=basic_context)
 
-        # Should have called send_prompt_async for each prompt in sequence
-        assert mock_prompt_normalizer.send_prompt_async.call_count == len(basic_context.prompt_sequence)
-        assert result.executed_turns == len(basic_context.prompt_sequence)
+        # Should have called send_prompt_async for each message in sequence
+        assert mock_prompt_normalizer.send_prompt_async.call_count == len(basic_context.params.user_messages)
+        assert result.executed_turns == len(basic_context.params.user_messages)
         assert result.last_response is not None
 
     @pytest.mark.asyncio
@@ -487,15 +516,21 @@ class TestExecuteAsync:
                 executed_turns=0,
             )
 
-            result = await attack.execute_async(objective="Test objective", prompt_sequence=["prompt1", "prompt2"])
+            result = await attack.execute_async(
+                objective="Test objective",
+                user_messages=[
+                    Message.from_prompt(prompt="prompt1", role="user"),
+                    Message.from_prompt(prompt="prompt2", role="user"),
+                ],
+            )
 
             assert isinstance(result, AttackResult)
             mock_perform.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_execute_async_validates_prompt_sequence_parameter(self, mock_target):
+    async def test_execute_async_validates_messages_parameter(self, mock_target):
         """
-        Test that execute_async validates the prompt_sequence parameter.
+        Test that execute_async validates the user_messages parameter.
         This ensures the required parameter is properly validated at the entry point.
         """
         attack = MultiPromptSendingAttack(objective_target=mock_target)
@@ -503,18 +538,22 @@ class TestExecuteAsync:
         with pytest.raises(ValueError):
             await attack.execute_async(
                 objective="Test objective"
-                # Missing prompt_sequence parameter
+                # Missing user_messages parameter
             )
 
     @pytest.mark.asyncio
-    async def test_execute_async_passes_prompt_sequence_to_context(self, mock_target):
+    async def test_execute_async_passes_messages_to_context(self, mock_target):
         """
-        Test that execute_async properly passes prompt_sequence to the context.
+        Test that execute_async properly passes user_messages to the context.
         This verifies parameter propagation through the execution pipeline.
         """
         attack = MultiPromptSendingAttack(objective_target=mock_target)
 
-        test_sequence = ["prompt1", "prompt2", "prompt3"]
+        test_messages = [
+            Message.from_prompt(prompt="prompt1", role="user"),
+            Message.from_prompt(prompt="prompt2", role="user"),
+            Message.from_prompt(prompt="prompt3", role="user"),
+        ]
 
         with patch.object(attack, "_perform_async") as mock_perform:
             mock_perform.return_value = AttackResult(
@@ -526,12 +565,12 @@ class TestExecuteAsync:
                 executed_turns=0,
             )
 
-            await attack.execute_async(objective="Test objective", prompt_sequence=test_sequence)
+            await attack.execute_async(objective="Test objective", user_messages=test_messages)
 
-            # Verify the context was created with the correct prompt_sequence
+            # Verify the context was created with the correct messages
             call_args = mock_perform.call_args[1]
             context = call_args["context"]
-            assert context.prompt_sequence == test_sequence
+            assert context.params.user_messages == test_messages
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -607,8 +646,12 @@ class TestEdgeCasesAndErrorHandling:
 
         attack = MultiPromptSendingAttack(objective_target=mock_target, prompt_normalizer=mock_prompt_normalizer)
 
-        context = MultiPromptSendingAttackContext(
-            objective="Test objective", session=ConversationSession(), prompt_sequence=["Single prompt"]
+        context = MultiTurnAttackContext(
+            params=MultiPromptSendingAttackParameters(
+                objective="Test objective",
+                user_messages=[Message.from_prompt(prompt="Single prompt", role="user")],
+            ),
+            session=ConversationSession(),
         )
 
         result = await attack._perform_async(context=context)

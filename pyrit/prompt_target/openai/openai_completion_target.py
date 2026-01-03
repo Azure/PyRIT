@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAICompletionTarget(OpenAITarget):
+    """A prompt target for OpenAI completion endpoints."""
 
     def __init__(
         self,
@@ -30,7 +31,7 @@ class OpenAICompletionTarget(OpenAITarget):
         Initialize the OpenAICompletionTarget with the given parameters.
 
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
                 If no value is provided, the OPENAI_COMPLETION_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
@@ -52,10 +53,14 @@ class OpenAICompletionTarget(OpenAITarget):
             presence_penalty (float, Optional): Number between -2.0 and 2.0. Positive values penalize new
                 tokens based on whether they appear in the text so far, increasing the model's likelihood to
                 talk about new topics.
+            frequency_penalty (float, Optional): Number between -2.0 and 2.0. Positive values penalize new
+                tokens based on their existing frequency in the text so far, decreasing the model's likelihood to
+                repeat the same line verbatim.
             n (int, Optional): How many completions to generate for each prompt.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                `httpx.AsyncClient()` constructor.
-                For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
+            *args: Variable length argument list passed to the parent class.
+            **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the ``httpx.AsyncClient()``
+                constructor. For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
         """
         super().__init__(*args, **kwargs)
 
@@ -70,6 +75,7 @@ class OpenAICompletionTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_COMPLETION_MODEL"
         self.endpoint_environment_variable = "OPENAI_COMPLETION_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_COMPLETION_API_KEY"
+        self.underlying_model_environment_variable = "OPENAI_COMPLETION_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -85,7 +91,15 @@ class OpenAICompletionTarget(OpenAITarget):
     @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously send a message to the OpenAI completion target.
 
+        Args:
+            message (Message): The message object containing the prompt to send.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+        """
         self._validate_request(message=message)
         message_piece = message.message_pieces[0]
 
@@ -141,5 +155,10 @@ class OpenAICompletionTarget(OpenAITarget):
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """
+        Check if the target supports JSON as a response format.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return False

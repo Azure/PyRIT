@@ -16,6 +16,9 @@ class MorseConverter(PromptConverter):
     Invalid or unsupported characters are replaced with an error sequence '........'.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(self, *, append_description: bool = False) -> None:
         """
         Initializes the converter with an option to append a description to the prompt.
@@ -48,12 +51,6 @@ class MorseConverter(PromptConverter):
         else:
             output_text = self._morse(prompt)
         return ConverterResult(output_text=output_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def _morse(self, text: str) -> str:
         text_clean = " ".join([line.strip() for line in str.splitlines(text)])

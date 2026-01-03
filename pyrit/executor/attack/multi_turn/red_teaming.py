@@ -33,7 +33,6 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -92,6 +91,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_turns: int = 10,
+        score_last_turn_only: bool = False,
     ):
         """
         Initialize the red teaming attack strategy.
@@ -103,6 +103,10 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             attack_scoring_config: Configuration for attack scoring. Defaults to None.
             prompt_normalizer: The prompt normalizer to use for sending prompts. Defaults to None.
             max_turns (int): Maximum number of turns for the attack. Defaults to 10.
+            score_last_turn_only (bool): If True, only score the final turn instead of every turn.
+                This reduces LLM calls when intermediate scores are not needed (e.g., for
+                generating simulated conversations). The attack will run for exactly max_turns
+                when this is enabled. Defaults to False.
 
         Raises:
             ValueError: If objective_scorer is not provided in attack_scoring_config.
@@ -154,6 +158,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             raise ValueError("Maximum turns must be a positive integer.")
 
         self._max_turns = max_turns
+        self._score_last_turn_only = score_last_turn_only
 
     def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
         """
@@ -232,9 +237,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         # update the turns based on prepend conversation
         context.executed_turns = conversation_state.turn_count
 
-        # update the custom prompt if provided
+        # update the custom message if provided
         if RedTeamingAttack._has_custom_prompt(state=conversation_state):
-            context.custom_prompt = conversation_state.last_user_message
+            context.next_message = Message.from_prompt(prompt=conversation_state.last_user_message, role="user")
 
         # get the last assistant message evaluation score if available
         score = self._retrieve_last_assistant_message_evaluation_score(state=conversation_state)
@@ -244,7 +249,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         context.memory_labels = combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels or {})
 
         # set the system prompt for the adversarial chat
-        system_prompt = self._adversarial_chat_system_prompt_template.render_template_value(objective=context.objective)
+        # Pass max_turns as well for templates that need it (e.g., Crescendo prompts)
+        # Templates that don't use max_turns will simply ignore it
+        system_prompt = self._adversarial_chat_system_prompt_template.render_template_value(
+            objective=context.objective,
+            max_turns=self._max_turns,
+        )
         if not system_prompt:
             raise ValueError("Adversarial chat system prompt must be defined")
 
@@ -254,6 +264,16 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
+
+        # Replay prepended conversation to adversarial chat so it has context
+        # This allows the adversarial chat to continue naturally from established context
+        if context.prepended_conversation:
+            await self._conversation_manager.prepend_to_adversarial_chat_async(
+                adversarial_chat=self._adversarial_chat,
+                adversarial_chat_conversation_id=context.session.adversarial_chat_conversation_id,
+                prepended_conversation=context.prepended_conversation,
+                labels=context.memory_labels,
+            )
 
     async def _perform_async(self, *, context: MultiTurnAttackContext) -> AttackResult:
         """
@@ -282,7 +302,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         achieved_objective = False
 
         # Execute conversation turns
-        while context.executed_turns < self._max_turns and not achieved_objective:
+        while context.executed_turns < self._max_turns and (self._score_last_turn_only or not achieved_objective):
             logger.info(f"Executing turn {context.executed_turns + 1}/{self._max_turns}")
 
             # Determine what to send next
@@ -293,11 +313,17 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
                 context=context, prompt=prompt_to_send
             )
 
-            # Score the response
-            context.last_score = await self._score_response_async(context=context)
+            # Determine if this is the last turn
+            is_last_turn = context.executed_turns + 1 >= self._max_turns
 
-            # Check if objective achieved
-            achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
+            # Score the response (conditionally based on score_last_turn_only)
+            if not self._score_last_turn_only or is_last_turn:
+                context.last_score = await self._score_response_async(context=context)
+                # Check if objective achieved
+                achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
+            else:
+                # Skip scoring on intermediate turns when score_last_turn_only is True
+                context.last_score = None
 
             # Increment the executed turns
             context.executed_turns += 1
@@ -336,12 +362,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         Raises:
             ValueError: If no response is received from the adversarial chat.
         """
-        # If custom prompt provided, use it and clear it
-        if context.custom_prompt:
-            logger.debug("Using custom prompt")
-            prompt = context.custom_prompt
+        # If custom message provided, use it and bypass adversarial chat generation
+        if context.next_message:
+            logger.debug("Using custom message, bypassing adversarial chat")
+            prompt = context.next_message.message_pieces[0].converted_value
             # Clear to prevent reuse
-            context.custom_prompt = None
+            context.next_message = None
             return prompt
 
         # Generate prompt using adversarial chat
@@ -352,10 +378,10 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         # Send the prompt to the adversarial chat and get the response
         logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
-        prompt_grp = SeedGroup(seeds=[SeedPrompt(value=prompt_text, data_type="text")])
+        prompt_message = Message.from_prompt(prompt=prompt_text, role="user")
 
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=prompt_grp,
+            message=prompt_message,
             conversation_id=context.session.adversarial_chat_conversation_id,
             target=self._adversarial_chat,
             attack_identifier=self.get_identifier(),
@@ -499,13 +525,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         """
         logger.info(f"Sending prompt to target: {prompt[:50]}...")
 
-        # Create a seed group from the prompt
-        seed_prompt = SeedPrompt(value=prompt, data_type="text")
-        seed_group = SeedGroup(seeds=[seed_prompt])
+        # Create a message from the prompt
+        message = Message.from_prompt(prompt=prompt, role="user")
 
         # Send the prompt to the target
         response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=seed_group,
+            message=message,
             conversation_id=context.session.conversation_id,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,

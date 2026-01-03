@@ -8,6 +8,7 @@ from typing import Optional
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
@@ -17,13 +18,15 @@ from pyrit.models import (
     AttackResult,
     Message,
     SeedDataset,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
+
+# SkeletonKeyAttack does not support prepended conversations
+# as it manages its own conversation flow with the skeleton key prompt.
+SkeletonKeyAttackParameters = AttackParameters.excluding("prepended_conversation", "next_message")
 
 
 class SkeletonKeyAttack(PromptSendingAttack):
@@ -76,6 +79,7 @@ class SkeletonKeyAttack(PromptSendingAttack):
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
+            params_type=SkeletonKeyAttackParameters,
         )
 
         # Load skeleton key prompt
@@ -95,26 +99,6 @@ class SkeletonKeyAttack(PromptSendingAttack):
             return skeleton_key_prompt
 
         return SeedDataset.from_yaml_file(self.DEFAULT_SKELETON_KEY_PROMPT_PATH).prompts[0].value
-
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
-        """
-        Validate the context for the skeleton key attack.
-        This attack does not support prepended conversations, so it raises an error if one exists.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context to validate.
-
-        Raises:
-            ValueError: If the context has a prepended conversation.
-        """
-        # Call parent validation first
-        super()._validate_context(context=context)
-
-        if context.prepended_conversation:
-            raise ValueError(
-                "Skeleton key attack does not support prepended conversations. "
-                "Please clear the prepended conversation before starting the attack."
-            )
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
@@ -163,12 +147,12 @@ class SkeletonKeyAttack(PromptSendingAttack):
         """
         self._logger.debug("Sending skeleton key prompt to target")
 
-        # Create seed group for skeleton key
-        skeleton_key_prompt_group = SeedGroup(seeds=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")])
+        # Create message for skeleton key
+        skeleton_key_message = Message.from_prompt(prompt=self._skeleton_key_prompt, role="user")
 
         # Send skeleton key prompt
         skeleton_response = await self._send_prompt_to_objective_target_async(
-            prompt_group=skeleton_key_prompt_group, context=context
+            message=skeleton_key_message, context=context
         )
 
         if skeleton_response:

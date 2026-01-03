@@ -9,13 +9,18 @@ import requests
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import JAILBREAK_TEMPLATES_PATH
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn import SingleTurnAttackContext
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import AttackResult, SeedGroup, SeedPrompt
+from pyrit.models import AttackResult, Message, SeedPrompt
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
+
+# ManyShotJailbreakAttack does not support prepended conversations
+# as it constructs its own prompt format with examples.
+ManyShotJailbreakParameters = AttackParameters.excluding("prepended_conversation", "next_message")
 
 
 def fetch_many_shot_jailbreaking_dataset() -> list[dict[str, str]]:
@@ -73,6 +78,7 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
             attack_scoring_config=attack_scoring_config,
             prompt_normalizer=prompt_normalizer,
             max_attempts_on_failure=max_attempts_on_failure,
+            params_type=ManyShotJailbreakParameters,
         )
 
         # Template for the faux dialogue to be prepended
@@ -87,20 +93,6 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
         if not self._examples:
             raise ValueError("Many shot examples must be provided.")
 
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
-        """
-        Validate the context before executing the attack.
-
-        Args:
-            context (SingleTurnAttackContext): The attack context containing parameters and objective.
-
-        Raises:
-            ValueError: If the context is invalid.
-        """
-        if context.prepended_conversation:
-            raise ValueError("ManyShotJailbreakAttack does not support prepended conversations.")
-        super()._validate_context(context=context)
-
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
         """
         Perform the ManyShotJailbreakAttack.
@@ -112,8 +104,6 @@ class ManyShotJailbreakAttack(PromptSendingAttack):
             AttackResult: The result of the attack.
         """
         many_shot_prompt = self._template.render_template_value(prompt=context.objective, examples=self._examples)
-        seed_group = SeedGroup(seeds=[SeedPrompt(value=many_shot_prompt, data_type="text")])
-
-        context.seed_group = seed_group
+        context.next_message = Message.from_prompt(prompt=many_shot_prompt, role="user")
 
         return await super()._perform_async(context=context)

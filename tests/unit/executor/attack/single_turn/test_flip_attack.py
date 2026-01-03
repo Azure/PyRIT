@@ -8,6 +8,7 @@ import pytest
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     FlipAttack,
     SingleTurnAttackContext,
@@ -15,8 +16,6 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    Message,
-    MessagePiece,
 )
 from pyrit.prompt_converter import FlipConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -50,7 +49,10 @@ def mock_scorer():
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return SingleTurnAttackContext(objective="How can I kill a Python process?", conversation_id=str(uuid.uuid4()))
+    return SingleTurnAttackContext(
+        params=AttackParameters(objective="How can I kill a Python process?"),
+        conversation_id=str(uuid.uuid4()),
+    )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -117,22 +119,29 @@ class TestFlipAttackInitialization:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestFlipAttackValidation:
-    """Tests for context validation"""
+class TestFlipAttackParamsType:
+    """Tests for params_type in FlipAttack"""
 
-    def test_validate_context_raises_error_with_prepended_conversation(self, flip_attack):
-        """Test that validation fails if prepended conversation is provided"""
-        context = SingleTurnAttackContext(
-            objective="Test objective", conversation_id=str(uuid.uuid4()), prepended_conversation=[MagicMock()]
-        )
+    def test_params_type_excludes_next_message(self, flip_attack):
+        """Test that params_type excludes next_message field"""
+        import dataclasses
 
-        with pytest.raises(ValueError, match="FlipAttack does not support prepended conversations"):
-            flip_attack._validate_context(context=context)
+        fields = {f.name for f in dataclasses.fields(flip_attack.params_type)}
+        assert "next_message" not in fields
 
-    def test_validate_context_passes_without_prepended_conversation(self, flip_attack, basic_context):
-        """Test that validation passes when no prepended conversation is provided"""
-        # Should not raise any exception
-        flip_attack._validate_context(context=basic_context)
+    def test_params_type_excludes_prepended_conversation(self, flip_attack):
+        """Test that params_type excludes prepended_conversation field"""
+        import dataclasses
+
+        fields = {f.name for f in dataclasses.fields(flip_attack.params_type)}
+        assert "prepended_conversation" not in fields
+
+    def test_params_type_includes_objective(self, flip_attack):
+        """Test that params_type includes objective field"""
+        import dataclasses
+
+        fields = {f.name for f in dataclasses.fields(flip_attack.params_type)}
+        assert "objective" in fields
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -174,10 +183,8 @@ class TestFlipAttackExecution:
     @pytest.mark.asyncio
     async def test_perform_attack_formats_objective_correctly(self, flip_attack, basic_context):
         """Test that the objective is formatted with the special TASK format"""
-        objective = "How can I kill a Python process?"
+        # basic_context fixture already has objective="How can I kill a Python process?"
         expected_prompt = "TASK is '⟪How can I kill a Python process?⟫'"
-
-        basic_context.objective = objective
 
         # Mock the parent's perform_attack_async
         with patch.object(
@@ -185,7 +192,7 @@ class TestFlipAttackExecution:
         ) as mock_perform:
             mock_result = AttackResult(
                 conversation_id=basic_context.conversation_id,
-                objective=objective,
+                objective=basic_context.objective,
                 attack_identifier=flip_attack.get_identifier(),
                 outcome=AttackOutcome.SUCCESS,
             )
@@ -193,11 +200,11 @@ class TestFlipAttackExecution:
 
             result = await flip_attack._perform_async(context=basic_context)
 
-            # Verify the seed prompt was set correctly
-            assert basic_context.seed_group is not None
-            assert len(basic_context.seed_group.prompts) == 1
-            assert basic_context.seed_group.prompts[0].value == expected_prompt
-            assert basic_context.seed_group.prompts[0].data_type == "text"
+            # Verify the message was set correctly
+            assert basic_context.next_message is not None
+            assert len(basic_context.next_message.message_pieces) == 1
+            assert basic_context.next_message.message_pieces[0].original_value == expected_prompt
+            assert basic_context.next_message.message_pieces[0].original_value_data_type == "text"
 
             # Verify parent method was called
             mock_perform.assert_called_once_with(context=basic_context)
@@ -233,26 +240,3 @@ class TestAttackLifecycle:
         attack._setup_async.assert_called_once_with(context=basic_context)
         attack._perform_async.assert_called_once_with(context=basic_context)
         attack._teardown_async.assert_called_once_with(context=basic_context)
-
-    @pytest.mark.asyncio
-    async def test_execute_async_validation_failure_prevents_execution(self, mock_objective_target, basic_context):
-        attack = FlipAttack(objective_target=mock_objective_target)
-
-        # Context with prepended conversation
-        basic_context.prepended_conversation = [
-            Message(message_pieces=[MessagePiece(role="user", original_value="Test prepended conversation")])
-        ]
-        attack._setup_async = AsyncMock()
-        attack._perform_async = AsyncMock()
-        attack._teardown_async = AsyncMock()
-
-        # Should raise ValueError since prepended conversation is not allowed
-        with pytest.raises(ValueError) as exc_info:
-            await attack.execute_with_context_async(context=basic_context)
-
-        # Verify error details
-        assert "Strategy context validation failed for FlipAttack" in str(exc_info.value)
-
-        attack._setup_async.assert_not_called()
-        attack._perform_async.assert_not_called()
-        attack._teardown_async.assert_not_called()

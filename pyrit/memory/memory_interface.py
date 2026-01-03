@@ -3,7 +3,6 @@
 
 import abc
 import atexit
-import copy
 import logging
 import uuid
 import weakref
@@ -33,7 +32,6 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AttackResult,
-    ChatMessage,
     DataTypeSerializer,
     Message,
     MessagePiece,
@@ -472,7 +470,7 @@ class MemoryInterface(abc.ABC):
         Raises:
             ValueError: If the response is not from an assistant role or has no preceding request.
         """
-        if response.role != "assistant":
+        if response.api_role != "assistant":
             raise ValueError("The provided request is not a response (role must be 'assistant').")
         if response.sequence < 1:
             raise ValueError("The provided request does not have a preceding request (sequence < 1).")
@@ -564,45 +562,49 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve prompts with error {e}")
             raise
 
-    def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
+    def _duplicate_conversation(self, *, messages: Sequence[Message]) -> tuple[str, Sequence[MessagePiece]]:
+        """
+        Duplicate messages with new conversation ID.
+
+        Args:
+            messages (Sequence[Message]): The messages to duplicate.
+
+        Returns:
+            tuple[str, Sequence[MessagePiece]]: The new conversation ID and the duplicated message pieces.
+        """
+        new_conversation_id = str(uuid.uuid4())
+
+        all_pieces: list[MessagePiece] = []
+        for message in messages:
+            duplicated_message = message.duplicate_message()
+
+            for piece in duplicated_message.message_pieces:
+                piece.conversation_id = new_conversation_id
+
+            all_pieces.extend(duplicated_message.message_pieces)
+
+        return new_conversation_id, all_pieces
+
+    def duplicate_conversation(self, *, conversation_id: str) -> str:
         """
         Duplicate a conversation for reuse.
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
-        One cannot continue both branches with the same attack and conversation IDs since that would corrupt
-        the memory. Instead, one needs to duplicate the conversation and continue with the new attack ID.
+        One cannot continue both branches with the same conversation ID since that would corrupt
+        the memory. Instead, one needs to duplicate the conversation and continue with the new conversation ID.
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
-                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
 
         Returns:
             The uuid for the new conversation.
-
-        Raises:
-            ValueError: If the new attack ID is the same as the existing attack ID.
         """
-        new_conversation_id = str(uuid.uuid4())
-        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
-        for piece in message_pieces:
-            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
-            piece.id = uuid.uuid4()
-            if piece.attack_identifier["id"] == new_attack_id:
-                raise ValueError("The new attack ID must be different from the existing attack ID.")
-
-            if new_attack_id:
-                piece.attack_identifier["id"] = new_attack_id
-
-            piece.conversation_id = new_conversation_id
-
-        self.add_message_pieces_to_memory(message_pieces=message_pieces)
+        messages = self.get_conversation(conversation_id=conversation_id)
+        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages)
+        self.add_message_pieces_to_memory(message_pieces=all_pieces)
         return new_conversation_id
 
-    def duplicate_conversation_excluding_last_turn(
-        self, *, conversation_id: str, new_attack_id: Optional[str] = None
-    ) -> str:
+    def duplicate_conversation_excluding_last_turn(self, *, conversation_id: str) -> str:
         """
         Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
         user request (e.g. if there is half a turn, it just removes that half).
@@ -611,43 +613,31 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
-                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
 
         Returns:
             The uuid for the new conversation.
         """
-        new_conversation_id = str(uuid.uuid4())
-        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
+        messages = self.get_conversation(conversation_id=conversation_id)
 
         # remove the final turn from the conversation
-        if len(message_pieces) == 0:
-            return new_conversation_id
+        if len(messages) == 0:
+            return str(uuid.uuid4())
 
-        last_prompt = max(message_pieces, key=lambda x: x.sequence)
+        last_message = messages[-1]
 
         length_of_sequence_to_remove = 0
 
-        if last_prompt.role == "system" or last_prompt.role == "user":
+        if last_message.api_role == "system" or last_message.api_role == "user":
             length_of_sequence_to_remove = 1
         else:
             length_of_sequence_to_remove = 2
 
-        message_pieces = [
-            message_piece
-            for message_piece in message_pieces
-            if message_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
+        messages_to_duplicate = [
+            message for message in messages if message.sequence <= last_message.sequence - length_of_sequence_to_remove
         ]
 
-        for piece in message_pieces:
-            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
-            piece.id = uuid.uuid4()
-            if new_attack_id:
-                piece.attack_identifier["id"] = new_attack_id
-            piece.conversation_id = new_conversation_id
-
-        self.add_message_pieces_to_memory(message_pieces=message_pieces)
+        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages_to_duplicate)
+        self.add_message_pieces_to_memory(message_pieces=all_pieces)
 
         return new_conversation_id
 
@@ -775,19 +765,6 @@ class MemoryInterface(abc.ABC):
 
         # Ensure cleanup happens even if the object is garbage collected before process exits
         weakref.finalize(self, self.dispose_engine)
-
-    def get_chat_messages_with_conversation_id(self, *, conversation_id: str) -> Sequence[ChatMessage]:
-        """
-        Return the memory for a given conversation_id.
-
-        Args:
-            conversation_id (str): The conversation ID.
-
-        Returns:
-            Sequence[ChatMessage]: The list of chat messages.
-        """
-        memory_entries = self.get_message_pieces(conversation_id=conversation_id)
-        return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
 
     def get_seeds(
         self,
@@ -1420,7 +1397,11 @@ class MemoryInterface(abc.ABC):
             conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))  # type: ignore
 
         if scenario_name:
-            conditions.append(ScenarioResultEntry.scenario_name.contains(scenario_name))  # type: ignore
+            # Normalize CLI snake_case names (e.g., "foundry" or "content_harms")
+            # to class names (e.g., "Foundry" or "ContentHarms")
+            # This allows users to query with either format
+            normalized_name = ScenarioResult.normalize_scenario_name(scenario_name)
+            conditions.append(ScenarioResultEntry.scenario_name.contains(normalized_name))  # type: ignore
 
         if scenario_version is not None:
             conditions.append(ScenarioResultEntry.scenario_version == scenario_version)  # type: ignore

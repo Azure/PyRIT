@@ -60,12 +60,13 @@ class CharSwapConverter(WordLevelConverter):
             str: The perturbed word with swapped characters.
         """
         if word not in string.punctuation and len(word) > 3:
-            idx1 = random.randint(1, len(word) - 2)
             idx_elements = list(word)
-            # Swap characters
-            idx_elements[idx1], idx_elements[idx1 + 1] = (
-                idx_elements[idx1 + 1],
-                idx_elements[idx1],
-            )
+            for _ in range(self.max_iterations):
+                idx1 = random.randint(1, len(word) - 2)
+                # Swap characters
+                idx_elements[idx1], idx_elements[idx1 + 1] = (
+                    idx_elements[idx1 + 1],
+                    idx_elements[idx1],
+                )
             return "".join(idx_elements)
         return word

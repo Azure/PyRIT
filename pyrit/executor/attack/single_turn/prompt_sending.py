@@ -3,12 +3,13 @@
 
 import logging
 import uuid
-from typing import Optional
+from typing import Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
@@ -20,8 +21,6 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -58,6 +57,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
+        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -68,12 +68,20 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
             max_attempts_on_failure (int): Maximum number of attempts to retry on failure.
+            params_type (Type[AttackParamsT]): The type of parameters this strategy accepts.
+                Defaults to AttackParameters. Use AttackParameters.excluding() to create
+                a params type that rejects certain fields.
 
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(objective_target=objective_target, logger=logger, context_type=SingleTurnAttackContext)
+        super().__init__(
+            objective_target=objective_target,
+            logger=logger,
+            context_type=SingleTurnAttackContext,
+            params_type=params_type,
+        )
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -176,15 +184,15 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # 6) After retries are exhausted, compile the final response and score
         # 7) Return an AttackResult object that captures the outcome of the attack
 
-        # Prepare the prompt
-        prompt_group = self._get_prompt_group(context)
-
         # Execute with retries
         for attempt in range(self._max_attempts_on_failure + 1):
             self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
 
+            # Prepare a fresh message for each attempt to avoid duplicate ID errors in database
+            message = self._get_message(context)
+
             # Send the prompt
-            response = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
+            response = await self._send_prompt_to_objective_target_async(message=message, context=context)
             if not response:
                 self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
@@ -264,33 +272,34 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Nothing to be done here, no-op
         pass
 
-    def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedGroup:
+    def _get_message(self, context: SingleTurnAttackContext) -> Message:
         """
-        Prepare the seed group for the attack.
+        Prepare the message for the attack.
 
-        If a seed_group is provided in the context, it will be used directly.
-        Otherwise, creates a new SeedGroup with the objective as a text prompt.
+        If a message is provided in the context, it will be used directly.
+        Otherwise, creates a new Message from the objective as a text prompt.
 
         Args:
             context (SingleTurnAttackContext): The attack context containing the objective
-                and optionally a pre-configured seed_group.
+                and optionally a pre-configured message template.
 
         Returns:
-            SeedGroup: The seed group to be used in the attack.
+            Message: The message to be used in the attack.
         """
-        if context.seed_group:
-            return context.seed_group
+        if context.next_message:
+            # Deep copy the message to preserve all fields, then assign new IDs
+            return context.next_message.duplicate_message()
 
-        return SeedGroup(seeds=[SeedPrompt(value=context.objective, data_type="text")])
+        return Message.from_prompt(prompt=context.objective, role="user")
 
     async def _send_prompt_to_objective_target_async(
-        self, *, prompt_group: SeedGroup, context: SingleTurnAttackContext
+        self, *, message: Message, context: SingleTurnAttackContext
     ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
         Args:
-            prompt_group (SeedGroup): The seed group to send.
+            message (Message): The message to send.
             context (SingleTurnAttackContext): The attack context containing parameters and labels.
 
         Returns:
@@ -298,7 +307,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 the request was filtered, blocked, or encountered an error.
         """
         return await self._prompt_normalizer.send_prompt_async(
-            seed_group=prompt_group,
+            message=message,
             target=self._objective_target,
             conversation_id=context.conversation_id,
             request_converter_configurations=self._request_converters,

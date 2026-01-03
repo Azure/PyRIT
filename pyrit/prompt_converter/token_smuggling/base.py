@@ -19,6 +19,9 @@ class SmugglerConverter(PromptConverter, abc.ABC):
     implementation of encode_message and decode_message in subclasses.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(self, action: Literal["encode", "decode"] = "encode") -> None:
         """
         Initializes the converter with options for encoding/decoding.

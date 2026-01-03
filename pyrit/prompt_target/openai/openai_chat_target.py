@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, MutableSequence, Optional
+from typing import Any, Dict, MutableSequence, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -17,6 +17,7 @@ from pyrit.models import (
     MessagePiece,
     construct_response_from_request,
 )
+from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target import (
     OpenAITarget,
     PromptChatTarget,
@@ -29,15 +30,14 @@ logger = logging.getLogger(__name__)
 
 class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     """
-    This class facilitates multimodal (image and text) input and text output generation.
+    Facilitates multimodal (image and text) input and text output generation.
 
     This works with GPT3.5, GPT4, GPT4o, GPT-V, and other compatible models
 
     Args:
         api_key (str): The api key for the OpenAI API
         endpoint (str): The endpoint for the OpenAI API
-        model_name (str): The model name for the OpenAI API
-        deployment_name (str): For Azure, the deployment name
+        model_name (str): The model name for the OpenAI API (or deployment name in Azure)
         temperature (float): The temperature for the completion
         max_completion_tokens (int): The maximum number of tokens to be returned by the model.
             The total length of input tokens and generated tokens is limited by
@@ -115,9 +115,9 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
-                `httpx.AsyncClient()` constructor.
-                For example, to specify a 3 minute timeout: httpx_client_kwargs={"timeout": 180}
+            **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
+            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the ``httpx.AsyncClient()``
+                constructor. For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
 
         Raises:
             PyritException: If the temperature or top_p values are out of bounds.
@@ -149,10 +149,15 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._n = n
         self._extra_body_parameters = extra_body_parameters
 
-    def _set_openai_env_configuration_vars(self):
+    def _set_openai_env_configuration_vars(self) -> None:
+        """
+        Set deployment_environment_variable, endpoint_environment_variable,
+        and api_key_environment_variable which are read from .env file.
+        """
         self.model_name_environment_variable = "OPENAI_CHAT_MODEL"
         self.endpoint_environment_variable = "OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_CHAT_KEY"
+        self.underlying_model_environment_variable = "OPENAI_CHAT_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -182,8 +187,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
-
-        is_json_response = self.is_response_format_json(message_piece)
+        json_config = self._get_json_response_config(message_piece=message_piece)
 
         # Get conversation from memory and append the current message
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
@@ -191,7 +195,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {message}")
 
-        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+        body = await self._construct_request_body(conversation=conversation, json_config=json_config)
 
         # Use unified error handling - automatically detects ChatCompletion and validates
         response = await self._handle_openai_request(
@@ -238,7 +242,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             EmptyResponseException: When the API returns an empty response.
         """
         # Check for missing choices
-        if not response.choices:
+        if not hasattr(response, "choices") or not response.choices:
             raise PyritException(message="No choices returned in the completion response.")
 
         choice = response.choices[0]
@@ -275,12 +279,17 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         return construct_response_from_request(request=request, response_text_pieces=[extracted_response])
 
     def is_json_response_supported(self) -> bool:
-        """Indicates that this target supports JSON response format."""
+        """
+        Check if the target supports JSON as a response format.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
         return self._is_json_supported
 
     async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries.
+        Build chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
@@ -295,10 +304,10 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
         """
-        Checks if the message piece is in text message format.
+        Check if the message piece is in text message format.
 
         Args:
-            conversation list[Message]: The conversation
+            conversation (list[Message]): The conversation
 
         Returns:
             bool: True if the message piece is in text message format, False otherwise.
@@ -312,7 +321,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries. This is needed because many
+        Build chat messages based on message entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted).
 
         Args:
@@ -320,6 +329,10 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         Returns:
             list[dict]: The list of constructed chat messages.
+
+        Raises:
+            ValueError: If any message does not have exactly one text piece.
+            ValueError: If any message piece is not of type text.
         """
         chat_messages: list[dict] = []
         for message in conversation:
@@ -333,20 +346,24 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             if message_piece.converted_value_data_type != "text":
                 raise ValueError("_build_chat_messages_for_text only supports text.")
 
-            chat_message = ChatMessage(role=message_piece.role, content=message_piece.converted_value)
+            chat_message = ChatMessage(role=message_piece.api_role, content=message_piece.converted_value)
             chat_messages.append(chat_message.model_dump(exclude_none=True))
 
         return chat_messages
 
     async def _build_chat_messages_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> list[dict]:
         """
-        Builds chat messages based on message entries.
+        Build chat messages based on message entries.
 
         Args:
             conversation (list[Message]): A list of Message objects.
 
         Returns:
             list[dict]: The list of constructed chat messages.
+
+        Raises:
+            ValueError: If any message does not have a role.
+            ValueError: If any message piece has an unsupported data type.
         """
         chat_messages: list[dict] = []
         for message in conversation:
@@ -355,7 +372,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             content = []
             role = None
             for message_piece in message_pieces:
-                role = message_piece.role
+                role = message_piece.api_role
                 if message_piece.converted_value_data_type == "text":
                     entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)
@@ -376,8 +393,11 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: _JsonResponseConfig
+    ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
+        response_format = self._build_response_format(json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -391,7 +411,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             "seed": self._seed,
             "n": self._n,
             "messages": messages,
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "response_format": response_format,
         }
 
         if self._extra_body_parameters:
@@ -403,7 +423,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     def _validate_request(self, *, message: Message) -> None:
         """
-        Validates the structure and content of a message for compatibility of this target.
+        Validate the structure and content of a message for compatibility of this target.
 
         Args:
             message (Message): The message object.
@@ -419,3 +439,19 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
+
+    def _build_response_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+
+        if json_config.schema:
+            return {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
+                },
+            }
+
+        return {"type": "json_object"}

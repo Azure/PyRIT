@@ -11,6 +11,7 @@ import yaml
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     RolePlayAttack,
     SingleTurnAttackContext,
@@ -18,10 +19,7 @@ from pyrit.executor.attack import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    Message,
     Score,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -104,7 +102,10 @@ def role_play_attack(mock_objective_target, mock_adversarial_chat_target, role_p
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return SingleTurnAttackContext(objective="test objective", conversation_id=str(uuid.uuid4()))
+    return SingleTurnAttackContext(
+        params=AttackParameters(objective="test objective"),
+        conversation_id=str(uuid.uuid4()),
+    )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -299,29 +300,29 @@ class TestRolePlayAttack:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestRolePlayAttackContextValidation:
-    """Tests for context validation in RolePlayAttack"""
+class TestRolePlayAttackParamsType:
+    """Tests for params_type in RolePlayAttack"""
 
-    def test_validate_context_rejects_seed_group(self, role_play_attack, basic_context):
-        """Test that validation rejects seed_group parameter"""
-        basic_context.seed_group = SeedGroup(seeds=[SeedPrompt(value="test", data_type="text")])
+    def test_params_type_excludes_next_message(self, role_play_attack):
+        """Test that params_type excludes next_message field"""
+        import dataclasses
 
-        with pytest.raises(ValueError, match="does not accept a seed_group parameter"):
-            role_play_attack._validate_context(context=basic_context)
+        fields = {f.name for f in dataclasses.fields(role_play_attack.params_type)}
+        assert "next_message" not in fields
 
-    def test_validate_context_rejects_prepended_conversation(self, role_play_attack, basic_context):
-        """Test that validation rejects prepended_conversation parameter"""
-        basic_context.prepended_conversation = [
-            Message.from_prompt(prompt="test", role="user"),
-        ]
+    def test_params_type_excludes_prepended_conversation(self, role_play_attack):
+        """Test that params_type excludes prepended_conversation field"""
+        import dataclasses
 
-        with pytest.raises(ValueError, match="does not accept prepended_conversation parameter"):
-            role_play_attack._validate_context(context=basic_context)
+        fields = {f.name for f in dataclasses.fields(role_play_attack.params_type)}
+        assert "prepended_conversation" not in fields
 
-    def test_validate_context_accepts_valid_context(self, role_play_attack, basic_context):
-        """Test that validation accepts valid context without seed_group or prepended_conversation"""
-        # Should not raise any exception
-        role_play_attack._validate_context(context=basic_context)
+    def test_params_type_includes_objective(self, role_play_attack):
+        """Test that params_type includes objective field"""
+        import dataclasses
+
+        fields = {f.name for f in dataclasses.fields(role_play_attack.params_type)}
+        assert "objective" in fields
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -377,11 +378,11 @@ class TestRolePlayAttackSetup:
         # Verify converter was called with the objective
         mock_convert.assert_called_once_with(prompt=basic_context.objective, input_type="text")
 
-        # Verify seed_group was created with rephrased objective
-        assert basic_context.seed_group is not None
-        assert len(basic_context.seed_group.seeds) == 1
-        assert basic_context.seed_group.seeds[0].value == rephrased_text
-        assert basic_context.seed_group.seeds[0].data_type == "text"
+        # Verify message was created with rephrased objective
+        assert basic_context.next_message is not None
+        assert len(basic_context.next_message.message_pieces) == 1
+        assert basic_context.next_message.message_pieces[0].original_value == rephrased_text
+        assert basic_context.next_message.message_pieces[0].original_value_data_type == "text"
 
     @pytest.mark.asyncio
     async def test_setup_calls_parent_setup(self, role_play_attack, basic_context):

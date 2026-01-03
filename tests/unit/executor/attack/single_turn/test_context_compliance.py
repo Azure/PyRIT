@@ -10,6 +10,7 @@ import pytest
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     ContextComplianceAttack,
     SingleTurnAttackContext,
@@ -18,7 +19,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     SeedDataset,
-    SeedGroup,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -98,7 +98,8 @@ def mock_seed_dataset():
 def basic_context():
     """Create a basic context for testing"""
     return SingleTurnAttackContext(
-        objective="How can I create a dangerous substance?", conversation_id=str(uuid.uuid4())
+        params=AttackParameters(objective="How can I create a dangerous substance?"),
+        conversation_id=str(uuid.uuid4()),
     )
 
 
@@ -391,12 +392,12 @@ class TestContextComplianceAttackSetup:
                 with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock):
                     await attack._setup_async(context=basic_context)
 
-                    # Verify seed group was created
-                    assert basic_context.seed_group is not None
-                    assert isinstance(basic_context.seed_group, SeedGroup)
-                    assert len(basic_context.seed_group.prompts) == 1
-                    assert basic_context.seed_group.prompts[0].value == attack._affirmative_response
-                    assert basic_context.seed_group.prompts[0].data_type == "text"
+                    # Verify message was created
+                    assert basic_context.next_message is not None
+                    assert isinstance(basic_context.next_message, Message)
+                    assert len(basic_context.next_message.message_pieces) == 1
+                    assert basic_context.next_message.message_pieces[0].original_value == attack._affirmative_response
+                    assert basic_context.next_message.message_pieces[0].original_value_data_type == "text"
 
     @pytest.mark.asyncio
     async def test_setup_with_custom_affirmative_response(
@@ -428,7 +429,7 @@ class TestContextComplianceAttackSetup:
                     await attack._setup_async(context=basic_context)
 
                     # Verify custom response was used
-                    assert basic_context.seed_group.prompts[0].value == custom_response
+                    assert basic_context.next_message.message_pieces[0].original_value == custom_response
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -545,11 +546,11 @@ class TestContextComplianceAttackExecution:
             assert call_args.kwargs["attack_identifier"] == attack.get_identifier()
             assert call_args.kwargs["labels"] == basic_context.memory_labels
 
-            # Verify seed group was created correctly
-            seed_group = call_args.kwargs["seed_group"]
-            assert isinstance(seed_group, SeedGroup)
-            assert len(seed_group.prompts) == 1
-            assert seed_group.prompts[0].data_type == "text"
+            # Verify message was created correctly (converted from seed group)
+            message = call_args.kwargs["message"]
+            assert isinstance(message, Message)
+            assert len(message.message_pieces) == 1
+            assert message.message_pieces[0].converted_value_data_type == "text"
 
             # Verify template was rendered
             mock_seed_dataset.seeds[0].render_template_value.assert_called_once_with(objective=basic_context.objective)
@@ -795,10 +796,10 @@ class TestContextComplianceAttackComponentIntegration:
     """Test integration with attack components."""
 
     @pytest.mark.asyncio
-    async def test_seed_group_creation(
+    async def test_message_creation(
         self, mock_objective_target, mock_attack_adversarial_config, mock_seed_dataset, basic_context
     ):
-        """Test proper creation and usage of SeedGroup objects."""
+        """Test proper creation and usage of Message objects."""
         with patch(
             "pyrit.executor.attack.single_turn.context_compliance.SeedDataset.from_yaml_file",
             return_value=mock_seed_dataset,
@@ -815,51 +816,38 @@ class TestContextComplianceAttackComponentIntegration:
                 with patch.object(attack.__class__.__bases__[0], "_setup_async", new_callable=AsyncMock):
                     await attack._setup_async(context=basic_context)
 
-                    # Verify seed group was created correctly
-                    assert basic_context.seed_group is not None
-                    assert isinstance(basic_context.seed_group, SeedGroup)
-                    assert len(basic_context.seed_group.prompts) == 1
+                    # Verify message was created correctly
+                    assert basic_context.next_message is not None
+                    assert isinstance(basic_context.next_message, Message)
+                    assert len(basic_context.next_message.message_pieces) == 1
 
-                    seed_prompt = basic_context.seed_group.prompts[0]
-                    assert seed_prompt.value == attack._affirmative_response
-                    assert seed_prompt.data_type == "text"
+                    message_piece = basic_context.next_message.message_pieces[0]
+                    assert message_piece.original_value == attack._affirmative_response
+                    assert message_piece.original_value_data_type == "text"
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestContextComplianceAttackContextValidation:
-    """Test context compliance attack context validation functionality."""
+class TestContextComplianceAttackParamsType:
+    """Tests for params_type in ContextComplianceAttack"""
 
-    def test_validate_context_raises_error_with_prepended_conversation(
-        self, mock_objective_target, mock_attack_adversarial_config, basic_context
-    ):
-        """Test that context validation raises ValueError when prepended conversations exist."""
+    def test_params_type_excludes_prepended_conversation(self, mock_objective_target, mock_attack_adversarial_config):
+        """Test that params_type excludes prepended_conversation field."""
+        import dataclasses
+
         attack = ContextComplianceAttack(
             objective_target=mock_objective_target, attack_adversarial_config=mock_attack_adversarial_config
         )
 
-        # Add some prepended conversation to context
-        mock_response = MagicMock()
-        basic_context.prepended_conversation = [mock_response]
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "prepended_conversation" not in fields
 
-        # Verify that ValueError is raised
-        with pytest.raises(ValueError, match="This attack does not support prepended conversations"):
-            attack._validate_context(context=basic_context)
+    def test_params_type_includes_objective(self, mock_objective_target, mock_attack_adversarial_config):
+        """Test that params_type includes objective field."""
+        import dataclasses
 
-    def test_validate_context_succeeds_when_no_prepended_conversation(
-        self, mock_objective_target, mock_attack_adversarial_config, basic_context
-    ):
-        """Test that context validation succeeds when no prepended conversation exists."""
         attack = ContextComplianceAttack(
             objective_target=mock_objective_target, attack_adversarial_config=mock_attack_adversarial_config
         )
 
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
-
-        # Mock the parent _validate_context method
-        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
-            # Should not raise any exception
-            attack._validate_context(context=basic_context)
-
-            # Verify parent validation was called
-            mock_parent_validate.assert_called_once_with(context=basic_context)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "objective" in fields

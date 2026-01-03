@@ -31,15 +31,15 @@ Examples:
   pyrit_scan --list-initializers
 
   # Run a scenario with built-in initializers
-  pyrit_scan foundry_scenario --initializers openai_objective_target load_default_datasets
+  pyrit_scan foundry --initializers openai_objective_target load_default_datasets
 
   # Run with custom initialization scripts
-  pyrit_scan garak.encoding_scenario --initialization-scripts ./my_config.py
+  pyrit_scan garak.encoding --initialization-scripts ./my_config.py
 
   # Run specific strategies or options
-  pyrit scan foundry_scenario --strategies base64 rot13 --initializers openai_objective_target
-  pyrit_scan foundry_scenario --initializers openai_objective_target --max-concurrency 10 --max-retries 3
-  pyrit_scan garak.encoding_scenario --initializers openai_objective_target --memory-labels '{"run_id":"test123"}'
+  pyrit scan foundry --strategies base64 rot13 --initializers openai_objective_target
+  pyrit_scan foundry --initializers openai_objective_target --max-concurrency 10 --max-retries 3
+  pyrit_scan garak.encoding --initializers openai_objective_target --memory-labels '{"run_id":"test123"}'
 """,
         formatter_class=RawDescriptionHelpFormatter,
     )
@@ -95,6 +95,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--env-files",
+        type=str,
+        nargs="+",
+        help=frontend_core.ARG_HELP["env_files"],
+    )
+
+    parser.add_argument(
         "--strategies",
         "-s",
         type=str,
@@ -119,6 +126,19 @@ Examples:
         "--memory-labels",
         type=str,
         help=frontend_core.ARG_HELP["memory_labels"],
+    )
+
+    parser.add_argument(
+        "--dataset-names",
+        type=str,
+        nargs="+",
+        help=frontend_core.ARG_HELP["dataset_names"],
+    )
+
+    parser.add_argument(
+        "--max-dataset-size",
+        type=frontend_core.positive_int,
+        help=frontend_core.ARG_HELP["max_dataset_size"],
     )
 
     return parser.parse_args(args)
@@ -152,9 +172,18 @@ def main(args=None) -> int:
                 print(f"Error: {e}")
                 return 1
 
+        env_files = None
+        if parsed_args.env_files:
+            try:
+                env_files = frontend_core.resolve_env_files(env_file_paths=parsed_args.env_files)
+            except ValueError as e:
+                print(f"Error: {e}")
+                return 1
+
         context = frontend_core.FrontendCore(
             database=parsed_args.database,
             initialization_scripts=initialization_scripts,
+            env_files=env_files,
             log_level=parsed_args.log_level,
         )
 
@@ -181,11 +210,17 @@ def main(args=None) -> int:
                 script_paths=parsed_args.initialization_scripts
             )
 
+        # Collect environment files
+        env_files = None
+        if parsed_args.env_files:
+            env_files = frontend_core.resolve_env_files(env_file_paths=parsed_args.env_files)
+
         # Create context with initializers
         context = frontend_core.FrontendCore(
             database=parsed_args.database,
             initialization_scripts=initialization_scripts,
             initializer_names=parsed_args.initializers,
+            env_files=env_files,
             log_level=parsed_args.log_level,
         )
 
@@ -203,6 +238,8 @@ def main(args=None) -> int:
                 max_concurrency=parsed_args.max_concurrency,
                 max_retries=parsed_args.max_retries,
                 memory_labels=memory_labels,
+                dataset_names=parsed_args.dataset_names,
+                max_dataset_size=parsed_args.max_dataset_size,
             )
         )
         return 0

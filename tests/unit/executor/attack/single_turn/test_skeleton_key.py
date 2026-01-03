@@ -9,6 +9,7 @@ import pytest
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     SingleTurnAttackContext,
     SkeletonKeyAttack,
@@ -19,7 +20,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
-    SeedGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -54,7 +54,10 @@ def mock_prompt_normalizer():
 @pytest.fixture
 def basic_context():
     """Create a basic context for testing"""
-    return SingleTurnAttackContext(objective="Test objective", conversation_id=str(uuid.uuid4()))
+    return SingleTurnAttackContext(
+        params=AttackParameters(objective="Test objective"),
+        conversation_id=str(uuid.uuid4()),
+    )
 
 
 @pytest.fixture
@@ -238,12 +241,12 @@ class TestSkeletonKeyPromptSending:
         assert call_args.kwargs["target"] == mock_target
         assert call_args.kwargs["conversation_id"] == basic_context.conversation_id
 
-        # Check that skeleton key prompt was included in seed group
-        seed_group = call_args.kwargs["seed_group"]
-        assert isinstance(seed_group, SeedGroup)
-        assert len(seed_group.prompts) == 1
-        assert seed_group.prompts[0].value == "Test skeleton key"
-        assert seed_group.prompts[0].data_type == "text"
+        # Check that skeleton key prompt was included in message
+        message = call_args.kwargs["message"]
+        assert isinstance(message, Message)
+        assert len(message.message_pieces) == 1
+        assert message.message_pieces[0].original_value == "Test skeleton key"
+        assert message.message_pieces[0].original_value_data_type == "text"
 
     @pytest.mark.asyncio
     async def test_send_skeleton_key_prompt_filtered_response(self, mock_target, mock_prompt_normalizer, basic_context):
@@ -434,8 +437,14 @@ class TestSkeletonKeyAttackStateMangement:
         attack = SkeletonKeyAttack(objective_target=mock_target)
 
         # Create multiple contexts
-        context1 = SingleTurnAttackContext(objective="Objective 1", conversation_id=str(uuid.uuid4()))
-        context2 = SingleTurnAttackContext(objective="Objective 2", conversation_id=str(uuid.uuid4()))
+        context1 = SingleTurnAttackContext(
+            params=AttackParameters(objective="Objective 1"),
+            conversation_id=str(uuid.uuid4()),
+        )
+        context2 = SingleTurnAttackContext(
+            params=AttackParameters(objective="Objective 2"),
+            conversation_id=str(uuid.uuid4()),
+        )
 
         # Mock skeleton key prompt to return None (filtered)
         with patch.object(attack, "_send_skeleton_key_prompt_async", return_value=None):
@@ -468,61 +477,29 @@ class TestSkeletonKeyAttackParameterValidation:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestSkeletonKeyAttackContextValidation:
-    """Test skeleton key attack context validation functionality."""
+class TestSkeletonKeyAttackParamsType:
+    """Tests for params_type in SkeletonKeyAttack"""
 
-    def test_validate_context_raises_error_with_prepended_conversation(self, mock_target, basic_context):
-        """Test that context validation raises ValueError when prepended conversations exist."""
+    def test_params_type_excludes_next_message(self, mock_target):
+        """Test that params_type excludes next_message field."""
+        import dataclasses
+
         attack = SkeletonKeyAttack(objective_target=mock_target)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "next_message" not in fields
 
-        # Add some prepended conversation to context
-        mock_response = MagicMock()
-        basic_context.prepended_conversation = [mock_response]
+    def test_params_type_excludes_prepended_conversation(self, mock_target):
+        """Test that params_type excludes prepended_conversation field."""
+        import dataclasses
 
-        # Verify that ValueError is raised
-        with pytest.raises(ValueError, match="Skeleton key attack does not support prepended conversations"):
-            attack._validate_context(context=basic_context)
-
-    def test_validate_context_succeeds_when_no_prepended_conversation(self, mock_target, basic_context):
-        """Test that context validation succeeds when no prepended conversation exists."""
         attack = SkeletonKeyAttack(objective_target=mock_target)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "prepended_conversation" not in fields
 
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
+    def test_params_type_includes_objective(self, mock_target):
+        """Test that params_type includes objective field."""
+        import dataclasses
 
-        # Mock the parent _validate_context method
-        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
-            # Should not raise any exception
-            attack._validate_context(context=basic_context)
-
-            # Verify parent validation was called
-            mock_parent_validate.assert_called_once_with(context=basic_context)
-
-    def test_validate_context_calls_parent_validation(self, mock_target, basic_context):
-        """Test that validate_context properly calls parent validation method."""
         attack = SkeletonKeyAttack(objective_target=mock_target)
-
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
-
-        # Mock the parent _validate_context method
-        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
-            attack._validate_context(context=basic_context)
-
-            # Verify parent validation was called with the correct context
-            mock_parent_validate.assert_called_once_with(context=basic_context)
-
-    def test_validate_context_parent_validation_errors_propagate(self, mock_target, basic_context):
-        """Test that parent validation errors are properly propagated."""
-        attack = SkeletonKeyAttack(objective_target=mock_target)
-
-        # Ensure no prepended conversation
-        basic_context.prepended_conversation = []
-
-        # Mock the parent _validate_context method to raise an error
-        with patch.object(attack.__class__.__bases__[0], "_validate_context") as mock_parent_validate:
-            mock_parent_validate.side_effect = ValueError("Parent validation error")
-
-            # Verify that parent validation error is propagated
-            with pytest.raises(ValueError, match="Parent validation error"):
-                attack._validate_context(context=basic_context)
+        fields = {f.name for f in dataclasses.fields(attack.params_type)}
+        assert "objective" in fields

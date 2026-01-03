@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: pyrit2
-#     language: python
-#     name: python3
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -40,7 +36,6 @@ from pyrit.score import (
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
-target = OpenAIChatTarget()
 
 # %% [markdown]
 # ## Running Harm Scorer Evaluation
@@ -80,7 +75,14 @@ target = OpenAIChatTarget()
 # With multiple evaluators, we can measure inter-reliability alignment between evaluators shown below:
 
 # %%
-target = OpenAIChatTarget()
+import os
+
+# Use unsafe endpoint ideally since evaluation dataset may include harmful content
+target = OpenAIChatTarget(
+    endpoint=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"],
+    api_key=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"],
+    model_name=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"],
+)
 likert_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=LikertScalePaths.HATE_SPEECH_SCALE.value)
 
 # factory method that creates an HarmScorerEvaluator in this case since metrics_type is HARM.
