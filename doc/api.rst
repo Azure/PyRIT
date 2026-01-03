@@ -30,6 +30,7 @@ API Reference
     Authenticator
     AzureAuth
     AzureStorageAuth
+    CopilotAuthenticator
 
 :py:mod:`pyrit.auxiliary_attacks`
 =================================
@@ -505,6 +506,7 @@ API Reference
     PromptTarget
     RealtimeTarget
     TextTarget
+    WebSocketCopilotTarget
 
 :py:mod:`pyrit.score`
 =====================
