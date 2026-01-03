@@ -20,6 +20,7 @@ from pyrit.common import utils
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
 from pyrit.models.seeds.seed import Seed
+from pyrit.models.seeds.seed_attack_group import SeedAttackGroup
 from pyrit.models.seeds.seed_group import SeedGroup
 from pyrit.models.seeds.seed_objective import SeedObjective
 from pyrit.models.seeds.seed_prompt import SeedPrompt
@@ -264,35 +265,43 @@ class SeedDataset(YamlLoadable):
                 prompt["prompt_group_id"] = uuid.uuid4()
 
     @staticmethod
-    def group_seed_prompts_by_prompt_group_id(seed: Sequence[Seed]) -> Sequence[SeedGroup]:
+    def group_seed_prompts_by_prompt_group_id(seeds: Sequence[Seed]) -> Sequence[SeedGroup]:
         """
         Groups the given list of Seeds by their prompt_group_id and creates
-        SeedGroup instances. All seed prompts in a group must share the same prompt_group_id.
+        SeedGroup or SeedAttackGroup instances.
+
+        For each group, this method first attempts to create a SeedAttackGroup
+        (which has attack-specific properties like objective). If validation fails,
+        it falls back to a basic SeedGroup.
 
         Args:
-            seed: A list of Seed objects.
+            seeds: A list of Seed objects.
 
         Returns:
-            A list of SeedGroup objects, with prompts grouped by prompt_group_id. Each SeedGroup
-            will be ordered by the sequence number of the prompts, if available.
-
+            A list of SeedGroup or SeedAttackGroup objects, with seeds grouped by
+            prompt_group_id. Each group will be ordered by the sequence number of
+            the seeds, if available.
         """
-        # Group seed prompts by `prompt_group_id`
-        grouped_prompts = defaultdict(list)
-        for prompt in seed:
-            if prompt.prompt_group_id:
-                grouped_prompts[prompt.prompt_group_id].append(prompt)
+        # Group seeds by `prompt_group_id`
+        grouped_seeds: Dict[uuid.UUID, list] = defaultdict(list)
+        for seed in seeds:
+            if seed.prompt_group_id:
+                grouped_seeds[seed.prompt_group_id].append(seed)
             else:
-                grouped_prompts[uuid.uuid4()].append(prompt)
+                grouped_seeds[uuid.uuid4()].append(seed)
 
-        # Create SeedGroup instances from grouped prompts
-        seed_groups = []
-        for group_prompts in grouped_prompts.values():
-            if len(group_prompts) > 1:
-                group_prompts.sort(key=lambda prompt: prompt.sequence if hasattr(prompt, "sequence") else 0)
+        # Create SeedGroup or SeedAttackGroup instances from grouped seeds
+        seed_groups: list[SeedGroup] = []
+        for group_seeds in grouped_seeds.values():
+            if len(group_seeds) > 1:
+                group_seeds.sort(key=lambda s: s.sequence if hasattr(s, "sequence") else 0)
 
-            seed_group = SeedGroup(seeds=group_prompts)
-            seed_groups.append(seed_group)
+            # Try to create a SeedAttackGroup first; fall back to SeedGroup if validation fails
+            try:
+                attack_group = SeedAttackGroup(seeds=group_seeds)
+                seed_groups.append(attack_group)
+            except ValueError:
+                seed_groups.append(SeedGroup(seeds=group_seeds))
 
         return seed_groups
 

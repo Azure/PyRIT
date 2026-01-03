@@ -2,16 +2,21 @@
 # Licensed under the MIT license.
 
 import dataclasses
-from typing import List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from pyrit.executor.attack.core.attack_parameters import (
     AttackParameters,
-    _build_params_from_seed_group_async,
 )
-from pyrit.models import Message, MessagePiece, SeedAttackGroup, SeedObjective, SeedPrompt
+from pyrit.models import (
+    Message,
+    MessagePiece,
+    SeedAttackGroup,
+    SeedObjective,
+    SeedPrompt,
+    SeedSimulatedConversation,
+)
 from pyrit.models.literals import ChatMessageRole
 
 
@@ -33,22 +38,19 @@ class TestFromSeedGroupAsync:
         """Create a SeedAttackGroup with just an objective."""
         return SeedAttackGroup(seeds=[seed_objective])
 
-    async def test_extracts_objective_from_seed_group(
-        self, seed_group_with_objective: SeedAttackGroup
-    ) -> None:
+    async def test_extracts_objective_from_seed_group(self, seed_group_with_objective: SeedAttackGroup) -> None:
         """Test that objective is correctly extracted from seed group."""
         params = await AttackParameters.from_seed_group_async(seed_group_with_objective)
 
         assert params.objective == "Test objective"
 
     async def test_raises_when_no_objective(self) -> None:
-        """Test that ValueError is raised when seed group has no objective."""
-        # Create a seed group with only a prompt (no objective)
+        """Test that ValueError is raised when SeedAttackGroup has no objective."""
+        # SeedAttackGroup now validates exactly one objective at construction
         prompt = SeedPrompt(value="Some prompt", data_type="text", role="user")
-        seed_group = SeedAttackGroup(seeds=[prompt])
 
-        with pytest.raises(ValueError, match="SeedGroup must have an objective"):
-            await AttackParameters.from_seed_group_async(seed_group)
+        with pytest.raises(ValueError, match="SeedAttackGroup must have exactly one objective"):
+            SeedAttackGroup(seeds=[prompt])
 
     async def test_extracts_next_message(self) -> None:
         """Test that next_message is extracted from seed group prompts."""
@@ -105,23 +107,21 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         return SeedObjective(value="Test objective")
 
     @pytest.fixture
-    def simulated_conversation_config(self) -> MagicMock:
-        """Create a mock SeedSimulatedConversation config."""
-        config = MagicMock()
-        config.num_turns = 3
-        config.adversarial_system_prompt = "/path/to/adversarial.yaml"
-        config.simulated_target_system_prompt = "/path/to/target.yaml"
-        return config
+    def simulated_conversation_config(self) -> SeedSimulatedConversation:
+        """Create a SeedSimulatedConversation config."""
+        return SeedSimulatedConversation(
+            value="Simulated conversation config",
+            num_turns=3,
+            adversarial_system_prompt="/path/to/adversarial.yaml",
+            simulated_target_system_prompt="/path/to/target.yaml",
+        )
 
     @pytest.fixture
     def seed_group_with_simulated_conv(
-        self, seed_objective: SeedObjective, simulated_conversation_config: MagicMock
+        self, seed_objective: SeedObjective, simulated_conversation_config: SeedSimulatedConversation
     ) -> SeedAttackGroup:
         """Create a SeedAttackGroup with simulated conversation config."""
-        seed_group = SeedAttackGroup(seeds=[seed_objective])
-        # Mock the simulated conversation properties
-        seed_group._simulated_conversation_config = simulated_conversation_config
-        return seed_group
+        return SeedAttackGroup(seeds=[seed_objective, simulated_conversation_config])
 
     @pytest.fixture
     def mock_adversarial_chat(self) -> MagicMock:
@@ -171,31 +171,24 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
             )
 
     async def test_raises_when_next_message_conflicts_with_simulated_conv(
-        self, seed_objective: SeedObjective, simulated_conversation_config: MagicMock
+        self, seed_objective: SeedObjective, simulated_conversation_config: SeedSimulatedConversation
     ) -> None:
-        """Test that ValueError is raised when both simulated conv and next_message are set."""
+        """Test that ValueError is raised when both prompts and simulated conv are in seeds."""
         prompt = SeedPrompt(value="Static prompt", data_type="text", role="user")
-        seed_group = SeedAttackGroup(seeds=[seed_objective, prompt])
-        seed_group._simulated_conversation_config = simulated_conversation_config
 
-        with pytest.raises(ValueError, match="next_message set.*mutually exclusive"):
-            await AttackParameters.from_seed_group_async(seed_group)
+        # Validation now happens at construction time
+        with pytest.raises(ValueError, match="Cannot have both SeedPrompts and SeedSimulatedConversation"):
+            SeedAttackGroup(seeds=[seed_objective, prompt, simulated_conversation_config])
 
     async def test_raises_when_multi_sequence_prompts_conflict_with_simulated_conv(
-        self, seed_objective: SeedObjective, simulated_conversation_config: MagicMock
+        self, seed_objective: SeedObjective, simulated_conversation_config: SeedSimulatedConversation
     ) -> None:
-        """Test that ValueError is raised when simulated conv is set during SeedAttackGroup creation with prompts."""
-        # This test verifies that the SeedAttackGroup constructor raises if we have 
-        # multi-sequence prompts and simulated_conversation_config together.
-        # Since validation happens at construction for multi-sequence prompts,
-        # we test the from_seed_group_async path for the single prompt case.
+        """Test that ValueError is raised when simulated conv is set with any prompts."""
+        # Any prompts with simulated conversation should fail at construction
         prompt = SeedPrompt(value="Static prompt", data_type="text", role="user")
-        seed_group = SeedAttackGroup(seeds=[seed_objective, prompt])
-        seed_group._simulated_conversation_config = simulated_conversation_config
 
-        # A single prompt creates next_message, which triggers the first validation check
-        with pytest.raises(ValueError, match="next_message set.*mutually exclusive"):
-            await AttackParameters.from_seed_group_async(seed_group)
+        with pytest.raises(ValueError, match="Cannot have both SeedPrompts and SeedSimulatedConversation"):
+            SeedAttackGroup(seeds=[seed_objective, prompt, simulated_conversation_config])
 
     @patch("pyrit.executor.attack.component.simulated_conversation.generate_simulated_conversation_async")
     async def test_generates_simulated_conversation(
@@ -209,7 +202,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         """Test that simulated conversation is generated when config is present."""
         mock_generate.return_value = mock_simulated_result
 
-        params = await AttackParameters.from_seed_group_async(
+        await AttackParameters.from_seed_group_async(
             seed_group_with_simulated_conv,
             adversarial_chat=mock_adversarial_chat,
             objective_scorer=mock_objective_scorer,
@@ -274,18 +267,19 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         """Test that the generated result is cached in the seed_group."""
         mock_generate.return_value = mock_simulated_result
 
-        # Mock set_simulated_conversation_result
-        seed_group_with_simulated_conv.set_simulated_conversation_result = MagicMock()
-
-        await AttackParameters.from_seed_group_async(
+        # Spy on set_simulated_conversation_result using patch.object
+        with patch.object(
             seed_group_with_simulated_conv,
-            adversarial_chat=mock_adversarial_chat,
-            objective_scorer=mock_objective_scorer,
-        )
+            "set_simulated_conversation_result",
+            wraps=seed_group_with_simulated_conv.set_simulated_conversation_result
+        ) as mock_set_result:
+            await AttackParameters.from_seed_group_async(
+                seed_group_with_simulated_conv,
+                adversarial_chat=mock_adversarial_chat,
+                objective_scorer=mock_objective_scorer,
+            )
 
-        seed_group_with_simulated_conv.set_simulated_conversation_result.assert_called_once_with(
-            mock_simulated_result
-        )
+            mock_set_result.assert_called_once_with(mock_simulated_result)
 
 
 class TestExcluding:

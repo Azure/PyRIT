@@ -14,11 +14,15 @@ have a common interface for scenarios.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
 from pyrit.executor.attack.core.attack_executor import AttackExecutorResult
-from pyrit.models import AttackResult, SeedGroup
+from pyrit.models import AttackResult, SeedAttackGroup
+
+if TYPE_CHECKING:
+    from pyrit.prompt_target import PromptChatTarget
+    from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +35,8 @@ class AtomicAttack:
     all objectives in a dataset. Multiple AtomicAttacks can be grouped together into
     larger test scenarios for comprehensive security testing and evaluation.
 
-    The AtomicAttack uses SeedGroups as the single source of truth for objectives,
-    prepended conversations, and next messages. Each SeedGroup must have an objective set.
+    The AtomicAttack uses SeedAttackGroups as the single source of truth for objectives,
+    prepended conversations, and next messages. Each SeedAttackGroup must have an objective set.
 
     Example:
         >>> from pyrit.scenario import AtomicAttack
@@ -44,7 +48,7 @@ class AtomicAttack:
         >>> attack = PromptAttack(objective_target=target)
         >>>
         >>> # Create seed groups with objectives
-        >>> seed_groups = SeedGroup.from_yaml_file("seeds.yaml")
+        >>> seed_groups = SeedAttackGroup.from_yaml_file("seeds.yaml")
         >>> for sg in seed_groups:
         ...     sg.set_objective("your objective here")
         >>>
@@ -62,7 +66,9 @@ class AtomicAttack:
         *,
         atomic_attack_name: str,
         attack: AttackStrategy,
-        seed_groups: List[SeedGroup],
+        seed_groups: List[SeedAttackGroup],
+        adversarial_chat: Optional["PromptChatTarget"] = None,
+        objective_scorer: Optional["TrueFalseScorer"] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_execute_params: Any,
     ) -> None:
@@ -73,9 +79,15 @@ class AtomicAttack:
             atomic_attack_name (str): Used to group an AtomicAttack with related attacks for a
                 strategy.
             attack (AttackStrategy): The configured attack strategy to execute.
-            seed_groups (List[SeedGroup]): List of seed groups. Each seed group must have an
-                objective set. The seed groups serve as the single source of truth for objectives,
-                prepended conversations, and next messages.
+            seed_groups (List[SeedAttackGroup]): List of seed attack groups. Each seed group must
+                have an objective set. The seed groups serve as the single source of truth for
+                objectives, prepended conversations, and next messages.
+            adversarial_chat (Optional[PromptChatTarget]): Optional chat target for generating
+                adversarial prompts or simulated conversations. Required when seed groups contain
+                SeedSimulatedConversation configurations.
+            objective_scorer (Optional[TrueFalseScorer]): Optional scorer for evaluating simulated
+                conversations. Required when seed groups contain SeedSimulatedConversation
+                configurations.
             memory_labels (Optional[Dict[str, str]]): Additional labels to apply to prompts.
                 These labels help track and categorize the atomic attack in memory.
             **attack_execute_params (Any): Additional parameters to pass to the attack
@@ -91,15 +103,11 @@ class AtomicAttack:
         if not seed_groups:
             raise ValueError("seed_groups list cannot be empty")
 
-        # Validate each seed group has an objective
-        for i, sg in enumerate(seed_groups):
-            if sg.objective is None:
-                raise ValueError(
-                    f"SeedGroup at index {i} is missing an objective. "
-                    "Use seed_group.set_objective(value) to set one."
-                )
+        # SeedAttackGroup validates in __init__ that it has exactly one objective
 
         self._seed_groups = seed_groups
+        self._adversarial_chat = adversarial_chat
+        self._objective_scorer = objective_scorer
         self._memory_labels = memory_labels or {}
         self._attack_execute_params = attack_execute_params
 
@@ -119,12 +127,12 @@ class AtomicAttack:
         return [sg.objective.value for sg in self._seed_groups if sg.objective is not None]
 
     @property
-    def seed_groups(self) -> List[SeedGroup]:
+    def seed_groups(self) -> List[SeedAttackGroup]:
         """
         Get a copy of the seed groups list for this atomic attack.
 
         Returns:
-            List[SeedGroup]: A copy of the seed groups list.
+            List[SeedAttackGroup]: A copy of the seed groups list.
         """
         return list(self._seed_groups)
 
@@ -189,6 +197,8 @@ class AtomicAttack:
             results = await executor.execute_attack_from_seed_groups_async(
                 attack=self._attack,
                 seed_groups=self._seed_groups,
+                adversarial_chat=self._adversarial_chat,
+                objective_scorer=self._objective_scorer,
                 memory_labels=self._memory_labels,
                 return_partial_on_failure=return_partial_on_failure,
                 **self._attack_execute_params,

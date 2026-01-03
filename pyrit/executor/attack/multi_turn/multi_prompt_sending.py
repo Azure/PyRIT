@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, get_kwarg_param
@@ -23,11 +23,15 @@ from pyrit.models import (
     AttackResult,
     Message,
     Score,
-    SeedGroup,
+    SeedAttackGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
+
+if TYPE_CHECKING:
+    from pyrit.prompt_target import PromptChatTarget
+    from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,7 @@ class MultiPromptSendingAttackParameters(AttackParameters):
     @classmethod
     async def from_seed_group_async(
         cls: Type["MultiPromptSendingAttackParameters"],
-        seed_group: SeedGroup,
+        seed_group: SeedAttackGroup,
         *,
         adversarial_chat: Optional["PromptChatTarget"] = None,
         objective_scorer: Optional["TrueFalseScorer"] = None,

@@ -173,7 +173,7 @@ class MyScenario(Scenario):
                 AtomicAttack(
                     atomic_attack_name=strategy,
                     attack=attack,
-                    seed_groups=seed_groups,
+                    seed_groups=seed_groups,  # type: ignore[arg-type]
                     memory_labels=self._memory_labels,
                 )
             )

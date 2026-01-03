@@ -9,9 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models.seed_group import SeedGroup
-from pyrit.models.seed_objective import SeedObjective
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedAttackGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.scenario import ScenarioCompositeStrategy
@@ -62,13 +60,13 @@ def mock_seed_groups():
     def create_seed_groups_for_strategy(strategy_name: str):
         """Helper to create seed groups for a given strategy."""
         return [
-            SeedGroup(
+            SeedAttackGroup(
                 seeds=[
                     SeedObjective(value=f"{strategy_name} objective 1"),
                     SeedPrompt(value=f"{strategy_name} prompt 1"),
                 ]
             ),
-            SeedGroup(
+            SeedAttackGroup(
                 seeds=[
                     SeedObjective(value=f"{strategy_name} objective 2"),
                     SeedPrompt(value=f"{strategy_name} prompt 2"),
@@ -204,10 +202,10 @@ class TestContentHarmsBasic:
 
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     async def test_initialization_with_minimal_parameters(
         self,
-        mock_get_seed_groups,
+        mock_get_seed_attack_groups,
         mock_get_scorer,
         mock_objective_target,
         mock_adversarial_target,
@@ -216,7 +214,7 @@ class TestContentHarmsBasic:
     ):
         """Test initialization with only required parameters."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seed_groups.return_value = mock_all_harm_objectives
+        mock_get_seed_attack_groups.return_value = mock_all_harm_objectives
 
         scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
@@ -232,10 +230,10 @@ class TestContentHarmsBasic:
 
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     async def test_initialization_with_custom_strategies(
         self,
-        mock_get_seed_groups,
+        mock_get_seed_attack_groups,
         mock_get_scorer,
         mock_objective_target,
         mock_adversarial_target,
@@ -244,7 +242,7 @@ class TestContentHarmsBasic:
     ):
         """Test initialization with custom harm strategies."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seed_groups.return_value = {
+        mock_get_seed_attack_groups.return_value = {
             "hate": mock_seed_groups("hate"),
             "fairness": mock_seed_groups("fairness"),
         }
@@ -272,10 +270,10 @@ class TestContentHarmsBasic:
 
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     async def test_initialization_with_custom_max_concurrency(
         self,
-        mock_get_seed_groups,
+        mock_get_seed_attack_groups,
         mock_get_scorer,
         mock_objective_target,
         mock_adversarial_target,
@@ -284,7 +282,7 @@ class TestContentHarmsBasic:
     ):
         """Test initialization with custom max concurrency."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seed_groups.return_value = mock_all_harm_objectives
+        mock_get_seed_attack_groups.return_value = mock_all_harm_objectives
 
         scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
@@ -294,10 +292,10 @@ class TestContentHarmsBasic:
 
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     async def test_initialization_with_custom_dataset_path(
         self,
-        mock_get_seed_groups,
+        mock_get_seed_attack_groups,
         mock_get_scorer,
         mock_objective_target,
         mock_adversarial_target,
@@ -306,7 +304,7 @@ class TestContentHarmsBasic:
     ):
         """Test initialization with custom seed dataset prefix."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seed_groups.return_value = mock_all_harm_objectives
+        mock_get_seed_attack_groups.return_value = mock_all_harm_objectives
 
         scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
@@ -317,10 +315,10 @@ class TestContentHarmsBasic:
 
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     async def test_initialization_defaults_to_all_strategy(
         self,
-        mock_get_seed_groups,
+        mock_get_seed_attack_groups,
         mock_get_scorer,
         mock_objective_target,
         mock_adversarial_target,
@@ -329,7 +327,7 @@ class TestContentHarmsBasic:
     ):
         """Test that initialization defaults to ALL strategy when none provided."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seed_groups.return_value = mock_all_harm_objectives
+        mock_get_seed_attack_groups.return_value = mock_all_harm_objectives
 
         scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
@@ -395,10 +393,10 @@ class TestContentHarmsBasic:
 
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     async def test_initialization_with_max_retries(
         self,
-        mock_get_seed_groups,
+        mock_get_seed_attack_groups,
         mock_get_scorer,
         mock_objective_target,
         mock_adversarial_target,
@@ -407,7 +405,7 @@ class TestContentHarmsBasic:
     ):
         """Test initialization with max_retries parameter."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seed_groups.return_value = mock_all_harm_objectives
+        mock_get_seed_attack_groups.return_value = mock_all_harm_objectives
 
         scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
@@ -417,10 +415,10 @@ class TestContentHarmsBasic:
 
     @pytest.mark.asyncio
     @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     async def test_memory_labels_are_stored(
         self,
-        mock_get_seed_groups,
+        mock_get_seed_attack_groups,
         mock_get_scorer,
         mock_objective_target,
         mock_adversarial_target,
@@ -429,7 +427,7 @@ class TestContentHarmsBasic:
     ):
         """Test that memory labels are properly stored."""
         mock_get_scorer.return_value = mock_objective_scorer
-        mock_get_seed_groups.return_value = mock_all_harm_objectives
+        mock_get_seed_attack_groups.return_value = mock_all_harm_objectives
 
         memory_labels = {"test_run": "123", "category": "harm"}
 
@@ -440,17 +438,17 @@ class TestContentHarmsBasic:
         assert scenario._memory_labels == memory_labels
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     async def test_initialization_with_all_parameters(
         self,
-        mock_get_seed_groups,
+        mock_get_seed_attack_groups,
         mock_objective_target,
         mock_adversarial_target,
         mock_objective_scorer,
         mock_seed_groups,
     ):
         """Test initialization with all possible parameters."""
-        mock_get_seed_groups.return_value = {
+        mock_get_seed_attack_groups.return_value = {
             "hate": mock_seed_groups("hate"),
             "violence": mock_seed_groups("violence"),
         }
@@ -479,7 +477,7 @@ class TestContentHarmsBasic:
         assert scenario._max_retries == 2
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_attack_groups")
     @patch.dict(
         "os.environ",
         {
@@ -489,7 +487,7 @@ class TestContentHarmsBasic:
         },
     )
     async def test_initialization_with_objectives_by_harm(
-        self, mock_get_seed_groups, mock_objective_target, mock_adversarial_target, mock_seed_groups
+        self, mock_get_seed_attack_groups, mock_objective_target, mock_adversarial_target, mock_seed_groups
     ):
         """Test initialization with custom objectives_by_harm parameter."""
         # Setup custom objectives by harm
@@ -498,7 +496,7 @@ class TestContentHarmsBasic:
             "violence": mock_seed_groups("violence"),
         }
 
-        mock_get_seed_groups.return_value = custom_objectives
+        mock_get_seed_attack_groups.return_value = custom_objectives
 
         scenario = ContentHarms(
             adversarial_chat=mock_adversarial_target,
@@ -525,12 +523,12 @@ class TestContentHarmsBasic:
 class TestContentHarmsDatasetConfiguration:
     """Tests for the ContentHarmsDatasetConfiguration class."""
 
-    def test_get_seed_groups_returns_all_datasets_when_no_composites(self):
-        """Test that get_seed_groups returns all datasets when scenario_composites is None."""
+    def test_get_seed_attack_groups_returns_all_datasets_when_no_composites(self):
+        """Test that get_seed_attack_groups returns all datasets when scenario_composites is None."""
         # Create mock seed groups for each dataset
         mock_groups = {
-            "airt_hate": [SeedGroup(seeds=[SeedObjective(value="hate obj")])],
-            "airt_violence": [SeedGroup(seeds=[SeedObjective(value="violence obj")])],
+            "airt_hate": [SeedAttackGroup(seeds=[SeedObjective(value="hate obj")])],
+            "airt_violence": [SeedAttackGroup(seeds=[SeedObjective(value="violence obj")])],
         }
 
         config = ContentHarmsDatasetConfiguration(
@@ -540,19 +538,19 @@ class TestContentHarmsDatasetConfiguration:
         with patch.object(config, "_load_seed_groups_for_dataset") as mock_load:
             mock_load.side_effect = lambda dataset_name: mock_groups.get(dataset_name, [])
 
-            result = config.get_seed_groups()
+            result = config.get_seed_attack_groups()
 
             # Without scenario_composites, returns dataset names as keys
             assert "airt_hate" in result
             assert "airt_violence" in result
             assert len(result) == 2
 
-    def test_get_seed_groups_filters_by_selected_harm_strategy(self):
-        """Test that get_seed_groups filters datasets by selected harm strategies."""
+    def test_get_seed_attack_groups_filters_by_selected_harm_strategy(self):
+        """Test that get_seed_attack_groups filters datasets by selected harm strategies."""
         mock_groups = {
-            "airt_hate": [SeedGroup(seeds=[SeedObjective(value="hate obj")])],
-            "airt_violence": [SeedGroup(seeds=[SeedObjective(value="violence obj")])],
-            "airt_sexual": [SeedGroup(seeds=[SeedObjective(value="sexual obj")])],
+            "airt_hate": [SeedAttackGroup(seeds=[SeedObjective(value="hate obj")])],
+            "airt_violence": [SeedAttackGroup(seeds=[SeedObjective(value="violence obj")])],
+            "airt_sexual": [SeedAttackGroup(seeds=[SeedObjective(value="sexual obj")])],
         }
 
         config = ContentHarmsDatasetConfiguration(
@@ -563,7 +561,7 @@ class TestContentHarmsDatasetConfiguration:
         with patch.object(config, "_load_seed_groups_for_dataset") as mock_load:
             mock_load.side_effect = lambda dataset_name: mock_groups.get(dataset_name, [])
 
-            result = config.get_seed_groups()
+            result = config.get_seed_attack_groups()
 
             # Should only return "hate" key (mapped from "airt_hate")
             assert "hate" in result
@@ -571,11 +569,11 @@ class TestContentHarmsDatasetConfiguration:
             assert "sexual" not in result
             assert len(result) == 1
 
-    def test_get_seed_groups_maps_dataset_names_to_harm_names(self):
+    def test_get_seed_attack_groups_maps_dataset_names_to_harm_names(self):
         """Test that dataset names are mapped to harm strategy names."""
         mock_groups = {
-            "airt_hate": [SeedGroup(seeds=[SeedObjective(value="hate obj")])],
-            "airt_fairness": [SeedGroup(seeds=[SeedObjective(value="fairness obj")])],
+            "airt_hate": [SeedAttackGroup(seeds=[SeedObjective(value="hate obj")])],
+            "airt_fairness": [SeedAttackGroup(seeds=[SeedObjective(value="fairness obj")])],
         }
 
         config = ContentHarmsDatasetConfiguration(
@@ -589,7 +587,7 @@ class TestContentHarmsDatasetConfiguration:
         with patch.object(config, "_load_seed_groups_for_dataset") as mock_load:
             mock_load.side_effect = lambda dataset_name: mock_groups.get(dataset_name, [])
 
-            result = config.get_seed_groups()
+            result = config.get_seed_attack_groups()
 
             # Keys should be harm names, not dataset names
             assert "hate" in result
@@ -597,7 +595,7 @@ class TestContentHarmsDatasetConfiguration:
             assert "airt_hate" not in result
             assert "airt_fairness" not in result
 
-    def test_get_seed_groups_with_all_strategy_returns_all_harms(self):
+    def test_get_seed_attack_groups_with_all_strategy_returns_all_harms(self):
         """Test that ALL strategy returns all harm categories."""
         all_datasets = [
             "airt_hate",
@@ -608,7 +606,7 @@ class TestContentHarmsDatasetConfiguration:
             "airt_misinformation",
             "airt_leakage",
         ]
-        mock_groups = {name: [SeedGroup(seeds=[SeedObjective(value=f"{name} obj")])] for name in all_datasets}
+        mock_groups = {name: [SeedAttackGroup(seeds=[SeedObjective(value=f"{name} obj")])] for name in all_datasets}
 
         # ALL strategy expands to all individual harm strategies
         all_harms = ["hate", "fairness", "violence", "sexual", "harassment", "misinformation", "leakage"]
@@ -622,18 +620,18 @@ class TestContentHarmsDatasetConfiguration:
         with patch.object(config, "_load_seed_groups_for_dataset") as mock_load:
             mock_load.side_effect = lambda dataset_name: mock_groups.get(dataset_name, [])
 
-            result = config.get_seed_groups()
+            result = config.get_seed_attack_groups()
 
             # Should have all 7 harm categories
             assert len(result) == 7
             for harm in all_harms:
                 assert harm in result
 
-    def test_get_seed_groups_applies_max_dataset_size(self):
+    def test_get_seed_attack_groups_applies_max_dataset_size(self):
         """Test that max_dataset_size is applied per dataset."""
         # Create 5 seed groups for the dataset
         mock_groups = {
-            "airt_hate": [SeedGroup(seeds=[SeedObjective(value=f"hate obj {i}")]) for i in range(5)],
+            "airt_hate": [SeedAttackGroup(seeds=[SeedObjective(value=f"hate obj {i}")]) for i in range(5)],
         }
 
         config = ContentHarmsDatasetConfiguration(
@@ -645,7 +643,7 @@ class TestContentHarmsDatasetConfiguration:
         with patch.object(config, "_load_seed_groups_for_dataset") as mock_load:
             mock_load.side_effect = lambda dataset_name: mock_groups.get(dataset_name, [])
 
-            result = config.get_seed_groups()
+            result = config.get_seed_attack_groups()
 
             # Should have at most 2 seed groups due to max_dataset_size
             assert "hate" in result

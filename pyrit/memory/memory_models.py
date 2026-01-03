@@ -585,6 +585,7 @@ class SeedEntry(Base):
         if self.is_simulated_conversation:
             # Reconstruct SeedSimulatedConversation from JSON value
             import json
+
             config = json.loads(self.value)
             return SeedSimulatedConversation(
                 id=self.id,

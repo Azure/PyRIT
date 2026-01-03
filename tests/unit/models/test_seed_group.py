@@ -15,7 +15,6 @@ from pyrit.models.seeds import (
     SeedSimulatedConversation,
 )
 
-
 # =============================================================================
 # SeedGroup Tests
 # =============================================================================
@@ -73,7 +72,7 @@ class TestSeedGroupInit:
 
     def test_init_multiple_objectives_raises_error(self):
         """Test that multiple objectives raises ValueError."""
-        with pytest.raises(ValueError, match="SeedGroups can only have one objective"):
+        with pytest.raises(ValueError, match="SeedGroup can only have one objective"):
             SeedGroup(
                 seeds=[
                     SeedObjective(value="Objective 1"),
@@ -220,9 +219,9 @@ class TestSeedAttackGroupInit:
         assert group.has_simulated_conversation
         assert group.simulated_conversation_config.num_turns == 5
 
-    def test_init_simulated_conversation_with_multi_sequence_raises_error(self):
-        """Test that simulated_conversation with multi-sequence prompts raises error."""
-        with pytest.raises(ValueError, match="Cannot use simulated_conversation with multi-sequence prompts"):
+    def test_init_simulated_conversation_with_prompts_raises_error(self):
+        """Test that simulated_conversation with prompts raises error."""
+        with pytest.raises(ValueError, match="Cannot have both SeedPrompts and SeedSimulatedConversation"):
             SeedAttackGroup(
                 seeds=[
                     SeedObjective(value="Objective"),
@@ -232,15 +231,13 @@ class TestSeedAttackGroupInit:
                         adversarial_system_prompt="Adversarial",
                     ),
                     SeedPrompt(value="Prompt 1", data_type="text", sequence=0, role="user"),
-                    SeedPrompt(value="Prompt 2", data_type="text", sequence=1, role="assistant"),
                 ]
             )
 
-    def test_init_ordering_objective_simulated_prompts(self):
-        """Test that seeds are ordered: objective, simulated_conversation, prompts."""
+    def test_init_ordering_objective_simulated(self):
+        """Test that seeds are ordered: objective, simulated_conversation."""
         group = SeedAttackGroup(
             seeds=[
-                {"value": "Prompt", "data_type": "text"},
                 {"is_simulated_conversation": True, "num_turns": 2, "adversarial_system_prompt": "adv"},
                 {"value": "Objective", "is_objective": True},
             ]
@@ -248,7 +245,6 @@ class TestSeedAttackGroupInit:
 
         assert isinstance(group.seeds[0], SeedObjective)
         assert isinstance(group.seeds[1], SeedSimulatedConversation)
-        assert isinstance(group.seeds[2], SeedPrompt)
 
 
 class TestSeedAttackGroupObjective:
@@ -265,16 +261,13 @@ class TestSeedAttackGroupObjective:
 
         assert group.objective.value == "My objective"
 
-    def test_objective_property_none_when_no_objective(self):
-        """Test that objective property returns None when no objective."""
-        group = SeedAttackGroup(
-            seeds=[SeedPrompt(value="Test", data_type="text")]
-        )
+    def test_no_objective_raises_error(self):
+        """Test that SeedAttackGroup without objective raises error."""
+        with pytest.raises(ValueError, match="must have exactly one objective"):
+            SeedAttackGroup(seeds=[SeedPrompt(value="Test", data_type="text")])
 
-        assert group.objective is None
-
-    def test_set_objective_updates_existing(self):
-        """Test that set_objective updates existing objective."""
+    def test_objective_value_can_be_updated(self):
+        """Test that objective value can be updated directly."""
         group = SeedAttackGroup(
             seeds=[
                 SeedObjective(value="Old objective"),
@@ -282,19 +275,8 @@ class TestSeedAttackGroupObjective:
             ]
         )
 
-        group.set_objective("New objective")
+        group.objective.value = "New objective"
 
-        assert group.objective.value == "New objective"
-
-    def test_set_objective_creates_new_when_none(self):
-        """Test that set_objective creates new objective when none exists."""
-        group = SeedAttackGroup(
-            seeds=[SeedPrompt(value="Test", data_type="text")]
-        )
-
-        group.set_objective("New objective")
-
-        assert group.objective is not None
         assert group.objective.value == "New objective"
 
 
@@ -304,7 +286,10 @@ class TestSeedAttackGroupSimulatedConversation:
     def test_has_simulated_conversation_false_when_none(self):
         """Test has_simulated_conversation is False when no config."""
         group = SeedAttackGroup(
-            seeds=[SeedPrompt(value="Test", data_type="text")]
+            seeds=[
+                SeedObjective(value="Objective"),
+                SeedPrompt(value="Test", data_type="text"),
+            ]
         )
 
         assert not group.has_simulated_conversation
@@ -313,6 +298,7 @@ class TestSeedAttackGroupSimulatedConversation:
         """Test has_simulated_conversation is True when config present."""
         group = SeedAttackGroup(
             seeds=[
+                SeedObjective(value="Objective"),
                 SeedSimulatedConversation(
                     value="",
                     num_turns=3,
@@ -327,6 +313,7 @@ class TestSeedAttackGroupSimulatedConversation:
         """Test simulated_conversation_generated is False initially."""
         group = SeedAttackGroup(
             seeds=[
+                SeedObjective(value="Objective"),
                 SeedSimulatedConversation(
                     value="",
                     num_turns=3,
@@ -341,13 +328,17 @@ class TestSeedAttackGroupSimulatedConversation:
 class TestSeedAttackGroupMessageExtraction:
     """Tests for SeedAttackGroup message extraction methods."""
 
-    def test_is_single_turn_true_for_single_sequence_no_objective(self):
-        """Test is_single_turn is True for single sequence without objective."""
+    def test_is_single_turn_false_for_attack_group_with_objective(self):
+        """Test is_single_turn is False for SeedAttackGroup (always has objective)."""
         group = SeedAttackGroup(
-            seeds=[SeedPrompt(value="Test", data_type="text")]
+            seeds=[
+                SeedObjective(value="Objective"),
+                SeedPrompt(value="Test", data_type="text"),
+            ]
         )
 
-        assert group.is_single_turn()
+        # SeedAttackGroup always has objective, so is_single_turn is always False
+        assert not group.is_single_turn()
 
     def test_is_single_turn_false_with_objective(self):
         """Test is_single_turn is False when objective present."""
@@ -364,6 +355,7 @@ class TestSeedAttackGroupMessageExtraction:
         """Test is_single_request is True for single sequence."""
         group = SeedAttackGroup(
             seeds=[
+                SeedObjective(value="Objective"),
                 SeedPrompt(value="Test 1", data_type="text", sequence=0, role="user"),
                 SeedPrompt(value="Test 2", data_type="text", sequence=0, role="user"),
             ]
@@ -375,6 +367,7 @@ class TestSeedAttackGroupMessageExtraction:
         """Test is_single_request is False for multi-sequence."""
         group = SeedAttackGroup(
             seeds=[
+                SeedObjective(value="Objective"),
                 SeedPrompt(value="Test 1", data_type="text", sequence=0, role="user"),
                 SeedPrompt(value="Test 2", data_type="text", sequence=1, role="assistant"),
             ]
@@ -385,7 +378,10 @@ class TestSeedAttackGroupMessageExtraction:
     def test_next_message_returns_last_user_message(self):
         """Test next_message returns the last user message."""
         group = SeedAttackGroup(
-            seeds=[SeedPrompt(value="Test prompt", data_type="text", role="user")]
+            seeds=[
+                SeedObjective(value="Objective"),
+                SeedPrompt(value="Test prompt", data_type="text", role="user"),
+            ]
         )
 
         next_msg = group.next_message
@@ -396,6 +392,7 @@ class TestSeedAttackGroupMessageExtraction:
         """Test next_message is None when last message is assistant."""
         group = SeedAttackGroup(
             seeds=[
+                SeedObjective(value="Objective"),
                 SeedPrompt(value="User msg", data_type="text", sequence=0, role="user"),
                 SeedPrompt(value="Assistant msg", data_type="text", sequence=1, role="assistant"),
             ]
@@ -407,6 +404,7 @@ class TestSeedAttackGroupMessageExtraction:
         """Test prepended_conversation returns all except last user message."""
         group = SeedAttackGroup(
             seeds=[
+                SeedObjective(value="Objective"),
                 SeedPrompt(value="User 1", data_type="text", sequence=0, role="user"),
                 SeedPrompt(value="Assistant 1", data_type="text", sequence=1, role="assistant"),
                 SeedPrompt(value="User 2", data_type="text", sequence=2, role="user"),
@@ -421,6 +419,7 @@ class TestSeedAttackGroupMessageExtraction:
         """Test user_messages returns all prompts as Messages."""
         group = SeedAttackGroup(
             seeds=[
+                SeedObjective(value="Objective"),
                 SeedPrompt(value="Prompt 1", data_type="text", sequence=0, role="user"),
                 SeedPrompt(value="Prompt 2", data_type="text", sequence=1, role="assistant"),
             ]
@@ -436,17 +435,21 @@ class TestSeedAttackGroupRepr:
     def test_repr_basic(self):
         """Test basic __repr__ output."""
         group = SeedAttackGroup(
-            seeds=[SeedPrompt(value="Test", data_type="text")]
+            seeds=[
+                SeedObjective(value="Objective"),
+                SeedPrompt(value="Test", data_type="text"),
+            ]
         )
 
         repr_str = repr(group)
-        assert "SeedAttackGroup" in repr_str
+        assert "SeedGroup" in repr_str
         assert "seeds=" in repr_str
 
     def test_repr_with_simulated_conversation(self):
         """Test __repr__ includes simulated indicator."""
         group = SeedAttackGroup(
             seeds=[
+                SeedObjective(value="Objective"),
                 SeedSimulatedConversation(
                     value="",
                     num_turns=3,

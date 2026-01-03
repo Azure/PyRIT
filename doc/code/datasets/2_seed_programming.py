@@ -77,7 +77,7 @@ await printer.print_result_async(result=result)  # type: ignore
 
 # %%
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedPrompt
 
 system_prompt = SeedPrompt.from_yaml_file(CONVERTER_SEED_PROMPT_PATH / "tone_converter.yaml")
 print(system_prompt.value)

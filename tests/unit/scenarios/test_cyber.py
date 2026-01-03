@@ -11,7 +11,7 @@ import pytest
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import PromptSendingAttack, RedTeamingAttack
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.models import SeedDataset, SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedDataset, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario.airt import Cyber, CyberStrategy
 from pyrit.score import TrueFalseCompositeScorer
@@ -22,7 +22,7 @@ def mock_memory_seed_groups():
     """Create mock seed groups that _get_default_seed_groups() would return."""
     malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
     seed_prompts = list(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
-    return [SeedGroup(seeds=[SeedObjective(value=prompt)]) for prompt in seed_prompts]
+    return [SeedAttackGroup(seeds=[SeedObjective(value=prompt)]) for prompt in seed_prompts]
 
 
 @pytest.fixture

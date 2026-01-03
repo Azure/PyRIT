@@ -17,7 +17,8 @@ This module provides the core seed types used throughout PyRIT:
 from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_prompt import SeedPrompt
 from pyrit.models.seeds.seed_objective import SeedObjective
-from pyrit.models.seeds.seed_group import SeedGroup, SeedAttackGroup
+from pyrit.models.seeds.seed_group import SeedGroup
+from pyrit.models.seeds.seed_attack_group import SeedAttackGroup
 from pyrit.models.seeds.seed_simulated_conversation import SeedSimulatedConversation
 from pyrit.models.seeds.seed_dataset import SeedDataset
 

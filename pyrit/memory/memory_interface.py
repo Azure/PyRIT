@@ -976,7 +976,7 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             raise
 
-    async def add_seed_groups_to_memory(
+    async def add_seed_groups_to_memory_async(
         self, *, prompt_groups: Sequence[SeedGroup], added_by: Optional[str] = None
     ) -> None:
         """
@@ -987,35 +987,32 @@ class MemoryInterface(abc.ABC):
             added_by (str): The user who added the prompt groups.
 
         Raises:
-            ValueError: If a prompt group does not have at least one prompt.
-            ValueError: If prompt group IDs are inconsistent within the same prompt group.
+            ValueError: If a seed group does not have at least one seed.
+            ValueError: If seed group IDs are inconsistent within the same seed group.
         """
         if not prompt_groups:
             raise ValueError("At least one prompt group must be provided.")
         # Validates the prompt group IDs and sets them if possible before leveraging
-        # the add_seed_prompts_to_memory method.
-        all_prompts: MutableSequence[Seed] = []
+        # the add_seeds_to_memory_async method.
+        all_seeds: MutableSequence[Seed] = []
         for prompt_group in prompt_groups:
-            if not prompt_group.prompts:
-                raise ValueError("Prompt group must have at least one prompt.")
+            if not prompt_group.seeds:
+                raise ValueError("Seed group must have at least one seed.")
             # Determine the prompt group ID.
             # It should either be set uniformly or generated if not set.
             # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
+            group_id_set = set(seed.prompt_group_id for seed in prompt_group.seeds)
             if len(group_id_set) > 1:
                 raise ValueError(
                     f"""Inconsistent 'prompt_group_id' attribute between members of the
-                    same prompt group. Found {group_id_set}"""
+                    same seed group. Found {group_id_set}"""
                 )
             prompt_group_id = group_id_set.pop() or uuid.uuid4()
-            for prompt in prompt_group.prompts:
-                prompt.prompt_group_id = prompt_group_id
+            for seed in prompt_group.seeds:
+                seed.prompt_group_id = prompt_group_id
 
-            all_prompts.extend(prompt_group.prompts)
-            if prompt_group.objective:
-                prompt_group.objective.prompt_group_id = prompt_group_id
-                all_prompts.append(prompt_group.objective)
-        await self.add_seeds_to_memory_async(seeds=all_prompts, added_by=added_by)
+            all_seeds.extend(prompt_group.seeds)
+        await self.add_seeds_to_memory_async(seeds=all_seeds, added_by=added_by)
 
     def get_seed_groups(
         self,

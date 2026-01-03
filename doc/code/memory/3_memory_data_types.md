@@ -80,7 +80,7 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 
 ## SeedPrompts
 
-[`SeedPrompt`](../../../pyrit/models/seed_prompt.py) objects represent the starting points of conversations. They are used to assemble and initiate attacks, and can be translated to and from `MessagePieces`.
+[`SeedPrompt`](../../../pyrit/models/seeds/seed_prompt.py) objects represent the starting points of conversations. They are used to assemble and initiate attacks, and can be translated to and from `MessagePieces`.
 
 **Key Fields:**
 
@@ -99,7 +99,7 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 
 ## SeedObjectives
 
-[`SeedObjective`](../../../pyrit/models/seed_objective.py) objects represent the goal or objective of an attack or test scenario. They describe what the attacker is trying to achieve and are used alongside `SeedPrompts` to define complete attack scenarios.
+[`SeedObjective`](../../../pyrit/models/seeds/seed_objective.py) objects represent the goal or objective of an attack or test scenario. They describe what the attacker is trying to achieve and are used alongside `SeedPrompts` to define complete attack scenarios.
 
 **Key Fields:**
 
@@ -117,7 +117,7 @@ This architecture is plumbed throughout PyRIT, providing flexibility to interact
 
 **Relationship to SeedGroups:**
 
-`SeedObjective` and `SeedPrompt` objects are combined into [`SeedGroup`](../../../pyrit/models/seed_group.py) objects, which represent a complete test case with optional seed prompts and an objective. A SeedGroup can contain:
+`SeedObjective` and `SeedPrompt` objects are combined into [`SeedGroup`](../../../pyrit/models/seeds/seed_group.py) objects, which represent a complete test case with optional seed prompts and an objective. A SeedGroup can contain:
 
 - Multiple prompts (for multi-turn conversations)
 - A single objective (what the attack is trying to achieve)

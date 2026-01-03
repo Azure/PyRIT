@@ -145,7 +145,7 @@ def test_seed_group_with_multiple_objectives():
     with pytest.raises(ValueError) as exc_info:
         SeedGroup(seeds=prompts)
 
-    assert ("SeedGroups can only have one objective.") in str(exc_info.value)
+    assert ("SeedGroup can only have one objective.") in str(exc_info.value)
 
 
 def test_seed_group_sequence_default():
@@ -779,7 +779,7 @@ def test_seed_group_mixed_objective_types():
     objective = SeedObjective(value="Seed objective")
     dict_objective = {"value": "Dict objective", "data_type": "text", "is_objective": True}
 
-    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
+    with pytest.raises(ValueError, match="SeedGroup can only have one objective."):
         SeedGroup(seeds=[objective, dict_objective])
 
 

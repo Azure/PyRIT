@@ -46,7 +46,7 @@ from pyrit.models.seeds import (
     SeedSimulatedConversation,
     SeedDataset,
 )
-from pyrit.models.simulated_conversation_generation_result import SimulatedConversationGenerationResult
+from pyrit.models.simulated_conversation_result import SimulatedConversationResult
 
 # Keep old module-level imports working (deprecated, will be removed)
 # These are re-exported from the seeds submodule
@@ -97,7 +97,7 @@ __all__ = [
     "SeedDataset",
     "SeedGroup",
     "SeedSimulatedConversation",
-    "SimulatedConversationGenerationResult",
+    "SimulatedConversationResult",
     "sort_message_pieces",
     "StorageIO",
     "StrategyResult",
