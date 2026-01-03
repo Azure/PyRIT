@@ -101,7 +101,7 @@ class Scam(Scenario):
     def required_datasets(cls) -> list[str]:
         """Return a list of dataset names required by this scenario."""
         return ["airt_scams"]
-    
+
     @classmethod
     def default_dataset_config(cls) -> DatasetConfiguration:
         """
@@ -142,7 +142,6 @@ class Scam(Scenario):
                 "objectives is deprecated and will be removed in 0.13.0. "
                 "Use dataset_config in initialize_async instead."
             )
-
 
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
