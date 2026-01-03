@@ -9,10 +9,9 @@ from pyrit.datasets import SeedDatasetProvider
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import _DarkBenchDataset
 from pyrit.datasets.seed_datasets.remote.harmbench_dataset import _HarmBenchDataset
 from pyrit.datasets.seed_datasets.remote.jailbreakv_28k_dataset import (
-    HarmCategory,
+    _HarmCategory,
     _JailbreakV28KDataset,
 )
-from pyrit.models import SeedDataset, SeedPrompt
 from pyrit.models import SeedDataset, SeedObjective, SeedPrompt
 
 
@@ -319,18 +318,18 @@ class TestJailbreakV28KDataset:
 
     def test_harm_category_enum(self):
         """Test HarmCategory enum values."""
-        assert HarmCategory.HATE_SPEECH.value == "Hate Speech"
-        assert HarmCategory.VIOLENCE.value == "Violence"
-        assert HarmCategory.FRAUD.value == "Fraud"
+        assert _HarmCategory.HATE_SPEECH.value == "Hate Speech"
+        assert _HarmCategory.VIOLENCE.value == "Violence"
+        assert _HarmCategory.FRAUD.value == "Fraud"
 
     def test_initialization_with_harm_categories(self):
         """Test initialization with harm category filtering."""
         loader = _JailbreakV28KDataset(
-            harm_categories=[HarmCategory.HATE_SPEECH, HarmCategory.VIOLENCE],
+            harm_categories=[_HarmCategory.HATE_SPEECH, _HarmCategory.VIOLENCE],
         )
         assert loader.harm_categories is not None
         assert len(loader.harm_categories) == 2
-        assert HarmCategory.HATE_SPEECH in loader.harm_categories
+        assert _HarmCategory.HATE_SPEECH in loader.harm_categories
 
     def test_initialization_invalid_harm_category(self):
         """Test that invalid harm categories raise ValueError."""
@@ -388,7 +387,7 @@ class TestJailbreakV28KDataset:
 
         loader = _JailbreakV28KDataset(
             zip_dir=str(zip_dir),
-            harm_categories=[HarmCategory.HATE_SPEECH],  # Only hate speech
+            harm_categories=[_HarmCategory.HATE_SPEECH],  # Only hate speech
         )
 
         with patch("pathlib.Path.exists", return_value=True):

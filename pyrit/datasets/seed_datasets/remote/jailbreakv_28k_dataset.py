@@ -16,7 +16,7 @@ from pyrit.models import SeedDataset, SeedPrompt
 logger = logging.getLogger(__name__)
 
 
-class HarmCategory(Enum):
+class _HarmCategory(Enum):
     """Harm categories in the JailBreakV-28K dataset."""
 
     UNETHICAL_BEHAVIOR = "Unethical Behavior"
@@ -65,7 +65,7 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
         zip_dir: str = str(pathlib.Path.home()),
         split: Literal["JailBreakV_28K", "mini_JailBreakV_28K"] = "mini_JailBreakV_28K",
         text_field: Literal["jailbreak_query", "redteam_query"] = "redteam_query",
-        harm_categories: Optional[List[HarmCategory]] = None,
+        harm_categories: Optional[List[_HarmCategory]] = None,
     ) -> None:
         """
         Initialize the JailBreakV-28K dataset loader.
@@ -92,9 +92,9 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
 
         # Validate harm categories if provided
         if harm_categories is not None:
-            valid_categories = {category.value for category in HarmCategory}
+            valid_categories = {category.value for category in _HarmCategory}
             invalid_categories = (
-                set(cat.value if isinstance(cat, HarmCategory) else cat for cat in harm_categories) - valid_categories
+                set(cat.value if isinstance(cat, _HarmCategory) else cat for cat in harm_categories) - valid_categories
             )
             if invalid_categories:
                 raise ValueError(f"Invalid harm categories: {', '.join(invalid_categories)}")
