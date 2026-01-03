@@ -51,6 +51,8 @@ However, there are many reasons to install as a contributor. Yes, of course, if 
     git clone https://github.com/Azure/PyRIT
     ```
 
+4. **Node.js and npm**. Required for building the TypeScript/React frontend. Download [Node.js](https://nodejs.org/) (which includes npm). Version 18 or higher is recommended.
+
 ## Installation with uv
 
 This is a guide for how to install PyRIT using uv

@@ -39,6 +39,7 @@ dependencies = [
     "confusable-homoglyphs>=3.3.1",
     "ecoji>=0.1.1",
     "datasets>=3.6.0",
+    "fastapi>=0.115.0",
     "httpx[http2]>=0.27.2",
     "jinja2>=3.1.6",
     "numpy>=1.26.0",
@@ -59,6 +60,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "transformers>=4.52.4",
     "treelib>=1.7.1",
+    "uvicorn[standard]>=0.32.0",
     "websockets>=14.0",
 ]
 
@@ -169,7 +171,10 @@ build-backend = "setuptools.build_meta"
 include = ["pyrit", "pyrit.*"]
 
 [tool.setuptools.package-data]
-pyrit = ["py.typed"]
+pyrit = [
+    "backend/frontend/**/*",
+    "py.typed"
+]
 
 [tool.jupytext]
 formats = "ipynb,py:percent"
