@@ -497,7 +497,7 @@ async def test_memory_encoding_metadata_image(sqlite_instance):
 
 
 @pytest.mark.asyncio
-@patch("pyrit.models.seed_prompt.TinyTag")
+@patch("pyrit.models.seeds.seed_prompt.TinyTag")
 async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     # Simulate WAV data
     sample_rate = 44100
@@ -531,8 +531,8 @@ async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     os.remove(original_wav_path)
 
 
-@patch("pyrit.models.seed_prompt.logger")
-@patch("pyrit.models.seed_prompt.TinyTag")
+@patch("pyrit.models.seeds.seed_prompt.logger")
+@patch("pyrit.models.seeds.seed_prompt.TinyTag")
 def test_set_encoding_metadata_tinytag_exception(mock_tinytag, mock_logger):
     mock_tinytag.get.side_effect = Exception("Tinytag error")
     sp = SeedPrompt(
@@ -547,7 +547,7 @@ def test_set_encoding_metadata_tinytag_exception(mock_tinytag, mock_logger):
     mock_logger.error.assert_called_once()
 
 
-@patch("pyrit.models.seed_prompt.logger")
+@patch("pyrit.models.seeds.seed_prompt.logger")
 def test_set_encoding_metadata_unsupported_audio(mock_logger):
     sp = SeedPrompt(
         value="unsupported_audio.xyz",

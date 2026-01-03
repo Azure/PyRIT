@@ -40,6 +40,7 @@ from pyrit.models import (
     Seed,
     SeedDataset,
     SeedGroup,
+    SeedPrompt,
     StorageIO,
     data_serializer_factory,
     group_conversation_message_pieces_by_sequence,
@@ -780,6 +781,7 @@ class MemoryInterface(abc.ABC):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
         is_objective: Optional[bool] = None,
+        is_simulated_conversation: Optional[bool] = None,
         parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
         prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
@@ -807,6 +809,7 @@ class MemoryInterface(abc.ABC):
             groups (Sequence[str]): A list of groups to filter by. If None, all groups are considered.
             source (str): The source to filter by. If None, all sources are considered.
             is_objective (bool): Whether to filter by prompts that are used as objectives.
+            is_simulated_conversation (bool): Whether to filter by simulated conversation configurations.
             parameters (Sequence[str]): A list of parameters to filter by. Specifying parameters effectively returns
                 prompt templates instead of prompts.
             metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
@@ -837,6 +840,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedEntry.source == source)
         if is_objective is not None:
             conditions.append(SeedEntry.is_objective == is_objective)
+        if is_simulated_conversation is not None:
+            conditions.append(SeedEntry.is_simulated_conversation == is_simulated_conversation)
 
         self._add_list_conditions(field=SeedEntry.harm_categories, values=harm_categories, conditions=conditions)
         self._add_list_conditions(field=SeedEntry.authors, values=authors, conditions=conditions)
@@ -921,7 +926,9 @@ class MemoryInterface(abc.ABC):
             if prompt.date_added is None:
                 prompt.date_added = current_time
 
-            prompt.set_encoding_metadata()
+            # Only SeedPrompt has set_encoding_metadata for audio/video/image files
+            if isinstance(prompt, SeedPrompt):
+                prompt.set_encoding_metadata()
 
             # Handle serialization for image, audio & video SeedPrompts
             if prompt.data_type in ["image_path", "audio_path", "video_path"]:

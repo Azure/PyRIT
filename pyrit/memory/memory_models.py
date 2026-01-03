@@ -44,6 +44,7 @@ from pyrit.models import (
     Seed,
     SeedObjective,
     SeedPrompt,
+    SeedSimulatedConversation,
 )
 
 
@@ -516,6 +517,7 @@ class SeedEntry(Base):
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
     is_objective: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    is_simulated_conversation: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
     def __init__(self, *, entry: Seed):
         """
@@ -525,6 +527,7 @@ class SeedEntry(Base):
             entry (Seed): The seed object to convert into a database entry.
         """
         is_objective = isinstance(entry, SeedObjective)
+        is_simulated_conversation = isinstance(entry, SeedSimulatedConversation)
 
         self.id = entry.id
         self.value = entry.value
@@ -540,18 +543,26 @@ class SeedEntry(Base):
         self.date_added = entry.date_added
         self.added_by = entry.added_by
         self.prompt_metadata = entry.metadata  # type: ignore
-        self.parameters = None if is_objective else entry.parameters  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
-        self.sequence = None if is_objective else entry.sequence  # type: ignore
-        self.role = None if is_objective else entry.role  # type: ignore
         self.is_objective = is_objective
+        self.is_simulated_conversation = is_simulated_conversation
+
+        # SeedPrompt-specific fields
+        if isinstance(entry, SeedPrompt):
+            self.parameters = entry.parameters  # type: ignore
+            self.sequence = entry.sequence  # type: ignore
+            self.role = entry.role  # type: ignore
+        else:
+            self.parameters = None
+            self.sequence = None
+            self.role = None
 
     def get_seed(self) -> Seed:
         """
         Convert this database entry back into a Seed object.
 
         Returns:
-            Seed: The reconstructed seed object (SeedPrompt or SeedObjective)
+            Seed: The reconstructed seed object (SeedPrompt, SeedObjective, or SeedSimulatedConversation)
         """
         if self.is_objective:
             return SeedObjective(
@@ -570,6 +581,30 @@ class SeedEntry(Base):
                 added_by=self.added_by,
                 metadata=self.prompt_metadata,
                 prompt_group_id=self.prompt_group_id,
+            )
+        if self.is_simulated_conversation:
+            # Reconstruct SeedSimulatedConversation from JSON value
+            import json
+            config = json.loads(self.value)
+            return SeedSimulatedConversation(
+                id=self.id,
+                value=self.value,
+                value_sha256=self.value_sha256,
+                data_type=self.data_type,
+                name=self.name,
+                dataset_name=self.dataset_name,
+                harm_categories=self.harm_categories,
+                description=self.description,
+                authors=self.authors,
+                groups=self.groups,
+                source=self.source,
+                date_added=self.date_added,
+                added_by=self.added_by,
+                metadata=self.prompt_metadata,
+                prompt_group_id=self.prompt_group_id,
+                num_turns=config.get("num_turns", 3),
+                adversarial_system_prompt=config.get("adversarial_system_prompt"),
+                simulated_target_system_prompt=config.get("simulated_target_system_prompt"),
             )
         return SeedPrompt(
             id=self.id,

@@ -346,10 +346,13 @@ API Reference
     Score
     ScoreType
     Seed
+    SeedAttackGroup
     SeedDataset
     SeedGroup
     SeedObjective
     SeedPrompt
+    SeedSimulatedConversation
+    SimulatedConversationGenerationResult
     sort_message_pieces
     StorageIO
     StrategyResult
