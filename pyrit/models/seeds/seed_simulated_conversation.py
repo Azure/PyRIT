@@ -126,6 +126,51 @@ class SeedSimulatedConversation(Seed):
         )
 
     @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SeedSimulatedConversation":
+        """
+        Create a SeedSimulatedConversation from a dictionary, typically from YAML.
+
+        Handles both path-based loading (for YAML files) and direct string values.
+
+        Expected formats:
+            # Path-based (from YAML):
+            num_turns: 3
+            adversarial_system_prompt_path: path/to/adversarial.yaml
+            simulated_target_system_prompt_path: path/to/simulated.yaml  # optional
+
+            # String-based (from code):
+            num_turns: 3
+            adversarial_system_prompt: "You are a red teaming agent..."
+            simulated_target_system_prompt: "You are a helpful assistant..."  # optional
+
+        Args:
+            data: Dictionary containing the configuration.
+
+        Returns:
+            A new SeedSimulatedConversation instance.
+        """
+        num_turns = data.get("num_turns", 3)
+
+        # Check if using path-based loading or direct strings
+        adversarial_path = data.get("adversarial_system_prompt_path")
+
+        if adversarial_path:
+            # Load from paths
+            return cls.from_yaml_paths(
+                num_turns=num_turns,
+                adversarial_system_prompt_path=adversarial_path,
+                simulated_target_system_prompt_path=data.get("simulated_target_system_prompt_path"),
+            )
+        else:
+            # Direct string values
+            return cls(
+                value="",  # Will be set by __post_init__
+                num_turns=num_turns,
+                adversarial_system_prompt=data.get("adversarial_system_prompt"),
+                simulated_target_system_prompt=data.get("simulated_target_system_prompt"),
+            )
+
+    @classmethod
     def from_yaml_with_required_parameters(
         cls,
         template_path: Union[str, Path],

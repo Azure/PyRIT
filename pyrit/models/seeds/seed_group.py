@@ -53,12 +53,18 @@ class SeedGroup(YamlLoadable):
         for seed in seeds:
             if isinstance(seed, SeedObjective):
                 self.seeds.append(seed)
+            elif isinstance(seed, SeedSimulatedConversation):
+                self.seeds.append(seed)
             elif isinstance(seed, SeedPrompt):
                 self.seeds.append(seed)
             elif isinstance(seed, dict):
-                # create a SeedObjective in addition to the SeedPrompt if is_objective is True
+                # Create appropriate seed type based on flags
                 is_objective = seed.pop("is_objective", False)
-                if is_objective:
+                is_simulated_conversation = seed.pop("is_simulated_conversation", False)
+
+                if is_simulated_conversation:
+                    self.seeds.append(SeedSimulatedConversation.from_dict(seed))
+                elif is_objective:
                     self.seeds.append(SeedObjective(**seed))
                 else:
                     self.seeds.append(SeedPrompt(**seed))
@@ -69,14 +75,29 @@ class SeedGroup(YamlLoadable):
         self._enforce_consistent_role()
         self._enforce_max_one_objective()
 
-        sorted_prompts = sorted(self.prompts, key=lambda prompt: prompt.sequence if prompt.sequence is not None else 0)
+        # Reconstruct seeds in canonical order: objective, simulated_conversation, sorted prompts
+        objective = self._get_objective()
+        simulated_conv = self._get_simulated_conversation()
+        sorted_prompts = sorted(self.prompts, key=lambda p: p.sequence if p.sequence is not None else 0)
 
-        self.seeds = list([self._get_objective()] if self._get_objective() else []) + list(sorted_prompts)
+        self.seeds = []
+        if objective:
+            self.seeds.append(objective)
+        if simulated_conv:
+            self.seeds.append(simulated_conv)
+        self.seeds.extend(sorted_prompts)
 
     def _get_objective(self) -> Optional[SeedObjective]:
         """Get the objective seed if present."""
         for seed in self.seeds:
             if isinstance(seed, SeedObjective):
+                return seed
+        return None
+
+    def _get_simulated_conversation(self) -> Optional[SeedSimulatedConversation]:
+        """Get the simulated conversation seed if present."""
+        for seed in self.seeds:
+            if isinstance(seed, SeedSimulatedConversation):
                 return seed
         return None
 
@@ -242,15 +263,16 @@ class SeedAttackGroup(SeedGroup):
         self,
         *,
         seeds: Sequence[Union[Seed, Dict[str, Any]]],
-        simulated_conversation: Optional[SeedSimulatedConversation] = None,
     ):
         """
         Initialize a SeedAttackGroup.
 
         Args:
-            seeds: Sequence of seeds (must include at least one SeedObjective).
-            simulated_conversation: Optional configuration for generating prepended
-                conversations dynamically. Cannot be used with multi-sequence prompts.
+            seeds: Sequence of seeds. Can include:
+                - SeedObjective (or dict with is_objective=True) for the attack objective
+                - SeedSimulatedConversation (or dict with is_simulated_conversation=True)
+                  for dynamic prepended conversation generation
+                - SeedPrompt for static prompts/prepended conversation
 
         Raises:
             ValueError: If seeds is empty or contains invalid types.
@@ -258,11 +280,13 @@ class SeedAttackGroup(SeedGroup):
         """
         super().__init__(seeds=seeds)
 
-        self._simulated_conversation_config = simulated_conversation
+        # Extract simulated conversation config from seeds (there can be at most one)
+        self._simulated_conversation_config = self._get_simulated_conversation()
+
         self._cached_simulated_result: Optional[SimulatedConversationGenerationResult] = None
 
         # Validate mutual exclusivity
-        if simulated_conversation is not None and self._has_multi_sequence_prompts():
+        if self._simulated_conversation_config is not None and self._has_multi_sequence_prompts():
             raise ValueError(
                 "Cannot use simulated_conversation with multi-sequence prompts. "
                 "The simulated conversation generates the prepended conversation dynamically."
