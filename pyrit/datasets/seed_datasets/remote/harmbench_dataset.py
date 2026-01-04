@@ -80,7 +80,6 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
             # Create SeedPrompt
             seed_prompt = SeedObjective(
                 value=example["Behavior"],
-                data_type="text",
                 name="HarmBench Examples",
                 dataset_name=self.dataset_name,
                 harm_categories=[category],

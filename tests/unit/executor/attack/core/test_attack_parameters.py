@@ -110,10 +110,9 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
     def simulated_conversation_config(self) -> SeedSimulatedConversation:
         """Create a SeedSimulatedConversation config."""
         return SeedSimulatedConversation(
-            value="Simulated conversation config",
             num_turns=3,
-            adversarial_system_prompt="/path/to/adversarial.yaml",
-            simulated_target_system_prompt="/path/to/target.yaml",
+            adversarial_chat_system_prompt_path="/path/to/adversarial.yaml",
+            simulated_target_system_prompt_path="/path/to/target.yaml",
         )
 
     @pytest.fixture

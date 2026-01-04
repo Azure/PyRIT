@@ -10,16 +10,24 @@ against a simulated (compliant) target before executing the actual attack.
 
 from __future__ import annotations
 
+import enum
 import logging
 from pathlib import Path
 from typing import List, Optional, Union
 
+from pyrit.common.path import EXECUTOR_SIMULATED_TARGET_PATH
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
 )
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
+
+
+class SimulatedTargetSystemPromptPaths(enum.Enum):
+    """Enum for predefined simulated target system prompt paths."""
+
+    COMPLIANT = Path(EXECUTOR_SIMULATED_TARGET_PATH, "compliant.yaml").resolve()
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, SimulatedConversationResult
 from pyrit.models.seeds import SeedSimulatedConversation
