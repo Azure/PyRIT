@@ -860,9 +860,7 @@ class MemoryInterface(abc.ABC):
         # Handle seed_type filtering with backward compatibility for is_objective
         if seed_type == "objective":
             # Match either seed_type="objective" OR legacy is_objective=True
-            conditions.append(
-                or_(SeedEntry.seed_type == "objective", SeedEntry.is_objective == True)  # noqa: E712
-            )
+            conditions.append(or_(SeedEntry.seed_type == "objective", SeedEntry.is_objective == True))  # noqa: E712
         elif seed_type is not None:
             conditions.append(SeedEntry.seed_type == seed_type)
 

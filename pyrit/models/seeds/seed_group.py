@@ -77,25 +77,17 @@ class SeedGroup(YamlLoadable):
                 # Support new seed_type field with backward compatibility for deprecated fields
                 seed_type = seed.pop("seed_type", None)
                 is_objective = seed.pop("is_objective", False)
-                is_simulated_conversation = seed.pop("is_simulated_conversation", False)
 
-                # Emit deprecation warnings for legacy fields
                 if is_objective:
                     warnings.warn(
                         "is_objective is deprecated since 0.13.0. Use seed_type='objective' instead.",
                         DeprecationWarning,
                         stacklevel=2,
                     )
-                if is_simulated_conversation:
-                    warnings.warn(
-                        "is_simulated_conversation is deprecated since 0.13.0. "
-                        "Use seed_type='simulated_conversation' instead.",
-                        DeprecationWarning,
-                        stacklevel=2,
-                    )
+                    if seed_type != "objective":
+                        raise ValueError("Conflicting seed_type and is_objective values.")
 
-                # Determine effective seed type: seed_type takes precedence over deprecated booleans
-                if seed_type == "simulated_conversation" or (seed_type is None and is_simulated_conversation):
+                if seed_type == "simulated_conversation":
                     self.seeds.append(SeedSimulatedConversation.from_dict(seed))
                 elif seed_type == "objective" or (seed_type is None and is_objective):
                     self.seeds.append(SeedObjective(**seed))
