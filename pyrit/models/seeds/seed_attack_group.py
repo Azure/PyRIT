@@ -50,3 +50,18 @@ class SeedAttackGroup(SeedGroup):
         objective_count = len([s for s in self.seeds if isinstance(s, SeedObjective)])
         if objective_count != 1:
             raise ValueError(f"SeedAttackGroup must have exactly one objective. Found {objective_count}.")
+
+    @property
+    def objective(self) -> SeedObjective:
+        """
+        Get the objective for this attack group.
+
+        Unlike SeedGroup.objective which may return None, SeedAttackGroup
+        guarantees exactly one objective exists.
+
+        Returns:
+            The SeedObjective for this attack group.
+        """
+        obj = self._get_objective()
+        assert obj is not None, "SeedAttackGroup should always have an objective"
+        return obj

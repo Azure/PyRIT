@@ -49,7 +49,6 @@ from pyrit.executor.attack.component import (
     ObjectiveEvaluator,
     generate_simulated_conversation_async,
     SimulatedConversationResult,
-    SimulatedTargetSystemPromptPaths,
 )
 
 # Import printer modules last to avoid circular dependencies
@@ -95,5 +94,4 @@ __all__ = [
     "AttackExecutorResult",
     "generate_simulated_conversation_async",
     "SimulatedConversationResult",
-    "SimulatedTargetSystemPromptPaths",
 ]

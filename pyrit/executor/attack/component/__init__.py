@@ -13,7 +13,6 @@ from pyrit.executor.attack.component.objective_evaluator import ObjectiveEvaluat
 from pyrit.executor.attack.component.simulated_conversation import (
     generate_simulated_conversation_async,
     SimulatedConversationResult,
-    SimulatedTargetSystemPromptPaths,
 )
 
 __all__ = [
@@ -24,5 +23,4 @@ __all__ = [
     "ObjectiveEvaluator",
     "generate_simulated_conversation_async",
     "SimulatedConversationResult",
-    "SimulatedTargetSystemPromptPaths",
 ]

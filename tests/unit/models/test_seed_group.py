@@ -185,16 +185,17 @@ class TestSeedAttackGroupInit:
         assert group.objective.value == "Test objective"
         assert len(group.prompts) == 1
 
-    def test_init_with_simulated_conversation(self):
+    def test_init_with_simulated_conversation(self, tmp_path):
         """Test initialization with simulated conversation config."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: Adversarial\ndata_type: text")
+
         group = SeedAttackGroup(
             seeds=[
                 SeedObjective(value="Test objective"),
                 SeedSimulatedConversation(
-                    value="",
                     num_turns=3,
-                    adversarial_system_prompt="Adversarial",
-                    simulated_target_system_prompt="Target",
+                    adversarial_chat_system_prompt_path=adv_path,
                 ),
             ]
         )
@@ -203,15 +204,18 @@ class TestSeedAttackGroupInit:
         assert group.simulated_conversation_config is not None
         assert group.simulated_conversation_config.num_turns == 3
 
-    def test_init_with_dict_simulated_conversation(self):
+    def test_init_with_dict_simulated_conversation(self, tmp_path):
         """Test initialization with dict-based simulated conversation."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: Adversarial\ndata_type: text")
+
         group = SeedAttackGroup(
             seeds=[
-                {"value": "Test objective", "is_objective": True},
+                {"value": "Test objective", "seed_type": "objective"},
                 {
-                    "is_simulated_conversation": True,
+                    "seed_type": "simulated_conversation",
                     "num_turns": 5,
-                    "adversarial_system_prompt": "Adversarial",
+                    "adversarial_chat_system_prompt_path": str(adv_path),
                 },
             ]
         )
@@ -219,27 +223,32 @@ class TestSeedAttackGroupInit:
         assert group.has_simulated_conversation
         assert group.simulated_conversation_config.num_turns == 5
 
-    def test_init_simulated_conversation_with_prompts_raises_error(self):
+    def test_init_simulated_conversation_with_prompts_raises_error(self, tmp_path):
         """Test that simulated_conversation with prompts raises error."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: Adversarial\ndata_type: text")
+
         with pytest.raises(ValueError, match="Cannot have both SeedPrompts and SeedSimulatedConversation"):
             SeedAttackGroup(
                 seeds=[
                     SeedObjective(value="Objective"),
                     SeedSimulatedConversation(
-                        value="",
                         num_turns=3,
-                        adversarial_system_prompt="Adversarial",
+                        adversarial_chat_system_prompt_path=adv_path,
                     ),
                     SeedPrompt(value="Prompt 1", data_type="text", sequence=0, role="user"),
                 ]
             )
 
-    def test_init_ordering_objective_simulated(self):
+    def test_init_ordering_objective_simulated(self, tmp_path):
         """Test that seeds are ordered: objective, simulated_conversation."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: adv\ndata_type: text")
+
         group = SeedAttackGroup(
             seeds=[
-                {"is_simulated_conversation": True, "num_turns": 2, "adversarial_system_prompt": "adv"},
-                {"value": "Objective", "is_objective": True},
+                {"seed_type": "simulated_conversation", "num_turns": 2, "adversarial_chat_system_prompt_path": str(adv_path)},
+                {"value": "Objective", "seed_type": "objective"},
             ]
         )
 
@@ -294,30 +303,34 @@ class TestSeedAttackGroupSimulatedConversation:
 
         assert not group.has_simulated_conversation
 
-    def test_has_simulated_conversation_true_when_present(self):
+    def test_has_simulated_conversation_true_when_present(self, tmp_path):
         """Test has_simulated_conversation is True when config present."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: Adversarial\ndata_type: text")
+
         group = SeedAttackGroup(
             seeds=[
                 SeedObjective(value="Objective"),
                 SeedSimulatedConversation(
-                    value="",
                     num_turns=3,
-                    adversarial_system_prompt="Adversarial",
+                    adversarial_chat_system_prompt_path=adv_path,
                 ),
             ]
         )
 
         assert group.has_simulated_conversation
 
-    def test_simulated_conversation_generated_false_initially(self):
+    def test_simulated_conversation_generated_false_initially(self, tmp_path):
         """Test simulated_conversation_generated is False initially."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: Adversarial\ndata_type: text")
+
         group = SeedAttackGroup(
             seeds=[
                 SeedObjective(value="Objective"),
                 SeedSimulatedConversation(
-                    value="",
                     num_turns=3,
-                    adversarial_system_prompt="Adversarial",
+                    adversarial_chat_system_prompt_path=adv_path,
                 ),
             ]
         )
@@ -445,15 +458,17 @@ class TestSeedAttackGroupRepr:
         assert "SeedGroup" in repr_str
         assert "seeds=" in repr_str
 
-    def test_repr_with_simulated_conversation(self):
+    def test_repr_with_simulated_conversation(self, tmp_path):
         """Test __repr__ includes simulated indicator."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: Adversarial\ndata_type: text")
+
         group = SeedAttackGroup(
             seeds=[
                 SeedObjective(value="Objective"),
                 SeedSimulatedConversation(
-                    value="",
                     num_turns=3,
-                    adversarial_system_prompt="Adversarial",
+                    adversarial_chat_system_prompt_path=adv_path,
                 ),
             ]
         )

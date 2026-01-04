@@ -131,7 +131,8 @@ class SeedDataset(YamlLoadable):
                         DeprecationWarning,
                         stacklevel=2,
                     )
-                    if p_seed_type != "objective":
+                    # Only error if seed_type is explicitly set to a conflicting value
+                    if p_seed_type is not None and p_seed_type != "objective":
                         raise ValueError("Conflicting seed_type and is_objective values.")
 
                 effective_type: SeedType = "prompt"
@@ -143,9 +144,9 @@ class SeedDataset(YamlLoadable):
                     effective_type = "prompt"
 
                 # Extract common base parameters (from Seed base class) with dataset defaults.
+                # Note: If Seed base class param names change, update here too.
+                # SeedSimulatedConversation computes its own value, so we don't require it.
                 base_params = {
-                    "value": p["value"],
-                    "data_type": p.get("data_type") or self.data_type,
                     "value_sha256": p.get("value_sha256"),
                     "id": uuid.uuid4(),
                     "name": p.get("name") or self.name,
@@ -161,22 +162,25 @@ class SeedDataset(YamlLoadable):
                     "prompt_group_id": p.get("prompt_group_id"),
                 }
 
-                if effective_type == "objective":
-                    base_params["data_type"] = "text"  # Objectives are always text
-                    self.seeds.append(SeedObjective(**base_params))
-                elif effective_type == "simulated_conversation":
+                if effective_type == "simulated_conversation":
                     self.seeds.append(
                         SeedSimulatedConversation(
                             **base_params,
-                            num_turns=p.get("num_turns", 0),
-                            adversarial_system_prompt=p.get("adversarial_system_prompt", ""),
-                            simulated_target_system_prompt=p.get("simulated_target_system_prompt", ""),
+                            num_turns=p.get("num_turns", 3),
+                            adversarial_chat_system_prompt_path=p.get("adversarial_chat_system_prompt_path"),
+                            simulated_target_system_prompt_path=p.get("simulated_target_system_prompt_path"),
                         )
                     )
+                elif effective_type == "objective":
+                    # SeedObjective inherits data_type="text" from base Seed property
+                    base_params["value"] = p["value"]
+                    self.seeds.append(SeedObjective(**base_params))
                 else:  # prompt
+                    base_params["value"] = p["value"]
                     self.seeds.append(
                         SeedPrompt(
                             **base_params,
+                            data_type=p.get("data_type") or self.data_type,
                             role=p.get("role", "user"),
                             sequence=p.get("sequence", 0),
                             parameters=p.get("parameters", {}),

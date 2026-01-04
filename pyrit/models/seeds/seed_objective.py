@@ -25,7 +25,6 @@ class SeedObjective(Seed):
     def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values."""
         self.value = super().render_template_value_silent(**PATHS_DICT)
-        self.data_type = "text"
 
     @classmethod
     def from_yaml_with_required_parameters(

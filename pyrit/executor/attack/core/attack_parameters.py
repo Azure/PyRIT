@@ -41,6 +41,38 @@ class AttackParameters:
     # Additional labels that can be applied to the prompts throughout the attack
     memory_labels: Optional[Dict[str, str]] = field(default_factory=dict)
 
+    def __str__(self) -> str:
+        """Return a nicely formatted string representation of the attack parameters."""
+        lines = [f"{self.__class__.__name__}:"]
+        lines.append(f"  objective: {self.objective}")
+
+        if self.next_message is not None:
+            piece_count = len(self.next_message.message_pieces)
+            msg_value = self.next_message.get_value()
+            # Truncate long messages for display
+            if len(msg_value) > 100:
+                msg_value = msg_value[:100] + "..."
+            lines.append(f"  next_message: ({piece_count} piece(s)) {msg_value}")
+        else:
+            lines.append("  next_message: None")
+
+        if self.prepended_conversation:
+            lines.append(f"  prepended_conversation: {len(self.prepended_conversation)} message(s)")
+            for i, msg in enumerate(self.prepended_conversation):
+                role = msg.api_role if hasattr(msg, "api_role") else "unknown"
+                piece_count = len(msg.message_pieces)
+                value = msg.get_value()
+                if len(value) > 60:
+                    value = value[:60] + "..."
+                lines.append(f"    [{i}] {role} ({piece_count} piece(s)): {value}")
+        else:
+            lines.append("  prepended_conversation: None")
+
+        if self.memory_labels:
+            lines.append(f"  memory_labels: {self.memory_labels}")
+
+        return "\n".join(lines)
+
     @classmethod
     async def from_seed_group_async(
         cls: Type[AttackParamsT],
@@ -215,8 +247,8 @@ async def _build_params_from_seed_group_async(
             adversarial_chat=adversarial_chat,
             objective_scorer=objective_scorer,
             num_turns=config.num_turns,
-            adversarial_chat_system_prompt_path=config.adversarial_system_prompt,
-            simulated_target_system_prompt_path=config.simulated_target_system_prompt,
+            adversarial_chat_system_prompt_path=config.adversarial_chat_system_prompt_path,
+            simulated_target_system_prompt_path=config.simulated_target_system_prompt_path,
         )
 
         # Cache the result in the seed_group for later access

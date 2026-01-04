@@ -17,7 +17,7 @@ from tinytag import TinyTag
 
 from pyrit.common.path import PATHS_DICT
 from pyrit.models import DataTypeSerializer
-from pyrit.models.literals import ChatMessageRole
+from pyrit.models.literals import ChatMessageRole, PromptDataType
 from pyrit.models.seeds.seed import Seed
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SeedPrompt(Seed):
     """Represents a seed prompt with various attributes and metadata."""
+
+    # The type of data this prompt represents (e.g., text, image_path, audio_path, video_path)
+    # This field shadows the base class property to allow per-prompt data types
+    data_type: Optional[PromptDataType] = None  # type: ignore[assignment]
 
     # Role of the prompt in a conversation (e.g., "user", "assistant")
     role: Optional[ChatMessageRole] = None

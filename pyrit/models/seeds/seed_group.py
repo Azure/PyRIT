@@ -84,12 +84,17 @@ class SeedGroup(YamlLoadable):
                         DeprecationWarning,
                         stacklevel=2,
                     )
-                    if seed_type != "objective":
+                    # Only error if seed_type is explicitly set to a conflicting value
+                    if seed_type is not None and seed_type != "objective":
                         raise ValueError("Conflicting seed_type and is_objective values.")
 
                 if seed_type == "simulated_conversation":
+                    # SeedSimulatedConversation doesn't use data_type (always text)
+                    seed.pop("data_type", None)
                     self.seeds.append(SeedSimulatedConversation.from_dict(seed))
                 elif seed_type == "objective" or (seed_type is None and is_objective):
+                    # SeedObjective doesn't use data_type (always text)
+                    seed.pop("data_type", None)
                     self.seeds.append(SeedObjective(**seed))
                 else:
                     self.seeds.append(SeedPrompt(**seed))

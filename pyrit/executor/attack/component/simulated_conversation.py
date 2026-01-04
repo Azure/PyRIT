@@ -10,12 +10,10 @@ against a simulated (compliant) target before executing the actual attack.
 
 from __future__ import annotations
 
-import enum
 import logging
 from pathlib import Path
 from typing import List, Optional, Union
 
-from pyrit.common.path import EXECUTOR_SIMULATED_TARGET_PATH
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -23,17 +21,12 @@ from pyrit.executor.attack.core import (
 )
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.memory import CentralMemory
-from pyrit.models import Message, SeedPrompt, SimulatedConversationResult
+from pyrit.models import Message, SimulatedConversationResult
+from pyrit.models.seeds import SeedSimulatedConversation
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
-
-
-class SimulatedTargetSystemPromptPaths(enum.Enum):
-    """Enum for predefined simulated target system prompt paths."""
-
-    COMPLIANT = Path(EXECUTOR_SIMULATED_TARGET_PATH, "compliant.yaml").resolve()
 
 
 async def generate_simulated_conversation_async(
@@ -92,18 +85,11 @@ async def generate_simulated_conversation_async(
     if num_turns <= 0:
         raise ValueError("num_turns must be a positive integer")
 
-    # Load and configure simulated target system prompt
-    simulated_target_prompt_path = (
-        simulated_target_system_prompt_path or SimulatedTargetSystemPromptPaths.COMPLIANT.value
-    )
-    simulated_target_system_prompt_template = SeedPrompt.from_yaml_with_required_parameters(
-        template_path=simulated_target_prompt_path,
-        required_parameters=["objective", "num_turns"],
-        error_message="Simulated target system prompt must have objective and num_turns parameters",
-    )
-    simulated_target_system_prompt = simulated_target_system_prompt_template.render_template_value(
+    # Load and configure simulated target system prompt using centralized validation
+    simulated_target_system_prompt = SeedSimulatedConversation.load_simulated_target_system_prompt(
         objective=objective,
         num_turns=num_turns,
+        simulated_target_system_prompt_path=simulated_target_system_prompt_path,
     )
 
     # Create adversarial config for the simulation

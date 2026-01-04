@@ -55,9 +55,6 @@ class Seed(YamlLoadable):
     # SHA256 hash of the value, used for deduplication
     value_sha256: Optional[str] = None
 
-    # The type of data this prompt represents (e.g., text, image, audio, video)
-    data_type: Optional[PromptDataType] = None
-
     # Unique identifier for the prompt
     id: Optional[uuid.UUID] = field(default_factory=lambda: uuid.uuid4())
 
@@ -96,6 +93,16 @@ class Seed(YamlLoadable):
 
     # Alias for the prompt group
     prompt_group_alias: Optional[str] = None
+
+    @property
+    def data_type(self) -> PromptDataType:
+        """
+        Return the data type for this seed.
+
+        Base implementation returns 'text'. SeedPrompt overrides this
+        to support multiple data types (image_path, audio_path, etc.).
+        """
+        return "text"
 
     def render_template_value(self, **kwargs) -> str:
         """

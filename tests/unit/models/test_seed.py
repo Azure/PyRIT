@@ -46,7 +46,6 @@ def seed_prompt_fixture():
 def seed_objective_fixture():
     return SeedObjective(
         value="Test objective",
-        data_type="text",
         name="Test Name",
         dataset_name="Test Dataset",
         harm_categories=["category1", "category2"],
@@ -938,29 +937,27 @@ def test_seed_dataset_dict_to_seed_objective_all_base_params():
     assert seed.prompt_group_id == prompt_group_id
 
 
-def test_seed_dataset_dict_to_seed_simulated_conversation_all_base_params():
-    """Test that all base_params are correctly passed when creating SeedSimulatedConversation from dict."""
-    prompt_group_id = uuid.uuid4()
+def test_seed_dataset_dict_to_seed_simulated_conversation_all_base_params(tmp_path):
+    """Test that SeedSimulatedConversation is correctly created from dict with path-based API."""
+    # Create adversarial prompt file
+    adv_path = tmp_path / "adversarial.yaml"
+    adv_path.write_text("value: You are adversarial\ndata_type: text")
+
+    # Create simulated target prompt file
+    sim_path = tmp_path / "simulated.yaml"
+    sim_path.write_text(
+        "value: 'Objective: {{ objective }} Turns: {{ num_turns }}'\n"
+        "data_type: text\n"
+        "parameters:\n"
+        "  - objective\n"
+        "  - num_turns"
+    )
+
     sim_dict = {
-        "value": "Simulated conv value",
-        "data_type": "text",
-        "value_sha256": "ghi789sha",
-        "name": "Sim Name",
-        "dataset_name": "Sim Dataset",
-        "harm_categories": ["sim_harm"],
-        "description": "Sim Description",
-        "authors": ["SimAuthor"],
-        "groups": ["SimGroup"],
-        "source": "Sim Source",
-        "date_added": "2025-12-01",
-        "added_by": "SimTester",
-        "metadata": {"sim_key": "sim_value"},
-        "prompt_group_id": prompt_group_id,
-        # SeedSimulatedConversation-specific fields
-        "num_turns": 5,
-        "adversarial_system_prompt": "You are adversarial",
-        "simulated_target_system_prompt": "You are a target",
         "seed_type": "simulated_conversation",
+        "num_turns": 5,
+        "adversarial_chat_system_prompt_path": str(adv_path),
+        "simulated_target_system_prompt_path": str(sim_path),
     }
 
     dataset = SeedDataset(seeds=[sim_dict])
@@ -969,23 +966,10 @@ def test_seed_dataset_dict_to_seed_simulated_conversation_all_base_params():
     seed = dataset.seeds[0]
     assert isinstance(seed, SeedSimulatedConversation)
 
-    # Verify all base params
-    assert seed.value_sha256 == "ghi789sha"
-    assert seed.name == "Sim Name"
-    assert seed.dataset_name == "Sim Dataset"
-    assert seed.harm_categories == ["sim_harm"]
-    assert seed.description == "Sim Description"
-    assert seed.authors == ["SimAuthor"]
-    assert seed.groups == ["SimGroup"]
-    assert seed.source == "Sim Source"
-    assert seed.added_by == "SimTester"
-    assert seed.metadata == {"sim_key": "sim_value"}
-    assert seed.prompt_group_id == prompt_group_id
-
     # Verify SeedSimulatedConversation-specific fields
     assert seed.num_turns == 5
-    assert seed.adversarial_system_prompt == "You are adversarial"
-    assert seed.simulated_target_system_prompt == "You are a target"
+    assert seed.adversarial_chat_system_prompt_path == Path(adv_path)
+    assert seed.simulated_target_system_prompt_path == Path(sim_path)
 
 
 def test_seed_dataset_uses_dataset_defaults_for_missing_params():

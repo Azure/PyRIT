@@ -352,6 +352,7 @@ API Reference
     SeedObjective
     SeedPrompt
     SeedSimulatedConversation
+    SeedType
     SimulatedConversationResult
     sort_message_pieces
     StorageIO
