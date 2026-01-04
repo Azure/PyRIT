@@ -19,6 +19,7 @@ from pyrit.models import (
     SeedObjective,
     SeedPrompt,
 )
+from pyrit.models.seeds import SeedSimulatedConversation
 
 
 @pytest.fixture
@@ -801,6 +802,220 @@ def test_seed_group_mixed_prompt_types():
     # Should have the objective
     assert group.objective is not None
     assert group.objective.value == "Test objective"
+
+
+def test_seed_group_dict_with_seed_type_objective():
+    """Test that a dictionary with seed_type='objective' creates an objective."""
+    prompt_dict = {
+        "value": "Test objective from dict with seed_type",
+        "seed_type": "objective",
+    }
+
+    group = SeedGroup(seeds=[prompt_dict])
+
+    # Should create objective from the dictionary
+    assert group.objective is not None
+    assert group.objective.value == "Test objective from dict with seed_type"
+
+    # Prompts list should be empty
+    assert len(group.prompts) == 0
+
+
+def test_seed_group_dict_with_seed_type_prompt():
+    """Test that a dictionary with seed_type='prompt' creates a prompt."""
+    prompt_dict = {"value": "Test prompt from dict with seed_type", "seed_type": "prompt", "sequence": 1}
+
+    group = SeedGroup(seeds=[prompt_dict])
+
+    # Should create prompt from the dictionary
+    assert len(group.prompts) == 1
+    assert group.prompts[0].value == "Test prompt from dict with seed_type"
+    assert group.prompts[0].sequence == 1
+
+    # No objective should be created
+    assert group.objective is None
+
+
+# ============================================================================
+# SeedDataset base_params verification tests
+# These tests verify that all base parameters are correctly passed from dict
+# to the corresponding Seed object for each seed type.
+# ============================================================================
+
+
+def test_seed_dataset_dict_to_seed_prompt_all_base_params():
+    """Test that all base_params are correctly passed when creating SeedPrompt from dict."""
+    prompt_group_id = uuid.uuid4()
+    prompt_dict = {
+        "value": "Test prompt value",
+        "data_type": "text",
+        "value_sha256": "abc123sha",
+        "name": "Test Name",
+        "dataset_name": "Test Dataset",
+        "harm_categories": ["category1", "category2"],
+        "description": "Test Description",
+        "authors": ["Author1", "Author2"],
+        "groups": ["Group1", "Group2"],
+        "source": "Test Source",
+        "date_added": "2025-01-01",
+        "added_by": "Tester",
+        "metadata": {"key": "value"},
+        "prompt_group_id": prompt_group_id,
+        # SeedPrompt-specific fields
+        "role": "assistant",
+        "sequence": 5,
+        "parameters": {"param1": "val1"},
+        "seed_type": "prompt",
+    }
+
+    dataset = SeedDataset(seeds=[prompt_dict])
+
+    assert len(dataset.seeds) == 1
+    seed = dataset.seeds[0]
+    assert isinstance(seed, SeedPrompt)
+
+    # Verify all base params
+    assert seed.value == "Test prompt value"
+    assert seed.data_type == "text"
+    assert seed.value_sha256 == "abc123sha"
+    assert seed.name == "Test Name"
+    assert seed.dataset_name == "Test Dataset"
+    assert seed.harm_categories == ["category1", "category2"]
+    assert seed.description == "Test Description"
+    assert seed.authors == ["Author1", "Author2"]
+    assert seed.groups == ["Group1", "Group2"]
+    assert seed.source == "Test Source"
+    assert seed.added_by == "Tester"
+    assert seed.metadata == {"key": "value"}
+    assert seed.prompt_group_id == prompt_group_id
+
+    # Verify SeedPrompt-specific fields
+    assert seed.role == "assistant"
+    assert seed.sequence == 5
+    assert seed.parameters == {"param1": "val1"}
+
+
+def test_seed_dataset_dict_to_seed_objective_all_base_params():
+    """Test that all base_params are correctly passed when creating SeedObjective from dict."""
+    prompt_group_id = uuid.uuid4()
+    objective_dict = {
+        "value": "Test objective value",
+        "data_type": "image",  # Should be overridden to "text" for objectives
+        "value_sha256": "def456sha",
+        "name": "Objective Name",
+        "dataset_name": "Objective Dataset",
+        "harm_categories": ["harm1", "harm2"],
+        "description": "Objective Description",
+        "authors": ["ObjAuthor"],
+        "groups": ["ObjGroup"],
+        "source": "Objective Source",
+        "date_added": "2025-06-15",
+        "added_by": "ObjTester",
+        "metadata": {"obj_key": "obj_value"},
+        "prompt_group_id": prompt_group_id,
+        "seed_type": "objective",
+    }
+
+    dataset = SeedDataset(seeds=[objective_dict])
+
+    assert len(dataset.seeds) == 1
+    seed = dataset.seeds[0]
+    assert isinstance(seed, SeedObjective)
+
+    # Verify all base params
+    assert seed.value == "Test objective value"
+    assert seed.data_type == "text"  # Objectives are always text
+    assert seed.value_sha256 == "def456sha"
+    assert seed.name == "Objective Name"
+    assert seed.dataset_name == "Objective Dataset"
+    assert seed.harm_categories == ["harm1", "harm2"]
+    assert seed.description == "Objective Description"
+    assert seed.authors == ["ObjAuthor"]
+    assert seed.groups == ["ObjGroup"]
+    assert seed.source == "Objective Source"
+    assert seed.added_by == "ObjTester"
+    assert seed.metadata == {"obj_key": "obj_value"}
+    assert seed.prompt_group_id == prompt_group_id
+
+
+def test_seed_dataset_dict_to_seed_simulated_conversation_all_base_params():
+    """Test that all base_params are correctly passed when creating SeedSimulatedConversation from dict."""
+    prompt_group_id = uuid.uuid4()
+    sim_dict = {
+        "value": "Simulated conv value",
+        "data_type": "text",
+        "value_sha256": "ghi789sha",
+        "name": "Sim Name",
+        "dataset_name": "Sim Dataset",
+        "harm_categories": ["sim_harm"],
+        "description": "Sim Description",
+        "authors": ["SimAuthor"],
+        "groups": ["SimGroup"],
+        "source": "Sim Source",
+        "date_added": "2025-12-01",
+        "added_by": "SimTester",
+        "metadata": {"sim_key": "sim_value"},
+        "prompt_group_id": prompt_group_id,
+        # SeedSimulatedConversation-specific fields
+        "num_turns": 5,
+        "adversarial_system_prompt": "You are adversarial",
+        "simulated_target_system_prompt": "You are a target",
+        "seed_type": "simulated_conversation",
+    }
+
+    dataset = SeedDataset(seeds=[sim_dict])
+
+    assert len(dataset.seeds) == 1
+    seed = dataset.seeds[0]
+    assert isinstance(seed, SeedSimulatedConversation)
+
+    # Verify all base params
+    assert seed.value_sha256 == "ghi789sha"
+    assert seed.name == "Sim Name"
+    assert seed.dataset_name == "Sim Dataset"
+    assert seed.harm_categories == ["sim_harm"]
+    assert seed.description == "Sim Description"
+    assert seed.authors == ["SimAuthor"]
+    assert seed.groups == ["SimGroup"]
+    assert seed.source == "Sim Source"
+    assert seed.added_by == "SimTester"
+    assert seed.metadata == {"sim_key": "sim_value"}
+    assert seed.prompt_group_id == prompt_group_id
+
+    # Verify SeedSimulatedConversation-specific fields
+    assert seed.num_turns == 5
+    assert seed.adversarial_system_prompt == "You are adversarial"
+    assert seed.simulated_target_system_prompt == "You are a target"
+
+
+def test_seed_dataset_uses_dataset_defaults_for_missing_params():
+    """Test that dataset-level defaults are used when dict params are missing."""
+    prompt_dict = {
+        "value": "Minimal prompt",
+        "seed_type": "prompt",
+    }
+
+    dataset = SeedDataset(
+        seeds=[prompt_dict],
+        name="Dataset Name",
+        dataset_name="Dataset Dataset Name",
+        description="Dataset Description",
+        source="Dataset Source",
+    )
+
+    seed = dataset.seeds[0]
+    assert isinstance(seed, SeedPrompt)
+
+    # These should come from dataset defaults
+    assert seed.name == "Dataset Name"
+    assert seed.dataset_name == "Dataset Dataset Name"
+    assert seed.description == "Dataset Description"
+    assert seed.source == "Dataset Source"
+
+    # These should use sensible defaults
+    assert seed.role == "user"
+    assert seed.sequence == 0
+    assert seed.parameters == {}
 
 
 def test_next_message_single_turn_no_objective():

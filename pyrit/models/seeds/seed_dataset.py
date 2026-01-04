@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import random
 import uuid
+import warnings
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, Optional, Sequence, Union
@@ -18,12 +19,13 @@ from pydantic.types import PositiveInt
 
 from pyrit.common import utils
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models.literals import PromptDataType
+from pyrit.models.literals import PromptDataType, SeedType
 from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_attack_group import SeedAttackGroup
 from pyrit.models.seeds.seed_group import SeedGroup
 from pyrit.models.seeds.seed_objective import SeedObjective
 from pyrit.models.seeds.seed_prompt import SeedPrompt
+from pyrit.models.seeds.seed_simulated_conversation import SeedSimulatedConversation
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +65,8 @@ class SeedDataset(YamlLoadable):
         source: Optional[str] = None,
         date_added: Optional[datetime] = None,
         added_by: Optional[str] = None,
-        is_objective: bool = False,
+        seed_type: Optional[SeedType] = None,
+        is_objective: bool = False,  # Deprecated in 0.13.0: Use seed_type="objective" instead
     ):
         """
         Initialize the dataset.
@@ -71,9 +74,32 @@ class SeedDataset(YamlLoadable):
         are merged into each seed. If you're passing seeds directly, they can be
         either a list of Seed objects or seed dictionaries (which then get
         converted to Seed objects).
+
+        Args:
+            seeds: List of seed dictionaries or Seed objects.
+            data_type: Default data type for seeds.
+            name: Name of the dataset.
+            dataset_name: Dataset name for categorization.
+            harm_categories: List of harm categories.
+            description: Description of the dataset.
+            authors: List of authors.
+            groups: List of groups.
+            source: Source of the dataset.
+            date_added: Date when the dataset was added.
+            added_by: User who added the dataset.
+            seed_type: The type of seeds in this dataset ("prompt", "objective", or "simulated_conversation").
+            is_objective: Deprecated in 0.13.0. Use seed_type="objective" instead.
         """
         if not seeds:
             raise ValueError("SeedDataset cannot be empty.")
+
+        # Emit deprecation warning for legacy is_objective parameter
+        if is_objective:
+            warnings.warn(
+                "is_objective parameter is deprecated since 0.13.0. Use seed_type='objective' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         input_seeds = seeds
 
@@ -94,39 +120,75 @@ class SeedDataset(YamlLoadable):
         self.seeds = []
         for p in input_seeds:
             if isinstance(p, dict):
-                # Use top-level is_objective if not present in p
+                # Support new seed_type field with backward compatibility for deprecated is_objective
+                p_seed_type = p.get("seed_type", seed_type)
                 p_is_objective = p.get("is_objective", is_objective)
 
-                if p_is_objective:
+                # Emit deprecation warning if is_objective is used in dict
+                if "is_objective" in p and p["is_objective"]:
+                    warnings.warn(
+                        "is_objective in seed dict is deprecated since 0.13.0. "
+                        "Use seed_type='objective' instead.",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
+                    if p_seed_type != "objective":
+                        raise ValueError("Conflicting seed_type and is_objective values.")
+
+                effective_type: SeedType = "prompt"
+                if p_seed_type == "objective" or (p_is_objective):
+                    effective_type = "objective"
+                elif p_seed_type == "simulated_conversation":
+                    effective_type = "simulated_conversation"
+                elif p_seed_type == "prompt":
+                    effective_type = "prompt"
+
+                # Extract common base parameters (from Seed base class) with dataset defaults.
+                # Note: If Seed base class param names change, update here too.
+                base_params = {
+                    "value": p["value"],
+                    "data_type": p.get("data_type") or self.data_type,
+                    "value_sha256": p.get("value_sha256"),
+                    "id": uuid.uuid4(),
+                    "name": p.get("name") or self.name,
+                    "dataset_name": p.get("dataset_name") or self.dataset_name or self.name,
+                    "harm_categories": p.get("harm_categories", []),
+                    "description": p.get("description") or self.description,
+                    "authors": p.get("authors", []),
+                    "groups": p.get("groups", []),
+                    "source": p.get("source") or self.source,
+                    "date_added": p.get("date_added"),
+                    "added_by": p.get("added_by"),
+                    "metadata": p.get("metadata", {}),
+                    "prompt_group_id": p.get("prompt_group_id"),
+                }
+
+                if effective_type == "objective":
+                    base_params["data_type"] = "text"  # Objectives are always text
+                    self.seeds.append(SeedObjective(**base_params))
+                elif effective_type == "simulated_conversation":
                     self.seeds.append(
-                        SeedObjective(
-                            value=p["value"],
-                            data_type="text",
-                            value_sha256=p.get("value_sha256"),
-                            id=uuid.uuid4(),
-                            name=p.get("name") or self.name,
-                            dataset_name=p.get("dataset_name") or self.dataset_name or self.name,
-                            harm_categories=p.get("harm_categories", []),
-                            description=p.get("description") or self.description,
-                            authors=p.get("authors", []),
-                            groups=p.get("groups", []),
-                            source=p.get("source") or self.source,
-                            date_added=p.get("date_added"),
-                            added_by=p.get("added_by"),
-                            metadata=p.get("metadata", {}),
-                            prompt_group_id=p.get("prompt_group_id"),
+                        SeedSimulatedConversation(
+                            **base_params,
+                            num_turns=p.get("num_turns", 0),
+                            adversarial_system_prompt=p.get("adversarial_system_prompt", ""),
+                            simulated_target_system_prompt=p.get("simulated_target_system_prompt", ""),
                         )
                     )
-                else:
-                    if "is_objective" in p:
-                        del p["is_objective"]
-
-                    self.seeds.append(SeedPrompt(**p))
-            elif isinstance(p, (SeedPrompt, SeedObjective)):
+                else:  # prompt
+                    self.seeds.append(
+                        SeedPrompt(
+                            **base_params,
+                            role=p.get("role", "user"),
+                            sequence=p.get("sequence", 0),
+                            parameters=p.get("parameters", {}),
+                        )
+                    )
+            elif isinstance(p, (SeedPrompt, SeedObjective, SeedSimulatedConversation)):
                 self.seeds.append(p)
             else:
                 raise ValueError(
-                    "Prompts should be either dicts, SeedPrompt objects, or SeedObjective objects. Got something else."
+                    "Seeds should be dicts or Seed objects (SeedPrompt, SeedObjective, SeedSimulatedConversation)."
                 )
 
     def get_values(

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+import warnings
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence, Union
 
@@ -51,9 +52,10 @@ class SeedGroup(YamlLoadable):
 
         Args:
             seeds: Sequence of seeds. Can include:
-                - SeedObjective (or dict with is_objective=True)
-                - SeedSimulatedConversation (or dict with is_simulated_conversation=True)
-                - SeedPrompt for prompts
+                - SeedObjective (or dict with seed_type="objective")
+                - SeedSimulatedConversation (or dict with seed_type="simulated_conversation")
+                - SeedPrompt for prompts (or dict with seed_type="prompt" or no seed_type)
+                Note: is_objective and is_simulated_conversation are deprecated since 0.13.0.
 
         Raises:
             ValueError: If seeds is empty.
@@ -72,12 +74,30 @@ class SeedGroup(YamlLoadable):
             elif isinstance(seed, SeedPrompt):
                 self.seeds.append(seed)
             elif isinstance(seed, dict):
+                # Support new seed_type field with backward compatibility for deprecated fields
+                seed_type = seed.pop("seed_type", None)
                 is_objective = seed.pop("is_objective", False)
                 is_simulated_conversation = seed.pop("is_simulated_conversation", False)
 
+                # Emit deprecation warnings for legacy fields
+                if is_objective:
+                    warnings.warn(
+                        "is_objective is deprecated since 0.13.0. Use seed_type='objective' instead.",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
                 if is_simulated_conversation:
+                    warnings.warn(
+                        "is_simulated_conversation is deprecated since 0.13.0. "
+                        "Use seed_type='simulated_conversation' instead.",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
+
+                # Determine effective seed type: seed_type takes precedence over deprecated booleans
+                if seed_type == "simulated_conversation" or (seed_type is None and is_simulated_conversation):
                     self.seeds.append(SeedSimulatedConversation.from_dict(seed))
-                elif is_objective:
+                elif seed_type == "objective" or (seed_type is None and is_objective):
                     self.seeds.append(SeedObjective(**seed))
                 else:
                     self.seeds.append(SeedPrompt(**seed))

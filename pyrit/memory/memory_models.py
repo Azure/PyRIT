@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import json
+import logging
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -45,6 +46,7 @@ from pyrit.models import (
     SeedObjective,
     SeedPrompt,
     SeedSimulatedConversation,
+    SeedType,
 )
 
 
@@ -490,7 +492,8 @@ class SeedEntry(Base):
         sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
         role (str): The role of the prompt (e.g., user, system, assistant).
-        is_objective (bool): Whether this prompt is used as an objective.
+        seed_type (SeedType): The type of seed - "prompt", "objective", or "simulated_conversation".
+        is_objective (bool): Deprecated in 0.13.0. Use seed_type="objective" instead.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -516,8 +519,9 @@ class SeedEntry(Base):
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
+    seed_type: Mapped[SeedType] = mapped_column(String, nullable=False, default="prompt")
+    # Deprecated in 0.13.0: Use seed_type instead
     is_objective: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
-    is_simulated_conversation: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
     def __init__(self, *, entry: Seed):
         """
@@ -526,8 +530,13 @@ class SeedEntry(Base):
         Args:
             entry (Seed): The seed object to convert into a database entry.
         """
-        is_objective = isinstance(entry, SeedObjective)
-        is_simulated_conversation = isinstance(entry, SeedSimulatedConversation)
+        # Determine seed_type based on the Seed subclass
+        if isinstance(entry, SeedObjective):
+            seed_type: SeedType = "objective"
+        elif isinstance(entry, SeedSimulatedConversation):
+            seed_type = "simulated_conversation"
+        else:
+            seed_type = "prompt"
 
         self.id = entry.id
         self.value = entry.value
@@ -544,8 +553,9 @@ class SeedEntry(Base):
         self.added_by = entry.added_by
         self.prompt_metadata = entry.metadata  # type: ignore
         self.prompt_group_id = entry.prompt_group_id
-        self.is_objective = is_objective
-        self.is_simulated_conversation = is_simulated_conversation
+        self.seed_type = seed_type
+        # Deprecated: kept for backward compatibility with existing databases
+        self.is_objective = seed_type == "objective"
 
         # SeedPrompt-specific fields
         if isinstance(entry, SeedPrompt):
@@ -564,7 +574,24 @@ class SeedEntry(Base):
         Returns:
             Seed: The reconstructed seed object (SeedPrompt, SeedObjective, or SeedSimulatedConversation)
         """
+        # Use seed_type for dispatching, with fallback to is_objective for backward compatibility
+        effective_seed_type = self.seed_type
+
+        # Handle backward compatibility with legacy is_objective field
         if self.is_objective:
+            if effective_seed_type is None or effective_seed_type == "prompt":
+                # Legacy record: use is_objective to determine type
+                effective_seed_type = "objective"
+            elif effective_seed_type != "objective":
+                # Conflict: seed_type and is_objective disagree - prefer seed_type and warn
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f"SeedEntry {self.id} has conflicting values: seed_type='{effective_seed_type}' "
+                    f"but is_objective=True. Using seed_type='{effective_seed_type}'. "
+                    "is_objective is deprecated since 0.13.0."
+                )
+
+        if effective_seed_type == "objective":
             return SeedObjective(
                 id=self.id,
                 value=self.value,
@@ -582,7 +609,7 @@ class SeedEntry(Base):
                 metadata=self.prompt_metadata,
                 prompt_group_id=self.prompt_group_id,
             )
-        if self.is_simulated_conversation:
+        if effective_seed_type == "simulated_conversation":
             # Reconstruct SeedSimulatedConversation from JSON value
             import json
 

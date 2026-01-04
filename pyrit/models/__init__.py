@@ -25,7 +25,7 @@ from pyrit.models.data_type_serializer import (
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.identifiers import Identifier
-from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
+from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError, SeedType
 from pyrit.models.message import (
     Message,
     construct_response_from_request,
@@ -97,6 +97,7 @@ __all__ = [
     "SeedDataset",
     "SeedGroup",
     "SeedSimulatedConversation",
+    "SeedType",
     "SimulatedConversationResult",
     "sort_message_pieces",
     "StorageIO",
