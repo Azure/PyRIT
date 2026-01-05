@@ -286,9 +286,9 @@ class ConversationManager:
             - All messages get new UUIDs
 
         For non-chat PromptTarget:
-            - If config.non_chat_target_behavior="normalize_first_turn": normalizes
+            - If `config.non_chat_target_behavior="normalize_first_turn"`: normalizes
               conversation to string and prepends to context.next_message
-            - If config.non_chat_target_behavior="raise": raises ValueError
+            - If `config.non_chat_target_behavior="raise"`: raises ValueError
 
         Args:
             context: The attack context to initialize.
@@ -364,8 +364,8 @@ class ConversationManager:
 
         if config.non_chat_target_behavior == "raise":
             raise ValueError(
-                "prepended_conversation requires target to be a PromptChatTarget. "
-                "Non-chat targets do not support conversation history. "
+                "prepended_conversation requires the objective target to be a PromptChatTarget. "
+                "Non-chat objective targets do not support conversation history. "
                 "Use PrependedConversationConfig with non_chat_target_behavior='normalize_first_turn' "
                 "to normalize the conversation into the first message instead."
             )
@@ -458,22 +458,21 @@ class ConversationManager:
         for i, message in enumerate(valid_messages):
             message_copy = message.duplicate_message()
 
+            message_copy.set_simulated_role()
+
             for piece in message_copy.message_pieces:
                 piece.conversation_id = conversation_id
                 piece.attack_identifier = self._attack_identifier
 
-                # Swap assistant to simulated_assistant
-                if piece._role == "assistant":
-                    piece._role = "simulated_assistant"
-
-                # Count turns (only assistant/simulated_assistant messages)
-                if piece.api_role == "assistant":
-                    turn_count += 1
-                    if max_turns is not None and turn_count > max_turns:
-                        raise ValueError(
-                            f"Prepended conversation has {turn_count} turns, "
-                            f"exceeding max_turns={max_turns}. Reduce prepended turns or increase max_turns."
-                        )
+            # Count turns at message level (only assistant/simulated_assistant messages)
+            # A multi-part response still counts as one turn
+            if message_copy.api_role == "assistant":
+                turn_count += 1
+                if max_turns is not None and turn_count > max_turns:
+                    raise ValueError(
+                        f"Prepended conversation has {turn_count} turns, "
+                        f"exceeding max_turns={max_turns}. Reduce prepended turns or increase max_turns."
+                    )
 
             # Apply converters if configured
             if request_converters:
@@ -542,11 +541,11 @@ class ConversationManager:
                 context.executed_turns = state.turn_count  # type: ignore[attr-defined]
 
             # Extract scores for last assistant message if it exists
-            last_piece = valid_messages[-1].get_piece()
-            if last_piece.api_role == "assistant":
-                state.last_assistant_message_scores = list(
-                    self._memory.get_prompt_scores(prompt_ids=[str(last_piece.original_prompt_id)])
-                )
+            # Multi-part messages (e.g., text + image) may have scores on multiple pieces
+            last_message = valid_messages[-1]
+            if last_message.api_role == "assistant":
+                prompt_ids = [str(piece.original_prompt_id) for piece in last_message.message_pieces]
+                state.last_assistant_message_scores = list(self._memory.get_prompt_scores(prompt_ids=prompt_ids))
 
         return state
 

@@ -348,7 +348,9 @@ class TestNextMessageSentFirst:
 
         call_args = mock_normalizer.send_prompt_async.call_args
         sent_message = call_args.kwargs.get("message")
+        sent_target = call_args.kwargs.get("target")
 
+        assert sent_target == mock_chat_target, "Message should be sent to the objective target"
         assert sent_message is not None, "No message was sent to the target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
@@ -390,7 +392,9 @@ class TestNextMessageSentFirst:
         # The first message sent should contain the next_message content with image preserved
         first_call = mock_normalizer.send_prompt_async.call_args_list[0]
         sent_message = first_call.kwargs.get("message")
+        sent_target = first_call.kwargs.get("target")
 
+        assert sent_target == mock_chat_target, "First message should be sent to the objective target"
         assert sent_message is not None, "No message was sent to the target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces (text + image)"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
@@ -454,7 +458,9 @@ class TestNextMessageSentFirst:
         # The first message sent should contain the next_message content with image preserved
         first_call = mock_normalizer.send_prompt_async.call_args_list[0]
         sent_message = first_call.kwargs.get("message")
+        sent_target = first_call.kwargs.get("target")
 
+        assert sent_target == mock_chat_target, "First message should be sent to the objective target"
         assert sent_message is not None, "No message was sent to the target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces (text + image)"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
@@ -591,8 +597,8 @@ class TestPrependedConversationInMemory:
         memory = CentralMemory.get_memory_instance()
         conversation = list(memory.get_conversation(conversation_id=conversation_id))
 
-        # Should have prepended messages in memory
-        assert len(conversation) >= 2, f"Expected at least 2 prepended messages, got {len(conversation)}"
+        # Should have exactly the prepended messages in memory (mock normalizer doesn't add responses)
+        assert len(conversation) == 2, f"Expected exactly 2 prepended messages, got {len(conversation)}"
 
         # Find the multimodal message in conversation - verify image content preserved
         image_pieces = [
@@ -601,7 +607,7 @@ class TestPrependedConversationInMemory:
             for piece in msg.message_pieces
             if piece.original_value_data_type == "image_path"
         ]
-        assert len(image_pieces) >= 1, "Multimodal image content should be preserved in memory"
+        assert len(image_pieces) == 1, "Multimodal image content should be preserved in memory"
 
         # Verify assistant -> simulated_assistant translation
         self._assert_assistant_translated_to_simulated(
@@ -625,8 +631,8 @@ class TestPrependedConversationInMemory:
         memory = CentralMemory.get_memory_instance()
         conversation = list(memory.get_conversation(conversation_id=result.conversation_id))
 
-        # Should have prepended messages in memory
-        assert len(conversation) >= 2, f"Expected at least 2 prepended messages, got {len(conversation)}"
+        # Should have exactly the prepended messages in memory (mock normalizer doesn't add responses)
+        assert len(conversation) == 2, f"Expected exactly 2 prepended messages, got {len(conversation)}"
 
         # Find the multimodal message in conversation - verify image content preserved
         image_pieces = [
@@ -635,7 +641,7 @@ class TestPrependedConversationInMemory:
             for piece in msg.message_pieces
             if piece.original_value_data_type == "image_path"
         ]
-        assert len(image_pieces) >= 1, "Multimodal image content should be preserved in memory"
+        assert len(image_pieces) == 1, "Multimodal image content should be preserved in memory"
 
         # Verify assistant -> simulated_assistant translation
         self._assert_assistant_translated_to_simulated(
@@ -661,8 +667,8 @@ class TestPrependedConversationInMemory:
         memory = CentralMemory.get_memory_instance()
         conversation = list(memory.get_conversation(conversation_id=result.conversation_id))
 
-        # Should have prepended messages in memory
-        assert len(conversation) >= 2, f"Expected at least 2 prepended messages, got {len(conversation)}"
+        # Should have exactly the prepended messages in memory (mock normalizer doesn't add responses)
+        assert len(conversation) == 2, f"Expected exactly 2 prepended messages, got {len(conversation)}"
 
         # Find the multimodal message in conversation - verify image content preserved
         image_pieces = [
@@ -671,7 +677,7 @@ class TestPrependedConversationInMemory:
             for piece in msg.message_pieces
             if piece.original_value_data_type == "image_path"
         ]
-        assert len(image_pieces) >= 1, "Multimodal image content should be preserved in memory"
+        assert len(image_pieces) == 1, "Multimodal image content should be preserved in memory"
 
         # Verify assistant -> simulated_assistant translation
         self._assert_assistant_translated_to_simulated(
@@ -720,8 +726,8 @@ class TestPrependedConversationInMemory:
         memory = CentralMemory.get_memory_instance()
         conversation = list(memory.get_conversation(conversation_id=result.conversation_id))
 
-        # Should have prepended messages in memory
-        assert len(conversation) >= 2, f"Expected at least 2 prepended messages, got {len(conversation)}"
+        # Should have exactly the prepended messages in memory (mock normalizer doesn't add responses)
+        assert len(conversation) == 2, f"Expected exactly 2 prepended messages, got {len(conversation)}"
 
         # Find the multimodal message in conversation - verify image content preserved
         image_pieces = [
@@ -730,7 +736,7 @@ class TestPrependedConversationInMemory:
             for piece in msg.message_pieces
             if piece.original_value_data_type == "image_path"
         ]
-        assert len(image_pieces) >= 1, "Multimodal image content should be preserved in memory"
+        assert len(image_pieces) == 1, "Multimodal image content should be preserved in memory"
 
         # Verify assistant -> simulated_assistant translation
         self._assert_assistant_translated_to_simulated(

@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import List, Literal, Optional, get_args
 
@@ -15,12 +17,12 @@ from pyrit.models import ChatMessageRole
 class PrependedConversationConfig:
     """
     Configuration for controlling how prepended conversations are processed before
-    being sent to targets.
+    being sent to the objective target.
 
     This class provides control over:
     - Which message roles should have request converters applied
-    - How to normalize conversation history for non-chat targets
-    - What to do when the target is not a PromptChatTarget
+    - How to normalize conversation history for non-chat objective targets
+    - What to do when the objective target is not a PromptChatTarget
     """
 
     # Roles for which request converters should be applied to prepended messages.
@@ -54,7 +56,7 @@ class PrependedConversationConfig:
         return self.message_normalizer or ConversationContextNormalizer()
 
     @classmethod
-    def default(cls) -> "PrependedConversationConfig":
+    def default(cls) -> PrependedConversationConfig:
         """
         Create a default configuration with converters applied to all roles.
 
@@ -74,7 +76,7 @@ class PrependedConversationConfig:
         *,
         message_normalizer: Optional[MessageStringNormalizer] = None,
         apply_converters_to_roles: Optional[List[ChatMessageRole]] = None,
-    ) -> "PrependedConversationConfig":
+    ) -> PrependedConversationConfig:
         """
         Create a configuration for use with non-chat targets.
 
