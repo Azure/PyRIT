@@ -336,6 +336,7 @@ API Reference
     AttackResult
     Message
     MessagePiece
+    NextMessageSystemPromptPaths
     PromptDataType
     PromptResponseError
     QuestionAnsweringDataset
