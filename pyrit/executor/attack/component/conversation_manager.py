@@ -328,7 +328,7 @@ class ConversationManager:
                 config=prepended_conversation_config,
             )
 
-        # Process prepended conversation for chat target
+        # Process prepended conversation for objective target
         return await self._process_prepended_for_chat_target_async(
             context=context,
             prepended_conversation=prepended_conversation,
