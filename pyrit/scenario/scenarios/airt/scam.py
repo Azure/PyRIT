@@ -262,6 +262,7 @@ class Scam(Scenario):
         attack_strategy: Optional[AttackStrategy] = None
 
         if strategy == "persuasive_rta":
+            # Set system prompt to generic persuasion persona
             self._adversarial_config.system_prompt_path = Path(
                 PERSUASION_DECEPTION_PATH, "persuasion_persona_generic.yaml"
             ).resolve()
@@ -280,6 +281,9 @@ class Scam(Scenario):
                 attack_scoring_config=self._scorer_config,
             )
         elif strategy == "context_compliance":
+            # Set system prompt to default
+            self._adversarial_config.system_prompt_path = None
+
             attack_strategy = ContextComplianceAttack(
                 objective_target=self._objective_target,
                 attack_scoring_config=self._scorer_config,
