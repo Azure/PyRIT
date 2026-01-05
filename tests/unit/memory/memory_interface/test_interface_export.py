@@ -72,25 +72,29 @@ def test_export_all_conversations_with_scores_correct_data(sqlite_instance: Memo
         temp_file.close()  # Close the file to allow Windows to open it for writing
 
     try:
-        with patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_message_pieces") as mock_get_pieces:
-            # Create a mock score that returns serializable data
-            mock_score = MagicMock()
-            mock_score.to_dict.return_value = {"message_piece_id": "piece_id_1234", "score_value": 10}
-
-            # Create a mock piece that returns serializable data including scores
+        with (
+            patch.object(sqlite_instance, "get_message_pieces") as mock_get_pieces,
+            patch.object(sqlite_instance, "get_prompt_scores") as mock_get_scores,
+        ):
+            # Create a mock piece
             mock_piece = MagicMock()
             mock_piece.id = "piece_id_1234"
             mock_piece.original_prompt_id = "1234"
             mock_piece.converted_value = "sample piece"
-            mock_piece.scores = [mock_score]
             mock_piece.to_dict.return_value = {
                 "id": "piece_id_1234",
                 "original_prompt_id": "1234",
                 "converted_value": "sample piece",
-                "scores": [mock_score.to_dict()],
             }
 
+            # Create a mock score
+            mock_score = MagicMock()
+            mock_score.message_piece_id = "piece_id_1234"
+            mock_score.score_value = 10
+            mock_score.to_dict.return_value = {"message_piece_id": "piece_id_1234", "score_value": 10}
+
             mock_get_pieces.return_value = [mock_piece]
+            mock_get_scores.return_value = [mock_score]
 
             result_path = sqlite_instance.export_conversations(file_path=file_path)
 
