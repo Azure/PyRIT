@@ -47,7 +47,7 @@ Create the required environment configuration files:
 ```bash
 # Create main environment files in the parent directory
 cp ../.env_example ../.env
-cp ../.env.local_example ../.env.local
+cp ../.env_local_example ../.env.local
 
 # Create container-specific settings
 # Note: The example file uses underscores, but you copy it to a file with dots
