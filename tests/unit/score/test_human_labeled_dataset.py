@@ -594,6 +594,7 @@ def test_from_csv_objective_dataset_ignores_harm_category_column(tmp_path):
 # =============================================================================
 
 # Mapping of directory names to MetricsType for validation
+# Note: 'sample' directory is excluded as it contains test fixtures, not production eval data
 _DIRECTORY_METRICS_TYPE = {
     "harm": MetricsType.HARM,
     "objective": MetricsType.OBJECTIVE,
