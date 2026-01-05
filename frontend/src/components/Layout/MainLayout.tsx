@@ -1,11 +1,12 @@
+import { useEffect, useState } from 'react'
 import {
   makeStyles,
   tokens,
   Text,
   Tooltip,
-  Button,
 } from '@fluentui/react-components'
-import { WeatherMoonRegular, WeatherSunnyRegular } from '@fluentui/react-icons'
+import { versionApi } from '../../services/api'
+import Navigation from '../Sidebar/Navigation'
 
 const useStyles = makeStyles({
   root: {
@@ -21,13 +22,7 @@ const useStyles = makeStyles({
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
     padding: `0 ${tokens.spacingHorizontalL}`,
-    gap: tokens.spacingHorizontalM,
-  },
-  leftSection: {
-    display: 'flex',
-    alignItems: 'center',
     gap: tokens.spacingHorizontalM,
   },
   logo: {
@@ -44,6 +39,18 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase200,
     color: tokens.colorNeutralForeground3,
     marginLeft: tokens.spacingHorizontalXS,
+  },
+  contentArea: {
+    display: 'flex',
+    flex: 1,
+    overflow: 'hidden',
+  },
+  sidebar: {
+    width: '60px',
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderRight: `1px solid ${tokens.colorNeutralStroke1}`,
+    display: 'flex',
+    flexDirection: 'column',
   },
   main: {
     flex: 1,
@@ -65,28 +72,36 @@ export default function MainLayout({
   isDarkMode,
 }: MainLayoutProps) {
   const styles = useStyles()
+  const [version, setVersion] = useState<string>('Loading...')
+
+  useEffect(() => {
+    versionApi.getVersion()
+      .then(data => setVersion(data.display || data.version))
+      .catch(() => setVersion('Unknown'))
+  }, [])
 
   return (
     <div className={styles.root}>
       <div className={styles.topBar}>
-        <div className={styles.leftSection}>
-          <Tooltip content="PyRIT" relationship="label">
-            <img
-              src="/roakey.png"
-              alt="Co-PyRIT Logo"
-              className={styles.logo}
-            />
-          </Tooltip>
-          <Text className={styles.title}>Co-PyRIT</Text>
-          <Text className={styles.subtitle}>Minimal Demo</Text>
-        </div>
-        <Button
-          appearance="subtle"
-          icon={isDarkMode ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
-          onClick={onToggleTheme}
-        />
+        <Tooltip content={`PyRIT ${version}`} relationship="label">
+          <img
+            src="/roakey.png"
+            alt="Co-PyRIT Logo"
+            className={styles.logo}
+          />
+        </Tooltip>
+        <Text className={styles.title}>Co-PyRIT</Text>
+        <Text className={styles.subtitle}>Python Risk Identification Tool</Text>
       </div>
-      <main className={styles.main}>{children}</main>
+      <div className={styles.contentArea}>
+        <aside className={styles.sidebar}>
+          <Navigation
+            onToggleTheme={onToggleTheme}
+            isDarkMode={isDarkMode}
+          />
+        </aside>
+        <main className={styles.main}>{children}</main>
+      </div>
     </div>
   )
 }
