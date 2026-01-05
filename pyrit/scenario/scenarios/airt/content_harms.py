@@ -95,7 +95,7 @@ class ContentHarmsStrategy(ScenarioStrategy):
     Leakage = ("leakage", set[str]())
 
 
-class ContentHarmsScenario(Scenario):
+class ContentHarms(Scenario):
     """
 
     Content Harms Scenario implementation for PyRIT.
@@ -178,7 +178,7 @@ class ContentHarmsScenario(Scenario):
         self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
 
         super().__init__(
-            name="Content Harms Scenario",
+            name="Content Harms",
             version=self.version,
             objective_scorer=self._objective_scorer,
             strategy_class=ContentHarmsStrategy,

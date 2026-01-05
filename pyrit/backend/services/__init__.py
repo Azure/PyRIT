@@ -1,4 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Scenario implementations package."""
+"""
+Business logic services for backend operations.
+"""

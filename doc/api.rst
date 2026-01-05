@@ -596,11 +596,55 @@ API Reference
     :toctree: _autosummary/
 
     AtomicAttack
-    EncodingScenario
-    FoundryStrategy
-    FoundryScenario
+    DatasetConfiguration
     Scenario
+    ScenarioCompositeStrategy
     ScenarioStrategy
+
+:py:mod:`pyrit.scenario.airt`
+=============================
+
+.. automodule:: pyrit.scenario.airt
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    ContentHarms
+    ContentHarmsStrategy
+    Cyber
+    CyberStrategy
+
+:py:mod:`pyrit.scenario.foundry`
+================================
+
+.. automodule:: pyrit.scenario.foundry
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    Foundry
+    FoundryScenario
+    FoundryStrategy
+
+:py:mod:`pyrit.scenario.garak`
+==============================
+
+.. automodule:: pyrit.scenario.garak
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    Encoding
+    EncodingStrategy
 
 :py:mod:`pyrit.setup`
 =====================

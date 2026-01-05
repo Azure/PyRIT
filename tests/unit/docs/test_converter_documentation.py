@@ -22,7 +22,8 @@ def get_all_converter_classes():
 
 def get_converters_mentioned_in_notebooks():
     """Parse converter notebooks to find which converters are mentioned."""
-    doc_path = Path(__file__).parent.parent.parent / "doc" / "code" / "converters"
+    # tests/unit/docs -> tests/unit -> tests -> workspace_root
+    doc_path = Path(__file__).parent.parent.parent.parent / "doc" / "code" / "converters"
 
     mentioned_converters = set()
 

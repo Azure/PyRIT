@@ -106,7 +106,7 @@ class FoundryStrategy(ScenarioStrategy):
         >>> converter_strategies = FoundryStrategy.get_strategies_by_tag("converter")
         >>>
         >>> # Expand EASY to all easy strategies
-        >>> scenario = FoundryScenario(target, attack_strategies={FoundryStrategy.EASY})
+        >>> scenario = Foundry(target, attack_strategies={FoundryStrategy.EASY})
     """
 
     # Aggregate members (special markers that expand to strategies with matching tags)
@@ -199,9 +199,9 @@ class FoundryStrategy(ScenarioStrategy):
             )
 
 
-class FoundryScenario(Scenario):
+class Foundry(Scenario):
     """
-    FoundryScenario is a preconfigured scenario that automatically generates multiple
+    Foundry is a preconfigured scenario that automatically generates multiple
     AtomicAttack instances based on the specified attack strategies. It supports both
     single-turn attacks (with various converters) and multi-turn attacks (Crescendo,
     RedTeaming), making it easy to quickly test a target against multiple attack vectors.
@@ -251,7 +251,7 @@ class FoundryScenario(Scenario):
         scenario_result_id: Optional[str] = None,
     ):
         """
-        Initialize a FoundryScenario with the specified attack strategies.
+        Initialize a Foundry Scenario with the specified attack strategies.
 
         Args:
             adversarial_chat (Optional[PromptChatTarget]): Target for multi-turn attacks
@@ -294,7 +294,7 @@ class FoundryScenario(Scenario):
 
         # Call super().__init__() first to initialize self._memory
         super().__init__(
-            name="Foundry Scenario",
+            name="Foundry",
             version=self.version,
             strategy_class=FoundryStrategy,
             objective_scorer=objective_scorer,
@@ -538,3 +538,23 @@ class FoundryScenario(Scenario):
         # attack types. The caller is responsible for ensuring the attack type accepts
         # these constructor parameters.
         return attack_type(**kwargs)  # type: ignore[arg-type, call-arg]
+
+
+class FoundryScenario(Foundry):
+    """
+    Deprecated alias for Foundry.
+
+    This class is deprecated and will be removed in version 0.13.0.
+    Use `Foundry` instead.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        """Initialize FoundryScenario with deprecation warning."""
+        import warnings
+
+        warnings.warn(
+            "FoundryScenario is deprecated and will be removed in version 0.13.0. " "Use 'Foundry' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(**kwargs)
