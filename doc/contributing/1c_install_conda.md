@@ -11,6 +11,8 @@ This is a list of the prerequisites needed to run this library.
     git clone https://github.com/Azure/PyRIT
     ```
 
+1. **Node.js and npm**. Required for building the TypeScript/React frontend. Download [Node.js](https://nodejs.org/) (which includes npm). Version 18 or higher is recommended.
+
 Note: PyRIT requires Python version 3.10, 3.11, 3.12, or 3.13. If using Conda, you'll set the environment to use this version. If running PyRIT outside of a python environment, make sure you have this version installed.
 
 ## Installation with conda

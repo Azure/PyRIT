@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Tests for the ContentHarmsScenario class."""
+"""Tests for the ContentHarms class."""
 
 import pathlib
 from unittest.mock import MagicMock, patch
@@ -14,12 +14,12 @@ from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
-from pyrit.scenario import (
-    ContentHarmsScenario,
+from pyrit.scenario import ScenarioCompositeStrategy
+from pyrit.scenario.airt import (
+    ContentHarms,
     ContentHarmsStrategy,
-    ScenarioCompositeStrategy,
 )
-from pyrit.scenario.scenarios.airt.content_harms_scenario import (
+from pyrit.scenario.scenarios.airt.content_harms import (
     ContentHarmsDatasetConfiguration,
 )
 from pyrit.score import TrueFalseScorer
@@ -199,12 +199,12 @@ class TestContentHarmsStrategy:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestContentHarmsScenarioBasic:
-    """Basic tests for ContentHarmsScenario initialization and properties."""
+class TestContentHarmsBasic:
+    """Basic tests for ContentHarms initialization and properties."""
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     async def test_initialization_with_minimal_parameters(
         self,
         mock_get_seed_groups,
@@ -218,11 +218,11 @@ class TestContentHarmsScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seed_groups.return_value = mock_all_harm_objectives
 
-        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
         # Constructor should set adversarial chat and basic metadata
         assert scenario._adversarial_chat == mock_adversarial_target
-        assert scenario.name == "Content Harms Scenario"
+        assert scenario.name == "Content Harms"
         assert scenario.version == 1
 
         # Initialization populates objective target and scenario composites
@@ -231,8 +231,8 @@ class TestContentHarmsScenarioBasic:
         assert scenario._objective_target == mock_objective_target
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     async def test_initialization_with_custom_strategies(
         self,
         mock_get_seed_groups,
@@ -251,7 +251,7 @@ class TestContentHarmsScenarioBasic:
 
         strategies = [ContentHarmsStrategy.Hate, ContentHarmsStrategy.Fairness]
 
-        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=strategies)
 
@@ -262,7 +262,7 @@ class TestContentHarmsScenarioBasic:
         self, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
         """Test initialization with custom objective scorer."""
-        scenario = ContentHarmsScenario(
+        scenario = ContentHarms(
             adversarial_chat=mock_adversarial_target,
             objective_scorer=mock_objective_scorer,
         )
@@ -271,8 +271,8 @@ class TestContentHarmsScenarioBasic:
         assert scenario._scorer_config.objective_scorer == mock_objective_scorer
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     async def test_initialization_with_custom_max_concurrency(
         self,
         mock_get_seed_groups,
@@ -286,15 +286,15 @@ class TestContentHarmsScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seed_groups.return_value = mock_all_harm_objectives
 
-        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=10)
 
         assert scenario._max_concurrency == 10
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     async def test_initialization_with_custom_dataset_path(
         self,
         mock_get_seed_groups,
@@ -308,7 +308,7 @@ class TestContentHarmsScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seed_groups.return_value = mock_all_harm_objectives
 
-        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target)
 
@@ -316,8 +316,8 @@ class TestContentHarmsScenarioBasic:
         assert scenario is not None
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     async def test_initialization_defaults_to_all_strategy(
         self,
         mock_get_seed_groups,
@@ -331,7 +331,7 @@ class TestContentHarmsScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seed_groups.return_value = mock_all_harm_objectives
 
-        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target)
 
@@ -340,7 +340,7 @@ class TestContentHarmsScenarioBasic:
 
     def test_get_default_strategy_returns_all(self):
         """Test that get_default_strategy returns ALL strategy."""
-        assert ContentHarmsScenario.get_default_strategy() == ContentHarmsStrategy.ALL
+        assert ContentHarms.get_default_strategy() == ContentHarmsStrategy.ALL
 
     @patch.dict(
         "os.environ",
@@ -352,7 +352,7 @@ class TestContentHarmsScenarioBasic:
     )
     def test_get_default_adversarial_target(self, mock_objective_target):
         """Test default adversarial target creation."""
-        scenario = ContentHarmsScenario()
+        scenario = ContentHarms()
 
         assert scenario._adversarial_chat is not None
 
@@ -366,13 +366,13 @@ class TestContentHarmsScenarioBasic:
     )
     def test_get_default_scorer(self, mock_objective_target):
         """Test default scorer creation."""
-        scenario = ContentHarmsScenario()
+        scenario = ContentHarms()
 
         assert scenario._objective_scorer is not None
 
     def test_scenario_version(self):
         """Test that scenario has correct version."""
-        assert ContentHarmsScenario.version == 1
+        assert ContentHarms.version == 1
 
     @patch.dict(
         "os.environ",
@@ -388,14 +388,14 @@ class TestContentHarmsScenarioBasic:
     ):
         """Test that initialization raises ValueError when datasets are not available in memory."""
         # Don't mock _get_objectives_by_harm, let it try to load from empty memory
-        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
         with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
             await scenario.initialize_async(objective_target=mock_objective_target)
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     async def test_initialization_with_max_retries(
         self,
         mock_get_seed_groups,
@@ -409,15 +409,15 @@ class TestContentHarmsScenarioBasic:
         mock_get_scorer.return_value = mock_objective_scorer
         mock_get_seed_groups.return_value = mock_all_harm_objectives
 
-        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target, max_retries=3)
 
         assert scenario._max_retries == 3
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsScenario._get_default_scorer")
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarms._get_default_scorer")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     async def test_memory_labels_are_stored(
         self,
         mock_get_seed_groups,
@@ -433,14 +433,14 @@ class TestContentHarmsScenarioBasic:
 
         memory_labels = {"test_run": "123", "category": "harm"}
 
-        scenario = ContentHarmsScenario(adversarial_chat=mock_adversarial_target)
+        scenario = ContentHarms(adversarial_chat=mock_adversarial_target)
 
         await scenario.initialize_async(objective_target=mock_objective_target, memory_labels=memory_labels)
 
         assert scenario._memory_labels == memory_labels
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     async def test_initialization_with_all_parameters(
         self,
         mock_get_seed_groups,
@@ -458,7 +458,7 @@ class TestContentHarmsScenarioBasic:
         memory_labels = {"test": "value"}
         strategies = [ContentHarmsStrategy.Hate, ContentHarmsStrategy.Violence]
 
-        scenario = ContentHarmsScenario(
+        scenario = ContentHarms(
             adversarial_chat=mock_adversarial_target,
             objective_scorer=mock_objective_scorer,
         )
@@ -479,7 +479,7 @@ class TestContentHarmsScenarioBasic:
         assert scenario._max_retries == 2
 
     @pytest.mark.asyncio
-    @patch("pyrit.scenario.scenarios.airt.content_harms_scenario.ContentHarmsDatasetConfiguration.get_seed_groups")
+    @patch("pyrit.scenario.scenarios.airt.content_harms.ContentHarmsDatasetConfiguration.get_seed_groups")
     @patch.dict(
         "os.environ",
         {
@@ -500,7 +500,7 @@ class TestContentHarmsScenarioBasic:
 
         mock_get_seed_groups.return_value = custom_objectives
 
-        scenario = ContentHarmsScenario(
+        scenario = ContentHarms(
             adversarial_chat=mock_adversarial_target,
             objectives_by_harm=custom_objectives,
         )
@@ -653,7 +653,7 @@ class TestContentHarmsDatasetConfiguration:
 
     def test_default_dataset_config_has_all_harm_datasets(self):
         """Test that default_dataset_config includes all 7 harm category datasets."""
-        config = ContentHarmsScenario.default_dataset_config()
+        config = ContentHarms.default_dataset_config()
 
         assert isinstance(config, ContentHarmsDatasetConfiguration)
         dataset_names = config.get_default_dataset_names()
@@ -675,6 +675,6 @@ class TestContentHarmsDatasetConfiguration:
 
     def test_default_dataset_config_has_max_dataset_size(self):
         """Test that default_dataset_config has max_dataset_size set to 4."""
-        config = ContentHarmsScenario.default_dataset_config()
+        config = ContentHarms.default_dataset_config()
 
         assert config.max_dataset_size == 4
