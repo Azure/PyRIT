@@ -416,7 +416,7 @@ def test_from_csv_harm_dataset():
 
 def test_from_csv_objective_dataset():
     """Load an objective dataset from the standard mini_refusal.csv."""
-    csv_path = SCORER_EVALS_PATH / "refusal_scorer" / "mini_refusal.csv"
+    csv_path = SCORER_EVALS_PATH / "sample" / "mini_refusal.csv"
     dataset = HumanLabeledDataset.from_csv(
         csv_path=csv_path,
         metrics_type=MetricsType.OBJECTIVE,

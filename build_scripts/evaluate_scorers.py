@@ -32,6 +32,10 @@ from pyrit.score import (
     TrueFalseInverterScorer,
     TrueFalseScoreAggregator,
 )
+from pyrit.score.true_false.self_ask_true_false_scorer import (
+    SelfAskTrueFalseScorer,
+    TrueFalseQuestionPaths,
+)
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 
@@ -70,10 +74,10 @@ async def evaluate_scorers() -> None:
     )
 
     # Refusal Scorer
-    refuasal = SelfAskRefusalScorer(chat_target=gpt_4o_target)
+    refusal = SelfAskRefusalScorer(chat_target=gpt_4o_target)
 
     # Objective Scorers
-    refuasal_gpt_4o = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=gpt_4o_target))
+    refusal_gpt_4o = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=gpt_4o_target))
 
     refusal_gpt_4o_unsafe = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=gpt_4o_unsafe))
 
@@ -102,10 +106,20 @@ async def evaluate_scorers() -> None:
         ),
     )
 
+    task_achieved_tf_scorer = SelfAskTrueFalseScorer(
+        chat_target=OpenAIChatTarget(
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT"),
+            api_key=os.environ.get("AZURE_OPENAI_GPT4O_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_MODEL"),
+            temperature=0.9,
+        ),
+        true_false_question_path=TrueFalseQuestionPaths.TASK_ACHIEVED.value,
+    )
+
     scale_gpt_4o_9_threshhold = FloatScaleThresholdScorer(scorer=_scale_scorer_gpt_4o, threshold=0.9)
 
     scale_and_refusal = TrueFalseCompositeScorer(
-        scorers=[scale_gpt_4o_9_threshhold, refuasal_gpt_4o],
+        scorers=[scale_gpt_4o_9_threshhold, refusal_gpt_4o],
         aggregator=TrueFalseScoreAggregator.AND,
     )
 
@@ -127,8 +141,8 @@ async def evaluate_scorers() -> None:
 
     # Build list of scorers to evaluate
     scorers = [
-        refuasal,
-        refuasal_gpt_4o,
+        refusal,
+        refusal_gpt_4o,
         refusal_gpt_4o_unsafe,
         refusal_gpt_4o_unsafe_temp9,
         acs_t1,
@@ -141,6 +155,7 @@ async def evaluate_scorers() -> None:
         acs_self_harm,
         acs_sexual,
         acs_violence,
+        task_achieved_tf_scorer,
     ]
 
     scorers.extend(likert_scorers_gpt_4o)
