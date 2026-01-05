@@ -223,20 +223,23 @@ class TestSeedAttackGroupInit:
         assert group.has_simulated_conversation
         assert group.simulated_conversation_config.num_turns == 5
 
-    def test_init_simulated_conversation_with_prompts_raises_error(self, tmp_path):
-        """Test that simulated_conversation with prompts raises error."""
+    def test_init_simulated_conversation_with_overlapping_prompts_raises_error(self, tmp_path):
+        """Test that simulated_conversation with overlapping prompt sequences raises error."""
         adv_path = tmp_path / "adversarial.yaml"
         adv_path.write_text("value: Adversarial\ndata_type: text")
 
-        with pytest.raises(ValueError, match="Cannot have both SeedPrompts and SeedSimulatedConversation"):
+        # SeedSimulatedConversation with sequence=0 and num_turns=3 occupies sequences 0-5
+        # SeedPrompt with sequence=2 overlaps with that range
+        with pytest.raises(ValueError, match="overlaps with SeedSimulatedConversation"):
             SeedAttackGroup(
                 seeds=[
                     SeedObjective(value="Objective"),
                     SeedSimulatedConversation(
                         num_turns=3,
                         adversarial_chat_system_prompt_path=adv_path,
+                        sequence=0,
                     ),
-                    SeedPrompt(value="Prompt 1", data_type="text", sequence=0, role="user"),
+                    SeedPrompt(value="Prompt 1", data_type="text", sequence=2, role="user"),
                 ]
             )
 
@@ -247,7 +250,11 @@ class TestSeedAttackGroupInit:
 
         group = SeedAttackGroup(
             seeds=[
-                {"seed_type": "simulated_conversation", "num_turns": 2, "adversarial_chat_system_prompt_path": str(adv_path)},
+                {
+                    "seed_type": "simulated_conversation",
+                    "num_turns": 2,
+                    "adversarial_chat_system_prompt_path": str(adv_path),
+                },
                 {"value": "Objective", "seed_type": "objective"},
             ]
         )
@@ -320,22 +327,51 @@ class TestSeedAttackGroupSimulatedConversation:
 
         assert group.has_simulated_conversation
 
-    def test_simulated_conversation_generated_false_initially(self, tmp_path):
-        """Test simulated_conversation_generated is False initially."""
+    def test_simulated_conversation_allows_non_overlapping_prompts(self, tmp_path):
+        """Test that prompts can coexist with simulated conversation if sequences don't overlap."""
         adv_path = tmp_path / "adversarial.yaml"
         adv_path.write_text("value: Adversarial\ndata_type: text")
 
+        # SeedSimulatedConversation with sequence=0 and num_turns=2 occupies sequences 0-3 (2*2=4)
+        # A prompt with sequence=10 does NOT overlap
         group = SeedAttackGroup(
             seeds=[
                 SeedObjective(value="Objective"),
                 SeedSimulatedConversation(
-                    num_turns=3,
+                    num_turns=2,
                     adversarial_chat_system_prompt_path=adv_path,
+                    sequence=0,
+                ),
+                SeedPrompt(value="Static follow-up", data_type="text", sequence=10, role="user"),
+            ]
+        )
+
+        assert group.has_simulated_conversation
+        assert len(group.prompts) == 1
+        assert group.prompts[0].value == "Static follow-up"
+
+    def test_simulated_conversation_with_custom_sequence(self, tmp_path):
+        """Test simulated conversation with non-zero sequence allows prompts before it."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: Adversarial\ndata_type: text")
+
+        # SeedSimulatedConversation with sequence=5 and num_turns=2 occupies sequences 5-8
+        # A prompt with sequence=0 does NOT overlap (it's before the simulated range)
+        group = SeedAttackGroup(
+            seeds=[
+                SeedObjective(value="Objective"),
+                SeedPrompt(value="Static intro", data_type="text", sequence=0, role="user"),
+                SeedSimulatedConversation(
+                    num_turns=2,
+                    adversarial_chat_system_prompt_path=adv_path,
+                    sequence=5,
                 ),
             ]
         )
 
-        assert not group.simulated_conversation_generated
+        assert group.has_simulated_conversation
+        assert len(group.prompts) == 1
+        assert group.prompts[0].value == "Static intro"
 
 
 class TestSeedAttackGroupMessageExtraction:

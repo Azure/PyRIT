@@ -7,7 +7,7 @@ import dataclasses
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar
 
-from pyrit.models import Message, SeedAttackGroup
+from pyrit.models import Message, SeedAttackGroup, SeedGroup
 
 if TYPE_CHECKING:
     from pyrit.prompt_target import PromptChatTarget
@@ -230,36 +230,46 @@ async def _build_params_from_seed_group_async(
     if "memory_labels" in valid_fields:
         params["memory_labels"] = {}
 
-    # Handle simulated conversation generation if configured but not yet generated
-    # Note if simulated conversation has been called on this seed_group, it is cached there
-    if seed_group.has_simulated_conversation and not seed_group.simulated_conversation_generated:
-        config = seed_group.simulated_conversation_config
-        assert config is not None  # Guaranteed by has_simulated_conversation
+    # Determine which group to use for extracting prepended_conversation/next_message
+    extraction_group: SeedGroup = seed_group
+
+    # Handle simulated conversation generation if configured
+    if seed_group.has_simulated_conversation:
+        simulated_conversation_config = seed_group.simulated_conversation_config
+        assert simulated_conversation_config is not None  # Guaranteed by has_simulated_conversation
 
         if adversarial_chat is None:
             raise ValueError("adversarial_chat is required when seed_group has a simulated conversation config")
         if objective_scorer is None:
             raise ValueError("objective_scorer is required when seed_group has a simulated conversation config")
 
-        # Generate the simulated conversation
-        result = await generate_simulated_conversation_async(
+        # Generate the simulated conversation - returns List[SeedPrompt]
+        simulated_prompts = await generate_simulated_conversation_async(
             objective=seed_group.objective.value,
             adversarial_chat=adversarial_chat,
             objective_scorer=objective_scorer,
-            num_turns=config.num_turns,
-            adversarial_chat_system_prompt_path=config.adversarial_chat_system_prompt_path,
-            simulated_target_system_prompt_path=config.simulated_target_system_prompt_path,
+            num_turns=simulated_conversation_config.num_turns,
+            starting_sequence=simulated_conversation_config.sequence,
+            adversarial_chat_system_prompt_path=simulated_conversation_config.adversarial_chat_system_prompt_path,
+            simulated_target_system_prompt_path=simulated_conversation_config.simulated_target_system_prompt_path,
+            next_message_system_prompt_path=simulated_conversation_config.next_message_system_prompt_path,
         )
 
-        # Cache the result in the seed_group for later access
-        seed_group.set_simulated_conversation_result(result)
+        # Merge simulated prompts with existing static prompts from the seed_group
+        all_prompts = list(seed_group.prompts) + simulated_prompts
 
-    # Use seed_group properties - they handle both cached simulated and static prompts
+        # Create a temporary prompts-only SeedGroup for extraction
+        # This group contains only prompts (no objective, no simulated config)
+        # and will use the standard sequence-based logic for prepended_conversation/next_message
+        if all_prompts:
+            extraction_group = SeedGroup(seeds=all_prompts)
+
+    # Use extraction_group properties for prepended_conversation/next_message
     if "next_message" in valid_fields:
-        params["next_message"] = seed_group.next_message
+        params["next_message"] = extraction_group.next_message
 
     if "prepended_conversation" in valid_fields:
-        params["prepended_conversation"] = seed_group.prepended_conversation
+        params["prepended_conversation"] = extraction_group.prepended_conversation
 
     # Apply overrides (already validated above)
     params.update(overrides)

@@ -14,6 +14,8 @@ from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
+    Message,
+    MessagePiece,
     SeedDataset,
     SeedGroup,
     SeedObjective,
@@ -1168,3 +1170,115 @@ def test_prepended_conversation_ends_with_assistant():
     assert group.prepended_conversation[1].get_value() == "Assistant 1"
     assert group.prepended_conversation[2].get_value() == "User 2"
     assert group.prepended_conversation[3].get_value() == "Assistant 2"
+
+
+def test_from_messages_single_message():
+    """Test from_messages with a single message."""
+    piece = MessagePiece(role="user", original_value="Hello")
+    message = Message(message_pieces=[piece])
+
+    result = SeedPrompt.from_messages([message])
+
+    assert len(result) == 1
+    assert result[0].value == "Hello"
+    assert result[0].role == "user"
+    assert result[0].data_type == "text"
+    assert result[0].sequence == 0
+
+
+def test_from_messages_multiple_messages():
+    """Test from_messages with multiple messages."""
+    msg1 = Message(message_pieces=[MessagePiece(role="user", original_value="User message")])
+    msg2 = Message(message_pieces=[MessagePiece(role="assistant", original_value="Assistant response")])
+    msg3 = Message(message_pieces=[MessagePiece(role="user", original_value="Follow up")])
+
+    result = SeedPrompt.from_messages([msg1, msg2, msg3])
+
+    assert len(result) == 3
+    assert result[0].value == "User message"
+    assert result[0].role == "user"
+    assert result[0].sequence == 0
+    assert result[1].value == "Assistant response"
+    assert result[1].role == "assistant"
+    assert result[1].sequence == 1
+    assert result[2].value == "Follow up"
+    assert result[2].role == "user"
+    assert result[2].sequence == 2
+
+
+def test_from_messages_multipart_message():
+    """Test from_messages with a multipart message (e.g., text + image)."""
+    conv_id = str(uuid.uuid4())
+    pieces = [
+        MessagePiece(role="user", original_value="Check this image:", original_value_data_type="text", conversation_id=conv_id),
+        MessagePiece(role="user", original_value="/path/to/image.png", original_value_data_type="image_path", conversation_id=conv_id),
+    ]
+    message = Message(message_pieces=pieces)
+
+    result = SeedPrompt.from_messages([message])
+
+    assert len(result) == 2
+    # Both pieces share the same sequence since they're from the same message
+    assert result[0].value == "Check this image:"
+    assert result[0].data_type == "text"
+    assert result[0].sequence == 0
+    assert result[1].value == "/path/to/image.png"
+    assert result[1].data_type == "image_path"
+    assert result[1].sequence == 0
+
+
+def test_from_messages_starting_sequence():
+    """Test from_messages with a custom starting sequence."""
+    msg1 = Message(message_pieces=[MessagePiece(role="user", original_value="First")])
+    msg2 = Message(message_pieces=[MessagePiece(role="assistant", original_value="Second")])
+
+    result = SeedPrompt.from_messages([msg1, msg2], starting_sequence=5)
+
+    assert len(result) == 2
+    assert result[0].sequence == 5
+    assert result[1].sequence == 6
+
+
+def test_from_messages_empty_list():
+    """Test from_messages with an empty list."""
+    result = SeedPrompt.from_messages([])
+    assert result == []
+
+
+def test_from_messages_preserves_data_types():
+    """Test from_messages preserves various data types."""
+    messages = [
+        Message(message_pieces=[MessagePiece(role="user", original_value="text", original_value_data_type="text")]),
+        Message(
+            message_pieces=[
+                MessagePiece(role="user", original_value="/audio.mp3", original_value_data_type="audio_path")
+            ]
+        ),
+        Message(
+            message_pieces=[
+                MessagePiece(role="user", original_value="/video.mp4", original_value_data_type="video_path")
+            ]
+        ),
+    ]
+
+    result = SeedPrompt.from_messages(messages)
+
+    assert len(result) == 3
+    assert result[0].data_type == "text"
+    assert result[1].data_type == "audio_path"
+    assert result[2].data_type == "video_path"
+
+
+def test_from_messages_with_prompt_group_id():
+    """Test from_messages assigns prompt_group_id to all prompts."""
+    group_id = uuid.uuid4()
+    messages = [
+        Message(message_pieces=[MessagePiece(role="user", original_value="First")]),
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="Second")]),
+    ]
+
+    result = SeedPrompt.from_messages(messages, prompt_group_id=group_id)
+
+    assert len(result) == 2
+    assert result[0].prompt_group_id == group_id
+    assert result[1].prompt_group_id == group_id

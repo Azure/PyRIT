@@ -38,6 +38,7 @@ from pyrit.models.score import Score, ScoreType, UnvalidatedScore
 # Seeds - import from new seeds submodule for forward compatibility
 # Also keep imports from old locations for backward compatibility
 from pyrit.models.seeds import (
+    NextMessageSystemPromptPaths,
     Seed,
     SeedPrompt,
     SeedObjective,
@@ -46,7 +47,6 @@ from pyrit.models.seeds import (
     SeedSimulatedConversation,
     SeedDataset,
 )
-from pyrit.models.simulated_conversation_result import SimulatedConversationResult
 
 # Keep old module-level imports working (deprecated, will be removed)
 # These are re-exported from the seeds submodule
@@ -81,6 +81,7 @@ __all__ = [
     "ImagePathDataTypeSerializer",
     "Message",
     "MessagePiece",
+    "NextMessageSystemPromptPaths",
     "PromptDataType",
     "PromptResponseError",
     "QuestionAnsweringDataset",
@@ -98,7 +99,6 @@ __all__ = [
     "SeedGroup",
     "SeedSimulatedConversation",
     "SeedType",
-    "SimulatedConversationResult",
     "sort_message_pieces",
     "StorageIO",
     "StrategyResult",

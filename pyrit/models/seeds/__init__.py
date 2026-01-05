@@ -19,7 +19,11 @@ from pyrit.models.seeds.seed_prompt import SeedPrompt
 from pyrit.models.seeds.seed_objective import SeedObjective
 from pyrit.models.seeds.seed_group import SeedGroup
 from pyrit.models.seeds.seed_attack_group import SeedAttackGroup
-from pyrit.models.seeds.seed_simulated_conversation import SeedSimulatedConversation
+from pyrit.models.seeds.seed_simulated_conversation import (
+    SeedSimulatedConversation,
+    SimulatedTargetSystemPromptPaths,
+    NextMessageSystemPromptPaths,
+)
 from pyrit.models.seeds.seed_dataset import SeedDataset
 
 __all__ = [
@@ -29,5 +33,7 @@ __all__ = [
     "SeedGroup",
     "SeedAttackGroup",
     "SeedSimulatedConversation",
+    "SimulatedTargetSystemPromptPaths",
+    "NextMessageSystemPromptPaths",
     "SeedDataset",
 ]

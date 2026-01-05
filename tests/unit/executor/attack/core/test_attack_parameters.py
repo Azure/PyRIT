@@ -133,15 +133,13 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         return MagicMock()
 
     @pytest.fixture
-    def mock_simulated_result(self) -> MagicMock:
-        """Create a mock simulated conversation result."""
-        result = MagicMock()
-        result.prepended_messages = [
-            _make_message("user", "Simulated user message"),
-            _make_message("assistant", "Simulated assistant response"),
+    def mock_simulated_result(self) -> list:
+        """Create a mock simulated conversation result (List[SeedPrompt])."""
+        return [
+            SeedPrompt(value="Simulated user message", data_type="text", role="user", sequence=0),
+            SeedPrompt(value="Simulated assistant response", data_type="text", role="assistant", sequence=1),
+            SeedPrompt(value="Final simulated message", data_type="text", role="user", sequence=2),
         ]
-        result.next_message = _make_message("user", "Final simulated message")
-        return result
 
     async def test_raises_when_adversarial_chat_missing(
         self,
@@ -169,24 +167,26 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
                 objective_scorer=None,
             )
 
-    async def test_raises_when_next_message_conflicts_with_simulated_conv(
+    async def test_raises_when_prompt_overlaps_with_simulated_conv(
         self, seed_objective: SeedObjective, simulated_conversation_config: SeedSimulatedConversation
     ) -> None:
-        """Test that ValueError is raised when both prompts and simulated conv are in seeds."""
-        prompt = SeedPrompt(value="Static prompt", data_type="text", role="user")
+        """Test that ValueError is raised when prompts overlap with simulated conv sequences."""
+        # SeedSimulatedConversation with default sequence=0 and num_turns=3 occupies sequences 0-5
+        # A prompt with sequence=2 would overlap with that range
+        prompt = SeedPrompt(value="Static prompt", data_type="text", role="user", sequence=2)
 
-        # Validation now happens at construction time
-        with pytest.raises(ValueError, match="Cannot have both SeedPrompts and SeedSimulatedConversation"):
+        # Validation now happens at construction time with sequence overlap checking
+        with pytest.raises(ValueError, match="overlaps with SeedSimulatedConversation"):
             SeedAttackGroup(seeds=[seed_objective, prompt, simulated_conversation_config])
 
-    async def test_raises_when_multi_sequence_prompts_conflict_with_simulated_conv(
+    async def test_raises_when_multi_sequence_prompts_overlap_with_simulated_conv(
         self, seed_objective: SeedObjective, simulated_conversation_config: SeedSimulatedConversation
     ) -> None:
-        """Test that ValueError is raised when simulated conv is set with any prompts."""
-        # Any prompts with simulated conversation should fail at construction
-        prompt = SeedPrompt(value="Static prompt", data_type="text", role="user")
+        """Test that ValueError is raised when any prompts overlap with simulated conv sequences."""
+        # Any prompts overlapping with simulated conversation sequences should fail at construction
+        prompt = SeedPrompt(value="Static prompt", data_type="text", role="user", sequence=1)
 
-        with pytest.raises(ValueError, match="Cannot have both SeedPrompts and SeedSimulatedConversation"):
+        with pytest.raises(ValueError, match="overlaps with SeedSimulatedConversation"):
             SeedAttackGroup(seeds=[seed_objective, prompt, simulated_conversation_config])
 
     @patch("pyrit.executor.attack.component.simulated_conversation.generate_simulated_conversation_async")
@@ -221,7 +221,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         seed_group_with_simulated_conv: SeedAttackGroup,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
-        mock_simulated_result: MagicMock,
+        mock_simulated_result: list,
     ) -> None:
         """Test that prepended_conversation comes from the generated result."""
         mock_generate.return_value = mock_simulated_result
@@ -232,7 +232,11 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert params.prepended_conversation == mock_simulated_result.prepended_messages
+        # prepended_conversation should contain the first two prompts (before the last user message)
+        assert params.prepended_conversation is not None
+        assert len(params.prepended_conversation) == 2
+        assert params.prepended_conversation[0].get_value() == "Simulated user message"
+        assert params.prepended_conversation[1].get_value() == "Simulated assistant response"
 
     @patch("pyrit.executor.attack.component.simulated_conversation.generate_simulated_conversation_async")
     async def test_uses_generated_next_message(
@@ -241,7 +245,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         seed_group_with_simulated_conv: SeedAttackGroup,
         mock_adversarial_chat: MagicMock,
         mock_objective_scorer: MagicMock,
-        mock_simulated_result: MagicMock,
+        mock_simulated_result: list,
     ) -> None:
         """Test that next_message comes from the generated result."""
         mock_generate.return_value = mock_simulated_result
@@ -252,33 +256,9 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert params.next_message == mock_simulated_result.next_message
-
-    @patch("pyrit.executor.attack.component.simulated_conversation.generate_simulated_conversation_async")
-    async def test_caches_result_in_seed_group(
-        self,
-        mock_generate: AsyncMock,
-        seed_group_with_simulated_conv: SeedAttackGroup,
-        mock_adversarial_chat: MagicMock,
-        mock_objective_scorer: MagicMock,
-        mock_simulated_result: MagicMock,
-    ) -> None:
-        """Test that the generated result is cached in the seed_group."""
-        mock_generate.return_value = mock_simulated_result
-
-        # Spy on set_simulated_conversation_result using patch.object
-        with patch.object(
-            seed_group_with_simulated_conv,
-            "set_simulated_conversation_result",
-            wraps=seed_group_with_simulated_conv.set_simulated_conversation_result,
-        ) as mock_set_result:
-            await AttackParameters.from_seed_group_async(
-                seed_group_with_simulated_conv,
-                adversarial_chat=mock_adversarial_chat,
-                objective_scorer=mock_objective_scorer,
-            )
-
-            mock_set_result.assert_called_once_with(mock_simulated_result)
+        # next_message should be the last user message
+        assert params.next_message is not None
+        assert params.next_message.get_value() == "Final simulated message"
 
 
 class TestExcluding:

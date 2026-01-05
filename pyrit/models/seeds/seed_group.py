@@ -22,7 +22,6 @@ from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_objective import SeedObjective
 from pyrit.models.seeds.seed_prompt import SeedPrompt
 from pyrit.models.seeds.seed_simulated_conversation import SeedSimulatedConversation
-from pyrit.models.simulated_conversation_result import SimulatedConversationResult
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class SeedGroup(YamlLoadable):
     - Grouping of SeedPrompt, SeedObjective, and SeedSimulatedConversation
     - Consistent group IDs and roles across seeds
     - Prepended conversation and next message extraction
-    - Simulated conversation result caching
+    - Validation of sequence overlaps between SeedPrompts and SeedSimulatedConversation
 
     All prompts in the group share the same `prompt_group_id`.
     """
@@ -60,7 +59,7 @@ class SeedGroup(YamlLoadable):
         Raises:
             ValueError: If seeds is empty.
             ValueError: If multiple objectives are provided.
-            ValueError: If both SeedPrompts and SeedSimulatedConversation are provided.
+            ValueError: If SeedPrompt sequences overlap with SeedSimulatedConversation range.
         """
         if not seeds:
             raise ValueError("SeedGroup cannot be empty.")
@@ -105,11 +104,10 @@ class SeedGroup(YamlLoadable):
         self._enforce_consistent_role()
         self._enforce_max_one_objective()
         self._enforce_max_one_simulated_conversation()
-        self._enforce_no_prompts_with_simulated_conversation()
+        self._enforce_no_sequence_overlap_with_simulated()
 
         # Extract simulated conversation config
         self._simulated_conversation_config = self._get_simulated_conversation()
-        self._cached_simulated_result: Optional[SimulatedConversationResult] = None
 
         # Reconstruct seeds in canonical order: objective, simulated_conversation, sorted prompts
         objective = self._get_objective()
@@ -185,21 +183,30 @@ class SeedGroup(YamlLoadable):
             for prompt in prompts:
                 prompt.role = role
 
-    def _enforce_no_prompts_with_simulated_conversation(self) -> None:
+    def _enforce_no_sequence_overlap_with_simulated(self) -> None:
         """
-        Ensure SeedPrompts and SeedSimulatedConversation are not both present.
+        Ensure SeedPrompt sequences don't overlap with SeedSimulatedConversation range.
+
+        When a SeedSimulatedConversation is present, it will generate turns that occupy
+        sequence numbers [config.sequence, config.sequence + config.num_turns * 2 - 1].
+        SeedPrompts must not have sequences that fall within this range.
 
         Raises:
-            ValueError: If both are present.
+            ValueError: If any SeedPrompt sequence overlaps with the simulated range.
         """
-        has_prompts = any(isinstance(s, SeedPrompt) for s in self.seeds)
-        has_simulated = any(isinstance(s, SeedSimulatedConversation) for s in self.seeds)
+        simulated_config = self._get_simulated_conversation()
+        if simulated_config is None:
+            return
 
-        if has_prompts and has_simulated:
-            raise ValueError(
-                "Cannot have both SeedPrompts and SeedSimulatedConversation in the same group. "
-                "Use prompts for static conversations or simulated_conversation for dynamic generation."
-            )
+        simulated_range = simulated_config.sequence_range
+
+        for prompt in self.prompts:
+            if prompt.sequence in simulated_range:
+                raise ValueError(
+                    f"SeedPrompt sequence {prompt.sequence} overlaps with SeedSimulatedConversation "
+                    f"range {list(simulated_range)}. Adjust the SeedPrompt sequence or the "
+                    f"SeedSimulatedConversation sequence/num_turns to avoid overlap."
+                )
 
     # =========================================================================
     # Seed Accessors
@@ -257,24 +264,6 @@ class SeedGroup(YamlLoadable):
         """Check if this group uses simulated conversation generation."""
         return self._simulated_conversation_config is not None
 
-    @property
-    def simulated_conversation_generated(self) -> bool:
-        """Check if the simulated conversation has been generated and cached."""
-        return self._cached_simulated_result is not None
-
-    def set_simulated_conversation_result(self, result: SimulatedConversationResult) -> None:
-        """
-        Store the result of simulated conversation generation.
-
-        Args:
-            result: The generation result from the executor.
-        """
-        self._cached_simulated_result = result
-
-    def clear_cached_simulated_conversation(self) -> None:
-        """Clear the cached simulated conversation result."""
-        self._cached_simulated_result = None
-
     # =========================================================================
     # Message Extraction
     # =========================================================================
@@ -284,15 +273,11 @@ class SeedGroup(YamlLoadable):
         """
         Returns Messages that should be prepended as conversation history.
 
-        If a simulated conversation has been generated, returns those messages.
-        Otherwise, returns all messages except the last user sequence.
+        Returns all messages except the last user sequence.
 
         Returns:
             Messages for conversation history, or None if empty.
         """
-        if self._cached_simulated_result is not None:
-            return self._cached_simulated_result.prepended_messages or None
-
         if not self.prompts:
             return None
 
@@ -318,14 +303,9 @@ class SeedGroup(YamlLoadable):
         """
         Returns a Message containing only the last turn's prompts if it's a user message.
 
-        If a simulated conversation has been generated, returns the next_message from that.
-
         Returns:
             Message for the current/last turn if user role, or None otherwise.
         """
-        if self._cached_simulated_result is not None:
-            return self._cached_simulated_result.next_message
-
         if not self.prompts:
             return None
 
@@ -443,5 +423,4 @@ class SeedGroup(YamlLoadable):
 
     def __repr__(self) -> str:
         sim_info = " (simulated)" if self.has_simulated_conversation else ""
-        cached_info = " [cached]" if self.simulated_conversation_generated else ""
-        return f"<SeedGroup(seeds={len(self.seeds)}{sim_info}{cached_info})>"
+        return f"<SeedGroup(seeds={len(self.seeds)}{sim_info})>"

@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import logging
 import os
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 from tinytag import TinyTag
 
@@ -19,6 +20,9 @@ from pyrit.common.path import PATHS_DICT
 from pyrit.models import DataTypeSerializer
 from pyrit.models.literals import ChatMessageRole, PromptDataType
 from pyrit.models.seeds.seed import Seed
+
+if TYPE_CHECKING:
+    from pyrit.models import Message
 
 logger = logging.getLogger(__name__)
 
@@ -127,3 +131,44 @@ class SeedPrompt(Seed):
             raise ValueError(f"{error_message}: '{sp}'")
 
         return sp
+
+    @staticmethod
+    def from_messages(
+        messages: list["Message"],
+        *,
+        starting_sequence: int = 0,
+        prompt_group_id: Optional[uuid.UUID] = None,
+    ) -> list["SeedPrompt"]:
+        """
+        Convert a list of Messages to a list of SeedPrompts.
+
+        Each MessagePiece becomes a SeedPrompt. All pieces from the same message
+        share the same sequence number, preserving the grouping.
+
+        Args:
+            messages: List of Messages to convert.
+            starting_sequence: The starting sequence number. Defaults to 0.
+            prompt_group_id: Optional group ID to assign to all prompts. Defaults to None.
+
+        Returns:
+            List of SeedPrompts with incrementing sequence numbers per message.
+        """
+        seed_prompts: list[SeedPrompt] = []
+        current_sequence = starting_sequence
+
+        for message in messages:
+            role: ChatMessageRole = "assistant" if message.api_role == "assistant" else "user"
+
+            for piece in message.message_pieces:
+                seed_prompt = SeedPrompt(
+                    value=piece.converted_value,
+                    data_type=piece.converted_value_data_type,
+                    role=role,
+                    sequence=current_sequence,
+                    prompt_group_id=prompt_group_id,
+                )
+                seed_prompts.append(seed_prompt)
+
+            current_sequence += 1
+
+        return seed_prompts

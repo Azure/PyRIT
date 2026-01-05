@@ -8,7 +8,10 @@ import uuid
 
 import pytest
 
-from pyrit.models.seeds import SeedSimulatedConversation
+from pyrit.models.seeds import (
+    SeedSimulatedConversation,
+    SimulatedTargetSystemPromptPaths,
+)
 
 
 class TestSeedSimulatedConversationInit:
@@ -44,7 +47,8 @@ class TestSeedSimulatedConversationInit:
 
         assert conv.num_turns == 3  # default
         assert conv.adversarial_chat_system_prompt_path == adv_path
-        assert conv.simulated_target_system_prompt_path is None
+        # Default simulated_target_system_prompt_path is the compliant prompt
+        assert conv.simulated_target_system_prompt_path == SimulatedTargetSystemPromptPaths.COMPLIANT.value
 
     def test_init_default_num_turns(self, tmp_path):
         """Test that default num_turns is 3."""
@@ -121,6 +125,54 @@ class TestSeedSimulatedConversationInit:
 
         assert conv1.value == conv2.value
 
+    def test_init_default_sequence_is_zero(self, tmp_path):
+        """Test that default sequence is 0."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: test\ndata_type: text")
+
+        conv = SeedSimulatedConversation(
+            adversarial_chat_system_prompt_path=adv_path,
+        )
+
+        assert conv.sequence == 0
+
+    def test_init_custom_sequence(self, tmp_path):
+        """Test that sequence can be set to a custom value."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: test\ndata_type: text")
+
+        conv = SeedSimulatedConversation(
+            adversarial_chat_system_prompt_path=adv_path,
+            sequence=5,
+        )
+
+        assert conv.sequence == 5
+
+    def test_init_default_next_message_system_prompt_path_is_none(self, tmp_path):
+        """Test that default next_message_system_prompt_path is None."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: test\ndata_type: text")
+
+        conv = SeedSimulatedConversation(
+            adversarial_chat_system_prompt_path=adv_path,
+        )
+
+        assert conv.next_message_system_prompt_path is None
+
+    def test_init_next_message_system_prompt_path_set(self, tmp_path):
+        """Test that next_message_system_prompt_path can be set."""
+        adv_path = tmp_path / "adversarial.yaml"
+        adv_path.write_text("value: test\ndata_type: text")
+        next_msg_path = tmp_path / "next_message.yaml"
+        next_msg_path.write_text("value: test\ndata_type: text\nparameters:\n  - objective\n  - conversation_context")
+
+        conv = SeedSimulatedConversation(
+            adversarial_chat_system_prompt_path=adv_path,
+            next_message_system_prompt_path=next_msg_path,
+        )
+
+        assert conv.next_message_system_prompt_path == next_msg_path
+
 
 class TestSeedSimulatedConversationFromDict:
     """Tests for SeedSimulatedConversation.from_dict method."""
@@ -140,7 +192,7 @@ class TestSeedSimulatedConversationFromDict:
         assert conv.adversarial_chat_system_prompt_path == adv_path
 
     def test_from_dict_without_simulated_target_path(self, tmp_path):
-        """Test from_dict without simulated_target_system_prompt_path."""
+        """Test from_dict without simulated_target_system_prompt_path uses compliant default."""
         adv_path = tmp_path / "adversarial.yaml"
         adv_path.write_text("value: test\ndata_type: text")
 
@@ -150,7 +202,8 @@ class TestSeedSimulatedConversationFromDict:
         }
         conv = SeedSimulatedConversation.from_dict(data)
 
-        assert conv.simulated_target_system_prompt_path is None
+        # Default simulated_target_system_prompt_path is the compliant prompt
+        assert conv.simulated_target_system_prompt_path == SimulatedTargetSystemPromptPaths.COMPLIANT.value
 
     def test_from_dict_default_num_turns(self, tmp_path):
         """Test from_dict uses default num_turns when not specified."""
