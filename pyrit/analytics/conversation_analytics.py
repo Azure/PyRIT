@@ -100,6 +100,9 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 
     Returns:
         float: The cosine similarity between the two 1D vectors.
+
+    Raises:
+        ValueError: If the input vectors are not 1D.
     """
     # Ensure we are dealing with 1D vectors
     if a.ndim != 1 or b.ndim != 1:

@@ -5,7 +5,7 @@ import json
 import logging
 import os
 from abc import ABC
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from openai import RateLimitError
 from tenacity import (
@@ -148,7 +148,9 @@ class MissingPromptPlaceholderException(PyritException):
         super().__init__(message=message)
 
 
-def pyrit_custom_result_retry(retry_function: Callable, retry_max_num_attempts: Optional[int] = None) -> Callable:
+def pyrit_custom_result_retry(
+    retry_function: Callable[..., bool], retry_max_num_attempts: Optional[int] = None
+) -> Callable[..., Any]:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
@@ -167,8 +169,9 @@ def pyrit_custom_result_retry(retry_function: Callable, retry_max_num_attempts: 
         Callable: The decorated function with retry logic applied.
     """
 
-    def inner_retry(func):
+    def inner_retry(func: Callable[..., Any]) -> Callable[..., Any]:
         # Use static value if explicitly provided, otherwise use dynamic getter
+        stop_strategy: stop_base
         if retry_max_num_attempts is not None:
             stop_strategy = stop_after_attempt(retry_max_num_attempts)
         else:
@@ -185,7 +188,7 @@ def pyrit_custom_result_retry(retry_function: Callable, retry_max_num_attempts: 
     return inner_retry
 
 
-def pyrit_target_retry(func: Callable) -> Callable:
+def pyrit_target_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
@@ -210,7 +213,7 @@ def pyrit_target_retry(func: Callable) -> Callable:
     )(func)
 
 
-def pyrit_json_retry(func: Callable) -> Callable:
+def pyrit_json_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     A decorator to apply retry logic to a function.
 
@@ -231,7 +234,7 @@ def pyrit_json_retry(func: Callable) -> Callable:
     )(func)
 
 
-def pyrit_placeholder_retry(func: Callable) -> Callable:
+def pyrit_placeholder_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     A decorator to apply retry logic.
 
@@ -255,7 +258,7 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
 def handle_bad_request_exception(
     response_text: str,
     request: MessagePiece,
-    is_content_filter=False,
+    is_content_filter: bool = False,
     error_code: int = 400,
 ) -> Message:
 
