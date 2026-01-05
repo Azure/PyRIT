@@ -46,6 +46,7 @@ from pyrit.models.seeds import (
     SeedAttackGroup,
     SeedSimulatedConversation,
     SeedDataset,
+    SimulatedTargetSystemPromptPaths,
 )
 
 # Keep old module-level imports working (deprecated, will be removed)
@@ -99,6 +100,7 @@ __all__ = [
     "SeedGroup",
     "SeedSimulatedConversation",
     "SeedType",
+    "SimulatedTargetSystemPromptPaths",
     "sort_message_pieces",
     "StorageIO",
     "StrategyResult",
