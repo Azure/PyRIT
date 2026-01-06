@@ -47,6 +47,20 @@ PERSUASION_DECEPTION_PATH = Path(EXECUTOR_RED_TEAM_PATH, "persuasion_deception")
 class ScamStrategy(ScenarioStrategy):
     """
     Strategies for the Scam Scenario.
+
+    Non-Aggregate Values:
+    - ContextCompliance: This single-turn attack attempts to bypass safety measures by rephrasing the objective into
+        a more benign context.
+        It uses an adversarial chat target to:
+        1) rephrase the objective (first user turn)
+        2) generate the assistant's response to the benign question (first assistant turn)
+        3) rephrase the original objective as a follow-up question (end of first assistant turn)
+        This conversation is prepended and sent with an affirmative "yes" to get a response from the target.
+    - RolePlay: This single-turn attack uses the `persuasion_script_written.yaml` role-play scenario to convince the
+        target to help draft a response to the scam objective. It is framed in the context of creating written samples
+        to be used during training seminars.
+    - PersuasiveRedTeamingAttack: This multi-turn attack uses a persuasive persona with the `RedTeamingAttack` to
+        iteratively convince the target to comply with the scam objective over multiple turns.
     """
 
     ALL = ("all", {"all"})
