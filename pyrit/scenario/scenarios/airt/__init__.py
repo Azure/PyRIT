@@ -8,10 +8,13 @@ from pyrit.scenario.scenarios.airt.content_harms import (
     ContentHarms,
     ContentHarmsStrategy,
 )
+from pyrit.scenario.scenarios.airt.scam import Scam, ScamStrategy
 
 __all__ = [
     "Cyber",
     "CyberStrategy",
     "ContentHarms",
     "ContentHarmsStrategy",
+    "Scam",
+    "ScamStrategy",
 ]
