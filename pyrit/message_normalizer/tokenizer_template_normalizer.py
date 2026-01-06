@@ -108,6 +108,24 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         self.tokenizer = tokenizer
         self.system_message_behavior = system_message_behavior
 
+    @staticmethod
+    def _load_tokenizer(model_name: str, token: Optional[str]) -> "PreTrainedTokenizerBase":
+        """
+        Load a tokenizer from HuggingFace.
+
+        This is a separate method to make it easy to mock in tests.
+
+        Args:
+            model_name: The HuggingFace model name.
+            token: Optional authentication token.
+
+        Returns:
+            The loaded tokenizer.
+        """
+        from transformers import AutoTokenizer
+
+        return AutoTokenizer.from_pretrained(model_name, token=token or None)
+
     @classmethod
     def from_model(
         cls,
@@ -137,8 +155,6 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         Raises:
             ValueError: If the tokenizer doesn't have a chat_template.
         """
-        from transformers import AutoTokenizer
-
         resolved_token = get_non_required_value(env_var_name="HUGGINGFACE_TOKEN", passed_value=token)
         if not resolved_token:
             logger.warning("No HuggingFace token provided. Gated models may fail to load without authentication.")
@@ -153,7 +169,7 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
             model_name = model_name_or_alias
             default_behavior = "keep"
 
-        tokenizer = AutoTokenizer.from_pretrained(model_name, token=resolved_token or None)
+        tokenizer = cls._load_tokenizer(model_name, resolved_token)
 
         if tokenizer.chat_template is None:
             raise ValueError(

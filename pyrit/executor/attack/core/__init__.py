@@ -20,6 +20,10 @@ from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategyResultT,
 )
 
+from pyrit.executor.attack.core.prepended_conversation_config import (
+    PrependedConversationConfig,
+)
+
 __all__ = [
     "AttackParameters",
     "AttackParamsT",
@@ -32,4 +36,5 @@ __all__ = [
     "AttackStrategyResultT",
     "AttackExecutor",
     "AttackExecutorResult",
+    "PrependedConversationConfig",
 ]

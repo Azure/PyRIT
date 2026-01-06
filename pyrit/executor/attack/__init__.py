@@ -3,6 +3,47 @@
 
 """Attack executor module."""
 
+from pyrit.executor.attack.core import (
+    AttackStrategy,
+    AttackContext,
+    AttackConverterConfig,
+    AttackParameters,
+    AttackScoringConfig,
+    AttackAdversarialConfig,
+    AttackExecutor,
+    AttackExecutorResult,
+    PrependedConversationConfig,
+)
+
+from pyrit.executor.attack.single_turn import (
+    SingleTurnAttackStrategy,
+    SingleTurnAttackContext,
+    PromptSendingAttack,
+    FlipAttack,
+    ContextComplianceAttack,
+    ManyShotJailbreakAttack,
+    RolePlayAttack,
+    RolePlayPaths,
+    SkeletonKeyAttack,
+)
+
+from pyrit.executor.attack.multi_turn import (
+    ConversationSession,
+    MultiTurnAttackStrategy,
+    MultiTurnAttackContext,
+    MultiPromptSendingAttack,
+    MultiPromptSendingAttackParameters,
+    RedTeamingAttack,
+    RTASystemPromptPaths,
+    CrescendoAttack,
+    CrescendoAttackContext,
+    CrescendoAttackResult,
+    TAPAttack,
+    TreeOfAttacksWithPruningAttack,
+    TAPAttackContext,
+    TAPAttackResult,
+)
+
 from pyrit.executor.attack.component import (
     ConversationManager,
     ConversationState,
@@ -90,6 +131,7 @@ __all__ = [
     "AttackExecutor",
     "ObjectiveEvaluator",
     "AttackExecutorResult",
+    "PrependedConversationConfig",
     "generate_simulated_conversation_async",
     "SimulatedConversationResult",
     "SimulatedTargetSystemPromptPaths",
