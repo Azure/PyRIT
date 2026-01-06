@@ -294,7 +294,7 @@ class TestPromptPreparation:
         assert result.message_pieces[0].id != existing_message.message_pieces[0].id
         # But content should match
         assert result.message_pieces[0].original_value == existing_message.message_pieces[0].original_value
-        assert result.message_pieces[0].role == existing_message.message_pieces[0].role
+        assert result.message_pieces[0].api_role == existing_message.message_pieces[0].api_role
 
     def test_get_message_creates_from_objective_when_no_message(self, mock_target):
         # Create context with specific objective for this test

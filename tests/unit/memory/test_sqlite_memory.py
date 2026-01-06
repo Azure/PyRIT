@@ -367,7 +367,7 @@ def test_get_memories_with_json_properties(sqlite_instance):
         assert len(retrieved_entries) == 1
         retrieved_entry = retrieved_entries[0].message_pieces[0]
         assert retrieved_entry.conversation_id == specific_conversation_id
-        assert retrieved_entry.role == "user"
+        assert retrieved_entry.api_role == "user"
         assert retrieved_entry.original_value == "Test content"
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
         assert abs((retrieved_entry.timestamp - piece.timestamp).total_seconds()) < 0.1

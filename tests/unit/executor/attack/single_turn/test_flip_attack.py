@@ -65,7 +65,7 @@ class TestFlipAttackInitialization:
 
         assert attack._system_prompt is not None
         assert len(attack._system_prompt.message_pieces) == 1
-        assert attack._system_prompt.message_pieces[0].role == "system"
+        assert attack._system_prompt.message_pieces[0].api_role == "system"
         assert "flipping each word" in attack._system_prompt.message_pieces[0].original_value
 
     def test_init_adds_flip_converter_to_request_converters(self, mock_objective_target):

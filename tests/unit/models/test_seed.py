@@ -839,9 +839,9 @@ def test_prepended_conversation_multi_turn_no_objective():
     assert group.prepended_conversation is not None
     assert len(group.prepended_conversation) == 2  # Two prior turns
     assert group.prepended_conversation[0].get_value() == "Turn 1"
-    assert group.prepended_conversation[0].role == "user"
+    assert group.prepended_conversation[0].api_role == "user"
     assert group.prepended_conversation[1].get_value() == "Turn 2"
-    assert group.prepended_conversation[1].role == "assistant"
+    assert group.prepended_conversation[1].api_role == "assistant"
     assert group.next_message is not None
     assert len(group.next_message.message_pieces) == 1
     assert group.next_message.get_value() == "Turn 3"
@@ -931,9 +931,9 @@ def test_next_message_none_when_last_is_assistant():
     assert group.prepended_conversation is not None
     assert len(group.prepended_conversation) == 2
     assert group.prepended_conversation[0].get_value() == "User turn"
-    assert group.prepended_conversation[0].role == "user"
+    assert group.prepended_conversation[0].api_role == "user"
     assert group.prepended_conversation[1].get_value() == "Assistant turn"
-    assert group.prepended_conversation[1].role == "assistant"
+    assert group.prepended_conversation[1].api_role == "assistant"
 
 
 def test_next_message_none_when_single_assistant():
@@ -948,7 +948,7 @@ def test_next_message_none_when_single_assistant():
     assert group.prepended_conversation is not None
     assert len(group.prepended_conversation) == 1
     assert group.prepended_conversation[0].get_value() == "Assistant only"
-    assert group.prepended_conversation[0].role == "assistant"
+    assert group.prepended_conversation[0].api_role == "assistant"
 
 
 def test_prepended_conversation_ends_with_assistant():

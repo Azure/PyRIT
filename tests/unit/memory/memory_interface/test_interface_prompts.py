@@ -39,7 +39,7 @@ def test_add_message_pieces_to_memory(
 ):
     for c in sample_conversations[:num_conversations]:
         c.conversation_id = sample_conversations[0].conversation_id
-        c.role = sample_conversations[0].role
+        c._role = sample_conversations[0]._role
         c.sequence = 0
 
     message = Message(message_pieces=sample_conversations[:num_conversations])
@@ -579,7 +579,7 @@ def test_duplicate_conversation_with_multiple_pieces(sqlite_instance: MemoryInte
         sorted(original_pieces, key=lambda p: p.sequence), sorted(new_pieces, key=lambda p: p.sequence)
     ):
         assert orig.sequence == new.sequence
-        assert orig.role == new.role
+        assert orig.api_role == new.api_role
         assert orig.original_value == new.original_value
 
 
@@ -599,7 +599,7 @@ def test_add_message_pieces_to_memory_updates_sequence(
 ):
     for conversation in sample_conversations:
         conversation.conversation_id = sample_conversations[0].conversation_id
-        conversation.role = sample_conversations[0].role
+        conversation._role = sample_conversations[0]._role
         conversation.sequence = 17
 
     with patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory") as mock_add:
@@ -618,7 +618,7 @@ def test_add_message_pieces_to_memory_updates_sequence_with_prev_conversation(
 
     for conversation in sample_conversations:
         conversation.conversation_id = sample_conversations[0].conversation_id
-        conversation.role = sample_conversations[0].role
+        conversation._role = sample_conversations[0]._role
         conversation.sequence = 17
 
     # insert one of these into memory
@@ -1125,7 +1125,7 @@ def test_get_request_from_response_success(sqlite_instance: MemoryInterface):
     # Retrieve the request that produced this response
     request = sqlite_instance.get_request_from_response(response=response)
 
-    assert request.role == "user"
+    assert request.api_role == "user"
     assert request.sequence == 0
     assert request.get_value() == "What is the weather?"
     assert request.conversation_id == conversation_id
@@ -1174,7 +1174,7 @@ def test_get_request_from_response_multi_turn_conversation(sqlite_instance: Memo
     second_response = conversation[3]
     second_request = sqlite_instance.get_request_from_response(response=second_response)
 
-    assert second_request.role == "user"
+    assert second_request.api_role == "user"
     assert second_request.sequence == 2
     assert second_request.get_value() == "Second question"
 

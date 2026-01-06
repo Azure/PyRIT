@@ -164,7 +164,7 @@ class TestPlaywrightTarget:
         # Verify response structure
         assert len(response) == 1
         assert len(response[0].message_pieces) == 1
-        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].api_role == "assistant"
         assert response[0].get_value() == "Processed: Hello, how are you?"
 
         # Verify interaction function was called correctly
@@ -181,7 +181,7 @@ class TestPlaywrightTarget:
         # Verify response structure
         assert len(response) == 1
         assert len(response[0].message_pieces) == 1
-        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].api_role == "assistant"
         assert response[0].get_value() == "Processed: Hello"  # First piece's value
 
         # Verify interaction function was called with the complete request
@@ -198,7 +198,7 @@ class TestPlaywrightTarget:
         # Verify response structure
         assert len(response) == 1
         assert len(response[0].message_pieces) == 1
-        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].api_role == "assistant"
         assert response[0].get_value() == "Processed: /path/to/image.jpg"
 
         # Verify interaction function was called correctly
@@ -248,7 +248,7 @@ class TestPlaywrightTarget:
         assert len(response) == 1
         assert response[0].message_pieces[0].original_value == expected_response.message_pieces[0].original_value
         assert response[0].message_pieces[0].converted_value == expected_response.message_pieces[0].converted_value
-        assert response[0].message_pieces[0].role == expected_response.message_pieces[0].role
+        assert response[0].message_pieces[0].api_role == expected_response.message_pieces[0].api_role
 
     @pytest.mark.asyncio
     async def test_send_prompt_async_empty_response(self, mock_page, text_message_piece):
@@ -266,7 +266,7 @@ class TestPlaywrightTarget:
         # Verify empty response is handled correctly
         assert len(response) == 1
         assert len(response[0].message_pieces) == 1
-        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].api_role == "assistant"
         assert response[0].get_value() == ""
 
     def test_protocol_interaction_function_signature(self):

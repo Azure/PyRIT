@@ -336,7 +336,7 @@ class TestGenerateSimulatedConversationAsync:
                 assert "prepended_conversation" in call_kwargs
                 prepended = call_kwargs["prepended_conversation"]
                 assert len(prepended) == 1
-                assert prepended[0].role == "system"
+                assert prepended[0].api_role == "system"
 
     @pytest.mark.asyncio
     async def test_passes_memory_labels_to_execute(
@@ -465,7 +465,7 @@ class TestGenerateSimulatedConversationAsync:
                 assert "prepended_conversation" in execute_kwargs
                 prepended = execute_kwargs["prepended_conversation"]
                 assert len(prepended) == 1
-                assert prepended[0].message_pieces[0].role == "system"
+                assert prepended[0].message_pieces[0].api_role == "system"
 
     @pytest.mark.asyncio
     async def test_uses_default_num_turns_of_3(
@@ -541,7 +541,7 @@ class TestSimulatedConversationResult:
         prepended = result.prepended_messages
         # Should exclude last turn (2 messages)
         assert len(prepended) == 4
-        assert prepended[-1].role == "assistant"
+        assert prepended[-1].api_role == "assistant"
         assert prepended[-1].get_value() == "Turn 2 assistant"
 
     def test_prepended_messages_with_turn_index_2(self):
@@ -583,7 +583,7 @@ class TestSimulatedConversationResult:
 
         next_msg = result.next_message
         assert next_msg is not None
-        assert next_msg.role == "user"
+        assert next_msg.api_role == "user"
         assert next_msg.get_value() == "Turn 3 user"
 
     def test_next_message_with_turn_index_2(self):
@@ -593,7 +593,7 @@ class TestSimulatedConversationResult:
 
         next_msg = result.next_message
         assert next_msg is not None
-        assert next_msg.role == "user"
+        assert next_msg.api_role == "user"
         assert next_msg.get_value() == "Turn 2 user"
 
     def test_next_message_with_turn_index_1(self):

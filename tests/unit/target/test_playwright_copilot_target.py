@@ -357,7 +357,7 @@ class TestPlaywrightCopilotTarget:
         assert len(response) == 1
         mock_interact.assert_awaited_once_with(request)
         assert response[0].message_pieces[0].converted_value == "AI response"
-        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].api_role == "assistant"
 
     @pytest.mark.asyncio
     async def test_no_page(self, text_request_piece):
@@ -1024,10 +1024,10 @@ class TestPlaywrightCopilotTargetMultimodal:
         assert len(response[0].message_pieces) == 2
         assert response[0].message_pieces[0].converted_value == "Here is an image"
         assert response[0].message_pieces[0].converted_value_data_type == "text"
-        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].api_role == "assistant"
         assert response[0].message_pieces[1].converted_value == "/path/to/image.png"
         assert response[0].message_pieces[1].converted_value_data_type == "image_path"
-        assert response[0].message_pieces[1].role == "assistant"
+        assert response[0].message_pieces[1].api_role == "assistant"
 
     @pytest.mark.asyncio
     async def test_wait_for_response_with_placeholder_content(self, mock_page):
