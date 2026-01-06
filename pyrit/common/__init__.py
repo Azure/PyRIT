@@ -35,7 +35,7 @@ from pyrit.common.utils import (
     warn_if_set,
 )
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.common.deprecation import deprecation_message
+from pyrit.common.deprecation import print_deprecation_message
 
 __all__ = [
     "apply_defaults",
@@ -44,7 +44,6 @@ __all__ = [
     "combine_list",
     "convert_local_image_to_data_url",
     "DefaultValueScope",
-    "deprecation_message",
     "display_image_response",
     "download_chunk",
     "download_file",

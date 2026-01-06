@@ -6,6 +6,7 @@ import os
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
@@ -118,9 +119,10 @@ class Cyber(Scenario):
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
         if objectives is not None:
-            logger.warning(
-                "objectives is deprecated and will be removed in 0.13.0. "
-                "Use dataset_config in initialize_async instead."
+            print_deprecation_message(
+                old_item="objectives parameter",
+                new_item="dataset_config in initialize_async",
+                removed_in="0.13.0",
             )
 
         # Cyber uses a "take object, make config" pattern to expose a more ergonomic interface. Helper

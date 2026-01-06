@@ -11,6 +11,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, cast
 
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core import (
     AttackStrategy,
@@ -360,9 +361,10 @@ class AttackExecutor:
         Returns:
             AttackExecutorResult with completed results and any incomplete objectives.
         """
-        logger.warning(
-            "execute_multi_objective_attack_async is deprecated and will disappear in 0.13.0. "
-            "Use execute_attack_async instead."
+        print_deprecation_message(
+            old_item="execute_multi_objective_attack_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
         )
 
         # Build field_overrides if prepended_conversation is provided (broadcast to all)
@@ -411,9 +413,10 @@ class AttackExecutor:
         Raises:
             TypeError: If the attack does not use SingleTurnAttackContext.
         """
-        logger.warning(
-            "execute_single_turn_attacks_async is deprecated and will disappear in 0.13.0. "
-            "Use execute_attack_async instead."
+        print_deprecation_message(
+            old_item="execute_single_turn_attacks_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
         )
 
         # Validate that the attack uses SingleTurnAttackContext
@@ -475,9 +478,10 @@ class AttackExecutor:
         Raises:
             TypeError: If the attack does not use MultiTurnAttackContext.
         """
-        logger.warning(
-            "execute_multi_turn_attacks_async is deprecated and will disappear in 0.13.0. "
-            "Use execute_attack_async instead."
+        print_deprecation_message(
+            old_item="execute_multi_turn_attacks_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
         )
 
         # Validate that the attack uses MultiTurnAttackContext
