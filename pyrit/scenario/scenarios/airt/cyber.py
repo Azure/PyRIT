@@ -228,7 +228,7 @@ class Cyber(Scenario):
 
         return list(seed_groups)
 
-    async def _get_atomic_attack_from_strategy_async(self, strategy: str) -> AtomicAttack:
+    def _get_atomic_attack_from_strategy(self, strategy: str) -> AtomicAttack:
         """
         Translate the strategy into an actual AtomicAttack.
 
@@ -281,5 +281,5 @@ class Cyber(Scenario):
         )
 
         for strategy in strategies:
-            atomic_attacks.append(await self._get_atomic_attack_from_strategy_async(strategy))
+            atomic_attacks.append(self._get_atomic_attack_from_strategy(strategy))
         return atomic_attacks

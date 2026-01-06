@@ -73,10 +73,10 @@ def test_export_all_conversations_with_scores_correct_data(sqlite_instance: Memo
 
     try:
         with (
-            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_message_pieces") as mock_get_pieces,
-            patch("pyrit.memory.sqlite_memory.SQLiteMemory.get_prompt_scores") as mock_get_scores,
+            patch.object(sqlite_instance, "get_message_pieces") as mock_get_pieces,
+            patch.object(sqlite_instance, "get_prompt_scores") as mock_get_scores,
         ):
-            # Create a mock piece that returns serializable data
+            # Create a mock piece
             mock_piece = MagicMock()
             mock_piece.id = "piece_id_1234"
             mock_piece.original_prompt_id = "1234"
@@ -87,7 +87,7 @@ def test_export_all_conversations_with_scores_correct_data(sqlite_instance: Memo
                 "converted_value": "sample piece",
             }
 
-            # Create a mock score that returns serializable data
+            # Create a mock score
             mock_score = MagicMock()
             mock_score.message_piece_id = "piece_id_1234"
             mock_score.score_value = 10

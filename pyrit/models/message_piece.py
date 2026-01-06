@@ -229,16 +229,6 @@ class MessagePiece:
             raise ValueError(f"Role {value} is not a valid role.")
         self._role = value
 
-    def to_chat_message(self):
-        """
-        Convert to a ChatMessage for API calls.
-
-        Uses api_role to ensure simulated_assistant is mapped to assistant.
-        """
-        from pyrit.models.chat_message import ChatMessage
-
-        return ChatMessage(role=cast(ChatMessageRole, self.api_role), content=self.converted_value)
-
     def to_message(self) -> Message:  # type: ignore # noqa F821
         from pyrit.models.message import Message
 
