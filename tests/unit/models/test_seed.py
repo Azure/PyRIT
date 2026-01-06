@@ -1210,8 +1210,15 @@ def test_from_messages_multipart_message():
     """Test from_messages with a multipart message (e.g., text + image)."""
     conv_id = str(uuid.uuid4())
     pieces = [
-        MessagePiece(role="user", original_value="Check this image:", original_value_data_type="text", conversation_id=conv_id),
-        MessagePiece(role="user", original_value="/path/to/image.png", original_value_data_type="image_path", conversation_id=conv_id),
+        MessagePiece(
+            role="user", original_value="Check this image:", original_value_data_type="text", conversation_id=conv_id
+        ),
+        MessagePiece(
+            role="user",
+            original_value="/path/to/image.png",
+            original_value_data_type="image_path",
+            conversation_id=conv_id,
+        ),
     ]
     message = Message(message_pieces=pieces)
 

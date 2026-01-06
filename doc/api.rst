@@ -356,6 +356,7 @@ API Reference
     SeedSimulatedConversation
     SeedType
     SimulatedConversationResult
+    SimulatedTargetSystemPromptPaths
     sort_message_pieces
     StorageIO
     StrategyResult
