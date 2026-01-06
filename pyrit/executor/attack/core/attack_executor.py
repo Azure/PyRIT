@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, cast
 
 from pyrit.common.deprecation import print_deprecation_message
-from pyrit.common.logger import logger
 from pyrit.executor.attack.core import (
     AttackStrategy,
     AttackStrategyContextT,

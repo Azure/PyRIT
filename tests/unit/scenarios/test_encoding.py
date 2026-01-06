@@ -75,24 +75,27 @@ class TestEncodingInitialization:
             # _deprecated_seed_prompts should be None when using defaults
             assert scenario._deprecated_seed_prompts is None
 
-    def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_seeds):
+    def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with custom objective scorer."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        assert scenario._scorer_config.objective_scorer == mock_objective_scorer
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
 
-    def test_init_creates_default_scorer_when_not_provided(self, mock_objective_target, sample_seeds):
+            assert scenario._scorer_config.objective_scorer == mock_objective_scorer
+
+    def test_init_creates_default_scorer_when_not_provided(self, mock_objective_target, mock_memory_seeds):
         """Test that initialization creates default DecodingScorer when not provided."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-        )
+        from unittest.mock import patch
 
-        # Should create a DecodingScorer by default
-        assert scenario._scorer_config.objective_scorer is not None
-        assert isinstance(scenario._scorer_config.objective_scorer, DecodingScorer)
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding()
+
+            # Should create a DecodingScorer by default
+            assert scenario._scorer_config.objective_scorer is not None
+            assert isinstance(scenario._scorer_config.objective_scorer, DecodingScorer)
 
     @pytest.mark.asyncio
     async def test_init_raises_exception_when_no_datasets_available(self, mock_objective_target, mock_objective_scorer):
@@ -105,60 +108,68 @@ class TestEncodingInitialization:
         with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
             await scenario.initialize_async(objective_target=mock_objective_target)
 
-    def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_seeds):
+    def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with memory labels."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        # memory_labels are not set until initialize_async is called
-        assert scenario._memory_labels == {}
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
 
-    def test_init_with_custom_encoding_templates(self, mock_objective_target, mock_objective_scorer, sample_seeds):
+            # memory_labels are not set until initialize_async is called
+            assert scenario._memory_labels == {}
+
+    def test_init_with_custom_encoding_templates(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with custom encoding templates."""
+        from unittest.mock import patch
+
         custom_templates = ["template1", "template2"]
 
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            encoding_templates=custom_templates,
-            objective_scorer=mock_objective_scorer,
-        )
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                encoding_templates=custom_templates,
+                objective_scorer=mock_objective_scorer,
+            )
 
-        assert scenario._encoding_templates == custom_templates
+            assert scenario._encoding_templates == custom_templates
 
-    def test_init_with_max_concurrency(self, mock_objective_target, mock_objective_scorer, sample_seeds):
+    def test_init_with_max_concurrency(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with custom max_concurrency."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        # max_concurrency defaults to 1 until initialize_async is called
-        assert scenario._max_concurrency == 1
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
+
+            # max_concurrency defaults to 1 until initialize_async is called
+            assert scenario._max_concurrency == 1
 
     @pytest.mark.asyncio
-    async def test_init_attack_strategies(self, mock_objective_target, mock_objective_scorer, sample_seeds):
+    async def test_init_attack_strategies(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test that attack strategies are set correctly."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        # By default, EncodingStrategy.ALL is used, which expands to all encoding strategies
-        assert len(scenario._scenario_composites) > 0
-        # Verify all composites contain EncodingStrategy instances
-        assert all(
-            isinstance(comp.strategies[0], EncodingStrategy)
-            for comp in scenario._scenario_composites
-            if comp.strategies
-        )
-        # Verify none of the strategies are the aggregate "ALL"
-        assert all(
-            comp.strategies[0] != EncodingStrategy.ALL for comp in scenario._scenario_composites if comp.strategies
-        )
+            await scenario.initialize_async(objective_target=mock_objective_target)
+
+            # By default, EncodingStrategy.ALL is used, which expands to all encoding strategies
+            assert len(scenario._scenario_composites) > 0
+            # Verify all composites contain EncodingStrategy instances
+            assert all(
+                isinstance(comp.strategies[0], EncodingStrategy)
+                for comp in scenario._scenario_composites
+                if comp.strategies
+            )
+            # Verify none of the strategies are the aggregate "ALL"
+            assert all(
+                comp.strategies[0] != EncodingStrategy.ALL for comp in scenario._scenario_composites if comp.strategies
+            )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -167,79 +178,89 @@ class TestEncodingAtomicAttacks:
 
     @pytest.mark.asyncio
     async def test_get_atomic_attacks_async_returns_attacks(
-        self, mock_objective_target, mock_objective_scorer, sample_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
-        atomic_attacks = await scenario._get_atomic_attacks_async()
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        # Should return multiple atomic attacks (one for each encoding type)
-        assert len(atomic_attacks) > 0
-        assert all(hasattr(run, "_attack") for run in atomic_attacks)
+            await scenario.initialize_async(objective_target=mock_objective_target)
+            atomic_attacks = await scenario._get_atomic_attacks_async()
+
+            # Should return multiple atomic attacks (one for each encoding type)
+            assert len(atomic_attacks) > 0
+            assert all(hasattr(run, "_attack") for run in atomic_attacks)
 
     @pytest.mark.asyncio
     async def test_get_converter_attacks_returns_multiple_encodings(
-        self, mock_objective_target, mock_objective_scorer, sample_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
     ):
         """Test that _get_converter_attacks returns attacks for multiple encoding types."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
-        attack_runs = scenario._get_converter_attacks()
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        # Should have multiple attack runs for different encodings
-        # The list includes: Base64 (4 variants), Base2048, Base16, Base32, ASCII85 (2), hex,
-        # quoted-printable, UUencode, ROT13, Braille, Atbash, Morse, NATO, Ecoji, Zalgo, Leet, AsciiSmuggler
-        assert len(attack_runs) > 0
+            await scenario.initialize_async(objective_target=mock_objective_target)
+            attack_runs = scenario._get_converter_attacks()
+
+            # Should have multiple attack runs for different encodings
+            # The list includes: Base64 (4 variants), Base2048, Base16, Base32, ASCII85 (2), hex,
+            # quoted-printable, UUencode, ROT13, Braille, Atbash, Morse, NATO, Ecoji, Zalgo, Leet, AsciiSmuggler
+            assert len(attack_runs) > 0
 
     @pytest.mark.asyncio
     async def test_get_prompt_attacks_creates_attack_runs(
-        self, mock_objective_target, mock_objective_scorer, sample_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
     ):
         """Test that _get_prompt_attacks creates attack runs with correct structure."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
-        attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        # Should create attack runs
-        assert len(attack_runs) > 0
+            await scenario.initialize_async(objective_target=mock_objective_target)
+            attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
 
-        # Each attack run should have the correct attack type
-        for run in attack_runs:
-            assert isinstance(run._attack, PromptSendingAttack)
-            assert len(run.objectives) == len(sample_seeds)
-            assert run._seed_groups is not None
-            assert len(run._seed_groups) == len(sample_seeds)
+            # Should create attack runs
+            assert len(attack_runs) > 0
+
+            # Each attack run should have the correct attack type
+            for run in attack_runs:
+                assert isinstance(run._attack, PromptSendingAttack)
+                assert len(run.objectives) == len(mock_memory_seeds)
+                assert run._seed_groups is not None
+                assert len(run._seed_groups) == len(mock_memory_seeds)
 
     @pytest.mark.asyncio
-    async def test_attack_runs_include_objectives(self, mock_objective_target, mock_objective_scorer, sample_seeds):
+    async def test_attack_runs_include_objectives(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
+    ):
         """Test that attack runs include objectives for each seed prompt."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
-        attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        # Check that objectives are created for each seed prompt
-        for run in attack_runs:
-            assert len(run.objectives) == len(sample_seeds)
-            for i, objective in enumerate(run.objectives):
-                assert "Make the model say an encoded payload:" in objective
-                assert sample_seeds[i] in objective
+            await scenario.initialize_async(objective_target=mock_objective_target)
+            attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
+
+            # Check that objectives are created for each seed prompt
+            for run in attack_runs:
+                assert len(run.objectives) == len(mock_memory_seeds)
+                for i, objective in enumerate(run.objectives):
+                    assert "Make the model say an encoded payload:" in objective
+                    assert mock_memory_seeds[i].value in objective
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -247,17 +268,19 @@ class TestEncodingExecution:
     """Tests for Encoding execution."""
 
     @pytest.mark.asyncio
-    async def test_scenario_initialization(self, mock_objective_target, mock_objective_scorer, sample_seeds):
+    async def test_scenario_initialization(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test that scenario can be initialized successfully."""
-        scenario = Encoding(
-            seed_prompts=sample_seeds,
-            objective_scorer=mock_objective_scorer,
-        )
+        from unittest.mock import patch
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
+        with patch.object(Encoding, "_resolve_seed_prompts", return_value=[seed.value for seed in mock_memory_seeds]):
+            scenario = Encoding(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        # Verify initialization creates atomic attacks
-        assert scenario.atomic_attack_count > 0
+            await scenario.initialize_async(objective_target=mock_objective_target)
+
+            # Verify initialization creates atomic attacks
+            assert scenario.atomic_attack_count > 0
 
     @pytest.mark.asyncio
     async def test_resolve_seed_prompts_loads_garak_data(

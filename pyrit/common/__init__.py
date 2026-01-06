@@ -64,5 +64,5 @@ __all__ = [
     "set_default_value",
     "Singleton",
     "warn_if_set",
-    "YamlLoadable",
+    "YamlLoadable", "print_deprecation_message",
 ]
