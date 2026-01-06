@@ -23,7 +23,7 @@ class AttackAdversarialConfig:
     # Adversarial chat target for the attack
     target: PromptChatTarget
 
-    # Path to the YAML file containing the system prompt for the advarsarial chat target
+    # Path to the YAML file containing the system prompt for the adversarial chat target
     system_prompt_path: Optional[Union[str, Path]] = None
 
     # Seed prompt for the adversarial chat target
