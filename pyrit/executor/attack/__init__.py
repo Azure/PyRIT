@@ -12,6 +12,7 @@ from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackExecutor,
     AttackExecutorResult,
+    PrependedConversationConfig,
 )
 
 from pyrit.executor.attack.single_turn import (
@@ -91,5 +92,6 @@ __all__ = [
     "AttackExecutor",
     "ObjectiveEvaluator",
     "AttackExecutorResult",
+    "PrependedConversationConfig",
     "generate_simulated_conversation_async",
 ]
