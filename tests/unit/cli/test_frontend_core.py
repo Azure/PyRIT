@@ -394,55 +394,55 @@ class TestPrintFunctions:
 
 
 class TestFormatFunctions:
-    """Tests for format_scenario_info and format_initializer_info."""
+    """Tests for format_scenario_metadata and format_initializer_metadata."""
 
-    def test_format_scenario_info_basic(self, capsys):
-        """Test format_scenario_info with basic info."""
-        scenario_info = {
+    def test_format_scenario_metadata_basic(self, capsys):
+        """Test format_scenario_metadata with basic metadata."""
+        scenario_metadata = {
             "name": "test_scenario",
             "class_name": "TestScenario",
         }
 
-        frontend_core.format_scenario_info(scenario_info=scenario_info)
+        frontend_core.format_scenario_metadata(scenario_metadata=scenario_metadata)
 
         captured = capsys.readouterr()
         assert "test_scenario" in captured.out
         assert "TestScenario" in captured.out
 
-    def test_format_scenario_info_with_description(self, capsys):
-        """Test format_scenario_info with description."""
-        scenario_info = {
+    def test_format_scenario_metadata_with_description(self, capsys):
+        """Test format_scenario_metadata with description."""
+        scenario_metadata = {
             "name": "test_scenario",
             "class_name": "TestScenario",
             "description": "This is a test scenario",
         }
 
-        frontend_core.format_scenario_info(scenario_info=scenario_info)
+        frontend_core.format_scenario_metadata(scenario_metadata=scenario_metadata)
 
         captured = capsys.readouterr()
         assert "This is a test scenario" in captured.out
 
-    def test_format_scenario_info_with_strategies(self, capsys):
-        """Test format_scenario_info with strategies."""
-        scenario_info = {
+    def test_format_scenario_metadata_with_strategies(self, capsys):
+        """Test format_scenario_metadata with strategies."""
+        scenario_metadata = {
             "name": "test_scenario",
             "class_name": "TestScenario",
             "all_strategies": ["strategy1", "strategy2"],
             "default_strategy": "strategy1",
         }
 
-        frontend_core.format_scenario_info(scenario_info=scenario_info)
+        frontend_core.format_scenario_metadata(scenario_metadata=scenario_metadata)
 
         captured = capsys.readouterr()
         assert "strategy1" in captured.out
         assert "strategy2" in captured.out
         assert "Default Strategy" in captured.out
 
-    def test_format_initializer_info_basic(self, capsys) -> None:
-        """Test format_initializer_info with basic info."""
-        from pyrit.cli.initializer_registry import InitializerInfo
+    def test_format_initializer_metadata_basic(self, capsys) -> None:
+        """Test format_initializer_metadata with basic metadata."""
+        from pyrit.registry import InitializerMetadata
 
-        initializer_info: InitializerInfo = {
+        initializer_metadata: InitializerMetadata = {
             "name": "test_init",
             "class_name": "TestInit",
             "initializer_name": "test",
@@ -451,18 +451,18 @@ class TestFormatFunctions:
             "execution_order": 100,
         }
 
-        frontend_core.format_initializer_info(initializer_info=initializer_info)
+        frontend_core.format_initializer_metadata(initializer_metadata=initializer_metadata)
 
         captured = capsys.readouterr()
         assert "test_init" in captured.out
         assert "TestInit" in captured.out
         assert "100" in captured.out
 
-    def test_format_initializer_info_with_env_vars(self, capsys) -> None:
-        """Test format_initializer_info with environment variables."""
-        from pyrit.cli.initializer_registry import InitializerInfo
+    def test_format_initializer_metadata_with_env_vars(self, capsys) -> None:
+        """Test format_initializer_metadata with environment variables."""
+        from pyrit.registry import InitializerMetadata
 
-        initializer_info: InitializerInfo = {
+        initializer_metadata: InitializerMetadata = {
             "name": "test_init",
             "class_name": "TestInit",
             "initializer_name": "test",
@@ -471,17 +471,17 @@ class TestFormatFunctions:
             "execution_order": 100,
         }
 
-        frontend_core.format_initializer_info(initializer_info=initializer_info)
+        frontend_core.format_initializer_metadata(initializer_metadata=initializer_metadata)
 
         captured = capsys.readouterr()
         assert "VAR1" in captured.out
         assert "VAR2" in captured.out
 
-    def test_format_initializer_info_with_description(self, capsys) -> None:
-        """Test format_initializer_info with description."""
-        from pyrit.cli.initializer_registry import InitializerInfo
+    def test_format_initializer_metadata_with_description(self, capsys) -> None:
+        """Test format_initializer_metadata with description."""
+        from pyrit.registry import InitializerMetadata
 
-        initializer_info: InitializerInfo = {
+        initializer_metadata: InitializerMetadata = {
             "name": "test_init",
             "class_name": "TestInit",
             "initializer_name": "test",
@@ -490,7 +490,7 @@ class TestFormatFunctions:
             "execution_order": 100,
         }
 
-        frontend_core.format_initializer_info(initializer_info=initializer_info)
+        frontend_core.format_initializer_metadata(initializer_metadata=initializer_metadata)
 
         captured = capsys.readouterr()
         assert "Test description" in captured.out
