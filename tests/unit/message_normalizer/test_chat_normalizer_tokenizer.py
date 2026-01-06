@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import textwrap
 from unittest.mock import MagicMock, patch
 
@@ -48,6 +49,7 @@ class TestTokenizerTemplateNormalizerInit:
 class TestFromModel:
     """Tests for the from_model factory method."""
 
+    @patch.dict(os.environ, {"HUGGINGFACE_TOKEN": ""}, clear=False)
     @patch.object(TokenizerTemplateNormalizer, "_load_tokenizer")
     def test_from_model_with_alias(self, mock_load_tokenizer):
         """Test from_model resolves alias to full model name."""
@@ -61,6 +63,7 @@ class TestFromModel:
         mock_load_tokenizer.assert_called_once_with("HuggingFaceH4/zephyr-7b-beta", "")
         assert normalizer.tokenizer == mock_tokenizer
 
+    @patch.dict(os.environ, {"HUGGINGFACE_TOKEN": ""}, clear=False)
     @patch.object(TokenizerTemplateNormalizer, "_load_tokenizer")
     def test_from_model_with_full_name(self, mock_load_tokenizer):
         """Test from_model works with full model name."""
@@ -95,6 +98,7 @@ class TestFromModel:
         with pytest.raises(ValueError, match="does not have a chat_template"):
             TokenizerTemplateNormalizer.from_model("model-without-template")
 
+    @patch.dict(os.environ, {"HUGGINGFACE_TOKEN": ""}, clear=False)
     @patch.object(TokenizerTemplateNormalizer, "_load_tokenizer")
     def test_from_model_case_insensitive_alias(self, mock_load_tokenizer):
         """Test from_model aliases are case-insensitive."""

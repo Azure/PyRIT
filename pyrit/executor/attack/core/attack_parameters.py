@@ -164,9 +164,7 @@ class AttackParameters:
         )
 
         # Attach from_seed_group_async that delegates to the helper function
-        async def from_seed_group_async_wrapper(
-            c, *, seed_group, adversarial_chat=None, objective_scorer=None, **ov
-        ):
+        async def from_seed_group_async_wrapper(c, *, seed_group, adversarial_chat=None, objective_scorer=None, **ov):
             return await _build_params_from_seed_group_async(
                 c, seed_group, adversarial_chat=adversarial_chat, objective_scorer=objective_scorer, **ov
             )
