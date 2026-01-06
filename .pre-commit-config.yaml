@@ -59,7 +59,6 @@ repos:
         entry: mypy
         language: system
         types: [ python ]
-        exclude: ^doc/
 
   - repo: local
     hooks:
