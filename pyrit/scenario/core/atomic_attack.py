@@ -103,7 +103,9 @@ class AtomicAttack:
         if not seed_groups:
             raise ValueError("seed_groups list cannot be empty")
 
-        # SeedAttackGroup validates in __init__ that it has exactly one objective
+        # Validate each seed group to ensure they are in a valid state
+        for sg in seed_groups:
+            sg.validate()
 
         self._seed_groups = seed_groups
         self._adversarial_chat = adversarial_chat

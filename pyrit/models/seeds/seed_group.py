@@ -66,11 +66,7 @@ class SeedGroup(YamlLoadable):
 
         self.seeds = []
         for seed in seeds:
-            if isinstance(seed, SeedObjective):
-                self.seeds.append(seed)
-            elif isinstance(seed, SeedSimulatedConversation):
-                self.seeds.append(seed)
-            elif isinstance(seed, SeedPrompt):
+            if isinstance(seed, Seed):
                 self.seeds.append(seed)
             elif isinstance(seed, dict):
                 # Support new seed_type field with backward compatibility for deprecated fields
@@ -100,11 +96,8 @@ class SeedGroup(YamlLoadable):
             else:
                 raise ValueError(f"Invalid seed type: {type(seed)}")
 
-        self._enforce_consistent_group_id()
-        self._enforce_consistent_role()
-        self._enforce_max_one_objective()
-        self._enforce_max_one_simulated_conversation()
-        self._enforce_no_sequence_overlap_with_simulated()
+        # Validate and normalize the seeds
+        self.validate()
 
         # Extract simulated conversation config
         self._simulated_conversation_config = self._get_simulated_conversation()
@@ -124,6 +117,25 @@ class SeedGroup(YamlLoadable):
     # =========================================================================
     # Validation
     # =========================================================================
+
+    def validate(self) -> None:
+        """
+        Validate the seed group state.
+
+        This method can be called after external modifications to seeds
+        to ensure the group remains in a valid state. It is automatically
+        called during initialization.
+
+        Raises:
+            ValueError: If validation fails.
+        """
+        if not self.seeds:
+            raise ValueError("SeedGroup cannot be empty.")
+        self._enforce_consistent_group_id()
+        self._enforce_consistent_role()
+        self._enforce_max_one_objective()
+        self._enforce_max_one_simulated_conversation()
+        self._enforce_no_sequence_overlap_with_simulated()
 
     def _enforce_max_one_objective(self) -> None:
         """Ensure at most one objective is present."""

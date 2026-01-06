@@ -43,6 +43,17 @@ class SeedAttackGroup(SeedGroup):
             ValueError: If exactly one objective is not provided.
         """
         super().__init__(seeds=seeds)
+
+    def validate(self) -> None:
+        """
+        Validate the seed attack group state.
+
+        Extends SeedGroup validation to require exactly one objective.
+
+        Raises:
+            ValueError: If validation fails.
+        """
+        super().validate()
         self._enforce_exactly_one_objective()
 
     def _enforce_exactly_one_objective(self) -> None:

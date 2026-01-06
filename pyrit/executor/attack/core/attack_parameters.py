@@ -218,6 +218,9 @@ async def _build_params_from_seed_group_async(
             f"Accepted parameters: {valid_fields}"
         )
 
+    # Validate seed_group state before extracting parameters
+    seed_group.validate()
+
     # SeedAttackGroup validates in __init__ that objective is set
     assert seed_group.objective is not None
 
