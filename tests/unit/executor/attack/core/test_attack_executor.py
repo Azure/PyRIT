@@ -300,9 +300,9 @@ class TestExecuteAttackFromSeedGroupsAsync:
 
         original_from_seed_group_async = attack.params_type.from_seed_group_async
 
-        async def capture_from_seed_group_async(seed_group, **kwargs):
+        async def capture_from_seed_group_async(*, seed_group, **kwargs):
             captured_kwargs.update(kwargs)
-            return await original_from_seed_group_async(seed_group, **kwargs)
+            return await original_from_seed_group_async(seed_group=seed_group, **kwargs)
 
         attack.params_type.from_seed_group_async = capture_from_seed_group_async
 
