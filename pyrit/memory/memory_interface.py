@@ -820,6 +820,9 @@ class MemoryInterface(abc.ABC):
 
         Returns:
             Sequence[SeedPrompt]: A list of prompts matching the criteria.
+
+        Raises:
+            ValueError: If both 'seed_type' and deprecated 'is_objective' parameters are specified.
         """
         # Handle deprecated is_objective parameter
         if is_objective is not None:

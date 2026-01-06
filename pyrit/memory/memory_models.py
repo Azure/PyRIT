@@ -596,7 +596,6 @@ class SeedEntry(Base):
                 id=self.id,
                 value=self.value,
                 value_sha256=self.value_sha256,
-                data_type=self.data_type,
                 name=self.name,
                 dataset_name=self.dataset_name,
                 harm_categories=self.harm_categories,
@@ -616,9 +615,7 @@ class SeedEntry(Base):
             config = json.loads(self.value)
             return SeedSimulatedConversation(
                 id=self.id,
-                value=self.value,
                 value_sha256=self.value_sha256,
-                data_type=self.data_type,
                 name=self.name,
                 dataset_name=self.dataset_name,
                 harm_categories=self.harm_categories,
@@ -631,8 +628,10 @@ class SeedEntry(Base):
                 metadata=self.prompt_metadata,
                 prompt_group_id=self.prompt_group_id,
                 num_turns=config.get("num_turns", 3),
-                adversarial_system_prompt=config.get("adversarial_system_prompt"),
-                simulated_target_system_prompt=config.get("simulated_target_system_prompt"),
+                sequence=config.get("sequence", 0),
+                adversarial_chat_system_prompt_path=config.get("adversarial_chat_system_prompt_path"),
+                simulated_target_system_prompt_path=config.get("simulated_target_system_prompt_path"),
+                next_message_system_prompt_path=config.get("next_message_system_prompt_path"),
             )
         return SeedPrompt(
             id=self.id,

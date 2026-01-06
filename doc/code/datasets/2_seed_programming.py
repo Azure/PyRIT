@@ -89,7 +89,7 @@ results = await AttackExecutor().execute_attack_from_seed_groups_async(  # type:
 await printer.print_result_async(result=results.completed_results[0])  # type: ignore
 
 # %% [markdown]
-# You can also generate all or part of `prepended_conversation` and `next_message` using an attack model using a `seed_simulated_conversation`. The below example shows how to create these parameters such that the objective target has
+# You can also generate all or part of `prepended_conversation` and `next_message` using an attack model using a `seed_simulated_conversation`. The below example shows how to create these parameters such that the objective target has the following:
 #
 # 1. A static system prompt
 # 2. Generate the first three turns to a conversation to be prepended, along with a next_message.

@@ -37,6 +37,7 @@ from pyrit.executor.attack import (
     CrescendoAttack,
     generate_simulated_conversation_async,
 )
+from pyrit.models import SeedGroup
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
@@ -82,7 +83,7 @@ converter_target = OpenAIChatTarget(
 adversarial_config = AttackAdversarialConfig(target=objective_target)
 
 
-simulated_conversation = await generate_simulated_conversation_async(  # type: ignore
+simulated_conversation_prompts = await generate_simulated_conversation_async(  # type: ignore
     objective=conversation_objective,
     adversarial_chat=OpenAIChatTarget(),
     memory_labels=memory_labels,
@@ -90,9 +91,12 @@ simulated_conversation = await generate_simulated_conversation_async(  # type: i
     adversarial_chat_system_prompt_path=(Path(EXECUTOR_SEED_PROMPT_PATH) / "red_teaming" / "naive_crescendo.yaml"),
 )
 
+# Wrap the generated prompts in a SeedGroup to access prepended_conversation and next_message
+simulated_conversation = SeedGroup(seeds=simulated_conversation_prompts)
+
 
 await ConsoleAttackResultPrinter().print_messages_async(  # type: ignore
-    messages=simulated_conversation.prepended_messages
+    messages=simulated_conversation.prepended_conversation
 )
 
 
@@ -141,7 +145,7 @@ new_attack = CrescendoAttack(
 
 new_result = await new_attack.execute_async(  # type: ignore
     objective=conversation_objective,
-    prepended_conversation=simulated_conversation.prepended_messages,
+    prepended_conversation=simulated_conversation.prepended_conversation,
     next_message=simulated_conversation.next_message,
     memory_labels=memory_labels,
 )

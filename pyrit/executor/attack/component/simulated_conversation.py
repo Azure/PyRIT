@@ -184,6 +184,9 @@ async def _generate_next_message_async(
 
     Returns:
         Message: The generated next message.
+
+    Raises:
+        ValueError: If no response is received from the adversarial chat.
     """
     # Format the conversation context using ConversationContextNormalizer
     normalizer = ConversationContextNormalizer()

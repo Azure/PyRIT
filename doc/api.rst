@@ -189,8 +189,6 @@ API Reference
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
-    SimulatedConversationResult
-    SimulatedTargetSystemPromptPaths
     RolePlayPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
@@ -355,7 +353,6 @@ API Reference
     SeedPrompt
     SeedSimulatedConversation
     SeedType
-    SimulatedConversationResult
     SimulatedTargetSystemPromptPaths
     sort_message_pieces
     StorageIO
