@@ -533,8 +533,6 @@ API Reference
     FloatScaleScorerByCategory
     FloatScaleThresholdScorer
     GandalfScorer
-    get_all_harm_definitions
-    HarmDefinition
     HarmHumanLabeledEntry
     HarmScorerEvaluator
     HarmScorerMetrics
@@ -562,7 +560,6 @@ API Reference
     ScorerMetricsWithIdentity
     ScorerPrinter
     ScorerPromptValidator
-    ScaleDescription
     get_all_harm_metrics
     get_all_objective_metrics
     SelfAskCategoryScorer

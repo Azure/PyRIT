@@ -33,11 +33,6 @@ from pyrit.score.float_scale.plagiarism_scorer import PlagiarismScorer, Plagiari
 from pyrit.score.true_false.prompt_shield_scorer import PromptShieldScorer
 
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType, RegistryUpdateBehavior
-from pyrit.models.harm_definition import (
-    HarmDefinition,
-    ScaleDescription,
-    get_all_harm_definitions,
-)
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
@@ -140,7 +135,4 @@ __all__ = [
     "TrueFalseScorer",
     "VideoFloatScaleScorer",
     "VideoTrueFalseScorer",
-    "HarmDefinition",
-    "ScaleDescription",
-    "get_all_harm_definitions",
 ]
