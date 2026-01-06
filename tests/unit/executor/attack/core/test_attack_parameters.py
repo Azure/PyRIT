@@ -40,7 +40,7 @@ class TestFromSeedGroupAsync:
 
     async def test_extracts_objective_from_seed_group(self, seed_group_with_objective: SeedAttackGroup) -> None:
         """Test that objective is correctly extracted from seed group."""
-        params = await AttackParameters.from_seed_group_async(seed_group_with_objective)
+        params = await AttackParameters.from_seed_group_async(seed_group=seed_group_with_objective)
 
         assert params.objective == "Test objective"
 
@@ -58,7 +58,7 @@ class TestFromSeedGroupAsync:
         prompt = SeedPrompt(value="Test prompt", data_type="text", role="user")
         seed_group = SeedAttackGroup(seeds=[objective, prompt])
 
-        params = await AttackParameters.from_seed_group_async(seed_group)
+        params = await AttackParameters.from_seed_group_async(seed_group=seed_group)
 
         assert params.next_message is not None
         assert params.next_message.get_value() == "Test prompt"
@@ -71,7 +71,7 @@ class TestFromSeedGroupAsync:
         prompt3 = SeedPrompt(value="Second message", data_type="text", role="user", sequence=3)
         seed_group = SeedAttackGroup(seeds=[objective, prompt1, prompt2, prompt3])
 
-        params = await AttackParameters.from_seed_group_async(seed_group)
+        params = await AttackParameters.from_seed_group_async(seed_group=seed_group)
 
         assert params.prepended_conversation is not None
         assert len(params.prepended_conversation) == 2
@@ -292,7 +292,7 @@ class TestExcluding:
         objective = SeedObjective(value="Test objective")
         seed_group = SeedAttackGroup(seeds=[objective])
 
-        params = await ExcludedParams.from_seed_group_async(seed_group)
+        params = await ExcludedParams.from_seed_group_async(seed_group=seed_group)
 
         assert params.objective == "Test objective"
 
@@ -304,6 +304,6 @@ class TestExcluding:
 
         with pytest.raises(ValueError, match="does not accept parameters"):
             await ExcludedParams.from_seed_group_async(
-                seed_group,
+                seed_group=seed_group,
                 next_message=_make_message("user", "Should fail"),
             )
