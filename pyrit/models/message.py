@@ -114,7 +114,7 @@ class Message:
                 return True
         return False
 
-    def set_response_not_in_database(self):
+    def set_response_not_in_database(self) -> None:
         """
         Set that the prompt is not in the database.
 
@@ -122,6 +122,17 @@ class Message:
         """
         for piece in self.message_pieces:
             piece.set_piece_not_in_database()
+
+    def set_simulated_role(self) -> None:
+        """
+        Set the role of all message pieces to simulated_assistant.
+
+        This marks the message as coming from a simulated conversation
+        rather than an actual target response.
+        """
+        for piece in self.message_pieces:
+            if piece._role == "assistant":
+                piece._role = "simulated_assistant"
 
     def validate(self):
         """
