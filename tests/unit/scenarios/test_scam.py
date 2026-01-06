@@ -51,7 +51,7 @@ def mock_runtime_env():
     with patch.dict(
         "os.environ",
         {
-            "AZURE_OPENAI_GPT4O_UNSAFE_ENDPOINT": "https://test.openai.azure.com/",
+            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT": "https://test.openai.azure.com/",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY": "test-key",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
             "OPENAI_CHAT_ENDPOINT": "https://test.openai.azure.com/",

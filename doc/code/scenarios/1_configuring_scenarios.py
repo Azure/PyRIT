@@ -32,8 +32,8 @@
 # %%
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenario import ScenarioCompositeStrategy
-from pyrit.scenario.foundry import Foundry, FoundryStrategy
 from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
+from pyrit.scenario.scenarios.foundry import Foundry, FoundryStrategy
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY, initializers=[])  # type: ignore

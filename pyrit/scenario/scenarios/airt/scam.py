@@ -175,9 +175,6 @@ class Scam(Scenario):
 
         Returns:
             TrueFalseCompositeScorer: Default objective scorer with backstop and scam materials evaluation.
-
-        Returns:
-            SelfAskTrueFalseScorer: Default objective scorer for scam scenarios.
         """
         scam_materials = SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(
