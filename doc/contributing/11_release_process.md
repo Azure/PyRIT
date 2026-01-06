@@ -38,7 +38,8 @@ that happened since the last release will influence the new version number.
 
 ## 2. Remove deprecated functionality
 
-Search the entire codebase for the new version, e.g., "0.10.1" (no leading "v"),
+If you are incrementing the minor version, search the entire codebase for the new minor
+version, e.g., "0.11.0" (no leading "v"),
 to find occurrences where we deprecated functionality and announced that it will be
 removed in the new version. Typically, functionality is deprecated and then stays for
 two minor versions before getting removed.
