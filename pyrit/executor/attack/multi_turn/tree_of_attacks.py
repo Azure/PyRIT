@@ -31,6 +31,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
+from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.core.prepended_conversation_config import (
     PrependedConversationConfig,
 )
