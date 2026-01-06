@@ -83,7 +83,7 @@ class TestFromSeedGroupAsync:
         custom_message = _make_message("user", "Override message")
 
         params = await AttackParameters.from_seed_group_async(
-            seed_group_with_objective,
+            seed_group=seed_group_with_objective,
             next_message=custom_message,
         )
 
@@ -93,7 +93,7 @@ class TestFromSeedGroupAsync:
         """Test that invalid override fields raise ValueError."""
         with pytest.raises(ValueError, match="does not accept parameters"):
             await AttackParameters.from_seed_group_async(
-                seed_group_with_objective,
+                seed_group=seed_group_with_objective,
                 invalid_field="value",
             )
 
@@ -149,7 +149,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         """Test that ValueError is raised when adversarial_chat is None."""
         with pytest.raises(ValueError, match="adversarial_chat is required"):
             await AttackParameters.from_seed_group_async(
-                seed_group_with_simulated_conv,
+                seed_group=seed_group_with_simulated_conv,
                 adversarial_chat=None,
                 objective_scorer=mock_objective_scorer,
             )
@@ -162,7 +162,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         """Test that ValueError is raised when objective_scorer is None."""
         with pytest.raises(ValueError, match="objective_scorer is required"):
             await AttackParameters.from_seed_group_async(
-                seed_group_with_simulated_conv,
+                seed_group=seed_group_with_simulated_conv,
                 adversarial_chat=mock_adversarial_chat,
                 objective_scorer=None,
             )
@@ -202,7 +202,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         mock_generate.return_value = mock_simulated_result
 
         await AttackParameters.from_seed_group_async(
-            seed_group_with_simulated_conv,
+            seed_group=seed_group_with_simulated_conv,
             adversarial_chat=mock_adversarial_chat,
             objective_scorer=mock_objective_scorer,
         )
@@ -227,7 +227,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         mock_generate.return_value = mock_simulated_result
 
         params = await AttackParameters.from_seed_group_async(
-            seed_group_with_simulated_conv,
+            seed_group=seed_group_with_simulated_conv,
             adversarial_chat=mock_adversarial_chat,
             objective_scorer=mock_objective_scorer,
         )
@@ -251,7 +251,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         mock_generate.return_value = mock_simulated_result
 
         params = await AttackParameters.from_seed_group_async(
-            seed_group_with_simulated_conv,
+            seed_group=seed_group_with_simulated_conv,
             adversarial_chat=mock_adversarial_chat,
             objective_scorer=mock_objective_scorer,
         )
