@@ -9,6 +9,12 @@
 # ---
 
 # %% [markdown]
+# # 8. Scorer Metrics
+#
+# This demo will walk you through how to measure and gauge performance of PyRIT scoring configurations, both harm scorers and objective scorers.
+#
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
+#
 # ## Understanding Scorer Metrics
 #
 # PyRIT has metrics for many scorers checked in. Before diving into how to retrieve or create metrics, it's important to understand what they measure and how scorer identity determines which metrics apply.
@@ -271,7 +277,9 @@ refusal_scorer.evaluation_file_mapping = ScorerEvalDatasetFiles(
 # Run evaluation with:
 # - num_scorer_trials=1: Score each response once (use 3+ for production to measure variance)
 # - RegistryUpdateBehavior.NEVER_UPDATE: Don't save to the official registry (for testing only)
-metrics = await refusal_scorer.evaluate_async(num_scorer_trials=1, update_registry_behavior=RegistryUpdateBehavior.NEVER_UPDATE)  # type: ignore
+metrics = await refusal_scorer.evaluate_async(  # type: ignore
+    num_scorer_trials=1, update_registry_behavior=RegistryUpdateBehavior.NEVER_UPDATE
+)
 
 if metrics:
     objective_metrics = cast(ObjectiveScorerMetrics, metrics)
@@ -301,7 +309,9 @@ likert_scorer = SelfAskLikertScorer(chat_target=OpenAIChatTarget(), likert_scale
 # )
 
 # This can be called without parameters to update the registry
-metrics = await likert_scorer.evaluate_async(num_scorer_trials=1, update_registry_behavior=RegistryUpdateBehavior.NEVER_UPDATE)  # type: ignore
+metrics = await likert_scorer.evaluate_async(  # type: ignore
+    num_scorer_trials=1, update_registry_behavior=RegistryUpdateBehavior.NEVER_UPDATE
+)
 
 if metrics:
     harm_metrics = cast(HarmScorerMetrics, metrics)
