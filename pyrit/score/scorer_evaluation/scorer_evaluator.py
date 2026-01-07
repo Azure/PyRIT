@@ -119,6 +119,7 @@ class ScorerEvaluator(abc.ABC):
         Evaluate scorer using dataset files configuration.
 
         The update_registry_behavior parameter controls how existing registry entries are handled:
+
         - SKIP_IF_EXISTS (default): Check registry for existing results matching scorer config,
           dataset version, and num_scorer_trials. If found, return cached metrics.
           If not found, run evaluation and write to registry.
