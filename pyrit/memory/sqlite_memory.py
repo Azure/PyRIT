@@ -212,7 +212,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         Fetch data from the specified table model with optional conditions.
 
         Args:
-            Model: The SQLAlchemy model class corresponding to the table you want to query.
+            model_class: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (default is False).
             join_scores: Flag to join the scores table (default is False).
