@@ -4,12 +4,10 @@
 import logging
 import textwrap
 from dataclasses import dataclass, field
-from typing import List, Optional
 from string import Formatter
-
+from typing import List, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
@@ -129,7 +127,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
             # Extract all field names from the template
             formatter = Formatter()
             template_fields = {field_name for _, field_name, _, _ in formatter.parse(request_template) if field_name}
-            
+
             missing_placeholders = required_placeholders - template_fields
             if missing_placeholders:
                 raise ValueError(
@@ -208,7 +206,6 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         """
         prompts = []
         start = 1
-
 
         while start <= self._total_length:
             end = min(start + self._chunk_size - 1, self._total_length)

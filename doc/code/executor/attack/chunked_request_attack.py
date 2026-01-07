@@ -43,11 +43,7 @@ scoring_config = AttackScoringConfig(
     ),
 )
 
-attack = ChunkedRequestAttack(
-    objective_target=objective_target,
-    attack_scoring_config=scoring_config,
-    total_length=500
-)
+attack = ChunkedRequestAttack(objective_target=objective_target, attack_scoring_config=scoring_config, total_length=500)
 
 result = await attack.execute_async(objective=objective)  # type: ignore
 await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
