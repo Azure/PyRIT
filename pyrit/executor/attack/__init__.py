@@ -20,6 +20,8 @@ from pyrit.executor.attack.core import (
     AttackStrategy,
 )
 from pyrit.executor.attack.multi_turn import (
+    ChunkedRequestAttack,
+    ChunkedRequestAttackContext,
     ConversationSession,
     CrescendoAttack,
     CrescendoAttackContext,
