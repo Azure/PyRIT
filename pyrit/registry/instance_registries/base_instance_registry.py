@@ -110,23 +110,35 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
         """
         return sorted(self._registry_items.keys())
 
-    def list_metadata(self) -> List[MetadataT]:
+    def list_metadata(self, **filters: object) -> List[MetadataT]:
         """
-        List metadata for all registered instances.
+        List metadata for all registered instances, optionally filtered.
+
+        Supports filtering on any metadata property:
+        - Simple types (str, int, bool): exact match
+        - List types: checks if filter value is in the list
+        - Dataclass types with to_compact_dict(): match against compact dict properties
+
+        Args:
+            **filters: Optional keyword arguments to filter results.
+                Keys are metadata property names, values are the filter criteria.
 
         Returns:
             List of metadata dictionaries describing each registered instance.
         """
-        if self._metadata_cache is not None:
+        from pyrit.registry.base import _matches_filters
+
+        if self._metadata_cache is None:
+            items = []
+            for name in sorted(self._registry_items.keys()):
+                instance = self._registry_items[name]
+                items.append(self._build_metadata(name, instance))
+            self._metadata_cache = items
+
+        if not filters:
             return self._metadata_cache
 
-        items = []
-        for name in sorted(self._registry_items.keys()):
-            instance = self._registry_items[name]
-            items.append(self._build_metadata(name, instance))
-
-        self._metadata_cache = items
-        return items
+        return [m for m in self._metadata_cache if _matches_filters(m, **filters)]
 
     @abstractmethod
     def _build_metadata(self, name: str, instance: T) -> MetadataT:

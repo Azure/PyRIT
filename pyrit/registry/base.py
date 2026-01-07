@@ -8,10 +8,42 @@ This module contains types shared between class registries (which store Type[T])
 and instance registries (which store T instances).
 """
 
-from typing import Iterator, List, Protocol, TypedDict, TypeVar, runtime_checkable
+from typing import Any, Iterator, List, Protocol, TypedDict, TypeVar, runtime_checkable
 
 # Type variable for metadata (invariant for Protocol compatibility)
 MetadataT = TypeVar("MetadataT")
+
+
+def _matches_filters(metadata: TypedDict, **filters: Any) -> bool:
+    """
+    Check if a metadata dictionary matches all provided filters.
+
+    Supports filtering on any property of the metadata TypedDict:
+    - For simple types (str, int, bool): exact match comparison
+    - For list types: checks if filter value is contained in the list
+
+    Args:
+        metadata: The metadata dictionary to check.
+        **filters: Keyword arguments where key is the property name and value is the filter.
+
+    Returns:
+        True if all filters match, False otherwise.
+    """
+    for key, filter_value in filters.items():
+        if key not in metadata:
+            return False
+
+        actual_value = metadata[key]
+
+        # Handle list types - check if filter value is in the list
+        if isinstance(actual_value, list):
+            if filter_value not in actual_value:
+                return False
+        # Simple exact match for other types
+        elif actual_value != filter_value:
+            return False
+
+    return True
 
 
 @runtime_checkable
@@ -41,8 +73,8 @@ class RegistryProtocol(Protocol[MetadataT]):
         """Get a sorted list of all registered names."""
         ...
 
-    def list_metadata(self) -> List[MetadataT]:
-        """List metadata for all registered items."""
+    def list_metadata(self, **filters: Any) -> List[MetadataT]:
+        """List metadata for all registered items, optionally filtered."""
         ...
 
     def __contains__(self, name: str) -> bool:

@@ -260,22 +260,35 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         self._ensure_discovered()
         return sorted(self._class_entries.keys())
 
-    def list_metadata(self) -> List[MetadataT]:
+    def list_metadata(self, **filters: object) -> List[MetadataT]:
         """
-        List metadata for all registered classes.
+        List metadata for all registered classes, optionally filtered.
+
+        Supports filtering on any metadata property:
+        - Simple types (str, int, bool): exact match
+        - List types: checks if filter value is in the list
+
+        Args:
+            **filters: Optional keyword arguments to filter results.
+                Keys are metadata property names, values are the filter criteria.
 
         Returns:
             List of metadata dictionaries (TypedDict) describing each registered class.
             Note: This returns descriptive info, not the classes themselves.
         """
+        from pyrit.registry.base import _matches_filters
+
         self._ensure_discovered()
 
-        if self._metadata_cache is not None:
+        if self._metadata_cache is None:
+            self._metadata_cache = [
+                self._build_metadata(name, entry) for name, entry in sorted(self._class_entries.items())
+            ]
+
+        if not filters:
             return self._metadata_cache
 
-        items = [self._build_metadata(name, entry) for name, entry in sorted(self._class_entries.items())]
-        self._metadata_cache = items
-        return items
+        return [m for m in self._metadata_cache if _matches_filters(m, **filters)]
 
     def register(
         self,

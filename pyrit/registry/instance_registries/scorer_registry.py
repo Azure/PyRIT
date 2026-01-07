@@ -10,7 +10,7 @@ scorers are registered explicitly via initializers as pre-configured instances.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from pyrit.registry.base import RegistryItemMetadata
 from pyrit.registry.instance_registries.base_instance_registry import BaseInstanceRegistry
@@ -128,16 +128,3 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerMetadata]):
             scorer_type=scorer_type,
             scorer_identifier=instance.scorer_identifier,
         )
-
-    def list_metadata_by_type(self, scorer_type: str) -> List[ScorerMetadata]:
-        """
-        List scorer metadata filtered by scorer_type.
-
-        Args:
-            scorer_type: The scorer type to filter by (e.g., "true_false", "float_scale").
-
-        Returns:
-            List of ScorerMetadata dictionaries matching the type.
-        """
-        all_metadata = self.list_metadata()
-        return [m for m in all_metadata if m["scorer_type"] == scorer_type]
