@@ -185,7 +185,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
             print()
             self._print_colored(f"{self._indent * 2}▸ Performance Metrics", Fore.WHITE)
             self._print_colored(
-                f"{self._indent * 3}Official evaluation has not been run yet for this " f"specific configuration",
+                f"{self._indent * 3}Official evaluation has not been run yet for this specific configuration",
                 Fore.YELLOW,
             )
             return
@@ -245,7 +245,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
             print()
             self._print_colored(f"{self._indent * 2}▸ Performance Metrics", Fore.WHITE)
             self._print_colored(
-                f"{self._indent * 3}Official evaluation has not been run yet for this " f"specific configuration",
+                f"{self._indent * 3}Official evaluation has not been run yet for this specific configuration",
                 Fore.YELLOW,
             )
             return

@@ -74,7 +74,7 @@ class TestObjectiveScorerEvalCSVSchema:
 
             missing_columns = required_columns - columns
             assert not missing_columns, (
-                f"CSV {csv_file.name} is missing required columns: {missing_columns}. " f"Found columns: {columns}"
+                f"CSV {csv_file.name} is missing required columns: {missing_columns}. Found columns: {columns}"
             )
 
     @pytest.mark.parametrize(
@@ -108,8 +108,7 @@ class TestObjectiveScorerEvalCSVSchema:
 
             unexpected_columns = columns - allowed_columns
             assert not unexpected_columns, (
-                f"CSV {csv_file.name} has unexpected columns: {unexpected_columns}. "
-                f"Allowed columns: {allowed_columns}"
+                f"CSV {csv_file.name} has unexpected columns: {unexpected_columns}. Allowed columns: {allowed_columns}"
             )
 
 
@@ -163,7 +162,7 @@ class TestHarmScorerEvalCSVSchema:
 
             missing_columns = required_columns - columns
             assert not missing_columns, (
-                f"CSV {csv_file.name} is missing required columns: {missing_columns}. " f"Found columns: {columns}"
+                f"CSV {csv_file.name} is missing required columns: {missing_columns}. Found columns: {columns}"
             )
 
     @pytest.mark.parametrize(
@@ -192,11 +191,11 @@ class TestHarmScorerEvalCSVSchema:
             # Find all human_score_* columns
             human_score_cols = {col for col in columns if col.startswith("human_score_")}
 
-            assert human_score_cols, f"CSV {csv_file.name} has no human_score_* columns. " f"Found columns: {columns}"
+            assert human_score_cols, f"CSV {csv_file.name} has no human_score_* columns. Found columns: {columns}"
 
             # Verify human_score_1 specifically exists
             assert "human_score_1" in human_score_cols, (
-                f"CSV {csv_file.name} must have human_score_1 column. " f"Found human_score columns: {human_score_cols}"
+                f"CSV {csv_file.name} must have human_score_1 column. Found human_score columns: {human_score_cols}"
             )
 
 
@@ -245,7 +244,7 @@ class TestRefusalScorerEvalCSVSchema:
 
             missing_columns = required_columns - columns
             assert not missing_columns, (
-                f"CSV {csv_file.name} is missing required columns: {missing_columns}. " f"Found columns: {columns}"
+                f"CSV {csv_file.name} is missing required columns: {missing_columns}. Found columns: {columns}"
             )
 
     @pytest.mark.parametrize(
@@ -277,8 +276,7 @@ class TestRefusalScorerEvalCSVSchema:
 
             unexpected_columns = columns - allowed_columns
             assert not unexpected_columns, (
-                f"CSV {csv_file.name} has unexpected columns: {unexpected_columns}. "
-                f"Allowed columns: {allowed_columns}"
+                f"CSV {csv_file.name} has unexpected columns: {unexpected_columns}. Allowed columns: {allowed_columns}"
             )
 
 
@@ -364,9 +362,9 @@ class TestCSVVersionMetadata:
                     harm_definition_path = value.strip()
                     break
 
-        assert (
-            harm_definition_path is not None
-        ), f"Could not parse harm_definition from {csv_file}. First line: '{first_line}'"
+        assert harm_definition_path is not None, (
+            f"Could not parse harm_definition from {csv_file}. First line: '{first_line}'"
+        )
 
         # HarmDefinition.from_yaml will raise FileNotFoundError if file doesn't exist,
         # or ValueError if the YAML is invalid
@@ -374,9 +372,9 @@ class TestCSVVersionMetadata:
             harm_def = HarmDefinition.from_yaml(harm_definition_path)
             assert harm_def.version, f"Harm definition {harm_definition_path} is missing version"
             assert harm_def.category, f"Harm definition {harm_definition_path} is missing category"
-            assert (
-                len(harm_def.scale_descriptions) > 0
-            ), f"Harm definition {harm_definition_path} has no scale descriptions"
+            assert len(harm_def.scale_descriptions) > 0, (
+                f"Harm definition {harm_definition_path} has no scale descriptions"
+            )
         except FileNotFoundError as e:
             pytest.fail(f"Harm definition file not found for {csv_file}: {e}")
         except ValueError as e:
