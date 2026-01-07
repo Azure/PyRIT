@@ -68,15 +68,10 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
             ValueError: If system_prompt_format_string is not provided or empty.
             ValueError: If min_value is greater than max_value.
         """
+        super().__init__(validator=validator or self._default_validator)
+        self._prompt_target = chat_target
         if not system_prompt_format_string:
             raise ValueError("system_prompt_format_string must be provided and non-empty.")
-
-        if min_value > max_value:
-            raise ValueError("min_value must be less than or equal to max_value")
-
-        super().__init__(validator=validator or self._default_validator)
-
-        self._prompt_target = chat_target
         self._system_prompt_format_string = system_prompt_format_string
         self._prompt_format_string = prompt_format_string
 

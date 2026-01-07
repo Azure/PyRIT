@@ -18,7 +18,7 @@ class RegistryUpdateBehavior(Enum):
     """
     Enum representing how the evaluation registry should be updated.
 
-    Attributes:
+    Members:
         SKIP_IF_EXISTS: Only run evaluation and update registry if no matching entry exists.
             This is the default production behavior for efficiency.
         ALWAYS_UPDATE: Always run evaluation and overwrite any existing registry entry.

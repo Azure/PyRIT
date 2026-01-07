@@ -80,7 +80,7 @@ class ScenarioResult:
         self._objective_scorer = objective_scorer
         # Derive identifier from scorer if available, otherwise use provided identifier
         if objective_scorer:
-            self.objective_scorer_identifier = objective_scorer_identifier or objective_scorer.get_identifier()
+            self.objective_scorer_identifier = objective_scorer.get_identifier() or objective_scorer_identifier
         else:
             self.objective_scorer_identifier = objective_scorer_identifier or {}
         self.scenario_run_state = scenario_run_state

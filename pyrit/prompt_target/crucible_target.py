@@ -41,10 +41,7 @@ class CrucibleTarget(PromptTarget):
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
         """
-        super().__init__(
-            max_requests_per_minute=max_requests_per_minute,
-            endpoint=endpoint,
-        )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
 
         self._api_key: str = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key

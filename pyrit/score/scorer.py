@@ -44,7 +44,7 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from pyrit.score import RegistryUpdateBehavior
+    from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
     from pyrit.score.scorer_evaluation.scorer_evaluator import (
         ScorerEvalDatasetFiles,
         ScorerMetrics,

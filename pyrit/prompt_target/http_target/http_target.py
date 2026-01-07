@@ -72,11 +72,7 @@ class HTTPTarget(PromptTarget):
         # This will fail early if the http_request is malformed
         _, _, endpoint, _, _ = self.parse_raw_http_request(http_request)
 
-        super().__init__(
-            max_requests_per_minute=max_requests_per_minute,
-            endpoint=endpoint,
-            model_name=model_name,
-        )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, model_name=model_name)
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string

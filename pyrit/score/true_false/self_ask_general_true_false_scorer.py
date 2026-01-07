@@ -70,12 +70,10 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         Raises:
             ValueError: If system_prompt_format_string is not provided or empty.
         """
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        self._prompt_target = chat_target
         if not system_prompt_format_string:
             raise ValueError("system_prompt_format_string must be provided and non-empty.")
-
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
-
-        self._prompt_target = chat_target
         self._system_prompt_format_string = system_prompt_format_string
         self._prompt_format_string = prompt_format_string
 

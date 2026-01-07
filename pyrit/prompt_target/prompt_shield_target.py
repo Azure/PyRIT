@@ -81,10 +81,7 @@ class PromptShieldTarget(PromptTarget):
         endpoint_value = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
-        super().__init__(
-            max_requests_per_minute=max_requests_per_minute,
-            endpoint=endpoint_value,
-        )
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value)
 
         self._api_version = api_version
 

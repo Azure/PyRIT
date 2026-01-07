@@ -12,13 +12,17 @@ import numpy as np
 from scipy.stats import ttest_1samp
 
 from pyrit.common.path import SCORER_EVALS_PATH
-from pyrit.score import MetricsType, RegistryUpdateBehavior, Scorer
+from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
     ObjectiveHumanLabeledEntry,
 )
 from pyrit.score.scorer_evaluation.krippendorff import krippendorff_alpha
+from pyrit.score.scorer_evaluation.metrics_type import (
+    MetricsType,
+    RegistryUpdateBehavior,
+)
 from pyrit.score.scorer_evaluation.scorer_metrics import (
     HarmScorerMetrics,
     ObjectiveScorerMetrics,
