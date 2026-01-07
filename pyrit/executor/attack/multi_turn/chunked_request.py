@@ -67,16 +67,6 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
     5. Evaluating the combined result with scorers if configured.
     6. Returning the attack result with achievement status.
 
-    Example usage:
-        attack = ChunkedRequestAttack(
-            objective_target=target_llm,
-            chunk_size=50,
-            total_length=200,
-        )
-        result = await attack.execute_async(
-            objective="Extract the secret password",
-        )
-
     The strategy supports customization through converters and scorers for
     comprehensive evaluation.
     """
