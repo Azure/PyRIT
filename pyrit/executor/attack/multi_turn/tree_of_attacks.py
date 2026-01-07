@@ -21,6 +21,7 @@ from pyrit.exceptions import (
 )
 from pyrit.executor.attack.component import (
     ConversationManager,
+    PrependedConversationConfig,
     get_prepended_turn_count,
 )
 from pyrit.executor.attack.component.conversation_manager import (
@@ -32,9 +33,6 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.executor.attack.core.prepended_conversation_config import (
-    PrependedConversationConfig,
-)
 from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (

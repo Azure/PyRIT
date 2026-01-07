@@ -14,6 +14,11 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     MultiTurnAttackStrategy,
 )
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack, RTASystemPromptPaths
+from pyrit.executor.attack.multi_turn.simulated_conversation import (
+    SimulatedConversationResult,
+    SimulatedTargetSystemPromptPaths,
+    generate_simulated_conversation_async,
+)
 from pyrit.executor.attack.multi_turn.tree_of_attacks import (
     TAPAttack,
     TAPAttackContext,
@@ -32,6 +37,9 @@ __all__ = [
     "CrescendoAttackResult",
     "RedTeamingAttack",
     "RTASystemPromptPaths",
+    "SimulatedConversationResult",
+    "SimulatedTargetSystemPromptPaths",
+    "generate_simulated_conversation_async",
     "TreeOfAttacksWithPruningAttack",
     "TAPAttack",
     "TAPAttackResult",

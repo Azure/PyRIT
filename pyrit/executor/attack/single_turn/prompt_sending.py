@@ -7,12 +7,9 @@ from typing import Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import warn_if_set
-from pyrit.executor.attack.component import ConversationManager
+from pyrit.executor.attack.component import ConversationManager, PrependedConversationConfig
 from pyrit.executor.attack.core.attack_config import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
-from pyrit.executor.attack.core.prepended_conversation_config import (
-    PrependedConversationConfig,
-)
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
