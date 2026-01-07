@@ -121,8 +121,8 @@ class ScorerEvaluator(abc.ABC):
         The update_registry_behavior parameter controls how existing registry entries are handled:
 
         - SKIP_IF_EXISTS (default): Check registry for existing results matching scorer config,
-          dataset version, and num_scorer_trials. If found, return cached metrics.
-          If not found, run evaluation and write to registry.
+            dataset version, and num_scorer_trials. If found, return cached metrics.
+            If not found, run evaluation and write to registry.
         - ALWAYS_UPDATE: Always run evaluation and overwrite any existing registry entry.
         - NEVER_UPDATE: Always run evaluation but never write to registry (for debugging).
 
