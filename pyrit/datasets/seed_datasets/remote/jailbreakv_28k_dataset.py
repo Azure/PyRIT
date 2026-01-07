@@ -11,7 +11,7 @@ from typing import Dict, List, Literal, Optional
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
 )
-from pyrit.models import SeedDataset, SeedPrompt, SeedObjective
+from pyrit.models import SeedDataset, SeedObjective, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +75,6 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
                 Defaults to home directory.
             split: Dataset split to load. Defaults to "mini_JailBreakV_28K".
                 Options are "JailBreakV_28K" and "mini_JailBreakV_28K".
-            text_field: Field to use as the prompt text. Defaults to "redteam_query".
-                Options are "jailbreak_query" and "redteam_query".
             harm_categories: List of harm categories to filter examples.
                 If None, all categories are included (default).
 
@@ -189,7 +187,7 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
                 group_id = uuid.uuid4()
 
                 seed_objective = SeedObjective(
-                    value = item.get("redteam_query", ""),
+                    value=item.get("redteam_query", ""),
                     data_type="text",
                     name="JailBreakV-28K",
                     dataset_name=self.dataset_name,
