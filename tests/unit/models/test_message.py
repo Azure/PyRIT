@@ -221,3 +221,37 @@ class TestMessageSimulatedAssistantRole:
         message = Message(message_pieces=[MessagePiece(role="user", original_value="x", conversation_id="test")])
         message.message_pieces = []  # Manually empty for edge case test
         assert message.is_simulated is False
+
+    def test_set_simulated_role_sets_all_pieces(self) -> None:
+        """Test that set_simulated_role sets assistant pieces to simulated_assistant."""
+        pieces = [
+            MessagePiece(role="assistant", original_value="Hello", conversation_id="test"),
+            MessagePiece(role="assistant", original_value="World", conversation_id="test"),
+        ]
+        message = Message(message_pieces=pieces)
+
+        assert message.is_simulated is False
+        assert message.api_role == "assistant"
+
+        message.set_simulated_role()
+
+        assert message.is_simulated is True
+        assert message.api_role == "assistant"
+        for piece in message.message_pieces:
+            assert piece._role == "simulated_assistant"
+            assert piece.is_simulated is True
+
+    def test_set_simulated_role_only_changes_assistant_role(self) -> None:
+        """Test that set_simulated_role only changes assistant roles, not other roles."""
+        pieces = [
+            MessagePiece(role="user", original_value="Hello", conversation_id="test"),
+            MessagePiece(role="user", original_value="World", conversation_id="test"),
+        ]
+        message = Message(message_pieces=pieces)
+
+        message.set_simulated_role()
+
+        # User roles should remain unchanged
+        for piece in message.message_pieces:
+            assert piece._role == "user"
+            assert piece.is_simulated is False

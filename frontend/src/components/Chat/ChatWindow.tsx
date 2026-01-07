@@ -83,7 +83,7 @@ export default function ChatWindow({
     <div className={styles.root}>
       <div className={styles.ribbon}>
         <div className={styles.conversationInfo}>
-          <Text>PyRIT Minimal Frontend (No Backend)</Text>
+          <Text>PyRIT Frontend</Text>
         </div>
         <Button
           appearance="primary"
