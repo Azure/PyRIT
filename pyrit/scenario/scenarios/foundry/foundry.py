@@ -297,7 +297,7 @@ class Foundry(Scenario):
             name="Foundry",
             version=self.version,
             strategy_class=FoundryStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )

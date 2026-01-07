@@ -180,7 +180,7 @@ class ContentHarms(Scenario):
         super().__init__(
             name="Content Harms",
             version=self.version,
-            objective_scorer_identifier=self._objective_scorer.get_identifier(),
+            objective_scorer=self._objective_scorer,
             strategy_class=ContentHarmsStrategy,
             scenario_result_id=scenario_result_id,
         )
