@@ -59,6 +59,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
     they refused to reveal the complete value.
 
     The attack flow consists of:
+    
     1. Generating chunk request prompts based on the configured strategy.
     2. Sending each chunk request to the target system sequentially.
     3. Collecting responses from each chunk request.
