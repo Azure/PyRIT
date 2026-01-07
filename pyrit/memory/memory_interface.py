@@ -178,7 +178,12 @@ class MemoryInterface(abc.ABC):
 
     @abc.abstractmethod
     def _query_entries(
-        self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
+        self,
+        Model,
+        *,
+        conditions: Optional[Any] = None,
+        distinct: bool = False,
+        join_scores: bool = False,  # type: ignore
     ) -> MutableSequence[Model]:  # type: ignore
         """
         Fetch data from the specified table model with optional conditions.

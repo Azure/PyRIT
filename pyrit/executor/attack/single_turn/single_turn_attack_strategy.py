@@ -10,8 +10,8 @@ from dataclasses import dataclass, field
 from typing import Optional, Type, Union
 
 from pyrit.common.logger import logger
-from pyrit.executor.attack.core import AttackContext, AttackStrategy
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
+from pyrit.executor.attack.core.attack_strategy import AttackContext, AttackStrategy
 from pyrit.models import AttackResult
 from pyrit.prompt_target import PromptTarget
 

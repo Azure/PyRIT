@@ -12,10 +12,8 @@ from pyrit.executor.attack.component.conversation_manager import (
     mark_messages_as_simulated,
 )
 from pyrit.executor.attack.component.objective_evaluator import ObjectiveEvaluator
-from pyrit.executor.attack.component.simulated_conversation import (
-    generate_simulated_conversation_async,
-    SimulatedConversationResult,
-    SimulatedTargetSystemPromptPaths,
+from pyrit.executor.attack.component.prepended_conversation_config import (
+    PrependedConversationConfig,
 )
 
 __all__ = [
@@ -26,7 +24,5 @@ __all__ = [
     "get_prepended_turn_count",
     "mark_messages_as_simulated",
     "ObjectiveEvaluator",
-    "generate_simulated_conversation_async",
-    "SimulatedConversationResult",
-    "SimulatedTargetSystemPromptPaths",
+    "PrependedConversationConfig",
 ]

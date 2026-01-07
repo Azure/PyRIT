@@ -26,43 +26,19 @@ repos:
         args: ["--maxkb=3072"]  # Set limit to 3072 KB (3 MB) for displaying images in notebooks
       - id: detect-private-key
 
-  # https://black.readthedocs.io/en/stable/integrations/source_version_control.html
-  # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
-  - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.1.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.4
     hooks:
-      - id: black
-        language_version: python3
-
-  - repo: https://github.com/pycqa/isort
-    rev: 6.0.1
-    hooks:
-      - id: isort
-        name: Import Sort (Python files)
-        exclude: __init__.py
-        args: [--profile=black, --filter-files, --treat-comment-as-code "# %%"]
+      - id: ruff-format
+      - id: ruff-check
+        args: [--fix]
 
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.9.1
     hooks:
-    - id: nbqa-isort
-      name: Import Sort (Jupyter Notebooks)
-      args: [--profile=black]
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.4
-    hooks:
-      - id: ruff-check
-        name: ruff-check
-        args: [--fix]
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.2
-    hooks:
-      - id: flake8
-        additional_dependencies: ['flake8-copyright']
-        types: [python]
-        exclude: ^doc/
+    - id: nbqa-ruff
+      name: Ruff (Jupyter Notebooks)
+      args: [--fix]
 
   - repo: local
     hooks:

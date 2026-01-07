@@ -74,7 +74,6 @@ class AzureStorageAuth:
 
         try:
             async with BlobServiceClient(account_url=account_url, credential=credential) as blob_service_client:
-
                 user_delegation_key = await AzureStorageAuth.get_user_delegation_key(
                     blob_service_client=blob_service_client
                 )

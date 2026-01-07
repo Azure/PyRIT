@@ -83,7 +83,9 @@ class ConversationAnalytics:
             if similarity_score >= threshold:
                 similar_messages.append(
                     EmbeddingMessageWithSimilarity(
-                        score=similarity_score, uuid=memory.id, metric="cosine_similarity"  # type: ignore
+                        score=float(similarity_score),
+                        uuid=memory.id,
+                        metric="cosine_similarity",  # type: ignore
                     )
                 )
 

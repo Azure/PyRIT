@@ -14,7 +14,6 @@ from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConve
 
 @pytest.mark.asyncio
 async def test_convert_async_success(sqlite_instance):
-
     # Simulate WAV data
     sample_rate = 44100
     mock_audio_data = np.random.randint(-32768, 32767, size=(100,), dtype=np.int16)
@@ -42,7 +41,6 @@ async def test_convert_async_success(sqlite_instance):
 
 @pytest.mark.asyncio
 async def test_convert_async_file_not_found():
-
     # Create an instance of the converter
     converter = AudioFrequencyConverter(shift_value=20000)
 

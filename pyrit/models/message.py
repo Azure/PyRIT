@@ -84,8 +84,7 @@ class Message:
         Returns api_role for backward compatibility.
         """
         warnings.warn(
-            "Message.role getter is deprecated. Use api_role for comparisons. "
-            "This property will be removed in 0.13.0.",
+            "Message.role getter is deprecated. Use api_role for comparisons. This property will be removed in 0.13.0.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -145,7 +144,6 @@ class Message:
         sequence = self.message_pieces[0].sequence
         role = self.message_pieces[0]._role
         for message_piece in self.message_pieces:
-
             if message_piece.conversation_id != conversation_id:
                 raise ValueError("Conversation ID mismatch.")
 

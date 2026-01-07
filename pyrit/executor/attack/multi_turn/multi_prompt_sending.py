@@ -8,11 +8,11 @@ from typing import Any, List, Optional, Type
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.component import ConversationManager
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
-    AttackParameters,
     AttackScoringConfig,
 )
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     ConversationSession,
     MultiTurnAttackContext,
@@ -79,8 +79,7 @@ class MultiPromptSendingAttackParameters(AttackParameters):
         invalid_fields = set(overrides.keys()) - valid_fields
         if invalid_fields:
             raise ValueError(
-                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. "
-                f"Only accepts: {valid_fields}"
+                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. Only accepts: {valid_fields}"
             )
 
         # Build parameters with only objective, user_messages, and memory_labels
