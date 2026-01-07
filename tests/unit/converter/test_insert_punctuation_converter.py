@@ -30,9 +30,7 @@ async def test_word_swap_ratio(
     converter = InsertPunctuationConverter(word_swap_ratio=word_swap_ratio, between_words=between_words)
     result = await converter.convert_async(prompt=input_prompt, punctuation_list=punctuation_list)
     modified_prompt = result.output_text
-    assert (
-        punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
-    ) == expected_punctuation_count, (
+    assert (punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))) == expected_punctuation_count, (
         f"Expect {expected_punctuation_count} punctuations found in prompt: {punctuation_count}"
     )
 
@@ -47,9 +45,7 @@ async def test_default_swap(input_prompt, expected_punctuation_count):
     converter = InsertPunctuationConverter()
     result = await converter.convert_async(prompt=input_prompt)
     modified_prompt = result.output_text
-    assert (
-        punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
-    ) == expected_punctuation_count, (
+    assert (punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))) == expected_punctuation_count, (
         f"Expect {expected_punctuation_count} punctuations found in prompt: {punctuation_count}"
     )
 

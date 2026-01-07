@@ -142,7 +142,6 @@ async def test_composite_scorer_majority_false(mock_request, true_scorer, false_
 
 
 def test_composite_scorer_invalid_scorer_type():
-
     class InvalidScorer(FloatScaleScorer):
         def __init__(self):
             self._validator = MagicMock()

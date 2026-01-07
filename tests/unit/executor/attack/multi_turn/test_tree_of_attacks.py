@@ -921,7 +921,6 @@ class TestTreeOfAttacksNode:
         with patch.object(
             node, "_generate_red_teaming_prompt_async", new_callable=AsyncMock, return_value=test_prompt
         ) as red_teaming_mock:
-
             await node.send_prompt_async(objective="Test objective")
 
         # Verify off-topic detection worked

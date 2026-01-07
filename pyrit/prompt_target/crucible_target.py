@@ -13,7 +13,8 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.models import Message, construct_response_from_request
-from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 

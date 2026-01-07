@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 import tenacity
 from openai import AsyncOpenAI
@@ -70,7 +70,7 @@ class OpenAITextEmbedding(EmbeddingSupport):
         super().__init__()
 
     @tenacity.retry(wait=tenacity.wait_fixed(0.1), stop=tenacity.stop_after_delay(3))
-    async def generate_text_embedding_async(self, text: str, **kwargs) -> EmbeddingResponse:
+    async def generate_text_embedding_async(self, text: str, **kwargs: Any) -> EmbeddingResponse:
         """
         Generate text embedding asynchronously.
 
@@ -99,7 +99,7 @@ class OpenAITextEmbedding(EmbeddingSupport):
         )
         return embedding_response
 
-    def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
+    def generate_text_embedding(self, text: str, **kwargs: Any) -> EmbeddingResponse:
         """
         Generate text embedding synchronously by calling the async method.
 

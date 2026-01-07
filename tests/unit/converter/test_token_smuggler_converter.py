@@ -213,9 +213,9 @@ async def test_embed_in_base_false_inserts_separator():
     _, encoded = converter.encode_message(prompt)
     base_char = converter.utf8_base_char
     # Expect the encoded string to be: base_char + " " + payload
-    assert encoded.startswith(
-        base_char + " "
-    ), "Encoded text should start with base_char followed by a space when embed_in_base is False."
+    assert encoded.startswith(base_char + " "), (
+        "Encoded text should start with base_char followed by a space when embed_in_base is False."
+    )
 
 
 # Test for the input_supported method

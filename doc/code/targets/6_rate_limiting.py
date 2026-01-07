@@ -38,5 +38,5 @@ await AttackExecutor(max_concurrency=1).execute_attack_async(  # type: ignore
 )
 end = time.time()
 
-print(f"Elapsed time for operation, with request delay is: {end-start}")
+print(f"Elapsed time for operation, with request delay is: {end - start}")
 assert (end - start) > (60 / max_requests_per_minute * len(all_prompts))

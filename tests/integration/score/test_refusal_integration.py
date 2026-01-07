@@ -48,6 +48,6 @@ async def test_refusal_scorer_accuracy(memory: MemoryInterface):
             save_results=False,
         )
 
-        assert (
-            metrics.accuracy >= accuracy_threshold
-        ), f"Accuracy {metrics.accuracy} is below threshold {accuracy_threshold}. Full metrics: {asdict(metrics)}"
+        assert metrics.accuracy >= accuracy_threshold, (
+            f"Accuracy {metrics.accuracy} is below threshold {accuracy_threshold}. Full metrics: {asdict(metrics)}"
+        )
