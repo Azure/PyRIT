@@ -97,6 +97,7 @@ class TestFromModel:
         with pytest.raises(ValueError, match="does not have a chat_template"):
             TokenizerTemplateNormalizer.from_model("model-without-template")
 
+    @patch.dict("os.environ", {"HUGGINGFACE_TOKEN": ""}, clear=False)
     @patch.object(TokenizerTemplateNormalizer, "_load_tokenizer")
     def test_from_model_case_insensitive_alias(self, mock_load_tokenizer):
         """Test from_model aliases are case-insensitive."""
