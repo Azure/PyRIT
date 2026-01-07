@@ -40,7 +40,12 @@ except ImportError:
 
 if TYPE_CHECKING:
     from pyrit.models.scenario_result import ScenarioResult
-    from pyrit.registry import InitializerMetadata, InitializerRegistry, ScenarioMetadata, ScenarioRegistry
+    from pyrit.registry import (
+        InitializerMetadata,
+        InitializerRegistry,
+        ScenarioMetadata,
+        ScenarioRegistry,
+    )
 
 logger = logging.getLogger(__name__)
 

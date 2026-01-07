@@ -16,7 +16,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
 from pyrit.registry.base import RegistryItemMetadata
-from pyrit.registry.class_registries.base_class_registry import BaseClassRegistry, ClassEntry
+from pyrit.registry.class_registries.base_class_registry import (
+    BaseClassRegistry,
+    ClassEntry,
+)
 from pyrit.registry.discovery import discover_in_directory
 
 # Compute PYRIT_PATH directly to avoid importing pyrit package
@@ -169,8 +172,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         if short_name in self._initializer_paths:
             existing_path = self._initializer_paths[short_name]
             logger.error(
-                f"Initializer name collision: '{short_name}' found in both "
-                f"'{file_path}' and '{existing_path}'."
+                f"Initializer name collision: '{short_name}' found in both " f"'{file_path}' and '{existing_path}'."
             )
             return
 

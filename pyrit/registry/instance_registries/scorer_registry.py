@@ -13,7 +13,9 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 from pyrit.registry.base import RegistryItemMetadata
-from pyrit.registry.instance_registries.base_instance_registry import BaseInstanceRegistry
+from pyrit.registry.instance_registries.base_instance_registry import (
+    BaseInstanceRegistry,
+)
 from pyrit.registry.name_utils import class_name_to_registry_name
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer

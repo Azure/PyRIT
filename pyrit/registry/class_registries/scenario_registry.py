@@ -15,8 +15,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from pyrit.registry.base import RegistryItemMetadata
-from pyrit.registry.class_registries.base_class_registry import BaseClassRegistry, ClassEntry
-from pyrit.registry.discovery import discover_in_package, discover_subclasses_in_loaded_modules
+from pyrit.registry.class_registries.base_class_registry import (
+    BaseClassRegistry,
+    ClassEntry,
+)
+from pyrit.registry.discovery import (
+    discover_in_package,
+    discover_subclasses_in_loaded_modules,
+)
 from pyrit.registry.name_utils import class_name_to_registry_name
 
 if TYPE_CHECKING:
