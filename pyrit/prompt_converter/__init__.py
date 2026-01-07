@@ -37,6 +37,7 @@ from pyrit.prompt_converter.math_obfuscation_converter import MathObfuscationCon
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.nato_converter import NatoConverter
+from pyrit.prompt_converter.negation_trap_converter import NegationTrapConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
 from pyrit.prompt_converter.pdf_converter import PDFConverter
 from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
@@ -130,6 +131,7 @@ __all__ = [
     "MathPromptConverter",
     "MorseConverter",
     "NatoConverter",
+    "NegationTrapConverter",
     "NoiseConverter",
     "PDFConverter",
     "PersuasionConverter",

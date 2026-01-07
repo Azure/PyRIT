@@ -46,14 +46,15 @@ chapters:
           - file: code/executor/attack/1_prompt_sending_attack
           - file: code/executor/attack/2_red_teaming_attack
           - file: code/executor/attack/3_crescendo_attack
-          - file: code/executor/attack/skeleton_key_attack
-          - file: code/executor/attack/violent_durian_attack
-          - file: code/executor/attack/flip_attack
+          - file: code/executor/attack/chunked_request_attack
           - file: code/executor/attack/context_compliance_attack
-          - file: code/executor/attack/role_play_attack
+          - file: code/executor/attack/flip_attack
           - file: code/executor/attack/many_shot_jailbreak_attack
-          - file: code/executor/attack/tap_attack
           - file: code/executor/attack/multi_prompt_sending_attack
+          - file: code/executor/attack/role_play_attack
+          - file: code/executor/attack/skeleton_key_attack
+          - file: code/executor/attack/tap_attack
+          - file: code/executor/attack/violent_durian_attack
         - file: code/executor/workflow/0_workflow
           sections:
           - file: code/executor/workflow/1_xpia_website

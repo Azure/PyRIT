@@ -20,6 +20,8 @@ from pyrit.executor.attack.core import (
     AttackStrategy,
 )
 from pyrit.executor.attack.multi_turn import (
+    ChunkedRequestAttack,
+    ChunkedRequestAttackContext,
     ConversationSession,
     CrescendoAttack,
     CrescendoAttackContext,
@@ -57,6 +59,8 @@ __all__ = [
     "AttackStrategy",
     "AttackContext",
     "AttackParameters",
+    "ChunkedRequestAttack",
+    "ChunkedRequestAttackContext",
     "CrescendoAttack",
     "CrescendoAttackContext",
     "CrescendoAttackResult",
