@@ -14,7 +14,6 @@ import logging
 from pathlib import Path
 from typing import List, Optional, Union
 
-from pyrit.common.path import EXECUTOR_SIMULATED_TARGET_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,

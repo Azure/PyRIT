@@ -127,7 +127,7 @@ class SeedDataset(YamlLoadable):
                 # Emit deprecation warning if is_objective is used in dict
                 if "is_objective" in p and p["is_objective"]:
                     warnings.warn(
-                        "is_objective in seed dict is deprecated since 0.13.0. " "Use seed_type='objective' instead.",
+                        "is_objective in seed dict is deprecated since 0.13.0. Use seed_type='objective' instead.",
                         DeprecationWarning,
                         stacklevel=2,
                     )

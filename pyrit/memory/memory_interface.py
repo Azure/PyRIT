@@ -41,7 +41,6 @@ from pyrit.models import (
     Seed,
     SeedDataset,
     SeedGroup,
-    SeedPrompt,
     SeedType,
     StorageIO,
     data_serializer_factory,
@@ -958,8 +957,8 @@ class MemoryInterface(abc.ABC):
                 prompt.date_added = current_time
 
             # Only SeedPrompt has set_encoding_metadata for audio/video/image files
-            if hasattr(prompt, 'set_encoding_metadata'):
-                prompt.set_encoding_metadata()  # type: ignore
+            if hasattr(prompt, "set_encoding_metadata"):
+                prompt.set_encoding_metadata()
 
             # Handle serialization for image, audio & video SeedPrompts
             if prompt.data_type in ["image_path", "audio_path", "video_path"]:

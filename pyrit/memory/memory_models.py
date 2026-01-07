@@ -548,12 +548,12 @@ class SeedEntry(Base):
         self.dataset_name = entry.dataset_name
         self.harm_categories = entry.harm_categories  # type: ignore
         self.description = entry.description
-        self.authors = entry.authors  # type: ignore
-        self.groups = entry.groups  # type: ignore
+        self.authors = list(entry.authors) if entry.authors else None
+        self.groups = list(entry.groups) if entry.groups else None
         self.source = entry.source
         self.date_added = entry.date_added
         self.added_by = entry.added_by
-        self.prompt_metadata = entry.metadata  # type: ignore
+        self.prompt_metadata = entry.metadata
         self.prompt_group_id = entry.prompt_group_id
         self.seed_type = seed_type
         # Deprecated: kept for backward compatibility with existing databases
@@ -561,9 +561,9 @@ class SeedEntry(Base):
 
         # SeedPrompt-specific fields
         if isinstance(entry, SeedPrompt):
-            self.parameters = entry.parameters  # type: ignore
-            self.sequence = entry.sequence  # type: ignore
-            self.role = entry.role  # type: ignore
+            self.parameters = list(entry.parameters) if entry.parameters else None
+            self.sequence = entry.sequence
+            self.role = entry.role
         else:
             self.parameters = None
             self.sequence = None

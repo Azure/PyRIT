@@ -116,8 +116,7 @@ class AttackParameters:
         invalid_fields = set(overrides.keys()) - valid_fields
         if invalid_fields:
             raise ValueError(
-                f"{cls.__name__} does not accept parameters: {invalid_fields}. "
-                f"Accepted parameters: {valid_fields}"
+                f"{cls.__name__} does not accept parameters: {invalid_fields}. Accepted parameters: {valid_fields}"
             )
 
         # Validate seed_group state before extracting parameters
