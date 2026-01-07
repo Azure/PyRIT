@@ -22,12 +22,12 @@ from typing import (
 )
 
 from pyrit.common.logger import logger
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
+from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategy,
     AttackStrategyContextT,
     AttackStrategyResultT,
 )
-from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     MultiTurnAttackContext,
 )
@@ -181,8 +181,7 @@ class AttackExecutor:
 
         if field_overrides and len(field_overrides) != len(seed_groups):
             raise ValueError(
-                f"field_overrides length ({len(field_overrides)}) must match "
-                f"seed_groups length ({len(seed_groups)})"
+                f"field_overrides length ({len(field_overrides)}) must match seed_groups length ({len(seed_groups)})"
             )
 
         params_type = attack.params_type
@@ -247,7 +246,7 @@ class AttackExecutor:
 
         if field_overrides and len(field_overrides) != len(objectives):
             raise ValueError(
-                f"field_overrides length ({len(field_overrides)}) must match " f"objectives length ({len(objectives)})"
+                f"field_overrides length ({len(field_overrides)}) must match objectives length ({len(objectives)})"
             )
 
         params_type = attack.params_type

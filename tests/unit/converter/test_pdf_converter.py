@@ -60,7 +60,6 @@ async def test_convert_async_no_template(pdf_converter_no_template):
         patch.object(pdf_converter_no_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate,
         patch.object(pdf_converter_no_template, "_serialize_pdf") as mock_serialize,
     ):
-
         serializer_mock = MagicMock()
         serializer_mock.value = "mock_url"
         mock_serialize.return_value = serializer_mock
@@ -92,7 +91,6 @@ async def test_convert_async_with_template(pdf_converter_with_template):
         patch.object(pdf_converter_with_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate,
         patch.object(pdf_converter_with_template, "_serialize_pdf") as mock_serialize,
     ):
-
         serializer_mock = MagicMock()
         serializer_mock.value = "mock_url"
         mock_serialize.return_value = serializer_mock

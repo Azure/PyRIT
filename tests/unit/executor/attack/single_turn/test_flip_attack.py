@@ -193,7 +193,9 @@ class TestFlipAttackExecution:
 
         # Mock the parent's perform_attack_async
         with patch.object(
-            FlipAttack.__bases__[0], "_perform_async", new_callable=AsyncMock  # PromptSendingAttack
+            FlipAttack.__bases__[0],
+            "_perform_async",
+            new_callable=AsyncMock,  # PromptSendingAttack
         ) as mock_perform:
             mock_result = AttackResult(
                 conversation_id=basic_context.conversation_id,

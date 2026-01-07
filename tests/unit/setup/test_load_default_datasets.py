@@ -213,10 +213,9 @@ class TestLoadDefaultDatasets:
                     print(f"Warning: Could not get required datasets from {scenario_name}: {e}")
 
         # Assert that all required datasets are available
-        assert (
-            len(missing_datasets) == 0
-        ), "The following scenarios require datasets not available in SeedDatasetProvider:\n" + "\n".join(
-            missing_datasets
+        assert len(missing_datasets) == 0, (
+            "The following scenarios require datasets not available in SeedDatasetProvider:\n"
+            + "\n".join(missing_datasets)
         )
 
     @pytest.mark.asyncio

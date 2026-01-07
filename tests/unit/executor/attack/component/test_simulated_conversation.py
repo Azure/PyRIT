@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.executor.attack import AttackConverterConfig, RTASystemPromptPaths
-from pyrit.executor.attack.component.simulated_conversation import (
+from pyrit.executor.attack.multi_turn.simulated_conversation import (
     generate_simulated_conversation_async,
 )
 from pyrit.models import (
@@ -140,7 +140,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that the same adversarial_chat is used as simulated target."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             # Configure the mock attack
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
@@ -155,7 +155,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -182,7 +182,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that the attack is created with score_last_turn_only=True."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -196,7 +196,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -222,7 +222,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that the attack is created with the specified num_turns as max_turns."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -236,7 +236,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -265,7 +265,7 @@ class TestGenerateSimulatedConversationAsync:
         conversation_id = str(uuid.uuid4())
         mock_score = MagicMock(spec=Score)
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -280,7 +280,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -311,7 +311,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that the simulated target system prompt is passed via prepended_conversation."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -325,7 +325,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -359,7 +359,7 @@ class TestGenerateSimulatedConversationAsync:
         """Test that memory_labels are passed to attack.execute_async."""
         memory_labels = {"source": "test", "type": "simulated"}
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -373,7 +373,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -402,7 +402,7 @@ class TestGenerateSimulatedConversationAsync:
         """Test that attack_converter_config is passed to RedTeamingAttack."""
         converter_config = AttackConverterConfig()
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -416,7 +416,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -443,7 +443,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that a system message is prepended when executing the attack."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -457,7 +457,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -488,7 +488,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that default num_turns is 3."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -502,7 +502,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -543,7 +543,7 @@ class TestGenerateSimulatedConversationAsync:
             ]
         )
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -557,7 +557,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -609,7 +609,7 @@ class TestGenerateSimulatedConversationAsync:
             ]
         )
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -623,7 +623,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -653,7 +653,7 @@ class TestGenerateSimulatedConversationAsync:
         """Test that starting_sequence sets the sequence number of the first prompt."""
         conversation_id = str(uuid.uuid4())
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -667,7 +667,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory

@@ -168,6 +168,8 @@ API Reference
     AttackScoringConfig
     AttackStrategy
     ConsoleAttackResultPrinter
+    ChunkedRequestAttack
+    ChunkedRequestAttackContext
     ContextComplianceAttack
     ConversationManager
     ConversationSession
@@ -413,6 +415,7 @@ API Reference
     MathPromptConverter
     MorseConverter
     NatoConverter
+    NegationTrapConverter
     NoiseConverter
     PDFConverter
     PersuasionConverter

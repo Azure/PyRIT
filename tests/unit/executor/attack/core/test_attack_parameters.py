@@ -189,7 +189,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         with pytest.raises(ValueError, match="overlaps with SeedSimulatedConversation"):
             SeedAttackGroup(seeds=[seed_objective, prompt, simulated_conversation_config])
 
-    @patch("pyrit.executor.attack.component.simulated_conversation.generate_simulated_conversation_async")
+    @patch("pyrit.executor.attack.multi_turn.simulated_conversation.generate_simulated_conversation_async")
     async def test_generates_simulated_conversation(
         self,
         mock_generate: AsyncMock,
@@ -214,7 +214,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         assert call_kwargs["objective_scorer"] == mock_objective_scorer
         assert call_kwargs["num_turns"] == 3
 
-    @patch("pyrit.executor.attack.component.simulated_conversation.generate_simulated_conversation_async")
+    @patch("pyrit.executor.attack.multi_turn.simulated_conversation.generate_simulated_conversation_async")
     async def test_uses_generated_prepended_messages(
         self,
         mock_generate: AsyncMock,
@@ -238,7 +238,7 @@ class TestFromSeedGroupAsyncWithSimulatedConversation:
         assert params.prepended_conversation[0].get_value() == "Simulated user message"
         assert params.prepended_conversation[1].get_value() == "Simulated assistant response"
 
-    @patch("pyrit.executor.attack.component.simulated_conversation.generate_simulated_conversation_async")
+    @patch("pyrit.executor.attack.multi_turn.simulated_conversation.generate_simulated_conversation_async")
     async def test_uses_generated_next_message(
         self,
         mock_generate: AsyncMock,

@@ -45,7 +45,6 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
 
     scorer = create_mock_float_scorer(score_value)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=threshold)
 
         binary_score = (await float_scale_threshold_scorer.score_text_async(text="mock example"))[0]

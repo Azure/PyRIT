@@ -22,13 +22,13 @@ from sqlalchemy import (
     Unicode,
 )
 from sqlalchemy.dialects.sqlite import CHAR
-from sqlalchemy.orm import (  # type: ignore
+from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     mapped_column,
     relationship,
 )
-from sqlalchemy.types import Uuid  # type: ignore
+from sqlalchemy.types import Uuid
 
 from pyrit.common.utils import to_sha256
 from pyrit.models import (
@@ -50,7 +50,7 @@ from pyrit.models import (
 )
 
 
-class CustomUUID(TypeDecorator):
+class CustomUUID(TypeDecorator[uuid.UUID]):
     """
     A custom UUID type that works consistently across different database backends.
     For SQLite, stores UUIDs as strings and converts them back to UUID objects.
@@ -60,7 +60,7 @@ class CustomUUID(TypeDecorator):
     impl = CHAR
     cache_ok = True
 
-    def load_dialect_impl(self, dialect):
+    def load_dialect_impl(self, dialect: Any) -> Any:
         """
         Load the dialect-specific implementation for UUID handling.
 
@@ -75,7 +75,7 @@ class CustomUUID(TypeDecorator):
         else:
             return dialect.type_descriptor(Uuid())
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value: Optional[uuid.UUID], dialect: Any) -> Optional[str]:
         """
         Process a parameter value before binding it to a database statement.
 
@@ -88,7 +88,7 @@ class CustomUUID(TypeDecorator):
         """
         return str(value) if value else None
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: uuid.UUID | str | None, dialect: Any) -> Optional[uuid.UUID]:
         """
         Process a result value after it has been retrieved from the database.
 
@@ -99,9 +99,11 @@ class CustomUUID(TypeDecorator):
         Returns:
             UUID or None: The UUID object or None if value is None.
         """
+        if value is None:
+            return None
         if dialect.name == "sqlite":
-            return uuid.UUID(value) if value else None
-        return value
+            return uuid.UUID(value) if isinstance(value, str) else value
+        return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
 
 
 class Base(DeclarativeBase):
@@ -251,7 +253,7 @@ class PromptMemoryEntry(Base):
         message_piece.scores = [score.get_score() for score in self.scores]
         return message_piece
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return a string representation of the memory entry.
 
@@ -263,7 +265,7 @@ class PromptMemoryEntry(Base):
         return f": {self.role}: {self.converted_value}"
 
 
-class EmbeddingDataEntry(Base):  # type: ignore
+class EmbeddingDataEntry(Base):
     """
     Represents the embedding data associated with conversation entries in the database.
     Each embedding is linked to a specific conversation entry via an id.
@@ -279,10 +281,10 @@ class EmbeddingDataEntry(Base):  # type: ignore
     __table_args__ = {"extend_existing": True}
     id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
     # Use ARRAY for PostgreSQL, JSON for SQLite and MSSQL (SQL Server/Azure SQL)
-    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite").with_variant(JSON, "mssql"))  # type: ignore
+    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite").with_variant(JSON, "mssql"))
     embedding_type_name = mapped_column(String)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return a string representation of the embedding data entry (its ID).
 
@@ -292,7 +294,7 @@ class EmbeddingDataEntry(Base):  # type: ignore
         return f"{self.id}"
 
 
-class ScoreEntry(Base):  # type: ignore
+class ScoreEntry(Base):
     """
     Represents the Score Memory Entry.
 
@@ -338,7 +340,7 @@ class ScoreEntry(Base):  # type: ignore
         self.objective = entry.objective
 
     @staticmethod
-    def _normalize_scorer_identifier(identifier: Dict) -> Dict[str, str]:
+    def _normalize_scorer_identifier(identifier: Dict[str, Any]) -> Dict[str, str]:
         """
         Normalize scorer identifier to ensure all values are strings for database storage.
         Handles nested sub_identifiers by converting them to JSON strings.
@@ -380,7 +382,7 @@ class ScoreEntry(Base):  # type: ignore
         )
 
     @staticmethod
-    def _denormalize_scorer_identifier(identifier: Dict[str, str]) -> Dict:
+    def _denormalize_scorer_identifier(identifier: Dict[str, str]) -> Dict[str, Any]:
         """
         Denormalize scorer identifier when reading from database.
         Parses JSON strings back into dicts/lists for sub_identifier field.
@@ -402,7 +404,7 @@ class ScoreEntry(Base):  # type: ignore
                 pass
         return denormalized
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert this database entry to a dictionary.
 
@@ -541,7 +543,7 @@ class SeedEntry(Base):
         self.id = entry.id
         self.value = entry.value
         self.value_sha256 = entry.value_sha256
-        self.data_type = entry.data_type  # type: ignore
+        self.data_type = entry.data_type
         self.name = entry.name
         self.dataset_name = entry.dataset_name
         self.harm_categories = entry.harm_categories  # type: ignore
@@ -736,7 +738,7 @@ class AttackResultEntry(Base):
 
         self.executed_turns = entry.executed_turns
         self.execution_time_ms = entry.execution_time_ms
-        self.outcome = entry.outcome.value  # type: ignore
+        self.outcome = entry.outcome.value
         self.outcome_reason = entry.outcome_reason
         self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
 
@@ -884,14 +886,14 @@ class ScenarioResultEntry(Base):
     scenario_description = mapped_column(Unicode, nullable=True)
     scenario_version = mapped_column(INTEGER, nullable=False, default=1)
     pyrit_version = mapped_column(String, nullable=False)
-    scenario_init_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    objective_target_identifier: Mapped[dict] = mapped_column(JSON, nullable=False)
-    objective_scorer_identifier: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    scenario_init_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    objective_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
+    objective_scorer_identifier: Mapped[Optional[dict[str, str]]] = mapped_column(JSON, nullable=True)
     scenario_run_state: Mapped[Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]] = mapped_column(
         String, nullable=False, default="CREATED"
     )
     attack_results_json: Mapped[str] = mapped_column(Unicode, nullable=False)
-    labels: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    labels: Mapped[Optional[dict[str, str]]] = mapped_column(JSON, nullable=True)
     number_tries: Mapped[int] = mapped_column(INTEGER, nullable=False, default=0)
     completion_time = mapped_column(DateTime, nullable=False)
     timestamp = mapped_column(DateTime, nullable=False)
@@ -911,7 +913,7 @@ class ScenarioResultEntry(Base):
         self.scenario_init_data = entry.scenario_identifier.init_data
         self.objective_target_identifier = entry.objective_target_identifier
         self.objective_scorer_identifier = entry.objective_scorer_identifier
-        self.scenario_run_state = entry.scenario_run_state  # type: ignore
+        self.scenario_run_state = entry.scenario_run_state
         self.labels = entry.labels
         self.number_tries = entry.number_tries
         self.completion_time = entry.completion_time
@@ -967,9 +969,10 @@ class ScenarioResultEntry(Base):
         Returns:
             Dictionary mapping attack names to lists of conversation IDs
         """
-        return json.loads(self.attack_results_json)
+        result: dict[str, list[str]] = json.loads(self.attack_results_json)
+        return result
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return a string representation of the scenario result entry.
 

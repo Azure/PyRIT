@@ -104,13 +104,82 @@ class AttackParameters:
             ValueError: If seed_group has no objective or if overrides contain invalid fields.
             ValueError: If seed_group has simulated conversation but adversarial_chat/scorer not provided.
         """
-        return await _build_params_from_seed_group_async(
-            cls,
-            seed_group,
-            adversarial_chat=adversarial_chat,
-            objective_scorer=objective_scorer,
-            **overrides,
+        # Import here to avoid circular imports
+        from pyrit.executor.attack.multi_turn.simulated_conversation import (
+            generate_simulated_conversation_async,
         )
+
+        # Get valid field names for this params type
+        valid_fields = {f.name for f in dataclasses.fields(cls)}
+
+        # Validate overrides don't contain invalid fields
+        invalid_fields = set(overrides.keys()) - valid_fields
+        if invalid_fields:
+            raise ValueError(
+                f"{cls.__name__} does not accept parameters: {invalid_fields}. "
+                f"Accepted parameters: {valid_fields}"
+            )
+
+        # Validate seed_group state before extracting parameters
+        seed_group.validate()
+
+        # SeedAttackGroup validates in __init__ that objective is set
+        assert seed_group.objective is not None
+
+        # Build params dict, only including fields this class accepts
+        params: Dict[str, Any] = {}
+
+        if "objective" in valid_fields:
+            params["objective"] = seed_group.objective.value
+
+        if "memory_labels" in valid_fields:
+            params["memory_labels"] = {}
+
+        # Determine which group to use for extracting prepended_conversation/next_message
+        extraction_group: SeedGroup = seed_group
+
+        # Handle simulated conversation generation if configured
+        if seed_group.has_simulated_conversation:
+            simulated_conversation_config = seed_group.simulated_conversation_config
+            assert simulated_conversation_config is not None  # Guaranteed by has_simulated_conversation
+
+            if adversarial_chat is None:
+                raise ValueError("adversarial_chat is required when seed_group has a simulated conversation config")
+            if objective_scorer is None:
+                raise ValueError("objective_scorer is required when seed_group has a simulated conversation config")
+
+            # Generate the simulated conversation - returns List[SeedPrompt]
+            simulated_prompts = await generate_simulated_conversation_async(
+                objective=seed_group.objective.value,
+                adversarial_chat=adversarial_chat,
+                objective_scorer=objective_scorer,
+                num_turns=simulated_conversation_config.num_turns,
+                starting_sequence=simulated_conversation_config.sequence,
+                adversarial_chat_system_prompt_path=simulated_conversation_config.adversarial_chat_system_prompt_path,
+                simulated_target_system_prompt_path=simulated_conversation_config.simulated_target_system_prompt_path,
+                next_message_system_prompt_path=simulated_conversation_config.next_message_system_prompt_path,
+            )
+
+            # Merge simulated prompts with existing static prompts from the seed_group
+            all_prompts = list(seed_group.prompts) + simulated_prompts
+
+            # Create a temporary prompts-only SeedGroup for extraction
+            # This group contains only prompts (no objective, no simulated config)
+            # and will use the standard sequence-based logic for prepended_conversation/next_message
+            if all_prompts:
+                extraction_group = SeedGroup(seeds=all_prompts)
+
+        # Use extraction_group properties for prepended_conversation/next_message
+        if "next_message" in valid_fields:
+            params["next_message"] = extraction_group.next_message
+
+        if "prepended_conversation" in valid_fields:
+            params["prepended_conversation"] = extraction_group.prepended_conversation
+
+        # Apply overrides (already validated above)
+        params.update(overrides)
+
+        return cls(**params)
 
     @classmethod
     def excluding(cls, *field_names: str) -> Type["AttackParameters"]:
@@ -163,118 +232,13 @@ class AttackParameters:
             frozen=True,
         )
 
-        # Attach from_seed_group_async that delegates to the helper function
+        # Attach from_seed_group_async that delegates to the parent classmethod
         async def from_seed_group_async_wrapper(c, *, seed_group, adversarial_chat=None, objective_scorer=None, **ov):
-            return await _build_params_from_seed_group_async(
-                c, seed_group, adversarial_chat=adversarial_chat, objective_scorer=objective_scorer, **ov
+            # Call AttackParameters.from_seed_group_async with the new class type
+            return await AttackParameters.from_seed_group_async.__func__(
+                c, seed_group=seed_group, adversarial_chat=adversarial_chat, objective_scorer=objective_scorer, **ov
             )
 
         new_cls.from_seed_group_async = classmethod(from_seed_group_async_wrapper)  # type: ignore[attr-defined]
 
         return new_cls  # type: ignore[return-value]
-
-
-async def _build_params_from_seed_group_async(
-    params_cls: Type[AttackParamsT],
-    seed_group: SeedAttackGroup,
-    *,
-    adversarial_chat: Optional["PromptChatTarget"] = None,
-    objective_scorer: Optional["TrueFalseScorer"] = None,
-    **overrides: Any,
-) -> AttackParamsT:
-    """
-    Build attack parameters from a SeedAttackGroup.
-
-    This helper function contains the core logic for extracting parameters from a seed group.
-    It is used by both AttackParameters.from_seed_group_async and dynamically created
-    excluded parameter classes.
-
-    Args:
-        params_cls: The parameters class to instantiate.
-        seed_group: The seed attack group to extract parameters from.
-        adversarial_chat: The adversarial chat target for generating simulated conversations.
-        objective_scorer: The scorer for evaluating simulated conversations.
-        **overrides: Field overrides to apply.
-
-    Returns:
-        An instance of params_cls.
-
-    Raises:
-        ValueError: If seed_group has no objective or if overrides contain invalid fields.
-    """
-    # Import here to avoid circular imports
-    from pyrit.executor.attack.component.simulated_conversation import (
-        generate_simulated_conversation_async,
-    )
-
-    # Get valid field names for this params type
-    valid_fields = {f.name for f in dataclasses.fields(params_cls)}
-
-    # Validate overrides don't contain invalid fields
-    invalid_fields = set(overrides.keys()) - valid_fields
-    if invalid_fields:
-        raise ValueError(
-            f"{params_cls.__name__} does not accept parameters: {invalid_fields}. "
-            f"Accepted parameters: {valid_fields}"
-        )
-
-    # Validate seed_group state before extracting parameters
-    seed_group.validate()
-
-    # SeedAttackGroup validates in __init__ that objective is set
-    assert seed_group.objective is not None
-
-    # Build params dict, only including fields this class accepts
-    params: Dict[str, Any] = {}
-
-    if "objective" in valid_fields:
-        params["objective"] = seed_group.objective.value
-
-    if "memory_labels" in valid_fields:
-        params["memory_labels"] = {}
-
-    # Determine which group to use for extracting prepended_conversation/next_message
-    extraction_group: SeedGroup = seed_group
-
-    # Handle simulated conversation generation if configured
-    if seed_group.has_simulated_conversation:
-        simulated_conversation_config = seed_group.simulated_conversation_config
-        assert simulated_conversation_config is not None  # Guaranteed by has_simulated_conversation
-
-        if adversarial_chat is None:
-            raise ValueError("adversarial_chat is required when seed_group has a simulated conversation config")
-        if objective_scorer is None:
-            raise ValueError("objective_scorer is required when seed_group has a simulated conversation config")
-
-        # Generate the simulated conversation - returns List[SeedPrompt]
-        simulated_prompts = await generate_simulated_conversation_async(
-            objective=seed_group.objective.value,
-            adversarial_chat=adversarial_chat,
-            objective_scorer=objective_scorer,
-            num_turns=simulated_conversation_config.num_turns,
-            starting_sequence=simulated_conversation_config.sequence,
-            adversarial_chat_system_prompt_path=simulated_conversation_config.adversarial_chat_system_prompt_path,
-            simulated_target_system_prompt_path=simulated_conversation_config.simulated_target_system_prompt_path,
-            next_message_system_prompt_path=simulated_conversation_config.next_message_system_prompt_path,
-        )
-
-        # Merge simulated prompts with existing static prompts from the seed_group
-        all_prompts = list(seed_group.prompts) + simulated_prompts
-
-        # Create a temporary prompts-only SeedGroup for extraction
-        # This group contains only prompts (no objective, no simulated config)
-        # and will use the standard sequence-based logic for prepended_conversation/next_message
-        if all_prompts:
-            extraction_group = SeedGroup(seeds=all_prompts)
-
-    # Use extraction_group properties for prepended_conversation/next_message
-    if "next_message" in valid_fields:
-        params["next_message"] = extraction_group.next_message
-
-    if "prepended_conversation" in valid_fields:
-        params["prepended_conversation"] = extraction_group.prepended_conversation
-
-    # Apply overrides (already validated above)
-    params.update(overrides)
-
-    return params_cls(**params)

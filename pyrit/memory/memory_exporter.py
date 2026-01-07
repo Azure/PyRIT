@@ -15,7 +15,7 @@ class MemoryExporter:
     This class utilizes the strategy design pattern to select the appropriate export format.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the MemoryExporter.
 
@@ -31,7 +31,7 @@ class MemoryExporter:
 
     def export_data(
         self, data: list[MessagePiece], *, file_path: Optional[Path] = None, export_type: str = "json"
-    ):  # type: ignore
+    ) -> None:
         """
         Export the provided data to a file in the specified format.
 
@@ -52,7 +52,7 @@ class MemoryExporter:
         else:
             raise ValueError(f"Unsupported export format: {export_type}")
 
-    def export_to_json(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_json(self, data: list[MessagePiece], file_path: Optional[Path] = None) -> None:
         """
         Export the provided data to a JSON file at the specified file path.
         Each item in the data list, representing a row from the table,
@@ -75,7 +75,7 @@ class MemoryExporter:
         with open(file_path, "w") as f:
             json.dump(export_data, f, indent=4)
 
-    def export_to_csv(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_csv(self, data: list[MessagePiece], file_path: Optional[Path] = None) -> None:
         """
         Export the provided data to a CSV file at the specified file path.
         Each item in the data list, representing a row from the table,
@@ -101,7 +101,7 @@ class MemoryExporter:
             writer.writeheader()
             writer.writerows(export_data)
 
-    def export_to_markdown(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_markdown(self, data: list[MessagePiece], file_path: Optional[Path] = None) -> None:
         """
         Export the provided data to a Markdown file at the specified file path.
         Each item in the data list is converted to a dictionary and formatted as a table.

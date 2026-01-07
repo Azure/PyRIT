@@ -15,7 +15,6 @@ from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 @pytest.fixture
 def scorer_true_false_response() -> Message:
-
     json_response = (
         dedent(
             """
@@ -31,7 +30,6 @@ def scorer_true_false_response() -> Message:
 
 @pytest.mark.asyncio
 async def test_true_false_scorer_score(patch_central_database, scorer_true_false_response: Message):
-
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
@@ -83,7 +81,6 @@ async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: Mess
 
 @pytest.mark.asyncio
 async def test_self_ask_scorer_bad_json_exception_retries(patch_central_database):
-
     chat_target = MagicMock()
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
