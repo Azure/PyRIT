@@ -18,14 +18,12 @@ from pyrit.executor.attack.component import (
     ConversationManager,
     ConversationState,
     ObjectiveEvaluator,
+    PrependedConversationConfig,
 )
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
-)
-from pyrit.executor.attack.core.prepended_conversation_config import (
-    PrependedConversationConfig,
 )
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     ConversationSession,

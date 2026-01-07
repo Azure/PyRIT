@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
-from typing import Union
+from typing import Any, Union
 
 import tenacity
 from openai import AzureOpenAI, OpenAI
@@ -29,7 +29,7 @@ class _TextEmbedding(EmbeddingSupport, abc.ABC):
             )
 
     @tenacity.retry(wait=tenacity.wait_fixed(0.1), stop=tenacity.stop_after_delay(3))
-    def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
+    def generate_text_embedding(self, text: str, **kwargs: Any) -> EmbeddingResponse:
         """
         Generate text embedding.
 

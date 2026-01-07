@@ -270,7 +270,7 @@ async def run_scenario_async(
 
     if scenario_class is None:
         available = ", ".join(context.scenario_registry.get_names())
-        raise ValueError(f"Scenario '{scenario_name}' not found.\n" f"Available scenarios: {available}")
+        raise ValueError(f"Scenario '{scenario_name}' not found.\nAvailable scenarios: {available}")
 
     # Build initialization kwargs (these go to initialize_async, not __init__)
     init_kwargs: dict[str, Any] = {}
@@ -458,7 +458,7 @@ def validate_database(*, database: str) -> str:
     """
     valid_databases = [IN_MEMORY, SQLITE, AZURE_SQL]
     if database not in valid_databases:
-        raise ValueError(f"Invalid database type: {database}. " f"Must be one of: {', '.join(valid_databases)}")
+        raise ValueError(f"Invalid database type: {database}. Must be one of: {', '.join(valid_databases)}")
     return database
 
 
@@ -478,7 +478,7 @@ def validate_log_level(*, log_level: str) -> str:
     valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     level_upper = log_level.upper()
     if level_upper not in valid_levels:
-        raise ValueError(f"Invalid log level: {log_level}. " f"Must be one of: {', '.join(valid_levels)}")
+        raise ValueError(f"Invalid log level: {log_level}. Must be one of: {', '.join(valid_levels)}")
     return level_upper
 
 

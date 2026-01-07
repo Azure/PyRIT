@@ -15,5 +15,5 @@ def construct_evaluation_prompt(entry: QuestionAnsweringEntry) -> str:
         str: The constructed prompt string.
     """
     available_choices = "\n".join(f"index={c.index}, value={c.text}" for c in entry.choices)
-    prompt = f"Question:\n" f"{entry.question}\n\n" f"Choices:\n" f"{available_choices}"
+    prompt = f"Question:\n{entry.question}\n\nChoices:\n{available_choices}"
     return prompt

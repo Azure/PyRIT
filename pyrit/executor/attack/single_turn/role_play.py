@@ -8,7 +8,7 @@ from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
-from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_config import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
@@ -37,6 +37,7 @@ class RolePlayPaths(enum.Enum):
     MOVIE_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "movie_script.yaml"
     TRIVIA_GAME = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "trivia_game.yaml"
     PERSUASION_SCRIPT = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "persuasion_script.yaml"
+    PERSUASION_SCRIPT_WRITTEN = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH) / "role_play" / "persuasion_script_written.yaml"
 
 
 class RolePlayAttack(PromptSendingAttack):

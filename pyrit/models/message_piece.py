@@ -140,7 +140,7 @@ class MessagePiece:
         self.scores = scores if scores else []
         self.targeted_harm_categories = targeted_harm_categories if targeted_harm_categories else []
 
-    async def set_sha256_values_async(self):
+    async def set_sha256_values_async(self) -> None:
         """
         This method computes the SHA256 hash values asynchronously.
         It should be called after object creation if `original_value` and `converted_value` are set.

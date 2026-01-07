@@ -133,7 +133,6 @@ async def test_gandalf_scorer_adds_to_memory(mocked_post, level: GandalfLevel, s
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
 @pytest.mark.asyncio
 async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, sqlite_instance: MemoryInterface):
-
     conversation_id = str(uuid.uuid4())
     sqlite_instance.add_message_to_memory(request=generate_request(conversation_id=conversation_id))
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
