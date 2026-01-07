@@ -55,9 +55,9 @@ class ScorerEvalDatasetFiles:
 
     Args:
         human_labeled_datasets_files (List[str]): List of glob patterns to match CSV files.
-            Examples: ["objective/*.csv"], ["objective/hate_speech.csv", "objective/violence.csv"]
+            Examples: ``["objective/*.csv"]``, ``["objective/hate_speech.csv", "objective/violence.csv"]``
         result_file (str): Name of the result file (stem used as dict key in results).
-            Example: "objective_achieved_metrics.jsonl"
+            Example: ``"objective_achieved_metrics.jsonl"``
         harm_category (Optional[str]): The harm category for harm scorers (e.g., "hate_speech", "violence").
             Required for harm evaluations, ignored for objective evaluations. Defaults to None.
     """
