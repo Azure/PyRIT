@@ -4,7 +4,7 @@
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Literal, Optional, Union, get_args
+from typing import Any, Dict, List, Literal, Optional, Union, get_args
 
 ScoreType = Literal["true_false", "float_scale"]
 
@@ -112,7 +112,7 @@ class Score:
             except ValueError:
                 raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}")
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "id": str(self.id),
             "score_value": self.score_value,

@@ -24,7 +24,7 @@ class Message:
         message_pieces (Sequence[MessagePiece]): The list of message pieces.
     """
 
-    def __init__(self, message_pieces: Sequence[MessagePiece], *, skip_validation: Optional[bool] = False):
+    def __init__(self, message_pieces: Sequence[MessagePiece], *, skip_validation: Optional[bool] = False) -> None:
         if not message_pieces:
             raise ValueError("Message must have at least one message piece.")
         self.message_pieces = message_pieces
@@ -133,7 +133,7 @@ class Message:
             if piece._role == "assistant":
                 piece._role = "simulated_assistant"
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Validates the request response.
         """

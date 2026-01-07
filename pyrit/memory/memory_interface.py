@@ -66,7 +66,7 @@ class MemoryInterface(abc.ABC):
     results_path: str = None
     engine: Engine = None
 
-    def __init__(self, embedding_model=None):
+    def __init__(self, embedding_model: Optional[Any] = None) -> None:
         """
         Initialize the MemoryInterface.
 
@@ -83,7 +83,7 @@ class MemoryInterface(abc.ABC):
         # Ensure cleanup at process exit
         self.cleanup()
 
-    def enable_embedding(self, embedding_model=None):
+    def enable_embedding(self, embedding_model: Optional[Any] = None) -> None:
         """
         Enable embedding functionality for the memory interface.
 
@@ -97,7 +97,7 @@ class MemoryInterface(abc.ABC):
         """
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
 
-    def disable_embedding(self):
+    def disable_embedding(self) -> None:
         """
         Disable embedding functionality for the memory interface.
 
@@ -112,13 +112,13 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _init_storage_io(self):
+    def _init_storage_io(self) -> None:
         """
         Initialize the storage IO handler results_storage_io.
         """
 
     @abc.abstractmethod
-    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list[Any]:
         """
         Return a list of conditions for filtering memory entries based on memory labels.
 
@@ -133,7 +133,9 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(
+        self, *, prompt_metadata: dict[str, Union[str, int]]
+    ) -> list[Any]:
         """
         Return a list of conditions for filtering memory entries based on prompt metadata.
 
@@ -179,17 +181,17 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _query_entries(
         self,
-        Model,
+        model_class: type[Model],
         *,
         conditions: Optional[Any] = None,
         distinct: bool = False,
-        join_scores: bool = False,  # type: ignore
-    ) -> MutableSequence[Model]:  # type: ignore
+        join_scores: bool = False,
+    ) -> MutableSequence[Model]:
         """
         Fetch data from the specified table model with optional conditions.
 
         Args:
-            Model: The SQLAlchemy model class corresponding to the table you want to query.
+            model_class: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Whether to return distinct rows only. Defaults to False.
             join_scores: Whether to join the scores table. Defaults to False.
@@ -199,7 +201,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:
         """
         Insert an entry into the Table.
 
@@ -208,11 +210,11 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: Sequence[Base]) -> None:
         """Insert multiple entries into the database."""
 
     @abc.abstractmethod
-    def get_session(self):  # type: ignore
+    def get_session(self) -> Any:
         """
         Provide a SQLAlchemy session for transactional operations.
 
@@ -220,7 +222,7 @@ class MemoryInterface(abc.ABC):
             Session: A SQLAlchemy session bound to the engine.
         """
 
-    def _update_entry(self, entry: Base) -> None:  # type: ignore
+    def _update_entry(self, entry: Base) -> None:
         """
         Update an existing entry in the Table using merge.
 
@@ -248,7 +250,7 @@ class MemoryInterface(abc.ABC):
                 raise
 
     @abc.abstractmethod
-    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict[str, Any]) -> bool:
         """
         Update the given entries with the specified field values.
 
@@ -360,7 +362,7 @@ class MemoryInterface(abc.ABC):
         conditions: list[Any] = []
 
         if score_ids:
-            conditions.append(ScoreEntry.id.in_(score_ids))  # type: ignore
+            conditions.append(ScoreEntry.id.in_(score_ids))
         if score_type:
             conditions.append(ScoreEntry.score_type == score_type)
         if score_category:
@@ -537,7 +539,7 @@ class MemoryInterface(abc.ABC):
             conditions.append(PromptMemoryEntry.conversation_id == str(conversation_id))
         if prompt_ids:
             prompt_ids = [str(pi) for pi in prompt_ids]
-            conditions.append(PromptMemoryEntry.id.in_(prompt_ids))  # type: ignore
+            conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
         if labels:
             conditions.extend(self._get_message_pieces_memory_label_conditions(memory_labels=labels))
         if prompt_metadata:
@@ -547,20 +549,20 @@ class MemoryInterface(abc.ABC):
         if sent_before:
             conditions.append(PromptMemoryEntry.timestamp <= sent_before)
         if original_values:
-            conditions.append(PromptMemoryEntry.original_value.in_(original_values))  # type: ignore
+            conditions.append(PromptMemoryEntry.original_value.in_(original_values))
         if converted_values:
-            conditions.append(PromptMemoryEntry.converted_value.in_(converted_values))  # type: ignore
+            conditions.append(PromptMemoryEntry.converted_value.in_(converted_values))
         if data_type:
             conditions.append(PromptMemoryEntry.converted_value_data_type == data_type)
         if not_data_type:
             conditions.append(PromptMemoryEntry.converted_value_data_type != not_data_type)
         if converted_value_sha256:
-            conditions.append(PromptMemoryEntry.converted_value_sha256.in_(converted_value_sha256))  # type: ignore
+            conditions.append(PromptMemoryEntry.converted_value_sha256.in_(converted_value_sha256))
 
         try:
             memory_entries: Sequence[PromptMemoryEntry] = self._query_entries(
                 PromptMemoryEntry, conditions=and_(*conditions) if conditions else None, join_scores=True
-            )  # type: ignore
+            )
             message_pieces = [memory_entry.get_message_piece() for memory_entry in memory_entries]
             return sort_message_pieces(message_pieces=message_pieces)
         except Exception as e:
@@ -672,7 +674,7 @@ class MemoryInterface(abc.ABC):
 
             self._add_embeddings_to_memory(embedding_data=embedding_entries)
 
-    def _update_sequence(self, *, message_pieces: Sequence[MessagePiece]):
+    def _update_sequence(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
         Update the sequence number of the message pieces in the conversation.
 
@@ -689,7 +691,7 @@ class MemoryInterface(abc.ABC):
         for piece in message_pieces:
             piece.sequence = sequence
 
-    def update_prompt_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
+    def update_prompt_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict[str, Any]) -> bool:
         """
         Update prompt entries for a given conversation ID with the specified field values.
 
@@ -723,7 +725,7 @@ class MemoryInterface(abc.ABC):
             logger.error(f"Failed to update entries with conversation_id {conversation_id}.")
         return success
 
-    def update_labels_by_conversation_id(self, *, conversation_id: str, labels: dict) -> bool:
+    def update_labels_by_conversation_id(self, *, conversation_id: str, labels: dict[str, Any]) -> bool:
         """
         Update the labels of prompt entries in memory for a given conversation ID.
 
@@ -756,12 +758,12 @@ class MemoryInterface(abc.ABC):
         )
 
     @abc.abstractmethod
-    def dispose_engine(self):
+    def dispose_engine(self) -> None:
         """
         Dispose the engine and clean up resources.
         """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Ensure cleanup on process exit.
         """
@@ -824,17 +826,17 @@ class MemoryInterface(abc.ABC):
 
         # Apply filters for non-list fields
         if value:
-            conditions.append(SeedEntry.value.contains(value))  # type: ignore
+            conditions.append(SeedEntry.value.contains(value))
         if value_sha256:
-            conditions.append(SeedEntry.value_sha256.in_(value_sha256))  # type: ignore
+            conditions.append(SeedEntry.value_sha256.in_(value_sha256))
         if dataset_name:
             conditions.append(SeedEntry.dataset_name == dataset_name)
         elif dataset_name_pattern:
-            conditions.append(SeedEntry.dataset_name.like(dataset_name_pattern))  # type: ignore
+            conditions.append(SeedEntry.dataset_name.like(dataset_name_pattern))
         if prompt_group_ids:
-            conditions.append(SeedEntry.prompt_group_id.in_(prompt_group_ids))  # type: ignore
+            conditions.append(SeedEntry.prompt_group_id.in_(prompt_group_ids))
         if data_types:
-            data_type_conditions = SeedEntry.data_type.in_(data_types)  # type: ignore
+            data_type_conditions = SeedEntry.data_type.in_(data_types)
             conditions.append(data_type_conditions)
         if added_by:
             conditions.append(SeedEntry.added_by == added_by)
@@ -857,18 +859,18 @@ class MemoryInterface(abc.ABC):
             memory_entries: Sequence[SeedEntry] = self._query_entries(
                 SeedEntry,
                 conditions=and_(*conditions) if conditions else None,
-            )  # type: ignore
+            )
             return [memory_entry.get_seed() for memory_entry in memory_entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             raise
 
     def _add_list_conditions(
-        self, field: InstrumentedAttribute, conditions: list, values: Optional[Sequence[str]] = None
+        self, field: InstrumentedAttribute[Any], conditions: list[Any], values: Optional[Sequence[str]] = None
     ) -> None:
         if values:
             for value in values:
-                conditions.append(field.contains(value))  # type: ignore
+                conditions.append(field.contains(value))
 
     async def _serialize_seed_value(self, prompt: Seed) -> str:
         """
@@ -926,7 +928,7 @@ class MemoryInterface(abc.ABC):
             if prompt.date_added is None:
                 prompt.date_added = current_time
 
-            prompt.set_encoding_metadata()
+            prompt.set_encoding_metadata()  # type: ignore
 
             # Handle serialization for image, audio & video SeedPrompts
             if prompt.data_type in ["image_path", "audio_path", "video_path"]:
@@ -1211,14 +1213,14 @@ class MemoryInterface(abc.ABC):
             if len(attack_result_ids) == 0:
                 # Empty list means no results
                 return []
-            conditions.append(AttackResultEntry.id.in_(attack_result_ids))  # type: ignore
+            conditions.append(AttackResultEntry.id.in_(attack_result_ids))
         if conversation_id:
-            conditions.append(AttackResultEntry.conversation_id == conversation_id)  # type: ignore
+            conditions.append(AttackResultEntry.conversation_id == conversation_id)
         if objective:
-            conditions.append(AttackResultEntry.objective.contains(objective))  # type: ignore
+            conditions.append(AttackResultEntry.objective.contains(objective))
 
         if objective_sha256:
-            conditions.append(AttackResultEntry.objective_sha256.in_(objective_sha256))  # type: ignore
+            conditions.append(AttackResultEntry.objective_sha256.in_(objective_sha256))
         if outcome:
             conditions.append(AttackResultEntry.outcome == outcome)
 
@@ -1399,26 +1401,26 @@ class MemoryInterface(abc.ABC):
             if len(scenario_result_ids) == 0:
                 # Empty list means no results
                 return []
-            conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))  # type: ignore
+            conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))
 
         if scenario_name:
             # Normalize CLI snake_case names (e.g., "foundry" or "content_harms")
             # to class names (e.g., "Foundry" or "ContentHarms")
             # This allows users to query with either format
             normalized_name = ScenarioResult.normalize_scenario_name(scenario_name)
-            conditions.append(ScenarioResultEntry.scenario_name.contains(normalized_name))  # type: ignore
+            conditions.append(ScenarioResultEntry.scenario_name.contains(normalized_name))
 
         if scenario_version is not None:
-            conditions.append(ScenarioResultEntry.scenario_version == scenario_version)  # type: ignore
+            conditions.append(ScenarioResultEntry.scenario_version == scenario_version)
 
         if pyrit_version:
-            conditions.append(ScenarioResultEntry.pyrit_version == pyrit_version)  # type: ignore
+            conditions.append(ScenarioResultEntry.pyrit_version == pyrit_version)
 
         if added_after:
-            conditions.append(ScenarioResultEntry.completion_time >= added_after)  # type: ignore
+            conditions.append(ScenarioResultEntry.completion_time >= added_after)
 
         if added_before:
-            conditions.append(ScenarioResultEntry.completion_time <= added_before)  # type: ignore
+            conditions.append(ScenarioResultEntry.completion_time <= added_before)
 
         if labels:
             # Use database-specific JSON query method
@@ -1453,7 +1455,7 @@ class MemoryInterface(abc.ABC):
                 # Query all AttackResults in a single batch if there are any
                 if all_conversation_ids:
                     # Build condition to query multiple conversation IDs at once
-                    attack_conditions = [AttackResultEntry.conversation_id.in_(all_conversation_ids)]  # type: ignore
+                    attack_conditions = [AttackResultEntry.conversation_id.in_(all_conversation_ids)]
                     attack_entries: Sequence[AttackResultEntry] = self._query_entries(
                         AttackResultEntry, conditions=and_(*attack_conditions)
                     )
@@ -1475,7 +1477,7 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve scenario results with error {e}")
             raise
 
-    def print_schema(self):
+    def print_schema(self) -> None:
         """Print the schema of all tables in the database."""
         metadata = MetaData()
         metadata.reflect(bind=self.engine)
