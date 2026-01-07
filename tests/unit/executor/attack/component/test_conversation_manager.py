@@ -24,6 +24,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.executor.attack import ConversationManager, ConversationState
+from pyrit.executor.attack.component import PrependedConversationConfig
 from pyrit.executor.attack.component.conversation_manager import (
     build_conversation_context_string_async,
     get_adversarial_chat_messages,
@@ -32,9 +33,6 @@ from pyrit.executor.attack.component.conversation_manager import (
 )
 from pyrit.executor.attack.core import AttackContext
 from pyrit.executor.attack.core.attack_parameters import AttackParameters
-from pyrit.executor.attack.core.prepended_conversation_config import (
-    PrependedConversationConfig,
-)
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget

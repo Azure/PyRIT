@@ -157,7 +157,7 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         """
         resolved_token = get_non_required_value(env_var_name="HUGGINGFACE_TOKEN", passed_value=token)
         if not resolved_token:
-            logger.warning("No HuggingFace token provided. " "Gated models may fail to load without authentication.")
+            logger.warning("No HuggingFace token provided. Gated models may fail to load without authentication.")
 
         # Get config from alias or create default config for custom model
         alias_key = model_name_or_alias.lower()

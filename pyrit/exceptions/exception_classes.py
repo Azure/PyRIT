@@ -89,7 +89,6 @@ class _DynamicWaitRandomExponential(wait_base):
 
 
 class PyritException(Exception, ABC):
-
     def __init__(self, *, status_code: int = 500, message: str = "An error occurred") -> None:
         self.status_code = status_code
         self.message = message
@@ -261,7 +260,6 @@ def handle_bad_request_exception(
     is_content_filter: bool = False,
     error_code: int = 400,
 ) -> Message:
-
     if (
         "content_filter" in response_text
         or "Invalid prompt: your prompt was flagged as potentially violating our usage policy." in response_text

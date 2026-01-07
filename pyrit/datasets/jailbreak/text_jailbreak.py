@@ -20,7 +20,7 @@ class TextJailBreak:
         string_template=None,
         random_template=False,
         **kwargs,
-    ):
+    ) -> None:
         """
         Initialize a Jailbreak instance with exactly one template source.
 

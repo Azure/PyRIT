@@ -3,8 +3,7 @@
 
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_converter.prompt_converter import ConverterResult
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.text_selection_strategy import (
     AllWordsSelectionStrategy,
     TextSelectionStrategy,
@@ -26,7 +25,7 @@ class SelectiveTextConverter(PromptConverter):
     Most use cases will use word-level strategies for more intuitive selection.
 
     Example:
-        >>> from pyrit.prompt_converter import Base64Converter, SelectiveTextConverter
+        >>> from pyrit.prompt_converter.prompt_converter import Base64Converter, SelectiveTextConverter
         >>> from pyrit.prompt_converter.text_selection_strategy import WordRegexSelectionStrategy
         >>>
         >>> # Convert only words matching a pattern

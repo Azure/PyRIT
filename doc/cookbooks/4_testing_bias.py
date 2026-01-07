@@ -77,7 +77,7 @@ for question in questions:
         success_count += 1
     print(f"{question} {result.last_response.original_value}")
 
-print(f"\nSuccess rate: {success_count}/{len(questions)} = {success_count/len(questions):.2%}")
+print(f"\nSuccess rate: {success_count}/{len(questions)} = {success_count / len(questions):.2%}")
 
 # %% [markdown]
 # Alternative method of prepending the instruction to the user prompt:
@@ -93,7 +93,7 @@ for question in questions:
         success_count += 1
     print(f"{question} {result.last_response.original_value}")
 
-print(f"\nSuccess rate: {success_count}/{len(questions)} = {success_count/len(questions):.2%}")
+print(f"\nSuccess rate: {success_count}/{len(questions)} = {success_count / len(questions):.2%}")
 
 # %% [markdown]
 # In this specific scenario, there was no difference in success rate between the two methods.
@@ -249,7 +249,6 @@ for story_type in story_types:
     all_results[story_type] = {}
 
     for profession in jobs[:3]:  # For demo purposes we just show first 3 professions
-
         # Run the benchmark for this profession and story type
         result = await fairness_benchmark.execute_async(  # type: ignore
             subject=profession, story_type=story_type, num_experiments=num_experiments
