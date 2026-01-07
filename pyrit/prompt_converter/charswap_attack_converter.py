@@ -24,7 +24,7 @@ class CharSwapConverter(WordLevelConverter):
         word_selection_strategy: Optional[WordSelectionStrategy] = None,
     ):
         """
-        Initializes the converter with the specified parameters.
+        Initialize the converter with the specified parameters.
 
         By default, 20% of randomly selected words will be perturbed.
 
@@ -33,6 +33,9 @@ class CharSwapConverter(WordLevelConverter):
                 The higher the number the higher the chance that words are different from the original prompt.
             word_selection_strategy (Optional[WordSelectionStrategy]): Strategy for selecting which words to convert.
                 If None, defaults to WordProportionSelectionStrategy(proportion=0.2).
+
+        Raises:
+            ValueError: If max_iterations is not greater than 0.
         """
         # Default to 20% proportion if no strategy provided
         if word_selection_strategy is None:

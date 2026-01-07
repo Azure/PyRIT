@@ -30,7 +30,7 @@ class DenylistConverter(LLMGenericTextConverter):
         denylist: list[str] = [],
     ):
         """
-        Initializes the converter with a target, an optional system prompt template, and a denylist.
+        Initialize the converter with a target, an optional system prompt template, and a denylist.
 
         Args:
             converter_target (PromptChatTarget): The target for the prompt conversion.
@@ -52,7 +52,7 @@ class DenylistConverter(LLMGenericTextConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by removing any words or phrases that are in the denylist,
+        Convert the given prompt by removing any words or phrases that are in the denylist,
         replacing them with synonymous words.
 
         Args:
