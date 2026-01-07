@@ -255,7 +255,6 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
 
 @pytest.mark.asyncio
 async def test_scorer_send_chat_target_async_good_response(good_json):
-
     chat_target = MagicMock(PromptChatTarget)
 
     good_json_resp = Message(
@@ -280,7 +279,6 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
 
 @pytest.mark.asyncio
 async def test_scorer_remove_markdown_json_called(good_json):
-
     chat_target = MagicMock(PromptChatTarget)
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
@@ -443,7 +441,6 @@ def test_scorer_extract_task_from_response(patch_central_database):
     ]
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory):
-
         extracted_task = scorer._extract_objective_from_response(response_piece.to_message())
         assert "User's question about the universe" in extracted_task
 
@@ -993,7 +990,6 @@ async def test_score_response_async_empty_lists():
 
 
 def test_get_scorer_metrics(tmp_path):
-
     # Create a fake metrics file
     metrics = HarmScorerMetrics(
         mean_absolute_error=0.1,

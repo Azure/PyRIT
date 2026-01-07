@@ -81,7 +81,6 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(
         converter = converter_class(converter_target=prompt_target, prompt_templates=["testing 1"])
 
     with patch("unit.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
-
         message = Message(
             message_pieces=[
                 MessagePiece(

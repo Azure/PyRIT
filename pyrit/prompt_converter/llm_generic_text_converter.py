@@ -12,7 +12,7 @@ from pyrit.models import (
     PromptDataType,
     SeedPrompt,
 )
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,6 @@ class LLMGenericTextConverter(PromptConverter):
         kwargs = self._prompt_kwargs.copy()
 
         if self._system_prompt_template:
-
             system_prompt = self._system_prompt_template.render_template_value(**kwargs)
 
             self._converter_target.set_system_prompt(

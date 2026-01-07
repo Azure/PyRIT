@@ -11,7 +11,7 @@ import pandas as pd
 
 from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message, MessagePiece, PromptDataType
-from pyrit.score import MetricsType
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 logger = logging.getLogger(__name__)
 
@@ -325,7 +325,7 @@ class HumanLabeledDataset:
             ValueError: If any field is invalid.
         """
         if not response_to_score or not str(response_to_score).strip():
-            raise ValueError("One or more of the responses is empty. Ensure that the file contains " "valid responses.")
+            raise ValueError("One or more of the responses is empty. Ensure that the file contains valid responses.")
         if not all(isinstance(score, (int, float)) for score in human_scores):
             raise ValueError(
                 "Human scores must be a list of numeric values (int or float). Ensure that the file contains valid"

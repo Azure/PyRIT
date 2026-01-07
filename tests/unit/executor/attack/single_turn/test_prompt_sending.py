@@ -147,7 +147,7 @@ class TestPromptSendingAttackInitialization:
         attack = PromptSendingAttack(objective_target=mock_target)
 
         assert attack._conversation_manager is not None
-        assert hasattr(attack._conversation_manager, "update_conversation_state_async")
+        assert hasattr(attack._conversation_manager, "initialize_context_async")
 
     def test_init_with_negative_max_attempts_raises_error(self, mock_target):
         with pytest.raises(ValueError, match="max_attempts_on_failure must be a non-negative integer"):
@@ -227,8 +227,14 @@ class TestSetupPhase:
         attack._memory_labels = {"strategy_label": "strategy_value", "common": "strategy"}
         basic_context.memory_labels = {"context_label": "context_value", "common": "context"}
 
+        # Mock that simulates initialize_context_async merging labels
+        async def mock_initialize(*, context, memory_labels=None, **kwargs):
+            from pyrit.common.utils import combine_dict
+
+            context.memory_labels = combine_dict(existing_dict=memory_labels, new_dict=context.memory_labels)
+
         attack._conversation_manager = MagicMock()
-        attack._conversation_manager.update_conversation_state_async = AsyncMock()
+        attack._conversation_manager.initialize_context_async = AsyncMock(side_effect=mock_initialize)
 
         # Store original conversation_id
         original_conversation_id = basic_context.conversation_id
@@ -259,16 +265,17 @@ class TestSetupPhase:
         )
 
         attack._conversation_manager = MagicMock()
-        attack._conversation_manager.update_conversation_state_async = AsyncMock()
+        attack._conversation_manager.initialize_context_async = AsyncMock()
 
         await attack._setup_async(context=basic_context)
 
-        attack._conversation_manager.update_conversation_state_async.assert_called_once_with(
+        attack._conversation_manager.initialize_context_async.assert_called_once_with(
+            context=basic_context,
             target=mock_target,
             conversation_id=basic_context.conversation_id,
-            prepended_conversation=basic_context.prepended_conversation,
             request_converters=converter_config,
-            response_converters=[],
+            prepended_conversation_config=None,
+            memory_labels={},
         )
 
 
@@ -439,7 +446,6 @@ class TestResponseEvaluation:
             new_callable=AsyncMock,
             return_value={"auxiliary_scores": [], "objective_scores": [success_score]},
         ) as mock_score_method:
-
             result = await attack._evaluate_response_async(response=sample_response, objective="Test objective")
 
             assert result == success_score
@@ -504,7 +510,6 @@ class TestResponseEvaluation:
             new_callable=AsyncMock,
             return_value={"auxiliary_scores": [auxiliary_score], "objective_scores": [success_score]},
         ) as mock_score_method:
-
             result = await attack._evaluate_response_async(response=sample_response, objective="Test objective")
 
             # Only objective score is returned
@@ -1122,7 +1127,6 @@ class TestEdgeCasesAndErrorHandling:
             new_callable=AsyncMock,
             side_effect=RuntimeError("Scorer error"),
         ):
-
             # Should propagate the exception
             with pytest.raises(RuntimeError, match="Scorer error"):
                 await attack._evaluate_response_async(response=sample_response, objective="Test")
