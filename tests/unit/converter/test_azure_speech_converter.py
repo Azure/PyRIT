@@ -20,7 +20,6 @@ def is_speechsdk_installed():
 
 @pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed.")
 class TestAzureSpeechTextToAudioConverter:
-
     @pytest.mark.asyncio
     @patch("azure.cognitiveservices.speech.SpeechSynthesizer")
     @patch("azure.cognitiveservices.speech.SpeechConfig")

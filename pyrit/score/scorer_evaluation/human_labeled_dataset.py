@@ -11,7 +11,7 @@ import pandas as pd
 
 from pyrit.common.utils import verify_and_resolve_path
 from pyrit.models import Message, MessagePiece, PromptDataType
-from pyrit.score import MetricsType
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 
 if TYPE_CHECKING:
     from pyrit.models.harm_definition import HarmDefinition
@@ -417,8 +417,7 @@ class HumanLabeledDataset:
         for column in required_columns:
             if column not in eval_df.columns:
                 raise ValueError(
-                    f"Required column '{column}' is missing from the dataset. "
-                    f"Found columns: {list(eval_df.columns)}"
+                    f"Required column '{column}' is missing from the dataset. Found columns: {list(eval_df.columns)}"
                 )
             if eval_df[column].isna().any():
                 raise ValueError(f"Column '{column}' contains NaN values.")

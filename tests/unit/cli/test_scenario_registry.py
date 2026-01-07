@@ -90,9 +90,9 @@ class TestScenarioRegistry:
             assert "pyrit" not in scenario_name.lower(), f"Scenario name has 'pyrit' in it: {scenario_name}"
 
             # Should not see 'scenario.scenarios' duplication
-            assert (
-                "scenarios.scenarios" not in scenario_name
-            ), f"Scenario name has duplicated 'scenarios': {scenario_name}"
+            assert "scenarios.scenarios" not in scenario_name, (
+                f"Scenario name has duplicated 'scenarios': {scenario_name}"
+            )
 
         # Verify that nested scenarios use dot notation (e.g., "airt.content_harms")
         nested_scenarios = [name for name in discovered_names if "." in name]

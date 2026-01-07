@@ -11,7 +11,7 @@ from tenacity import RetryCallState
 logger = logging.getLogger(__name__)
 
 
-def log_exception(retry_state: RetryCallState):
+def log_exception(retry_state: RetryCallState) -> None:
     # Log each retry attempt with exception details at ERROR level
     elapsed_time = time.monotonic() - retry_state.start_time
     call_count = retry_state.attempt_number

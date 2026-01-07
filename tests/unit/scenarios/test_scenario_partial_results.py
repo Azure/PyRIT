@@ -80,7 +80,6 @@ class ConcreteScenario(Scenario):
 
     @classmethod
     def get_strategy_class(cls):
-
         class TestStrategy(ScenarioStrategy):
             CONCRETE = ("concrete", {"concrete"})
             ALL = ("all", {"all"})

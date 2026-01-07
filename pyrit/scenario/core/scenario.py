@@ -258,8 +258,7 @@ class Scenario(ABC):
                     self._scenario_result_id = None
             else:
                 logger.warning(
-                    f"Scenario result ID {self._scenario_result_id} not found in memory. "
-                    f"Creating new scenario result."
+                    f"Scenario result ID {self._scenario_result_id} not found in memory. Creating new scenario result."
                 )
                 self._scenario_result_id = None
 
@@ -332,7 +331,7 @@ class Scenario(ABC):
             Either load the datasets into the database before running the scenario, or for
             example datasets, you can use the `load_default_datasets` initializer.
 
-            Required datasets: {', '.join(self.default_dataset_config().get_default_dataset_names())}
+            Required datasets: {", ".join(self.default_dataset_config().get_default_dataset_names())}
             """
         )
         raise ValueError(error_msg)

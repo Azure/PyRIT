@@ -146,7 +146,7 @@ class SeedDatasetProvider(ABC):
             available_names = cls.get_all_dataset_names()
             invalid_names = [name for name in dataset_names if name not in available_names]
             if invalid_names:
-                raise ValueError(f"Dataset(s) not found: {invalid_names}. " f"Available datasets: {available_names}")
+                raise ValueError(f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
 
         async def fetch_single_dataset(
             provider_name: str, provider_class: Type["SeedDatasetProvider"]

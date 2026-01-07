@@ -6,13 +6,13 @@ from dataclasses import dataclass
 from typing import Any, List, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.utils import combine_dict, get_kwarg_param
+from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.component import ConversationManager
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
-    AttackParameters,
     AttackScoringConfig,
 )
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     ConversationSession,
     MultiTurnAttackContext,
@@ -79,8 +79,7 @@ class MultiPromptSendingAttackParameters(AttackParameters):
         invalid_fields = set(overrides.keys()) - valid_fields
         if invalid_fields:
             raise ValueError(
-                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. "
-                f"Only accepts: {valid_fields}"
+                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. Only accepts: {valid_fields}"
             )
 
         # Build parameters with only objective, user_messages, and memory_labels
@@ -200,16 +199,13 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, A
         # Ensure the context has a session (like red_teaming.py does)
         context.session = ConversationSession()
 
-        # Combine memory labels from context and attack strategy
-        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
-
-        # Process prepended conversation if provided
-        await self._conversation_manager.update_conversation_state_async(
+        # Initialize context with prepended conversation and merged labels
+        await self._conversation_manager.initialize_context_async(
+            context=context,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
-            prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
-            response_converters=self._response_converters,
+            memory_labels=self._memory_labels,
         )
 
     async def _perform_async(self, *, context: MultiTurnAttackContext) -> AttackResult:

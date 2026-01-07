@@ -381,7 +381,6 @@ class TestXPIAWorkflowExecution:
                 patch.object(workflow, "_setup_async") as mock_setup,
                 patch.object(workflow, "_teardown_async") as mock_teardown,
             ):
-
                 # Setup mock return value
                 expected_result = XPIAResult(
                     processing_conversation_id="test-conversation-id",
@@ -441,7 +440,8 @@ class TestXPIAWorkflowExecution:
 
             with pytest.raises(TypeError, match="processing_callback must be callable"):
                 await workflow.execute_async(
-                    attack_content=valid_message, processing_callback="not_callable"  # Should be callable
+                    attack_content=valid_message,
+                    processing_callback="not_callable",  # Should be callable
                 )
 
     @pytest.mark.asyncio
