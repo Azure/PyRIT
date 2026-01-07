@@ -91,6 +91,10 @@ class Seed(YamlLoadable):
     # Alias for the prompt group
     prompt_group_alias: Optional[str] = None
 
+    # Secondary value for multimodal prompts (e.g., image path for text prompt)
+    # Added to support multimodal prompts
+    prompt_text: Optional[str] = None
+
     def render_template_value(self, **kwargs) -> str:
         """
         Renders self.value as a template, applying provided parameters in kwargs.
