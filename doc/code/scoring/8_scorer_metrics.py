@@ -34,7 +34,7 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Create a refusal scorer
-refusal_scorer = SelfAskRefusalScorer(chat_target=OpenAIChatTarget())
+refusal_scorer = SelfAskRefusalScorer(chat_target=OpenAIChatTarget(temperature=0.9))
 
 # View the scorer's full identity - this determines which metrics apply
 scorer_identity = refusal_scorer.scorer_identifier
@@ -68,29 +68,29 @@ print(f"  Identity Hash: {scorer_identity.compute_hash()}")
 # Harm scorers produce float scores (0.0-1.0) representing severity. Since these are continuous values, we use different metrics that capture how close the model's scores are to human judgments.
 #
 # **Error Metrics:**
-# - **Mean Absolute Error (MAE)**: Average absolute difference between model and human scores. An MAE of 0.15 means the model is off by ~15% on average.
+# - **Mean Absolute Error (MAE)**: Average absolute difference between model and human scores. An MAE of 0.15 means the model is off by 0.15 on average.
 # - **MAE Standard Error**: Uncertainty in the MAE estimate.
 #
 # **Statistical Significance:**
 # - **t-statistic**: From a one-sample t-test. Positive = model scores higher than humans; negative = lower.
-# - **p-value**: If < 0.05, the difference between model and human scores is statistically significant (not due to chance).
+# - **p-value**: If small (e.g., < 0.05), the difference between model and human scores is statistically significant (not due to chance).
 #
 # **Inter-Rater Reliability (Krippendorff's Alpha):**
 # Measures agreement between evaluators, ranging from -1.0 to 1.0:
 # - **1.0**: Perfect agreement
 # - **0.8+**: Strong agreement
 # - **0.6-0.8**: Moderate agreement
-# - **< 0.6**: Weak agreement (scorer may need tuning)
+# - **< 0.6**: Weak agreement
 #
 # Three alpha values are reported:
 # - **`krippendorff_alpha_humans`**: Agreement among human evaluators (baseline quality of labels)
-# - **`krippendorff_alpha_model`**: Agreement across multiple scoring trials (model consistency)
+# - **`krippendorff_alpha_model`**: Agreement across multiple model scoring trials (model consistency)
 # - **`krippendorff_alpha_combined`**: Overall agreement between humans and model
 
 # %% [markdown]
 # ## Retrieving Scorer Metrics
 #
-# Once scorer metrics are calculated with `evaluate_async()`, they're saved to JSONL registry files and can be retrieved without re-running the evaluation. The PyRIT team has pre-computed metrics for common scorer configurations which you can access immediately.
+# When scorer metrics are calculated with `evaluate_async()`, they can be saved to JSONL registry files and retrieved without re-running the evaluation. The PyRIT team has pre-computed metrics for common scorer configurations which you can access immediately.
 #
 # ### Retrieving Cached Metrics for a Scorer
 #
@@ -212,12 +212,12 @@ all_harm_scorers = get_all_harm_metrics(harm_category="violence")
 
 print(f"Found {len(all_harm_scorers)} harm scorer configurations for violence\n")
 
-# Sort by Krippendorff's alpha (higher is better)
-sorted_by_alpha = sorted(all_harm_scorers, key=lambda x: x.metrics.krippendorff_alpha_combined, reverse=True)
+# Sort by mean absolute error (lower is better)
+sorted_by_mae = sorted(all_harm_scorers, key=lambda x: x.metrics.mean_absolute_error)
 
-print("Top configurations by Krippendorff's Alpha:")
+print("Top configurations by Mean Absolute Error:")
 print("-" * 80)
-for i, e in enumerate(sorted_by_alpha[:5], 1):
+for i, e in enumerate(sorted_by_mae[:5], 1):
     printer = ConsoleScorerPrinter()
     printer.print_harm_scorer(scorer_identifier=e.scorer_identifier, harm_category="violence")
 
@@ -231,7 +231,7 @@ for i, e in enumerate(sorted_by_alpha[:5], 1):
 # When you call `evaluate_async()` on a scorer, the evaluation framework follows a smart caching strategy to avoid redundant work. It checks the metrics registry (a JSONL file) for an existing entry matching the scorer's identity hash. The decision to skip or run evaluation depends on:
 #
 # 1. **No existing entry**: Run the full evaluation
-# 2. **Dataset version changed**: Re-run and replace the old entry (assumes newer dataset is authoritative)
+# 2. **Dataset version or harm definition version changed**: Re-run and replace the old entry (assumes newer dataset/newer scoring criteria for harm is authoritative)
 # 3. **Same version, sufficient trials**: Skip if existing `num_scorer_trials >= requested` (existing metrics are good enough)
 # 4. **Same version, fewer trials**: Re-run with more trials and replace (higher fidelity needed)
 #

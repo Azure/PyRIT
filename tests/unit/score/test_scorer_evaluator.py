@@ -432,6 +432,128 @@ def test_should_skip_evaluation_exception_handling(mock_find, mock_objective_sco
         mock_find.assert_not_called()
 
 
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_harm_metrics_by_hash")
+def test_should_skip_evaluation_harm_definition_version_changed_runs_evaluation(mock_find, mock_harm_scorer, tmp_path):
+    """Test that harm_definition_version change triggers re-evaluation."""
+    evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
+    result_file = tmp_path / "test_results.jsonl"
+
+    with patch.object(mock_harm_scorer.scorer_identifier, "compute_hash", return_value="test_hash_456"):
+        # Create existing metrics with older harm_definition_version
+        existing_metrics = HarmScorerMetrics(
+            num_responses=15,
+            num_human_raters=4,
+            mean_absolute_error=0.05,
+            mae_standard_error=0.01,
+            t_statistic=1.5,
+            p_value=0.15,
+            krippendorff_alpha_combined=0.85,
+            krippendorff_alpha_humans=0.88,
+            krippendorff_alpha_model=0.82,
+            num_scorer_trials=3,
+            dataset_name="harm_dataset",
+            dataset_version="1.0",
+            harm_category="hate_speech",
+            harm_definition="hate_speech.yaml",
+            harm_definition_version="1.0",
+        )
+        mock_find.return_value = existing_metrics
+
+        # Request evaluation with newer harm_definition_version
+        should_skip, result = evaluator._should_skip_evaluation(
+            dataset_version="1.0",
+            harm_definition_version="2.0",  # Different version
+            num_scorer_trials=3,
+            harm_category="hate_speech",
+            result_file_path=result_file,
+        )
+
+        assert should_skip is False
+        assert result is None
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_harm_metrics_by_hash")
+def test_should_skip_evaluation_harm_definition_version_same_skips(mock_find, mock_harm_scorer, tmp_path):
+    """Test that matching harm_definition_version allows skip when other conditions met."""
+    evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
+    result_file = tmp_path / "test_results.jsonl"
+
+    with patch.object(mock_harm_scorer.scorer_identifier, "compute_hash", return_value="test_hash_456"):
+        # Create existing metrics with same harm_definition_version
+        existing_metrics = HarmScorerMetrics(
+            num_responses=15,
+            num_human_raters=4,
+            mean_absolute_error=0.05,
+            mae_standard_error=0.01,
+            t_statistic=1.5,
+            p_value=0.15,
+            krippendorff_alpha_combined=0.85,
+            krippendorff_alpha_humans=0.88,
+            krippendorff_alpha_model=0.82,
+            num_scorer_trials=3,
+            dataset_name="harm_dataset",
+            dataset_version="1.0",
+            harm_category="hate_speech",
+            harm_definition="hate_speech.yaml",
+            harm_definition_version="1.0",
+        )
+        mock_find.return_value = existing_metrics
+
+        # Request evaluation with same harm_definition_version
+        should_skip, result = evaluator._should_skip_evaluation(
+            dataset_version="1.0",
+            harm_definition_version="1.0",  # Same version
+            num_scorer_trials=3,
+            harm_category="hate_speech",
+            result_file_path=result_file,
+        )
+
+        assert should_skip is True
+        assert result == existing_metrics
+
+
+@patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_harm_metrics_by_hash")
+def test_should_skip_evaluation_harm_definition_version_none_in_existing_runs_evaluation(
+    mock_find, mock_harm_scorer, tmp_path
+):
+    """Test that if existing metrics has no harm_definition_version but request has one, re-run."""
+    evaluator = HarmScorerEvaluator(scorer=mock_harm_scorer)
+    result_file = tmp_path / "test_results.jsonl"
+
+    with patch.object(mock_harm_scorer.scorer_identifier, "compute_hash", return_value="test_hash_456"):
+        # Create existing metrics without harm_definition_version (legacy)
+        existing_metrics = HarmScorerMetrics(
+            num_responses=15,
+            num_human_raters=4,
+            mean_absolute_error=0.05,
+            mae_standard_error=0.01,
+            t_statistic=1.5,
+            p_value=0.15,
+            krippendorff_alpha_combined=0.85,
+            krippendorff_alpha_humans=0.88,
+            krippendorff_alpha_model=0.82,
+            num_scorer_trials=3,
+            dataset_name="harm_dataset",
+            dataset_version="1.0",
+            harm_category="hate_speech",
+            harm_definition="hate_speech.yaml",
+            harm_definition_version=None,  # Legacy: no version
+        )
+        mock_find.return_value = existing_metrics
+
+        # Request evaluation with harm_definition_version
+        should_skip, result = evaluator._should_skip_evaluation(
+            dataset_version="1.0",
+            harm_definition_version="1.0",  # New: has version
+            num_scorer_trials=3,
+            harm_category="hate_speech",
+            result_file_path=result_file,
+        )
+
+        assert should_skip is False
+        assert result is None
+
+
 @pytest.mark.asyncio
 async def test__run_evaluation_async_harm_passes_harm_definition_version(mock_harm_scorer):
     """Test that harm_definition_version from dataset is passed through to metrics."""

@@ -12,17 +12,13 @@ import numpy as np
 from scipy.stats import ttest_1samp
 
 from pyrit.common.path import SCORER_EVALS_PATH
-from pyrit.score import Scorer
+from pyrit.score import MetricsType, RegistryUpdateBehavior, Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
     ObjectiveHumanLabeledEntry,
 )
 from pyrit.score.scorer_evaluation.krippendorff import krippendorff_alpha
-from pyrit.score.scorer_evaluation.metrics_type import (
-    MetricsType,
-    RegistryUpdateBehavior,
-)
 from pyrit.score.scorer_evaluation.scorer_metrics import (
     HarmScorerMetrics,
     ObjectiveScorerMetrics,
@@ -209,6 +205,7 @@ class ScorerEvaluator(abc.ABC):
         if update_registry_behavior == RegistryUpdateBehavior.SKIP_IF_EXISTS:
             should_skip, existing_metrics = self._should_skip_evaluation(
                 dataset_version=combined_version,
+                harm_definition_version=combined_harm_definition_version,
                 num_scorer_trials=num_scorer_trials,
                 harm_category=dataset_files.harm_category,
                 result_file_path=SCORER_EVALS_PATH / dataset_files.result_file,
@@ -240,6 +237,7 @@ class ScorerEvaluator(abc.ABC):
         self,
         *,
         dataset_version: str,
+        harm_definition_version: Optional[str] = None,
         num_scorer_trials: int,
         harm_category: Optional[str] = None,
         result_file_path: Path,
@@ -249,12 +247,14 @@ class ScorerEvaluator(abc.ABC):
 
         Decision logic (only one entry per scorer hash is maintained):
         - If no existing entry: run evaluation
-        - If existing version differs from requested: run and replace (assume newer dataset)
+        - If existing dataset_version differs from requested: run and replace (assume newer dataset)
+        - If existing harm_definition_version differs from requested: run and replace (scoring criteria changed)
         - If versions match and existing num_scorer_trials >= requested: skip (existing is sufficient)
         - If versions match and existing num_scorer_trials < requested: run and replace (higher fidelity)
 
         Args:
             dataset_version (str): The version of the dataset.
+            harm_definition_version (Optional[str]): Version of the harm definition YAML. For harm evaluations.
             num_scorer_trials (int): Number of scorer trials requested.
             harm_category (Optional[str]): The harm category for harm scorers. Required for harm evaluations.
             result_file_path (Path): Path to the result file to search.
@@ -289,13 +289,23 @@ class ScorerEvaluator(abc.ABC):
                 logger.debug(f"No existing metrics found for hash {scorer_hash[:8]}...")
                 return (False, None)
 
-            # Check if versions differ - if so, run and replace (assume newer dataset)
+            # Check if dataset_version differs - if so, run and replace (assume newer dataset)
             if existing.dataset_version != dataset_version:
                 logger.info(
                     f"Dataset version changed ({existing.dataset_version} -> {dataset_version}). "
                     f"Will re-run evaluation and replace existing entry."
                 )
                 return (False, None)
+
+            # Check if harm_definition_version differs - if so, run and replace (scoring criteria changed)
+            if harm_definition_version is not None and isinstance(existing, HarmScorerMetrics):
+                if existing.harm_definition_version != harm_definition_version:
+                    logger.info(
+                        f"Harm definition version changed "
+                        f"({existing.harm_definition_version} -> {harm_definition_version}). "
+                        f"Will re-run evaluation and replace existing entry."
+                    )
+                    return (False, None)
 
             # Versions match - check num_scorer_trials
             if existing.num_scorer_trials >= num_scorer_trials:
