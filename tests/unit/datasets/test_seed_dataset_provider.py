@@ -296,16 +296,20 @@ class TestJailbreakV28KDataset:
                     dataset = await loader.fetch_dataset()
 
                     assert isinstance(dataset, SeedDataset)
-                    # 2 examples * 2 prompts each (text + image) = 4 total
-                    assert len(dataset.seeds) == 4
-                    assert all(isinstance(p, SeedPrompt) for p in dataset.seeds)
+                    # 2 examples * 3 items each (objective + text + image) = 6 total
+                    assert len(dataset.seeds) == 6
 
-                    # Check text prompts
-                    text_prompts = [p for p in dataset.seeds if p.data_type == "text"]
+                    # Check objectives
+                    objectives = [p for p in dataset.seeds if isinstance(p, SeedObjective)]
+                    assert len(objectives) == 2
+                    assert objectives[0].value == "Test redteam query 1"
+                    assert objectives[0].dataset_name == "jailbreakv_28k"
+                    assert objectives[0].harm_categories == ["hate_speech"]
+
+                    # Check text prompts (jailbreak queries)
+                    text_prompts = [p for p in dataset.seeds if isinstance(p, SeedPrompt) and p.data_type == "text"]
                     assert len(text_prompts) == 2
-                    assert text_prompts[0].value == "Test redteam query 1"
-                    assert text_prompts[0].dataset_name == "jailbreakv_28k"
-                    assert text_prompts[0].harm_categories == ["hate_speech"]
+                    assert text_prompts[0].value == "Test jailbreak query 1"
 
                     # Check image prompts
                     image_prompts = [p for p in dataset.seeds if p.data_type == "image_path"]
@@ -337,33 +341,6 @@ class TestJailbreakV28KDataset:
             _JailbreakV28KDataset(
                 harm_categories=["invalid_category"],  # type: ignore
             )
-
-    @pytest.mark.asyncio
-    async def test_fetch_dataset_with_text_field(self, mock_jailbreakv_data, tmp_path):
-        """Test fetching with different text field."""
-        zip_dir = tmp_path / "test_zip"
-        zip_dir.mkdir()
-        images_dir = zip_dir / "JailBreakV_28K" / "images"
-        images_dir.mkdir(parents=True)
-        (images_dir / "test_001.png").touch()
-        (images_dir / "test_002.png").touch()
-
-        loader = _JailbreakV28KDataset(
-            zip_dir=str(zip_dir),
-            text_field="jailbreak_query",
-        )
-
-        with patch("pathlib.Path.exists", return_value=True):
-            with patch.object(loader, "_fetch_from_huggingface", return_value=mock_jailbreakv_data):
-                with patch.object(loader, "_resolve_image_path") as mock_resolve:
-                    mock_resolve.side_effect = lambda rel_path, local_directory, call_cache: str(
-                        local_directory / rel_path
-                    )
-
-                    dataset = await loader.fetch_dataset()
-
-                    text_prompts = [p for p in dataset.seeds if p.data_type == "text"]
-                    assert text_prompts[0].value == "Test jailbreak query 1"
 
     @pytest.mark.asyncio
     async def test_fetch_dataset_missing_zip(self):
@@ -400,9 +377,25 @@ class TestJailbreakV28KDataset:
                     dataset = await loader.fetch_dataset()
 
                     # Should only get first example (hate speech), not second (violence)
-                    text_prompts = [p for p in dataset.seeds if p.data_type == "text"]
+                    # Each example has objective + text + image = 3 items
+                    assert len(dataset.seeds) == 3
+
+                    # Verify objective
+                    objectives = [p for p in dataset.seeds if isinstance(p, SeedObjective)]
+                    assert len(objectives) == 1
+                    assert objectives[0].harm_categories == ["hate_speech"]
+                    assert objectives[0].value == "Test redteam query 1"
+
+                    # Verify text prompt
+                    text_prompts = [p for p in dataset.seeds if isinstance(p, SeedPrompt) and p.data_type == "text"]
                     assert len(text_prompts) == 1
                     assert text_prompts[0].harm_categories == ["hate_speech"]
+                    assert text_prompts[0].value == "Test jailbreak query 1"
+
+                    # Verify image
+                    image_prompts = [p for p in dataset.seeds if p.data_type == "image_path"]
+                    assert len(image_prompts) == 1
+                    assert image_prompts[0].harm_categories == ["hate_speech"]
 
     def test_normalize_policy(self):
         """Test policy normalization helper."""
@@ -473,5 +466,5 @@ class TestJailbreakV28KDataset:
                     # Should succeed because only 25% are unpaired (< 50%)
                     dataset = await loader.fetch_dataset()
 
-                    # Should have 3 pairs (6 total prompts)
-                    assert len(dataset.seeds) == 6
+                    # Should have 3 examples * 3 items each (objective + text + image) = 9 total
+                    assert len(dataset.seeds) == 9

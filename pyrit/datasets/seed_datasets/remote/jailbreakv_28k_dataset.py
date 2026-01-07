@@ -11,7 +11,7 @@ from typing import Dict, List, Literal, Optional
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
 )
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedDataset, SeedPrompt, SeedObjective
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,6 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
         source: str = "JailbreakV-28K/JailBreakV-28k",
         zip_dir: str = str(pathlib.Path.home()),
         split: Literal["JailBreakV_28K", "mini_JailBreakV_28K"] = "mini_JailBreakV_28K",
-        text_field: Literal["jailbreak_query", "redteam_query"] = "redteam_query",
         harm_categories: Optional[List[_HarmCategory]] = None,
     ) -> None:
         """
@@ -87,7 +86,6 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
         self.source = source
         self.zip_dir = pathlib.Path(zip_dir)
         self.split = split
-        self.text_field = text_field
         self.harm_categories = harm_categories
 
         # Validate harm categories if provided
@@ -124,7 +122,7 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
         """
         # Extract images from ZIP if needed
         zip_file_path = self.zip_dir / "JailBreakV_28K.zip"
-        zip_extracted_path = self.zip_dir / "JailBreakV_28K"
+        zip_extracted_path = self.zip_dir / "JailBreakV_28k"
 
         if not zip_file_path.exists():
             raise FileNotFoundError(
@@ -190,8 +188,24 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
                 # Create linked text and image prompts
                 group_id = uuid.uuid4()
 
+                seed_objective = SeedObjective(
+                    value = item.get("redteam_query", ""),
+                    data_type="text",
+                    name="JailBreakV-28K",
+                    dataset_name=self.dataset_name,
+                    harm_categories=[policy],
+                    description=(
+                        "Benchmark for Assessing the Robustness of "
+                        "Multimodal Large Language Models against Jailbreak Attacks."
+                    ),
+                    authors=["Weidi Luo", "Siyuan Ma", "Xiaogeng Liu", "Chaowei Xiao", "Xiaoyu Guo"],
+                    groups=["The Ohio State University", "Peking University", "University of Wisconsin-Madison"],
+                    source="https://huggingface.co/datasets/JailbreakV-28K/JailBreakV-28k",
+                    prompt_group_id=group_id,
+                )
+
                 text_seed_prompt = SeedPrompt(
-                    value=item.get(self.text_field, ""),
+                    value=item.get("jailbreak_query", ""),
                     data_type="text",
                     name="JailBreakV-28K",
                     dataset_name=self.dataset_name,
@@ -224,6 +238,7 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
                     sequence=0,
                 )
 
+                seed_prompts.append(seed_objective)
                 seed_prompts.append(text_seed_prompt)
                 seed_prompts.append(image_seed_prompt)
 
@@ -238,7 +253,7 @@ class _JailbreakV28KDataset(_RemoteDatasetLoader):
                 "Try adjusting your harm_categories filter or check the dataset source."
             )
 
-        successful_pairs = len(seed_prompts) // 2  # Each pair has text + image
+        successful_pairs = len(seed_prompts) // 3  # Each pair has objective + text + image
         unpaired_percentage = (missing_images / total_items_processed) * 100
 
         if unpaired_percentage >= 50:
