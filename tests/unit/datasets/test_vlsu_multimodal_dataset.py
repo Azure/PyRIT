@@ -1,17 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-from unittest.mock import patch
 import uuid
+from unittest.mock import patch
+
+import pytest
 
 from pyrit.datasets.seed_datasets.remote.vlsu_multimodal_dataset import (
-    _VLSUMultimodalDataset,
     VLSUCategory,
+    _VLSUMultimodalDataset,
 )
-from pyrit.models import SeedDataset
 from pyrit.memory import SQLiteMemory
 from pyrit.memory.central_memory import CentralMemory
+from pyrit.models import SeedDataset
 
 
 class TestVLSUMultimodalDataset:
@@ -77,9 +78,7 @@ class TestVLSUMultimodalDataset:
             assert text_prompt.data_type == "text"
             assert text_prompt.value == "Unsafe text prompt"
             assert text_prompt.name == "ML-VLSU Text"
-            assert text_prompt.harm_categories == [
-                "C1: Slurs, Hate Speech, Hate Symbols"
-            ]
+            assert text_prompt.harm_categories == ["C1: Slurs, Hate Speech, Hate Symbols"]
             assert text_prompt.metadata["prompt_type"] == "text_only"
             assert text_prompt.metadata["text_grade"] == "unsafe"
 
@@ -119,9 +118,7 @@ class TestVLSUMultimodalDataset:
             assert image_prompt.data_type == "image_path"
             assert image_prompt.value == "/fake/path/image.png"
             assert image_prompt.name == "ML-VLSU Image"
-            assert image_prompt.harm_categories == [
-                "C2: Discrimination and Unequal Treatment"
-            ]
+            assert image_prompt.harm_categories == ["C2: Discrimination and Unequal Treatment"]
             assert image_prompt.metadata["prompt_type"] == "image_only"
             assert image_prompt.metadata["image_grade"] == "unsafe"
 
@@ -160,10 +157,7 @@ class TestVLSUMultimodalDataset:
             combined_prompt = dataset.seeds[0]
             assert combined_prompt.data_type == "image_path"
             assert combined_prompt.value == "/fake/path/image.png"
-            assert (
-                combined_prompt.prompt_text
-                == "Safe text that becomes unsafe with image"
-            )
+            assert combined_prompt.prompt_text == "Safe text that becomes unsafe with image"
             assert combined_prompt.name == "ML-VLSU Combined"
             assert combined_prompt.harm_categories == ["C3: Drug Abuse"]
             assert combined_prompt.metadata["prompt_type"] == "combined"
@@ -209,24 +203,14 @@ class TestVLSUMultimodalDataset:
             assert "combined" in prompt_types
 
             # Verify each uses correct category
-            text_prompt = next(
-                s for s in dataset.seeds if s.metadata["prompt_type"] == "text_only"
-            )
-            assert text_prompt.harm_categories == [
-                "C2: Discrimination and Unequal Treatment"
-            ]
+            text_prompt = next(s for s in dataset.seeds if s.metadata["prompt_type"] == "text_only")
+            assert text_prompt.harm_categories == ["C2: Discrimination and Unequal Treatment"]
 
-            image_prompt = next(
-                s for s in dataset.seeds if s.metadata["prompt_type"] == "image_only"
-            )
+            image_prompt = next(s for s in dataset.seeds if s.metadata["prompt_type"] == "image_only")
             assert image_prompt.harm_categories == ["C3: Drug Abuse"]
 
-            combined_prompt = next(
-                s for s in dataset.seeds if s.metadata["prompt_type"] == "combined"
-            )
-            assert combined_prompt.harm_categories == [
-                "C1: Slurs, Hate Speech, Hate Symbols"
-            ]
+            combined_prompt = next(s for s in dataset.seeds if s.metadata["prompt_type"] == "combined")
+            assert combined_prompt.harm_categories == ["C1: Slurs, Hate Speech, Hate Symbols"]
 
     @pytest.mark.asyncio
     async def test_fetch_dataset_all_safe_no_prompts(self):
@@ -279,9 +263,7 @@ class TestVLSUMultimodalDataset:
             },
         ]
 
-        dataset_loader = _VLSUMultimodalDataset(
-            categories=[VLSUCategory.SLURS_HATE_SPEECH]
-        )
+        dataset_loader = _VLSUMultimodalDataset(categories=[VLSUCategory.SLURS_HATE_SPEECH])
 
         with patch.object(dataset_loader, "_fetch_from_url", return_value=mock_data):
             dataset = await dataset_loader.fetch_dataset(cache=False)

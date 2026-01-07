@@ -136,9 +136,7 @@ class Seed(YamlLoadable):
         # Check if the template contains Jinja2 control structures (for loops, if statements, etc.)
         # If it does, and we don't have all required parameters, don't render it to preserve the structure
 
-        has_control_structures = bool(
-            re.search(r"\{%[-\s]*(for|if|block|macro|call)", self.value)
-        )
+        has_control_structures = bool(re.search(r"\{%[-\s]*(for|if|block|macro|call)", self.value))
 
         if has_control_structures:
             # Check if all parameters in control structures are provided
