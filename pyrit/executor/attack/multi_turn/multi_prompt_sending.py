@@ -3,16 +3,16 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import get_kwarg_param
 from pyrit.executor.attack.component import ConversationManager
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
-    AttackParameters,
     AttackScoringConfig,
 )
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     ConversationSession,
     MultiTurnAttackContext,
@@ -23,11 +23,15 @@ from pyrit.models import (
     AttackResult,
     Message,
     Score,
-    SeedGroup,
+    SeedAttackGroup,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
+
+if TYPE_CHECKING:
+    from pyrit.prompt_target import PromptChatTarget
+    from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +48,12 @@ class MultiPromptSendingAttackParameters(AttackParameters):
     user_messages: Optional[List[Message]] = None
 
     @classmethod
-    def from_seed_group(
+    async def from_seed_group_async(
         cls: Type["MultiPromptSendingAttackParameters"],
-        seed_group: SeedGroup,
+        seed_group: SeedAttackGroup,
+        *,
+        adversarial_chat: Optional["PromptChatTarget"] = None,
+        objective_scorer: Optional["TrueFalseScorer"] = None,
         **overrides: Any,
     ) -> "MultiPromptSendingAttackParameters":
         """
@@ -54,6 +61,8 @@ class MultiPromptSendingAttackParameters(AttackParameters):
 
         Args:
             seed_group: The seed group to extract parameters from.
+            adversarial_chat: Not used by this attack type.
+            objective_scorer: Not used by this attack type.
             **overrides: Field overrides to apply.
 
         Returns:
@@ -79,8 +88,7 @@ class MultiPromptSendingAttackParameters(AttackParameters):
         invalid_fields = set(overrides.keys()) - valid_fields
         if invalid_fields:
             raise ValueError(
-                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. "
-                f"Only accepts: {valid_fields}"
+                f"MultiPromptSendingAttackParameters does not accept: {invalid_fields}. Only accepts: {valid_fields}"
             )
 
         # Build parameters with only objective, user_messages, and memory_labels

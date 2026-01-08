@@ -153,7 +153,6 @@ class AzureBlobStorageIO(StorageIO):
         sas_token: Optional[str] = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
     ) -> None:
-
         self._blob_content_type: str = blob_content_type.value
         if not container_url:
             raise ValueError("Invalid Azure Storage Account Container URL.")

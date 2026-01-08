@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
 
 from pyrit.common.utils import combine_dict
-from pyrit.executor.attack.core.prepended_conversation_config import (
+from pyrit.executor.attack.component.prepended_conversation_config import (
     PrependedConversationConfig,
 )
 from pyrit.memory import CentralMemory

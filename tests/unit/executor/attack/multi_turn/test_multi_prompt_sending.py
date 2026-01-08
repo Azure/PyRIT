@@ -300,7 +300,6 @@ class TestPromptSending:
     async def test_send_prompt_to_target_with_all_configurations(
         self, mock_target, mock_prompt_normalizer, basic_context, sample_response
     ):
-
         request_converters = [PromptConverterConfiguration(converters=[])]
         response_converters = [PromptConverterConfiguration(converters=[])]
 

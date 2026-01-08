@@ -36,11 +36,28 @@ there should be any postfixes on the release version.
 With that in mind, the reason for the release and the set of changes
 that happened since the last release will influence the new version number.
 
-## 2. Update the version
+## 2. Remove deprecated functionality
 
-### __init__.py and pyproject.toml
+If you are incrementing the minor version, search the entire codebase for the new minor
+version, e.g., "0.11.0" (no leading "v"),
+to find occurrences where we deprecated functionality and announced that it will be
+removed in the new version. Typically, functionality is deprecated and then stays for
+two minor versions before getting removed.
 
-Set the version in `pyproject.toml` and `pyrit/__init__.py` to the version established in step 1.
+If you find functionality to remove make sure to merge the PR to `main` before proceeding.
+
+In some cases, we know that the next version will not be a patch upgrade (e.g.,
+0.10.0 to 0.10.1) but rather a minor upgrade (0.10.3 to 0.11.0) and we can remove
+functionality that is to be deprecated beforehand.
+This is preferable but it may not be clear if a release is patch or minor until the full
+scope of the release is known (see step 1).
+
+## 3. Update the version
+
+### __init__.py, pyproject.toml, and package.json
+
+Set the version in `pyrit/__init__.py`, `pyproject.toml`, and `package.json` to the version
+established in step 1.
 
 ### Update README File
 
@@ -62,7 +79,7 @@ For directories, update using the "tree" link, e.g.,
 This is required for the release branch because PyPI does not pick up
 other files besides the README, which results in local links breaking.
 
-## 3. Publish to GitHub
+## 4. Publish to GitHub
 
 Commit your changes and push them to the repository on a branch called
 `releases/vx.y.z`, then run
@@ -77,7 +94,7 @@ git push --tags
 
 After pushing the branch to remote, check the release branch to make sure it looks as intended (e.g. check the links in the README work properly).
 
-## 4. Build Package
+## 5. Build Package
 
 You'll need the build package to build the project. If it’s not already installed, install it `pip install build`.
 
@@ -91,7 +108,7 @@ This should print
 
 > Successfully built pyrit-x.y.z.tar.gz and pyrit-x.y.z-py3-none-any.whl
 
-## 5. Test Built Package
+## 6. Test Built Package
 
 This step is crucial to ensure that the new package works out of the box.
 Create a new environment with `uv venv --python 3.11`
@@ -111,7 +128,7 @@ In the new location, run all notebooks that are currently skipped by integration
 
 A reminder that you should ensure that the integration tests pass in the version you are releasing in addition to the skipped files.
 
-Note: copying the doc folder elsewhere is essential since we store data files
+Note: copying the `doc` folder elsewhere is essential since we store data files
 in the repository that should be shipped with the package.
 If we run inside the repository, we may not face errors that users encounter
 with a clean installation and no locally cloned repository.
@@ -129,7 +146,7 @@ git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct
 
 Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them. If you reuse the same environment, it is best to `uv pip uninstall pyrit` to force the reinstall.
 
-## 6. Publish to PyPI
+## 7. Publish to PyPI
 
 Create an account on pypi.org if you don't have one yet.
 Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
@@ -146,7 +163,7 @@ If successful, it will print
 > View at:
   https://pypi.org/project/pyrit/x.y.z/
 
-## 7. Update main
+## 8. Update main
 
 After the release is on PyPI, make sure to create a PR for the `main` branch
 where the only changes are:
@@ -158,7 +175,7 @@ where the only changes are:
 The PR should be made from your fork and should be a different branch than the releases branch you created earlier.
 This should be something like `x.y.z+1.dev0`.
 
-## 8. Create GitHub Release
+## 9. Create GitHub Release
 
 Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select "Draft a new release" and the "tag"
 for which you want to create the release notes. It should match the version that you just released

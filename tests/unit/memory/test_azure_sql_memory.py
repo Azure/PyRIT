@@ -6,13 +6,13 @@ import uuid
 from typing import Generator, MutableSequence, Sequence
 
 import pytest
-from unit.mocks import get_azure_sql_memory, get_sample_conversation_entries
 
 from pyrit.memory import AzureSQLMemory, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_models import Base
 from pyrit.models import MessagePiece
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
+from unit.mocks import get_azure_sql_memory, get_sample_conversation_entries
 
 
 @pytest.fixture
@@ -105,9 +105,9 @@ def test_insert_embedding_entry(memory_interface: AzureSQLMemory):
 def test_disable_embedding(memory_interface: AzureSQLMemory):
     memory_interface.disable_embedding()
 
-    assert (
-        memory_interface.memory_embedding is None
-    ), "disable_memory flag was passed, so memory embedding should be disabled."
+    assert memory_interface.memory_embedding is None, (
+        "disable_memory flag was passed, so memory embedding should be disabled."
+    )
 
 
 def test_default_enable_embedding(memory_interface: AzureSQLMemory):
@@ -117,9 +117,9 @@ def test_default_enable_embedding(memory_interface: AzureSQLMemory):
 
     memory_interface.enable_embedding()
 
-    assert (
-        memory_interface.memory_embedding is not None
-    ), "Memory embedding should be enabled when set with environment variables."
+    assert memory_interface.memory_embedding is not None, (
+        "Memory embedding should be enabled when set with environment variables."
+    )
 
 
 def test_default_embedding_raises(memory_interface: AzureSQLMemory):
@@ -134,7 +134,6 @@ def test_default_embedding_raises(memory_interface: AzureSQLMemory):
 def test_query_entries(
     memory_interface: AzureSQLMemory, sample_conversation_entries: MutableSequence[PromptMemoryEntry]
 ):
-
     for i in range(3):
         sample_conversation_entries[i].conversation_id = str(i)
         sample_conversation_entries[i].original_value = f"Message {i}"
@@ -157,7 +156,6 @@ def test_query_entries(
 def test_get_all_memory(
     memory_interface: AzureSQLMemory, sample_conversation_entries: MutableSequence[PromptMemoryEntry]
 ):
-
     memory_interface._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries

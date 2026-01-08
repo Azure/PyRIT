@@ -514,7 +514,6 @@ async def test_send_prompt_async_rate_limit_exception_retries(target: OpenAIResp
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_error(target: OpenAIResponseTarget):
-
     message = Message(message_pieces=[MessagePiece(role="user", conversation_id="1236748", original_value="Hello")])
 
     # Mock SDK to raise BadRequestError
@@ -528,7 +527,6 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIResponseTarget)
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
-
     message = Message(
         message_pieces=[
             MessagePiece(
@@ -1034,9 +1032,9 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         # Verify intermediate messages were NOT persisted to memory by the target
         # (The normalizer will handle persistence when messages are returned)
         all_messages = target._memory.get_conversation(conversation_id=shared_conversation_id)
-        assert (
-            len(all_messages) == 0
-        ), f"Expected 0 messages in memory (target doesn't persist), got {len(all_messages)}"
+        assert len(all_messages) == 0, (
+            f"Expected 0 messages in memory (target doesn't persist), got {len(all_messages)}"
+        )
 
 
 def test_invalid_temperature_raises(patch_central_database):

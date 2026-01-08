@@ -5,12 +5,12 @@
 
 from pyrit.executor.workflow.xpia import (
     XPIAContext,
-    XPIAResult,
-    XPIAWorkflow,
-    XPIATestWorkflow,
     XPIAManualProcessingWorkflow,
     XPIAProcessingCallback,
+    XPIAResult,
     XPIAStatus,
+    XPIATestWorkflow,
+    XPIAWorkflow,
 )
 
 __all__ = [

@@ -17,12 +17,9 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.models.json_response_config import _JsonResponseConfig
-from pyrit.prompt_target import (
-    OpenAITarget,
-    PromptChatTarget,
-    limit_requests_per_minute,
-)
-from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute, validate_temperature, validate_top_p
+from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
 

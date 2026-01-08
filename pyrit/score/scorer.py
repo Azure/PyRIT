@@ -10,6 +10,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -19,7 +20,6 @@ from typing import (
     cast,
 )
 
-import pyrit
 from pyrit.exceptions import (
     InvalidJsonException,
     PyritException,
@@ -38,11 +38,17 @@ from pyrit.models import (
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
+    from pyrit.score.scorer_evaluation.scorer_evaluator import (
+        ScorerEvalDatasetFiles,
+        ScorerMetrics,
+    )
 
 
 class Scorer(abc.ABC):
@@ -51,6 +57,10 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+
+    # Evaluation configuration - maps input dataset files to a result file
+    # Specifies glob patterns for datasets and a result file name
+    evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
 
     _scorer_identifier: Optional[ScorerIdentifier] = None
 
@@ -133,7 +143,6 @@ class Scorer(abc.ABC):
             target_info=target_info,
             score_aggregator=score_aggregator,
             scorer_specific_params=scorer_specific_params,
-            pyrit_version=pyrit.__version__,
         )
 
     async def score_async(
@@ -256,33 +265,77 @@ class Scorer(abc.ABC):
         """
         raise NotImplementedError()
 
-    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
+    async def evaluate_async(
+        self,
+        file_mapping: Optional["ScorerEvalDatasetFiles"] = None,
+        *,
+        num_scorer_trials: int = 3,
+        update_registry_behavior: "RegistryUpdateBehavior" = None,  # type: ignore[assignment]
+        max_concurrency: int = 10,
+    ) -> Optional["ScorerMetrics"]:
         """
-        Get evaluation statistics for the scorer using the dataset_name of the human labeled dataset.
+        Evaluate this scorer against human-labeled datasets.
 
-        This scorer was run against. If you did not evaluate the scorer against your own human labeled dataset, you can
-        use this method to retrieve metrics based on a pre-existing dataset name, which is often a 'harm_category'
-        or abbreviated version of the 'objective'. For example, to retrieve metrics for the 'hate_speech' harm,
-        you would pass 'hate_speech' as the dataset_name.
-
-        The existing metrics can be found in the 'dataset/score/scorer_evals' directory within either
-        the 'harm' or 'objective' subdirectory.
+        Uses file mapping to determine which datasets to evaluate and how to aggregate results.
 
         Args:
-            dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to
-                inform the name of the metrics file to read in the `scorer_evals` directory.
-            metrics_type (MetricsType, optional): The type of metrics to retrieve, either HARM
-                or OBJECTIVE. If not provided, it will default to OBJECTIVE for true/false scorers
-                and HARM for all other scorers.
+            file_mapping: Optional ScorerEvalDatasetFiles configuration.
+                If not provided, uses the scorer's configured evaluation_file_mapping.
+                Maps input file patterns to an output result file.
+            num_scorer_trials: Number of times to score each response (for measuring variance). Defaults to 3.
+            update_registry_behavior: Controls how existing registry entries are handled.
+                - SKIP_IF_EXISTS (default): Check registry for existing results. If found, return cached metrics.
+                - ALWAYS_UPDATE: Always run evaluation and overwrite any existing registry entry.
+                - NEVER_UPDATE: Always run evaluation but never write to registry (for debugging).
+                Defaults to RegistryUpdateBehavior.SKIP_IF_EXISTS.
+            max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
 
         Returns:
-            ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
-        """
-        # Import ScorerEvaluator here to avoid circular imports
-        from pyrit.score import ScorerEvaluator
+            ScorerMetrics: The evaluation metrics, or None if no datasets found.
 
-        scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
-        return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
+        Raises:
+            ValueError: If no file_mapping is provided and no evaluation_file_mapping is configured.
+        """
+        from pyrit.score import ScorerEvaluator
+        from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
+
+        # Handle default for update_registry_behavior (can't use enum in signature due to forward ref)
+        if update_registry_behavior is None:
+            update_registry_behavior = RegistryUpdateBehavior.SKIP_IF_EXISTS
+
+        # Use provided mapping or fall back to scorer's configured mapping
+        mapping = file_mapping if file_mapping is not None else self.evaluation_file_mapping
+
+        if mapping is None:
+            raise ValueError(
+                f"No file_mapping provided and no evaluation_file_mapping configured for {self.__class__.__name__}. "
+                "Either provide file_mapping parameter or configure evaluation_file_mapping on the scorer class."
+            )
+
+        scorer_evaluator = ScorerEvaluator.from_scorer(self)
+        return await scorer_evaluator.run_evaluation_async(
+            dataset_files=mapping,
+            num_scorer_trials=num_scorer_trials,
+            update_registry_behavior=update_registry_behavior,
+            max_concurrency=max_concurrency,
+        )
+
+    @abstractmethod
+    def get_scorer_metrics(self) -> Optional["ScorerMetrics"]:
+        """
+        Get evaluation metrics for this scorer from the configured evaluation result file.
+
+        Looks up metrics by this scorer's identity hash in the JSONL result file.
+        The result file may contain entries for multiple scorer configurations.
+
+        Subclasses must implement this to return the appropriate metrics type:
+        - TrueFalseScorer subclasses should return ObjectiveScorerMetrics
+        - FloatScaleScorer subclasses should return HarmScorerMetrics
+
+        Returns:
+            ScorerMetrics: The metrics for this scorer, or None if not found or not configured.
+        """
+        raise NotImplementedError("Subclasses must implement get_scorer_metrics")
 
     async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
         """

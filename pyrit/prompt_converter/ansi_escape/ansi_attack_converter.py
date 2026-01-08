@@ -5,7 +5,6 @@ import logging
 import random
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
     ASKS,
     ESCAPED_PAYLOADS,
@@ -14,6 +13,7 @@ from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
     REPEAT_STUBS,
     UNESCAPE_STUBS,
 )
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 

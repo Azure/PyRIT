@@ -398,9 +398,9 @@ class TestNextMessageSentFirst:
         assert sent_message is not None, "No message was sent to the target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces (text + image)"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
-        assert (
-            sent_message.message_pieces[1].original_value_data_type == "image_path"
-        ), "Image content must be preserved"
+        assert sent_message.message_pieces[1].original_value_data_type == "image_path", (
+            "Image content must be preserved"
+        )
 
     @pytest.mark.asyncio
     async def test_crescendo_attack_uses_next_message_first_turn(
@@ -464,9 +464,9 @@ class TestNextMessageSentFirst:
         assert sent_message is not None, "No message was sent to the target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces (text + image)"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
-        assert (
-            sent_message.message_pieces[1].original_value_data_type == "image_path"
-        ), "Image content must be preserved"
+        assert sent_message.message_pieces[1].original_value_data_type == "image_path", (
+            "Image content must be preserved"
+        )
 
     @pytest.mark.asyncio
     async def test_tree_of_attacks_uses_next_message_first_turn(
@@ -518,9 +518,9 @@ class TestNextMessageSentFirst:
         assert sent_message is not None, "No message was sent to the objective target"
         assert len(sent_message.message_pieces) == 2, "Multimodal message should have 2 pieces (text + image)"
         assert sent_message.message_pieces[0].original_value_data_type == "text"
-        assert (
-            sent_message.message_pieces[1].original_value_data_type == "image_path"
-        ), "Image content must be preserved"
+        assert sent_message.message_pieces[1].original_value_data_type == "image_path", (
+            "Image content must be preserved"
+        )
 
 
 # =============================================================================
@@ -558,9 +558,9 @@ class TestPrependedConversationInMemory:
         simulated_assistant_pieces = [
             piece for msg in prepended_in_memory for piece in msg.message_pieces if piece.is_simulated
         ]
-        assert (
-            len(simulated_assistant_pieces) >= 1
-        ), "Assistant messages should be translated to simulated_assistant (is_simulated=True)"
+        assert len(simulated_assistant_pieces) >= 1, (
+            "Assistant messages should be translated to simulated_assistant (is_simulated=True)"
+        )
 
         # Verify no raw non-simulated "assistant" role remains in prepended messages
         raw_assistant_in_prepended = [

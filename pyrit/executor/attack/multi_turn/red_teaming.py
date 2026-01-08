@@ -17,7 +17,7 @@ from pyrit.executor.attack.component import (
     ObjectiveEvaluator,
     get_adversarial_chat_messages,
 )
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,

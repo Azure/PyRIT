@@ -74,8 +74,7 @@ class AIRTInitializer(PyRITInitializer):
     def description(self) -> str:
         """Get the description of this initializer."""
         return (
-            "AI Red Team setup with Azure OpenAI converters, "
-            "composite harm/objective scorers, and adversarial targets"
+            "AI Red Team setup with Azure OpenAI converters, composite harm/objective scorers, and adversarial targets"
         )
 
     @property

@@ -615,7 +615,6 @@ def test_add_message_pieces_to_memory_updates_sequence(
 def test_add_message_pieces_to_memory_updates_sequence_with_prev_conversation(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
-
     for conversation in sample_conversations:
         conversation.conversation_id = sample_conversations[0].conversation_id
         conversation._role = sample_conversations[0]._role
@@ -637,7 +636,6 @@ def test_add_message_pieces_to_memory_updates_sequence_with_prev_conversation(
 def test_insert_prompt_memories_inserts_embedding(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
-
     request = Message(message_pieces=[sample_conversations[0]])
 
     embedding_mock = MagicMock()
@@ -648,7 +646,6 @@ def test_insert_prompt_memories_inserts_embedding(
         patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory"),
         patch("pyrit.memory.sqlite_memory.SQLiteMemory._add_embeddings_to_memory") as mock_embedding,
     ):
-
         sqlite_instance.add_message_to_memory(request=request)
 
         assert mock_embedding.called
@@ -658,7 +655,6 @@ def test_insert_prompt_memories_inserts_embedding(
 def test_insert_prompt_memories_not_inserts_embedding(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
-
     request = Message(message_pieces=[sample_conversations[0]])
 
     embedding_mock = MagicMock()
@@ -670,7 +666,6 @@ def test_insert_prompt_memories_not_inserts_embedding(
         patch("pyrit.memory.sqlite_memory.SQLiteMemory.add_message_pieces_to_memory"),
         patch("pyrit.memory.sqlite_memory.SQLiteMemory._add_embeddings_to_memory") as mock_embedding,
     ):
-
         sqlite_instance.add_message_to_memory(request=request)
 
         assert mock_embedding.assert_not_called
@@ -783,7 +778,6 @@ def test_get_message_pieces_id(sqlite_instance: MemoryInterface):
 
 
 def test_get_message_pieces_attack(sqlite_instance: MemoryInterface):
-
     attack1 = PromptSendingAttack(objective_target=MagicMock())
     attack2 = PromptSendingAttack(objective_target=MagicMock())
 

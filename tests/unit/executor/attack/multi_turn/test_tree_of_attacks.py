@@ -275,7 +275,7 @@ class TestHelpers:
         mock_dataset = MagicMock()
         mock_dataset.seeds = mock_seed_prompts
 
-        with patch("pyrit.models.seed_dataset.SeedDataset.from_yaml_file", return_value=mock_dataset):
+        with patch("pyrit.models.seeds.seed_dataset.SeedDataset.from_yaml_file", return_value=mock_dataset):
             attack._load_adversarial_prompts()
 
 
@@ -921,7 +921,6 @@ class TestTreeOfAttacksNode:
         with patch.object(
             node, "_generate_red_teaming_prompt_async", new_callable=AsyncMock, return_value=test_prompt
         ) as red_teaming_mock:
-
             await node.send_prompt_async(objective="Test objective")
 
         # Verify off-topic detection worked

@@ -13,8 +13,6 @@ from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
-    HarmScorerEvaluator,
-    HarmScorerMetrics,
     Scorer,
     ScorerPromptValidator,
     TrueFalseScorer,
@@ -143,6 +141,9 @@ class MockFloatScorer(Scorer):
         for score in scores:
             assert 0 <= float(score.score_value) <= 1
 
+    def get_scorer_metrics(self):
+        return None
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bad_json", [BAD_JSON, KEY_ERROR_JSON, KEY_ERROR2_JSON])
@@ -255,7 +256,6 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
 
 @pytest.mark.asyncio
 async def test_scorer_send_chat_target_async_good_response(good_json):
-
     chat_target = MagicMock(PromptChatTarget)
 
     good_json_resp = Message(
@@ -280,7 +280,6 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
 
 @pytest.mark.asyncio
 async def test_scorer_remove_markdown_json_called(good_json):
-
     chat_target = MagicMock(PromptChatTarget)
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
@@ -443,7 +442,6 @@ def test_scorer_extract_task_from_response(patch_central_database):
     ]
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory):
-
         extracted_task = scorer._extract_objective_from_response(response_piece.to_message())
         assert "User's question about the universe" in extracted_task
 
@@ -990,29 +988,6 @@ async def test_score_response_async_empty_lists():
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
-
-
-def test_get_scorer_metrics(tmp_path):
-
-    # Create a fake metrics file
-    metrics = HarmScorerMetrics(
-        mean_absolute_error=0.1,
-        mae_standard_error=0.01,
-        t_statistic=1.0,
-        p_value=0.05,
-        krippendorff_alpha_combined=0.8,
-        krippendorff_alpha_humans=0.7,
-        krippendorff_alpha_model=0.9,
-    )
-    metrics_path = tmp_path / "metrics.json"
-    with open(metrics_path, "w") as f:
-        f.write(metrics.to_json())
-    scorer = MagicMock(spec=Scorer)
-    evaluator = HarmScorerEvaluator(scorer)
-    # Patch _get_metrics_path to return our temp file
-    with patch.object(evaluator, "_get_metrics_path", return_value=metrics_path):
-        loaded = evaluator.get_scorer_metrics("any_dataset")
-        assert loaded == metrics
 
 
 @pytest.mark.asyncio

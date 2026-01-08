@@ -3,7 +3,6 @@
 from typing import MutableSequence, Sequence
 
 import pytest
-from unit.mocks import get_sample_conversation_entries
 
 from pyrit.memory import MemoryEmbedding, PromptMemoryEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
@@ -13,6 +12,7 @@ from pyrit.models import (
     EmbeddingSupport,
     EmbeddingUsageInformation,
 )
+from unit.mocks import get_sample_conversation_entries
 
 DEFAULT_EMBEDDING_DATA = EmbeddingData(embedding=[0.0], index=0, object="mock_object")
 

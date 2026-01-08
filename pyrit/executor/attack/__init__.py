@@ -3,63 +3,62 @@
 
 """Attack executor module."""
 
-from pyrit.executor.attack.core import (
-    AttackStrategy,
-    AttackContext,
-    AttackConverterConfig,
-    AttackParameters,
-    AttackScoringConfig,
-    AttackAdversarialConfig,
-    AttackExecutor,
-    AttackExecutorResult,
-    PrependedConversationConfig,
-)
-
-from pyrit.executor.attack.single_turn import (
-    SingleTurnAttackStrategy,
-    SingleTurnAttackContext,
-    PromptSendingAttack,
-    FlipAttack,
-    ContextComplianceAttack,
-    ManyShotJailbreakAttack,
-    RolePlayAttack,
-    RolePlayPaths,
-    SkeletonKeyAttack,
-)
-
-from pyrit.executor.attack.multi_turn import (
-    ConversationSession,
-    MultiTurnAttackStrategy,
-    MultiTurnAttackContext,
-    MultiPromptSendingAttack,
-    MultiPromptSendingAttackParameters,
-    RedTeamingAttack,
-    RTASystemPromptPaths,
-    CrescendoAttack,
-    CrescendoAttackContext,
-    CrescendoAttackResult,
-    TAPAttack,
-    TreeOfAttacksWithPruningAttack,
-    TAPAttackContext,
-    TAPAttackResult,
-)
-
 from pyrit.executor.attack.component import (
     ConversationManager,
     ConversationState,
     ObjectiveEvaluator,
+    PrependedConversationConfig,
+)
+from pyrit.executor.attack.core import (
+    AttackAdversarialConfig,
+    AttackContext,
+    AttackConverterConfig,
+    AttackExecutor,
+    AttackExecutorResult,
+    AttackParameters,
+    AttackScoringConfig,
+    AttackStrategy,
+)
+from pyrit.executor.attack.multi_turn import (
+    ChunkedRequestAttack,
+    ChunkedRequestAttackContext,
+    ConversationSession,
+    CrescendoAttack,
+    CrescendoAttackContext,
+    CrescendoAttackResult,
+    MultiPromptSendingAttack,
+    MultiPromptSendingAttackParameters,
+    MultiTurnAttackContext,
+    MultiTurnAttackStrategy,
+    RedTeamingAttack,
+    RTASystemPromptPaths,
+    TAPAttack,
+    TAPAttackContext,
+    TAPAttackResult,
+    TreeOfAttacksWithPruningAttack,
     generate_simulated_conversation_async,
-    SimulatedConversationResult,
-    SimulatedTargetSystemPromptPaths,
 )
 
 # Import printer modules last to avoid circular dependencies
-from pyrit.executor.attack.printer import ConsoleAttackResultPrinter, AttackResultPrinter, MarkdownAttackResultPrinter
+from pyrit.executor.attack.printer import AttackResultPrinter, ConsoleAttackResultPrinter, MarkdownAttackResultPrinter
+from pyrit.executor.attack.single_turn import (
+    ContextComplianceAttack,
+    FlipAttack,
+    ManyShotJailbreakAttack,
+    PromptSendingAttack,
+    RolePlayAttack,
+    RolePlayPaths,
+    SingleTurnAttackContext,
+    SingleTurnAttackStrategy,
+    SkeletonKeyAttack,
+)
 
 __all__ = [
     "AttackStrategy",
     "AttackContext",
     "AttackParameters",
+    "ChunkedRequestAttack",
+    "ChunkedRequestAttackContext",
     "CrescendoAttack",
     "CrescendoAttackContext",
     "CrescendoAttackResult",
@@ -96,6 +95,4 @@ __all__ = [
     "AttackExecutorResult",
     "PrependedConversationConfig",
     "generate_simulated_conversation_async",
-    "SimulatedConversationResult",
-    "SimulatedTargetSystemPromptPaths",
 ]

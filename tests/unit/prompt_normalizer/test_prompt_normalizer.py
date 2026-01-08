@@ -257,7 +257,6 @@ async def test_send_prompt_async_adds_memory_twice(mock_memory_instance, seed_gr
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_no_converters_response(mock_memory_instance, seed_group, response: Message):
-
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 
@@ -271,7 +270,6 @@ async def test_send_prompt_async_no_converters_response(mock_memory_instance, se
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_converters_response(mock_memory_instance, seed_group, response: Message):
-
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=[response])
 

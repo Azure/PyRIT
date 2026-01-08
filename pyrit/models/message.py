@@ -24,7 +24,7 @@ class Message:
         message_pieces (Sequence[MessagePiece]): The list of message pieces.
     """
 
-    def __init__(self, message_pieces: Sequence[MessagePiece], *, skip_validation: Optional[bool] = False):
+    def __init__(self, message_pieces: Sequence[MessagePiece], *, skip_validation: Optional[bool] = False) -> None:
         if not message_pieces:
             raise ValueError("Message must have at least one message piece.")
         self.message_pieces = message_pieces
@@ -84,8 +84,7 @@ class Message:
         Returns api_role for backward compatibility.
         """
         warnings.warn(
-            "Message.role getter is deprecated. Use api_role for comparisons. "
-            "This property will be removed in 0.13.0.",
+            "Message.role getter is deprecated. Use api_role for comparisons. This property will be removed in 0.13.0.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -134,7 +133,7 @@ class Message:
             if piece._role == "assistant":
                 piece._role = "simulated_assistant"
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Validates the request response.
         """
@@ -145,7 +144,6 @@ class Message:
         sequence = self.message_pieces[0].sequence
         role = self.message_pieces[0]._role
         for message_piece in self.message_pieces:
-
             if message_piece.conversation_id != conversation_id:
                 raise ValueError("Conversation ID mismatch.")
 
