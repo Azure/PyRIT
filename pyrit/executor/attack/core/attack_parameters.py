@@ -232,13 +232,14 @@ class AttackParameters:
         )
 
         # Attach from_seed_group_async that delegates to the parent classmethod
-        # Access the underlying function via __dict__ to get the classmethod descriptor,
-        # then use __func__ to get the actual function. This is portable across Python versions.
-        original_method = AttackParameters.__dict__["from_seed_group_async"].__func__
+        # Get the underlying function from __dict__. In Python 3.13+, classmethod descriptors
+        # are stored directly; in Python 3.11, the function may already be unwrapped.
+        _dict_entry = AttackParameters.__dict__["from_seed_group_async"]
+        original_func = _dict_entry.__func__ if isinstance(_dict_entry, classmethod) else _dict_entry
 
         async def from_seed_group_async_wrapper(c, *, seed_group, adversarial_chat=None, objective_scorer=None, **ov):
             # Call AttackParameters.from_seed_group_async with the new class type
-            return await original_method(
+            return await original_func(
                 c, seed_group=seed_group, adversarial_chat=adversarial_chat, objective_scorer=objective_scorer, **ov
             )
 
