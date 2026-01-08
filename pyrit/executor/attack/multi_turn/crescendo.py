@@ -9,7 +9,6 @@ from typing import Optional, Union
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
-from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -19,6 +18,7 @@ from pyrit.executor.attack.component import (
     ConversationManager,
     ConversationState,
     ObjectiveEvaluator,
+    PrependedConversationConfig,
 )
 from pyrit.executor.attack.core import (
     AttackAdversarialConfig,
@@ -31,6 +31,7 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     MultiTurnAttackStrategy,
 )
 from pyrit.memory.central_memory import CentralMemory
+from pyrit.message_normalizer import ConversationContextNormalizer
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -123,6 +124,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_backtracks: int = 10,
         max_turns: int = 10,
+        prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ) -> None:
         """
         Initialize the Crescendo attack strategy.
@@ -137,6 +139,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for prompts.
             max_backtracks (int): Maximum number of backtracks allowed.
             max_turns (int): Maximum number of turns allowed.
+            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
+                Configuration for how to process prepended conversations. Controls converter
+                application by role, message normalization, and non-chat target behavior.
 
         Raises:
             ValueError: If objective_target is not a PromptChatTarget.
@@ -212,6 +217,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._max_backtracks = max_backtracks
         self._max_turns = max_turns
 
+        # Store the prepended conversation configuration
+        self._prepended_conversation_config = prepended_conversation_config
+
     def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
         """
         Get the attack scoring configuration used by this strategy.
@@ -267,36 +275,32 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         self._logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
-        # Update the conversation state
-        conversation_state = await self._conversation_manager.update_conversation_state_async(
+        # Initialize context with prepended conversation (handles memory labels, turns, next_message)
+        conversation_state = await self._conversation_manager.initialize_context_async(
+            context=context,
             target=self._objective_target,
-            max_turns=self._max_turns,
             conversation_id=context.session.conversation_id,
-            prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
-            response_converters=self._response_converters,
+            prepended_conversation_config=self._prepended_conversation_config,
+            max_turns=self._max_turns,
+            memory_labels=self._memory_labels,
         )
 
-        # Update turns based on prepended conversation
-        context.executed_turns = conversation_state.turn_count
+        # Extract Crescendo-specific state from scores (refusal detection, objective score)
+        context.refused_text, context.last_score = self._extract_scores_from_state(conversation_state, context)
 
-        # Handle prepended conversation
-        refused_text, objective_score = self._retrieve_refusal_text_and_objective_score(conversation_state)
-        custom_prompt_text = self._retrieve_custom_prompt_from_prepended_conversation(conversation_state)
-        if custom_prompt_text:
-            context.next_message = Message.from_prompt(prompt=custom_prompt_text, role="user")
-        context.last_score = objective_score
+        # Set up adversarial chat with prepended conversation
+        adversarial_chat_context: Optional[str] = None
+        if context.prepended_conversation:
+            # Build context string for system prompt
+            normalizer = ConversationContextNormalizer()
+            adversarial_chat_context = await normalizer.normalize_string_async(context.prepended_conversation)
 
-        # Store refused text in context
-        context.refused_text = refused_text
-
-        # Update memory labels
-        context.memory_labels = combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels or {})
-
-        # Set the system prompt for adversarial chat
+        # Set the system prompt for adversarial chat using context
         system_prompt = self._adversarial_chat_system_prompt_template.render_template_value(
             objective=context.objective,
             max_turns=self._max_turns,
+            conversation_context=adversarial_chat_context,
         )
 
         self._adversarial_chat.set_system_prompt(
@@ -305,6 +309,9 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             attack_identifier=self.get_identifier(),
             labels=context.memory_labels,
         )
+
+        # Initialize backtrack count in context
+        context.backtrack_count = 0
 
         # Initialize backtrack count in context
         context.backtrack_count = 0
@@ -674,15 +681,24 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._logger.debug(f"Backtracked conversation from {conversation_id} to {new_conversation_id}")
         return new_conversation_id
 
-    def _retrieve_refusal_text_and_objective_score(self, state: ConversationState) -> tuple[str, Optional[Score]]:
+    def _extract_scores_from_state(
+        self, state: ConversationState, context: CrescendoAttackContext
+    ) -> tuple[str, Optional[Score]]:
         """
-        Retrieve refusal text and objective score from the last assistant message in prepended conversation.
+        Extract refusal text and objective score from the conversation state.
+
+        This is Crescendo-specific logic that interprets the scores from the last
+        assistant message to determine if a refusal occurred and get the objective score.
 
         Args:
-            state (ConversationState): The conversation state.
+            state (ConversationState): The conversation state with scores.
+            context (CrescendoAttackContext): The attack context.
 
         Returns:
             tuple: (refused_text, objective_score)
+                - refused_text: The text that was refused (from context.next_message if
+                  there's a refusal), empty string if no refusal
+                - objective_score: The objective score if found, None otherwise
         """
         refused_text = ""
         objective_score = None
@@ -692,32 +708,16 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
             if scorer_type == self._refusal_scorer.get_identifier()["__type__"]:
                 self._logger.debug(f"Prepended response refusal score: {score.get_value()}")
-                if score.get_value():
-                    refused_text = state.last_user_message or ""
+                # If there was a refusal and we have a next_message (unanswered user message),
+                # use that as the refused text
+                if score.get_value() and context.next_message:
+                    refused_text = context.next_message.get_value() or ""
 
             elif scorer_type == self._objective_scorer.get_identifier()["__type__"]:
                 self._logger.debug(f"Prepended response objective score: {score.get_value()}")
                 objective_score = score
 
         return refused_text, objective_score
-
-    def _retrieve_custom_prompt_from_prepended_conversation(self, state: ConversationState) -> Optional[str]:
-        """
-        Retrieve a custom prompt from the last user message in prepended conversation.
-
-        A message is considered a custom prompt if it exists and has no associated
-        assistant message scores (meaning it hasn't been responded to yet).
-
-        Args:
-            state (ConversationState): The conversation state.
-
-        Returns:
-            Optional[str]: The custom prompt if applicable.
-        """
-        if state.last_user_message and not state.last_assistant_message_scores:
-            self._logger.info("Using last user message from prepended conversation as attack prompt")
-            return state.last_user_message
-        return None
 
     def _set_adversarial_chat_system_prompt_template(self, *, system_prompt_template_path: Union[Path, str]) -> None:
         """
@@ -752,7 +752,8 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         # If custom message is set, use it and bypass adversarial chat generation
         if context.next_message:
             self._logger.debug("Using custom message, bypassing adversarial chat")
-            message = context.next_message
+            # Duplicate to ensure fresh IDs (avoids conflicts if message was already in memory)
+            message = context.next_message.duplicate_message()
             context.next_message = None  # Clear for future turns
             return message
 

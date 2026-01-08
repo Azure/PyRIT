@@ -11,7 +11,7 @@ import numpy
 from PIL import Image
 
 from pyrit.models import PromptDataType, data_serializer_factory
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +101,9 @@ class TransparencyAttackConverter(PromptConverter):
         foreground and hidden background layers. When mismatched, the background becomes visible to the human eye
         and the vision algorithm."`
     """
+
+    SUPPORTED_INPUT_TYPES = ("image_path",)
+    SUPPORTED_OUTPUT_TYPES = ("image_path",)
 
     @staticmethod
     def _validate_input_image(path: str) -> None:
@@ -275,9 +278,3 @@ class TransparencyAttackConverter(PromptConverter):
 
         image_path = await self._save_blended_image(background_tensor, alpha)
         return ConverterResult(output_text=image_path, output_type="image_path")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "image_path"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "image_path"

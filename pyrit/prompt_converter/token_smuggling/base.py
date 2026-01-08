@@ -6,7 +6,7 @@ import logging
 from typing import Literal, Tuple
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,9 @@ class SmugglerConverter(PromptConverter, abc.ABC):
     Provides the common asynchronous conversion interface and enforces
     implementation of encode_message and decode_message in subclasses.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self, action: Literal["encode", "decode"] = "encode") -> None:
         """

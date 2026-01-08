@@ -151,8 +151,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                 send_button_selector='button[type="submit"]',
                 ai_messages_selector='div[data-testid="copilot-message-div"]',
                 ai_messages_group_selector=(
-                    'div[data-testid="copilot-message-div"] > div > div > div > '
-                    "div > div > div > div > div > div > div"
+                    'div[data-testid="copilot-message-div"] > div > div > div > div > div > div > div > div > div > div'
                 ),
                 text_content_selector="div > p",
                 plus_button_dropdown_selector='button[aria-label="Add content"]',
@@ -346,7 +345,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         for group_idx, msg_group in enumerate(ai_message_groups):
             text_elements = await msg_group.query_selector_all(text_selector)
-            logger.debug(f"Found {len(text_elements)} text elements in group {group_idx+1}")
+            logger.debug(f"Found {len(text_elements)} text elements in group {group_idx + 1}")
 
             for text_elem in text_elements:
                 text = await text_elem.text_content()
@@ -410,7 +409,7 @@ class PlaywrightCopilotTarget(PromptTarget):
         """
         for i in range(seconds):
             await asyncio.sleep(1)
-            logger.debug(f"Minimum wait: {i+1}/{seconds} seconds")
+            logger.debug(f"Minimum wait: {i + 1}/{seconds} seconds")
 
     async def _wait_for_images_to_stabilize(
         self, selectors: CopilotSelectors, ai_message_groups: list, initial_group_count: int = 0
@@ -495,25 +494,25 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         for group_idx, msg_group in enumerate(ai_message_groups):
             iframes = await msg_group.query_selector_all(self.SELECTOR_IFRAME)
-            logger.debug(f"Found {len(iframes)} iframes in message group {group_idx+1}")
+            logger.debug(f"Found {len(iframes)} iframes in message group {group_idx + 1}")
 
             for idx, iframe_element in enumerate(iframes):
                 try:
                     iframe_id = await iframe_element.get_attribute(self.ATTR_ID)
-                    logger.debug(f"Checking iframe {idx+1} in group {group_idx+1} with id: {iframe_id}")
+                    logger.debug(f"Checking iframe {idx + 1} in group {group_idx + 1} with id: {iframe_id}")
 
                     content_frame = await iframe_element.content_frame()
                     if content_frame:
                         iframe_imgs = await content_frame.query_selector_all(self.ARIA_LABEL_THUMBNAIL)
                         logger.debug(
-                            f"Found {len(iframe_imgs)} thumbnail images in iframe {idx+1} of group {group_idx+1}"
+                            f"Found {len(iframe_imgs)} thumbnail images in iframe {idx + 1} of group {group_idx + 1}"
                         )
                         if iframe_imgs:
                             iframe_images.extend(iframe_imgs)
                     else:
-                        logger.debug(f"Could not access content frame for iframe {idx+1} in group {group_idx+1}")
+                        logger.debug(f"Could not access content frame for iframe {idx + 1} in group {group_idx + 1}")
                 except Exception as e:
-                    logger.debug(f"Error accessing iframe {idx+1} in group {group_idx+1}: {e}")
+                    logger.debug(f"Error accessing iframe {idx + 1} in group {group_idx + 1}: {e}")
 
         return iframe_images
 
@@ -534,10 +533,10 @@ class PlaywrightCopilotTarget(PromptTarget):
         for idx, msg_group in enumerate(ai_message_groups):
             imgs = await msg_group.query_selector_all(self.ARIA_LABEL_THUMBNAIL)
             if imgs:
-                logger.debug(f"Found {len(imgs)} img elements in message group {idx+1}")
+                logger.debug(f"Found {len(imgs)} img elements in message group {idx + 1}")
                 image_elements.extend(imgs)
             else:
-                logger.debug(f"No imgs with button selector in message group {idx+1}")
+                logger.debug(f"No imgs with button selector in message group {idx + 1}")
 
         logger.debug(f"Total {len(image_elements)} img elements found across all message groups")
 
@@ -549,7 +548,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                 for idx, ai_message in enumerate(all_ai_messages):
                     imgs = await ai_message.query_selector_all(self.ARIA_LABEL_THUMBNAIL)
                     if imgs:
-                        logger.debug(f"Found {len(imgs)} img elements in AI message {idx+1}")
+                        logger.debug(f"Found {len(imgs)} img elements in AI message {idx + 1}")
                         image_elements.extend(imgs)
 
                 logger.debug(f"Total {len(image_elements)} img elements found using M365 button selector")
@@ -559,7 +558,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                     for idx, ai_message in enumerate(all_ai_messages):
                         imgs = await ai_message.query_selector_all(self.SELECTOR_IMAGE)
                         if imgs:
-                            logger.debug(f"Found {len(imgs)} img elements using generic selector in message {idx+1}")
+                            logger.debug(f"Found {len(imgs)} img elements using generic selector in message {idx + 1}")
                             image_elements.extend(imgs)
 
         return image_elements
@@ -578,12 +577,12 @@ class PlaywrightCopilotTarget(PromptTarget):
 
         for i, img_elem in enumerate(image_elements):
             src = await img_elem.get_attribute(self.ATTR_SRC)
-            logger.debug(f"Image {i+1} src: {src[:100] if src else None}...")
+            logger.debug(f"Image {i + 1} src: {src[:100] if src else None}...")
 
             if src:
                 try:
                     if src.startswith(self.IMAGE_DATA_URL_PREFIX):
-                        logger.debug(f"Processing data URL image {i+1}")
+                        logger.debug(f"Processing data URL image {i + 1}")
                         # Extract base64 data from data URL
                         header, data = src.split(",", 1)
 
@@ -594,12 +593,12 @@ class PlaywrightCopilotTarget(PromptTarget):
                         logger.debug(f"Saved image to: {image_path}")
                         image_pieces.append((image_path, "image_path"))
                     else:
-                        logger.debug(f"Image {i+1} is not a data URL, starts with: {src[:20]}")
+                        logger.debug(f"Image {i + 1} is not a data URL, starts with: {src[:20]}")
                 except Exception as e:
-                    logger.warning(f"Failed to extract image {i+1}: {e}")
+                    logger.warning(f"Failed to extract image {i + 1}: {e}")
                     continue
             else:
-                logger.debug(f"Image {i+1} has no src attribute")
+                logger.debug(f"Image {i + 1} has no src attribute")
 
         return image_pieces
 
@@ -862,5 +861,5 @@ class PlaywrightCopilotTarget(PromptTarget):
             if piece_type not in self.SUPPORTED_DATA_TYPES:
                 supported_types = ", ".join(self.SUPPORTED_DATA_TYPES)
                 raise ValueError(
-                    f"This target only supports {supported_types} prompt input. " f"Piece {i} has type: {piece_type}."
+                    f"This target only supports {supported_types} prompt input. Piece {i} has type: {piece_type}."
                 )

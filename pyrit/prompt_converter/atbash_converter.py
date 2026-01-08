@@ -6,7 +6,7 @@ import string
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class AtbashConverter(PromptConverter):
@@ -19,6 +19,9 @@ class AtbashConverter(PromptConverter):
 
     'Hello 123' would encode to 'Svool 876'.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self, *, append_description: bool = False) -> None:
         """
@@ -51,12 +54,6 @@ class AtbashConverter(PromptConverter):
         else:
             output_text = self._atbash(prompt)
         return ConverterResult(output_text=output_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def _atbash(self, text: str) -> str:
         def reverse(alphabet: str) -> str:

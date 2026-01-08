@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from datetime import datetime, timedelta
+from typing import cast
 from urllib.parse import urlparse
 
 from azure.identity.aio import DefaultAzureCredential
@@ -74,7 +75,6 @@ class AzureStorageAuth:
 
         try:
             async with BlobServiceClient(account_url=account_url, credential=credential) as blob_service_client:
-
                 user_delegation_key = await AzureStorageAuth.get_user_delegation_key(
                     blob_service_client=blob_service_client
                 )
@@ -89,11 +89,11 @@ class AzureStorageAuth:
                     account_name=storage_account_name,
                     container_name=container_name,
                     user_delegation_key=user_delegation_key,
-                    permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True),
+                    permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True),  # type: ignore
                     expiry=expiry_time,
                     start=start_time,
                 )
         finally:
             await credential.close()
 
-        return sas_token
+        return cast(str, sas_token)

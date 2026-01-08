@@ -3,12 +3,13 @@
 
 import logging
 import uuid
-from typing import Optional
+from typing import Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.utils import combine_dict, warn_if_set
-from pyrit.executor.attack.component import ConversationManager
-from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.common.utils import warn_if_set
+from pyrit.executor.attack.component import ConversationManager, PrependedConversationConfig
+from pyrit.executor.attack.core.attack_config import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
@@ -56,6 +57,8 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
+        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -66,12 +69,23 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
             max_attempts_on_failure (int): Maximum number of attempts to retry on failure.
+            params_type (Type[AttackParamsT]): The type of parameters this strategy accepts.
+                Defaults to AttackParameters. Use AttackParameters.excluding() to create
+                a params type that rejects certain fields.
+            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
+                Configuration for how to process prepended conversations. Controls converter
+                application by role, message normalization, and non-chat target behavior.
 
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(objective_target=objective_target, logger=logger, context_type=SingleTurnAttackContext)
+        super().__init__(
+            objective_target=objective_target,
+            logger=logger,
+            context_type=SingleTurnAttackContext,
+            params_type=params_type,
+        )
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -99,6 +113,9 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             raise ValueError("max_attempts_on_failure must be a non-negative integer")
 
         self._max_attempts_on_failure = max_attempts_on_failure
+
+        # Store the prepended conversation configuration
+        self._prepended_conversation_config = prepended_conversation_config
 
     def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
         """
@@ -135,16 +152,14 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Ensure the context has a conversation ID
         context.conversation_id = str(uuid.uuid4())
 
-        # Combine memory labels from context and attack strategy
-        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
-
-        # Process prepended conversation if provided
-        await self._conversation_manager.update_conversation_state_async(
+        # Initialize context with prepended conversation and merged labels
+        await self._conversation_manager.initialize_context_async(
+            context=context,
             target=self._objective_target,
             conversation_id=context.conversation_id,
-            prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
-            response_converters=self._response_converters,
+            prepended_conversation_config=self._prepended_conversation_config,
+            memory_labels=self._memory_labels,
         )
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
@@ -176,7 +191,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         # Execute with retries
         for attempt in range(self._max_attempts_on_failure + 1):
-            self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
+            self._logger.debug(f"Attempt {attempt + 1}/{self._max_attempts_on_failure + 1}")
 
             # Prepare a fresh message for each attempt to avoid duplicate ID errors in database
             message = self._get_message(context)
@@ -184,7 +199,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             # Send the prompt
             response = await self._send_prompt_to_objective_target_async(message=message, context=context)
             if not response:
-                self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
+                self._logger.warning(f"No response received on attempt {attempt + 1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
 
             # Score the response including auxiliary and objective scoring

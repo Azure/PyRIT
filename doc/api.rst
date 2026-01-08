@@ -43,23 +43,6 @@ API Reference
     :toctree: _autosummary/
 
 
-:py:mod:`pyrit.chat_message_normalizer`
-=======================================
-
-.. automodule:: pyrit.chat_message_normalizer
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    ChatMessageNormalizer
-    ChatMessageNop
-    GenericSystemSquash
-    ChatMessageNormalizerChatML
-    ChatMessageNormalizerTokenizerTemplate
-
 
 :py:mod:`pyrit.cli`
 =======================================
@@ -105,7 +88,6 @@ API Reference
     get_required_value
     is_in_ipython_session
     make_request_and_raise_if_error_async
-    print_chat_messages_with_color
     reset_default_values
     set_default_value
     Singleton
@@ -180,9 +162,14 @@ API Reference
     AttackContext
     AttackConverterConfig
     AttackExecutor
+    AttackExecutorResult
+    AttackParameters
+    AttackResultPrinter
     AttackScoringConfig
     AttackStrategy
-    AttackResultPrinter
+    ConsoleAttackResultPrinter
+    ChunkedRequestAttack
+    ChunkedRequestAttackContext
     ContextComplianceAttack
     ConversationManager
     ConversationSession
@@ -191,27 +178,29 @@ API Reference
     CrescendoAttackContext
     CrescendoAttackResult
     FlipAttack
+    generate_simulated_conversation_async
     ManyShotJailbreakAttack
     MarkdownAttackResultPrinter
     MultiPromptSendingAttack
-    MultiPromptSendingAttackContext
+    MultiPromptSendingAttackParameters
     MultiTurnAttackContext
     MultiTurnAttackStrategy
-    AttackExecutorResult
     ObjectiveEvaluator
+    PrependedConversationConfig
     PromptSendingAttack
-    RolePlayPaths
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
+    SimulatedConversationResult
+    SimulatedTargetSystemPromptPaths
+    RolePlayPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
+    SkeletonKeyAttack
     TAPAttack
     TAPAttackContext
     TAPAttackResult
     TreeOfAttacksWithPruningAttack
-    SkeletonKeyAttack
-    ConsoleAttackResultPrinter
 
 :py:mod:`pyrit.executor.promptgen`
 ==================================
@@ -294,6 +283,24 @@ API Reference
     SeedEntry
     SQLiteMemory
 
+:py:mod:`pyrit.message_normalizer`
+==================================
+
+.. automodule:: pyrit.message_normalizer
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    MessageListNormalizer
+    MessageStringNormalizer
+    GenericSystemSquashNormalizer
+    TokenizerTemplateNormalizer
+    ConversationContextNormalizer
+    ChatMessageNormalizer
+
 :py:mod:`pyrit.models`
 ======================
 
@@ -323,14 +330,15 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
+    get_all_harm_definitions
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
+    HarmDefinition
     Identifier
     ImagePathDataTypeSerializer
     AllowedCategories
     AttackOutcome
     AttackResult
-    DecomposedSeedGroup
     Message
     MessagePiece
     PromptDataType
@@ -338,10 +346,12 @@ API Reference
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
+    ScaleDescription
     ScenarioIdentifier
     ScenarioResult
     Score
     ScoreType
+    Seed
     SeedDataset
     SeedGroup
     SeedObjective
@@ -392,6 +402,7 @@ API Reference
     EmojiConverter
     FirstLetterConverter
     FlipConverter
+    get_converter_modalities
     HumanInTheLoopConverter
     ImageCompressionConverter
     IndexSelectionStrategy
@@ -404,6 +415,7 @@ API Reference
     MathPromptConverter
     MorseConverter
     NatoConverter
+    NegationTrapConverter
     NoiseConverter
     PDFConverter
     PersuasionConverter
@@ -514,6 +526,7 @@ API Reference
 
     AzureContentFilterScorer
     BatchScorer
+    ConsoleScorerPrinter
     ContentClassifierPaths
     ConversationScorer
     create_conversation_scorer
@@ -531,6 +544,7 @@ API Reference
     HumanLabeledDataset
     HumanLabeledEntry
     InsecureCodeScorer
+    LikertScaleEvalFiles
     LikertScalePaths
     MarkdownInjectionScorer
     MetricsType
@@ -541,11 +555,17 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RegistryUpdateBehavior
     Scorer
+    ScorerEvalDatasetFiles
     ScorerEvaluator
     ScorerIdentifier
     ScorerMetrics
+    ScorerMetricsWithIdentity
+    ScorerPrinter
     ScorerPromptValidator
+    get_all_harm_metrics
+    get_all_objective_metrics
     SelfAskCategoryScorer
     SelfAskGeneralFloatScaleScorer
     SelfAskGeneralTrueFalseScorer
@@ -577,11 +597,55 @@ API Reference
     :toctree: _autosummary/
 
     AtomicAttack
-    EncodingScenario
-    FoundryStrategy
-    FoundryScenario
+    DatasetConfiguration
     Scenario
+    ScenarioCompositeStrategy
     ScenarioStrategy
+
+:py:mod:`pyrit.scenario.airt`
+=============================
+
+.. automodule:: pyrit.scenario.airt
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    ContentHarms
+    ContentHarmsStrategy
+    Cyber
+    CyberStrategy
+
+:py:mod:`pyrit.scenario.foundry`
+================================
+
+.. automodule:: pyrit.scenario.foundry
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    Foundry
+    FoundryScenario
+    FoundryStrategy
+
+:py:mod:`pyrit.scenario.garak`
+==============================
+
+.. automodule:: pyrit.scenario.garak
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    Encoding
+    EncodingStrategy
 
 :py:mod:`pyrit.setup`
 =====================

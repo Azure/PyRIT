@@ -4,13 +4,16 @@
 from art import text2art
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class AsciiArtConverter(PromptConverter):
     """
     Uses the `art` package to convert text into ASCII art.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self, font="rand"):
         """
@@ -27,9 +30,3 @@ class AsciiArtConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         return ConverterResult(output_text=text2art(prompt, font=self.font_value), output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

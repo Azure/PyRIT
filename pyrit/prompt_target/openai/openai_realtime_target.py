@@ -20,7 +20,8 @@ from pyrit.models import (
     construct_response_from_request,
     data_serializer_factory,
 )
-from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
+from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ class RealtimeTarget(OpenAITarget):
         Initialize the Realtime target with specified parameters.
 
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
                 If no value is provided, the OPENAI_REALTIME_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
                 Defaults to the `OPENAI_REALTIME_ENDPOINT` environment variable.
@@ -101,6 +102,7 @@ class RealtimeTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_REALTIME_MODEL"
         self.endpoint_environment_variable = "OPENAI_REALTIME_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_REALTIME_API_KEY"
+        self.underlying_model_environment_variable = "OPENAI_REALTIME_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -279,7 +281,7 @@ class RealtimeTarget(OpenAITarget):
         # Look for a system message at the beginning of the conversation
         if conversation and len(conversation) > 0:
             first_message = conversation[0]
-            if first_message.message_pieces and first_message.message_pieces[0].role == "system":
+            if first_message.message_pieces and first_message.message_pieces[0].api_role == "system":
                 return first_message.message_pieces[0].converted_value
 
         # Return default system prompt if none found in conversation

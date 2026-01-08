@@ -14,7 +14,6 @@ from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
-    DecomposedSeedGroup,
     SeedDataset,
     SeedGroup,
     SeedObjective,
@@ -722,18 +721,6 @@ metadata:
     assert seed_prompt.metadata["version"] == 1
 
 
-def test_seed_group_single_seed_prompt_creates_objective():
-    prompt_dict = {"value": "Test prompt from dict", "is_objective": True}
-
-    group = SeedGroup(seeds=[prompt_dict])
-
-    # Should create objective from the single prompt
-    assert group.objective is not None
-
-    # Prompts list should be empty
-    assert len(group.prompts) == 0
-
-
 def test_seed_group_dict_with_is_objective_true():
     """Test that a dictionary with is_objective=True creates an objective."""
     prompt_dict = {
@@ -787,24 +774,6 @@ def test_seed_group_dict_without_is_objective():
     assert group.objective is None
 
 
-def test_seed_group_multiple_objectives_from_seed_objective():
-    """Test that multiple SeedObjective instances raises ValueError."""
-    objective1 = SeedObjective(value="First objective")
-    objective2 = SeedObjective(value="Second objective")
-
-    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
-        SeedGroup(seeds=[objective1, objective2])
-
-
-def test_seed_group_multiple_objectives_from_dict():
-    """Test that multiple dictionaries with is_objective=True raises ValueError."""
-    dict1 = {"value": "First dict objective", "data_type": "text", "is_objective": True}
-    dict2 = {"value": "Second dict objective", "data_type": "text", "is_objective": True}
-
-    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
-        SeedGroup(seeds=[dict1, dict2])
-
-
 def test_seed_group_mixed_objective_types():
     """Test that mixing SeedObjective and dict with is_objective=True raises ValueError."""
     objective = SeedObjective(value="Seed objective")
@@ -834,138 +803,169 @@ def test_seed_group_mixed_prompt_types():
     assert group.objective.value == "Test objective"
 
 
-def test_to_attack_parameters_single_turn_no_objective():
-    """Test decomposing a single-turn SeedGroup with no objective."""
+def test_next_message_single_turn_no_objective():
+    """Test next_message property for a single-turn SeedGroup with no objective."""
     prompt = SeedPrompt(value="Hello", data_type="text", sequence=0, role="user")
     group = SeedGroup(seeds=[prompt])
 
-    result = group.to_attack_parameters()
-
-    assert isinstance(result, DecomposedSeedGroup)
-    assert result.objective is None
-    assert result.prepended_conversation is None
-    assert result.current_turn_message is not None
-    assert len(result.current_turn_message.message_pieces) == 1
-    assert result.current_turn_message.get_value() == "Hello"
+    assert group.objective is None
+    assert group.prepended_conversation is None
+    assert group.next_message is not None
+    assert len(group.next_message.message_pieces) == 1
+    assert group.next_message.get_value() == "Hello"
 
 
-def test_to_attack_parameters_single_turn_with_objective():
-    """Test decomposing a single-turn SeedGroup with an objective."""
+def test_next_message_single_turn_with_objective():
+    """Test next_message property for a single-turn SeedGroup with an objective."""
     prompt = SeedPrompt(value="Hello", data_type="text", sequence=0, role="user")
     objective = SeedObjective(value="Test objective")
     group = SeedGroup(seeds=[prompt, objective])
 
-    result = group.to_attack_parameters()
-
-    assert isinstance(result, DecomposedSeedGroup)
-    assert result.objective == "Test objective"
-    assert result.prepended_conversation is None
-    assert result.current_turn_message is not None
-    assert len(result.current_turn_message.message_pieces) == 1
-    assert result.current_turn_message.get_value() == "Hello"
+    assert group.objective.value == "Test objective"
+    assert group.prepended_conversation is None
+    assert group.next_message is not None
+    assert len(group.next_message.message_pieces) == 1
+    assert group.next_message.get_value() == "Hello"
 
 
-def test_to_attack_parameters_multi_turn_no_objective():
-    """Test decomposing a multi-turn SeedGroup with no objective."""
+def test_prepended_conversation_multi_turn_no_objective():
+    """Test prepended_conversation property for a multi-turn SeedGroup with no objective."""
     prompt1 = SeedPrompt(value="Turn 1", data_type="text", sequence=0, role="user")
     prompt2 = SeedPrompt(value="Turn 2", data_type="text", sequence=1, role="assistant")
     prompt3 = SeedPrompt(value="Turn 3", data_type="text", sequence=2, role="user")
     group = SeedGroup(seeds=[prompt1, prompt2, prompt3])
 
-    result = group.to_attack_parameters()
-
-    assert isinstance(result, DecomposedSeedGroup)
-    assert result.objective is None
-    assert result.prepended_conversation is not None
-    assert len(result.prepended_conversation) == 2  # Two prior turns
-    assert result.prepended_conversation[0].get_value() == "Turn 1"
-    assert result.prepended_conversation[0].role == "user"
-    assert result.prepended_conversation[1].get_value() == "Turn 2"
-    assert result.prepended_conversation[1].role == "assistant"
-    assert result.current_turn_message is not None
-    assert len(result.current_turn_message.message_pieces) == 1
-    assert result.current_turn_message.get_value() == "Turn 3"
+    assert group.objective is None
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 2  # Two prior turns
+    assert group.prepended_conversation[0].get_value() == "Turn 1"
+    assert group.prepended_conversation[0].role == "user"
+    assert group.prepended_conversation[1].get_value() == "Turn 2"
+    assert group.prepended_conversation[1].role == "assistant"
+    assert group.next_message is not None
+    assert len(group.next_message.message_pieces) == 1
+    assert group.next_message.get_value() == "Turn 3"
 
 
-def test_to_attack_parameters_multi_turn_with_objective():
-    """Test decomposing a multi-turn SeedGroup with an objective."""
+def test_prepended_conversation_multi_turn_with_objective():
+    """Test prepended_conversation property for a multi-turn SeedGroup with an objective."""
     prompt1 = SeedPrompt(value="Turn 1", data_type="text", sequence=0, role="user")
     prompt2 = SeedPrompt(value="Turn 2", data_type="text", sequence=1, role="assistant")
     prompt3 = SeedPrompt(value="Turn 3", data_type="text", sequence=2, role="user")
     objective = SeedObjective(value="Multi-turn objective")
     group = SeedGroup(seeds=[prompt1, prompt2, prompt3, objective])
 
-    result = group.to_attack_parameters()
-
-    assert isinstance(result, DecomposedSeedGroup)
-    assert result.objective == "Multi-turn objective"
-    assert result.prepended_conversation is not None
-    assert len(result.prepended_conversation) == 2
-    assert result.current_turn_message is not None
-    assert len(result.current_turn_message.message_pieces) == 1
+    assert group.objective.value == "Multi-turn objective"
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 2
+    assert group.next_message is not None
+    assert len(group.next_message.message_pieces) == 1
 
 
-def test_to_attack_parameters_multi_part_single_turn():
-    """Test decomposing a single-turn SeedGroup with multiple parts in one turn."""
+def test_next_message_multi_part_single_turn():
+    """Test next_message property for a single-turn SeedGroup with multiple parts in one turn."""
     prompt1 = SeedPrompt(value="Part 1", data_type="text", sequence=0, role="user")
     prompt2 = SeedPrompt(value="Part 2", data_type="text", sequence=0, role="user")
     group = SeedGroup(seeds=[prompt1, prompt2])
 
-    result = group.to_attack_parameters()
-
-    assert isinstance(result, DecomposedSeedGroup)
-    assert result.objective is None
-    assert result.prepended_conversation is None
-    assert result.current_turn_message is not None
-    assert len(result.current_turn_message.message_pieces) == 2
+    assert group.objective is None
+    assert group.prepended_conversation is None
+    assert group.next_message is not None
+    assert len(group.next_message.message_pieces) == 2
 
 
-def test_to_attack_parameters_multi_part_last_turn():
+def test_next_message_multi_part_last_turn():
     """Test that the last turn can have multiple parts."""
     prompt1 = SeedPrompt(value="Turn 1", data_type="text", sequence=0, role="user")
     prompt2 = SeedPrompt(value="Turn 2 Part 1", data_type="text", sequence=1, role="user")
     prompt3 = SeedPrompt(value="Turn 2 Part 2", data_type="text", sequence=1, role="user")
     group = SeedGroup(seeds=[prompt1, prompt2, prompt3])
 
-    result = group.to_attack_parameters()
-
-    assert isinstance(result, DecomposedSeedGroup)
-    assert result.prepended_conversation is not None
-    assert len(result.prepended_conversation) == 1
-    assert result.prepended_conversation[0].get_value() == "Turn 1"
-    assert result.current_turn_message is not None
-    assert len(result.current_turn_message.message_pieces) == 2
-    assert result.current_turn_message.message_pieces[0].converted_value == "Turn 2 Part 1"
-    assert result.current_turn_message.message_pieces[1].converted_value == "Turn 2 Part 2"
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 1
+    assert group.prepended_conversation[0].get_value() == "Turn 1"
+    assert group.next_message is not None
+    assert len(group.next_message.message_pieces) == 2
+    assert group.next_message.message_pieces[0].converted_value == "Turn 2 Part 1"
+    assert group.next_message.message_pieces[1].converted_value == "Turn 2 Part 2"
 
 
-def test_to_attack_parameters_preserves_prompt_group_id():
-    """Test that the prompt_group_id is preserved across decomposition."""
+def test_next_message_preserves_prompt_group_id():
+    """Test that the prompt_group_id is preserved in messages."""
     group_id = uuid.uuid4()
     prompt1 = SeedPrompt(value="Turn 1", data_type="text", sequence=0, role="user", prompt_group_id=group_id)
     prompt2 = SeedPrompt(value="Turn 2", data_type="text", sequence=1, role="user", prompt_group_id=group_id)
     group = SeedGroup(seeds=[prompt1, prompt2])
 
-    result = group.to_attack_parameters()
-
     # Check that the conversation_id matches the group_id
-    assert result.prepended_conversation[0].conversation_id == str(group_id)
-    assert result.current_turn_message.conversation_id == str(group_id)
+    assert group.prepended_conversation[0].conversation_id == str(group_id)
+    assert group.next_message.conversation_id == str(group_id)
 
 
-def test_to_attack_parameters_message_pieces_structure():
+def test_next_message_pieces_structure():
     """Test that message pieces have the correct structure."""
     prompt1 = SeedPrompt(value="Part 1", data_type="text", sequence=0, role="user")
     prompt2 = SeedPrompt(value="Part 2", data_type="image_path", sequence=0, role="user")
     group = SeedGroup(seeds=[prompt1, prompt2])
 
-    result = group.to_attack_parameters()
-
-    assert result.prepended_conversation is None
-    assert result.current_turn_message is not None
+    assert group.prepended_conversation is None
+    assert group.next_message is not None
 
     # Current turn should have both message pieces
-    current_pieces = result.current_turn_message.message_pieces
+    current_pieces = group.next_message.message_pieces
     assert len(current_pieces) == 2
     assert current_pieces[0].converted_value_data_type == "text"
     assert current_pieces[1].converted_value_data_type == "image_path"
+
+
+def test_next_message_none_when_last_is_assistant():
+    """Test that next_message is None when the last message is not a user message."""
+    prompt1 = SeedPrompt(value="User turn", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Assistant turn", data_type="text", sequence=1, role="assistant")
+    group = SeedGroup(seeds=[prompt1, prompt2])
+
+    # Last message is assistant, so next_message should be None
+    assert group.next_message is None
+
+    # prepended_conversation should contain the entire sequence
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 2
+    assert group.prepended_conversation[0].get_value() == "User turn"
+    assert group.prepended_conversation[0].role == "user"
+    assert group.prepended_conversation[1].get_value() == "Assistant turn"
+    assert group.prepended_conversation[1].role == "assistant"
+
+
+def test_next_message_none_when_single_assistant():
+    """Test that next_message is None when there's only an assistant message."""
+    prompt = SeedPrompt(value="Assistant only", data_type="text", sequence=0, role="assistant")
+    group = SeedGroup(seeds=[prompt])
+
+    # Last (and only) message is assistant, so next_message should be None
+    assert group.next_message is None
+
+    # prepended_conversation should contain the entire sequence
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 1
+    assert group.prepended_conversation[0].get_value() == "Assistant only"
+    assert group.prepended_conversation[0].role == "assistant"
+
+
+def test_prepended_conversation_ends_with_assistant():
+    """Test multi-turn conversation where last message is assistant."""
+    prompt1 = SeedPrompt(value="User 1", data_type="text", sequence=0, role="user")
+    prompt2 = SeedPrompt(value="Assistant 1", data_type="text", sequence=1, role="assistant")
+    prompt3 = SeedPrompt(value="User 2", data_type="text", sequence=2, role="user")
+    prompt4 = SeedPrompt(value="Assistant 2", data_type="text", sequence=3, role="assistant")
+    group = SeedGroup(seeds=[prompt1, prompt2, prompt3, prompt4])
+
+    # Last message is assistant, so next_message should be None
+    assert group.next_message is None
+
+    # prepended_conversation should contain all 4 messages
+    assert group.prepended_conversation is not None
+    assert len(group.prepended_conversation) == 4
+    assert group.prepended_conversation[0].get_value() == "User 1"
+    assert group.prepended_conversation[1].get_value() == "Assistant 1"
+    assert group.prepended_conversation[2].get_value() == "User 2"
+    assert group.prepended_conversation[3].get_value() == "Assistant 2"

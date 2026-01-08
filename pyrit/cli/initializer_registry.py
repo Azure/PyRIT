@@ -322,7 +322,7 @@ class InitializerRegistry:
 
             if not script_path.exists():
                 raise FileNotFoundError(
-                    f"Initialization script not found: {script_path}\n" f"  Looked in: {script_path.absolute()}"
+                    f"Initialization script not found: {script_path}\n  Looked in: {script_path.absolute()}"
                 )
 
             resolved_paths.append(script_path)

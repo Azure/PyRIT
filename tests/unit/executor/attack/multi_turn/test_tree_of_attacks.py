@@ -16,6 +16,7 @@ from pyrit.exceptions import InvalidJsonException
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     TAPAttackContext,
     TAPAttackResult,
@@ -238,8 +239,7 @@ class TestHelpers:
     def create_basic_context() -> TAPAttackContext:
         """Create a basic context with initialized tree."""
         context = TAPAttackContext(
-            objective="Test objective",
-            memory_labels={"test": "label"},
+            params=AttackParameters(objective="Test objective", memory_labels={"test": "label"}),
         )
         context.tree_visualization.create_node("Root", "root")
         return context
@@ -266,9 +266,7 @@ class TestHelpers:
             score_str = ""
             if node.objective_score:
                 score_str = f": Score {node.objective_score.get_value()}"
-            context.tree_visualization.create_node(
-                f"{context.current_iteration}{score_str}", node.node_id, parent=parent
-            )
+            context.tree_visualization.create_node(f"{context.executed_turns}{score_str}", node.node_id, parent=parent)
 
     @staticmethod
     def mock_prompt_loading(attack: TreeOfAttacksWithPruningAttack):
@@ -371,6 +369,28 @@ class TestTreeOfAttacksInitialization:
         assert result.objective_scorer == attack_builder.objective_scorer
         assert len(result.auxiliary_scorers) == 1
         assert result.successful_objective_threshold == 0.75
+
+    @pytest.mark.asyncio
+    async def test_tree_depth_validation_with_prepended_conversation(self, attack_builder, helpers):
+        """Test that prepended conversation turns are validated against tree_depth."""
+        attack = attack_builder.with_default_mocks().with_tree_params(tree_depth=1).build()
+
+        # Create prepended conversation with 2 assistant messages (2 turns)
+        prepended = [
+            Message.from_prompt(prompt="Hello", role="user"),
+            Message.from_prompt(prompt="Hi there!", role="assistant"),
+            Message.from_prompt(prompt="How are you?", role="user"),
+            Message.from_prompt(prompt="I'm fine!", role="assistant"),
+        ]
+        next_message = Message.from_prompt(prompt="Continue conversation", role="user")
+
+        # Should raise RuntimeError because prepended turns (2) exceed tree_depth (1)
+        with pytest.raises(RuntimeError, match="equals or exceeds tree_depth"):
+            await attack.execute_async(
+                objective="Test objective",
+                prepended_conversation=prepended,
+                next_message=next_message,
+            )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -533,7 +553,7 @@ class TestBranchingLogic:
         initial_nodes = node_factory.create_nodes_with_scores([0.8, 0.7])
         helpers.add_nodes_to_tree(context, initial_nodes)
         context.nodes = initial_nodes.copy()
-        context.current_iteration = 2
+        context.executed_turns = 2
 
         # Execute branching
         basic_attack._branch_existing_nodes(context=context)
@@ -901,7 +921,6 @@ class TestTreeOfAttacksNode:
         with patch.object(
             node, "_generate_red_teaming_prompt_async", new_callable=AsyncMock, return_value=test_prompt
         ) as red_teaming_mock:
-
             await node.send_prompt_async(objective="Test objective")
 
         # Verify off-topic detection worked
@@ -1096,6 +1115,30 @@ class TestTreeOfAttacksErrorHandling:
 class TestTreeOfAttacksMemoryOperations:
     """Tests for memory-related operations."""
 
+    def test_setup_with_prepended_conversation_without_next_message(self, attack_builder, helpers):
+        """Test that setup works with prepended_conversation even without next_message.
+
+        The adversarial chat will generate the first prompt based on the prepended
+        conversation context. This is similar to a fresh attack, but with context.
+        """
+        attack = attack_builder.with_default_mocks().build()
+
+        # Create context with prepended_conversation but no next_message
+        prepended = [
+            Message.from_prompt(prompt="Hello", role="user"),
+            Message.from_prompt(prompt="Hi there!", role="assistant"),
+        ]
+        context = helpers.create_basic_context()
+        context.prepended_conversation = prepended
+        context.next_message = None  # Explicitly no next_message
+
+        # Setup should succeed without raising an error
+        asyncio.run(attack._setup_async(context=context))
+
+        # Verify setup completed - tree visualization initialized
+        assert context.tree_visualization is not None
+        assert context.next_message is None  # No custom message, adversarial chat will generate
+
     def test_attack_updates_memory_labels(self, attack_builder, helpers):
         """Test that memory labels are properly combined."""
         attack = attack_builder.with_default_mocks().build()
@@ -1173,7 +1216,7 @@ class TestTreeOfAttacksVisualization:
         node_1 = node_factory.create_node(NodeMockConfig(node_id="node_1"))
 
         # Add first level to tree
-        context.current_iteration = 1
+        context.executed_turns = 1
         helpers.add_nodes_to_tree(context, [node_0, node_1])
 
         # Second level nodes
@@ -1182,7 +1225,7 @@ class TestTreeOfAttacksVisualization:
         node_1_child_0 = node_factory.create_node(NodeMockConfig(node_id="node_1_child_0", parent_id="node_1"))
 
         # Add second level to tree using the helper with proper parent relationships
-        context.current_iteration = 2
+        context.executed_turns = 2
         # Add children under node_0
         for child in [node_0_child_0, node_0_child_1]:
             context.tree_visualization.create_node(

@@ -83,7 +83,6 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
 
 
 def test_parse_raw_http_request_ignores_content_length(patch_central_database):
-
     request = "POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\nContent-Length: 100\n\n"
     target = HTTPTarget(http_request=request)
 
@@ -92,7 +91,6 @@ def test_parse_raw_http_request_ignores_content_length(patch_central_database):
 
 
 def test_parse_raw_http_respects_url_path(patch_central_database):
-
     request1 = (
         "POST https://diffsite.com/test/ HTTP/1.1\nHost: example.com\nContent-Type: "
         + "application/json\nContent-Length: 100\n\n"
@@ -146,7 +144,6 @@ async def test_send_prompt_async_validation(mock_http_target):
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.request")
 async def test_send_prompt_regex_parse_async(mock_request, mock_http_target):
-
     callback_function = get_http_target_regex_matching_callback_function(key=r"Match: (\d+)")
     mock_http_target.callback_function = callback_function
 
@@ -173,7 +170,6 @@ async def test_send_prompt_regex_parse_async(mock_request, mock_http_target):
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.request")
 async def test_send_prompt_async_keeps_original_template(mock_request, mock_http_target, mock_http_response):
-
     original_http_request = mock_http_target.http_request
     mock_request.return_value = mock_http_response
 

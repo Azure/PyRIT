@@ -153,7 +153,7 @@ class Seed(YamlLoadable):
             logging.error("Error rendering template: %s", e)
             return self.value
 
-    async def set_sha256_value_async(self):
+    async def set_sha256_value_async(self) -> None:
         """
         This method computes the SHA256 hash value asynchronously.
         It should be called after prompt `value` is serialized to text,

@@ -28,27 +28,72 @@ AZURE_SQL = "AzureSQL"
 MemoryDatabaseType = Literal["InMemory", "SQLite", "AzureSQL"]
 
 
-def _load_environment_files() -> None:
+def _load_environment_files(env_files: Optional[Sequence[pathlib.Path]], *, silent: bool = False) -> None:
     """
-    Load the base environment file from .env if it exists,
-    then load a single .env.local file if it exists, overriding previous values.
+    Load environment files in the order they are provided.
+    Later files override values from earlier files.
+
+    Args:
+        env_files: Optional sequence of environment file paths. If None, loads default
+            .env and .env.local from PyRIT home directory (only if they exist).
+        silent: If True, suppresses print statements about environment file loading.
+            Defaults to False.
+
+    Raises:
+        ValueError: If any provided env_files do not exist.
     """
-    base_file_path = path.HOME_PATH / ".env"
-    local_file_path = path.HOME_PATH / ".env.local"
+    # Validate env_files exist if they were provided
+    if env_files is not None:
+        if not silent:
+            _print_msg(f"Loading custom environment files: {[str(f) for f in env_files]}", quiet=silent, log=True)
+        for env_file in env_files:
+            if not env_file.exists():
+                raise ValueError(f"Environment file not found: {env_file}")
 
-    # Load the base .env file if it exists
-    if base_file_path.exists():
-        dotenv.load_dotenv(base_file_path, override=True, interpolate=True)
-        logger.info(f"Loaded {base_file_path}")
+    # By default load .env and .env.local from home directory of the package
     else:
-        dotenv.load_dotenv(verbose=True)
+        default_files = []
+        base_file = path.CONFIGURATION_DIRECTORY_PATH / ".env"
+        local_file = path.CONFIGURATION_DIRECTORY_PATH / ".env.local"
 
-    # Load the .env.local file if it exists, to override base .env values
-    if local_file_path.exists():
-        dotenv.load_dotenv(local_file_path, override=True, interpolate=True)
-        logger.info(f"Loaded {local_file_path}")
-    else:
-        dotenv.load_dotenv(dotenv_path=dotenv.find_dotenv(".env.local"), override=True, verbose=True)
+        if base_file.exists():
+            default_files.append(base_file)
+        if local_file.exists():
+            default_files.append(local_file)
+
+        if not silent:
+            if default_files:
+                _print_msg(
+                    f"Found default environment files: {[str(f) for f in default_files]}", quiet=silent, log=True
+                )
+            else:
+                _print_msg(
+                    "No default environment files found. Using system environment variables only.",
+                    quiet=silent,
+                    log=True,
+                )
+
+        env_files = default_files
+
+    for env_file in env_files:
+        dotenv.load_dotenv(env_file, override=True, interpolate=True)
+        if not silent:
+            _print_msg(f"Loaded environment file: {env_file}", quiet=silent, log=True)
+
+
+def _print_msg(message: str, quiet: bool, log: bool) -> None:
+    """
+    Print a standard initialization message unless quiet is True.
+
+    Args:
+        message (str): The message to print and/or log.
+        quiet (bool): If True, suppresses the initialization message.
+        log (bool): If True, logs the message using the logger.
+    """
+    if not quiet:
+        print(message)
+    if log:
+        logger.info(message)
 
 
 def _load_initializers_from_scripts(
@@ -158,15 +203,13 @@ async def _execute_initializers_async(*, initializers: Sequence["PyRITInitialize
     for initializer in initializers:
         if not isinstance(initializer, PyRITInitializer):
             raise ValueError(
-                f"All initializers must be PyRITInitializer instances. "
-                f"Got {type(initializer).__name__}: {initializer}"
+                f"All initializers must be PyRITInitializer instances. Got {type(initializer).__name__}: {initializer}"
             )
 
     # Sort initializers by execution_order (lower numbers first)
     sorted_initializers = sorted(initializers, key=lambda x: x.execution_order)
 
     for initializer in sorted_initializers:
-
         logger.info(f"Executing initializer: {initializer.name}")
         logger.debug(f"Description: {initializer.description}")
 
@@ -189,6 +232,8 @@ async def initialize_pyrit_async(
     *,
     initialization_scripts: Optional[Sequence[Union[str, pathlib.Path]]] = None,
     initializers: Optional[Sequence["PyRITInitializer"]] = None,
+    env_files: Optional[Sequence[pathlib.Path]] = None,
+    silent: bool = False,
     **memory_instance_kwargs: Any,
 ) -> None:
     """
@@ -202,23 +247,17 @@ async def initialize_pyrit_async(
             or an 'initializers' variable that returns/contains a list of PyRITInitializer instances.
         initializers (Optional[Sequence[PyRITInitializer]]): Optional sequence of PyRITInitializer instances
             to execute directly. These provide type-safe, validated configuration with clear documentation.
+        env_files (Optional[Sequence[pathlib.Path]]): Optional sequence of environment file paths to load
+            in order. If not provided, will load default .env and .env.local files from PyRIT home if they exist.
+            All paths must be valid pathlib.Path objects.
+        silent (bool): If True, suppresses print statements about environment file loading.
+            Defaults to False.
         **memory_instance_kwargs (Optional[Any]): Additional keyword arguments to pass to the memory instance.
 
     Raises:
-        ValueError: If an unsupported memory_db_type is provided.
+        ValueError: If an unsupported memory_db_type is provided or if env_files contains non-existent files.
     """
-    # Handle DuckDB deprecation before validation
-    if memory_db_type == "DuckDB":
-        logger.warning(
-            "DuckDB is no longer supported and has been replaced by SQLite for better compatibility and performance. "
-            "Please update your code to use SQLite instead. "
-            "For migration guidance, see the SQLite Memory documentation at: "
-            "doc/code/memory/1_sqlite_memory.ipynb. "
-            "Using in-memory SQLite instead."
-        )
-        memory_db_type = IN_MEMORY
-
-    _load_environment_files()
+    _load_environment_files(env_files=env_files, silent=silent)
 
     # Reset all default values before executing initialization scripts
     # This ensures a clean state for each initialization

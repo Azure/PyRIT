@@ -16,6 +16,7 @@ from pyrit.exceptions import (
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
+    AttackParameters,
     AttackScoringConfig,
     ConversationSession,
     ConversationState,
@@ -153,7 +154,7 @@ def mock_prompt_normalizer() -> MagicMock:
 @pytest.fixture
 def basic_context() -> CrescendoAttackContext:
     return CrescendoAttackContext(
-        objective="Test objective",
+        params=AttackParameters(objective="Test objective"),
         session=ConversationSession(),
     )
 
@@ -264,7 +265,6 @@ class CrescendoTestHelper:
 
     @staticmethod
     def mock_memory_for_attack(attack: CrescendoAttack) -> MagicMock:
-
         mock_memory = MagicMock()
         attack._memory = mock_memory
         return mock_memory
@@ -503,7 +503,7 @@ class TestContextValidation:
             objective_target=mock_objective_target,
             attack_adversarial_config=adversarial_config,
         )
-        context = CrescendoAttackContext(objective=objective)
+        context = CrescendoAttackContext(params=AttackParameters(objective=objective))
 
         with pytest.raises(ValueError, match=expected_error):
             attack._validate_context(context=context)
@@ -523,10 +523,83 @@ class TestContextValidation:
         )
         attack._validate_context(context=basic_context)  # Should not raise
 
+    @pytest.mark.asyncio
+    async def test_max_turns_validation_with_prepended_conversation(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+    ):
+        """Test that prepended conversation turns are validated against max_turns."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            max_turns=1,  # Less than prepended turns (2)
+        )
+
+        # Create prepended conversation with 2 assistant messages
+        prepended = [
+            Message.from_prompt(prompt="Hello", role="user"),
+            Message.from_prompt(prompt="Hi there!", role="assistant"),
+            Message.from_prompt(prompt="How are you?", role="user"),
+            Message.from_prompt(prompt="I'm fine!", role="assistant"),
+        ]
+        next_message = Message.from_prompt(prompt="Continue conversation", role="user")
+
+        # Should raise RuntimeError wrapping ValueError because prepended turns (2) exceed max_turns (1)
+        with pytest.raises(RuntimeError, match="exceeding max_turns"):
+            await attack.execute_async(
+                objective="Test objective",
+                prepended_conversation=prepended,
+                next_message=next_message,
+            )
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestSetupPhase:
     """Tests for the setup phase of the attack."""
+
+    @pytest.mark.asyncio
+    async def test_setup_with_prepended_conversation_without_next_message(
+        self, mock_objective_target, mock_adversarial_chat
+    ):
+        """Test that setup works with prepended_conversation even without next_message.
+
+        The adversarial chat will generate the first prompt based on the prepended
+        conversation context. This is similar to a fresh attack, but with context.
+        """
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+        )
+
+        # Create context with prepended_conversation but no next_message
+        prepended = [
+            Message.from_prompt(prompt="Hello", role="user"),
+            Message.from_prompt(prompt="Hi there!", role="assistant"),
+        ]
+        context = CrescendoAttackContext(
+            params=AttackParameters(
+                objective="Test objective",
+                prepended_conversation=prepended,
+                next_message=None,  # Explicitly no next_message
+            )
+        )
+
+        # Mock that simulates initialize_context_async setting executed_turns
+        async def mock_initialize(*, context, **kwargs):
+            context.executed_turns = 1  # 1 assistant message in prepended
+            return ConversationState(turn_count=1, last_assistant_message_scores=[])
+
+        with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
+            await attack._setup_async(context=context)
+
+        # Setup should succeed and track the prepended turn
+        assert context.executed_turns == 1
+        assert context.next_message is None  # No custom message, adversarial chat will generate
 
     @pytest.mark.asyncio
     async def test_setup_initializes_conversation_session(
@@ -545,7 +618,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.session is not None
@@ -571,7 +644,7 @@ class TestSetupPhase:
 
         # Mock conversation manager
         mock_state = ConversationState(turn_count=0)
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         # Verify system prompt was set
@@ -600,44 +673,20 @@ class TestSetupPhase:
             attack_scoring_config=scoring_config,
         )
 
-        # Mock conversation state with refusal score
-        mock_state = ConversationState(
-            turn_count=1,
-            last_user_message="Refused prompt",
-            last_assistant_message_scores=[refusal_score],
-        )
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
+        # Set next_message on context - this is how refused text is determined
+        # (when a refusal score is detected, refused_text comes from context.next_message)
+        basic_context._next_message_override = Message.from_prompt(prompt="Refused prompt", role="user")
+
+        # Mock that simulates initialize_context_async setting executed_turns
+        async def mock_initialize(*, context, **kwargs):
+            context.executed_turns = 1
+            return ConversationState(turn_count=1, last_assistant_message_scores=[refusal_score])
+
+        with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.refused_text == "Refused prompt"
         assert basic_context.executed_turns == 1
-
-    @pytest.mark.asyncio
-    async def test_setup_retrieves_custom_prompt_from_prepended_conversation(
-        self,
-        mock_objective_target: MagicMock,
-        mock_adversarial_chat: MagicMock,
-        basic_context: CrescendoAttackContext,
-    ):
-        """Test that setup retrieves custom prompt from prepended conversation."""
-        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-
-        attack = CrescendoAttack(
-            objective_target=mock_objective_target,
-            attack_adversarial_config=adversarial_config,
-        )
-
-        # Mock conversation state with last user message but no scores
-        mock_state = ConversationState(
-            turn_count=0,
-            last_user_message="Custom prepended prompt",
-            last_assistant_message_scores=[],
-        )
-        with patch.object(attack._conversation_manager, "update_conversation_state_async", return_value=mock_state):
-            await attack._setup_async(context=basic_context)
-
-        assert basic_context.next_message is not None
-        assert basic_context.next_message.get_value() == "Custom prepended prompt"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -660,12 +709,15 @@ class TestPromptGeneration:
         )
 
         custom_message = Message.from_prompt(prompt="Custom prompt", role="user")
+        original_id = custom_message.message_pieces[0].id
         basic_context.next_message = custom_message
 
         result = await attack._generate_next_prompt_async(context=basic_context)
 
-        assert result is custom_message  # Should return the same Message object
+        # Should return a duplicated message with the same content but a new ID
+        assert result is not custom_message  # Should be a duplicate, not the same object
         assert result.get_value() == "Custom prompt"
+        assert result.message_pieces[0].id != original_id  # Should have a new ID
         assert basic_context.next_message is None  # Should be cleared
 
     @pytest.mark.asyncio
@@ -1503,9 +1555,12 @@ class TestContextCreation:
     def test_create_context_with_basic_params(self):
         """Test creating context with basic parameters."""
         context = CrescendoAttackContext(
-            objective="Test objective",
-            prepended_conversation=[],
-            memory_labels={"test": "label"},
+            params=AttackParameters(
+                objective="Test objective",
+                prepended_conversation=[],
+                memory_labels={"test": "label"},
+            ),
+            session=ConversationSession(),
         )
 
         assert isinstance(context, CrescendoAttackContext)
@@ -1517,10 +1572,13 @@ class TestContextCreation:
         """Test creating context with message."""
         message = Message.from_prompt(prompt="My custom prompt", role="user")
         context = CrescendoAttackContext(
-            objective="Test objective",
-            prepended_conversation=[],
-            memory_labels={},
-            next_message=message,
+            params=AttackParameters(
+                objective="Test objective",
+                prepended_conversation=[],
+                memory_labels={},
+                next_message=message,
+            ),
+            session=ConversationSession(),
         )
 
         assert context.next_message == message
@@ -1532,9 +1590,12 @@ class TestContextCreation:
         """Test context creation with prepended conversation."""
         prepended_conversation = [sample_response]
         context = CrescendoAttackContext(
-            objective="Test objective",
-            prepended_conversation=prepended_conversation,
-            memory_labels={},
+            params=AttackParameters(
+                objective="Test objective",
+                prepended_conversation=prepended_conversation,
+                memory_labels={},
+            ),
+            session=ConversationSession(),
         )
 
         assert context.prepended_conversation == prepended_conversation
@@ -1694,7 +1755,8 @@ class TestIntegrationScenarios:
         )
 
         context = CrescendoAttackContext(
-            objective="Extract sensitive information",
+            params=AttackParameters(objective="Extract sensitive information"),
+            session=ConversationSession(),
         )
 
         # Set up mock responses for a 3-turn successful attack
@@ -1765,7 +1827,7 @@ class TestIntegrationScenarios:
         mock_conversation_state = ConversationState(turn_count=0)
 
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+            attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal):
                 with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
@@ -1812,7 +1874,8 @@ class TestIntegrationScenarios:
         )
 
         context = CrescendoAttackContext(
-            objective="Test with refusals",
+            params=AttackParameters(objective="Test with refusals"),
+            session=ConversationSession(),
         )
 
         # Set up responses
@@ -1854,7 +1917,7 @@ class TestIntegrationScenarios:
         mock_conversation_state = ConversationState(turn_count=0)
 
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+            attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, side_effect=refusal_checks):
                 with patch.object(
@@ -1894,7 +1957,7 @@ class TestEdgeCases:
             adversarial_chat=mock_adversarial_chat,
         )
 
-        context = CrescendoAttackContext(objective="")
+        context = CrescendoAttackContext(params=AttackParameters(objective=""))
 
         with pytest.raises(ValueError, match="Strategy context validation failed for CrescendoAttack"):
             await attack.execute_with_context_async(context=context)
@@ -1979,15 +2042,15 @@ class TestEdgeCases:
 
         # Create two contexts that could be used concurrently
         # They have different objectives to ensure isolation
-        context1 = CrescendoAttackContext(objective="Objective 1")
-        context2 = CrescendoAttackContext(objective="Objective 2")
+        context1 = CrescendoAttackContext(params=AttackParameters(objective="Objective 1"))
+        context2 = CrescendoAttackContext(params=AttackParameters(objective="Objective 2"))
 
         # Mock conversation manager for both setups
         mock_state1 = ConversationState(turn_count=0)
         mock_state2 = ConversationState(turn_count=0)
 
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", side_effect=[mock_state1, mock_state2]
+            attack._conversation_manager, "initialize_context_async", side_effect=[mock_state1, mock_state2]
         ):
             # Simulate concurrent setup - both contexts use the same attack instance
             await attack._setup_async(context=context1)
@@ -2028,7 +2091,7 @@ class TestEdgeCases:
         mock_conversation_state = ConversationState(turn_count=0)
 
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", return_value=mock_conversation_state
+            attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
         ):
             with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score):
                 with patch(
@@ -2060,8 +2123,8 @@ class TestEdgeCases:
             attack_adversarial_config=adversarial_config,
         )
 
-        # Test with unknown parameter - should raise TypeError
-        with pytest.raises(TypeError, match="got an unexpected keyword argument"):
+        # Test with unknown parameter - should raise ValueError
+        with pytest.raises(ValueError, match="does not accept parameters"):
             await attack.execute_async(
                 objective="Test objective",
                 unknown_param="should cause error",
@@ -2082,11 +2145,9 @@ class TestCrescendoConversationTracking:
             attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
         )
         with patch.object(
-            attack._conversation_manager, "update_conversation_state_async", new_callable=AsyncMock
+            attack._conversation_manager, "initialize_context_async", new_callable=AsyncMock
         ) as mock_update:
-            mock_update.return_value = ConversationState(
-                turn_count=0, last_user_message="Test message", last_assistant_message_scores=[]
-            )
+            mock_update.return_value = ConversationState(turn_count=0, last_assistant_message_scores=[])
             await attack._setup_async(context=basic_context)
 
             # Validate that the conversation ID is added to related_conversations

@@ -5,8 +5,7 @@ import abc
 from typing import Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_converter.prompt_converter import ConverterResult
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.text_selection_strategy import (
     AllWordsSelectionStrategy,
     WordSelectionStrategy,
@@ -24,6 +23,9 @@ class WordLevelConverter(PromptConverter):
         The `convert_word_async` method is an abstract method that must be implemented by subclasses.
         It defines the conversion logic for each word.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
         self,
@@ -100,9 +102,3 @@ class WordLevelConverter(PromptConverter):
             words[idx] = await self.convert_word_async(words[idx])
 
         return ConverterResult(output_text=self.join_words(words), output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

@@ -13,7 +13,7 @@ from reportlab.pdfgen import canvas
 
 from pyrit.common.logger import logger
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class PDFConverter(PromptConverter):
@@ -30,6 +30,9 @@ class PDFConverter(PromptConverter):
             Enables injecting text into existing PDFs at specified coordinates, merging a new "overlay layer"
             onto the original PDF.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("url",)
 
     def __init__(
         self,
@@ -128,12 +131,6 @@ class PDFConverter(PromptConverter):
 
         # Return the result
         return ConverterResult(output_text=pdf_serializer.value, output_type="url")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "url"
 
     def _prepare_content(self, prompt: str) -> str:
         """

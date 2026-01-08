@@ -1,7 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import base64
 import logging
 from typing import Any, Dict, Literal, Optional
+
+import httpx
 
 from pyrit.exceptions import (
     EmptyResponseException,
@@ -9,11 +12,11 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     Message,
-    PromptDataType,
     construct_response_from_request,
     data_serializer_factory,
 )
-from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
+from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +36,7 @@ class OpenAIImageTarget(OpenAITarget):
         Initialize the image target with specified parameters.
 
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
                 If no value is provided, the OPENAI_IMAGE_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
@@ -62,9 +65,6 @@ class OpenAIImageTarget(OpenAITarget):
         self.quality = quality
         self.style = style
         self.image_size = image_size
-        # Flag to track if we need to explicitly request b64_json format
-        # Will be set to True if the model returns URLs instead of base64
-        self._requires_response_format = False
 
         super().__init__(*args, **kwargs)
 
@@ -72,6 +72,7 @@ class OpenAIImageTarget(OpenAITarget):
         self.model_name_environment_variable = "OPENAI_IMAGE_MODEL"
         self.endpoint_environment_variable = "OPENAI_IMAGE_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_IMAGE_API_KEY"
+        self.underlying_model_environment_variable = "OPENAI_IMAGE_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -112,10 +113,6 @@ class OpenAIImageTarget(OpenAITarget):
             "size": self.image_size,
         }
 
-        # Add response_format if we've detected the model returns URLs by default
-        if self._requires_response_format:
-            image_generation_args["response_format"] = "b64_json"
-
         if self.quality:
             image_generation_args["quality"] = self.quality
         if self.style:
@@ -140,45 +137,49 @@ class OpenAIImageTarget(OpenAITarget):
             Message: Constructed message with image path.
 
         Raises:
-            EmptyResponseException: If the image generation returned an empty response
-                or if the model returned a URL instead of base64.
-
-        Note:
-            PyRIT expects base64-encoded images. Some models (like dall-e) return URLs by default,
-            while others (like gpt-image-1) always return base64. This method detects the format
-            and adapts automatically.
+            EmptyResponseException: If the image generation returned an empty response.
         """
         image_data = response.data[0]
+        image_bytes = await self._get_image_bytes(image_data)
 
-        # Try to get base64 data first (preferred format)
-        b64_data = getattr(image_data, "b64_json", None)
-
-        if not b64_data:
-            # Check if URL format was returned instead
-            image_url = getattr(image_data, "url", None)
-            if image_url:
-                # Model returned URL instead of base64 - set flag and retry
-                logger.info(
-                    "Image model returned URL instead of base64. "
-                    "Setting flag to request b64_json format in future calls."
-                )
-                self._requires_response_format = True
-                raise EmptyResponseException(
-                    message="Image was returned as URL instead of base64. Retrying with response_format parameter."
-                )
-            else:
-                # Neither URL nor base64 - truly empty response
-                raise EmptyResponseException(message="The image generation returned an empty response.")
-
-        # Save the image and get the file path
         data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
-        await data.save_b64_image(data=b64_data)
-        resp_text = data.value
-        response_type: PromptDataType = "image_path"
+        await data.save_data(data=image_bytes)
 
         return construct_response_from_request(
-            request=request, response_text_pieces=[resp_text], response_type=response_type
+            request=request, response_text_pieces=[data.value], response_type="image_path"
         )
+
+    async def _get_image_bytes(self, image_data: Any) -> bytes:
+        """
+        Extract image bytes from the API response.
+
+        Handles both base64-encoded data and URL responses. Some models (like gpt-image-1)
+        return base64 directly, while others (like dall-e) may return URLs.
+
+        Args:
+            image_data: The image data object from the API response.
+
+        Returns:
+            bytes: The raw image bytes.
+
+        Raises:
+            EmptyResponseException: If neither base64 data nor URL is available.
+        """
+        # Try base64 first (preferred format)
+        b64_data = getattr(image_data, "b64_json", None)
+        if b64_data:
+            return base64.b64decode(b64_data)
+
+        # Fall back to URL download
+        image_url = getattr(image_data, "url", None)
+        if image_url:
+            logger.info("Image model returned URL. Downloading image.")
+            async with httpx.AsyncClient() as http_client:
+                image_response = await http_client.get(image_url)
+                image_response.raise_for_status()
+                return image_response.content
+
+        raise EmptyResponseException(message="The image generation returned an empty response.")
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)

@@ -22,7 +22,7 @@ from pyrit.models import (
     PromptDataType,
     SeedPrompt,
 )
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,9 @@ class TranslationConverter(PromptConverter):
     """
     Translates prompts into different languages using an LLM.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     @apply_defaults
     def __init__(
@@ -140,9 +143,3 @@ class TranslationConverter(PromptConverter):
 
         # when we exhaust all retries without success, raise an exception
         raise Exception(f"Failed to translate after {self._max_retries} attempts")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

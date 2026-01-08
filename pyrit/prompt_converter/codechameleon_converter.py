@@ -9,7 +9,7 @@ from typing import Callable, Optional
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class CodeChameleonConverter(PromptConverter):
@@ -42,6 +42,9 @@ class CodeChameleonConverter(PromptConverter):
 
     Code Chameleon Converter based on https://arxiv.org/abs/2402.16717 by Lv, Huijie, et al.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
         self,
@@ -113,12 +116,6 @@ class CodeChameleonConverter(PromptConverter):
         )
 
         return ConverterResult(output_text=formatted_prompt, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def _stringify_decrypt(self, elements: list) -> str:
         output_text = "The following is the decryption function.\n```python\n"

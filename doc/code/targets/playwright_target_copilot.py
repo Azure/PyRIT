@@ -30,6 +30,7 @@ from playwright.async_api import Page, async_playwright
 
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
+    AttackParameters,
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
@@ -154,10 +155,11 @@ async def run_multimodal(page: Page) -> None:
             SeedPrompt(value=objective, data_type="text"),
         ]
     )
-    decomposed = seed_group.to_attack_parameters()
-    attack_context = SingleTurnAttackContext(
-        next_message=decomposed.current_turn_message,
-        objective=objective,
+    attack_context: SingleTurnAttackContext = SingleTurnAttackContext(
+        params=AttackParameters(
+            objective=objective,
+            next_message=seed_group.next_message,
+        )
     )
 
     result = await attack.execute_with_context_async(context=attack_context)  # type: ignore
@@ -165,10 +167,3 @@ async def run_multimodal(page: Page) -> None:
 
 
 asyncio.run(connect_to_existing_browser(browser_debug_port=9222, run_function=run_multimodal))
-
-# %%
-# Close connection to memory
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

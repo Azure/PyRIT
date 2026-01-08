@@ -10,7 +10,7 @@ import numpy as np
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.models import PromptDataType, data_serializer_factory
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,9 @@ class AddImageVideoConverter(PromptConverter):
 
     Currently the image is placed in the whole video, not at a specific timepoint.
     """
+
+    SUPPORTED_INPUT_TYPES = ("image_path",)
+    SUPPORTED_OUTPUT_TYPES = ("video_path",)
 
     def __init__(
         self,
@@ -189,9 +192,3 @@ class AddImageVideoConverter(PromptConverter):
         # Add video to the image
         updated_video = await self._add_image_to_video(image_path=prompt, output_path=output_video_serializer.value)
         return ConverterResult(output_text=str(updated_video), output_type="video_path")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "image_path"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "video_path"

@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+import pathlib
 import tempfile
 from unittest import mock
 
@@ -9,7 +10,10 @@ import pytest
 
 from pyrit.common.apply_defaults import reset_default_values
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
-from pyrit.setup.initialization import _load_initializers_from_scripts
+from pyrit.setup.initialization import (
+    _load_environment_files,
+    _load_initializers_from_scripts,
+)
 
 
 class TestLoadInitializersFromScripts:
@@ -104,3 +108,136 @@ class ScriptInit(PyRITInitializer):
         """Test that invalid memory type raises ValueError."""
         with pytest.raises(ValueError, match="is not a supported type"):
             await initialize_pyrit_async(memory_db_type="InvalidType")  # type: ignore
+
+
+class TestLoadEnvironmentFiles:
+    """Tests for _load_environment_files function and env_files parameter in initialize_pyrit_async."""
+
+    @pytest.mark.asyncio
+    @mock.patch("pyrit.setup.initialization.dotenv.load_dotenv")
+    @mock.patch("pyrit.setup.initialization.path.CONFIGURATION_DIRECTORY_PATH")
+    async def test_loads_default_env_files_when_none_provided(self, mock_config_path, mock_load_dotenv):
+        """Test that default .env and .env.local files are loaded when env_files is None."""
+        # Create temporary directory and files
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = pathlib.Path(temp_dir)
+            env_file = temp_path / ".env"
+            env_local_file = temp_path / ".env.local"
+
+            # Create the files
+            env_file.write_text("VAR1=value1")
+            env_local_file.write_text("VAR2=value2")
+
+            # Mock CONFIGURATION_DIRECTORY_PATH to point to our temp directory
+            mock_config_path.__truediv__ = lambda self, other: temp_path / other
+
+            # Call the function with None (default behavior)
+            _load_environment_files(env_files=None)
+
+            # Verify both files were loaded
+            assert mock_load_dotenv.call_count == 2
+            calls = [call[0][0] for call in mock_load_dotenv.call_args_list]
+            assert env_file in calls
+            assert env_local_file in calls
+
+    @pytest.mark.asyncio
+    @mock.patch("pyrit.setup.initialization.dotenv.load_dotenv")
+    @mock.patch("pyrit.setup.initialization.path.CONFIGURATION_DIRECTORY_PATH")
+    async def test_only_loads_existing_default_files(self, mock_config_path, mock_load_dotenv):
+        """Test that only existing default files are loaded."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = pathlib.Path(temp_dir)
+            env_file = temp_path / ".env"
+
+            # Only create .env, not .env.local
+            env_file.write_text("VAR1=value1")
+
+            mock_config_path.__truediv__ = lambda self, other: temp_path / other
+
+            _load_environment_files(env_files=None)
+
+            # Verify only one file was loaded
+            assert mock_load_dotenv.call_count == 1
+            assert mock_load_dotenv.call_args[0][0] == env_file
+
+    @pytest.mark.asyncio
+    @mock.patch("pyrit.setup.initialization.dotenv.load_dotenv")
+    async def test_loads_custom_env_files_in_order(self, mock_load_dotenv):
+        """Test that custom env_files are loaded in the order provided."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = pathlib.Path(temp_dir)
+            env1 = temp_path / ".env.test"
+            env2 = temp_path / ".env.prod"
+            env3 = temp_path / ".env.local"
+
+            # Create files
+            env1.write_text("VAR=test")
+            env2.write_text("VAR=prod")
+            env3.write_text("VAR=local")
+
+            # Pass custom files
+            _load_environment_files(env_files=[env1, env2, env3])
+
+            # Verify all three files were loaded in order
+            assert mock_load_dotenv.call_count == 3
+            call_args = [call[0][0] for call in mock_load_dotenv.call_args_list]
+            assert call_args == [env1, env2, env3]
+
+    @pytest.mark.asyncio
+    async def test_raises_error_for_nonexistent_env_file(self):
+        """Test that ValueError is raised for non-existent env file."""
+        nonexistent = pathlib.Path("/nonexistent/path/.env")
+
+        with pytest.raises(ValueError, match="Environment file not found"):
+            _load_environment_files(env_files=[nonexistent])
+
+    @pytest.mark.asyncio
+    @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
+    async def test_initialize_pyrit_with_custom_env_files(self, mock_set_memory):
+        """Test initialize_pyrit_async with custom env_files."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = pathlib.Path(temp_dir)
+            env_file = temp_path / ".env.custom"
+            env_file.write_text("CUSTOM_VAR=custom_value")
+
+            # Should not raise an error
+            await initialize_pyrit_async(memory_db_type=IN_MEMORY, env_files=[env_file])
+
+            mock_set_memory.assert_called_once()
+
+    @pytest.mark.asyncio
+    @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
+    async def test_initialize_pyrit_raises_for_nonexistent_env_file(self, mock_set_memory):
+        """Test that initialize_pyrit_async raises ValueError for non-existent env file."""
+        nonexistent = pathlib.Path("/nonexistent/.env")
+
+        with pytest.raises(ValueError, match="Environment file not found"):
+            await initialize_pyrit_async(memory_db_type=IN_MEMORY, env_files=[nonexistent])
+
+    @pytest.mark.asyncio
+    @mock.patch("pyrit.setup.initialization.dotenv.load_dotenv")
+    @mock.patch("pyrit.setup.initialization.path.HOME_PATH")
+    @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
+    async def test_custom_env_files_override_default_behavior(self, mock_set_memory, mock_home_path, mock_load_dotenv):
+        """Test that passing custom env_files prevents loading default files."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = pathlib.Path(temp_dir)
+
+            # Create default files
+            default_env = temp_path / ".env"
+            default_env_local = temp_path / ".env.local"
+            default_env.write_text("DEFAULT=value")
+            default_env_local.write_text("DEFAULT_LOCAL=value")
+
+            # Create custom file
+            custom_env = temp_path / ".env.custom"
+            custom_env.write_text("CUSTOM=value")
+
+            mock_home_path.__truediv__ = lambda self, other: temp_path / other
+
+            # Pass custom env_files - should NOT load defaults
+            await initialize_pyrit_async(memory_db_type=IN_MEMORY, env_files=[custom_env])
+
+            # Verify only custom file was loaded, not the default ones
+            assert mock_load_dotenv.call_count == 1
+            assert mock_load_dotenv.call_args[0][0] == custom_env

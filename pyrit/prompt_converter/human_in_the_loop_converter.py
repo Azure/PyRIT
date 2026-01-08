@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,9 @@ class HumanInTheLoopConverter(PromptConverter):
     Users can choose to send the prompt as is, modify the prompt,
     or run the prompt through one of the passed-in converters before sending it.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
         self,
@@ -81,7 +84,7 @@ class HumanInTheLoopConverter(PromptConverter):
                         input(
                             f"The available converters are {converters_str}. \
                                                 Enter the index of the converter you would like to run on \
-                                                the input (0 to {len(self._converters)-1})"
+                                                the input (0 to {len(self._converters) - 1})"
                         ).strip()
                     )
                 converter = self._converters[converter_index]
@@ -90,9 +93,3 @@ class HumanInTheLoopConverter(PromptConverter):
             else:
                 raise ValueError("No converters were passed into the HumanInTheLoopConverter")
         return ConverterResult(output_text=prompt, output_type=input_type)
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == []
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == []

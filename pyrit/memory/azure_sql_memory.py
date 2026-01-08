@@ -13,6 +13,7 @@ from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
+from sqlalchemy.sql.expression import TextClause
 
 from pyrit.auth.azure_auth import AzureAuth
 from pyrit.common import default_values
@@ -118,7 +119,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except ValueError:
             return None
 
-    def _init_storage_io(self):
+    def _init_storage_io(self) -> None:
         # Handle for Azure Blob Storage when using Azure SQL memory.
         self.results_storage_io = AzureBlobStorageIO(
             container_url=self._results_container_url, sas_token=self._results_container_sas_token
@@ -187,7 +188,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
 
         @event.listens_for(self.engine, "do_connect")
-        def provide_token(_dialect, _conn_rec, cargs, cparams):
+        def provide_token(_dialect: Any, _conn_rec: Any, cargs: list[Any], cparams: dict[str, Any]) -> None:
             # Refresh token if it's close to expiry
             self._refresh_token_if_needed()
 
@@ -202,7 +203,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             # add the encoded token
             cparams["attrs_before"] = {self.SQL_COPT_SS_ACCESS_TOKEN: packed_azure_token}
 
-    def _create_tables_if_not_exist(self):
+    def _create_tables_if_not_exist(self) -> None:
         """
         Create all tables defined in the Base metadata, if they don't already exist in the database.
 
@@ -222,7 +223,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list[TextClause]:
         """
         Generate SQL conditions for filtering message pieces by memory labels.
 
@@ -260,7 +261,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             json_id=str(attack_id)
         )
 
-    def _get_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list[TextClause]:
         """
         Generate SQL conditions for filtering by prompt metadata.
 
@@ -284,7 +285,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         condition = text(conditions).bindparams(**{key: str(value) for key, value in prompt_metadata.items()})
         return [condition]
 
-    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(
+        self, *, prompt_metadata: dict[str, Union[str, int]]
+    ) -> list[TextClause]:
         """
         Generate SQL conditions for filtering message pieces by prompt metadata.
 
@@ -298,7 +301,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         return self._get_metadata_conditions(prompt_metadata=prompt_metadata)
 
-    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
+    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> TextClause:
         """
         Generate SQL condition for filtering seed prompts by metadata.
 
@@ -403,7 +406,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             conditions.append(condition)
         return and_(*conditions)
 
-    def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
+    def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> TextClause:
         """
         Get the SQL Azure implementation for filtering ScenarioResults by target endpoint.
 
@@ -420,7 +423,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             AND LOWER(JSON_VALUE(objective_target_identifier, '$.endpoint')) LIKE :endpoint"""
         ).bindparams(endpoint=f"%{endpoint.lower()}%")
 
-    def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
+    def _get_scenario_result_target_model_condition(self, *, model_name: str) -> TextClause:
         """
         Get the SQL Azure implementation for filtering ScenarioResults by target model name.
 
@@ -444,7 +447,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in message_pieces])
 
-    def dispose_engine(self):
+    def dispose_engine(self) -> None:
         """
         Dispose the engine and clean up resources.
         """
@@ -462,7 +465,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         result: Sequence[EmbeddingDataEntry] = self._query_entries(EmbeddingDataEntry)
         return result
 
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:
         """
         Insert an entry into the Table.
 
@@ -484,7 +487,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     # The following methods are not part of MemoryInterface, but seem
     # common between SQLAlchemy-based implementations, regardless of engine.
     # Perhaps we should find a way to refactor
-    def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: Sequence[Base]) -> None:
         """
         Insert multiple entries into the database.
 
@@ -514,9 +517,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
     def _query_entries(
         self,
-        Model,
+        model_class: type[Model],
         *,
-        conditions: Optional[Any] = None,  # type: ignore
+        conditions: Optional[Any] = None,
         distinct: bool = False,
         join_scores: bool = False,
     ) -> MutableSequence[Model]:
@@ -524,7 +527,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Fetch data from the specified table model with optional conditions.
 
         Args:
-            Model: The SQLAlchemy model class to query.
+            model_class: The SQLAlchemy model class to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (defaults to False).
             join_scores: Flag to join the scores table with entries (defaults to False).
@@ -537,10 +540,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         with closing(self.get_session()) as session:
             try:
-                query = session.query(Model)
-                if join_scores and Model == PromptMemoryEntry:
+                query = session.query(model_class)
+                if join_scores and model_class == PromptMemoryEntry:
                     query = query.options(joinedload(PromptMemoryEntry.scores))
-                elif Model == AttackResultEntry:
+                elif model_class == AttackResultEntry:
                     query = query.options(
                         joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
                         joinedload(AttackResultEntry.last_score),
@@ -551,10 +554,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                     return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
-                logger.exception(f"Error fetching data from table {Model.__tablename__}: {e}")
+                logger.exception(f"Error fetching data from table {model_class.__tablename__}: {e}")  # type: ignore
                 raise
 
-    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict[str, Any]) -> bool:
         """
         Update the given entries with the specified field values.
 
@@ -595,7 +598,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error updating entries: {e}")
                 raise
 
-    def reset_database(self):
+    def reset_database(self) -> None:
         """Drop and recreate existing tables."""
         # Drop all existing tables
         Base.metadata.drop_all(self.engine)

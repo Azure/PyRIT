@@ -5,13 +5,16 @@ import logging
 import random
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
 
 class RandomCapitalLettersConverter(PromptConverter):
     """Takes a prompt and randomly capitalizes it by a percentage of the total characters."""
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self, percentage: float = 100.0) -> None:
         """
@@ -22,12 +25,6 @@ class RandomCapitalLettersConverter(PromptConverter):
                 Defaults to 100.0. This includes decimal points in that range.
         """
         self.percentage = percentage
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def is_lowercase_letter(self, char):
         """Checks if the given character is a lowercase letter."""

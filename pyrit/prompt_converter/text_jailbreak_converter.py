@@ -3,13 +3,16 @@
 
 from pyrit.datasets import TextJailBreak
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class TextJailbreakConverter(PromptConverter):
     """
     Uses a jailbreak template to create a prompt.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self, *, jailbreak_template: TextJailBreak):
         """
@@ -29,9 +32,3 @@ class TextJailbreakConverter(PromptConverter):
 
         jailbreak_prompt = self.jail_break_template.get_jailbreak(prompt=prompt)
         return ConverterResult(output_text=jailbreak_prompt, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

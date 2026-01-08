@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, Union
 from urllib.parse import urlparse
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 from azure.core.exceptions import ClientAuthenticationError, ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
@@ -153,7 +153,6 @@ class AzureBlobStorageIO(StorageIO):
         sas_token: Optional[str] = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
     ) -> None:
-
         self._blob_content_type: str = blob_content_type.value
         if not container_url:
             raise ValueError("Invalid Azure Storage Account Container URL.")

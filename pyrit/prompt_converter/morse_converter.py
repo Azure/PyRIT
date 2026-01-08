@@ -5,7 +5,7 @@ import pathlib
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class MorseConverter(PromptConverter):
@@ -15,6 +15,9 @@ class MorseConverter(PromptConverter):
     Uses '-' and '.' characters, with ' ' to separate characters and '/' to separate words.
     Invalid or unsupported characters are replaced with an error sequence '........'.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self, *, append_description: bool = False) -> None:
         """
@@ -48,12 +51,6 @@ class MorseConverter(PromptConverter):
         else:
             output_text = self._morse(prompt)
         return ConverterResult(output_text=output_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def _morse(self, text: str) -> str:
         text_clean = " ".join([line.strip() for line in str.splitlines(text)])

@@ -13,8 +13,6 @@ from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
-    HarmScorerEvaluator,
-    HarmScorerMetrics,
     Scorer,
     ScorerPromptValidator,
     TrueFalseScorer,
@@ -143,6 +141,9 @@ class MockFloatScorer(Scorer):
         for score in scores:
             assert 0 <= float(score.score_value) <= 1
 
+    def get_scorer_metrics(self):
+        return None
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bad_json", [BAD_JSON, KEY_ERROR_JSON, KEY_ERROR2_JSON])
@@ -255,7 +256,6 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
 
 @pytest.mark.asyncio
 async def test_scorer_send_chat_target_async_good_response(good_json):
-
     chat_target = MagicMock(PromptChatTarget)
 
     good_json_resp = Message(
@@ -280,7 +280,6 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
 
 @pytest.mark.asyncio
 async def test_scorer_remove_markdown_json_called(good_json):
-
     chat_target = MagicMock(PromptChatTarget)
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
@@ -301,6 +300,123 @@ async def test_scorer_remove_markdown_json_called(good_json):
         )
 
         mock_remove_markdown_json.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_score_value_with_llm_prepended_text_message_piece_creates_multipiece_message(good_json):
+    """Test that prepended_text_message_piece creates a multi-piece message (text context + main content)."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
+    scorer = MockScorer()
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="test_image.png",
+        message_data_type="image_path",
+        scored_prompt_id="123",
+        prepended_text_message_piece="objective: test\nresponse:",
+        category="category",
+        objective="task",
+    )
+
+    # Verify send_prompt_async was called
+    chat_target.send_prompt_async.assert_called_once()
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have 2 pieces: text context first, then the main content being scored
+    assert len(sent_message.message_pieces) == 2
+
+    # First piece should be the extra text context
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+    assert "objective: test" in text_piece.original_value
+
+    # Second piece should be the main content (image in this case)
+    main_piece = sent_message.message_pieces[1]
+    assert main_piece.converted_value_data_type == "image_path"
+    assert main_piece.original_value == "test_image.png"
+
+
+@pytest.mark.asyncio
+async def test_score_value_with_llm_no_prepended_text_creates_single_piece_message(good_json):
+    """Test that without prepended_text_message_piece, only a single piece message is created."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
+    scorer = MockScorer()
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="objective: test\nresponse: some text",
+        message_data_type="text",
+        scored_prompt_id="123",
+        category="category",
+        objective="task",
+    )
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have only 1 piece
+    assert len(sent_message.message_pieces) == 1
+
+    # The piece should be text with the full message
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+    assert "objective: test" in text_piece.original_value
+    assert "response: some text" in text_piece.original_value
+
+
+@pytest.mark.asyncio
+async def test_score_value_with_llm_prepended_text_works_with_audio(good_json):
+    """Test that prepended_text_message_piece works with audio content (type-independent)."""
+    chat_target = MagicMock(PromptChatTarget)
+    good_json_resp = Message(
+        message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=[good_json_resp])
+
+    scorer = MockScorer()
+
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="test_audio.wav",
+        message_data_type="audio_path",
+        scored_prompt_id="123",
+        prepended_text_message_piece="objective: transcribe and evaluate\nresponse:",
+        category="category",
+        objective="task",
+    )
+
+    # Get the message that was sent
+    call_args = chat_target.send_prompt_async.call_args
+    sent_message = call_args.kwargs["message"]
+
+    # Should have 2 pieces: text context + audio
+    assert len(sent_message.message_pieces) == 2
+
+    # First piece should be text context
+    text_piece = sent_message.message_pieces[0]
+    assert text_piece.converted_value_data_type == "text"
+
+    # Second piece should be audio
+    audio_piece = sent_message.message_pieces[1]
+    assert audio_piece.converted_value_data_type == "audio_path"
+    assert audio_piece.original_value == "test_audio.wav"
 
 
 def test_scorer_extract_task_from_response(patch_central_database):
@@ -326,7 +442,6 @@ def test_scorer_extract_task_from_response(patch_central_database):
     ]
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory):
-
         extracted_task = scorer._extract_objective_from_response(response_piece.to_message())
         assert "User's question about the universe" in extracted_task
 
@@ -873,29 +988,6 @@ async def test_score_response_async_empty_lists():
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
-
-
-def test_get_scorer_metrics(tmp_path):
-
-    # Create a fake metrics file
-    metrics = HarmScorerMetrics(
-        mean_absolute_error=0.1,
-        mae_standard_error=0.01,
-        t_statistic=1.0,
-        p_value=0.05,
-        krippendorff_alpha_combined=0.8,
-        krippendorff_alpha_humans=0.7,
-        krippendorff_alpha_model=0.9,
-    )
-    metrics_path = tmp_path / "metrics.json"
-    with open(metrics_path, "w") as f:
-        f.write(metrics.to_json())
-    scorer = MagicMock(spec=Scorer)
-    evaluator = HarmScorerEvaluator(scorer)
-    # Patch _get_metrics_path to return our temp file
-    with patch.object(evaluator, "_get_metrics_path", return_value=metrics_path):
-        loaded = evaluator.get_scorer_metrics("any_dataset")
-        assert loaded == metrics
 
 
 @pytest.mark.asyncio

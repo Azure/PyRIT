@@ -46,14 +46,15 @@ chapters:
           - file: code/executor/attack/1_prompt_sending_attack
           - file: code/executor/attack/2_red_teaming_attack
           - file: code/executor/attack/3_crescendo_attack
-          - file: code/executor/attack/skeleton_key_attack
-          - file: code/executor/attack/violent_durian_attack
-          - file: code/executor/attack/flip_attack
+          - file: code/executor/attack/chunked_request_attack
           - file: code/executor/attack/context_compliance_attack
-          - file: code/executor/attack/role_play_attack
+          - file: code/executor/attack/flip_attack
           - file: code/executor/attack/many_shot_jailbreak_attack
-          - file: code/executor/attack/tap_attack
           - file: code/executor/attack/multi_prompt_sending_attack
+          - file: code/executor/attack/role_play_attack
+          - file: code/executor/attack/skeleton_key_attack
+          - file: code/executor/attack/tap_attack
+          - file: code/executor/attack/violent_durian_attack
         - file: code/executor/workflow/0_workflow
           sections:
           - file: code/executor/workflow/1_xpia_website
@@ -75,6 +76,7 @@ chapters:
       - file: code/targets/6_rate_limiting
       - file: code/targets/7_http_target
       - file: code/targets/8_openai_responses_target
+      - file: code/targets/9_message_normalizer
       - file: code/targets/open_ai_completions
       - file: code/targets/playwright_target
       - file: code/targets/playwright_target_copilot
@@ -83,18 +85,13 @@ chapters:
       - file: code/targets/realtime_target
     - file: code/converters/0_converters
       sections:
-        - file: code/converters/1_llm_converters
-        - file: code/converters/2_using_converters
-        - file: code/converters/3_audio_converters
-        - file: code/converters/4_image_converters
-        - file: code/converters/5_selectively_converting
-        - file: code/converters/6_human_converter
-        - file: code/converters/7_video_converters
-        - file: code/converters/ansi_attack_converter
-        - file: code/converters/char_swap_attack_converter
-        - file: code/converters/pdf_converter
-        - file: code/converters/math_prompt_converter
-        - file: code/converters/transparency_attack_converter
+        - file: code/converters/1_text_to_text_converters
+        - file: code/converters/2_audio_converters
+        - file: code/converters/3_image_converters
+        - file: code/converters/4_video_converters
+        - file: code/converters/5_file_converters
+        - file: code/converters/6_selectively_converting
+        - file: code/converters/7_human_converter
     - file: code/scoring/0_scoring
       sections:
       - file: code/scoring/1_azure_content_safety_scorers
@@ -108,7 +105,7 @@ chapters:
       - file: code/scoring/persuasion_full_conversation_scorer
       - file: code/scoring/prompt_shield_scorer
       - file: code/scoring/generic_scorers
-      - file: code/scoring/scorer_evals
+      - file: code/scoring/8_scorer_metrics
     - file: code/memory/0_memory
       sections:
       - file: code/memory/1_sqlite_memory
@@ -122,7 +119,6 @@ chapters:
       - file: code/memory/9_exporting_data
       - file: code/memory/10_schema_diagram.md
       - file: code/memory/embeddings
-      - file: code/memory/chat_message
     - file: code/setup/0_setup
       sections:
       - file: code/setup/1_configuration
@@ -134,7 +130,7 @@ chapters:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
     - file: code/scenarios/0_scenarios
       sections:
-      - file: code/scenarios/1_composite_scenario
+      - file: code/scenarios/1_configuring_scenarios
     - file: code/front_end/0_front_end
       sections:
       - file: code/front_end/1_pyrit_scan

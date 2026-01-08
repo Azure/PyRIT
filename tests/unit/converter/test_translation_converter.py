@@ -34,7 +34,6 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
 
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
     with patch.object(translation_converter, "_send_translation_prompt_async", new=AsyncMock(return_value="hola")):
-
         raised = False
         try:
             await translation_converter.convert_async(prompt="hello")

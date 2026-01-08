@@ -26,13 +26,11 @@ from pyrit.models import (
     PromptDataType,
     PromptResponseError,
 )
-from pyrit.prompt_target import (
-    OpenAITarget,
-    PromptChatTarget,
-    limit_requests_per_minute,
-)
-from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
+from pyrit.models.json_response_config import _JsonResponseConfig
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute, validate_temperature, validate_top_p
 from pyrit.prompt_target.openai.openai_error_handling import _is_content_filter_error
+from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +82,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         Args:
             custom_functions: Mapping of user-defined function names (e.g., "my_func").
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or deployment name in Azure).
                 If no value is provided, the OPENAI_RESPONSES_MODEL environment variable will be used.
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str, Optional): The API key for accessing the Azure OpenAI service.
@@ -161,6 +159,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
         self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"
         self.api_key_environment_variable = "OPENAI_RESPONSES_KEY"
+        self.underlying_model_environment_variable = "OPENAI_RESPONSES_UNDERLYING_MODEL"
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
@@ -189,7 +188,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         """
         if piece.converted_value_data_type == "text":
             return {
-                "type": "input_text" if piece.role in ["developer", "user"] else "output_text",
+                "type": "input_text" if piece.api_role in ["developer", "user"] else "output_text",
                 "text": piece.converted_value,
             }
         if piece.converted_value_data_type == "image_path":
@@ -230,7 +229,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 )
 
             # System message (remapped to developer)
-            if pieces[0].role == "system":
+            if pieces[0].api_role == "system":
                 system_content = []
                 for piece in pieces:
                     system_content.append({"type": "input_text", "text": piece.converted_value})
@@ -238,7 +237,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 continue
 
             # All pieces in a Message share the same role
-            role = pieces[0].role
+            role = pieces[0].api_role
             content: List[Dict[str, Any]] = []
 
             for piece in pieces:
@@ -315,7 +314,9 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         return input_items
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: _JsonResponseConfig
+    ) -> dict:
         """
         Construct the request body to send to the Responses API.
 
@@ -324,12 +325,14 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         Args:
             conversation: The full conversation history.
-            is_json_response: Whether the response should be formatted as JSON.
+            json_config: Specification for JSON formatting.
 
         Returns:
             dict: The request body to send to the Responses API.
         """
         input_items = await self._build_input_for_multi_modal_async(conversation)
+
+        text_format = self._build_text_format(json_config=json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -339,7 +342,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             "stream": False,
             "input": input_items,
             # Correct JSON response format per Responses API
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "text": text_format,
         }
 
         if self._extra_body_parameters:
@@ -347,6 +350,23 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
+
+    def _build_text_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+
+        if json_config.schema:
+            return {
+                "format": {
+                    "type": "json_schema",
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
+                }
+            }
+
+        logger.info("Using json_object format without schema - consider providing a schema for better results")
+        return {"format": {"type": "json_object"}}
 
     def _check_content_filter(self, response: Any) -> bool:
         """
@@ -445,7 +465,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
-        is_json_response = self.is_response_format_json(message_piece)
+        json_config = _JsonResponseConfig(enabled=False)
+        if message.message_pieces:
+            last_piece = message.message_pieces[-1]
+            json_config = self._get_json_response_config(message_piece=last_piece)
 
         # Get full conversation history from memory and append the current message
         conversation: MutableSequence[Message] = self._memory.get_conversation(
@@ -462,7 +485,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         while True:
             logger.info(f"Sending conversation with {len(conversation)} messages to the prompt target")
 
-            body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+            body = await self._construct_request_body(conversation=conversation, json_config=json_config)
 
             # Use unified error handling - automatically detects Response and validates
             result = await self._handle_openai_request(
@@ -644,7 +667,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             The tool-call section dict, or None if not found.
         """
         for piece in reversed(reply.message_pieces):
-            if piece.role == "assistant":
+            if piece.api_role == "assistant":
                 try:
                     section = json.loads(piece.original_value)
                 except Exception:

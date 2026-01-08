@@ -105,23 +105,61 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
             include_reasoning_trace (bool): Whether to include model reasoning trace in the output
                 for applicable models. Defaults to False.
         """
-        messages = self._memory.get_conversation(conversation_id=result.conversation_id)
+        messages = list(self._memory.get_conversation(conversation_id=result.conversation_id))
 
         if not messages:
             self._print_colored(f"{self._indent} No conversation found for ID: {result.conversation_id}", Fore.YELLOW)
             return
 
+        await self.print_messages_async(
+            messages=messages,
+            include_scores=include_scores,
+            include_reasoning_trace=include_reasoning_trace,
+        )
+
+    async def print_messages_async(
+        self,
+        messages: list,
+        *,
+        include_scores: bool = False,
+        include_reasoning_trace: bool = False,
+    ) -> None:
+        """
+        Print a list of messages to console with enhanced formatting.
+
+        This method can be called directly with a list of Message objects,
+        without needing an AttackResult. Useful for printing prepended_conversation
+        or any other list of messages.
+
+        Displays:
+        - Turn numbers
+        - Role indicators (USER/ASSISTANT/SYSTEM)
+        - Original and converted values when different
+        - Images if present
+        - Scores for each response (if include_scores=True)
+
+        Args:
+            messages (list): List of Message objects to print.
+            include_scores (bool): Whether to include scores in the output.
+                Defaults to False.
+            include_reasoning_trace (bool): Whether to include model reasoning trace in the output
+                for applicable models. Defaults to False.
+        """
+        if not messages:
+            self._print_colored(f"{self._indent} No messages to display.", Fore.YELLOW)
+            return
+
         turn_number = 0
         for message in messages:
             # Increment turn number once per message with role="user"
-            if message.role == "user":
+            if message.api_role == "user":
                 turn_number += 1
                 # User message header
                 print()
                 self._print_colored("─" * self._width, Fore.BLUE)
                 self._print_colored(f"🔹 Turn {turn_number} - USER", Style.BRIGHT, Fore.BLUE)
                 self._print_colored("─" * self._width, Fore.BLUE)
-            elif message.role == "system":
+            elif message.api_role == "system":
                 # System message header (not counted as a turn)
                 print()
                 self._print_colored("─" * self._width, Fore.MAGENTA)
@@ -131,7 +169,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                 # Assistant or other role message header
                 print()
                 self._print_colored("─" * self._width, Fore.YELLOW)
-                self._print_colored(f"🔸 {message.role.upper()}", Style.BRIGHT, Fore.YELLOW)
+                role_label = "ASSISTANT (SIMULATED)" if message.is_simulated else message.api_role.upper()
+                self._print_colored(f"🔸 {role_label}", Style.BRIGHT, Fore.YELLOW)
                 self._print_colored("─" * self._width, Fore.YELLOW)
 
             # Now print all pieces in this message
@@ -141,15 +180,15 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                     continue
 
                 # Handle converted values for user messages
-                if piece.role == "user" and piece.converted_value != piece.original_value:
+                if piece.api_role == "user" and piece.converted_value != piece.original_value:
                     self._print_colored(f"{self._indent} Original:", Fore.CYAN)
                     self._print_wrapped_text(piece.original_value, Fore.WHITE)
                     print()
                     self._print_colored(f"{self._indent} Converted:", Fore.CYAN)
                     self._print_wrapped_text(piece.converted_value, Fore.WHITE)
-                elif piece.role == "user":
+                elif piece.api_role == "user":
                     self._print_wrapped_text(piece.converted_value, Fore.BLUE)
-                elif piece.role == "system":
+                elif piece.api_role == "system":
                     self._print_wrapped_text(piece.converted_value, Fore.MAGENTA)
                 else:
                     self._print_wrapped_text(piece.converted_value, Fore.YELLOW)
