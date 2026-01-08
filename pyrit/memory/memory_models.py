@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import json
+import logging
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -21,13 +22,13 @@ from sqlalchemy import (
     Unicode,
 )
 from sqlalchemy.dialects.sqlite import CHAR
-from sqlalchemy.orm import (  # type: ignore
+from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     mapped_column,
     relationship,
 )
-from sqlalchemy.types import Uuid  # type: ignore
+from sqlalchemy.types import Uuid
 
 from pyrit.common.utils import to_sha256
 from pyrit.models import (
@@ -44,10 +45,12 @@ from pyrit.models import (
     Seed,
     SeedObjective,
     SeedPrompt,
+    SeedSimulatedConversation,
+    SeedType,
 )
 
 
-class CustomUUID(TypeDecorator):
+class CustomUUID(TypeDecorator[uuid.UUID]):
     """
     A custom UUID type that works consistently across different database backends.
     For SQLite, stores UUIDs as strings and converts them back to UUID objects.
@@ -57,7 +60,7 @@ class CustomUUID(TypeDecorator):
     impl = CHAR
     cache_ok = True
 
-    def load_dialect_impl(self, dialect):
+    def load_dialect_impl(self, dialect: Any) -> Any:
         """
         Load the dialect-specific implementation for UUID handling.
 
@@ -72,7 +75,7 @@ class CustomUUID(TypeDecorator):
         else:
             return dialect.type_descriptor(Uuid())
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value: Optional[uuid.UUID], dialect: Any) -> Optional[str]:
         """
         Process a parameter value before binding it to a database statement.
 
@@ -85,7 +88,7 @@ class CustomUUID(TypeDecorator):
         """
         return str(value) if value else None
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: uuid.UUID | str | None, dialect: Any) -> Optional[uuid.UUID]:
         """
         Process a result value after it has been retrieved from the database.
 
@@ -96,9 +99,11 @@ class CustomUUID(TypeDecorator):
         Returns:
             UUID or None: The UUID object or None if value is None.
         """
+        if value is None:
+            return None
         if dialect.name == "sqlite":
-            return uuid.UUID(value) if value else None
-        return value
+            return uuid.UUID(value) if isinstance(value, str) else value
+        return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
 
 
 class Base(DeclarativeBase):
@@ -248,7 +253,7 @@ class PromptMemoryEntry(Base):
         message_piece.scores = [score.get_score() for score in self.scores]
         return message_piece
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return a string representation of the memory entry.
 
@@ -260,7 +265,7 @@ class PromptMemoryEntry(Base):
         return f": {self.role}: {self.converted_value}"
 
 
-class EmbeddingDataEntry(Base):  # type: ignore
+class EmbeddingDataEntry(Base):
     """
     Represents the embedding data associated with conversation entries in the database.
     Each embedding is linked to a specific conversation entry via an id.
@@ -276,10 +281,10 @@ class EmbeddingDataEntry(Base):  # type: ignore
     __table_args__ = {"extend_existing": True}
     id = mapped_column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
     # Use ARRAY for PostgreSQL, JSON for SQLite and MSSQL (SQL Server/Azure SQL)
-    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite").with_variant(JSON, "mssql"))  # type: ignore
+    embedding = mapped_column(ARRAY(Float).with_variant(JSON, "sqlite").with_variant(JSON, "mssql"))
     embedding_type_name = mapped_column(String)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return a string representation of the embedding data entry (its ID).
 
@@ -289,7 +294,7 @@ class EmbeddingDataEntry(Base):  # type: ignore
         return f"{self.id}"
 
 
-class ScoreEntry(Base):  # type: ignore
+class ScoreEntry(Base):
     """
     Represents the Score Memory Entry.
 
@@ -335,7 +340,7 @@ class ScoreEntry(Base):  # type: ignore
         self.objective = entry.objective
 
     @staticmethod
-    def _normalize_scorer_identifier(identifier: Dict) -> Dict[str, str]:
+    def _normalize_scorer_identifier(identifier: Dict[str, Any]) -> Dict[str, str]:
         """
         Normalize scorer identifier to ensure all values are strings for database storage.
         Handles nested sub_identifiers by converting them to JSON strings.
@@ -377,7 +382,7 @@ class ScoreEntry(Base):  # type: ignore
         )
 
     @staticmethod
-    def _denormalize_scorer_identifier(identifier: Dict[str, str]) -> Dict:
+    def _denormalize_scorer_identifier(identifier: Dict[str, str]) -> Dict[str, Any]:
         """
         Denormalize scorer identifier when reading from database.
         Parses JSON strings back into dicts/lists for sub_identifier field.
@@ -399,7 +404,7 @@ class ScoreEntry(Base):  # type: ignore
                 pass
         return denormalized
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert this database entry to a dictionary.
 
@@ -489,7 +494,8 @@ class SeedEntry(Base):
         sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
             are stored, this is used to order the prompts.
         role (str): The role of the prompt (e.g., user, system, assistant).
-        is_objective (bool): Whether this prompt is used as an objective.
+        seed_type (SeedType): The type of seed - "prompt", "objective", or "simulated_conversation".
+        is_objective (bool): Deprecated in 0.13.0. Use seed_type="objective" instead.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -515,6 +521,8 @@ class SeedEntry(Base):
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
+    seed_type: Mapped[SeedType] = mapped_column(String, nullable=False, default="prompt")
+    # Deprecated in 0.13.0: Use seed_type instead
     is_objective: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
     def __init__(self, *, entry: Seed):
@@ -524,41 +532,72 @@ class SeedEntry(Base):
         Args:
             entry (Seed): The seed object to convert into a database entry.
         """
-        is_objective = isinstance(entry, SeedObjective)
+        # Determine seed_type based on the Seed subclass
+        if isinstance(entry, SeedObjective):
+            seed_type: SeedType = "objective"
+        elif isinstance(entry, SeedSimulatedConversation):
+            seed_type = "simulated_conversation"
+        else:
+            seed_type = "prompt"
 
         self.id = entry.id
         self.value = entry.value
         self.value_sha256 = entry.value_sha256
-        self.data_type = entry.data_type  # type: ignore
+        self.data_type = entry.data_type
         self.name = entry.name
         self.dataset_name = entry.dataset_name
         self.harm_categories = entry.harm_categories  # type: ignore
         self.description = entry.description
-        self.authors = entry.authors  # type: ignore
-        self.groups = entry.groups  # type: ignore
+        self.authors = list(entry.authors) if entry.authors else None
+        self.groups = list(entry.groups) if entry.groups else None
         self.source = entry.source
         self.date_added = entry.date_added
         self.added_by = entry.added_by
-        self.prompt_metadata = entry.metadata  # type: ignore
-        self.parameters = None if is_objective else entry.parameters  # type: ignore
+        self.prompt_metadata = entry.metadata
         self.prompt_group_id = entry.prompt_group_id
-        self.sequence = None if is_objective else entry.sequence  # type: ignore
-        self.role = None if is_objective else entry.role  # type: ignore
-        self.is_objective = is_objective
+        self.seed_type = seed_type
+        # Deprecated: kept for backward compatibility with existing databases
+        self.is_objective = seed_type == "objective"
+
+        # SeedPrompt-specific fields
+        if isinstance(entry, SeedPrompt):
+            self.parameters = list(entry.parameters) if entry.parameters else None
+            self.sequence = entry.sequence
+            self.role = entry.role
+        else:
+            self.parameters = None
+            self.sequence = None
+            self.role = None
 
     def get_seed(self) -> Seed:
         """
         Convert this database entry back into a Seed object.
 
         Returns:
-            Seed: The reconstructed seed object (SeedPrompt or SeedObjective)
+            Seed: The reconstructed seed object (SeedPrompt, SeedObjective, or SeedSimulatedConversation)
         """
+        # Use seed_type for dispatching, with fallback to is_objective for backward compatibility
+        effective_seed_type = self.seed_type
+
+        # Handle backward compatibility with legacy is_objective field
         if self.is_objective:
+            if effective_seed_type is None or effective_seed_type == "prompt":
+                # Legacy record: use is_objective to determine type
+                effective_seed_type = "objective"
+            elif effective_seed_type != "objective":
+                # Conflict: seed_type and is_objective disagree - prefer seed_type and warn
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f"SeedEntry {self.id} has conflicting values: seed_type='{effective_seed_type}' "
+                    f"but is_objective=True. Using seed_type='{effective_seed_type}'. "
+                    "is_objective is deprecated since 0.13.0."
+                )
+
+        if effective_seed_type == "objective":
             return SeedObjective(
                 id=self.id,
                 value=self.value,
                 value_sha256=self.value_sha256,
-                data_type=self.data_type,
                 name=self.name,
                 dataset_name=self.dataset_name,
                 harm_categories=self.harm_categories,
@@ -570,6 +609,31 @@ class SeedEntry(Base):
                 added_by=self.added_by,
                 metadata=self.prompt_metadata,
                 prompt_group_id=self.prompt_group_id,
+            )
+        if effective_seed_type == "simulated_conversation":
+            # Reconstruct SeedSimulatedConversation from JSON value
+            import json
+
+            config = json.loads(self.value)
+            return SeedSimulatedConversation(
+                id=self.id,
+                value_sha256=self.value_sha256,
+                name=self.name,
+                dataset_name=self.dataset_name,
+                harm_categories=self.harm_categories,
+                description=self.description,
+                authors=self.authors,
+                groups=self.groups,
+                source=self.source,
+                date_added=self.date_added,
+                added_by=self.added_by,
+                metadata=self.prompt_metadata,
+                prompt_group_id=self.prompt_group_id,
+                num_turns=config.get("num_turns", 3),
+                sequence=config.get("sequence", 0),
+                adversarial_chat_system_prompt_path=config.get("adversarial_chat_system_prompt_path"),
+                simulated_target_system_prompt_path=config.get("simulated_target_system_prompt_path"),
+                next_message_system_prompt_path=config.get("next_message_system_prompt_path"),
             )
         return SeedPrompt(
             id=self.id,
@@ -674,7 +738,7 @@ class AttackResultEntry(Base):
 
         self.executed_turns = entry.executed_turns
         self.execution_time_ms = entry.execution_time_ms
-        self.outcome = entry.outcome.value  # type: ignore
+        self.outcome = entry.outcome.value
         self.outcome_reason = entry.outcome_reason
         self.attack_metadata = self.filter_json_serializable_metadata(entry.metadata)
 
@@ -822,14 +886,14 @@ class ScenarioResultEntry(Base):
     scenario_description = mapped_column(Unicode, nullable=True)
     scenario_version = mapped_column(INTEGER, nullable=False, default=1)
     pyrit_version = mapped_column(String, nullable=False)
-    scenario_init_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    objective_target_identifier: Mapped[dict] = mapped_column(JSON, nullable=False)
-    objective_scorer_identifier: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    scenario_init_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    objective_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
+    objective_scorer_identifier: Mapped[Optional[dict[str, str]]] = mapped_column(JSON, nullable=True)
     scenario_run_state: Mapped[Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]] = mapped_column(
         String, nullable=False, default="CREATED"
     )
     attack_results_json: Mapped[str] = mapped_column(Unicode, nullable=False)
-    labels: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    labels: Mapped[Optional[dict[str, str]]] = mapped_column(JSON, nullable=True)
     number_tries: Mapped[int] = mapped_column(INTEGER, nullable=False, default=0)
     completion_time = mapped_column(DateTime, nullable=False)
     timestamp = mapped_column(DateTime, nullable=False)
@@ -849,7 +913,7 @@ class ScenarioResultEntry(Base):
         self.scenario_init_data = entry.scenario_identifier.init_data
         self.objective_target_identifier = entry.objective_target_identifier
         self.objective_scorer_identifier = entry.objective_scorer_identifier
-        self.scenario_run_state = entry.scenario_run_state  # type: ignore
+        self.scenario_run_state = entry.scenario_run_state
         self.labels = entry.labels
         self.number_tries = entry.number_tries
         self.completion_time = entry.completion_time
@@ -905,9 +969,10 @@ class ScenarioResultEntry(Base):
         Returns:
             Dictionary mapping attack names to lists of conversation IDs
         """
-        return json.loads(self.attack_results_json)
+        result: dict[str, list[str]] = json.loads(self.attack_results_json)
+        return result
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return a string representation of the scenario result entry.
 

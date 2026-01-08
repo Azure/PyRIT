@@ -168,6 +168,8 @@ API Reference
     AttackScoringConfig
     AttackStrategy
     ConsoleAttackResultPrinter
+    ChunkedRequestAttack
+    ChunkedRequestAttackContext
     ContextComplianceAttack
     ConversationManager
     ConversationSession
@@ -184,12 +186,11 @@ API Reference
     MultiTurnAttackContext
     MultiTurnAttackStrategy
     ObjectiveEvaluator
+    PrependedConversationConfig
     PromptSendingAttack
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
-    SimulatedConversationResult
-    SimulatedTargetSystemPromptPaths
     RolePlayPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
@@ -327,8 +328,10 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
+    get_all_harm_definitions
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
+    HarmDefinition
     Identifier
     ImagePathDataTypeSerializer
     AllowedCategories
@@ -336,20 +339,26 @@ API Reference
     AttackResult
     Message
     MessagePiece
+    NextMessageSystemPromptPaths
     PromptDataType
     PromptResponseError
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
+    ScaleDescription
     ScenarioIdentifier
     ScenarioResult
     Score
     ScoreType
     Seed
+    SeedAttackGroup
     SeedDataset
     SeedGroup
     SeedObjective
     SeedPrompt
+    SeedSimulatedConversation
+    SeedType
+    SimulatedTargetSystemPromptPaths
     sort_message_pieces
     StorageIO
     StrategyResult
@@ -409,6 +418,7 @@ API Reference
     MathPromptConverter
     MorseConverter
     NatoConverter
+    NegationTrapConverter
     NoiseConverter
     PDFConverter
     PersuasionConverter
@@ -519,6 +529,7 @@ API Reference
 
     AzureContentFilterScorer
     BatchScorer
+    ConsoleScorerPrinter
     ContentClassifierPaths
     ConversationScorer
     create_conversation_scorer
@@ -536,6 +547,7 @@ API Reference
     HumanLabeledDataset
     HumanLabeledEntry
     InsecureCodeScorer
+    LikertScaleEvalFiles
     LikertScalePaths
     MarkdownInjectionScorer
     MetricsType
@@ -546,11 +558,17 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RegistryUpdateBehavior
     Scorer
+    ScorerEvalDatasetFiles
     ScorerEvaluator
     ScorerIdentifier
     ScorerMetrics
+    ScorerMetricsWithIdentity
+    ScorerPrinter
     ScorerPromptValidator
+    get_all_harm_metrics
+    get_all_objective_metrics
     SelfAskCategoryScorer
     SelfAskGeneralFloatScaleScorer
     SelfAskGeneralTrueFalseScorer

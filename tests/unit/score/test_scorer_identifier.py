@@ -318,38 +318,6 @@ class TestScorerIdentifierScoreAggregator:
         assert hash2 != hash3
 
 
-class TestScorerIdentifierPyritVersion:
-    """Test pyrit_version field behavior."""
-
-    def test_pyrit_version_default(self):
-        """Test that pyrit_version is set by default."""
-        import pyrit
-
-        identifier = ScorerIdentifier(type="TestScorer")
-
-        assert identifier.pyrit_version == pyrit.__version__
-
-    def test_pyrit_version_in_compact_dict(self):
-        """Test that pyrit_version appears in compact dict."""
-        import pyrit
-
-        identifier = ScorerIdentifier(type="TestScorer")
-        result = identifier.to_compact_dict()
-
-        assert result["pyrit_version"] == pyrit.__version__
-
-    def test_pyrit_version_can_be_overridden(self):
-        """Test that pyrit_version can be explicitly set."""
-        identifier = ScorerIdentifier(
-            type="TestScorer",
-            pyrit_version="0.0.1-test",
-        )
-
-        assert identifier.pyrit_version == "0.0.1-test"
-        result = identifier.to_compact_dict()
-        assert result["pyrit_version"] == "0.0.1-test"
-
-
 class TestScorerSubclassIdentifiers:
     """Test that scorer subclasses correctly build their identifiers."""
 

@@ -4,10 +4,15 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 import pyrit
 from pyrit.models import AttackOutcome, AttackResult
+
+if TYPE_CHECKING:
+    from pyrit.score import Scorer
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
+    from pyrit.score.scorer_identifier import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +53,10 @@ ScenarioRunState = Literal["CREATED", "IN_PROGRESS", "COMPLETED", "FAILED"]
 class ScenarioResult:
     """
     Scenario result class for aggregating scenario results.
+
+    Note: When creating a new ScenarioResult, objective_scorer should always be provided.
+    The parameter is Optional only to support deserialization from the database where
+    the scorer object cannot be reconstructed.
     """
 
     def __init__(
@@ -56,6 +65,7 @@ class ScenarioResult:
         scenario_identifier: ScenarioIdentifier,
         objective_target_identifier: dict,
         attack_results: dict[str, List[AttackResult]],
+        objective_scorer: Optional["Scorer"] = None,
         objective_scorer_identifier: Optional[dict] = None,
         scenario_run_state: ScenarioRunState = "CREATED",
         labels: Optional[dict[str, str]] = None,
@@ -66,12 +76,44 @@ class ScenarioResult:
         self.id = id if id is not None else uuid.uuid4()
         self.scenario_identifier = scenario_identifier
         self.objective_target_identifier = objective_target_identifier
-        self.objective_scorer_identifier = objective_scorer_identifier
+        # Store the scorer object for metrics access (not serialized)
+        self._objective_scorer = objective_scorer
+        # Derive identifier from scorer if available, otherwise use provided identifier
+        if objective_scorer:
+            self.objective_scorer_identifier = objective_scorer.get_identifier() or objective_scorer_identifier
+        else:
+            self.objective_scorer_identifier = objective_scorer_identifier or {}
         self.scenario_run_state = scenario_run_state
         self.attack_results = attack_results
         self.labels = labels if labels is not None else {}
         self.completion_time = completion_time if completion_time is not None else datetime.now(timezone.utc)
         self.number_tries = number_tries
+
+    @property
+    def objective_scorer(self) -> Optional["Scorer"]:
+        """
+        Get the objective scorer for this scenario.
+
+        Returns:
+            Scorer: The objective scorer instance, or None if deserialized from database.
+        """
+        return self._objective_scorer
+
+    def get_objective_scorer_identifier(self) -> Optional["ScorerIdentifier"]:
+        """
+        Get the objective scorer identifier as a ScorerIdentifier object.
+
+        Reconstructs a ScorerIdentifier from the stored dict representation.
+        This can be used even for deserialized results from the database.
+
+        Returns:
+            ScorerIdentifier: The scorer identifier object, or None if no identifier is stored.
+        """
+        from pyrit.score.scorer_identifier import ScorerIdentifier
+
+        if not self.objective_scorer_identifier:
+            return None
+        return ScorerIdentifier.from_compact_dict(self.objective_scorer_identifier)
 
     def get_strategies_used(self) -> List[str]:
         """Get the list of strategies used in this scenario."""
@@ -164,3 +206,22 @@ class ScenarioResult:
             return pascal_name
         # Already PascalCase or other format, return as-is
         return scenario_name
+
+    def get_scorer_evaluation_metrics(self) -> Optional["ScorerMetrics"]:
+        """
+        Get the evaluation metrics for the scenario's scorer from the scorer evaluation registry.
+
+        Returns:
+            ScorerMetrics: The evaluation metrics object, or None if not found.
+        """
+        # import here to avoid circular imports
+        from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+            find_objective_metrics_by_hash,
+        )
+
+        # Use the stored hash directly for lookup (avoids needing to reconstruct ScorerIdentifier)
+        scorer_hash = self.objective_scorer_identifier.get("hash")
+        if not scorer_hash:
+            return None
+
+        return find_objective_metrics_by_hash(hash=scorer_hash)

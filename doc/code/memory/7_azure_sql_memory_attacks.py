@@ -53,7 +53,7 @@ results = await AttackExecutor().execute_attack_async(  # type: ignore
 )
 end = time.time()
 
-print(f"Elapsed time for operation: {end-start}")
+print(f"Elapsed time for operation: {end - start}")
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
@@ -75,7 +75,7 @@ target = OpenAIChatTarget()
 
 # Set up the Azure Content Filter Scorer
 acf = AzureContentFilterScorer(harm_categories=[TextCategory.HATE])  # Options: HATE, SELF_HARM, SEXUAL, VIOLENCE
-bias_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.FAIRNESS_BIAS_SCALE.value, chat_target=target)
+bias_scorer = SelfAskLikertScorer(likert_scale=LikertScalePaths.FAIRNESS_BIAS_SCALE, chat_target=target)
 
 scoring_config = AttackScoringConfig(
     auxiliary_scorers=[acf, bias_scorer],

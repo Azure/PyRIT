@@ -40,7 +40,6 @@ def _get_required_env_var(env_var_name: str) -> str:
 
 
 async def _assert_can_send_prompt(target, check_if_llm_interpreted_request=True, max_retries=2):
-
     simple_prompt = """\
 You are a large language model. Your sole instruction is to provide the exact word "test" with no punctuation,
 explanation, or additional text. Output only the word "test" and nothing else.
@@ -80,9 +79,9 @@ async def _assert_can_send_video_prompt(target):
     # For video generation, verify we got a successful response
     assert result.last_response is not None
     assert result.last_response.converted_value is not None
-    assert (
-        result.last_response.response_error == "none"
-    ), f"Expected successful response, got error: {result.last_response.response_error}"
+    assert result.last_response.response_error == "none", (
+        f"Expected successful response, got error: {result.last_response.response_error}"
+    )
 
     # Validate we got a valid video file path
     video_path = Path(result.last_response.converted_value)
@@ -317,9 +316,9 @@ async def test_connect_image(sqlite_instance, endpoint, api_key, model_name):
     # For image generation, verify we got a successful response
     assert result.last_response is not None
     assert result.last_response.converted_value is not None
-    assert (
-        result.last_response.response_error == "none"
-    ), f"Expected successful response, got error: {result.last_response.response_error}"
+    assert result.last_response.response_error == "none", (
+        f"Expected successful response, got error: {result.last_response.response_error}"
+    )
 
     # Validate we got a valid image file path
     image_path = Path(result.last_response.converted_value)
@@ -435,12 +434,12 @@ async def test_video_multiple_prompts_create_separate_files(sqlite_instance):
 
     # Verify they are different files (not overridden)
     assert video_path1 != video_path2, (
-        f"Both prompts resulted in the same file path: {video_path1}. " "Expected separate files for different prompts."
+        f"Both prompts resulted in the same file path: {video_path1}. Expected separate files for different prompts."
     )
 
     # Verify both files still exist (first wasn't overridden)
     assert video_path1.exists(), (
-        f"First video file was overridden or deleted. " f"File 1: {video_path1}, File 2: {video_path2}"
+        f"First video file was overridden or deleted. File 1: {video_path1}, File 2: {video_path2}"
     )
 
 

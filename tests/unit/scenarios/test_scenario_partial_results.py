@@ -60,14 +60,19 @@ def create_mock_atomic_attack(name: str, objectives: list[str]) -> MagicMock:
 class ConcreteScenario(Scenario):
     """Concrete implementation of Scenario for testing."""
 
-    def __init__(self, *, atomic_attacks_to_return=None, **kwargs):
+    def __init__(self, *, atomic_attacks_to_return=None, objective_scorer=None, **kwargs):
         # Default include_default_baseline=False for tests unless explicitly specified
         kwargs.setdefault("include_default_baseline", False)
 
         # Get strategy_class from kwargs or use default
         strategy_class = kwargs.pop("strategy_class", None) or self.get_strategy_class()
 
-        super().__init__(strategy_class=strategy_class, **kwargs)
+        # Create a default mock scorer if not provided
+        if objective_scorer is None:
+            objective_scorer = MagicMock()
+            objective_scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test"}
+
+        super().__init__(strategy_class=strategy_class, objective_scorer=objective_scorer, **kwargs)
         self._test_atomic_attacks = atomic_attacks_to_return or []
 
     async def _get_atomic_attacks_async(self):
@@ -75,7 +80,6 @@ class ConcreteScenario(Scenario):
 
     @classmethod
     def get_strategy_class(cls):
-
         class TestStrategy(ScenarioStrategy):
             CONCRETE = ("concrete", {"concrete"})
             ALL = ("all", {"all"})

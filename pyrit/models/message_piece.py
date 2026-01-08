@@ -140,7 +140,7 @@ class MessagePiece:
         self.scores = scores if scores else []
         self.targeted_harm_categories = targeted_harm_categories if targeted_harm_categories else []
 
-    async def set_sha256_values_async(self):
+    async def set_sha256_values_async(self) -> None:
         """
         This method computes the SHA256 hash values asynchronously.
         It should be called after object creation if `original_value` and `converted_value` are set.
@@ -228,16 +228,6 @@ class MessagePiece:
         if value not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {value} is not a valid role.")
         self._role = value
-
-    def to_chat_message(self):
-        """
-        Convert to a ChatMessage for API calls.
-
-        Uses api_role to ensure simulated_assistant is mapped to assistant.
-        """
-        from pyrit.models.chat_message import ChatMessage
-
-        return ChatMessage(role=cast(ChatMessageRole, self.api_role), content=self.converted_value)
 
     def to_message(self) -> Message:  # type: ignore # noqa F821
         from pyrit.models.message import Message

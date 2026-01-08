@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 from tqdm import tqdm
 
-from pyrit.models.seed_dataset import SeedDataset
+from pyrit.models.seeds import SeedDataset
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ class SeedDatasetProvider(ABC):
             available_names = cls.get_all_dataset_names()
             invalid_names = [name for name in dataset_names if name not in available_names]
             if invalid_names:
-                raise ValueError(f"Dataset(s) not found: {invalid_names}. " f"Available datasets: {available_names}")
+                raise ValueError(f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
 
         async def fetch_single_dataset(
             provider_name: str, provider_class: Type["SeedDatasetProvider"]

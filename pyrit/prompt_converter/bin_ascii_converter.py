@@ -49,7 +49,7 @@ class BinAsciiConverter(WordLevelConverter):
 
         if encoding_func not in ["hex", "quoted-printable", "UUencode"]:
             raise ValueError(
-                f"Invalid encoding_func '{encoding_func}'. " "Must be one of: 'hex', 'quoted-printable', 'UUencode'"
+                f"Invalid encoding_func '{encoding_func}'. Must be one of: 'hex', 'quoted-printable', 'UUencode'"
             )
 
         self._encoding_func = encoding_func

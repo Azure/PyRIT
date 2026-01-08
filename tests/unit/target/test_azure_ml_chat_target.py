@@ -168,7 +168,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(aml_online_
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: AzureMLChatTarget):
-
     response = MagicMock()
     response.status_code = 429
     mock_complete_chat_async = AsyncMock(
@@ -185,7 +184,6 @@ async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: A
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureMLChatTarget):
-
     response = MagicMock()
     response.status_code = 429
     mock_complete_chat_async = AsyncMock()
