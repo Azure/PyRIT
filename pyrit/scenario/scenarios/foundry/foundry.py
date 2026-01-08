@@ -15,6 +15,7 @@ from inspect import signature
 from typing import Any, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack import (
     CrescendoAttack,
@@ -28,7 +29,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.models import SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_converter import (
     AnsiAttackConverter,
     AsciiArtConverter,
@@ -273,9 +274,10 @@ class Foundry(Scenario):
         """
         # Handle deprecation warning for objectives parameter
         if objectives is not None:
-            logger.warning(
-                "objectives is deprecated and will be removed in 0.13.0. "
-                "Use dataset_config in initialize_async instead."
+            print_deprecation_message(
+                old_item="objectives parameter",
+                new_item="dataset_config in initialize_async",
+                removed_in="0.13.0",
             )
 
         self._objectives = objectives  # Store for backward compatibility
@@ -297,12 +299,12 @@ class Foundry(Scenario):
             name="Foundry",
             version=self.version,
             strategy_class=FoundryStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
 
-    def _resolve_seed_groups(self) -> List[SeedGroup]:
+    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
         """
         Resolve seed groups from the configuration. This can be removed once objectives is removed.
 
@@ -325,10 +327,10 @@ class Foundry(Scenario):
 
         # Backward compatibility: convert objectives list to seed groups
         if self._objectives is not None:
-            return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in self._objectives]
+            return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._objectives]
 
         # Use dataset_config (always set by initialize_async)
-        return self._dataset_config.get_all_seed_groups()
+        return self._dataset_config.get_all_seed_attack_groups()
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -467,6 +469,8 @@ class Foundry(Scenario):
             atomic_attack_name=composite_strategy.name,
             attack=attack,
             seed_groups=self._seed_groups,
+            adversarial_chat=self._adversarial_chat,
+            objective_scorer=self._attack_scoring_config.objective_scorer,
             memory_labels=self._memory_labels,
         )
 
@@ -550,11 +554,9 @@ class FoundryScenario(Foundry):
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize FoundryScenario with deprecation warning."""
-        import warnings
-
-        warnings.warn(
-            "FoundryScenario is deprecated and will be removed in version 0.13.0. Use 'Foundry' instead.",
-            DeprecationWarning,
-            stacklevel=2,
+        print_deprecation_message(
+            old_item="FoundryScenario",
+            new_item="Foundry",
+            removed_in="0.13.0",
         )
         super().__init__(**kwargs)

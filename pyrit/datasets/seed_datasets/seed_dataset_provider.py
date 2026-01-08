@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 from tqdm import tqdm
 
-from pyrit.models.seed_dataset import SeedDataset
+from pyrit.models.seeds import SeedDataset
 
 logger = logging.getLogger(__name__)
 

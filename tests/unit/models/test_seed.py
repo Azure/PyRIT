@@ -14,11 +14,14 @@ from scipy.io import wavfile
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import (
+    Message,
+    MessagePiece,
     SeedDataset,
     SeedGroup,
     SeedObjective,
     SeedPrompt,
 )
+from pyrit.models.seeds import SeedSimulatedConversation
 
 
 @pytest.fixture
@@ -45,7 +48,6 @@ def seed_prompt_fixture():
 def seed_objective_fixture():
     return SeedObjective(
         value="Test objective",
-        data_type="text",
         name="Test Name",
         dataset_name="Test Dataset",
         harm_categories=["category1", "category2"],
@@ -145,7 +147,7 @@ def test_seed_group_with_multiple_objectives():
     with pytest.raises(ValueError) as exc_info:
         SeedGroup(seeds=prompts)
 
-    assert ("SeedGroups can only have one objective.") in str(exc_info.value)
+    assert ("SeedGroup can only have one objective.") in str(exc_info.value)
 
 
 def test_seed_group_sequence_default():
@@ -497,7 +499,7 @@ async def test_memory_encoding_metadata_image(sqlite_instance):
 
 
 @pytest.mark.asyncio
-@patch("pyrit.models.seed_prompt.TinyTag")
+@patch("pyrit.models.seeds.seed_prompt.TinyTag")
 async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     # Simulate WAV data
     sample_rate = 44100
@@ -531,8 +533,8 @@ async def test_memory_encoding_metadata_audio(mock_tinytag, sqlite_instance):
     os.remove(original_wav_path)
 
 
-@patch("pyrit.models.seed_prompt.logger")
-@patch("pyrit.models.seed_prompt.TinyTag")
+@patch("pyrit.models.seeds.seed_prompt.logger")
+@patch("pyrit.models.seeds.seed_prompt.TinyTag")
 def test_set_encoding_metadata_tinytag_exception(mock_tinytag, mock_logger):
     mock_tinytag.get.side_effect = Exception("Tinytag error")
     sp = SeedPrompt(
@@ -547,7 +549,7 @@ def test_set_encoding_metadata_tinytag_exception(mock_tinytag, mock_logger):
     mock_logger.error.assert_called_once()
 
 
-@patch("pyrit.models.seed_prompt.logger")
+@patch("pyrit.models.seeds.seed_prompt.logger")
 def test_set_encoding_metadata_unsupported_audio(mock_logger):
     sp = SeedPrompt(
         value="unsupported_audio.xyz",
@@ -779,7 +781,7 @@ def test_seed_group_mixed_objective_types():
     objective = SeedObjective(value="Seed objective")
     dict_objective = {"value": "Dict objective", "data_type": "text", "is_objective": True}
 
-    with pytest.raises(ValueError, match="SeedGroups can only have one objective."):
+    with pytest.raises(ValueError, match="SeedGroup can only have one objective."):
         SeedGroup(seeds=[objective, dict_objective])
 
 
@@ -801,6 +803,205 @@ def test_seed_group_mixed_prompt_types():
     # Should have the objective
     assert group.objective is not None
     assert group.objective.value == "Test objective"
+
+
+def test_seed_group_dict_with_seed_type_objective():
+    """Test that a dictionary with seed_type='objective' creates an objective."""
+    prompt_dict = {
+        "value": "Test objective from dict with seed_type",
+        "seed_type": "objective",
+    }
+
+    group = SeedGroup(seeds=[prompt_dict])
+
+    # Should create objective from the dictionary
+    assert group.objective is not None
+    assert group.objective.value == "Test objective from dict with seed_type"
+
+    # Prompts list should be empty
+    assert len(group.prompts) == 0
+
+
+def test_seed_group_dict_with_seed_type_prompt():
+    """Test that a dictionary with seed_type='prompt' creates a prompt."""
+    prompt_dict = {"value": "Test prompt from dict with seed_type", "seed_type": "prompt", "sequence": 1}
+
+    group = SeedGroup(seeds=[prompt_dict])
+
+    # Should create prompt from the dictionary
+    assert len(group.prompts) == 1
+    assert group.prompts[0].value == "Test prompt from dict with seed_type"
+    assert group.prompts[0].sequence == 1
+
+    # No objective should be created
+    assert group.objective is None
+
+
+# ============================================================================
+# SeedDataset base_params verification tests
+# These tests verify that all base parameters are correctly passed from dict
+# to the corresponding Seed object for each seed type.
+# ============================================================================
+
+
+def test_seed_dataset_dict_to_seed_prompt_all_base_params():
+    """Test that all base_params are correctly passed when creating SeedPrompt from dict."""
+    prompt_group_id = uuid.uuid4()
+    prompt_dict = {
+        "value": "Test prompt value",
+        "data_type": "text",
+        "value_sha256": "abc123sha",
+        "name": "Test Name",
+        "dataset_name": "Test Dataset",
+        "harm_categories": ["category1", "category2"],
+        "description": "Test Description",
+        "authors": ["Author1", "Author2"],
+        "groups": ["Group1", "Group2"],
+        "source": "Test Source",
+        "date_added": "2025-01-01",
+        "added_by": "Tester",
+        "metadata": {"key": "value"},
+        "prompt_group_id": prompt_group_id,
+        # SeedPrompt-specific fields
+        "role": "assistant",
+        "sequence": 5,
+        "parameters": {"param1": "val1"},
+        "seed_type": "prompt",
+    }
+
+    dataset = SeedDataset(seeds=[prompt_dict])
+
+    assert len(dataset.seeds) == 1
+    seed = dataset.seeds[0]
+    assert isinstance(seed, SeedPrompt)
+
+    # Verify all base params
+    assert seed.value == "Test prompt value"
+    assert seed.data_type == "text"
+    assert seed.value_sha256 == "abc123sha"
+    assert seed.name == "Test Name"
+    assert seed.dataset_name == "Test Dataset"
+    assert seed.harm_categories == ["category1", "category2"]
+    assert seed.description == "Test Description"
+    assert seed.authors == ["Author1", "Author2"]
+    assert seed.groups == ["Group1", "Group2"]
+    assert seed.source == "Test Source"
+    assert seed.added_by == "Tester"
+    assert seed.metadata == {"key": "value"}
+    assert seed.prompt_group_id == prompt_group_id
+
+    # Verify SeedPrompt-specific fields
+    assert seed.role == "assistant"
+    assert seed.sequence == 5
+    assert seed.parameters == {"param1": "val1"}
+
+
+def test_seed_dataset_dict_to_seed_objective_all_base_params():
+    """Test that all base_params are correctly passed when creating SeedObjective from dict."""
+    prompt_group_id = uuid.uuid4()
+    objective_dict = {
+        "value": "Test objective value",
+        "data_type": "image",  # Should be overridden to "text" for objectives
+        "value_sha256": "def456sha",
+        "name": "Objective Name",
+        "dataset_name": "Objective Dataset",
+        "harm_categories": ["harm1", "harm2"],
+        "description": "Objective Description",
+        "authors": ["ObjAuthor"],
+        "groups": ["ObjGroup"],
+        "source": "Objective Source",
+        "date_added": "2025-06-15",
+        "added_by": "ObjTester",
+        "metadata": {"obj_key": "obj_value"},
+        "prompt_group_id": prompt_group_id,
+        "seed_type": "objective",
+    }
+
+    dataset = SeedDataset(seeds=[objective_dict])
+
+    assert len(dataset.seeds) == 1
+    seed = dataset.seeds[0]
+    assert isinstance(seed, SeedObjective)
+
+    # Verify all base params
+    assert seed.value == "Test objective value"
+    assert seed.data_type == "text"  # Objectives are always text
+    assert seed.value_sha256 == "def456sha"
+    assert seed.name == "Objective Name"
+    assert seed.dataset_name == "Objective Dataset"
+    assert seed.harm_categories == ["harm1", "harm2"]
+    assert seed.description == "Objective Description"
+    assert seed.authors == ["ObjAuthor"]
+    assert seed.groups == ["ObjGroup"]
+    assert seed.source == "Objective Source"
+    assert seed.added_by == "ObjTester"
+    assert seed.metadata == {"obj_key": "obj_value"}
+    assert seed.prompt_group_id == prompt_group_id
+
+
+def test_seed_dataset_dict_to_seed_simulated_conversation_all_base_params(tmp_path):
+    """Test that SeedSimulatedConversation is correctly created from dict with path-based API."""
+    # Create adversarial prompt file
+    adv_path = tmp_path / "adversarial.yaml"
+    adv_path.write_text("value: You are adversarial\ndata_type: text")
+
+    # Create simulated target prompt file
+    sim_path = tmp_path / "simulated.yaml"
+    sim_path.write_text(
+        "value: 'Objective: {{ objective }} Turns: {{ num_turns }}'\n"
+        "data_type: text\n"
+        "parameters:\n"
+        "  - objective\n"
+        "  - num_turns"
+    )
+
+    sim_dict = {
+        "seed_type": "simulated_conversation",
+        "num_turns": 5,
+        "adversarial_chat_system_prompt_path": str(adv_path),
+        "simulated_target_system_prompt_path": str(sim_path),
+    }
+
+    dataset = SeedDataset(seeds=[sim_dict])
+
+    assert len(dataset.seeds) == 1
+    seed = dataset.seeds[0]
+    assert isinstance(seed, SeedSimulatedConversation)
+
+    # Verify SeedSimulatedConversation-specific fields
+    assert seed.num_turns == 5
+    assert seed.adversarial_chat_system_prompt_path == pathlib.Path(adv_path)
+    assert seed.simulated_target_system_prompt_path == pathlib.Path(sim_path)
+
+
+def test_seed_dataset_uses_dataset_defaults_for_missing_params():
+    """Test that dataset-level defaults are used when dict params are missing."""
+    prompt_dict = {
+        "value": "Minimal prompt",
+        "seed_type": "prompt",
+    }
+
+    dataset = SeedDataset(
+        seeds=[prompt_dict],
+        name="Dataset Name",
+        dataset_name="Dataset Dataset Name",
+        description="Dataset Description",
+        source="Dataset Source",
+    )
+
+    seed = dataset.seeds[0]
+    assert isinstance(seed, SeedPrompt)
+
+    # These should come from dataset defaults
+    assert seed.name == "Dataset Name"
+    assert seed.dataset_name == "Dataset Dataset Name"
+    assert seed.description == "Dataset Description"
+    assert seed.source == "Dataset Source"
+
+    # These should use sensible defaults
+    assert seed.role == "user"
+    assert seed.sequence == 0
+    assert seed.parameters == {}
 
 
 def test_next_message_single_turn_no_objective():
@@ -839,9 +1040,9 @@ def test_prepended_conversation_multi_turn_no_objective():
     assert group.prepended_conversation is not None
     assert len(group.prepended_conversation) == 2  # Two prior turns
     assert group.prepended_conversation[0].get_value() == "Turn 1"
-    assert group.prepended_conversation[0].role == "user"
+    assert group.prepended_conversation[0].api_role == "user"
     assert group.prepended_conversation[1].get_value() == "Turn 2"
-    assert group.prepended_conversation[1].role == "assistant"
+    assert group.prepended_conversation[1].api_role == "assistant"
     assert group.next_message is not None
     assert len(group.next_message.message_pieces) == 1
     assert group.next_message.get_value() == "Turn 3"
@@ -931,9 +1132,9 @@ def test_next_message_none_when_last_is_assistant():
     assert group.prepended_conversation is not None
     assert len(group.prepended_conversation) == 2
     assert group.prepended_conversation[0].get_value() == "User turn"
-    assert group.prepended_conversation[0].role == "user"
+    assert group.prepended_conversation[0].api_role == "user"
     assert group.prepended_conversation[1].get_value() == "Assistant turn"
-    assert group.prepended_conversation[1].role == "assistant"
+    assert group.prepended_conversation[1].api_role == "assistant"
 
 
 def test_next_message_none_when_single_assistant():
@@ -948,7 +1149,7 @@ def test_next_message_none_when_single_assistant():
     assert group.prepended_conversation is not None
     assert len(group.prepended_conversation) == 1
     assert group.prepended_conversation[0].get_value() == "Assistant only"
-    assert group.prepended_conversation[0].role == "assistant"
+    assert group.prepended_conversation[0].api_role == "assistant"
 
 
 def test_prepended_conversation_ends_with_assistant():
@@ -969,3 +1170,122 @@ def test_prepended_conversation_ends_with_assistant():
     assert group.prepended_conversation[1].get_value() == "Assistant 1"
     assert group.prepended_conversation[2].get_value() == "User 2"
     assert group.prepended_conversation[3].get_value() == "Assistant 2"
+
+
+def test_from_messages_single_message():
+    """Test from_messages with a single message."""
+    piece = MessagePiece(role="user", original_value="Hello")
+    message = Message(message_pieces=[piece])
+
+    result = SeedPrompt.from_messages([message])
+
+    assert len(result) == 1
+    assert result[0].value == "Hello"
+    assert result[0].role == "user"
+    assert result[0].data_type == "text"
+    assert result[0].sequence == 0
+
+
+def test_from_messages_multiple_messages():
+    """Test from_messages with multiple messages."""
+    msg1 = Message(message_pieces=[MessagePiece(role="user", original_value="User message")])
+    msg2 = Message(message_pieces=[MessagePiece(role="assistant", original_value="Assistant response")])
+    msg3 = Message(message_pieces=[MessagePiece(role="user", original_value="Follow up")])
+
+    result = SeedPrompt.from_messages([msg1, msg2, msg3])
+
+    assert len(result) == 3
+    assert result[0].value == "User message"
+    assert result[0].role == "user"
+    assert result[0].sequence == 0
+    assert result[1].value == "Assistant response"
+    assert result[1].role == "assistant"
+    assert result[1].sequence == 1
+    assert result[2].value == "Follow up"
+    assert result[2].role == "user"
+    assert result[2].sequence == 2
+
+
+def test_from_messages_multipart_message():
+    """Test from_messages with a multipart message (e.g., text + image)."""
+    conv_id = str(uuid.uuid4())
+    pieces = [
+        MessagePiece(
+            role="user", original_value="Check this image:", original_value_data_type="text", conversation_id=conv_id
+        ),
+        MessagePiece(
+            role="user",
+            original_value="/path/to/image.png",
+            original_value_data_type="image_path",
+            conversation_id=conv_id,
+        ),
+    ]
+    message = Message(message_pieces=pieces)
+
+    result = SeedPrompt.from_messages([message])
+
+    assert len(result) == 2
+    # Both pieces share the same sequence since they're from the same message
+    assert result[0].value == "Check this image:"
+    assert result[0].data_type == "text"
+    assert result[0].sequence == 0
+    assert result[1].value == "/path/to/image.png"
+    assert result[1].data_type == "image_path"
+    assert result[1].sequence == 0
+
+
+def test_from_messages_starting_sequence():
+    """Test from_messages with a custom starting sequence."""
+    msg1 = Message(message_pieces=[MessagePiece(role="user", original_value="First")])
+    msg2 = Message(message_pieces=[MessagePiece(role="assistant", original_value="Second")])
+
+    result = SeedPrompt.from_messages([msg1, msg2], starting_sequence=5)
+
+    assert len(result) == 2
+    assert result[0].sequence == 5
+    assert result[1].sequence == 6
+
+
+def test_from_messages_empty_list():
+    """Test from_messages with an empty list."""
+    result = SeedPrompt.from_messages([])
+    assert result == []
+
+
+def test_from_messages_preserves_data_types():
+    """Test from_messages preserves various data types."""
+    messages = [
+        Message(message_pieces=[MessagePiece(role="user", original_value="text", original_value_data_type="text")]),
+        Message(
+            message_pieces=[
+                MessagePiece(role="user", original_value="/audio.mp3", original_value_data_type="audio_path")
+            ]
+        ),
+        Message(
+            message_pieces=[
+                MessagePiece(role="user", original_value="/video.mp4", original_value_data_type="video_path")
+            ]
+        ),
+    ]
+
+    result = SeedPrompt.from_messages(messages)
+
+    assert len(result) == 3
+    assert result[0].data_type == "text"
+    assert result[1].data_type == "audio_path"
+    assert result[2].data_type == "video_path"
+
+
+def test_from_messages_with_prompt_group_id():
+    """Test from_messages assigns prompt_group_id to all prompts."""
+    group_id = uuid.uuid4()
+    messages = [
+        Message(message_pieces=[MessagePiece(role="user", original_value="First")]),
+        Message(message_pieces=[MessagePiece(role="assistant", original_value="Second")]),
+    ]
+
+    result = SeedPrompt.from_messages(messages, prompt_group_id=group_id)
+
+    assert len(result) == 2
+    assert result[0].prompt_group_id == group_id
+    assert result[1].prompt_group_id == group_id

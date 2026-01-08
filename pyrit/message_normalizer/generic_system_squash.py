@@ -36,7 +36,7 @@ class GenericSystemSquashNormalizer(MessageListNormalizer[Message]):
 
         # Check if first message is a system message
         first_piece = messages[0].get_piece()
-        if first_piece.role != "system":
+        if first_piece.api_role != "system":
             # No system message to squash, return messages unchanged
             return list(messages)
 

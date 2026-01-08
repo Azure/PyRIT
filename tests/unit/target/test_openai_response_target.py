@@ -440,7 +440,7 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
         # Response contains only assistant's response, not user's input
         assert len(response) == 1
         assert len(response[0].message_pieces) == 1
-        assert response[0].message_pieces[0].role == "assistant"
+        assert response[0].message_pieces[0].api_role == "assistant"
         assert response[0].message_pieces[0].converted_value == "hi"
     os.remove(tmp_file_name)
 
@@ -1017,15 +1017,15 @@ async def test_send_prompt_async_agentic_loop_executes_function_and_returns_fina
         assert len(final) == 3
         # First message: assistant with function_call
         assert len(final[0].message_pieces) == 1
-        assert final[0].message_pieces[0].role == "assistant"
+        assert final[0].message_pieces[0].api_role == "assistant"
         assert final[0].message_pieces[0].original_value_data_type == "function_call"
         # Second message: tool with function_call_output
         assert len(final[1].message_pieces) == 1
-        assert final[1].message_pieces[0].role == "tool"
+        assert final[1].message_pieces[0].api_role == "tool"
         assert final[1].message_pieces[0].original_value_data_type == "function_call_output"
         # Third message: final assistant response with text
         assert len(final[2].message_pieces) == 1
-        assert final[2].message_pieces[0].role == "assistant"
+        assert final[2].message_pieces[0].api_role == "assistant"
         assert final[2].message_pieces[0].original_value_data_type == "text"
         assert final[2].message_pieces[0].original_value == "Done: 14"
 

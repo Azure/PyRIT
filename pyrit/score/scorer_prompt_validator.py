@@ -125,7 +125,7 @@ class ScorerPromptValidator:
             if metadata not in message_piece.prompt_metadata:
                 return False
 
-        if message_piece.role not in self._supported_roles:
+        if message_piece.api_role not in self._supported_roles:
             return False
 
         # Check text length limit for text data types

@@ -73,7 +73,6 @@ API Reference
     combine_list
     convert_local_image_to_data_url
     DefaultValueScope
-    deprecation_message
     display_image_response
     download_chunk
     download_file
@@ -88,6 +87,7 @@ API Reference
     get_required_value
     is_in_ipython_session
     make_request_and_raise_if_error_async
+    print_deprecation_message
     reset_default_values
     set_default_value
     Singleton
@@ -191,8 +191,6 @@ API Reference
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
-    SimulatedConversationResult
-    SimulatedTargetSystemPromptPaths
     RolePlayPaths
     SingleTurnAttackContext
     SingleTurnAttackStrategy
@@ -330,8 +328,10 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
+    get_all_harm_definitions
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
+    HarmDefinition
     Identifier
     ImagePathDataTypeSerializer
     AllowedCategories
@@ -339,20 +339,26 @@ API Reference
     AttackResult
     Message
     MessagePiece
+    NextMessageSystemPromptPaths
     PromptDataType
     PromptResponseError
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
+    ScaleDescription
     ScenarioIdentifier
     ScenarioResult
     Score
     ScoreType
     Seed
+    SeedAttackGroup
     SeedDataset
     SeedGroup
     SeedObjective
     SeedPrompt
+    SeedSimulatedConversation
+    SeedType
+    SimulatedTargetSystemPromptPaths
     sort_message_pieces
     StorageIO
     StrategyResult
@@ -523,6 +529,7 @@ API Reference
 
     AzureContentFilterScorer
     BatchScorer
+    ConsoleScorerPrinter
     ContentClassifierPaths
     ConversationScorer
     create_conversation_scorer
@@ -540,6 +547,7 @@ API Reference
     HumanLabeledDataset
     HumanLabeledEntry
     InsecureCodeScorer
+    LikertScaleEvalFiles
     LikertScalePaths
     MarkdownInjectionScorer
     MetricsType
@@ -550,11 +558,17 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RegistryUpdateBehavior
     Scorer
+    ScorerEvalDatasetFiles
     ScorerEvaluator
     ScorerIdentifier
     ScorerMetrics
+    ScorerMetricsWithIdentity
+    ScorerPrinter
     ScorerPromptValidator
+    get_all_harm_metrics
+    get_all_objective_metrics
     SelfAskCategoryScorer
     SelfAskGeneralFloatScaleScorer
     SelfAskGeneralTrueFalseScorer

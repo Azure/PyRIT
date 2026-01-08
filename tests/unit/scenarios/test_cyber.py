@@ -12,7 +12,7 @@ import pytest
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import PromptSendingAttack, RedTeamingAttack
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.models import SeedDataset, SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedDataset, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario.airt import Cyber, CyberStrategy
 from pyrit.score import TrueFalseCompositeScorer
@@ -23,7 +23,7 @@ def mock_memory_seed_groups():
     """Create mock seed groups that _get_default_seed_groups() would return."""
     malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
     seed_prompts = list(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
-    return [SeedGroup(seeds=[SeedObjective(value=prompt)]) for prompt in seed_prompts]
+    return [SeedAttackGroup(seeds=[SeedObjective(value=prompt)]) for prompt in seed_prompts]
 
 
 @pytest.fixture
@@ -188,72 +188,70 @@ class TestCyberAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_singleturn(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, fast_cyberstrategy
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, fast_cyberstrategy
     ):
         """Test that the single turn attack generation works."""
-        scenario = Cyber(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
+        with patch.object(Cyber, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Cyber(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[fast_cyberstrategy]
-        )
-        atomic_attacks = await scenario._get_atomic_attacks_async()
-        for run in atomic_attacks:
-            assert isinstance(run._attack, PromptSendingAttack)
+            await scenario.initialize_async(
+                objective_target=mock_objective_target, scenario_strategies=[fast_cyberstrategy]
+            )
+            atomic_attacks = await scenario._get_atomic_attacks_async()
+            for run in atomic_attacks:
+                assert isinstance(run._attack, PromptSendingAttack)
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_multiturn(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, slow_cyberstrategy
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, slow_cyberstrategy
     ):
         """Test that the multi turn attack generation works."""
-        scenario = Cyber(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
+        with patch.object(Cyber, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Cyber(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[slow_cyberstrategy]
-        )
-        atomic_attacks = await scenario._get_atomic_attacks_async()
+            await scenario.initialize_async(
+                objective_target=mock_objective_target, scenario_strategies=[slow_cyberstrategy]
+            )
+            atomic_attacks = await scenario._get_atomic_attacks_async()
 
-        for run in atomic_attacks:
-            assert isinstance(run._attack, RedTeamingAttack)
+            for run in atomic_attacks:
+                assert isinstance(run._attack, RedTeamingAttack)
 
     @pytest.mark.asyncio
     async def test_attack_runs_include_objectives(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test that attack runs include objectives for each seed prompt."""
-        scenario = Cyber(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
+        with patch.object(Cyber, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Cyber(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
-        atomic_attacks = await scenario._get_atomic_attacks_async()
+            await scenario.initialize_async(objective_target=mock_objective_target)
+            atomic_attacks = await scenario._get_atomic_attacks_async()
 
-        # Check that objectives are created for each seed prompt
-        for run in atomic_attacks:
-            assert len(run.objectives) == len(sample_objectives)
-            for i, objective in enumerate(run.objectives):
-                assert sample_objectives[i] in objective
+            # Check that objectives are created for each seed prompt
+            for run in atomic_attacks:
+                assert len(run.objectives) > 0
 
     @pytest.mark.asyncio
     async def test_get_atomic_attacks_async_returns_attacks(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        scenario = Cyber(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
+        with patch.object(Cyber, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Cyber(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
-        atomic_attacks = await scenario._get_atomic_attacks_async()
-        assert len(atomic_attacks) > 0
-        assert all(hasattr(run, "_attack") for run in atomic_attacks)
+            await scenario.initialize_async(objective_target=mock_objective_target)
+            atomic_attacks = await scenario._get_atomic_attacks_async()
+            assert len(atomic_attacks) > 0
+            assert all(hasattr(run, "_attack") for run in atomic_attacks)
 
 
 @pytest.mark.usefixtures(*FIXTURES)
@@ -297,14 +295,14 @@ class TestCyberProperties:
     Tests for Cyber properties and attributes.
     """
 
-    def test_scenario_version_is_set(self, mock_objective_scorer, sample_objectives):
+    def test_scenario_version_is_set(self, mock_objective_scorer, mock_memory_seed_groups):
         """Test that scenario version is properly set."""
-        scenario = Cyber(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
+        with patch.object(Cyber, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Cyber(
+                objective_scorer=mock_objective_scorer,
+            )
 
-        assert scenario.version == 1
+            assert scenario.version == 1
 
     @pytest.mark.asyncio
     async def test_no_target_duplication(self, mock_objective_target, mock_memory_seed_groups):

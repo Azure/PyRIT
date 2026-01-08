@@ -80,7 +80,7 @@ class ChatMessageNormalizer(MessageListNormalizer[ChatMessage], MessageStringNor
         chat_messages: List[ChatMessage] = []
         for message in processed_messages:
             pieces = message.message_pieces
-            role = pieces[0].role
+            role = cast(ChatMessageRole, pieces[0].api_role)
 
             # Translate system -> developer for newer OpenAI models
             if self.use_developer_role and role == "system":

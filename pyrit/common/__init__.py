@@ -14,7 +14,7 @@ from pyrit.common.apply_defaults import (
 )
 from pyrit.common.data_url_converter import convert_local_image_to_data_url
 from pyrit.common.default_values import get_non_required_value, get_required_value
-from pyrit.common.deprecation import deprecation_message
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.common.display_response import display_image_response
 from pyrit.common.download_hf_model import (
     download_chunk,
@@ -43,7 +43,6 @@ __all__ = [
     "combine_list",
     "convert_local_image_to_data_url",
     "DefaultValueScope",
-    "deprecation_message",
     "display_image_response",
     "download_chunk",
     "download_file",
@@ -65,4 +64,5 @@ __all__ = [
     "Singleton",
     "warn_if_set",
     "YamlLoadable",
+    "print_deprecation_message",
 ]
