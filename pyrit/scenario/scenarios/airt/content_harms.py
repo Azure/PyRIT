@@ -175,7 +175,9 @@ class ContentHarms(Scenario):
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
 
-        self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
+        self._objective_scorer: TrueFalseScorer = (
+            objective_scorer if objective_scorer else self._get_default_scorer()
+        )
 
         super().__init__(
             name="Content Harms",
