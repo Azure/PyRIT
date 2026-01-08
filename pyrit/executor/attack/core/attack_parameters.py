@@ -232,13 +232,12 @@ class AttackParameters:
         )
 
         # Attach from_seed_group_async that delegates to the parent classmethod
+        # We need to call the underlying function with the new class type (c) so that
+        # dataclasses.fields(cls) returns only the reduced field set.
+        original_method = cls.from_seed_group_async.__func__
+
         async def from_seed_group_async_wrapper(c, *, seed_group, adversarial_chat=None, objective_scorer=None, **ov):
-            # Resolve the original function at call time (not class creation time) to avoid
-            # capturing mocked functions during parallel test execution.
-            # Access via __dict__ to get the descriptor, then extract the underlying function.
-            _dict_entry = AttackParameters.__dict__["from_seed_group_async"]
-            original_func = _dict_entry.__func__ if isinstance(_dict_entry, classmethod) else _dict_entry
-            return await original_func(
+            return await original_method(
                 c, seed_group=seed_group, adversarial_chat=adversarial_chat, objective_scorer=objective_scorer, **ov
             )
 

@@ -306,18 +306,22 @@ class TestExecuteAttackFromSeedGroupsAsync:
 
         attack.params_type.from_seed_group_async = capture_from_seed_group_async
 
-        executor = AttackExecutor()
-        sg = create_seed_group("Test objective")
+        try:
+            executor = AttackExecutor()
+            sg = create_seed_group("Test objective")
 
-        await executor.execute_attack_from_seed_groups_async(
-            attack=attack,
-            seed_groups=[sg],
-            adversarial_chat=mock_adversarial_chat,
-            objective_scorer=mock_objective_scorer,
-        )
+            await executor.execute_attack_from_seed_groups_async(
+                attack=attack,
+                seed_groups=[sg],
+                adversarial_chat=mock_adversarial_chat,
+                objective_scorer=mock_objective_scorer,
+            )
 
-        assert captured_kwargs.get("adversarial_chat") is mock_adversarial_chat
-        assert captured_kwargs.get("objective_scorer") is mock_objective_scorer
+            assert captured_kwargs.get("adversarial_chat") is mock_adversarial_chat
+            assert captured_kwargs.get("objective_scorer") is mock_objective_scorer
+        finally:
+            # Restore the original to prevent test pollution in parallel test runs
+            attack.params_type.from_seed_group_async = original_from_seed_group_async
 
 
 @pytest.mark.usefixtures("patch_central_database")
