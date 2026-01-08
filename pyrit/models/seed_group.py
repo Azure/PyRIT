@@ -9,7 +9,8 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models.message import Message, MessagePiece
+from pyrit.models.message import Message
+from pyrit.models.message_piece import MessagePiece
 from pyrit.models.seed import Seed
 from pyrit.models.seed_objective import SeedObjective
 from pyrit.models.seed_prompt import SeedPrompt
@@ -103,7 +104,7 @@ class SeedGroup(YamlLoadable):
                 categories.extend(seed.harm_categories)
         return list(set(categories))
 
-    def render_template_value(self, **kwargs):
+    def render_template_value(self, **kwargs: object) -> None:
         """
         Renders self.value as a template, applying provided parameters in kwargs.
 
@@ -119,11 +120,11 @@ class SeedGroup(YamlLoadable):
         for seed in self.seeds:
             seed.value = seed.render_template_value(**kwargs)
 
-    def _enforce_max_one_objective(self):
+    def _enforce_max_one_objective(self) -> None:
         if len([s for s in self.seeds if isinstance(s, SeedObjective)]) > 1:
             raise ValueError("SeedGroups can only have one objective.")
 
-    def _enforce_consistent_group_id(self):
+    def _enforce_consistent_group_id(self) -> None:
         """
         Ensures that if any of the seeds already have a group ID set,
         they share the same ID. If none have a group ID set, assign a
@@ -148,7 +149,7 @@ class SeedGroup(YamlLoadable):
             for seed in self.seeds:
                 seed.prompt_group_id = new_group_id
 
-    def _enforce_consistent_role(self):
+    def _enforce_consistent_role(self) -> None:
         """
         Ensures that all prompts in the group that share a sequence have a consistent role.
         If no roles are set, all prompts will be assigned the default 'user' role.
@@ -161,7 +162,7 @@ class SeedGroup(YamlLoadable):
             if no roles are set in a multi-sequence group.
         """
         # groups the prompts according to their sequence
-        grouped_prompts = defaultdict(list)
+        grouped_prompts: dict[int, list[SeedPrompt]] = defaultdict(list)
         for prompt in self.prompts:
             if prompt.sequence not in grouped_prompts:
                 grouped_prompts[prompt.sequence] = []
@@ -334,5 +335,5 @@ class SeedGroup(YamlLoadable):
 
         return messages
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<SeedGroup(seeds={len(self.seeds)} seeds)>"

@@ -38,8 +38,8 @@ class AddImageVideoConverter(PromptConverter):
         self,
         video_path: str,
         output_path: Optional[str] = None,
-        img_position: tuple = (10, 10),
-        img_resize_size: tuple = (500, 500),
+        img_position: tuple[int, int] = (10, 10),
+        img_resize_size: tuple[int, int] = (500, 500),
     ):
         """
         Initializes the converter with the video path and image properties.
@@ -185,7 +185,7 @@ class AddImageVideoConverter(PromptConverter):
         output_video_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="video_path")
 
         if not self._output_path:
-            output_video_serializer.value = await output_video_serializer.get_data_filename()
+            output_video_serializer.value = str(await output_video_serializer.get_data_filename())
         else:
             output_video_serializer.value = self._output_path
 

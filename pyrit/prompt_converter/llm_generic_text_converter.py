@@ -3,7 +3,7 @@
 
 import logging
 import uuid
-from typing import Optional
+from typing import Any, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.models import (
@@ -33,8 +33,8 @@ class LLMGenericTextConverter(PromptConverter):
         converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         system_prompt_template: Optional[SeedPrompt] = None,
         user_prompt_template_with_objective: Optional[SeedPrompt] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """
         Initializes the converter with a target and optional prompt templates.
 

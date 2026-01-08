@@ -170,7 +170,7 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         self._print_colored("=" * self._width, Fore.CYAN)
         print()
 
-    def _print_scorer_info(self, scorer_identifier: dict, *, indent_level: int = 2) -> None:
+    def _print_scorer_info(self, scorer_identifier: dict[str, str], *, indent_level: int = 2) -> None:
         """
         Print scorer information including nested sub-scorers.
 
@@ -207,10 +207,10 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
             str: Colorama color constant
         """
         if rate >= 75:
-            return Fore.RED  # High success (bad for security)
+            return str(Fore.RED)  # High success (bad for security)
         elif rate >= 50:
-            return Fore.YELLOW  # Medium success
+            return str(Fore.YELLOW)  # Medium success
         elif rate >= 25:
-            return Fore.CYAN  # Low success
+            return str(Fore.CYAN)  # Low success
         else:
-            return Fore.GREEN  # Very low success (good for security)
+            return str(Fore.GREEN)  # Very low success (good for security)

@@ -21,7 +21,7 @@ class ConverterResult:
     #: The data type of the converted output. Indicates the format/type of the ``output_text``.
     output_type: PromptDataType
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.output_type}: {self.output_text}"
 
 
@@ -41,7 +41,7 @@ class PromptConverter(abc.ABC, Identifier):
     #: Tuple of output modalities supported by this converter. Subclasses must override this.
     SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ()
 
-    def __init_subclass__(cls, **kwargs) -> None:
+    def __init_subclass__(cls, **kwargs: object) -> None:
         """
         Validates that concrete subclasses define required class attributes.
 
@@ -66,7 +66,7 @@ class PromptConverter(abc.ABC, Identifier):
                     f"Declare the output modalities this converter produces."
                 )
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes the prompt converter.
         """
@@ -152,7 +152,7 @@ class PromptConverter(abc.ABC, Identifier):
 
         return ConverterResult(output_text=prompt, output_type="text")
 
-    async def _replace_text_match(self, match):
+    async def _replace_text_match(self, match: str) -> ConverterResult:
         result = await self.convert_async(prompt=match, input_type="text")
         return result
 

@@ -10,6 +10,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -41,6 +42,9 @@ from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +87,7 @@ class Scorer(abc.ABC):
         """
         if self._scorer_identifier is None:
             self._build_scorer_identifier()
-        return self._scorer_identifier  # type: ignore[return-value]
+        return self._scorer_identifier
 
     @property
     def _memory(self) -> MemoryInterface:
@@ -246,7 +250,7 @@ class Scorer(abc.ABC):
         ]
 
     @abstractmethod
-    def validate_return_scores(self, scores: list[Score]):
+    def validate_return_scores(self, scores: list[Score]) -> None:
         """
         Validate the scores returned by the scorer. Because some scorers may require
         specific Score types or values.
@@ -256,7 +260,7 @@ class Scorer(abc.ABC):
         """
         raise NotImplementedError()
 
-    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
+    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None) -> "ScorerMetrics":
         """
         Get evaluation statistics for the scorer using the dataset_name of the human labeled dataset.
 

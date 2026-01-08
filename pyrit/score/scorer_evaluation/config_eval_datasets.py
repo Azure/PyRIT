@@ -12,7 +12,7 @@ from pyrit.common.path import (
 from pyrit.score.true_false.self_ask_true_false_scorer import TRUE_FALSE_QUESTIONS_PATH
 
 
-def get_harm_eval_datasets(category: str, metrics_type: str):
+def get_harm_eval_datasets(category: str, metrics_type: str) -> dict[str, str]:
     """
     Get the configuration for harm evaluation datasets based on category and metrics type.
 

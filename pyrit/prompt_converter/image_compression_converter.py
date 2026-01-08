@@ -4,7 +4,7 @@
 import base64
 import logging
 from io import BytesIO
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 from urllib.parse import urlparse
 
 import aiohttp
@@ -151,7 +151,7 @@ class ImageCompressionConverter(PromptConverter):
             else:
                 image = image.convert("RGB")
 
-        save_kwargs: dict = {}
+        save_kwargs: dict[str, Any] = {}
 
         # Format-specific options for currently supported output types
         if output_format == "JPEG":
@@ -182,7 +182,12 @@ class ImageCompressionConverter(PromptConverter):
         return compressed_bytes, output_format
 
     async def _handle_original_image_fallback(
-        self, prompt: str, input_type: PromptDataType, img_serializer, original_img_bytes: bytes, original_format: str
+        self,
+        prompt: str,
+        input_type: PromptDataType,
+        img_serializer: Any,
+        original_img_bytes: bytes,
+        original_format: str,
     ) -> ConverterResult:
         """Handles fallback to original image for both URL and file path inputs."""
         if input_type == "url":

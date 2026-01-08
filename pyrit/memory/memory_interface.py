@@ -928,7 +928,7 @@ class MemoryInterface(abc.ABC):
             if prompt.date_added is None:
                 prompt.date_added = current_time
 
-            prompt.set_encoding_metadata()  # type: ignore
+            prompt.set_encoding_metadata()
 
             # Handle serialization for image, audio & video SeedPrompts
             if prompt.data_type in ["image_path", "audio_path", "video_path"]:

@@ -5,7 +5,7 @@
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union, cast, get_args
+from typing import Any, List, Optional, Union, cast, get_args
 
 import pandas as pd
 
@@ -33,7 +33,7 @@ class HumanLabeledEntry:
     """
 
     conversation: List[Message]
-    human_scores: List
+    human_scores: List[Any]
 
 
 @dataclass
@@ -49,7 +49,7 @@ class HarmHumanLabeledEntry(HumanLabeledEntry):
     # For now, this is a string, but may be enum or Literal in the future.
     harm_category: str
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """
         Validate that all human scores are between 0.0 and 1.0 inclusive.
 
@@ -212,6 +212,7 @@ class HumanLabeledDataset:
                     ],
                 )
             ]
+            entry: HumanLabeledEntry
             if metrics_type == MetricsType.HARM:
                 entry = cls._construct_harm_entry(
                     messages=messages,
@@ -229,7 +230,7 @@ class HumanLabeledDataset:
         dataset_name = dataset_name or Path(csv_path).stem
         return cls(entries=entries, name=dataset_name, metrics_type=metrics_type, version=version)
 
-    def add_entries(self, entries: List[HumanLabeledEntry]):
+    def add_entries(self, entries: List[HumanLabeledEntry]) -> None:
         """
         Add multiple entries to the human-labeled dataset.
 
@@ -239,7 +240,7 @@ class HumanLabeledDataset:
         for entry in entries:
             self.add_entry(entry)
 
-    def add_entry(self, entry: HumanLabeledEntry):
+    def add_entry(self, entry: HumanLabeledEntry) -> None:
         """
         Add a new entry to the human-labeled dataset.
 
@@ -249,7 +250,7 @@ class HumanLabeledDataset:
         self._validate_entry(entry)
         self.entries.append(entry)
 
-    def _validate_entry(self, entry: HumanLabeledEntry):
+    def _validate_entry(self, entry: HumanLabeledEntry) -> None:
         if self.metrics_type == MetricsType.HARM:
             if not isinstance(entry, HarmHumanLabeledEntry):
                 raise ValueError("All entries must be HarmHumanLabeledEntry instances for harm datasets.")
@@ -274,7 +275,7 @@ class HumanLabeledDataset:
         assistant_response_col_name: str,
         objective_or_harm_col_name: str,
         assistant_response_data_type_col_name: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Validate that the required columns exist in the DataFrame (representing the human-labeled dataset)
         and that they are of the correct length and do not contain NaN values.
@@ -307,11 +308,11 @@ class HumanLabeledDataset:
     @staticmethod
     def _validate_fields(
         *,
-        response_to_score,
-        human_scores: List,
-        objective_or_harm,
-        data_type,
-    ):
+        response_to_score: Any,
+        human_scores: List[Any],
+        objective_or_harm: Any,
+        data_type: Any,
+    ) -> None:
         """
         Validate the fields needed for a human-labeled dataset entry.
 
@@ -340,12 +341,14 @@ class HumanLabeledDataset:
             raise ValueError(f"One of the data types is invalid. Valid types are: {get_args(PromptDataType)}.")
 
     @staticmethod
-    def _construct_harm_entry(*, messages: List[Message], harm: str, human_scores: List):
+    def _construct_harm_entry(*, messages: List[Message], harm: str, human_scores: List[Any]) -> HarmHumanLabeledEntry:
         float_scores = [float(score) for score in human_scores]
         return HarmHumanLabeledEntry(messages, float_scores, harm)
 
     @staticmethod
-    def _construct_objective_entry(*, messages: List[Message], objective: str, human_scores: List):
+    def _construct_objective_entry(
+        *, messages: List[Message], objective: str, human_scores: List[Any]
+    ) -> "ObjectiveHumanLabeledEntry":
         # Convert scores to int before casting to bool in case the values (0, 1) are parsed as strings
         bool_scores = [bool(int(score)) for score in human_scores]
         return ObjectiveHumanLabeledEntry(messages, bool_scores, objective)

@@ -296,7 +296,7 @@ class InitializerRegistry:
         spec.loader.exec_module(module)
 
         # Get the initializer class
-        initializer_class = getattr(module, initializer_info["class_name"])
+        initializer_class: type[PyRITInitializer] = getattr(module, initializer_info["class_name"])
         return initializer_class
 
     @staticmethod

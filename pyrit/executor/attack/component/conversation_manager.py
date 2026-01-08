@@ -4,7 +4,7 @@
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.component.prepended_conversation_config import (
@@ -264,7 +264,7 @@ class ConversationManager:
     async def initialize_context_async(
         self,
         *,
-        context: "AttackContext",
+        context: "AttackContext[Any]",
         target: PromptTarget,
         conversation_id: str,
         request_converters: Optional[List[PromptConverterConfiguration]] = None,
@@ -341,7 +341,7 @@ class ConversationManager:
     async def _handle_non_chat_target_async(
         self,
         *,
-        context: "AttackContext",
+        context: "AttackContext[Any]",
         prepended_conversation: List[Message],
         config: Optional["PrependedConversationConfig"],
     ) -> ConversationState:
@@ -491,7 +491,7 @@ class ConversationManager:
     async def _process_prepended_for_chat_target_async(
         self,
         *,
-        context: "AttackContext",
+        context: "AttackContext[Any]",
         prepended_conversation: List[Message],
         conversation_id: str,
         request_converters: Optional[List[PromptConverterConfiguration]],
@@ -538,7 +538,7 @@ class ConversationManager:
         if is_multi_turn:
             # Update executed_turns
             if hasattr(context, "executed_turns"):
-                context.executed_turns = state.turn_count  # type: ignore[attr-defined]
+                context.executed_turns = state.turn_count
 
             # Extract scores for last assistant message if it exists
             # Multi-part messages (e.g., text + image) may have scores on multiple pieces

@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Iterator, Optional, Union
 
 import yaml
 
@@ -61,15 +61,15 @@ class TrueFalseQuestion:
 
         self._keys = ["category", "true_description", "false_description"]
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         """Return the value of the specified key."""
         return getattr(self, key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any) -> None:
         """Set the value of the specified key."""
         setattr(self, key, value)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         """Return an iterator over the keys."""
         # Define which keys should be included when iterating
         return iter(self._keys)

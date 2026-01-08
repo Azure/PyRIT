@@ -70,8 +70,8 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         n: Optional[int] = None,
         is_json_supported: bool = True,
         extra_body_parameters: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """
         Args:
             model_name (str, Optional): The name of the model.
@@ -284,7 +284,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         """
         return self._is_json_supported
 
-    async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict]:
+    async def _build_chat_messages_async(self, conversation: MutableSequence[Message]) -> list[dict[str, Any]]:
         """
         Build chat messages based on message entries.
 
@@ -316,7 +316,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 return False
         return True
 
-    def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict]:
+    def _build_chat_messages_for_text(self, conversation: MutableSequence[Message]) -> list[dict[str, Any]]:
         """
         Build chat messages based on message entries. This is needed because many
         openai "compatible" models don't support ChatMessageListDictContent format (this is more universally accepted).
@@ -331,7 +331,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             ValueError: If any message does not have exactly one text piece.
             ValueError: If any message piece is not of type text.
         """
-        chat_messages: list[dict] = []
+        chat_messages: list[dict[str, Any]] = []
         for message in conversation:
             # validated to only have one text entry
 
@@ -348,7 +348,9 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         return chat_messages
 
-    async def _build_chat_messages_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> list[dict]:
+    async def _build_chat_messages_for_multi_modal_async(
+        self, conversation: MutableSequence[Message]
+    ) -> list[dict[str, Any]]:
         """
         Build chat messages based on message entries.
 
@@ -362,7 +364,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             ValueError: If any message does not have a role.
             ValueError: If any message piece has an unsupported data type.
         """
-        chat_messages: list[dict] = []
+        chat_messages: list[dict[str, Any]] = []
         for message in conversation:
             message_pieces = message.message_pieces
 
@@ -386,13 +388,13 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             if not role:
                 raise ValueError("No role could be determined from the message pieces.")
 
-            chat_message = ChatMessageListDictContent(role=role, content=content)  # type: ignore
+            chat_message = ChatMessageListDictContent(role=role, content=content)
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
     async def _construct_request_body(
         self, *, conversation: MutableSequence[Message], json_config: _JsonResponseConfig
-    ) -> dict:
+    ) -> dict[str, Any]:
         messages = await self._build_chat_messages_async(conversation)
         response_format = self._build_response_format(json_config)
 

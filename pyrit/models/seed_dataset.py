@@ -225,7 +225,7 @@ class SeedDataset(YamlLoadable):
         # Now create the dataset with the newly merged prompt dicts
         return cls(seeds=merged_seeds, **dataset_defaults)
 
-    def render_template_value(self, **kwargs):
+    def render_template_value(self, **kwargs: object) -> None:
         """
         Renders self.value as a template, applying provided parameters in kwargs.
 
@@ -242,7 +242,7 @@ class SeedDataset(YamlLoadable):
             seed.value = seed.render_template_value(**kwargs)
 
     @staticmethod
-    def _set_seed_group_id_by_alias(seed_prompts: Sequence[dict]):
+    def _set_seed_group_id_by_alias(seed_prompts: Sequence[dict[str, object]]) -> None:
         """
         Sets all seed_group_ids based on prompt_group_alias matches.
 
@@ -310,5 +310,5 @@ class SeedDataset(YamlLoadable):
         """
         return self.group_seed_prompts_by_prompt_group_id(self.seeds)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<SeedDataset(seeds={len(self.seeds)} seeds)>"

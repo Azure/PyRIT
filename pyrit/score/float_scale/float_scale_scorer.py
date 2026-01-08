@@ -8,6 +8,7 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptDataType, Score, UnvalidatedScore
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 
 class FloatScaleScorer(Scorer):
@@ -19,7 +20,7 @@ class FloatScaleScorer(Scorer):
     is scored independently, returning one score per piece.
     """
 
-    def __init__(self, *, validator) -> None:
+    def __init__(self, *, validator: ScorerPromptValidator) -> None:
         """
         Initialize the FloatScaleScorer.
 
@@ -28,7 +29,7 @@ class FloatScaleScorer(Scorer):
         """
         super().__init__(validator=validator)
 
-    def validate_return_scores(self, scores: list[Score]):
+    def validate_return_scores(self, scores: list[Score]) -> None:
         """
         Validate that the returned scores are within the valid range [0, 1].
 

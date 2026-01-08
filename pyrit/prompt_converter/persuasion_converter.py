@@ -114,7 +114,7 @@ class PersuasionConverter(PromptConverter):
         return ConverterResult(output_text=response, output_type="text")
 
     @pyrit_json_retry
-    async def send_persuasion_prompt_async(self, request):
+    async def send_persuasion_prompt_async(self, request: Message) -> str:
         """Sends the prompt to the converter target and processes the response."""
         response = await self.converter_target.send_prompt_async(message=request)
 
@@ -127,7 +127,7 @@ class PersuasionConverter(PromptConverter):
                 raise InvalidJsonException(
                     message=f"Invalid JSON encountered; missing 'mutated_text' key: {response_msg}"
                 )
-            return parsed_response["mutated_text"]
+            return str(parsed_response["mutated_text"])
 
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")

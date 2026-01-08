@@ -43,7 +43,7 @@ class BinaryConverter(WordLevelConverter):
             raise TypeError("bits_per_char must be an instance of BinaryConverter.BitsPerChar Enum.")
         self.bits_per_char = bits_per_char
 
-    def validate_input(self, prompt):
+    def validate_input(self, prompt: str) -> None:
         """Checks if ``bits_per_char`` is sufficient for the characters in the prompt."""
         bits = self.bits_per_char.value
         max_code_point = max((ord(char) for char in prompt), default=0)

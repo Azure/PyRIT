@@ -6,7 +6,7 @@ import os
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, cast
 from urllib.parse import urlparse
 
 import aiofiles  # type: ignore[import-untyped]
@@ -82,7 +82,7 @@ class DiskStorageIO(StorageIO):
         """
         path = self._convert_to_path(path)
         async with aiofiles.open(path, "rb") as file:
-            return await file.read()
+            return cast(bytes, await file.read())
 
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
         """
@@ -161,7 +161,7 @@ class AzureBlobStorageIO(StorageIO):
         self._sas_token = sas_token
         self._client_async: AsyncContainerClient = None
 
-    async def _create_container_client_async(self):
+    async def _create_container_client_async(self) -> None:
         """
         Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
@@ -185,7 +185,7 @@ class AzureBlobStorageIO(StorageIO):
             data (bytes): Byte representation of content to upload to container.
             content_type (str): Content type to upload.
         """
-        content_settings = ContentSettings(content_type=f"{content_type}")
+        content_settings = ContentSettings(content_type=f"{content_type}")  # type: ignore[no-untyped-call]
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
         try:
@@ -208,7 +208,7 @@ class AzureBlobStorageIO(StorageIO):
                 logger.exception(msg=f"An unexpected error occurred: {exc}")
                 raise
 
-    def parse_blob_url(self, file_path: str):
+    def parse_blob_url(self, file_path: str) -> tuple[str, str]:
         """Parses the blob URL to extract the container name and blob name."""
         parsed_url = urlparse(file_path)
         if parsed_url.scheme and parsed_url.netloc:
@@ -262,7 +262,7 @@ class AzureBlobStorageIO(StorageIO):
             logger.exception(f"Failed to read file at {blob_name}: {exc}")
             raise
         finally:
-            await self._client_async.close()
+            await self._client_async.close()  # type: ignore[no-untyped-call]
             self._client_async = None
 
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
@@ -282,7 +282,7 @@ class AzureBlobStorageIO(StorageIO):
             logger.exception(f"Failed to write file at {blob_name}: {exc}")
             raise
         finally:
-            await self._client_async.close()
+            await self._client_async.close()  # type: ignore[no-untyped-call]
             self._client_async = None
 
     async def path_exists(self, path: Union[Path, str]) -> bool:
@@ -297,7 +297,7 @@ class AzureBlobStorageIO(StorageIO):
         except ResourceNotFoundError:
             return False
         finally:
-            await self._client_async.close()
+            await self._client_async.close()  # type: ignore[no-untyped-call]
             self._client_async = None
 
     async def is_file(self, path: Union[Path, str]) -> bool:
@@ -312,7 +312,7 @@ class AzureBlobStorageIO(StorageIO):
         except ResourceNotFoundError:
             return False
         finally:
-            await self._client_async.close()
+            await self._client_async.close()  # type: ignore[no-untyped-call]
             self._client_async = None
 
     async def create_directory_if_not_exists(self, directory_path: Union[Path, str]) -> None:

@@ -76,7 +76,7 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
 )
 
-AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
+AttackStrategyT = TypeVar("AttackStrategyT", bound="AttackStrategy[Any, Any]")
 logger = logging.getLogger(__name__)
 
 
@@ -388,7 +388,7 @@ class Foundry(Scenario):
         Raises:
             ValueError: If the strategy composition is invalid (e.g., multiple attack strategies).
         """
-        attack: AttackStrategy
+        attack: AttackStrategy[Any, Any]
 
         # Extract FoundryStrategy enums from the composite
         strategy_list = [s for s in composite_strategy.strategies if isinstance(s, FoundryStrategy)]
@@ -400,7 +400,7 @@ class Foundry(Scenario):
         if len(attacks) > 1:
             raise ValueError(f"Cannot compose multiple attack strategies: {[a.value for a in attacks]}")
 
-        attack_type: type[AttackStrategy] = PromptSendingAttack
+        attack_type: type[AttackStrategy[Any, Any]] = PromptSendingAttack
         attack_kwargs: dict[str, Any] = {}
         if len(attacks) == 1:
             if attacks[0] == FoundryStrategy.Crescendo:
@@ -537,7 +537,7 @@ class Foundry(Scenario):
         # Type ignore is used because this is a factory method that works with compatible
         # attack types. The caller is responsible for ensuring the attack type accepts
         # these constructor parameters.
-        return attack_type(**kwargs)  # type: ignore[arg-type, call-arg]
+        return attack_type(**kwargs)  # type: ignore[arg-type]
 
 
 class FoundryScenario(Foundry):
@@ -548,7 +548,7 @@ class FoundryScenario(Foundry):
     Use `Foundry` instead.
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize FoundryScenario with deprecation warning."""
         import warnings
 

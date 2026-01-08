@@ -9,7 +9,7 @@ This is the new, cleaner design that leverages the params_type architecture.
 
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, cast
+from typing import Any, Dict, Generic, Iterator, List, Optional, Sequence, TypeVar
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_parameters import AttackParameters
@@ -46,7 +46,7 @@ class AttackExecutorResult(Generic[AttackResultT]):
     completed_results: List[AttackResultT]
     incomplete_objectives: List[tuple[str, BaseException]]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[AttackResultT]:
         """
         Iterate over completed results.
 
@@ -129,7 +129,7 @@ class AttackExecutor:
         seed_groups: Sequence[SeedGroup],
         field_overrides: Optional[Sequence[Dict[str, Any]]] = None,
         return_partial_on_failure: bool = False,
-        **broadcast_fields,
+        **broadcast_fields: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute attacks in parallel, extracting parameters from SeedGroups.
@@ -188,7 +188,7 @@ class AttackExecutor:
         objectives: Sequence[str],
         field_overrides: Optional[Sequence[Dict[str, Any]]] = None,
         return_partial_on_failure: bool = False,
-        **broadcast_fields,
+        **broadcast_fields: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute attacks in parallel for each objective.
@@ -270,10 +270,7 @@ class AttackExecutor:
         async def run_one(params: AttackParameters) -> AttackStrategyResultT:
             async with semaphore:
                 # Create context with params
-                context = cast(
-                    AttackStrategyContextT,
-                    attack._context_type(params=params),  # type: ignore[call-arg]
-                )
+                context = attack._context_type(params=params)
                 return await attack.execute_with_context_async(context=context)
 
         tasks = [run_one(p) for p in params_list]
@@ -329,8 +326,8 @@ class AttackExecutor:
     # Deprecated methods - these will be removed in a future version
     # =========================================================================
 
-    _SingleTurnContextT = TypeVar("_SingleTurnContextT", bound=SingleTurnAttackContext)
-    _MultiTurnContextT = TypeVar("_MultiTurnContextT", bound=MultiTurnAttackContext)
+    _SingleTurnContextT = TypeVar("_SingleTurnContextT", bound="SingleTurnAttackContext[Any]")
+    _MultiTurnContextT = TypeVar("_MultiTurnContextT", bound="MultiTurnAttackContext[Any]")
 
     async def execute_multi_objective_attack_async(
         self,
@@ -340,7 +337,7 @@ class AttackExecutor:
         prepended_conversation: Optional[List[Message]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         return_partial_on_failure: bool = False,
-        **attack_params,
+        **attack_params: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute the same attack strategy with multiple objectives against the same target in parallel.
@@ -387,7 +384,7 @@ class AttackExecutor:
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         return_partial_on_failure: bool = False,
-        **attack_params,
+        **attack_params: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute a batch of single-turn attacks with multiple objectives.
@@ -451,7 +448,7 @@ class AttackExecutor:
         prepended_conversations: Optional[List[List[Message]]] = None,
         memory_labels: Optional[Dict[str, str]] = None,
         return_partial_on_failure: bool = False,
-        **attack_params,
+        **attack_params: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
         Execute a batch of multi-turn attacks with multiple objectives.

@@ -15,7 +15,7 @@ class AsciiArtConverter(PromptConverter):
     SUPPORTED_INPUT_TYPES = ("text",)
     SUPPORTED_OUTPUT_TYPES = ("text",)
 
-    def __init__(self, font="rand"):
+    def __init__(self, font: str = "rand") -> None:
         """
         Initializes the converter with a specified font.
 

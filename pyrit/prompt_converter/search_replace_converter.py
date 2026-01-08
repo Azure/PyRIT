@@ -16,7 +16,7 @@ class SearchReplaceConverter(PromptConverter):
     SUPPORTED_INPUT_TYPES = ("text",)
     SUPPORTED_OUTPUT_TYPES = ("text",)
 
-    def __init__(self, pattern: str, replace: str | list[str], regex_flags=0) -> None:
+    def __init__(self, pattern: str, replace: str | list[str], regex_flags: int = 0) -> None:
         """
         Initializes the converter with the specified regex pattern and replacement phrase(s).
 

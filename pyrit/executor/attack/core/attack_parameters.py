@@ -121,7 +121,7 @@ class AttackParameters:
             raise ValueError(f"Cannot exclude non-existent fields: {invalid}. Valid fields: {current_fields}")
 
         # Build new fields list excluding the specified ones
-        new_fields: List[tuple] = []
+        new_fields: List[Any] = []
         for f in dataclasses.fields(cls):
             if f.name not in field_names:
                 # Preserve field defaults
@@ -145,11 +145,11 @@ class AttackParameters:
 
         # Copy the from_seed_group method to the new class
         # We need to bind it as a classmethod on the new class
-        new_cls.from_seed_group = classmethod(  # type: ignore[attr-defined,method-assign]
+        new_cls.from_seed_group = classmethod(  # type: ignore[attr-defined]
             lambda c, sg, **ov: cls._from_seed_group_impl(c, sg, **ov)
         )
 
-        return new_cls  # type: ignore[return-value]
+        return new_cls
 
     @classmethod
     def _from_seed_group_impl(

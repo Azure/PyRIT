@@ -3,7 +3,7 @@
 
 import logging
 import os
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
@@ -243,7 +243,7 @@ class Cyber(Scenario):
         """
         # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None
-        attack_strategy: Optional[AttackStrategy] = None
+        attack_strategy: Optional[AttackStrategy[Any, Any]] = None
         if strategy == "single_turn":
             attack_strategy = PromptSendingAttack(
                 objective_target=self._objective_target,

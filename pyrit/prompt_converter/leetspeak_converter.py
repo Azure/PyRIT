@@ -17,7 +17,7 @@ class LeetspeakConverter(WordLevelConverter):
         self,
         *,
         deterministic: bool = True,
-        custom_substitutions: Optional[dict] = None,
+        custom_substitutions: Optional[dict[str, list[str]]] = None,
         word_selection_strategy: Optional[WordSelectionStrategy] = None,
     ):
         """

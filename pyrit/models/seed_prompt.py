@@ -54,7 +54,7 @@ class SeedPrompt(Seed):
             else:
                 self.data_type = "text"
 
-    def set_encoding_metadata(self):
+    def set_encoding_metadata(self) -> None:
         """
         This method sets the encoding data for the prompt within metadata dictionary. For images, this is just the
         file format. For audio and video, this also includes bitrate (kBits/s as int), samplerate (samples/second

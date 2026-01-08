@@ -23,7 +23,7 @@ class SeedObjective(Seed):
         self.value = super().render_template_value_silent(**PATHS_DICT)
         self.data_type = "text"
 
-    def set_encoding_metadata(self):
+    def set_encoding_metadata(self) -> None:
         """
         This method sets the encoding data for the prompt within metadata dictionary.
         """

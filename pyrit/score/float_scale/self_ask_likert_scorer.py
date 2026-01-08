@@ -71,7 +71,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
             prompt_target=self._prompt_target,
         )
 
-    def _set_likert_scale_system_prompt(self, likert_scale_path: Path):
+    def _set_likert_scale_system_prompt(self, likert_scale_path: Path) -> None:
         """
         Set the Likert scale to use for scoring.
 

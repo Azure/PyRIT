@@ -61,7 +61,7 @@ class AtomicAttack:
         self,
         *,
         atomic_attack_name: str,
-        attack: AttackStrategy,
+        attack: AttackStrategy[Any, Any],
         seed_groups: List[SeedGroup],
         memory_labels: Optional[Dict[str, str]] = None,
         **attack_execute_params: Any,
@@ -145,7 +145,7 @@ class AtomicAttack:
         *,
         max_concurrency: int = 1,
         return_partial_on_failure: bool = True,
-        **attack_params,
+        **attack_params: Any,
     ) -> AttackExecutorResult[AttackResult]:
         """
         Execute the atomic attack against all seed groups.

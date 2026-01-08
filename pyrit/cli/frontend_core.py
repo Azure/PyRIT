@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, TypedDict
 
 try:
-    import termcolor  # type: ignore
+    import termcolor
 
     HAS_TERMCOLOR = True
 except ImportError:
@@ -577,7 +577,7 @@ def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], A
         raise ValueError(f"Validator function {validator_func.__name__} must have at least one parameter")
     first_param = params[0]
 
-    def wrapper(value):
+    def wrapper(value: Any) -> Any:
         import argparse as ap
 
         try:

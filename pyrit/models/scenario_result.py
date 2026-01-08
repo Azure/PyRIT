@@ -4,7 +4,7 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 import pyrit
 from pyrit.models import AttackOutcome, AttackResult
@@ -22,7 +22,7 @@ class ScenarioIdentifier:
         name: str,
         description: str = "",
         scenario_version: int = 1,
-        init_data: Optional[dict] = None,
+        init_data: Optional[dict[str, Any]] = None,
         pyrit_version: Optional[str] = None,
     ):
         """
@@ -54,9 +54,9 @@ class ScenarioResult:
         self,
         *,
         scenario_identifier: ScenarioIdentifier,
-        objective_target_identifier: dict,
+        objective_target_identifier: dict[str, str],
         attack_results: dict[str, List[AttackResult]],
-        objective_scorer_identifier: Optional[dict] = None,
+        objective_scorer_identifier: Optional[dict[str, str]] = None,
         scenario_run_state: ScenarioRunState = "CREATED",
         labels: Optional[dict[str, str]] = None,
         completion_time: Optional[datetime] = None,

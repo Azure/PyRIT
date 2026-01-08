@@ -85,7 +85,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         )
 
         # API key is required - either from parameter or environment variable
-        self._api_key = default_values.get_required_value(  # type: ignore[assignment]
+        self._api_key = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
@@ -163,8 +163,8 @@ class AzureContentFilterScorer(FloatScaleScorer):
                     categories=self._score_categories,
                     output_type="EightSeverityLevels",
                 )
-                filter_result = self._azure_cf_client.analyze_text(text_request_options)  # type: ignore
-                filter_results.append(filter_result)
+                text_result = self._azure_cf_client.analyze_text(text_request_options)
+                filter_results.append(text_result)
 
         elif message_piece.converted_value_data_type == "image_path":
             base64_encoded_data = await self._get_base64_image_data(message_piece)
@@ -173,12 +173,12 @@ class AzureContentFilterScorer(FloatScaleScorer):
             image_request_options = AnalyzeImageOptions(
                 image=image_data, categories=self._score_categories, output_type="FourSeverityLevels"
             )
-            filter_result = self._azure_cf_client.analyze_image(image_request_options)  # type: ignore
-            filter_results.append(filter_result)
+            image_result = self._azure_cf_client.analyze_image(image_request_options)
+            filter_results.append(image_result)
 
         # Collect all scores from all chunks/images
         all_scores = []
-        for filter_result in filter_results:  # type: ignore[assignment]
+        for filter_result in filter_results:
             for score in filter_result["categoriesAnalysis"]:
                 value = score["severity"]
                 category = score["category"]
