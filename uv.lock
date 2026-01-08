@@ -6233,7 +6233,7 @@ requires-dist = [
     { name = "opencv-python", marker = "extra == 'all'", specifier = ">=4.11.0.86" },
     { name = "opencv-python", marker = "extra == 'opencv'", specifier = ">=4.11.0.86" },
     { name = "openpyxl", specifier = ">=3.1.5" },
-    { name = "pillow", specifier = ">=11.2.1" },
+    { name = "pillow", specifier = ">=12.1.0" },
     { name = "playwright", marker = "extra == 'all'", specifier = ">=1.49.0" },
     { name = "playwright", marker = "extra == 'playwright'", specifier = ">=1.49.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.2.0" },
