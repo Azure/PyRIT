@@ -234,7 +234,9 @@ class AttackParameters:
         # Attach from_seed_group_async that delegates to the parent classmethod
         # We need to call the underlying function with the new class type (c) so that
         # dataclasses.fields(cls) returns only the reduced field set.
-        original_method = cls.from_seed_group_async.__func__
+        # Access via __dict__ to get the classmethod descriptor and extract __func__.
+        _classmethod_descriptor = cls.__dict__["from_seed_group_async"]
+        original_method = _classmethod_descriptor.__func__
 
         async def from_seed_group_async_wrapper(c, *, seed_group, adversarial_chat=None, objective_scorer=None, **ov):
             return await original_method(
