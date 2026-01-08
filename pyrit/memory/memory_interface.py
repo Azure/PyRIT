@@ -5,12 +5,13 @@ import abc
 import atexit
 import logging
 import uuid
+import warnings
 import weakref
 from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_
+from sqlalchemy import MetaData, and_, or_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
@@ -40,6 +41,7 @@ from pyrit.models import (
     Seed,
     SeedDataset,
     SeedGroup,
+    SeedType,
     StorageIO,
     data_serializer_factory,
     group_conversation_message_pieces_by_sequence,
@@ -786,7 +788,8 @@ class MemoryInterface(abc.ABC):
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
-        is_objective: Optional[bool] = None,
+        seed_type: Optional[SeedType] = None,
+        is_objective: Optional[bool] = None,  # Deprecated in 0.13.0: Use seed_type instead
         parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
         prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
@@ -813,7 +816,9 @@ class MemoryInterface(abc.ABC):
                 is "A. Jones", "Jones, Adam", etc. If None, all authors are considered.
             groups (Sequence[str]): A list of groups to filter by. If None, all groups are considered.
             source (str): The source to filter by. If None, all sources are considered.
-            is_objective (bool): Whether to filter by prompts that are used as objectives.
+            seed_type (SeedType): The type of seed to filter by ("prompt", "objective", or
+                "simulated_conversation").
+            is_objective (bool): Deprecated in 0.13.0. Use seed_type="objective" instead.
             parameters (Sequence[str]): A list of parameters to filter by. Specifying parameters effectively returns
                 prompt templates instead of prompts.
             metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
@@ -821,7 +826,25 @@ class MemoryInterface(abc.ABC):
 
         Returns:
             Sequence[SeedPrompt]: A list of prompts matching the criteria.
+
+        Raises:
+            ValueError: If both 'seed_type' and deprecated 'is_objective' parameters are specified.
         """
+        # Handle deprecated is_objective parameter
+        if is_objective is not None:
+            if seed_type is not None:
+                raise ValueError(
+                    "Cannot specify both 'seed_type' and 'is_objective'. "
+                    "is_objective is deprecated since 0.13.0. Use seed_type='objective' instead."
+                )
+            warnings.warn(
+                "is_objective parameter is deprecated since 0.13.0. Use seed_type='objective' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            # Convert is_objective to seed_type
+            seed_type = "objective" if is_objective else "prompt"
+
         conditions = []
 
         # Apply filters for non-list fields
@@ -842,8 +865,13 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedEntry.added_by == added_by)
         if source:
             conditions.append(SeedEntry.source == source)
-        if is_objective is not None:
-            conditions.append(SeedEntry.is_objective == is_objective)
+
+        # Handle seed_type filtering with backward compatibility for is_objective
+        if seed_type == "objective":
+            # Match either seed_type="objective" OR legacy is_objective=True
+            conditions.append(or_(SeedEntry.seed_type == "objective", SeedEntry.is_objective == True))  # noqa: E712
+        elif seed_type is not None:
+            conditions.append(SeedEntry.seed_type == seed_type)
 
         self._add_list_conditions(field=SeedEntry.harm_categories, values=harm_categories, conditions=conditions)
         self._add_list_conditions(field=SeedEntry.authors, values=authors, conditions=conditions)
@@ -928,7 +956,9 @@ class MemoryInterface(abc.ABC):
             if prompt.date_added is None:
                 prompt.date_added = current_time
 
-            prompt.set_encoding_metadata()  # type: ignore
+            # Only SeedPrompt has set_encoding_metadata for audio/video/image files
+            if hasattr(prompt, "set_encoding_metadata"):
+                prompt.set_encoding_metadata()
 
             # Handle serialization for image, audio & video SeedPrompts
             if prompt.data_type in ["image_path", "audio_path", "video_path"]:
@@ -976,7 +1006,7 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             raise
 
-    async def add_seed_groups_to_memory(
+    async def add_seed_groups_to_memory_async(
         self, *, prompt_groups: Sequence[SeedGroup], added_by: Optional[str] = None
     ) -> None:
         """
@@ -987,35 +1017,32 @@ class MemoryInterface(abc.ABC):
             added_by (str): The user who added the prompt groups.
 
         Raises:
-            ValueError: If a prompt group does not have at least one prompt.
-            ValueError: If prompt group IDs are inconsistent within the same prompt group.
+            ValueError: If a seed group does not have at least one seed.
+            ValueError: If seed group IDs are inconsistent within the same seed group.
         """
         if not prompt_groups:
             raise ValueError("At least one prompt group must be provided.")
         # Validates the prompt group IDs and sets them if possible before leveraging
-        # the add_seed_prompts_to_memory method.
-        all_prompts: MutableSequence[Seed] = []
+        # the add_seeds_to_memory_async method.
+        all_seeds: MutableSequence[Seed] = []
         for prompt_group in prompt_groups:
-            if not prompt_group.prompts:
-                raise ValueError("Prompt group must have at least one prompt.")
+            if not prompt_group.seeds:
+                raise ValueError("Seed group must have at least one seed.")
             # Determine the prompt group ID.
             # It should either be set uniformly or generated if not set.
             # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
+            group_id_set = set(seed.prompt_group_id for seed in prompt_group.seeds)
             if len(group_id_set) > 1:
                 raise ValueError(
                     f"""Inconsistent 'prompt_group_id' attribute between members of the
-                    same prompt group. Found {group_id_set}"""
+                    same seed group. Found {group_id_set}"""
                 )
             prompt_group_id = group_id_set.pop() or uuid.uuid4()
-            for prompt in prompt_group.prompts:
-                prompt.prompt_group_id = prompt_group_id
+            for seed in prompt_group.seeds:
+                seed.prompt_group_id = prompt_group_id
 
-            all_prompts.extend(prompt_group.prompts)
-            if prompt_group.objective:
-                prompt_group.objective.prompt_group_id = prompt_group_id
-                all_prompts.append(prompt_group.objective)
-        await self.add_seeds_to_memory_async(seeds=all_prompts, added_by=added_by)
+            all_seeds.extend(prompt_group.seeds)
+        await self.add_seeds_to_memory_async(seeds=all_seeds, added_by=added_by)
 
     def get_seed_groups(
         self,
@@ -1030,7 +1057,8 @@ class MemoryInterface(abc.ABC):
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
-        is_objective: Optional[bool] = None,
+        seed_type: Optional[SeedType] = None,
+        is_objective: Optional[bool] = None,  # Deprecated in 0.13.0: Use seed_type instead
         parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
         prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
@@ -1054,7 +1082,9 @@ class MemoryInterface(abc.ABC):
             authors (Optional[Sequence[str]], Optional): List of authors to filter seed groups by.
             groups (Optional[Sequence[str]], Optional): List of groups to filter seed groups by.
             source (Optional[str], Optional): The source from which the seed prompts originated.
-            is_objective (Optional[bool], Optional): Whether to filter by prompts that are used as objectives.
+            seed_type (Optional[SeedType], Optional): The type of seed to filter by ("prompt", "objective", or
+                "simulated_conversation").
+            is_objective (bool): Deprecated in 0.13.0. Use seed_type="objective" instead.
             parameters (Optional[Sequence[str]], Optional): List of parameters to filter by.
             metadata (Optional[dict[str, Union[str, int]]], Optional): A free-form dictionary for tagging
                 prompts with custom metadata.
@@ -1075,6 +1105,7 @@ class MemoryInterface(abc.ABC):
             authors=authors,
             groups=groups,
             source=source,
+            seed_type=seed_type,
             is_objective=is_objective,
             parameters=parameters,
             metadata=metadata,

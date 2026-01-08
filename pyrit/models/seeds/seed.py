@@ -1,6 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""
+Base Seed class for representing seed data with various attributes and metadata.
+
+This module is the foundation for all seed types in PyRIT.
+"""
+
 from __future__ import annotations
 
 import abc
@@ -49,9 +55,6 @@ class Seed(YamlLoadable):
     # SHA256 hash of the value, used for deduplication
     value_sha256: Optional[str] = None
 
-    # The type of data this prompt represents (e.g., text, image, audio, video)
-    data_type: Optional[PromptDataType] = None
-
     # Unique identifier for the prompt
     id: Optional[uuid.UUID] = field(default_factory=lambda: uuid.uuid4())
 
@@ -90,6 +93,16 @@ class Seed(YamlLoadable):
 
     # Alias for the prompt group
     prompt_group_alias: Optional[str] = None
+
+    @property
+    def data_type(self) -> PromptDataType:
+        """
+        Return the data type for this seed.
+
+        Base implementation returns 'text'. SeedPrompt overrides this
+        to support multiple data types (image_path, audio_path, etc.).
+        """
+        return "text"
 
     def render_template_value(self, **kwargs) -> str:
         """
@@ -169,15 +182,6 @@ class Seed(YamlLoadable):
         )
 
         self.value_sha256 = await original_serializer.get_sha256()
-
-    @abc.abstractmethod
-    def set_encoding_metadata(self):
-        """
-        This method sets the encoding data for the prompt within metadata dictionary. For images, this is just the
-        file format. For audio and video, this also includes bitrate (kBits/s as int), samplerate (samples/second
-        as int), bitdepth (as int), filesize (bytes as int), and duration (seconds as int) if the file type is
-        supported by TinyTag. Example suppported file types include: MP3, MP4, M4A, and WAV.
-        """
 
     @classmethod
     @abc.abstractmethod

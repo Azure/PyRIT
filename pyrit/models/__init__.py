@@ -21,7 +21,7 @@ from pyrit.models.data_type_serializer import (
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.harm_definition import HarmDefinition, ScaleDescription, get_all_harm_definitions
 from pyrit.models.identifiers import Identifier
-from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
+from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError, SeedType
 from pyrit.models.message import (
     Message,
     construct_response_from_request,
@@ -32,11 +32,23 @@ from pyrit.models.message_piece import MessagePiece, sort_message_pieces
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
-from pyrit.models.seed import Seed
-from pyrit.models.seed_dataset import SeedDataset
-from pyrit.models.seed_group import SeedGroup
-from pyrit.models.seed_objective import SeedObjective
-from pyrit.models.seed_prompt import SeedPrompt
+
+# Seeds - import from new seeds submodule for forward compatibility
+# Also keep imports from old locations for backward compatibility
+from pyrit.models.seeds import (
+    NextMessageSystemPromptPaths,
+    Seed,
+    SeedAttackGroup,
+    SeedDataset,
+    SeedGroup,
+    SeedObjective,
+    SeedPrompt,
+    SeedSimulatedConversation,
+    SimulatedTargetSystemPromptPaths,
+)
+
+# Keep old module-level imports working (deprecated, will be removed)
+# These are re-exported from the seeds submodule
 from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 from pyrit.models.strategy_result import StrategyResult, StrategyResultT
 
@@ -71,6 +83,7 @@ __all__ = [
     "ImagePathDataTypeSerializer",
     "Message",
     "MessagePiece",
+    "NextMessageSystemPromptPaths",
     "PromptDataType",
     "PromptResponseError",
     "QuestionAnsweringDataset",
@@ -82,10 +95,14 @@ __all__ = [
     "ScenarioIdentifier",
     "ScenarioResult",
     "Seed",
+    "SeedAttackGroup",
     "SeedObjective",
     "SeedPrompt",
     "SeedDataset",
     "SeedGroup",
+    "SeedSimulatedConversation",
+    "SeedType",
+    "SimulatedTargetSystemPromptPaths",
     "sort_message_pieces",
     "StorageIO",
     "StrategyResult",

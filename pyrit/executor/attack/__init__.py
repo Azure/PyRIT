@@ -32,8 +32,6 @@ from pyrit.executor.attack.multi_turn import (
     MultiTurnAttackStrategy,
     RedTeamingAttack,
     RTASystemPromptPaths,
-    SimulatedConversationResult,
-    SimulatedTargetSystemPromptPaths,
     TAPAttack,
     TAPAttackContext,
     TAPAttackResult,
@@ -97,6 +95,4 @@ __all__ = [
     "AttackExecutorResult",
     "PrependedConversationConfig",
     "generate_simulated_conversation_async",
-    "SimulatedConversationResult",
-    "SimulatedTargetSystemPromptPaths",
 ]
