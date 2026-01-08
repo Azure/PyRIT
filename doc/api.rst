@@ -73,7 +73,6 @@ API Reference
     combine_list
     convert_local_image_to_data_url
     DefaultValueScope
-    deprecation_message
     display_image_response
     download_chunk
     download_file
@@ -88,6 +87,7 @@ API Reference
     get_required_value
     is_in_ipython_session
     make_request_and_raise_if_error_async
+    print_deprecation_message
     reset_default_values
     set_default_value
     Singleton

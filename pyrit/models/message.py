@@ -178,7 +178,7 @@ class Message:
             converted_value_data_type = [piece.converted_value_data_type for piece in self.message_pieces]
 
         return {
-            "role": self.role,
+            "role": self.api_role,
             "converted_value": converted_value,
             "conversation_id": self.conversation_id,
             "sequence": self.sequence,

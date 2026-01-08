@@ -346,7 +346,7 @@ class TestGenerateSimulatedConversationAsync:
                 assert "prepended_conversation" in call_kwargs
                 prepended = call_kwargs["prepended_conversation"]
                 assert len(prepended) == 1
-                assert prepended[0].role == "system"
+                assert prepended[0].api_role == "system"
 
     @pytest.mark.asyncio
     async def test_passes_memory_labels_to_execute(
@@ -477,7 +477,7 @@ class TestGenerateSimulatedConversationAsync:
                 assert "prepended_conversation" in execute_kwargs
                 prepended = execute_kwargs["prepended_conversation"]
                 assert len(prepended) == 1
-                assert prepended[0].message_pieces[0].role == "system"
+                assert prepended[0].message_pieces[0].api_role == "system"
 
     @pytest.mark.asyncio
     async def test_uses_default_num_turns_of_3(

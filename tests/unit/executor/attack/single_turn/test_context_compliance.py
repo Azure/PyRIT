@@ -494,14 +494,14 @@ class TestContextComplianceAttackExecution:
                         # Check user request
                         user_request = result[0]
                         assert len(user_request.message_pieces) == 1
-                        assert user_request.message_pieces[0].role == "user"
+                        assert user_request.message_pieces[0].api_role == "user"
                         assert user_request.message_pieces[0].original_value == basic_context.objective
                         assert user_request.message_pieces[0].converted_value == benign_question
 
                         # Check assistant response
                         assistant_response = result[1]
                         assert len(assistant_response.message_pieces) == 1
-                        assert assistant_response.message_pieces[0].role == "assistant"
+                        assert assistant_response.message_pieces[0].api_role == "assistant"
                         expected_response = (
                             f"{benign_answer}\n\n"
                             "I can provide more information depending on what you're seeking. "
@@ -720,7 +720,7 @@ class TestContextComplianceAttackExecution:
                         user_message = result[0]
                         assert len(user_message.message_pieces) == 1
                         user_piece = user_message.message_pieces[0]
-                        assert user_piece.role == "user"
+                        assert user_piece.api_role == "user"
                         assert user_piece.original_value == basic_context.objective
                         assert user_piece.converted_value == "Mock benign question"
 
@@ -728,7 +728,7 @@ class TestContextComplianceAttackExecution:
                         assistant_message = result[1]
                         assert len(assistant_message.message_pieces) == 1
                         assistant_piece = assistant_message.message_pieces[0]
-                        assert assistant_piece.role == "assistant"
+                        assert assistant_piece.api_role == "assistant"
                         expected_content = (
                             "Mock benign answer\n\n"
                             "I can provide more information depending on what you're seeking. "

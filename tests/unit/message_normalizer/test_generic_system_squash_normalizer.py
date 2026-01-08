@@ -22,9 +22,9 @@ async def test_generic_squash_system_message():
     ]
     result = await GenericSystemSquashNormalizer().normalize_async(messages)
     assert len(result) == 2
-    assert result[0].role == "user"
+    assert result[0].api_role == "user"
     assert result[0].get_value() == "### Instructions ###\n\nSystem message\n\n######\n\nUser message 1"
-    assert result[1].role == "assistant"
+    assert result[1].api_role == "assistant"
     assert result[1].get_value() == "Assistant message"
 
 
@@ -39,7 +39,7 @@ async def test_generic_squash_system_message_single_system_message():
     messages = [_make_message("system", "System message")]
     result = await GenericSystemSquashNormalizer().normalize_async(messages)
     assert len(result) == 1
-    assert result[0].role == "user"
+    assert result[0].api_role == "user"
     assert result[0].get_value() == "System message"
 
 
@@ -48,9 +48,9 @@ async def test_generic_squash_system_message_no_system_message():
     messages = [_make_message("user", "User message 1"), _make_message("user", "User message 2")]
     result = await GenericSystemSquashNormalizer().normalize_async(messages)
     assert len(result) == 2
-    assert result[0].role == "user"
+    assert result[0].api_role == "user"
     assert result[0].get_value() == "User message 1"
-    assert result[1].role == "user"
+    assert result[1].api_role == "user"
     assert result[1].get_value() == "User message 2"
 
 
