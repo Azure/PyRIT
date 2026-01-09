@@ -58,9 +58,14 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
     """
 
     @classmethod
-    def get_instance(cls) -> "InitializerRegistry":
-        """Get the singleton instance of the InitializerRegistry."""
-        return super().get_instance()  # type: ignore[return-value]
+    def get_registry_singleton(cls) -> "InitializerRegistry":
+        """
+        Get the singleton instance of the InitializerRegistry.
+
+        Returns:
+            The singleton InitializerRegistry instance.
+        """
+        return super().get_registry_singleton()  # type: ignore[return-value]
 
     def __init__(self, *, discovery_path: Optional[Path] = None, lazy_discovery: bool = False) -> None:
         """
@@ -98,11 +103,11 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
         if discovery_path.is_file():
-            self._process_file(file_path=discovery_path, base_class=PyRITInitializer)
+            self._process_file(file_path=discovery_path, base_class=PyRITInitializer)  # type: ignore[type-abstract]
         else:
             for file_stem, file_path, initializer_class in discover_in_directory(
                 directory=discovery_path,
-                base_class=PyRITInitializer,
+                base_class=PyRITInitializer,  # type: ignore[type-abstract]
                 recursive=True,
             ):
                 self._register_initializer(
@@ -148,7 +153,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
                         self._register_initializer(
                             short_name=short_name,
                             file_path=file_path,
-                            initializer_class=attr,
+                            initializer_class=attr,  # type: ignore[arg-type]
                         )
 
         except Exception as e:
@@ -159,7 +164,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         *,
         short_name: str,
         file_path: Path,
-        initializer_class: type["PyRITInitializer"],
+        initializer_class: "type[PyRITInitializer]",
     ) -> None:
         """
         Register an initializer class.
@@ -173,7 +178,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         if short_name in self._initializer_paths:
             existing_path = self._initializer_paths[short_name]
             logger.error(
-                f"Initializer name collision: '{short_name}' found in both " f"'{file_path}' and '{existing_path}'."
+                f"Initializer name collision: '{short_name}' found in both '{file_path}' and '{existing_path}'."
             )
             return
 
@@ -277,7 +282,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
 
             if not script_path.exists():
                 raise FileNotFoundError(
-                    f"Initialization script not found: {script_path}\n" f"  Looked in: {script_path.absolute()}"
+                    f"Initialization script not found: {script_path}\n  Looked in: {script_path.absolute()}"
                 )
 
             resolved_paths.append(script_path)

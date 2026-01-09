@@ -2,16 +2,13 @@
 # Licensed under the MIT license.
 
 from typing import Optional
-from unittest.mock import MagicMock, patch
-
-import pytest
 
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.registry.instance_registries.scorer_registry import ScorerMetadata, ScorerRegistry
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
@@ -38,9 +35,7 @@ class MockTrueFalseScorer(TrueFalseScorer):
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return []
 
     def validate_return_scores(self, scores: list[Score]):
@@ -60,9 +55,7 @@ class MockFloatScaleScorer(FloatScaleScorer):
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return []
 
     def validate_return_scores(self, scores: list[Score]):
@@ -72,7 +65,7 @@ class MockFloatScaleScorer(FloatScaleScorer):
 class MockGenericScorer(Scorer):
     """Mock generic Scorer (not TrueFalse or FloatScale) for testing."""
 
-    scorer_type = "custom"
+    scorer_type = "true_false"  # type: ignore[assignment]
 
     def __init__(self):
         super().__init__(validator=DummyValidator())
@@ -84,9 +77,7 @@ class MockGenericScorer(Scorer):
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
 
-    async def _score_piece_async(
-        self, message_piece: MessagePiece, *, objective: Optional[str] = None
-    ) -> list[Score]:
+    async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return []
 
     def validate_return_scores(self, scores: list[Score]):
@@ -107,23 +98,23 @@ class TestScorerRegistrySingleton:
         """Reset the singleton after each test."""
         ScorerRegistry.reset_instance()
 
-    def test_get_instance_returns_same_instance(self):
-        """Test that get_instance returns the same singleton each time."""
-        instance1 = ScorerRegistry.get_instance()
-        instance2 = ScorerRegistry.get_instance()
+    def test_get_registry_singleton_returns_same_instance(self):
+        """Test that get_registry_singleton returns the same singleton each time."""
+        instance1 = ScorerRegistry.get_registry_singleton()
+        instance2 = ScorerRegistry.get_registry_singleton()
 
         assert instance1 is instance2
 
-    def test_get_instance_returns_scorer_registry_type(self):
-        """Test that get_instance returns a ScorerRegistry instance."""
-        instance = ScorerRegistry.get_instance()
+    def test_get_registry_singleton_returns_scorer_registry_type(self):
+        """Test that get_registry_singleton returns a ScorerRegistry instance."""
+        instance = ScorerRegistry.get_registry_singleton()
         assert isinstance(instance, ScorerRegistry)
 
     def test_reset_instance_clears_singleton(self):
         """Test that reset_instance clears the singleton."""
-        instance1 = ScorerRegistry.get_instance()
+        instance1 = ScorerRegistry.get_registry_singleton()
         ScorerRegistry.reset_instance()
-        instance2 = ScorerRegistry.get_instance()
+        instance2 = ScorerRegistry.get_registry_singleton()
 
         assert instance1 is not instance2
 
@@ -134,7 +125,7 @@ class TestScorerRegistryRegisterInstance:
     def setup_method(self):
         """Reset and get a fresh registry for each test."""
         ScorerRegistry.reset_instance()
-        self.registry = ScorerRegistry.get_instance()
+        self.registry = ScorerRegistry.get_registry_singleton()
 
     def teardown_method(self):
         """Reset the singleton after each test."""
@@ -186,7 +177,7 @@ class TestScorerRegistryGetInstanceByName:
     def setup_method(self):
         """Reset and get a fresh registry for each test."""
         ScorerRegistry.reset_instance()
-        self.registry = ScorerRegistry.get_instance()
+        self.registry = ScorerRegistry.get_registry_singleton()
         self.scorer = MockTrueFalseScorer()
         self.registry.register_instance(self.scorer, name="test_scorer")
 
@@ -211,7 +202,7 @@ class TestScorerRegistryBuildMetadata:
     def setup_method(self):
         """Reset and get a fresh registry for each test."""
         ScorerRegistry.reset_instance()
-        self.registry = ScorerRegistry.get_instance()
+        self.registry = ScorerRegistry.get_registry_singleton()
 
     def teardown_method(self):
         """Reset the singleton after each test."""
@@ -272,7 +263,7 @@ class TestScorerRegistryListMetadataFiltering:
     def setup_method(self):
         """Reset and get a fresh registry with multiple scorers."""
         ScorerRegistry.reset_instance()
-        self.registry = ScorerRegistry.get_instance()
+        self.registry = ScorerRegistry.get_registry_singleton()
 
         self.tf_scorer1 = MockTrueFalseScorer()
         self.tf_scorer2 = MockTrueFalseScorer()
@@ -288,17 +279,17 @@ class TestScorerRegistryListMetadataFiltering:
 
     def test_list_metadata_filter_by_scorer_type(self):
         """Test filtering metadata by scorer_type."""
-        tf_metadata = self.registry.list_metadata(scorer_type="true_false")
+        tf_metadata = self.registry.list_metadata(include_filters={"scorer_type": "true_false"})
         assert len(tf_metadata) == 2
         assert all(m.scorer_type == "true_false" for m in tf_metadata)
 
-        fs_metadata = self.registry.list_metadata(scorer_type="float_scale")
+        fs_metadata = self.registry.list_metadata(include_filters={"scorer_type": "float_scale"})
         assert len(fs_metadata) == 1
         assert fs_metadata[0].scorer_type == "float_scale"
 
     def test_list_metadata_filter_by_name(self):
         """Test filtering metadata by name."""
-        metadata = self.registry.list_metadata(name="tf_scorer_1")
+        metadata = self.registry.list_metadata(include_filters={"name": "tf_scorer_1"})
         assert len(metadata) == 1
         assert metadata[0].name == "tf_scorer_1"
 
@@ -307,6 +298,20 @@ class TestScorerRegistryListMetadataFiltering:
         metadata = self.registry.list_metadata()
         assert len(metadata) == 3
 
+    def test_list_metadata_exclude_by_scorer_type(self):
+        """Test excluding metadata by scorer_type."""
+        metadata = self.registry.list_metadata(exclude_filters={"scorer_type": "true_false"})
+        assert len(metadata) == 1
+        assert metadata[0].scorer_type == "float_scale"
+
+    def test_list_metadata_combined_include_and_exclude(self):
+        """Test combined include and exclude filters."""
+        metadata = self.registry.list_metadata(
+            include_filters={"scorer_type": "true_false"}, exclude_filters={"name": "tf_scorer_1"}
+        )
+        assert len(metadata) == 1
+        assert metadata[0].name == "tf_scorer_2"
+
 
 class TestScorerRegistryInheritedMethods:
     """Tests for inherited methods from BaseInstanceRegistry."""
@@ -314,7 +319,7 @@ class TestScorerRegistryInheritedMethods:
     def setup_method(self):
         """Reset and get a fresh registry."""
         ScorerRegistry.reset_instance()
-        self.registry = ScorerRegistry.get_instance()
+        self.registry = ScorerRegistry.get_registry_singleton()
         self.scorer = MockTrueFalseScorer()
         self.registry.register_instance(self.scorer, name="test_scorer")
 

@@ -12,9 +12,9 @@ import logging
 import textwrap
 from typing import List
 
-from pyrit.registry import ScenarioRegistry
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory import CentralMemory
+from pyrit.registry import ScenarioRegistry
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class LoadDefaultDatasets(PyRITInitializer):
     async def initialize_async(self) -> None:
         """Load default datasets from all registered scenarios."""
         # Get ScenarioRegistry to discover all scenarios
-        registry = ScenarioRegistry.get_instance()
+        registry = ScenarioRegistry.get_registry_singleton()
 
         # Collect all default datasets from all scenarios
         all_default_datasets: List[str] = []

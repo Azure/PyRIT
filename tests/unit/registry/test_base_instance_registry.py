@@ -38,18 +38,18 @@ class TestBaseInstanceRegistrySingleton:
         """Reset the singleton after each test."""
         ConcreteTestRegistry.reset_instance()
 
-    def test_get_instance_returns_same_instance(self):
-        """Test that get_instance returns the same singleton each time."""
-        instance1 = ConcreteTestRegistry.get_instance()
-        instance2 = ConcreteTestRegistry.get_instance()
+    def test_get_registry_singleton_returns_same_instance(self):
+        """Test that get_registry_singleton returns the same singleton each time."""
+        instance1 = ConcreteTestRegistry.get_registry_singleton()
+        instance2 = ConcreteTestRegistry.get_registry_singleton()
 
         assert instance1 is instance2
 
     def test_reset_instance_clears_singleton(self):
         """Test that reset_instance clears the singleton."""
-        instance1 = ConcreteTestRegistry.get_instance()
+        instance1 = ConcreteTestRegistry.get_registry_singleton()
         ConcreteTestRegistry.reset_instance()
-        instance2 = ConcreteTestRegistry.get_instance()
+        instance2 = ConcreteTestRegistry.get_registry_singleton()
 
         assert instance1 is not instance2
 
@@ -66,7 +66,7 @@ class TestBaseInstanceRegistryRegistration:
     def setup_method(self):
         """Reset and get a fresh registry for each test."""
         ConcreteTestRegistry.reset_instance()
-        self.registry = ConcreteTestRegistry.get_instance()
+        self.registry = ConcreteTestRegistry.get_registry_singleton()
 
     def teardown_method(self):
         """Reset the singleton after each test."""
@@ -118,7 +118,7 @@ class TestBaseInstanceRegistryGet:
     def setup_method(self):
         """Reset and get a fresh registry for each test."""
         ConcreteTestRegistry.reset_instance()
-        self.registry = ConcreteTestRegistry.get_instance()
+        self.registry = ConcreteTestRegistry.get_registry_singleton()
         self.registry.register("test_value", name="test_name")
 
     def teardown_method(self):
@@ -142,7 +142,7 @@ class TestBaseInstanceRegistryGetNames:
     def setup_method(self):
         """Reset and get a fresh registry for each test."""
         ConcreteTestRegistry.reset_instance()
-        self.registry = ConcreteTestRegistry.get_instance()
+        self.registry = ConcreteTestRegistry.get_registry_singleton()
 
     def teardown_method(self):
         """Reset the singleton after each test."""
@@ -169,7 +169,7 @@ class TestBaseInstanceRegistryListMetadata:
     def setup_method(self):
         """Reset and get a fresh registry for each test."""
         ConcreteTestRegistry.reset_instance()
-        self.registry = ConcreteTestRegistry.get_instance()
+        self.registry = ConcreteTestRegistry.get_registry_singleton()
         self.registry.register("test_item_1", name="item1")
         self.registry.register("other_item_2", name="item2")
         self.registry.register("test_item_3", name="item3")
@@ -191,14 +191,31 @@ class TestBaseInstanceRegistryListMetadata:
 
     def test_list_metadata_with_filter(self):
         """Test filtering metadata by a field."""
-        metadata = self.registry.list_metadata(category="test")
+        metadata = self.registry.list_metadata(include_filters={"category": "test"})
         assert len(metadata) == 2
         assert all(m.category == "test" for m in metadata)
 
     def test_list_metadata_filter_no_match(self):
         """Test filtering with no matches returns empty list."""
-        metadata = self.registry.list_metadata(category="nonexistent")
+        metadata = self.registry.list_metadata(include_filters={"category": "nonexistent"})
         assert metadata == []
+
+    def test_list_metadata_with_exclude_filter(self):
+        """Test excluding metadata by a field."""
+        metadata = self.registry.list_metadata(exclude_filters={"category": "test"})
+        assert len(metadata) == 1
+        assert all(m.category == "other" for m in metadata)
+
+    def test_list_metadata_combined_include_and_exclude(self):
+        """Test combined include and exclude filters."""
+        # Add another test item to have more variety
+        self.registry.register("another_test_item", name="item4")
+
+        # Get items with category "test" but exclude by name
+        metadata = self.registry.list_metadata(include_filters={"category": "test"}, exclude_filters={"name": "item1"})
+        assert len(metadata) == 2
+        assert all(m.category == "test" for m in metadata)
+        assert all(m.name != "item1" for m in metadata)
 
     def test_list_metadata_caching(self):
         """Test that metadata is cached after first call."""
@@ -217,7 +234,7 @@ class TestBaseInstanceRegistryDunderMethods:
     def setup_method(self):
         """Reset and get a fresh registry for each test."""
         ConcreteTestRegistry.reset_instance()
-        self.registry = ConcreteTestRegistry.get_instance()
+        self.registry = ConcreteTestRegistry.get_registry_singleton()
         self.registry.register("value1", name="name1")
         self.registry.register("value2", name="name2")
 
@@ -241,7 +258,7 @@ class TestBaseInstanceRegistryDunderMethods:
     def test_len_empty_registry(self):
         """Test __len__ returns 0 for empty registry."""
         ConcreteTestRegistry.reset_instance()
-        empty_registry = ConcreteTestRegistry.get_instance()
+        empty_registry = ConcreteTestRegistry.get_registry_singleton()
         assert len(empty_registry) == 0
 
     def test_iter_returns_sorted_names(self):

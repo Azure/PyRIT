@@ -95,7 +95,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
     - Registration of classes or factory callables
     - Metadata caching
     - Consistent API: get_class(), get_names(), list_metadata(), create_instance()
-    - Singleton pattern support via get_instance()
+    - Singleton pattern support via get_registry_singleton()
 
     Subclasses must implement:
     - _discover(): Populate the registry with discovered classes
@@ -128,7 +128,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
             self._discovered = True
 
     @classmethod
-    def get_instance(cls) -> "BaseClassRegistry[T, MetadataT]":
+    def get_registry_singleton(cls) -> "BaseClassRegistry[T, MetadataT]":
         """
         Get the singleton instance of this registry.
 
@@ -260,7 +260,12 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         self._ensure_discovered()
         return sorted(self._class_entries.keys())
 
-    def list_metadata(self, **filters: object) -> List[MetadataT]:
+    def list_metadata(
+        self,
+        *,
+        include_filters: Optional[Dict[str, object]] = None,
+        exclude_filters: Optional[Dict[str, object]] = None,
+    ) -> List[MetadataT]:
         """
         List metadata for all registered classes, optionally filtered.
 
@@ -269,8 +274,12 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         - List types: checks if filter value is in the list
 
         Args:
-            **filters: Optional keyword arguments to filter results.
+            include_filters: Optional dict of filters that items must match.
                 Keys are metadata property names, values are the filter criteria.
+                All filters must match (AND logic).
+            exclude_filters: Optional dict of filters that items must NOT match.
+                Keys are metadata property names, values are the filter criteria.
+                Any matching filter excludes the item.
 
         Returns:
             List of metadata dictionaries (TypedDict) describing each registered class.
@@ -285,10 +294,14 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
                 self._build_metadata(name, entry) for name, entry in sorted(self._class_entries.items())
             ]
 
-        if not filters:
+        if not include_filters and not exclude_filters:
             return self._metadata_cache
 
-        return [m for m in self._metadata_cache if _matches_filters(m, **filters)]
+        return [
+            m
+            for m in self._metadata_cache
+            if _matches_filters(m, include_filters=include_filters, exclude_filters=exclude_filters)
+        ]
 
     def register(
         self,
@@ -358,16 +371,31 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         return class_name_to_registry_name(cls.__name__)
 
     def __contains__(self, name: str) -> bool:
-        """Check if a name is registered."""
+        """
+        Check if a name is registered.
+
+        Returns:
+            True if the name is registered, False otherwise.
+        """
         self._ensure_discovered()
         return name in self._class_entries
 
     def __len__(self) -> int:
-        """Get the count of registered classes."""
+        """
+        Get the count of registered classes.
+
+        Returns:
+            The number of registered classes.
+        """
         self._ensure_discovered()
         return len(self._class_entries)
 
     def __iter__(self) -> Iterator[str]:
-        """Iterate over registered names."""
+        """
+        Iterate over registered names.
+
+        Returns:
+            An iterator over sorted registered names.
+        """
         self._ensure_discovered()
         return iter(sorted(self._class_entries.keys()))

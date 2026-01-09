@@ -44,7 +44,7 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
     _instances: Dict[type, "BaseInstanceRegistry[Any, Any]"] = {}
 
     @classmethod
-    def get_instance(cls) -> "BaseInstanceRegistry[T, MetadataT]":
+    def get_registry_singleton(cls) -> "BaseInstanceRegistry[T, MetadataT]":
         """
         Get the singleton instance of this registry.
 
@@ -110,18 +110,26 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
         """
         return sorted(self._registry_items.keys())
 
-    def list_metadata(self, **filters: object) -> List[MetadataT]:
+    def list_metadata(
+        self,
+        *,
+        include_filters: Optional[Dict[str, object]] = None,
+        exclude_filters: Optional[Dict[str, object]] = None,
+    ) -> List[MetadataT]:
         """
         List metadata for all registered instances, optionally filtered.
 
         Supports filtering on any metadata property:
         - Simple types (str, int, bool): exact match
         - List types: checks if filter value is in the list
-        - Dataclass types with to_compact_dict(): match against compact dict properties
 
         Args:
-            **filters: Optional keyword arguments to filter results.
+            include_filters: Optional dict of filters that items must match.
                 Keys are metadata property names, values are the filter criteria.
+                All filters must match (AND logic).
+            exclude_filters: Optional dict of filters that items must NOT match.
+                Keys are metadata property names, values are the filter criteria.
+                Any matching filter excludes the item.
 
         Returns:
             List of metadata dictionaries describing each registered instance.
@@ -135,10 +143,14 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
                 items.append(self._build_metadata(name, instance))
             self._metadata_cache = items
 
-        if not filters:
+        if not include_filters and not exclude_filters:
             return self._metadata_cache
 
-        return [m for m in self._metadata_cache if _matches_filters(m, **filters)]
+        return [
+            m
+            for m in self._metadata_cache
+            if _matches_filters(m, include_filters=include_filters, exclude_filters=exclude_filters)
+        ]
 
     @abstractmethod
     def _build_metadata(self, name: str, instance: T) -> MetadataT:
@@ -155,13 +167,28 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
         ...
 
     def __contains__(self, name: str) -> bool:
-        """Check if a name is registered."""
+        """
+        Check if a name is registered.
+
+        Returns:
+            True if the name is registered, False otherwise.
+        """
         return name in self._registry_items
 
     def __len__(self) -> int:
-        """Get the count of registered instances."""
+        """
+        Get the count of registered instances.
+
+        Returns:
+            The number of registered instances.
+        """
         return len(self._registry_items)
 
     def __iter__(self) -> Iterator[str]:
-        """Iterate over registered names."""
+        """
+        Iterate over registered names.
+
+        Returns:
+            An iterator over sorted registered names.
+        """
         return iter(sorted(self._registry_items.keys()))

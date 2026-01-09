@@ -59,9 +59,14 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
     """
 
     @classmethod
-    def get_instance(cls) -> "ScenarioRegistry":
-        """Get the singleton instance of the ScenarioRegistry."""
-        return super().get_instance()  # type: ignore[return-value]
+    def get_registry_singleton(cls) -> "ScenarioRegistry":
+        """
+        Get the singleton instance of the ScenarioRegistry.
+
+        Returns:
+            The singleton ScenarioRegistry instance.
+        """
+        return super().get_registry_singleton()  # type: ignore[return-value]
 
     def __init__(self, *, lazy_discovery: bool = True) -> None:
         """
@@ -104,7 +109,7 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
             for module_name, scenario_class in discover_in_package(
                 package_path=package_path,
                 package_name="pyrit.scenario.scenarios",
-                base_class=Scenario,
+                base_class=Scenario,  # type: ignore[type-abstract]
                 recursive=True,
             ):
                 entry = ClassEntry(registered_class=scenario_class)
@@ -126,7 +131,9 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
         from pyrit.scenario.core import Scenario
 
         try:
-            for module_name, scenario_class in discover_subclasses_in_loaded_modules(base_class=Scenario):
+            for module_name, scenario_class in discover_subclasses_in_loaded_modules(
+                base_class=Scenario  # type: ignore[type-abstract]
+            ):
                 # Check if this is a user-defined class (not from pyrit.scenario.scenarios)
                 if not scenario_class.__module__.startswith("pyrit.scenario.scenarios"):
                     # Convert class name to snake_case for scenario name

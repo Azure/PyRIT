@@ -56,9 +56,14 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerMetadata]):
     """
 
     @classmethod
-    def get_instance(cls) -> "ScorerRegistry":
-        """Get the singleton instance of the ScorerRegistry."""
-        return super().get_instance()  # type: ignore[return-value]
+    def get_registry_singleton(cls) -> "ScorerRegistry":
+        """
+        Get the singleton instance of the ScorerRegistry.
+
+        Returns:
+            The singleton ScorerRegistry instance.
+        """
+        return super().get_registry_singleton()  # type: ignore[return-value]
 
     def register_instance(
         self,

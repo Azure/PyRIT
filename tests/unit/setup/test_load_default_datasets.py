@@ -10,10 +10,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.registry import ScenarioRegistry
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedDataset
+from pyrit.registry import ScenarioRegistry
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.setup.initializers.scenarios.load_default_datasets import LoadDefaultDatasets
 
@@ -191,7 +191,7 @@ class TestLoadDefaultDatasets:
         available_datasets = set(SeedDatasetProvider.get_all_dataset_names())
 
         # Get ScenarioRegistry to discover all scenarios
-        registry = ScenarioRegistry.get_instance()
+        registry = ScenarioRegistry.get_registry_singleton()
         scenario_names = registry.get_names()
 
         # Collect all required datasets from all scenarios

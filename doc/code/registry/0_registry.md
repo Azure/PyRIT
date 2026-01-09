@@ -24,7 +24,7 @@ Both registry types implement `RegistryProtocol`, sharing a consistent interface
 
 | Method | Description |
 |--------|-------------|
-| `get_instance()` | Get the singleton registry instance |
+| `get_registry_singleton()` | Get the singleton registry instance |
 | `get_names()` | List all registered names |
 | `list_metadata()` | Get descriptive metadata for all items |
 | `reset_instance()` | Reset the singleton (useful for testing) |
@@ -38,6 +38,17 @@ def show_registry_contents(registry: RegistryProtocol) -> None:
     for name in registry.get_names():
         print(name)
 ```
+
+
+## Key Difference with Class and Instance Registries
+
+| Aspect | Class Registry | Instance Registry |
+|--------|----------------|-------------------|
+| Stores | Classes (Type[T]) | Instances (T) |
+| Registration | Automatic discovery | Explicit via `register_instance()` |
+| Returns | Class to instantiate | Ready-to-use instance |
+| Instantiation | Caller provides parameters | Pre-configured by initializer |
+| When to use | Self-contained components with deferred configuration | Components requiring constructor parameters or compositional setup |
 
 ## See Also
 

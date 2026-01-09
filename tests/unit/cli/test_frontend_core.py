@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.cli import frontend_core
-from pyrit.registry import ScenarioMetadata, InitializerMetadata
+from pyrit.registry import InitializerMetadata, ScenarioMetadata
 
 
 class TestFrontendCore:

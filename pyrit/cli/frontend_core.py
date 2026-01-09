@@ -117,7 +117,7 @@ class FrontendCore:
         )
 
         # Load registries (use singleton pattern for shared access)
-        self._scenario_registry = ScenarioRegistry.get_instance()
+        self._scenario_registry = ScenarioRegistry.get_registry_singleton()
         if self._initialization_scripts:
             print("Discovering user scenarios...")
             sys.stdout.flush()
