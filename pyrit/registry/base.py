@@ -8,35 +8,36 @@ This module contains types shared between class registries (which store Type[T])
 and instance registries (which store T instances).
 """
 
-from typing import Any, Iterator, List, Protocol, TypedDict, TypeVar, runtime_checkable
+from dataclasses import dataclass
+from typing import Any, Iterator, List, Protocol, TypeVar, runtime_checkable
 
 # Type variable for metadata (invariant for Protocol compatibility)
 MetadataT = TypeVar("MetadataT")
 
 
-def _matches_filters(metadata: TypedDict, **filters: Any) -> bool:
+def _matches_filters(metadata: Any, **filters: Any) -> bool:
     """
-    Check if a metadata dictionary matches all provided filters.
+    Check if a metadata object matches all provided filters.
 
-    Supports filtering on any property of the metadata TypedDict:
+    Supports filtering on any property of the metadata dataclass:
     - For simple types (str, int, bool): exact match comparison
-    - For list types: checks if filter value is contained in the list
+    - For sequence types (list, tuple): checks if filter value is contained in the sequence
 
     Args:
-        metadata: The metadata dictionary to check.
+        metadata: The metadata dataclass instance to check.
         **filters: Keyword arguments where key is the property name and value is the filter.
 
     Returns:
         True if all filters match, False otherwise.
     """
     for key, filter_value in filters.items():
-        if key not in metadata:
+        if not hasattr(metadata, key):
             return False
 
-        actual_value = metadata[key]
+        actual_value = getattr(metadata, key)
 
-        # Handle list types - check if filter value is in the list
-        if isinstance(actual_value, list):
+        # Handle sequence types - check if filter value is in the sequence
+        if isinstance(actual_value, (list, tuple)):
             if filter_value not in actual_value:
                 return False
         # Simple exact match for other types
@@ -56,7 +57,7 @@ class RegistryProtocol(Protocol[MetadataT]):
     works with either registry type.
 
     Type Parameters:
-        MetadataT: The TypedDict type for metadata (e.g., ScenarioMetadata).
+        MetadataT: The metadata dataclass type (e.g., ScenarioMetadata).
     """
 
     @classmethod
@@ -90,13 +91,14 @@ class RegistryProtocol(Protocol[MetadataT]):
         ...
 
 
-class RegistryItemMetadata(TypedDict):
+@dataclass(frozen=True)
+class RegistryItemMetadata:
     """
-    Base type definition for registry item metadata.
+    Base dataclass for registry item metadata.
 
-    This TypedDict provides descriptive information about a registered item
+    This dataclass provides descriptive information about a registered item
     (either a class or an instance). It is NOT the item itself - it's a
-    dictionary describing the item.
+    structured object describing the item.
 
     All registry-specific metadata types should extend this with additional fields.
     """

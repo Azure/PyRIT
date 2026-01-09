@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.cli import frontend_core
+from pyrit.registry import ScenarioMetadata, InitializerMetadata
 
 
 class TestFrontendCore:
@@ -53,8 +54,8 @@ class TestFrontendCore:
         with pytest.raises(ValueError, match="Invalid log level"):
             frontend_core.FrontendCore(log_level="INVALID")
 
-    @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
-    @patch("pyrit.cli.initializer_registry.InitializerRegistry")
+    @patch("pyrit.registry.ScenarioRegistry")
+    @patch("pyrit.registry.InitializerRegistry")
     @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     def test_initialize_loads_registries(
         self,
@@ -73,8 +74,8 @@ class TestFrontendCore:
         mock_scenario_registry.assert_called_once()
         mock_init_registry.assert_called_once()
 
-    @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
-    @patch("pyrit.cli.initializer_registry.InitializerRegistry")
+    @patch("pyrit.registry.ScenarioRegistry")
+    @patch("pyrit.registry.InitializerRegistry")
     @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     async def test_scenario_registry_property_initializes(
         self,
@@ -92,8 +93,8 @@ class TestFrontendCore:
         assert context._initialized is True
         assert registry is not None
 
-    @patch("pyrit.cli.scenario_registry.ScenarioRegistry")
-    @patch("pyrit.cli.initializer_registry.InitializerRegistry")
+    @patch("pyrit.registry.ScenarioRegistry")
+    @patch("pyrit.registry.InitializerRegistry")
     @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     async def test_initializer_registry_property_initializes(
         self,
@@ -249,7 +250,7 @@ class TestParseMemoryLabels:
 class TestResolveInitializationScripts:
     """Tests for resolve_initialization_scripts function."""
 
-    @patch("pyrit.cli.initializer_registry.InitializerRegistry.resolve_script_paths")
+    @patch("pyrit.registry.InitializerRegistry.resolve_script_paths")
     def test_resolve_initialization_scripts(self, mock_resolve: MagicMock):
         """Test resolve_initialization_scripts calls InitializerRegistry."""
         mock_resolve.return_value = [Path("/test/script.py")]
@@ -302,7 +303,7 @@ class TestListFunctions:
         assert result == [{"name": "test_init"}]
         mock_registry.list_initializers.assert_called_once()
 
-    @patch("pyrit.cli.initializer_registry.InitializerRegistry")
+    @patch("pyrit.registry.InitializerRegistry")
     async def test_list_initializers_with_discovery_path(self, mock_init_registry_class: MagicMock):
         """Test list_initializers_async with discovery path."""
         mock_registry = MagicMock()
@@ -398,10 +399,17 @@ class TestFormatFunctions:
 
     def test_format_scenario_metadata_basic(self, capsys):
         """Test format_scenario_metadata with basic metadata."""
-        scenario_metadata = {
-            "name": "test_scenario",
-            "class_name": "TestScenario",
-        }
+
+        scenario_metadata = ScenarioMetadata(
+            name="test_scenario",
+            class_name="TestScenario",
+            description="",
+            default_strategy="",
+            all_strategies=(),
+            aggregate_strategies=(),
+            default_datasets=(),
+            max_dataset_size=None,
+        )
 
         frontend_core.format_scenario_metadata(scenario_metadata=scenario_metadata)
 
@@ -411,11 +419,17 @@ class TestFormatFunctions:
 
     def test_format_scenario_metadata_with_description(self, capsys):
         """Test format_scenario_metadata with description."""
-        scenario_metadata = {
-            "name": "test_scenario",
-            "class_name": "TestScenario",
-            "description": "This is a test scenario",
-        }
+
+        scenario_metadata = ScenarioMetadata(
+            name="test_scenario",
+            class_name="TestScenario",
+            description="This is a test scenario",
+            default_strategy="",
+            all_strategies=(),
+            aggregate_strategies=(),
+            default_datasets=(),
+            max_dataset_size=None,
+        )
 
         frontend_core.format_scenario_metadata(scenario_metadata=scenario_metadata)
 
@@ -424,12 +438,16 @@ class TestFormatFunctions:
 
     def test_format_scenario_metadata_with_strategies(self, capsys):
         """Test format_scenario_metadata with strategies."""
-        scenario_metadata = {
-            "name": "test_scenario",
-            "class_name": "TestScenario",
-            "all_strategies": ["strategy1", "strategy2"],
-            "default_strategy": "strategy1",
-        }
+        scenario_metadata = ScenarioMetadata(
+            name="test_scenario",
+            class_name="TestScenario",
+            description="",
+            default_strategy="strategy1",
+            all_strategies=("strategy1", "strategy2"),
+            aggregate_strategies=(),
+            default_datasets=(),
+            max_dataset_size=None,
+        )
 
         frontend_core.format_scenario_metadata(scenario_metadata=scenario_metadata)
 
@@ -440,16 +458,14 @@ class TestFormatFunctions:
 
     def test_format_initializer_metadata_basic(self, capsys) -> None:
         """Test format_initializer_metadata with basic metadata."""
-        from pyrit.registry import InitializerMetadata
-
-        initializer_metadata: InitializerMetadata = {
-            "name": "test_init",
-            "class_name": "TestInit",
-            "initializer_name": "test",
-            "description": "",
-            "required_env_vars": [],
-            "execution_order": 100,
-        }
+        initializer_metadata = InitializerMetadata(
+            name="test_init",
+            class_name="TestInit",
+            description="",
+            initializer_name="test",
+            required_env_vars=(),
+            execution_order=100,
+        )
 
         frontend_core.format_initializer_metadata(initializer_metadata=initializer_metadata)
 
@@ -460,16 +476,14 @@ class TestFormatFunctions:
 
     def test_format_initializer_metadata_with_env_vars(self, capsys) -> None:
         """Test format_initializer_metadata with environment variables."""
-        from pyrit.registry import InitializerMetadata
-
-        initializer_metadata: InitializerMetadata = {
-            "name": "test_init",
-            "class_name": "TestInit",
-            "initializer_name": "test",
-            "description": "",
-            "required_env_vars": ["VAR1", "VAR2"],
-            "execution_order": 100,
-        }
+        initializer_metadata = InitializerMetadata(
+            name="test_init",
+            class_name="TestInit",
+            description="",
+            initializer_name="test",
+            required_env_vars=("VAR1", "VAR2"),
+            execution_order=100,
+        )
 
         frontend_core.format_initializer_metadata(initializer_metadata=initializer_metadata)
 
@@ -479,16 +493,14 @@ class TestFormatFunctions:
 
     def test_format_initializer_metadata_with_description(self, capsys) -> None:
         """Test format_initializer_metadata with description."""
-        from pyrit.registry import InitializerMetadata
-
-        initializer_metadata: InitializerMetadata = {
-            "name": "test_init",
-            "class_name": "TestInit",
-            "initializer_name": "test",
-            "description": "Test description",
-            "required_env_vars": [],
-            "execution_order": 100,
-        }
+        initializer_metadata = InitializerMetadata(
+            name="test_init",
+            class_name="TestInit",
+            description="Test description",
+            initializer_name="test",
+            required_env_vars=(),
+            execution_order=100,
+        )
 
         frontend_core.format_initializer_metadata(initializer_metadata=initializer_metadata)
 

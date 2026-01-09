@@ -92,6 +92,9 @@ class MockGenericScorer(Scorer):
     def validate_return_scores(self, scores: list[Score]):
         pass
 
+    def get_scorer_metrics(self):
+        return None
+
 
 class TestScorerRegistrySingleton:
     """Tests for the singleton pattern in ScorerRegistry."""
@@ -221,9 +224,9 @@ class TestScorerRegistryBuildMetadata:
 
         metadata = self.registry.list_metadata()
         assert len(metadata) == 1
-        assert metadata[0]["scorer_type"] == "true_false"
-        assert metadata[0]["class_name"] == "MockTrueFalseScorer"
-        assert metadata[0]["name"] == "tf_scorer"
+        assert metadata[0].scorer_type == "true_false"
+        assert metadata[0].class_name == "MockTrueFalseScorer"
+        assert metadata[0].name == "tf_scorer"
 
     def test_build_metadata_float_scale_scorer(self):
         """Test that metadata correctly identifies FloatScaleScorer type."""
@@ -232,8 +235,8 @@ class TestScorerRegistryBuildMetadata:
 
         metadata = self.registry.list_metadata()
         assert len(metadata) == 1
-        assert metadata[0]["scorer_type"] == "float_scale"
-        assert metadata[0]["class_name"] == "MockFloatScaleScorer"
+        assert metadata[0].scorer_type == "float_scale"
+        assert metadata[0].class_name == "MockFloatScaleScorer"
 
     def test_build_metadata_unknown_scorer_type(self):
         """Test that non-standard scorers get 'unknown' scorer_type."""
@@ -242,7 +245,7 @@ class TestScorerRegistryBuildMetadata:
 
         metadata = self.registry.list_metadata()
         assert len(metadata) == 1
-        assert metadata[0]["scorer_type"] == "unknown"
+        assert metadata[0].scorer_type == "unknown"
 
     def test_build_metadata_includes_scorer_identifier(self):
         """Test that metadata includes the scorer_identifier."""
@@ -250,8 +253,8 @@ class TestScorerRegistryBuildMetadata:
         self.registry.register_instance(scorer, name="tf_scorer")
 
         metadata = self.registry.list_metadata()
-        assert "scorer_identifier" in metadata[0]
-        assert isinstance(metadata[0]["scorer_identifier"], ScorerIdentifier)
+        assert hasattr(metadata[0], "scorer_identifier")
+        assert isinstance(metadata[0].scorer_identifier, ScorerIdentifier)
 
     def test_build_metadata_description_from_docstring(self):
         """Test that description is derived from the scorer's docstring."""
@@ -260,7 +263,7 @@ class TestScorerRegistryBuildMetadata:
 
         metadata = self.registry.list_metadata()
         # MockTrueFalseScorer has a docstring
-        assert "Mock TrueFalseScorer for testing" in metadata[0]["description"]
+        assert "Mock TrueFalseScorer for testing" in metadata[0].description
 
 
 class TestScorerRegistryListMetadataFiltering:
@@ -287,17 +290,17 @@ class TestScorerRegistryListMetadataFiltering:
         """Test filtering metadata by scorer_type."""
         tf_metadata = self.registry.list_metadata(scorer_type="true_false")
         assert len(tf_metadata) == 2
-        assert all(m["scorer_type"] == "true_false" for m in tf_metadata)
+        assert all(m.scorer_type == "true_false" for m in tf_metadata)
 
         fs_metadata = self.registry.list_metadata(scorer_type="float_scale")
         assert len(fs_metadata) == 1
-        assert fs_metadata[0]["scorer_type"] == "float_scale"
+        assert fs_metadata[0].scorer_type == "float_scale"
 
     def test_list_metadata_filter_by_name(self):
         """Test filtering metadata by name."""
         metadata = self.registry.list_metadata(name="tf_scorer_1")
         assert len(metadata) == 1
-        assert metadata[0]["name"] == "tf_scorer_1"
+        assert metadata[0].name == "tf_scorer_1"
 
     def test_list_metadata_no_filter_returns_all(self):
         """Test that list_metadata without filters returns all items."""
@@ -346,23 +349,23 @@ class TestScorerRegistryInheritedMethods:
 
 
 class TestScorerMetadata:
-    """Tests for ScorerMetadata TypedDict."""
+    """Tests for ScorerMetadata dataclass."""
 
     def test_scorer_metadata_has_required_fields(self):
         """Test that ScorerMetadata includes all required fields."""
         # Create a mock scorer identifier
         mock_identifier = ScorerIdentifier(type="test_type")
 
-        metadata: ScorerMetadata = {
-            "name": "test_scorer",
-            "class_name": "TestScorer",
-            "description": "A test scorer",
-            "scorer_type": "true_false",
-            "scorer_identifier": mock_identifier,
-        }
+        metadata = ScorerMetadata(
+            name="test_scorer",
+            class_name="TestScorer",
+            description="A test scorer",
+            scorer_type="true_false",
+            scorer_identifier=mock_identifier,
+        )
 
-        assert metadata["name"] == "test_scorer"
-        assert metadata["class_name"] == "TestScorer"
-        assert metadata["description"] == "A test scorer"
-        assert metadata["scorer_type"] == "true_false"
-        assert metadata["scorer_identifier"] == mock_identifier
+        assert metadata.name == "test_scorer"
+        assert metadata.class_name == "TestScorer"
+        assert metadata.description == "A test scorer"
+        assert metadata.scorer_type == "true_false"
+        assert metadata.scorer_identifier == mock_identifier

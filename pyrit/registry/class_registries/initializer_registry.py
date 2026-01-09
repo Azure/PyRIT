@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -32,16 +33,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
 class InitializerMetadata(RegistryItemMetadata):
     """
     Metadata describing a registered PyRITInitializer class.
 
-    This TypedDict provides descriptive information about an initializer class,
-    NOT the class itself. Use get_class() to get the actual class.
+    Use get_class() to get the actual class.
     """
 
     initializer_name: str
-    required_env_vars: list[str]
+    required_env_vars: tuple[str, ...]
     execution_order: int
 
 
@@ -195,7 +196,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
             entry: The ClassEntry containing the initializer class.
 
         Returns:
-            InitializerMetadata dictionary describing the initializer class.
+            InitializerMetadata describing the initializer class.
         """
         initializer_class = entry.registered_class
 
@@ -206,7 +207,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
                 class_name=initializer_class.__name__,
                 description=instance.description,
                 initializer_name=instance.name,
-                required_env_vars=instance.required_env_vars,
+                required_env_vars=tuple(instance.required_env_vars),
                 execution_order=instance.execution_order,
             )
         except Exception as e:
@@ -216,7 +217,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
                 class_name=initializer_class.__name__,
                 description="Error loading initializer metadata",
                 initializer_name=name,
-                required_env_vars=[],
+                required_env_vars=(),
                 execution_order=100,
             )
 

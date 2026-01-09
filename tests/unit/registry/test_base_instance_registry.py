@@ -1,14 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
-
-import pytest
+from dataclasses import dataclass
 
 from pyrit.registry.base import RegistryItemMetadata
 from pyrit.registry.instance_registries.base_instance_registry import BaseInstanceRegistry
 
 
+@dataclass(frozen=True)
 class SampleItemMetadata(RegistryItemMetadata):
     """Sample metadata with an extra field."""
 
@@ -187,14 +186,14 @@ class TestBaseInstanceRegistryListMetadata:
     def test_list_metadata_sorted_by_name(self):
         """Test that metadata is sorted by name."""
         metadata = self.registry.list_metadata()
-        names = [m["name"] for m in metadata]
+        names = [m.name for m in metadata]
         assert names == ["item1", "item2", "item3"]
 
     def test_list_metadata_with_filter(self):
         """Test filtering metadata by a field."""
         metadata = self.registry.list_metadata(category="test")
         assert len(metadata) == 2
-        assert all(m["category"] == "test" for m in metadata)
+        assert all(m.category == "test" for m in metadata)
 
     def test_list_metadata_filter_no_match(self):
         """Test filtering with no matches returns empty list."""

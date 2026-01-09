@@ -178,7 +178,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
             entry: The ClassEntry containing the registered class.
 
         Returns:
-            A TypedDict with descriptive metadata about the registered class.
+            A metadata dataclass with descriptive information about the registered class.
         """
         pass
 
@@ -187,14 +187,14 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         Build the common base metadata for a registered class.
 
         This helper extracts fields common to all registries: name, class_name, description.
-        Subclasses should call this and extend the result with additional fields.
+        Subclasses can use this for building common fields if needed.
 
         Args:
             name: The registry name (snake_case identifier).
             entry: The ClassEntry containing the registered class.
 
         Returns:
-            A RegistryItemMetadata with common fields.
+            A RegistryItemMetadata dataclass with common fields.
         """
         registered_class = entry.registered_class
 

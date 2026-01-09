@@ -10,6 +10,7 @@ scorers are registered explicitly via initializers as pre-configured instances.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 from pyrit.registry.base import RegistryItemMetadata
@@ -27,13 +28,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
 class ScorerMetadata(RegistryItemMetadata):
     """
     Metadata describing a registered scorer instance.
 
     Unlike ScenarioMetadata/InitializerMetadata which describe classes,
     ScorerMetadata describes an already-instantiated scorer.
-    This TypedDict provides descriptive information, not the scorer itself.
 
     Use get() to retrieve the actual scorer instance.
     """

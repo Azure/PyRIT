@@ -11,6 +11,7 @@ from the pyrit.scenario.scenarios module and from user-defined initialization sc
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -31,18 +32,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
 class ScenarioMetadata(RegistryItemMetadata):
     """
     Metadata describing a registered Scenario class.
 
-    This TypedDict provides descriptive information about a Scenario class,
-    NOT the class itself. Use get_class() to get the actual class.
+    Use get_class() to get the actual class.
     """
 
     default_strategy: str
-    all_strategies: list[str]
-    aggregate_strategies: list[str]
-    default_datasets: list[str]
+    all_strategies: tuple[str, ...]
+    aggregate_strategies: tuple[str, ...]
+    default_datasets: tuple[str, ...]
     max_dataset_size: Optional[int]
 
 
@@ -146,11 +147,13 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
             entry: The ClassEntry containing the scenario class.
 
         Returns:
-            ScenarioMetadata dictionary describing the scenario class.
+            ScenarioMetadata describing the scenario class.
         """
-        # Get base metadata (name, class_name, description)
-        base_metadata = self._build_base_metadata(name, entry)
         scenario_class = entry.registered_class
+
+        # Extract description from docstring, clean up whitespace
+        doc = scenario_class.__doc__ or ""
+        description = " ".join(doc.split()) if doc else entry.description or "No description available"
 
         # Get the strategy class for this scenario
         strategy_class = scenario_class.get_strategy_class()
@@ -160,10 +163,12 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
         max_dataset_size = dataset_config.max_dataset_size
 
         return ScenarioMetadata(
-            **base_metadata,
+            name=name,
+            class_name=scenario_class.__name__,
+            description=description,
             default_strategy=scenario_class.get_default_strategy().value,
-            all_strategies=[s.value for s in strategy_class.get_all_strategies()],
-            aggregate_strategies=[s.value for s in strategy_class.get_aggregate_strategies()],
-            default_datasets=default_datasets,
+            all_strategies=tuple(s.value for s in strategy_class.get_all_strategies()),
+            aggregate_strategies=tuple(s.value for s in strategy_class.get_aggregate_strategies()),
+            default_datasets=tuple(default_datasets),
             max_dataset_size=max_dataset_size,
         )

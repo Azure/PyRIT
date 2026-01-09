@@ -382,34 +382,34 @@ def format_scenario_metadata(*, scenario_metadata: ScenarioMetadata) -> None:
     Print formatted information about a scenario class.
 
     Args:
-        scenario_metadata: Dictionary containing scenario metadata.
+        scenario_metadata: Dataclass containing scenario metadata.
     """
-    _print_header(text=scenario_metadata["name"])
-    print(f"    Class: {scenario_metadata['class_name']}")
+    _print_header(text=scenario_metadata.name)
+    print(f"    Class: {scenario_metadata.class_name}")
 
-    description = scenario_metadata.get("description", "")
+    description = scenario_metadata.description
     if description:
         print("    Description:")
         print(_format_wrapped_text(text=description, indent="      "))
 
-    if scenario_metadata.get("aggregate_strategies"):
-        agg_strategies = scenario_metadata["aggregate_strategies"]
+    if scenario_metadata.aggregate_strategies:
+        agg_strategies = scenario_metadata.aggregate_strategies
         print("    Aggregate Strategies:")
         formatted = _format_wrapped_text(text=", ".join(agg_strategies), indent="      - ")
         print(formatted)
 
-    if scenario_metadata.get("all_strategies"):
-        strategies = scenario_metadata["all_strategies"]
+    if scenario_metadata.all_strategies:
+        strategies = scenario_metadata.all_strategies
         print(f"    Available Strategies ({len(strategies)}):")
         formatted = _format_wrapped_text(text=", ".join(strategies), indent="      ")
         print(formatted)
 
-    if scenario_metadata.get("default_strategy"):
-        print(f"    Default Strategy: {scenario_metadata['default_strategy']}")
+    if scenario_metadata.default_strategy:
+        print(f"    Default Strategy: {scenario_metadata.default_strategy}")
 
-    if scenario_metadata.get("default_datasets"):
-        datasets = scenario_metadata["default_datasets"]
-        max_size = scenario_metadata.get("max_dataset_size")
+    if scenario_metadata.default_datasets:
+        datasets = scenario_metadata.default_datasets
+        max_size = scenario_metadata.max_dataset_size
         if datasets:
             size_suffix = f", max {max_size} per dataset" if max_size else ""
             print(f"    Default Datasets ({len(datasets)}{size_suffix}):")
@@ -424,23 +424,23 @@ def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") 
     Print formatted information about an initializer class.
 
     Args:
-        initializer_metadata: Dictionary containing initializer metadata.
+        initializer_metadata: Dataclass containing initializer metadata.
     """
-    _print_header(text=initializer_metadata["name"])
-    print(f"    Class: {initializer_metadata['class_name']}")
-    print(f"    Name: {initializer_metadata['initializer_name']}")
-    print(f"    Execution Order: {initializer_metadata['execution_order']}")
+    _print_header(text=initializer_metadata.name)
+    print(f"    Class: {initializer_metadata.class_name}")
+    print(f"    Name: {initializer_metadata.initializer_name}")
+    print(f"    Execution Order: {initializer_metadata.execution_order}")
 
-    if initializer_metadata.get("required_env_vars"):
+    if initializer_metadata.required_env_vars:
         print("    Required Environment Variables:")
-        for env_var in initializer_metadata["required_env_vars"]:
+        for env_var in initializer_metadata.required_env_vars:
             print(f"      - {env_var}")
     else:
         print("    Required Environment Variables: None")
 
-    if initializer_metadata.get("description"):
+    if initializer_metadata.description:
         print("    Description:")
-        print(_format_wrapped_text(text=initializer_metadata["description"], indent="      "))
+        print(_format_wrapped_text(text=initializer_metadata.description, indent="      "))
 
 
 def validate_database(*, database: str) -> str:

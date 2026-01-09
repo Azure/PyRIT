@@ -1,9 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from dataclasses import dataclass
+
 import pytest
 
 from pyrit.registry.base import RegistryItemMetadata, _matches_filters
+
+
+@dataclass(frozen=True)
+class MetadataWithTags(RegistryItemMetadata):
+    """Test metadata with a tags field for list filtering tests."""
+
+    tags: tuple[str, ...]
 
 
 class TestMatchesFilters:
@@ -67,28 +76,28 @@ class TestMatchesFilters:
 
     def test_matches_filters_list_value_contains_filter(self):
         """Test filtering when metadata value is a list and filter value is in the list."""
-        metadata = {
-            "name": "test_item",
-            "class_name": "TestClass",
-            "description": "A test item",
-            "tags": ["tag1", "tag2", "tag3"],
-        }
+        metadata = MetadataWithTags(
+            name="test_item",
+            class_name="TestClass",
+            description="A test item",
+            tags=("tag1", "tag2", "tag3"),
+        )
         assert _matches_filters(metadata, tags="tag1") is True
         assert _matches_filters(metadata, tags="tag2") is True
 
     def test_matches_filters_list_value_not_contains_filter(self):
         """Test filtering when metadata value is a list and filter value is not in the list."""
-        metadata = {
-            "name": "test_item",
-            "class_name": "TestClass",
-            "description": "A test item",
-            "tags": ["tag1", "tag2", "tag3"],
-        }
+        metadata = MetadataWithTags(
+            name="test_item",
+            class_name="TestClass",
+            description="A test item",
+            tags=("tag1", "tag2", "tag3"),
+        )
         assert _matches_filters(metadata, tags="missing_tag") is False
 
 
 class TestRegistryItemMetadata:
-    """Tests for the RegistryItemMetadata TypedDict."""
+    """Tests for the RegistryItemMetadata dataclass."""
 
     def test_registry_item_metadata_creation(self):
         """Test creating a RegistryItemMetadata instance."""
@@ -97,18 +106,17 @@ class TestRegistryItemMetadata:
             class_name="TestScorer",
             description="A test scorer for testing",
         )
-        assert metadata["name"] == "test_scorer"
-        assert metadata["class_name"] == "TestScorer"
-        assert metadata["description"] == "A test scorer for testing"
+        assert metadata.name == "test_scorer"
+        assert metadata.class_name == "TestScorer"
+        assert metadata.description == "A test scorer for testing"
 
-    def test_registry_item_metadata_as_dict(self):
-        """Test that RegistryItemMetadata behaves as a dict."""
-        metadata: RegistryItemMetadata = {
-            "name": "test_item",
-            "class_name": "TestClass",
-            "description": "Description here",
-        }
+    def test_registry_item_metadata_is_frozen(self):
+        """Test that RegistryItemMetadata is immutable."""
+        metadata = RegistryItemMetadata(
+            name="test_item",
+            class_name="TestClass",
+            description="Description here",
+        )
 
-        assert "name" in metadata
-        assert len(metadata) == 3
-        assert list(metadata.keys()) == ["name", "class_name", "description"]
+        with pytest.raises(AttributeError):
+            metadata.name = "new_name"  # type: ignore[misc]
