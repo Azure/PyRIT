@@ -22,7 +22,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.models import SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
@@ -169,7 +169,7 @@ class Scam(Scenario):
             name="Scam",
             version=self.version,
             strategy_class=ScamStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
@@ -177,7 +177,7 @@ class Scam(Scenario):
         # Store deprecated objectives for later resolution in _resolve_seed_groups
         self._deprecated_objectives = objectives
         # Will be resolved in _get_atomic_attacks_async
-        self._seed_groups: Optional[List[SeedGroup]] = None
+        self._seed_groups: Optional[List[SeedAttackGroup]] = None
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
@@ -226,12 +226,12 @@ class Scam(Scenario):
             temperature=1.2,
         )
 
-    def _resolve_seed_groups(self) -> List[SeedGroup]:
+    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
         """
         Resolve seed groups from deprecated objectives or dataset configuration.
 
         Returns:
-            List[SeedGroup]: List of seed groups with objectives to be tested.
+            List[SeedAttackGroup]: List of seed attack groups with objectives to be tested.
 
         Raises:
             ValueError: If both 'objectives' parameter and 'dataset_config' are specified.
@@ -245,10 +245,10 @@ class Scam(Scenario):
 
         # Use deprecated objectives if provided
         if self._deprecated_objectives is not None:
-            return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives]
+            return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives]
 
         # Use dataset_config (guaranteed to be set by initialize_async)
-        seed_groups = self._dataset_config.get_all_seed_groups()
+        seed_groups = self._dataset_config.get_all_seed_attack_groups()
 
         if not seed_groups:
             self._raise_dataset_exception()

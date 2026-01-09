@@ -13,7 +13,7 @@ import logging
 import textwrap
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Sequence, Set, Type, Union
+from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
 from tqdm.auto import tqdm
 
@@ -30,6 +30,7 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class Scenario(ABC):
         name: str,
         version: int,
         strategy_class: Type[ScenarioStrategy],
-        objective_scorer_identifier: Optional[Dict[str, Any]] = None,
+        objective_scorer: Scorer,
         include_default_baseline: bool = True,
         scenario_result_id: Optional[Union[uuid.UUID, str]] = None,
     ) -> None:
@@ -60,7 +61,7 @@ class Scenario(ABC):
             name (str): Descriptive name for the scenario.
             version (int): Version number of the scenario.
             strategy_class (Type[ScenarioStrategy]): The strategy enum class for this scenario.
-            objective_scorer_identifier (Optional[Dict[str, Any]]): Identifier for the objective scorer.
+            objective_scorer (Scorer): The objective scorer used to evaluate attack results.
             include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
                 from the first atomic attack without modifications. Most scenarios should have some kind of
                 baseline so users can understand the impact of strategies, but subclasses can optionally write
@@ -94,7 +95,8 @@ class Scenario(ABC):
         self._max_concurrency: int = 1
         self._max_retries: int = 0
 
-        self._objective_scorer_identifier = objective_scorer_identifier or {}
+        self._objective_scorer = objective_scorer
+        self._objective_scorer_identifier = objective_scorer.get_identifier()
 
         self._name = name
         self._memory = CentralMemory.get_memory_instance()
@@ -268,6 +270,7 @@ class Scenario(ABC):
         result = ScenarioResult(
             scenario_identifier=self._identifier,
             objective_target_identifier=self._objective_target_identifier,
+            objective_scorer=self._objective_scorer,
             objective_scorer_identifier=self._objective_scorer_identifier,
             labels=self._memory_labels,
             attack_results=attack_results,

@@ -18,10 +18,11 @@ from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.float_scale.insecure_code_scorer import InsecureCodeScorer
 from pyrit.score.float_scale.plagiarism_scorer import PlagiarismMetric, PlagiarismScorer
 from pyrit.score.float_scale.self_ask_general_float_scale_scorer import SelfAskGeneralFloatScaleScorer
-from pyrit.score.float_scale.self_ask_likert_scorer import LikertScalePaths, SelfAskLikertScorer
+from pyrit.score.float_scale.self_ask_likert_scorer import LikertScaleEvalFiles, LikertScalePaths, SelfAskLikertScorer
 from pyrit.score.float_scale.self_ask_scale_scorer import SelfAskScaleScorer
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
 from pyrit.score.human.human_in_the_loop_gradio import HumanInTheLoopScorerGradio
+from pyrit.score.printer import ConsoleScorerPrinter, ScorerPrinter
 from pyrit.score.scorer import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
@@ -29,14 +30,22 @@ from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HumanLabeledEntry,
     ObjectiveHumanLabeledEntry,
 )
-from pyrit.score.scorer_evaluation.metrics_type import MetricsType
+from pyrit.score.scorer_evaluation.metrics_type import MetricsType, RegistryUpdateBehavior
 from pyrit.score.scorer_evaluation.scorer_evaluator import (
     HarmScorerEvaluator,
-    HarmScorerMetrics,
     ObjectiveScorerEvaluator,
-    ObjectiveScorerMetrics,
+    ScorerEvalDatasetFiles,
     ScorerEvaluator,
+)
+from pyrit.score.scorer_evaluation.scorer_metrics import (
+    HarmScorerMetrics,
+    ObjectiveScorerMetrics,
     ScorerMetrics,
+    ScorerMetricsWithIdentity,
+)
+from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+    get_all_harm_metrics,
+    get_all_objective_metrics,
 )
 from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -66,6 +75,7 @@ __all__ = [
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
+    "ConsoleScorerPrinter",
     "ConversationScorer",
     "DecodingScorer",
     "create_conversation_scorer",
@@ -82,6 +92,7 @@ __all__ = [
     "HumanLabeledDataset",
     "HumanLabeledEntry",
     "InsecureCodeScorer",
+    "LikertScaleEvalFiles",
     "LikertScalePaths",
     "MarkdownInjectionScorer",
     "MetricsType",
@@ -92,10 +103,15 @@ __all__ = [
     "PlagiarismScorer",
     "PromptShieldScorer",
     "QuestionAnswerScorer",
+    "RegistryUpdateBehavior",
     "Scorer",
     "ScorerIdentifier",
+    "ScorerEvalDatasetFiles",
     "ScorerEvaluator",
     "ScorerMetrics",
+    "ScorerMetricsWithIdentity",
+    "get_all_harm_metrics",
+    "get_all_objective_metrics",
     "ScorerPromptValidator",
     "SelfAskCategoryScorer",
     "SelfAskGeneralFloatScaleScorer",
@@ -105,6 +121,7 @@ __all__ = [
     "SelfAskRefusalScorer",
     "SelfAskScaleScorer",
     "SelfAskTrueFalseScorer",
+    "ScorerPrinter",
     "SubStringScorer",
     "TrueFalseCompositeScorer",
     "TrueFalseInverterScorer",

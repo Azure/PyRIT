@@ -139,7 +139,7 @@ class MyScenario(Scenario):
             name="My Custom Scenario",
             version=self.version,
             strategy_class=MyStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier() if objective_scorer else None,
+            objective_scorer=objective_scorer,
             scenario_result_id=scenario_result_id,
         )
 
@@ -173,7 +173,7 @@ class MyScenario(Scenario):
                 AtomicAttack(
                     atomic_attack_name=strategy,
                     attack=attack,
-                    seed_groups=seed_groups,
+                    seed_groups=seed_groups,  # type: ignore[arg-type]
                     memory_labels=self._memory_labels,
                 )
             )

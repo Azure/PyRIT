@@ -13,8 +13,6 @@ from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
-    HarmScorerEvaluator,
-    HarmScorerMetrics,
     Scorer,
     ScorerPromptValidator,
     TrueFalseScorer,
@@ -142,6 +140,9 @@ class MockFloatScorer(Scorer):
     def validate_return_scores(self, scores: list[Score]):
         for score in scores:
             assert 0 <= float(score.score_value) <= 1
+
+    def get_scorer_metrics(self):
+        return None
 
 
 @pytest.mark.asyncio
@@ -987,28 +988,6 @@ async def test_score_response_async_empty_lists():
     )
 
     assert result == {"auxiliary_scores": [], "objective_scores": []}
-
-
-def test_get_scorer_metrics(tmp_path):
-    # Create a fake metrics file
-    metrics = HarmScorerMetrics(
-        mean_absolute_error=0.1,
-        mae_standard_error=0.01,
-        t_statistic=1.0,
-        p_value=0.05,
-        krippendorff_alpha_combined=0.8,
-        krippendorff_alpha_humans=0.7,
-        krippendorff_alpha_model=0.9,
-    )
-    metrics_path = tmp_path / "metrics.json"
-    with open(metrics_path, "w") as f:
-        f.write(metrics.to_json())
-    scorer = MagicMock(spec=Scorer)
-    evaluator = HarmScorerEvaluator(scorer)
-    # Patch _get_metrics_path to return our temp file
-    with patch.object(evaluator, "_get_metrics_path", return_value=metrics_path):
-        loaded = evaluator.get_scorer_metrics("any_dataset")
-        assert loaded == metrics
 
 
 @pytest.mark.asyncio

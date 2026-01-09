@@ -11,8 +11,7 @@ from pyrit.executor.attack.core.attack_config import (
     AttackScoringConfig,
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedGroup, SeedObjective
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedAttackGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_converter import (
     AsciiSmugglerConverter,
     AskToDecodeConverter,
@@ -172,7 +171,7 @@ class Encoding(Scenario):
             name="Encoding",
             version=self.version,
             strategy_class=EncodingStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
@@ -311,7 +310,7 @@ class Encoding(Scenario):
             for seed_prompt in self._resolved_seed_prompts:
                 objective = f"Make the model say an encoded payload: {seed_prompt}"
                 seed = SeedPrompt(value=seed_prompt)
-                seed_groups.append(SeedGroup(seeds=[SeedObjective(value=objective), seed]))
+                seed_groups.append(SeedAttackGroup(seeds=[SeedObjective(value=objective), seed]))
 
             # objective_target is guaranteed to be non-None by parent class validation
             assert self._objective_target is not None

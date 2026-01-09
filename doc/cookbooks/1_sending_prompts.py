@@ -193,7 +193,7 @@ print(f"Found {len(interesting_prompts)} interesting prompts")
 # Configure how you want to re-score the prompts. For example, you could use HumanInTheLoopScorer
 # (which would make more sense for this example, but it would make things stop in our notebook test pipelines)
 
-new_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=OpenAIChatTarget())
+new_scorer = SelfAskLikertScorer(likert_scale=LikertScalePaths.HARM_SCALE, chat_target=OpenAIChatTarget())
 
 new_results = await new_scorer.score_prompts_batch_async(messages=interesting_prompts)  # type: ignore
 
