@@ -71,7 +71,7 @@ class TestFrontendCore:
 
         assert context._initialized is True
         mock_init_pyrit.assert_called_once()
-        mock_scenario_registry.assert_called_once()
+        mock_scenario_registry.get_instance.assert_called_once()
         mock_init_registry.assert_called_once()
 
     @patch("pyrit.registry.ScenarioRegistry")
@@ -278,7 +278,7 @@ class TestListFunctions:
     async def test_list_scenarios(self):
         """Test list_scenarios_async returns scenarios from registry."""
         mock_registry = MagicMock()
-        mock_registry.list_scenarios.return_value = [{"name": "test_scenario"}]
+        mock_registry.list_metadata.return_value = [{"name": "test_scenario"}]
 
         context = frontend_core.FrontendCore()
         context._scenario_registry = mock_registry
@@ -287,12 +287,12 @@ class TestListFunctions:
         result = await frontend_core.list_scenarios_async(context=context)
 
         assert result == [{"name": "test_scenario"}]
-        mock_registry.list_scenarios.assert_called_once()
+        mock_registry.list_metadata.assert_called_once()
 
     async def test_list_initializers_without_discovery_path(self):
         """Test list_initializers_async without discovery path."""
         mock_registry = MagicMock()
-        mock_registry.list_initializers.return_value = [{"name": "test_init"}]
+        mock_registry.list_metadata.return_value = [{"name": "test_init"}]
 
         context = frontend_core.FrontendCore()
         context._initializer_registry = mock_registry
@@ -301,13 +301,13 @@ class TestListFunctions:
         result = await frontend_core.list_initializers_async(context=context)
 
         assert result == [{"name": "test_init"}]
-        mock_registry.list_initializers.assert_called_once()
+        mock_registry.list_metadata.assert_called_once()
 
     @patch("pyrit.registry.InitializerRegistry")
     async def test_list_initializers_with_discovery_path(self, mock_init_registry_class: MagicMock):
         """Test list_initializers_async with discovery path."""
         mock_registry = MagicMock()
-        mock_registry.list_initializers.return_value = [{"name": "custom_init"}]
+        mock_registry.list_metadata.return_value = [{"name": "custom_init"}]
         mock_init_registry_class.return_value = mock_registry
 
         context = frontend_core.FrontendCore()
@@ -326,12 +326,17 @@ class TestPrintFunctions:
         """Test print_scenarios_list with scenarios."""
         context = frontend_core.FrontendCore()
         mock_registry = MagicMock()
-        mock_registry.list_scenarios.return_value = [
-            {
-                "name": "test_scenario",
-                "class_name": "TestScenario",
-                "description": "Test description",
-            }
+        mock_registry.list_metadata.return_value = [
+            ScenarioMetadata(
+                name="test_scenario",
+                class_name="TestScenario",
+                description="Test description",
+                default_strategy="default",
+                all_strategies=(),
+                aggregate_strategies=(),
+                default_datasets=(),
+                max_dataset_size=None,
+            )
         ]
         context._scenario_registry = mock_registry
         context._initialized = True
@@ -347,7 +352,7 @@ class TestPrintFunctions:
         """Test print_scenarios_list with no scenarios."""
         context = frontend_core.FrontendCore()
         mock_registry = MagicMock()
-        mock_registry.list_scenarios.return_value = []
+        mock_registry.list_metadata.return_value = []
         context._scenario_registry = mock_registry
         context._initialized = True
 
@@ -361,13 +366,15 @@ class TestPrintFunctions:
         """Test print_initializers_list_async with initializers."""
         context = frontend_core.FrontendCore()
         mock_registry = MagicMock()
-        mock_registry.list_initializers.return_value = [
-            {
-                "name": "test_init",
-                "class_name": "TestInit",
-                "initializer_name": "test",
-                "execution_order": 100,
-            }
+        mock_registry.list_metadata.return_value = [
+            InitializerMetadata(
+                name="test_init",
+                class_name="TestInit",
+                description="Test initializer",
+                initializer_name="test",
+                execution_order=100,
+                required_env_vars=(),
+            )
         ]
         context._initializer_registry = mock_registry
         context._initialized = True
@@ -383,7 +390,7 @@ class TestPrintFunctions:
         """Test print_initializers_list_async with no initializers."""
         context = frontend_core.FrontendCore()
         mock_registry = MagicMock()
-        mock_registry.list_initializers.return_value = []
+        mock_registry.list_metadata.return_value = []
         context._initializer_registry = mock_registry
         context._initialized = True
 
@@ -632,7 +639,7 @@ class TestRunScenarioAsync:
         mock_scenario_instance.initialize_async = AsyncMock()
         mock_scenario_instance.run_async = AsyncMock(return_value=mock_result)
         mock_scenario_class.return_value = mock_scenario_instance
-        mock_scenario_registry.get_scenario.return_value = mock_scenario_class
+        mock_scenario_registry.get_class.return_value = mock_scenario_class
         mock_printer_class.return_value = mock_printer
 
         context._scenario_registry = mock_scenario_registry
@@ -657,8 +664,8 @@ class TestRunScenarioAsync:
         """Test running non-existent scenario raises ValueError."""
         context = frontend_core.FrontendCore()
         mock_scenario_registry = MagicMock()
-        mock_scenario_registry.get_scenario.return_value = None
-        mock_scenario_registry.get_scenario_names.return_value = ["other_scenario"]
+        mock_scenario_registry.get_class.return_value = None
+        mock_scenario_registry.get_names.return_value = ["other_scenario"]
 
         context._scenario_registry = mock_scenario_registry
         context._initializer_registry = MagicMock()
@@ -696,7 +703,7 @@ class TestRunScenarioAsync:
         mock_scenario_instance.initialize_async = AsyncMock()
         mock_scenario_instance.run_async = AsyncMock(return_value=mock_result)
         mock_scenario_class.return_value = mock_scenario_instance
-        mock_scenario_registry.get_scenario.return_value = mock_scenario_class
+        mock_scenario_registry.get_class.return_value = mock_scenario_class
         mock_printer_class.return_value = mock_printer
 
         context._scenario_registry = mock_scenario_registry
@@ -734,12 +741,12 @@ class TestRunScenarioAsync:
         mock_printer.print_summary_async = AsyncMock()
 
         mock_initializer_class = MagicMock()
-        mock_initializer_registry.get_initializer_class.return_value = mock_initializer_class
+        mock_initializer_registry.get_class.return_value = mock_initializer_class
 
         mock_scenario_instance.initialize_async = AsyncMock()
         mock_scenario_instance.run_async = AsyncMock(return_value=mock_result)
         mock_scenario_class.return_value = mock_scenario_instance
-        mock_scenario_registry.get_scenario.return_value = mock_scenario_class
+        mock_scenario_registry.get_class.return_value = mock_scenario_class
         mock_printer_class.return_value = mock_printer
 
         context._scenario_registry = mock_scenario_registry
@@ -753,7 +760,7 @@ class TestRunScenarioAsync:
         )
 
         # Verify initializer was retrieved
-        mock_initializer_registry.get_initializer_class.assert_called_once_with(name="test_init")
+        mock_initializer_registry.get_class.assert_called_once_with("test_init")
 
     @patch("pyrit.setup.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.scenario.printer.console_printer.ConsoleScenarioResultPrinter")
@@ -774,7 +781,7 @@ class TestRunScenarioAsync:
         mock_scenario_instance.initialize_async = AsyncMock()
         mock_scenario_instance.run_async = AsyncMock(return_value=mock_result)
         mock_scenario_class.return_value = mock_scenario_instance
-        mock_scenario_registry.get_scenario.return_value = mock_scenario_class
+        mock_scenario_registry.get_class.return_value = mock_scenario_class
         mock_printer_class.return_value = mock_printer
 
         context._scenario_registry = mock_scenario_registry
@@ -812,7 +819,7 @@ class TestRunScenarioAsync:
         mock_scenario_instance.initialize_async = AsyncMock()
         mock_scenario_instance.run_async = AsyncMock(return_value=mock_result)
         mock_scenario_class.return_value = mock_scenario_instance
-        mock_scenario_registry.get_scenario.return_value = mock_scenario_class
+        mock_scenario_registry.get_class.return_value = mock_scenario_class
         mock_printer_class.return_value = mock_printer
 
         context._scenario_registry = mock_scenario_registry
