@@ -147,12 +147,11 @@ class TestFoundryInitialization:
         },
     )
     def test_init_with_custom_adversarial_target(
-        self, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_adversarial_target, mock_objective_scorer
     ):
         """Test initialization with custom adversarial target."""
         scenario = Foundry(
             adversarial_chat=mock_adversarial_target,
-            objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
@@ -166,11 +165,10 @@ class TestFoundryInitialization:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
-    def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer, sample_objectives):
+    def test_init_with_custom_scorer(self, mock_objective_target, mock_objective_scorer):
         """Test initialization with custom objective scorer."""
         scenario = Foundry(
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-            objectives=sample_objectives,
         )
 
         assert scenario._attack_scoring_config.objective_scorer == mock_objective_scorer
@@ -184,23 +182,23 @@ class TestFoundryInitialization:
         },
     )
     @pytest.mark.asyncio
-    async def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, sample_objectives):
+    async def test_init_with_memory_labels(self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups):
         """Test initialization with memory labels."""
         memory_labels = {"test": "foundry", "category": "attack"}
 
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        assert scenario._memory_labels == {}
+            assert scenario._memory_labels == {}
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            memory_labels=memory_labels,
-        )
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                memory_labels=memory_labels,
+            )
 
-        assert scenario._memory_labels == memory_labels
+            assert scenario._memory_labels == memory_labels
 
     @patch("pyrit.scenario.scenarios.foundry.foundry.TrueFalseCompositeScorer")
     @patch.dict(
@@ -262,19 +260,21 @@ class TestFoundryStrategyNormalization:
         },
     )
     @pytest.mark.asyncio
-    async def test_normalize_easy_strategies(self, mock_objective_target, mock_objective_scorer, sample_objectives):
+    async def test_normalize_easy_strategies(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
+    ):
         """Test that EASY strategy expands to easy attack strategies."""
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.EASY],
-        )
-        # EASY should expand to multiple attack strategies
-        assert scenario.atomic_attack_count > 1
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.EASY],
+            )
+            # EASY should expand to multiple attack strategies
+            assert scenario.atomic_attack_count > 1
 
     @patch.dict(
         "os.environ",
@@ -285,19 +285,21 @@ class TestFoundryStrategyNormalization:
         },
     )
     @pytest.mark.asyncio
-    async def test_normalize_moderate_strategies(self, mock_objective_target, mock_objective_scorer, sample_objectives):
+    async def test_normalize_moderate_strategies(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
+    ):
         """Test that MODERATE strategy expands to moderate attack strategies."""
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.MODERATE],
-        )
-        # MODERATE should expand to moderate attack strategies (currently only 1: Tense)
-        assert scenario.atomic_attack_count >= 1
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.MODERATE],
+            )
+            # MODERATE should expand to moderate attack strategies (currently only 1: Tense)
+            assert scenario.atomic_attack_count >= 1
 
     @patch.dict(
         "os.environ",
@@ -309,20 +311,20 @@ class TestFoundryStrategyNormalization:
     )
     @pytest.mark.asyncio
     async def test_normalize_difficult_strategies(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test that DIFFICULT strategy expands to difficult attack strategies."""
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.DIFFICULT],
-        )
-        # DIFFICULT should expand to multiple attack strategies
-        assert scenario.atomic_attack_count > 1
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.DIFFICULT],
+            )
+            # DIFFICULT should expand to multiple attack strategies
+            assert scenario.atomic_attack_count > 1
 
     @patch.dict(
         "os.environ",
@@ -334,20 +336,20 @@ class TestFoundryStrategyNormalization:
     )
     @pytest.mark.asyncio
     async def test_normalize_mixed_difficulty_levels(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test that multiple difficulty levels expand correctly."""
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.EASY, FoundryStrategy.MODERATE],
-        )
-        # Combined difficulty levels should expand to multiple strategies
-        assert scenario.atomic_attack_count > 5  # EASY has 20, MODERATE has 1, combined should have more
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.EASY, FoundryStrategy.MODERATE],
+            )
+            # Combined difficulty levels should expand to multiple strategies
+            assert scenario.atomic_attack_count > 5  # EASY has 20, MODERATE has 1, combined should have more
 
     @patch.dict(
         "os.environ",
@@ -359,23 +361,23 @@ class TestFoundryStrategyNormalization:
     )
     @pytest.mark.asyncio
     async def test_normalize_with_specific_and_difficulty_levels(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test that specific strategies combined with difficulty levels work correctly."""
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[
-                FoundryStrategy.EASY,
-                FoundryStrategy.Base64,  # Specific strategy
-            ],
-        )
-        # EASY expands to 20 strategies, but Base64 might already be in EASY, so at least 20
-        assert scenario.atomic_attack_count >= 20
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[
+                    FoundryStrategy.EASY,
+                    FoundryStrategy.Base64,  # Specific strategy
+                ],
+            )
+            # EASY expands to 20 strategies, but Base64 might already be in EASY, so at least 20
+            assert scenario.atomic_attack_count >= 20
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -392,25 +394,25 @@ class TestFoundryAttackCreation:
     )
     @pytest.mark.asyncio
     async def test_get_attack_from_single_turn_strategy(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test creating an attack from a single-turn strategy."""
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.Base64],
-        )
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.Base64],
+            )
 
-        # Get the composite strategy that was created during initialization
-        composite_strategy = scenario._scenario_composites[0]
-        atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
+            # Get the composite strategy that was created during initialization
+            composite_strategy = scenario._scenario_composites[0]
+            atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
 
-        assert isinstance(atomic_attack, AtomicAttack)
-        assert atomic_attack.objectives == sample_objectives
+            assert isinstance(atomic_attack, AtomicAttack)
+            assert atomic_attack.seed_groups == mock_memory_seed_groups
 
     @patch.dict(
         "os.environ",
@@ -422,26 +424,26 @@ class TestFoundryAttackCreation:
     )
     @pytest.mark.asyncio
     async def test_get_attack_from_multi_turn_strategy(
-        self, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_adversarial_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test creating a multi-turn attack strategy."""
-        scenario = Foundry(
-            adversarial_chat=mock_adversarial_target,
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                adversarial_chat=mock_adversarial_target,
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.Crescendo],
-        )
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.Crescendo],
+            )
 
-        # Get the composite strategy that was created during initialization
-        composite_strategy = scenario._scenario_composites[0]
-        atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
+            # Get the composite strategy that was created during initialization
+            composite_strategy = scenario._scenario_composites[0]
+            atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
 
-        assert isinstance(atomic_attack, AtomicAttack)
-        assert atomic_attack.objectives == sample_objectives
+            assert isinstance(atomic_attack, AtomicAttack)
+            assert atomic_attack.seed_groups == mock_memory_seed_groups
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -458,25 +460,25 @@ class TestFoundryGetAttack:
     )
     @pytest.mark.asyncio
     async def test_get_attack_single_turn_with_converters(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test creating a single-turn attack with converters."""
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.Base64],
-        )
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.Base64],
+            )
 
-        attack = scenario._get_attack(
-            attack_type=PromptSendingAttack,
-            converters=[Base64Converter()],
-        )
+            attack = scenario._get_attack(
+                attack_type=PromptSendingAttack,
+                converters=[Base64Converter()],
+            )
 
-        assert isinstance(attack, PromptSendingAttack)
+            assert isinstance(attack, PromptSendingAttack)
 
     @patch.dict(
         "os.environ",
@@ -488,26 +490,26 @@ class TestFoundryGetAttack:
     )
     @pytest.mark.asyncio
     async def test_get_attack_multi_turn_with_adversarial_target(
-        self, mock_objective_target, mock_adversarial_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_adversarial_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test creating a multi-turn attack."""
-        scenario = Foundry(
-            adversarial_chat=mock_adversarial_target,
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                adversarial_chat=mock_adversarial_target,
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[FoundryStrategy.Crescendo],
-        )
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[FoundryStrategy.Crescendo],
+            )
 
-        attack = scenario._get_attack(
-            attack_type=CrescendoAttack,
-            converters=[],
-        )
+            attack = scenario._get_attack(
+                attack_type=CrescendoAttack,
+                converters=[],
+            )
 
-        assert isinstance(attack, CrescendoAttack)
+            assert isinstance(attack, CrescendoAttack)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -550,23 +552,23 @@ class TestFoundryAllStrategies:
     )
     @pytest.mark.asyncio
     async def test_all_single_turn_strategies_create_attack_runs(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, strategy
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, strategy
     ):
         """Test that all single-turn strategies can create attack runs."""
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[strategy],
-        )
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[strategy],
+            )
 
-        # Get the composite strategy that was created during initialization
-        composite_strategy = scenario._scenario_composites[0]
-        atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
-        assert isinstance(atomic_attack, AtomicAttack)
+            # Get the composite strategy that was created during initialization
+            composite_strategy = scenario._scenario_composites[0]
+            atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
+            assert isinstance(atomic_attack, AtomicAttack)
 
     @patch.dict(
         "os.environ",
@@ -589,25 +591,25 @@ class TestFoundryAllStrategies:
         mock_objective_target,
         mock_adversarial_target,
         mock_objective_scorer,
-        sample_objectives,
+        mock_memory_seed_groups,
         strategy,
     ):
         """Test that all multi-turn strategies can create attack runs."""
-        scenario = Foundry(
-            adversarial_chat=mock_adversarial_target,
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                adversarial_chat=mock_adversarial_target,
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=[strategy],
-        )
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[strategy],
+            )
 
-        # Get the composite strategy that was created during initialization
-        composite_strategy = scenario._scenario_composites[0]
-        atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
-        assert isinstance(atomic_attack, AtomicAttack)
+            # Get the composite strategy that was created during initialization
+            composite_strategy = scenario._scenario_composites[0]
+            atomic_attack = scenario._get_attack_from_strategy(composite_strategy)
+            assert isinstance(atomic_attack, AtomicAttack)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -624,28 +626,28 @@ class TestFoundryProperties:
     )
     @pytest.mark.asyncio
     async def test_scenario_composites_set_after_initialize(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test that scenario composites are set after initialize_async."""
         strategies = [FoundryStrategy.Base64, FoundryStrategy.ROT13]
 
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-            include_baseline=False,
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+                include_baseline=False,
+            )
 
-        # Before initialize_async, composites should be empty
-        assert len(scenario._scenario_composites) == 0
+            # Before initialize_async, composites should be empty
+            assert len(scenario._scenario_composites) == 0
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=strategies,
-        )
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=strategies,
+            )
 
-        # After initialize_async, composites should be set
-        assert len(scenario._scenario_composites) == len(strategies)
-        assert scenario.atomic_attack_count == len(strategies)
+            # After initialize_async, composites should be set
+            assert len(scenario._scenario_composites) == len(strategies)
+            assert scenario.atomic_attack_count == len(strategies)
 
     @patch.dict(
         "os.environ",
@@ -655,10 +657,9 @@ class TestFoundryProperties:
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL": "gpt-4",
         },
     )
-    def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer, sample_objectives):
+    def test_scenario_version_is_set(self, mock_objective_target, mock_objective_scorer):
         """Test that scenario version is properly set."""
         scenario = Foundry(
-            objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
@@ -674,7 +675,7 @@ class TestFoundryProperties:
     )
     @pytest.mark.asyncio
     async def test_scenario_atomic_attack_count_matches_strategies(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
     ):
         """Test that atomic attack count is reasonable for the number of strategies."""
         strategies = [
@@ -683,14 +684,14 @@ class TestFoundryProperties:
             FoundryStrategy.Leetspeak,
         ]
 
-        scenario = Foundry(
-            objectives=sample_objectives,
-            attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
-        )
+        with patch.object(Foundry, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Foundry(
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+            )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target,
-            scenario_strategies=strategies,
-        )
-        # Should have at least as many runs as specific strategies provided
-        assert scenario.atomic_attack_count >= len(strategies)
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=strategies,
+            )
+            # Should have at least as many runs as specific strategies provided
+            assert scenario.atomic_attack_count >= len(strategies)

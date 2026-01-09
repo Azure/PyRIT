@@ -154,7 +154,7 @@ def get_prepended_turn_count(prepended_conversation: Optional[List[Message]]) ->
     """
     if not prepended_conversation:
         return 0
-    return sum(1 for msg in prepended_conversation if msg.role == "assistant")
+    return sum(1 for msg in prepended_conversation if msg.api_role == "assistant")
 
 
 @dataclass
@@ -567,7 +567,7 @@ class ConversationManager:
         """
         for piece in message.message_pieces:
             # Filter by role if specified
-            if apply_to_roles is not None and piece.role not in apply_to_roles:
+            if apply_to_roles is not None and piece.api_role not in apply_to_roles:
                 continue
 
             temp_message = Message(message_pieces=[piece])

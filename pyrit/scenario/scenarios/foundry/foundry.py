@@ -15,6 +15,7 @@ from inspect import signature
 from typing import Any, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack import (
     CrescendoAttack,
@@ -273,9 +274,10 @@ class Foundry(Scenario):
         """
         # Handle deprecation warning for objectives parameter
         if objectives is not None:
-            logger.warning(
-                "objectives is deprecated and will be removed in 0.13.0. "
-                "Use dataset_config in initialize_async instead."
+            print_deprecation_message(
+                old_item="objectives parameter",
+                new_item="dataset_config in initialize_async",
+                removed_in="0.13.0",
             )
 
         self._objectives = objectives  # Store for backward compatibility
@@ -552,11 +554,9 @@ class FoundryScenario(Foundry):
 
     def __init__(self, **kwargs) -> None:
         """Initialize FoundryScenario with deprecation warning."""
-        import warnings
-
-        warnings.warn(
-            "FoundryScenario is deprecated and will be removed in version 0.13.0. Use 'Foundry' instead.",
-            DeprecationWarning,
-            stacklevel=2,
+        print_deprecation_message(
+            old_item="FoundryScenario",
+            new_item="Foundry",
+            removed_in="0.13.0",
         )
         super().__init__(**kwargs)

@@ -725,7 +725,7 @@ def test_message_piece_to_dict():
         assert key in result, f"Missing key: {key}"
 
     assert result["id"] == str(entry.id)
-    assert result["role"] == entry.role
+    assert result["role"] == entry._role
     assert result["conversation_id"] == entry.conversation_id
     assert result["sequence"] == entry.sequence
     assert result["timestamp"] == entry.timestamp.isoformat()
@@ -767,7 +767,7 @@ def test_construct_response_from_request_combines_metadata():
     assert response_piece.prompt_metadata["key2"] == 3  # Overridden by additional metadata
     assert response_piece.prompt_metadata["key3"] == "value3"  # Added from additional metadata
 
-    assert response_piece.role == "assistant"
+    assert response_piece.api_role == "assistant"
     assert response_piece.original_value == "test response"
     assert response_piece.conversation_id == "123"
     assert response_piece.original_value_data_type == "text"
@@ -785,7 +785,7 @@ def test_construct_response_from_request_no_metadata():
 
     assert not response_piece.prompt_metadata
 
-    assert response_piece.role == "assistant"
+    assert response_piece.api_role == "assistant"
     assert response_piece.original_value == "test response"
     assert response_piece.conversation_id == "123"
     assert response_piece.original_value_data_type == "text"
