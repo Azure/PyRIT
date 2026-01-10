@@ -38,16 +38,18 @@ class TestSeedDatasetProviderIntegration:
             provider = provider_cls()
             dataset = await provider.fetch_dataset(cache=False)
 
-            assert isinstance(dataset, SeedDataset), f"{name} did not return a SeedDataset"
+            assert isinstance(
+                dataset, SeedDataset
+            ), f"{name} did not return a SeedDataset"
             assert len(dataset.seeds) > 0, f"{name} returned an empty dataset"
             assert dataset.dataset_name, f"{name} has no dataset_name"
 
             # Verify seeds have required fields
             for seed in dataset.seeds:
                 assert seed.value, f"Seed in {name} has no value"
-                assert seed.dataset_name == dataset.dataset_name, (
-                    f"Seed dataset_name mismatch in {name}: {seed.dataset_name} != {dataset.dataset_name}"
-                )
+                assert (
+                    seed.dataset_name == dataset.dataset_name
+                ), f"Seed dataset_name mismatch in {name}: {seed.dataset_name} != {dataset.dataset_name}"
 
             logger.info(f"Successfully verified {name} with {len(dataset.seeds)} seeds")
 

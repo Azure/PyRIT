@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import logging
-import random
 import uuid
 from enum import Enum
 from typing import List, Literal, Optional
@@ -58,9 +57,6 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         source_type: Literal["public_url", "file"] = "public_url",
         categories: Optional[List[VLSUCategory]] = None,
         unsafe_grades: Optional[List[str]] = ["unsafe", "borderline"],
-        limit: Optional[int] = 100,
-        random_sample: bool = True,
-        random_seed: Optional[int] = 42,
     ):
         """
         Initialize the ML-VLSU multimodal dataset loader.
@@ -73,9 +69,6 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
             unsafe_grades: List of grades considered unsafe (e.g., ['unsafe', 'borderline']).
                 Prompts are created only when the respective grade matches one of these values.
                 Defaults to ['unsafe', 'borderline']. Possible options further include 'safe' and 'not_sure'.
-            limit: Limit the number of examples to fetch. Primarily meant for testing subsamples.
-            random_sample: Whether to randomly sample examples when limit is set.
-            random_seed: Seed for random sampling to ensure reproducibility.
 
         Raises:
             ValueError: If any of the specified categories are invalid.
@@ -83,9 +76,6 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         self.source = source
         self.source_type: Literal["public_url", "file"] = source_type
         self.categories = categories
-        self.limit = limit
-        self.random_sample = random_sample
-        self.random_seed = random_seed
         self.unsafe_grades = unsafe_grades
 
         # Validate categories if provided
@@ -144,17 +134,6 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
             source_type=self.source_type,
             cache=cache,
         )
-
-        # Apply sampling if specified
-        if self.limit is not None:
-            if self.random_sample:
-                if self.random_seed is not None:
-                    random.seed(self.random_seed)
-                examples = random.sample(examples, min(self.limit, len(examples)))
-                logger.info(f"Randomly sampled {len(examples)} examples")
-            else:
-                examples = examples[: self.limit]
-                logger.info(f"Processing first {self.limit} examples")
 
         prompts = []
         failed_image_count = 0
