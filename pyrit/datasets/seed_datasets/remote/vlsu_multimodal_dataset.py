@@ -92,10 +92,16 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         if categories is not None:
             valid_categories = {category.value for category in VLSUCategory}
             invalid_categories = (
-                set(cat.value if isinstance(cat, VLSUCategory) else cat for cat in categories) - valid_categories
+                set(
+                    cat.value if isinstance(cat, VLSUCategory) else cat
+                    for cat in categories
+                )
+                - valid_categories
             )
             if invalid_categories:
-                raise ValueError(f"Invalid VLSU categories: {', '.join(invalid_categories)}")
+                raise ValueError(
+                    f"Invalid VLSU categories: {', '.join(invalid_categories)}"
+                )
 
     @property
     def dataset_name(self) -> str:
@@ -160,7 +166,6 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
 
             text = example.get("prompt")
             image_url = example.get("web_path")
-            uuid_str = example.get("uuid")
 
             # Get grades
             text_grade = example.get("consensus_text_grade", "").lower()
@@ -178,15 +183,6 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
                 if combined_category not in category_values:
                     continue
 
-            # Handle UUID
-            if uuid_str:
-                try:
-                    group_id = uuid.UUID(uuid_str)
-                except (ValueError, TypeError):
-                    group_id = uuid.uuid4()
-            else:
-                group_id = uuid.uuid4()
-
             # Create text prompt if text_grade is unsafe or borderline
             if text_grade in self.unsafe_grades:
                 text_prompt = SeedPrompt(
@@ -197,7 +193,7 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
                     harm_categories=[text_category],
                     description="Unsafe/borderline text from ML-VLSU dataset.",
                     source=self.source,
-                    prompt_group_id=group_id,
+                    prompt_group_id=uuid.uuid4(),
                     sequence=0,
                     metadata={
                         "category": text_category,
@@ -210,7 +206,9 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
             # Create image prompt if image_grade is unsafe or borderline
             if image_grade in self.unsafe_grades:
                 try:
-                    local_image_path = await self._fetch_and_save_image_async(image_url, str(group_id))
+                    local_image_path = await self._fetch_and_save_image_async(
+                        image_url, str(group_id)
+                    )
                     image_prompt = SeedPrompt(
                         value=local_image_path,
                         data_type="image_path",
@@ -219,7 +217,7 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
                         harm_categories=[image_category],
                         description="Unsafe/borderline image from ML-VLSU dataset.",
                         source=self.source,
-                        prompt_group_id=group_id,
+                        prompt_group_id=uuid.uuid4(),
                         sequence=0,
                         metadata={
                             "category": image_category,
@@ -236,7 +234,9 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
             # Create combined prompt if combined_grade is unsafe or borderline
             if combined_grade in self.unsafe_grades:
                 try:
-                    local_image_path = await self._fetch_and_save_image_async(image_url, str(group_id))
+                    local_image_path = await self._fetch_and_save_image_async(
+                        image_url, str(group_id)
+                    )
                     combined_prompt = SeedPrompt(
                         value=local_image_path,
                         prompt_text=text,
@@ -246,7 +246,7 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
                         harm_categories=[combined_category],
                         description="Combined text+image prompt from ML-VLSU dataset.",
                         source=self.source,
-                        prompt_group_id=group_id,
+                        prompt_group_id=uuid.uuid4(),
                         sequence=1,
                         metadata={
                             "category": combined_category,
@@ -261,10 +261,14 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
                     prompts.append(combined_prompt)
                 except Exception as e:
                     failed_image_count += 1
-                    logger.warning(f"Failed to fetch image for combined prompt {group_id}: {e}")
+                    logger.warning(
+                        f"Failed to fetch image for combined prompt {group_id}: {e}"
+                    )
 
         if failed_image_count > 0:
-            logger.warning(f"[ML-VLSU] Skipped {failed_image_count} image(s) due to fetch failures")
+            logger.warning(
+                f"[ML-VLSU] Skipped {failed_image_count} image(s) due to fetch failures"
+            )
 
         logger.info(f"Successfully loaded {len(prompts)} prompts from ML-VLSU dataset")
 
@@ -282,15 +286,25 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
             Local path to the saved image.
         """
         filename = f"ml_vlsu_{group_id}.png"
-        serializer = data_serializer_factory(category="seed-prompt-entries", data_type="image_path", extension="png")
+        serializer = data_serializer_factory(
+            category="seed-prompt-entries", data_type="image_path", extension="png"
+        )
 
         # Return existing path if image already exists
-        serializer.value = str(serializer._memory.results_path + serializer.data_sub_directory + f"/{filename}")
+        serializer.value = str(
+            serializer._memory.results_path
+            + serializer.data_sub_directory
+            + f"/{filename}"
+        )
         try:
-            if await serializer._memory.results_storage_io.path_exists(serializer.value):
+            if await serializer._memory.results_storage_io.path_exists(
+                serializer.value
+            ):
                 return serializer.value
         except Exception as e:
-            logger.warning(f"[ML-VLSU] Failed to check if image for {group_id} exists in cache: {e}")
+            logger.warning(
+                f"[ML-VLSU] Failed to check if image for {group_id} exists in cache: {e}"
+            )
 
         # Add browser-like headers for better success rate
         headers = {
@@ -310,6 +324,8 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
             timeout=2.0,
             follow_redirects=True,
         )
-        await serializer.save_data(data=response.content, output_filename=filename.replace(".png", ""))
+        await serializer.save_data(
+            data=response.content, output_filename=filename.replace(".png", "")
+        )
 
         return str(serializer.value)
