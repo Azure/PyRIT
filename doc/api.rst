@@ -502,6 +502,7 @@ API Reference
     HuggingFaceEndpointTarget
     limit_requests_per_minute
     OpenAICompletionTarget
+    OpenAICompletionsAudioConfig
     OpenAIImageTarget
     OpenAIChatTarget
     OpenAIResponseTarget
