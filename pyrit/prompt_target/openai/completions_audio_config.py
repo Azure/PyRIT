@@ -20,20 +20,19 @@ class OpenAICompletionsAudioConfig:
 
     Note: This is specific to the Chat Completions API. The Responses API does not
     support audio input or output. For real-time audio, use RealtimeTarget instead.
-
-    Attributes:
-        voice: The voice to use for audio output. Supported voices are:
-            "alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar".
-        audio_format: The audio format for the response. Supported formats are:
-            "wav", "mp3", "flac", "opus", "pcm16". Defaults to "wav".
-        prefer_transcript_for_history: If True, historical user messages that contain
-            both audio and text will only send the text (transcript) to reduce bandwidth
-            and token usage. The current (last) user message will still include audio.
-            Defaults to True.
     """
 
+    # The voice to use for audio output. Supported voices are:
+    # "alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar".
     voice: CompletionsAudioVoice
+
+    # The audio format for the response. Supported formats are:
+    # "wav", "mp3", "flac", "opus", "pcm16". Defaults to "wav".
     audio_format: CompletionsAudioFormat = "wav"
+
+    # If True, historical user messages that contain both audio and text will only send
+    # the text (transcript) to reduce bandwidth and token usage. The current (last) user
+    # message will still include audio. Defaults to True.
     prefer_transcript_for_history: bool = True
 
     def to_extra_body_parameters(self) -> dict:
