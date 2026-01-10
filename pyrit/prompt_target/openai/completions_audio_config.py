@@ -31,11 +31,6 @@ class OpenAICompletionsAudioConfig:
             both audio and text will only send the text (transcript) to reduce bandwidth
             and token usage. The current (last) user message will still include audio.
             Defaults to True.
-
-    Example:
-        >>> from pyrit.prompt_target import OpenAIChatTarget, OpenAICompletionsAudioConfig
-        >>> audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav")
-        >>> target = OpenAIChatTarget(audio_response_config=audio_config)
     """
 
     voice: CompletionsAudioVoice
