@@ -82,7 +82,7 @@ async def test_openai_chat_target_audio_multi_turn(sqlite_instance, platform_ope
     2. Conversation history is properly maintained
     3. Audio is generated for each assistant response
     """
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav")
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav")
 
     target = OpenAIChatTarget(
         **platform_openai_audio_args,
@@ -127,6 +127,7 @@ async def test_openai_chat_target_audio_multi_turn(sqlite_instance, platform_ope
 # ============================================================================
 # Tool Calling Tests
 # ============================================================================
+
 
 @pytest.mark.asyncio
 async def test_openai_chat_target_tool_calling_multiple_tools(sqlite_instance, platform_openai_chat_args):
@@ -189,9 +190,7 @@ async def test_openai_chat_target_tool_calling_multiple_tools(sqlite_instance, p
     assert len(result) >= 1
 
     # Find tool call pieces in the response
-    tool_call_pieces = [
-        p for p in result[0].message_pieces if p.converted_value_data_type == "function_call"
-    ]
+    tool_call_pieces = [p for p in result[0].message_pieces if p.converted_value_data_type == "function_call"]
 
     # The model should have returned a tool call for stock price
     assert len(tool_call_pieces) >= 1, "Response should contain at least one tool call"
@@ -200,4 +199,3 @@ async def test_openai_chat_target_tool_calling_multiple_tools(sqlite_instance, p
     tool_call_data = json.loads(tool_call_pieces[0].converted_value)
     assert tool_call_data["function"]["name"] == "get_stock_price"
     assert "msft" in tool_call_data["function"]["arguments"].lower()
-

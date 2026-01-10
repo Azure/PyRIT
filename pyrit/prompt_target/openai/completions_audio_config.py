@@ -4,7 +4,6 @@
 from dataclasses import dataclass
 from typing import Literal
 
-
 # Voices supported by OpenAI Chat Completions API audio output.
 # See: https://platform.openai.com/docs/guides/text-to-speech#voice-options
 CompletionsAudioVoice = Literal["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"]
@@ -25,7 +24,7 @@ class OpenAICompletionsAudioConfig:
     Attributes:
         voice: The voice to use for audio output. Supported voices are:
             "alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar".
-        format: The audio format for the response. Supported formats are:
+        audio_format: The audio format for the response. Supported formats are:
             "wav", "mp3", "flac", "opus", "pcm16". Defaults to "wav".
         prefer_transcript_for_history: If True, historical user messages that contain
             both audio and text will only send the text (transcript) to reduce bandwidth
@@ -34,7 +33,7 @@ class OpenAICompletionsAudioConfig:
     """
 
     voice: CompletionsAudioVoice
-    format: CompletionsAudioFormat = "wav"
+    audio_format: CompletionsAudioFormat = "wav"
     prefer_transcript_for_history: bool = True
 
     def to_extra_body_parameters(self) -> dict:
@@ -46,5 +45,5 @@ class OpenAICompletionsAudioConfig:
         """
         return {
             "modalities": ["text", "audio"],
-            "audio": {"voice": self.voice, "format": self.format},
+            "audio": {"voice": self.voice, "format": self.audio_format},
         }

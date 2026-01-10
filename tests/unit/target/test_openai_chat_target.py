@@ -1172,7 +1172,7 @@ def test_get_identifier_includes_top_p_when_set(patch_central_database):
 
 def test_init_with_audio_response_config(patch_central_database):
     """Test initialization with audio_response_config."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav")
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav")
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1182,12 +1182,12 @@ def test_init_with_audio_response_config(patch_central_database):
 
     assert target._audio_response_config is not None
     assert target._audio_response_config.voice == "alloy"
-    assert target._audio_response_config.format == "wav"
+    assert target._audio_response_config.audio_format == "wav"
 
 
 def test_init_audio_config_extra_body_params_merged(patch_central_database):
     """Test that audio config parameters are merged with extra_body_parameters."""
-    audio_config = OpenAICompletionsAudioConfig(voice="coral", format="mp3")
+    audio_config = OpenAICompletionsAudioConfig(voice="coral", audio_format="mp3")
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1205,7 +1205,7 @@ def test_init_audio_config_extra_body_params_merged(patch_central_database):
 @pytest.mark.asyncio
 async def test_construct_request_body_with_audio_config(patch_central_database, dummy_text_message_piece: MessagePiece):
     """Test that request body includes audio modalities when audio config is set."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav")
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav")
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1229,7 +1229,7 @@ async def test_construct_request_body_with_audio_config(patch_central_database, 
 
 def test_should_skip_sending_audio_assistant_role(patch_central_database):
     """Test that audio is always skipped for assistant messages."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav")
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav")
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1258,7 +1258,7 @@ def test_should_skip_sending_audio_assistant_role(patch_central_database):
 
 def test_should_skip_sending_audio_user_history_with_transcript(patch_central_database):
     """Test that historical user audio is skipped when transcript exists and prefer_transcript_for_history is True."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav", prefer_transcript_for_history=True)
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav", prefer_transcript_for_history=True)
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1278,7 +1278,7 @@ def test_should_skip_sending_audio_user_history_with_transcript(patch_central_da
 
 def test_should_skip_sending_audio_user_history_without_transcript(patch_central_database):
     """Test that historical user audio is NOT skipped when no transcript exists."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav", prefer_transcript_for_history=True)
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav", prefer_transcript_for_history=True)
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1298,7 +1298,7 @@ def test_should_skip_sending_audio_user_history_without_transcript(patch_central
 
 def test_should_skip_sending_audio_current_user_message(patch_central_database):
     """Test that the current (last) user audio is NOT skipped."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav", prefer_transcript_for_history=True)
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav", prefer_transcript_for_history=True)
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1318,7 +1318,7 @@ def test_should_skip_sending_audio_current_user_message(patch_central_database):
 
 def test_should_skip_sending_audio_prefer_transcript_disabled(patch_central_database):
     """Test that audio is NOT skipped when prefer_transcript_for_history is False."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav", prefer_transcript_for_history=False)
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav", prefer_transcript_for_history=False)
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1356,7 +1356,7 @@ def test_should_skip_sending_audio_no_audio_config(patch_central_database):
 
 def test_should_skip_sending_audio_non_audio_type(patch_central_database):
     """Test that non-audio data types are never skipped by this method."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav")
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav")
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",
@@ -1386,7 +1386,7 @@ def test_should_skip_sending_audio_non_audio_type(patch_central_database):
 @pytest.mark.asyncio
 async def test_build_chat_messages_strips_audio_from_history(patch_central_database):
     """Test that audio is stripped from historical messages when building chat messages."""
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", format="wav", prefer_transcript_for_history=True)
+    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav", prefer_transcript_for_history=True)
     target = OpenAIChatTarget(
         model_name="gpt-4o-audio-preview",
         endpoint="https://mock.azure.com/",

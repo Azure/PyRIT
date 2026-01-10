@@ -394,7 +394,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 ).message_pieces[0]
                 pieces.append(audio_piece)
 
-        # Handle tool calls
+        # Handle tool calls; for completions it is always function at the time of writing
         if has_tool_calls:
             for tool_call in message.tool_calls:
                 tool_call_data = {
@@ -431,7 +431,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         audio_bytes = base64.b64decode(audio_data_base64)
 
         # Determine the format from config, default to wav
-        audio_format = self._audio_response_config.format if self._audio_response_config else "wav"
+        audio_format = self._audio_response_config.audio_format if self._audio_response_config else "wav"
         extension = f".{audio_format}" if audio_format != "pcm16" else ".wav"
 
         audio_serializer = data_serializer_factory(

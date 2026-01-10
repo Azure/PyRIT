@@ -20,19 +20,19 @@ class TestOpenAICompletionsAudioConfigInit:
         config = OpenAICompletionsAudioConfig(voice="alloy")
 
         assert config.voice == "alloy"
-        assert config.format == "wav"  # Default value
+        assert config.audio_format == "wav"  # Default value
         assert config.prefer_transcript_for_history is True  # Default value
 
     def test_init_with_all_params(self):
         """Test initialization with all parameters specified."""
         config = OpenAICompletionsAudioConfig(
             voice="coral",
-            format="mp3",
+            audio_format="mp3",
             prefer_transcript_for_history=False,
         )
 
         assert config.voice == "coral"
-        assert config.format == "mp3"
+        assert config.audio_format == "mp3"
         assert config.prefer_transcript_for_history is False
 
     @pytest.mark.parametrize(
@@ -47,8 +47,8 @@ class TestOpenAICompletionsAudioConfigInit:
     @pytest.mark.parametrize("audio_format", ["wav", "mp3", "flac", "opus", "pcm16"])
     def test_init_with_all_valid_formats(self, audio_format):
         """Test that all valid audio format options are accepted."""
-        config = OpenAICompletionsAudioConfig(voice="alloy", format=audio_format)
-        assert config.format == audio_format
+        config = OpenAICompletionsAudioConfig(voice="alloy", audio_format=audio_format)
+        assert config.audio_format == audio_format
 
 
 class TestOpenAICompletionsAudioConfigToExtraBodyParameters:
@@ -67,7 +67,7 @@ class TestOpenAICompletionsAudioConfigToExtraBodyParameters:
 
     def test_to_extra_body_parameters_custom_format(self):
         """Test conversion with custom format."""
-        config = OpenAICompletionsAudioConfig(voice="coral", format="mp3")
+        config = OpenAICompletionsAudioConfig(voice="coral", audio_format="mp3")
 
         params = config.to_extra_body_parameters()
 
@@ -93,7 +93,7 @@ class TestOpenAICompletionsAudioConfigToExtraBodyParameters:
         formats = ["wav", "mp3", "flac", "opus", "pcm16"]
 
         for audio_format in formats:
-            config = OpenAICompletionsAudioConfig(voice="alloy", format=audio_format)  # type: ignore[arg-type]
+            config = OpenAICompletionsAudioConfig(voice="alloy", audio_format=audio_format)  # type: ignore[arg-type]
             params = config.to_extra_body_parameters()
 
             assert params["audio"]["format"] == audio_format
