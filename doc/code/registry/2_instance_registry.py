@@ -89,5 +89,7 @@ refusal_scorers = registry.list_metadata(include_filters={"class_name": "SelfAsk
 print(f"Refusal scorers: {[m.name for m in refusal_scorers]}")
 
 # Combine multiple filters (AND logic)
-specific_scorers = registry.list_metadata(include_filters={"scorer_type": "true_false", "class_name": "SelfAskRefusalScorer"})
+specific_scorers = registry.list_metadata(
+    include_filters={"scorer_type": "true_false", "class_name": "SelfAskRefusalScorer"}
+)
 print(f"True/False refusal scorers: {[m.name for m in specific_scorers]}")

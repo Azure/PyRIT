@@ -71,7 +71,7 @@ class TestFrontendCore:
 
         assert context._initialized is True
         mock_init_pyrit.assert_called_once()
-        mock_scenario_registry.get_instance.assert_called_once()
+        mock_scenario_registry.get_registry_singleton.assert_called_once()
         mock_init_registry.assert_called_once()
 
     @patch("pyrit.registry.ScenarioRegistry")
