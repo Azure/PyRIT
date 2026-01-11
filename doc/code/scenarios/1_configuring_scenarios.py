@@ -33,7 +33,7 @@
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenario import ScenarioCompositeStrategy
 from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
-from pyrit.scenario.scenarios.foundry import Foundry, FoundryStrategy
+from pyrit.scenario.scenarios.foundry import FoundryStrategy, RedTeamAgent
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY, initializers=[])  # type: ignore
@@ -44,7 +44,7 @@ printer = ConsoleScenarioResultPrinter()
 # %% [markdown]
 # ## Define Seed Groups
 #
-# By default, `Foundry` selects four random objectives from HarmBench. Here we'll retrieve only two for demonstration. If you didn't pass any `seed_groups`, the default would be almost the same except with `max_dataset_size=4`.
+# By default, `RedTeamAgent` selects four random objectives from HarmBench. Here we'll retrieve only two for demonstration. If you didn't pass any `seed_groups`, the default would be almost the same except with `max_dataset_size=4`.
 
 # %%
 from pyrit.datasets import SeedDatasetProvider
@@ -80,7 +80,7 @@ scenario_strategies = [
 # The scenario needs to be initialized before execution. This builds the atomic attacks based on the selected strategies. Most of these have defaults, but the one thing that needs to be supplied is an `objective_target` so the scenario knows what we're attacking.
 
 # %%
-foundry_scenario = Foundry()
+foundry_scenario = RedTeamAgent()
 await foundry_scenario.initialize_async(  # type: ignore
     objective_target=objective_target,
     scenario_strategies=scenario_strategies,
@@ -121,7 +121,7 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.memory.central_memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
-scenario_result_from_memory = memory.get_scenario_results(scenario_name="Foundry")[0]
+scenario_result_from_memory = memory.get_scenario_results(scenario_name="red_team_agent")[0]
 
 # Flatten all attack results from all strategies
 all_results = [result for results in scenario_result_from_memory.attack_results.values() for result in results]
@@ -144,7 +144,7 @@ else:
 
 # %%
 # Example: Test all EASY strategies
-# easy_scenario = Foundry(
+# easy_scenario = RedTeamAgent(
 #     objective_target=objective_target,
 #     scenario_strategies=[FoundryStrategy.EASY],  # Expands to all easy strategies
 #     objectives=objectives,
