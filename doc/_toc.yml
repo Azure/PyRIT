@@ -80,6 +80,7 @@ chapters:
       - file: code/targets/playwright_target_copilot
       - file: code/targets/prompt_shield_target
       - file: code/targets/use_huggingface_chat_target
+      - file: code/targets/websocket_copilot_target
       - file: code/targets/realtime_target
     - file: code/converters/0_converters
       sections:

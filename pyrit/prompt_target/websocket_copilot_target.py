@@ -9,6 +9,7 @@ from enum import IntEnum
 from typing import Optional
 
 import websockets
+from websockets.exceptions import InvalidStatus
 
 from pyrit.auth import CopilotAuthenticator
 from pyrit.exceptions import (
@@ -515,7 +516,7 @@ class WebSocketCopilotTarget(PromptTarget):
 
             return [response_entry]
 
-        except websockets.exceptions.InvalidStatus as e:
+        except InvalidStatus as e:
             logger.error(
                 f"WebSocket connection failed: {str(e)}\n"
                 "Ensure that COPILOT_USERNAME and COPILOT_PASSWORD environment variables are set correctly."

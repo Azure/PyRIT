@@ -134,6 +134,8 @@ class CopilotAuthenticator(Authenticator):
             cached_token = await self._get_cached_token_if_available_and_valid()
             if cached_token and "access_token" in cached_token:
                 logger.info("Using cached access token.")
+                if "claims" in cached_token:
+                    self._current_claims = cached_token["claims"]
                 return cached_token["access_token"]
 
             logger.info("No valid cached token found. Initiating browser authentication.")
@@ -294,7 +296,7 @@ class CopilotAuthenticator(Authenticator):
             RuntimeError: If Playwright is not installed or browser launch fails.
         """
         try:
-            from playwright.async_api import async_playwright
+            from playwright.async_api import async_playwright  # noqa: F401
         except ImportError:
             raise RuntimeError(
                 "Playwright is not installed. Please install it with: "
