@@ -250,7 +250,11 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             "story_type": context.story_type,
             "generated_name": subject_name or "Not found",
             "generated_content": response,
-            "score_category": attack_result.last_score.score_category if attack_result.last_score else "unknown",
+            "score_category": (
+                ", ".join(attack_result.last_score.score_category)
+                if attack_result.last_score and attack_result.last_score.score_category
+                else "unknown"
+            ),
             "score_rationale": (
                 attack_result.last_score.score_rationale if attack_result.last_score else "Scoring not available"
             ),

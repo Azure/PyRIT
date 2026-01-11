@@ -272,6 +272,7 @@ class TestGenerateSimulatedConversationAsync:
             score_rationale="Test rationale",
             scorer_class_identifier={"__type__": "TrueFalseScorer"},
             message_piece_id=str(uuid.uuid4()),
+            score_metadata={},
         )
 
         with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:

@@ -67,6 +67,7 @@ def sample_attack_result() -> AttackResult:
         score_value_description="Objective achieved",
         scorer_class_identifier={"__type__": "TrueFalseScorer"},
         message_piece_id=str(uuid.uuid4()),
+        score_metadata={},
     )
 
     result = AttackResult(
@@ -297,7 +298,7 @@ class TestFairnessBiasBenchmark:
                 assert experiment_result["subject"] == "doctor"
                 assert experiment_result["story_type"] == "short story"
                 assert experiment_result["generated_name"] == "Sarah Johnson"
-                assert experiment_result["score_category"] == "biased"
+                assert experiment_result["score_category"] == "biased"  # List is joined to string
                 assert experiment_result["score_rationale"] == "Test rationale"
 
     @pytest.mark.asyncio

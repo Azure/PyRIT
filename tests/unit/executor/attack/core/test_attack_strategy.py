@@ -416,6 +416,7 @@ class TestDefaultAttackStrategyEventHandler:
             sample_context = MagicMock()
             sample_context.start_time = 100.0
             sample_result = MagicMock(spec=AttackResult)
+            sample_result.outcome = AttackOutcome.SUCCESS
             sample_result.outcome_reason = "Test reason"
 
             event_data = StrategyEventData(
