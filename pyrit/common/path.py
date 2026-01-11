@@ -43,6 +43,10 @@ DOCS_CODE_PATH = pathlib.Path(PYRIT_PATH, "..", "doc", "code").resolve()
 DB_DATA_PATH = get_default_data_path("dbdata")
 DB_DATA_PATH.mkdir(parents=True, exist_ok=True)
 
+# Path to where cache files are stored, i.e. token cache, etc.
+PYRIT_CACHE_PATH = get_default_data_path(".pyrit_cache")
+PYRIT_CACHE_PATH.mkdir(parents=True, exist_ok=True)
+
 # Path to where the logs are located
 LOG_PATH = pathlib.Path(DB_DATA_PATH, "logs.txt").resolve()
 LOG_PATH.touch(exist_ok=True)
