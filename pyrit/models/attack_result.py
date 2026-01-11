@@ -224,8 +224,7 @@ class AttackResult(StrategyResult):
         Use objective_score instead.
         """
         warnings.warn(
-            "AttackResult.last_score is deprecated and will be removed in 0.13.0. "
-            "Use objective_score instead.",
+            "AttackResult.last_score is deprecated and will be removed in 0.13.0. Use objective_score instead.",
             DeprecationWarning,
             stacklevel=2,
         )

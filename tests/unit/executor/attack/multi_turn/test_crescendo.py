@@ -2152,3 +2152,90 @@ class TestCrescendoConversationTracking:
                 and ref.conversation_type == ConversationType.ADVERSARIAL
                 for ref in basic_context.related_conversations
             )
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestCrescendoScoringIntegration:
+    """
+    Tests verifying Crescendo correctly uses FloatScaleThresholdScorer and normalize_score_to_float.
+
+    These tests are critical because:
+    1. Crescendo needs granular float scores for feedback to the adversarial chat
+    2. The adversarial chat uses scores to incrementally improve prompts
+    3. Using raw true_false scores would only provide 0 or 1, losing the "how close" information
+    4. FloatScaleThresholdScorer preserves the original float in metadata while providing
+       true_false for AttackResult.automated_objective_score validation
+
+    Historical bug: Without normalize_score_to_float, the adversarial chat would receive
+    "True"/"False" instead of "0.73", making it impossible to provide graduated feedback.
+    """
+
+    def test_default_scorer_is_float_scale_threshold_scorer(
+        self, mock_objective_target: MagicMock, mock_adversarial_chat: MagicMock
+    ) -> None:
+        """
+        Crescendo must use FloatScaleThresholdScorer by default for objective scoring.
+
+        This should be updated with care.
+
+        Why FloatScaleThresholdScorer:
+        - Wraps a float_scale scorer (SelfAskScaleScorer) that returns 0.0-1.0 scores
+        - Converts to true_false for success/failure determination
+        - Stores original float in score_metadata[ORIGINAL_FLOAT_VALUE_KEY]
+        - This allows Crescendo to use the float for feedback while satisfying
+          AttackResult's requirement for true_false objective scores
+        """
+        # Create attack with no explicit objective scorer - should use default
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
+            # No explicit objective_scorer - should create default FloatScaleThresholdScorer
+        )
+
+        # Verify the objective scorer is a FloatScaleThresholdScorer
+        assert isinstance(attack._objective_scorer, FloatScaleThresholdScorer), (
+            "Crescendo default objective scorer must be FloatScaleThresholdScorer to preserve "
+            "float granularity for adversarial feedback while providing true_false for AttackResult"
+        )
+
+    def test_normalize_score_to_float_import_in_crescendo(self) -> None:
+        """
+        Verify normalize_score_to_float is imported and available in crescendo module.
+
+        This test ensures the module has the necessary import for extracting float values
+        from scores, which is essential for correct adversarial feedback and outcome reporting.
+        """
+        from pyrit.executor.attack.multi_turn import crescendo
+
+        assert hasattr(crescendo, "normalize_score_to_float"), (
+            "crescendo module must import normalize_score_to_float for "
+            "extracting float values from scores for adversarial feedback"
+        )
+
+    def test_score_feedback_uses_normalized_value(
+        self, mock_objective_target: MagicMock, mock_adversarial_chat: MagicMock
+    ) -> None:
+        """
+        Score feedback to adversarial chat should use normalize_score_to_float.
+
+        When providing feedback to the adversarial chat, the score should be the
+        original float value (e.g., "0.73"), not the true_false conversion ("1").
+        """
+        from pyrit.score.score_utils import ORIGINAL_FLOAT_VALUE_KEY, normalize_score_to_float
+
+        # Create a score that has metadata with original float
+        score = create_score(
+            score_type="true_false",
+            score_value="True",  # Threshold was met
+            scorer_class="FloatScaleThresholdScorer",
+        )
+        # Manually set metadata (create_score doesn't support this)
+        score.score_metadata = {ORIGINAL_FLOAT_VALUE_KEY: 0.73}
+
+        # normalize_score_to_float should extract 0.73, not convert True to 1.0
+        result = normalize_score_to_float(score)
+
+        assert result == 0.73, (
+            f"Expected 0.73 from metadata, got {result}. "
+            "normalize_score_to_float should extract original float from metadata."
+        )

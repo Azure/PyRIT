@@ -6,7 +6,6 @@ from typing import Dict, List, Optional, Union
 from pyrit.common.utils import combine_dict
 from pyrit.models import Score
 
-
 # Key used by FloatScaleThresholdScorer to store the original float value
 # in score_metadata when converting float_scale to true_false
 ORIGINAL_FLOAT_VALUE_KEY = "original_float_value"

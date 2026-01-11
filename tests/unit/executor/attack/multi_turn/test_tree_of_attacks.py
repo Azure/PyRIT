@@ -34,7 +34,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, Scorer, TrueFalseScorer
+from pyrit.score import FloatScaleThresholdScorer, Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -1443,3 +1443,95 @@ class TestTreeOfAttacksConversationTracking:
             )
             in context.related_conversations
         )
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestTAPAttackScoringIntegration:
+    """
+    Tests verifying TAP attack correctly uses FloatScaleThresholdScorer and normalize_score_to_float.
+
+    These tests are critical because:
+    1. TAP needs granular float scores (0.0-1.0) to make intelligent pruning decisions
+    2. The adversarial chat needs numerical feedback to improve prompts incrementally
+    3. Using raw true_false scores would only provide 0 or 1, losing the "how close" information
+    4. FloatScaleThresholdScorer preserves the original float in metadata while providing
+       true_false for AttackResult.automated_objective_score validation
+
+    Historical bug: Without normalize_score_to_float, outcome_reason reported incorrect
+    scores because it used get_value() on true_false scores (returning True/False).
+    """
+
+    def test_default_scorer_is_float_scale_threshold_scorer(self) -> None:
+        """
+        TAP must use FloatScaleThresholdScorer by default for objective scoring.
+
+        Why FloatScaleThresholdScorer:
+        - Wraps a float_scale scorer (SelfAskScaleScorer) that returns 0.0-1.0 scores
+        - Converts to true_false for success/failure determination
+        - Stores original float in score_metadata[ORIGINAL_FLOAT_VALUE_KEY]
+        - This allows TAP to use the float for pruning decisions while still
+          satisfying AttackResult's requirement for true_false objective scores
+        """
+        mock_target = MagicMock(spec=PromptChatTarget)
+        mock_target.send_prompt_async = AsyncMock()
+        mock_target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test"}
+
+        mock_adversarial = MagicMock(spec=PromptChatTarget)
+        mock_adversarial.send_prompt_async = AsyncMock()
+        mock_adversarial.get_identifier.return_value = {"__type__": "MockAdversarial", "__module__": "test"}
+
+        # Create attack with no explicit scoring config - should use default
+        with patch("pyrit.executor.attack.multi_turn.tree_of_attacks.SelfAskScaleScorer"):
+            attack = TreeOfAttacksWithPruningAttack(
+                objective_target=mock_target,
+                attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial),
+                # No attack_scoring_config - should create default FloatScaleThresholdScorer
+            )
+
+        # Verify the default scorer is a FloatScaleThresholdScorer
+        assert isinstance(attack._objective_scorer, FloatScaleThresholdScorer), (
+            "TAP default objective scorer must be FloatScaleThresholdScorer to preserve "
+            "float granularity for pruning while providing true_false for AttackResult"
+        )
+
+    def test_tap_attack_requires_float_scale_threshold_scorer(self) -> None:
+        """
+        TAPAttackScoringConfig validates that objective_scorer is FloatScaleThresholdScorer.
+
+        This constraint exists because TAP's algorithm depends on:
+        1. Float scores for intelligent node ranking and pruning
+        2. Threshold for determining objective success
+        3. Metadata preservation for normalize_score_to_float to extract original floats
+        """
+        mock_scorer = MagicMock(spec=Scorer)
+        mock_scorer.get_identifier.return_value = {"__type__": "MockScorer"}
+
+        # Non-FloatScaleThresholdScorer should raise ValueError
+        with pytest.raises(ValueError, match="FloatScaleThresholdScorer"):
+            TAPAttackScoringConfig(objective_scorer=mock_scorer)
+
+    def test_is_objective_achieved_uses_normalized_score(self, attack_builder, helpers) -> None:
+        """
+        _is_objective_achieved should use normalize_score_to_float for threshold comparison.
+
+        The threshold comparison must use the original float value from metadata,
+        not the true_false conversion, to correctly determine success.
+        """
+        attack = attack_builder.with_threshold(0.7).with_default_mocks().build()
+        context = helpers.create_basic_context()
+
+        # Score of 0.75 should be above threshold (0.7)
+        mock_score = MagicMock()
+        mock_score.score_metadata = {"original_float_value": 0.75}
+        mock_score.get_value.return_value = True
+        context.best_objective_score = mock_score
+
+        # Should be True because 0.75 >= 0.7
+        assert attack._is_objective_achieved(context) is True
+
+        # Now test below threshold
+        mock_score.score_metadata = {"original_float_value": 0.65}
+        context.best_objective_score = mock_score
+
+        # Should be False because 0.65 < 0.7
+        assert attack._is_objective_achieved(context) is False

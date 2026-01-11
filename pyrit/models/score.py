@@ -55,7 +55,7 @@ class Score:
         message_piece_id: str | uuid.UUID,
         id: Optional[uuid.UUID | str] = None,
         score_category: Optional[List[str]] = None,
-        score_metadata: Optional[Dict[str, Union[str, int, float]]]= None,
+        score_metadata: Optional[Dict[str, Union[str, int, float]]] = None,
         scorer_class_identifier: Optional[Dict[str, str]] = None,
         timestamp: Optional[datetime] = None,
         objective: Optional[str] = None,

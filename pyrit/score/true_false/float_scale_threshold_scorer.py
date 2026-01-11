@@ -10,8 +10,8 @@ from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleScoreAggregator,
 )
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
-from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.score_utils import ORIGINAL_FLOAT_VALUE_KEY
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 

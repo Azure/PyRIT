@@ -13,7 +13,7 @@ from treelib.tree import Tree
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
-from pyrit.common.utils import combine_dict, warn_if_set
+from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
@@ -41,7 +41,6 @@ from pyrit.models import (
     ConversationReference,
     ConversationType,
     Message,
-    MessagePiece,
     Score,
     SeedPrompt,
 )
