@@ -6,13 +6,16 @@ import re
 from typing import Dict, List, Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class ColloquialWordswapConverter(PromptConverter):
     """
     Converts text into colloquial Singaporean context.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
         self, deterministic: bool = False, custom_substitutions: Optional[Dict[str, List[str]]] = None
@@ -78,9 +81,3 @@ class ColloquialWordswapConverter(PromptConverter):
         final_prompt = final_prompt.strip()
 
         return ConverterResult(output_text=final_prompt, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

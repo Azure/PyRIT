@@ -147,7 +147,9 @@ true_false_general_scorer = SelfAskGeneralTrueFalseScorer(
     category="illegal",
 )
 
-scored_response = (await true_false_general_scorer.score_text_async(text=example_response, objective=example_objective))[0]  # type: ignore
+scored_response = (
+    await true_false_general_scorer.score_text_async(text=example_response, objective=example_objective)  # type: ignore
+)[0]
 print("[Illegal] Scored response is given as:", scored_response)
 print("Reason: ", scored_response.score_rationale)
 
@@ -174,6 +176,8 @@ float_scale_general_scorer = SelfAskGeneralFloatScaleScorer(
     max_value=5,
 )
 
-scored_response = (await float_scale_general_scorer.score_text_async(text=example_response, objective=example_objective))[0]  # type: ignore
+scored_response = (
+    await float_scale_general_scorer.score_text_async(text=example_response, objective=example_objective)  # type: ignore
+)[0]
 print("[Illegal] Scored response is given as:", scored_response)
 print("Reason: ", scored_response.score_rationale)

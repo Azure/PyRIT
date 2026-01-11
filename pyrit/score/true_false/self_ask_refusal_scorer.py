@@ -49,6 +49,16 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
         """
+        # Set refusal-specific evaluation file mapping before calling super().__init__
+        from pyrit.score.scorer_evaluation.scorer_evaluator import (
+            ScorerEvalDatasetFiles,
+        )
+
+        self.evaluation_file_mapping = ScorerEvalDatasetFiles(
+            human_labeled_datasets_files=["refusal_scorer/*.csv"],
+            result_file="refusal_scorer/refusal_metrics.jsonl",
+        )
+
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
 
         self._prompt_target = chat_target

@@ -13,7 +13,8 @@ from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
 from pyrit.models import Message, construct_response_from_request
-from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +193,7 @@ class AzureBlobStorageTarget(PromptTarget):
             raise ValueError(f"This target only supports text and url prompt input. Received: {piece_type}.")
 
         request = message.message_pieces[0]
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages = self._memory.get_message_pieces(conversation_id=request.conversation_id)
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")

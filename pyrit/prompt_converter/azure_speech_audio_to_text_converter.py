@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from pyrit.auth.azure_auth import get_speech_config
 from pyrit.common import default_values
 from pyrit.models import PromptDataType, data_serializer_factory
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,9 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
     """
+
+    SUPPORTED_INPUT_TYPES = ("audio_path",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     #: The name of the Azure region.
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -82,12 +85,6 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
         self.done = False
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "audio_path"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """

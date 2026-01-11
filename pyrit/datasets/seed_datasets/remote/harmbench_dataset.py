@@ -6,7 +6,7 @@ from typing import Literal
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
 )
-from pyrit.models import SeedDataset, SeedPrompt
+from pyrit.models import SeedDataset, SeedObjective
 
 
 class _HarmBenchDataset(_RemoteDatasetLoader):
@@ -67,7 +67,7 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
         )
 
         # Validate and process examples
-        seed_prompts = []
+        seeds = []
         for example in examples:
             # Check for missing keys in the example
             missing_keys = required_keys - example.keys()
@@ -78,9 +78,8 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
             category = example["SemanticCategory"]
 
             # Create SeedPrompt
-            seed_prompt = SeedPrompt(
+            seed_prompt = SeedObjective(
                 value=example["Behavior"],
-                data_type="text",
                 name="HarmBench Examples",
                 dataset_name=self.dataset_name,
                 harm_categories=[category],
@@ -91,7 +90,7 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
                 source="https://github.com/centerforaisafety/HarmBench",
                 authors=["Mantas Mazeika", "Long Phan", "Xuwang Yin", "Andy Zou", "Zifan Wang", "Norman Mu"],
             )
-            seed_prompts.append(seed_prompt)
+            seeds.append(seed_prompt)
 
         # Create and return SeedDataset
-        return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)
+        return SeedDataset(seeds=seeds, dataset_name=self.dataset_name)

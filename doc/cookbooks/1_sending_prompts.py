@@ -143,10 +143,9 @@ prepended_prompts = []
 prompt_groups = memory.get_seed_groups(dataset_name="airt_illegal")
 
 for prompt_group in prompt_groups:
-    attack_values = prompt_group.to_attack_parameters()
-    prepended_prompts.append(attack_values.prepended_conversation)
-    objectives.append(attack_values.objective)
-    seed_prompt_list.append(attack_values.current_turn_message)
+    prepended_prompts.append(prompt_group.prepended_conversation)
+    objectives.append(prompt_group.objective.value if prompt_group.objective else None)
+    seed_prompt_list.append(prompt_group.next_message)
 
 results = await AttackExecutor().execute_single_turn_attacks_async(  # type: ignore
     attack=attack,
@@ -194,7 +193,7 @@ print(f"Found {len(interesting_prompts)} interesting prompts")
 # Configure how you want to re-score the prompts. For example, you could use HumanInTheLoopScorer
 # (which would make more sense for this example, but it would make things stop in our notebook test pipelines)
 
-new_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=OpenAIChatTarget())
+new_scorer = SelfAskLikertScorer(likert_scale=LikertScalePaths.HARM_SCALE, chat_target=OpenAIChatTarget())
 
 new_results = await new_scorer.score_prompts_batch_async(messages=interesting_prompts)  # type: ignore
 

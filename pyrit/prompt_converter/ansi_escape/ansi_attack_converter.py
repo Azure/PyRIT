@@ -5,7 +5,6 @@ import logging
 import random
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
     ASKS,
     ESCAPED_PAYLOADS,
@@ -14,6 +13,7 @@ from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
     REPEAT_STUBS,
     UNESCAPE_STUBS,
 )
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,9 @@ class AnsiAttackConverter(PromptConverter):
         - Ask the model about ANSI codes, repeat given payloads, unescape strings.
         - Incorporate the user's original prompt into the final scenario, making the testing more dynamic.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
         self,

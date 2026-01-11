@@ -27,7 +27,7 @@ from pyrit.exceptions.exception_classes import (
     handle_bad_request_exception,
 )
 from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.openai.openai_error_handling import (
     _extract_error_payload,
     _extract_request_id_from_exception,
@@ -53,6 +53,7 @@ class OpenAITarget(PromptChatTarget):
     model_name_environment_variable: str
     endpoint_environment_variable: str
     api_key_environment_variable: str
+    underlying_model_environment_variable: str
 
     _async_client: Optional[AsyncOpenAI] = None
 
@@ -65,12 +66,13 @@ class OpenAITarget(PromptChatTarget):
         headers: Optional[str] = None,
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict] = None,
+        underlying_model: Optional[str] = None,
     ) -> None:
         """
         Initialize an instance of OpenAITarget.
 
         Args:
-            model_name (str, Optional): The name of the model.
+            model_name (str, Optional): The name of the model (or name of deployment in Azure).
                 If no value is provided, the environment variable will be used (set by subclass).
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
@@ -83,6 +85,11 @@ class OpenAITarget(PromptChatTarget):
                 will be capped at the value provided.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the
                 `httpx.AsyncClient()` constructor.
+            underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") used solely for
+                target identifier purposes. This is useful when the deployment name in Azure differs
+                from the actual model. If not provided, will attempt to fetch from environment variable.
+                If it is not there either, the identifier "model_name" attribute will use the model_name.
+                Defaults to None.
         """
         self._headers: dict = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
@@ -103,9 +110,18 @@ class OpenAITarget(PromptChatTarget):
             env_var_name=self.endpoint_environment_variable, passed_value=endpoint
         )
 
+        # Get underlying_model from passed value or environment variable
+        underlying_model_value = default_values.get_non_required_value(
+            env_var_name=self.underlying_model_environment_variable, passed_value=underlying_model
+        )
+
         # Initialize parent with endpoint and model_name
         PromptChatTarget.__init__(
-            self, max_requests_per_minute=max_requests_per_minute, endpoint=endpoint_value, model_name=self._model_name
+            self,
+            max_requests_per_minute=max_requests_per_minute,
+            endpoint=endpoint_value,
+            model_name=self._model_name,
+            underlying_model=underlying_model_value,
         )
 
         # API key is required - either from parameter or environment variable
@@ -421,8 +437,7 @@ class OpenAITarget(PromptChatTarget):
                 payload_str = str(payload)[:200]
 
             logger.warning(
-                f"BadRequestError request_id={request_id} is_content_filter={is_content_filter} "
-                f"payload={payload_str}"
+                f"BadRequestError request_id={request_id} is_content_filter={is_content_filter} payload={payload_str}"
             )
 
             request_piece = request.message_pieces[0] if request.message_pieces else None

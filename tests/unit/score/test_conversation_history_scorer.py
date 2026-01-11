@@ -61,6 +61,9 @@ class MockUnsupportedScorer(Scorer):
     def validate_return_scores(self, scores: list[Score]):
         pass
 
+    def get_scorer_metrics(self):
+        return None
+
 
 @pytest.mark.asyncio
 async def test_conversation_history_scorer_score_async_success(patch_central_database):
@@ -215,7 +218,7 @@ async def test_conversation_history_scorer_filters_roles_correctly(patch_central
     called_message = call_args.kwargs["message"]
     called_piece = called_message.message_pieces[0]
 
-    expected_conversation = "User: User message\n" "Assistant: Assistant message\n"
+    expected_conversation = "User: User message\nAssistant: Assistant message\n"
     assert called_piece.original_value == expected_conversation
     assert "System message" not in called_piece.original_value
 

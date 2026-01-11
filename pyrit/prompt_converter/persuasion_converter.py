@@ -19,7 +19,7 @@ from pyrit.models import (
     PromptDataType,
     SeedPrompt,
 )
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,9 @@ class PersuasionConverter(PromptConverter):
         - "misrepresentation":
             Presenting oneself or an issue in a way that's not genuine or true.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     @apply_defaults
     def __init__(
@@ -128,9 +131,3 @@ class PersuasionConverter(PromptConverter):
 
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

@@ -6,7 +6,7 @@ import string
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class CaesarConverter(PromptConverter):
@@ -17,6 +17,9 @@ class CaesarConverter(PromptConverter):
     Shifts for digits 0-9 only work if the offset is less than 10, if the offset is equal to or greater than 10,
     any numeric values will not be shifted.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self, *, caesar_offset: int, append_description: bool = False) -> None:
         """
@@ -57,12 +60,6 @@ class CaesarConverter(PromptConverter):
         else:
             output_text = self._caesar(prompt)
         return ConverterResult(output_text=output_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def _caesar(self, text: str) -> str:
         def shift(alphabet: str) -> str:

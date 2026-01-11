@@ -12,7 +12,7 @@ from pyrit.models import (
     PromptDataType,
     SeedPrompt,
 )
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,9 @@ class LLMGenericTextConverter(PromptConverter):
     """
     Represents a generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format).
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     @apply_defaults
     def __init__(
@@ -74,7 +77,6 @@ class LLMGenericTextConverter(PromptConverter):
         kwargs = self._prompt_kwargs.copy()
 
         if self._system_prompt_template:
-
             system_prompt = self._system_prompt_template.render_template_value(**kwargs)
 
             self._converter_target.set_system_prompt(
@@ -106,9 +108,3 @@ class LLMGenericTextConverter(PromptConverter):
 
         response = await self._converter_target.send_prompt_async(message=request)
         return ConverterResult(output_text=response[0].get_value(), output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

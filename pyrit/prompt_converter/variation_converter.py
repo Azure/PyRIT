@@ -21,7 +21,7 @@ from pyrit.models import (
     PromptDataType,
     SeedPrompt,
 )
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,9 @@ class VariationConverter(PromptConverter):
     """
     Generates variations of the input prompts using the converter target.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     @apply_defaults
     def __init__(
@@ -132,9 +135,3 @@ class VariationConverter(PromptConverter):
             return response[0]
         except KeyError:
             raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

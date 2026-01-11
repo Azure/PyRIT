@@ -5,7 +5,7 @@ import logging
 import unicodedata
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,9 @@ class DiacriticConverter(PromptConverter):
     """
     Applies diacritics to specified characters in a string.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self, target_chars: str = "aeiou", accent: str = "acute"):
         """
@@ -39,12 +42,6 @@ class DiacriticConverter(PromptConverter):
 
         self._target_chars = set(target_chars)
         self._accent = accent
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
 
     def _get_accent_mark(self) -> str:
         """

@@ -213,9 +213,9 @@ async def test_attack_executor_skips_scoring_on_error(
             # Verify scoring was called with skip_on_error_result=True if it was called
             if mock_score.called:
                 call_kwargs = mock_score.call_args.kwargs
-                assert (
-                    "skip_on_error_result" in call_kwargs
-                ), f"{attack_class.__name__} did not pass skip_on_error_result parameter"
-                assert (
-                    call_kwargs["skip_on_error_result"] is True
-                ), f"{attack_class.__name__} did not set skip_on_error_result=True"
+                assert "skip_on_error_result" in call_kwargs, (
+                    f"{attack_class.__name__} did not pass skip_on_error_result parameter"
+                )
+                assert call_kwargs["skip_on_error_result"] is True, (
+                    f"{attack_class.__name__} did not set skip_on_error_result=True"
+                )

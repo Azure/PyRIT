@@ -9,7 +9,7 @@ import numpy as np
 from scipy.io import wavfile
 
 from pyrit.models import PromptDataType, data_serializer_factory
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,9 @@ class AudioFrequencyConverter(PromptConverter):
     Shifts the frequency of an audio file by a specified value.
     By default, it will shift it above the human hearing range (=20 kHz).
     """
+
+    SUPPORTED_INPUT_TYPES = ("audio_path",)
+    SUPPORTED_OUTPUT_TYPES = ("audio_path",)
 
     #: Accepted audio formats for conversion.
     AcceptedAudioFormats = Literal["wav"]
@@ -38,12 +41,6 @@ class AudioFrequencyConverter(PromptConverter):
         """
         self._output_format = output_format
         self._shift_value = shift_value
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "audio_path"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "audio_path"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """

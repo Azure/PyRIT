@@ -205,7 +205,7 @@ class TestQuestionAnsweringBenchmark:
         assert isinstance(message, Message)
         message_piece = message.get_piece()
         assert message_piece.original_value == question_prompt
-        assert message_piece.role == "user"
+        assert message_piece.api_role == "user"
         assert message_piece.prompt_metadata is not None
         assert message_piece.prompt_metadata["correct_answer_index"] == "1"
         assert message_piece.prompt_metadata["correct_answer"] == "Paris"

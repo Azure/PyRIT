@@ -57,7 +57,7 @@ def test_set_system_prompt(azure_openai_target: OpenAIChatTarget, mock_attack_st
 
     chats = azure_openai_target._memory.get_message_pieces(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
-    assert chats[0].role == "system"
+    assert chats[0].api_role == "system"
     assert chats[0].converted_value == "system prompt"
 
 
@@ -75,7 +75,7 @@ async def test_set_system_prompt_adds_memory(
 
     chats = azure_openai_target._memory.get_message_pieces(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chats, got {len(chats)}"
-    assert chats[0].role == "system"
+    assert chats[0].api_role == "system"
 
 
 @pytest.mark.asyncio
@@ -85,7 +85,6 @@ async def test_send_prompt_with_system_calls_chat_complete(
     sample_entries: MutableSequence[MessagePiece],
     mock_attack_strategy: AttackStrategy,
 ):
-
     # Mock SDK response
     mock_response = MagicMock()
     mock_choice = MagicMock()

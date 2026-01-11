@@ -70,8 +70,8 @@ class ConversationScorer(Scorer, ABC):
         for conv_message in conversation:
             for piece in conv_message.message_pieces:
                 # Only include user and assistant messages in the conversation text
-                if piece.role in ["user", "assistant", "tool"]:
-                    role_display = piece.role.capitalize()
+                if piece.api_role in ["user", "assistant", "tool"]:
+                    role_display = "Assistant (simulated)" if piece.is_simulated else piece.api_role.capitalize()
                     conversation_text += f"{role_display}: {piece.converted_value}\n"
 
         # Create a new message with the concatenated conversation text
@@ -80,7 +80,7 @@ class ConversationScorer(Scorer, ABC):
         conversation_message = Message(
             message_pieces=[
                 MessagePiece(
-                    role=original_piece.role,
+                    role=original_piece.get_role_for_storage(),
                     original_value=conversation_text,
                     converted_value=conversation_text,
                     id=original_piece.id,
@@ -166,7 +166,7 @@ def create_conversation_scorer(
         ValueError: If the scorer is not an instance of FloatScaleScorer or TrueFalseScorer.
 
     Example:
-        >>> float_scorer = SelfAskLikertScorer(chat_target=target, likert_scale_path=scale_path)
+        >>> float_scorer = SelfAskLikertScorer(chat_target=target, likert_scale=scale)
         >>> conversation_scorer = create_conversation_scorer(scorer=float_scorer)
         >>> isinstance(conversation_scorer, FloatScaleScorer)  # True
         >>> isinstance(conversation_scorer, ConversationScorer)  # True

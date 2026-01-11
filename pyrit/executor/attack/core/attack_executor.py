@@ -1,11 +1,29 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""
+Simplified AttackExecutor that uses AttackParameters directly.
+
+This is the new, cleaner design that leverages the params_type architecture.
+"""
+
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    cast,
+)
 
-from pyrit.executor.attack.core import (
+from pyrit.common.deprecation import print_deprecation_message
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
+from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategy,
     AttackStrategyContextT,
     AttackStrategyResultT,
@@ -16,7 +34,11 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
-from pyrit.models import Message
+from pyrit.models import Message, SeedAttackGroup
+
+if TYPE_CHECKING:
+    from pyrit.prompt_target import PromptChatTarget
+    from pyrit.score import TrueFalseScorer
 
 AttackResultT = TypeVar("AttackResultT")
 
@@ -43,17 +65,12 @@ class AttackExecutorResult(Generic[AttackResultT]):
         Iterate over completed results.
 
         Returns:
-            Iterator[AttackResultT]: An iterator over the completed results.
+            Iterator over completed attack results.
         """
         return iter(self.completed_results)
 
     def __len__(self) -> int:
-        """
-        Return number of completed results.
-
-        Returns:
-            int: The number of completed results.
-        """
+        """Return number of completed results."""
         return len(self.completed_results)
 
     def __getitem__(self, index: int) -> AttackResultT:
@@ -61,7 +78,7 @@ class AttackExecutorResult(Generic[AttackResultT]):
         Access completed results by index.
 
         Returns:
-            AttackResultT: The completed result at the specified index.
+            The attack result at the specified index.
         """
         return self.completed_results[index]
 
@@ -77,21 +94,11 @@ class AttackExecutorResult(Generic[AttackResultT]):
 
     @property
     def exceptions(self) -> List[BaseException]:
-        """
-        Get all exceptions from incomplete objectives.
-
-        Returns:
-            List[BaseException]: List of exceptions that caused objectives to fail.
-        """
+        """Get all exceptions from incomplete objectives."""
         return [exception for _, exception in self.incomplete_objectives]
 
     def raise_if_incomplete(self) -> None:
-        """
-        Raise the first exception if any objectives are incomplete.
-
-        Raises:
-            BaseException: The first exception from incomplete objectives.
-        """
+        """Raise the first exception if any objectives are incomplete."""
         if self.incomplete_objectives:
             raise self.incomplete_objectives[0][1]
 
@@ -100,10 +107,7 @@ class AttackExecutorResult(Generic[AttackResultT]):
         Get completed results, raising if any incomplete.
 
         Returns:
-            List[AttackResultT]: All completed results.
-
-        Raises:
-            BaseException: The first exception from incomplete objectives.
+            List of completed attack results.
         """
         self.raise_if_incomplete()
         return self.completed_results
@@ -111,23 +115,19 @@ class AttackExecutorResult(Generic[AttackResultT]):
 
 class AttackExecutor:
     """
-    Manages the execution of attack strategies with support for different execution patterns.
+    Manages the execution of attack strategies with support for parallel execution.
 
-    The AttackExecutor provides controlled execution of attack strategies with features like
-    concurrency limiting and parallel execution. It can handle multiple objectives against
-    the same target or execute different strategies concurrently.
+    The AttackExecutor provides controlled execution of attack strategies with
+    concurrency limiting. It uses the attack's params_type to create parameters
+    from seed groups.
     """
-
-    _SingleTurnContextT = TypeVar("_SingleTurnContextT", bound=SingleTurnAttackContext)
-    _MultiTurnContextT = TypeVar("_MultiTurnContextT", bound=MultiTurnAttackContext)
 
     def __init__(self, *, max_concurrency: int = 1):
         """
         Initialize the attack executor with configurable concurrency control.
 
         Args:
-            max_concurrency (int): Maximum number of concurrent attack executions allowed.
-                Must be a positive integer (defaults to 1).
+            max_concurrency: Maximum number of concurrent attack executions (default: 1).
 
         Raises:
             ValueError: If max_concurrency is not a positive integer.
@@ -135,6 +135,231 @@ class AttackExecutor:
         if max_concurrency <= 0:
             raise ValueError(f"max_concurrency must be a positive integer, got {max_concurrency}")
         self._max_concurrency = max_concurrency
+
+    async def execute_attack_from_seed_groups_async(
+        self,
+        *,
+        attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
+        seed_groups: Sequence[SeedAttackGroup],
+        adversarial_chat: Optional["PromptChatTarget"] = None,
+        objective_scorer: Optional["TrueFalseScorer"] = None,
+        field_overrides: Optional[Sequence[Dict[str, Any]]] = None,
+        return_partial_on_failure: bool = False,
+        **broadcast_fields,
+    ) -> AttackExecutorResult[AttackStrategyResultT]:
+        """
+        Execute attacks in parallel, extracting parameters from SeedAttackGroups.
+
+        Uses the attack's params_type.from_seed_group() to extract parameters,
+        automatically handling which fields the attack accepts.
+
+        Args:
+            attack: The attack strategy to execute.
+            seed_groups: SeedAttackGroups containing objectives and optional prompts.
+            adversarial_chat: Optional chat target for generating adversarial prompts
+                or simulated conversations. Required when seed groups contain
+                SeedSimulatedConversation configurations.
+            objective_scorer: Optional scorer for evaluating simulated conversations.
+                Required when seed groups contain SeedSimulatedConversation configurations.
+            field_overrides: Optional per-seed-group field overrides. If provided,
+                must match the length of seed_groups. Each dict is passed to
+                from_seed_group() as overrides.
+            return_partial_on_failure: If True, returns partial results when some
+                objectives fail. If False (default), raises the first exception.
+            **broadcast_fields: Fields applied to all seed groups (e.g., memory_labels).
+                Per-seed-group field_overrides take precedence.
+
+        Returns:
+            AttackExecutorResult with completed results and any incomplete objectives.
+
+        Raises:
+            ValueError: If seed_groups is empty or field_overrides length doesn't match.
+            BaseException: If return_partial_on_failure=False and any objective fails.
+        """
+        if not seed_groups:
+            raise ValueError("At least one seed_group must be provided")
+
+        if field_overrides and len(field_overrides) != len(seed_groups):
+            raise ValueError(
+                f"field_overrides length ({len(field_overrides)}) must match seed_groups length ({len(seed_groups)})"
+            )
+
+        params_type = attack.params_type
+
+        # Build params list using from_seed_group_async with concurrency control
+        # This can take time if the SeedSimulatedConversation generation is included
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def build_params(i: int, sg: SeedAttackGroup) -> AttackParameters:
+            async with semaphore:
+                combined_overrides = dict(broadcast_fields)
+                if field_overrides:
+                    combined_overrides.update(field_overrides[i])
+                return await params_type.from_seed_group_async(
+                    seed_group=sg,
+                    adversarial_chat=adversarial_chat,
+                    objective_scorer=objective_scorer,
+                    **combined_overrides,
+                )
+
+        params_list = list(await asyncio.gather(*[build_params(i, sg) for i, sg in enumerate(seed_groups)]))
+
+        return await self._execute_with_params_list_async(
+            attack=attack,
+            params_list=params_list,
+            return_partial_on_failure=return_partial_on_failure,
+        )
+
+    async def execute_attack_async(
+        self,
+        *,
+        attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
+        objectives: Sequence[str],
+        field_overrides: Optional[Sequence[Dict[str, Any]]] = None,
+        return_partial_on_failure: bool = False,
+        **broadcast_fields,
+    ) -> AttackExecutorResult[AttackStrategyResultT]:
+        """
+        Execute attacks in parallel for each objective.
+
+        Creates AttackParameters directly from objectives and field values.
+
+        Args:
+            attack: The attack strategy to execute.
+            objectives: List of attack objectives.
+            field_overrides: Optional per-objective field overrides. If provided,
+                must match the length of objectives.
+            return_partial_on_failure: If True, returns partial results when some
+                objectives fail. If False (default), raises the first exception.
+            **broadcast_fields: Fields applied to all objectives (e.g., memory_labels).
+                Per-objective field_overrides take precedence.
+
+        Returns:
+            AttackExecutorResult with completed results and any incomplete objectives.
+
+        Raises:
+            ValueError: If objectives is empty or field_overrides length doesn't match.
+            BaseException: If return_partial_on_failure=False and any objective fails.
+        """
+        if not objectives:
+            raise ValueError("At least one objective must be provided")
+
+        if field_overrides and len(field_overrides) != len(objectives):
+            raise ValueError(
+                f"field_overrides length ({len(field_overrides)}) must match objectives length ({len(objectives)})"
+            )
+
+        params_type = attack.params_type
+
+        # Build params list
+        params_list: List[AttackParameters] = []
+        for i, objective in enumerate(objectives):
+            # Start with broadcast fields
+            fields = dict(broadcast_fields)
+
+            # Apply per-objective overrides
+            if field_overrides:
+                fields.update(field_overrides[i])
+
+            # Add objective
+            fields["objective"] = objective
+
+            params = params_type(**fields)
+            params_list.append(params)
+
+        return await self._execute_with_params_list_async(
+            attack=attack,
+            params_list=params_list,
+            return_partial_on_failure=return_partial_on_failure,
+        )
+
+    async def _execute_with_params_list_async(
+        self,
+        *,
+        attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
+        params_list: Sequence[AttackParameters],
+        return_partial_on_failure: bool = False,
+    ) -> AttackExecutorResult[AttackStrategyResultT]:
+        """
+        Execute attacks in parallel with a list of pre-built parameters.
+
+        This is the core execution method. It creates contexts from params
+        and runs attacks with concurrency control.
+
+        Args:
+            attack: The attack strategy to execute.
+            params_list: List of AttackParameters, one per execution.
+            return_partial_on_failure: If True, returns partial results on failure.
+
+        Returns:
+            AttackExecutorResult with completed results and any incomplete objectives.
+        """
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def run_one(params: AttackParameters) -> AttackStrategyResultT:
+            async with semaphore:
+                # Create context with params
+                context = cast(
+                    AttackStrategyContextT,
+                    attack._context_type(params=params),  # type: ignore[call-arg]
+                )
+                return await attack.execute_with_context_async(context=context)
+
+        tasks = [run_one(p) for p in params_list]
+        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
+
+        return self._process_execution_results(
+            objectives=[p.objective for p in params_list],
+            results_or_exceptions=list(results_or_exceptions),
+            return_partial_on_failure=return_partial_on_failure,
+        )
+
+    def _process_execution_results(
+        self,
+        *,
+        objectives: Sequence[str],
+        results_or_exceptions: List[Any],
+        return_partial_on_failure: bool,
+    ) -> AttackExecutorResult[AttackStrategyResultT]:
+        """
+        Process results from parallel execution into an AttackExecutorResult.
+
+        Args:
+            objectives: The objectives that were executed.
+            results_or_exceptions: Results or exceptions from asyncio.gather.
+            return_partial_on_failure: Whether to return partial results on failure.
+
+        Returns:
+            AttackExecutorResult with completed and incomplete results.
+
+        Raises:
+            BaseException: If return_partial_on_failure=False and any failed.
+        """
+        completed: List[AttackStrategyResultT] = []
+        incomplete: List[tuple[str, BaseException]] = []
+
+        for objective, result in zip(objectives, results_or_exceptions):
+            if isinstance(result, BaseException):
+                incomplete.append((objective, result))
+            else:
+                completed.append(result)
+
+        executor_result: AttackExecutorResult[AttackStrategyResultT] = AttackExecutorResult(
+            completed_results=completed,
+            incomplete_objectives=incomplete,
+        )
+
+        if not return_partial_on_failure:
+            executor_result.raise_if_incomplete()
+
+        return executor_result
+
+    # =========================================================================
+    # Deprecated methods - these will be removed in a future version
+    # =========================================================================
+
+    _SingleTurnContextT = TypeVar("_SingleTurnContextT", bound=SingleTurnAttackContext)
+    _MultiTurnContextT = TypeVar("_MultiTurnContextT", bound=MultiTurnAttackContext)
 
     async def execute_multi_objective_attack_async(
         self,
@@ -149,62 +374,44 @@ class AttackExecutor:
         """
         Execute the same attack strategy with multiple objectives against the same target in parallel.
 
-        This method provides a simplified interface for executing multiple objectives without
-        requiring users to create context objects. It uses the attack's execute_async method
-        which accepts parameters directly.
+        .. deprecated::
+            Use :meth:`execute_attack_async` instead. This method will be removed in a future version.
 
         Args:
-            attack (AttackStrategy[ContextT, AttackStrategyResultT]): The attack strategy to use for all objectives.
-            objectives (List[str]): List of attack objectives to test.
-            prepended_conversation (Optional[List[Message]]): Conversation to prepend to the target model.
-            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
-            return_partial_on_failure (bool): If True, returns AttackExecutorResult with completed results
-                even when some objectives don't complete execution. If False, raises the first exception encountered.
-                Defaults to False (raise on failure).
+            attack: The attack strategy to use for all objectives.
+            objectives: List of attack objectives to test.
+            prepended_conversation: Conversation to prepend to the target model.
+            memory_labels: Additional labels that can be applied to the prompts.
+            return_partial_on_failure: If True, returns partial results on failure.
             **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
-            AttackExecutorResult[AttackStrategyResultT]: Result container with completed results and
-                any incomplete objectives. The result is iterable and behaves like a list of completed results.
-                Use .has_incomplete or .raise_if_incomplete() to handle failures.
-
-        Raises:
-            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_multi_objective_attack_async(
-            ...     attack=red_teaming_attack,
-            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ... )
-            >>> # Iterate directly over results
-            >>> for result in results:
-            ...     print(result)
+            AttackExecutorResult with completed results and any incomplete objectives.
         """
-        semaphore = asyncio.Semaphore(self._max_concurrency)
+        print_deprecation_message(
+            old_item="execute_multi_objective_attack_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
+        )
 
-        async def execute_with_semaphore(objective: str) -> AttackStrategyResultT:
-            async with semaphore:
-                return await attack.execute_async(
-                    objective=objective,
-                    prepended_conversation=prepended_conversation,
-                    memory_labels=memory_labels,
-                    **attack_params,
-                )
+        # Build field_overrides if prepended_conversation is provided (broadcast to all)
+        field_overrides: Optional[List[Dict[str, Any]]] = None
+        if prepended_conversation:
+            field_overrides = [{"prepended_conversation": prepended_conversation} for _ in objectives]
 
-        tasks = [execute_with_semaphore(obj) for obj in objectives]
-        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
-
-        return self._process_execution_results(
+        return await self.execute_attack_async(
+            attack=attack,
             objectives=objectives,
-            results_or_exceptions=results_or_exceptions,
+            field_overrides=field_overrides,
             return_partial_on_failure=return_partial_on_failure,
+            memory_labels=memory_labels,
+            **attack_params,
         )
 
     async def execute_single_turn_attacks_async(
         self,
         *,
-        attack: AttackStrategy[_SingleTurnContextT, AttackStrategyResultT],
+        attack: AttackStrategy["_SingleTurnContextT", AttackStrategyResultT],
         objectives: List[str],
         messages: Optional[List[Message]] = None,
         prepended_conversations: Optional[List[List[Message]]] = None,
@@ -215,97 +422,61 @@ class AttackExecutor:
         """
         Execute a batch of single-turn attacks with multiple objectives.
 
-        This method is specifically designed for single-turn attacks, allowing you to
-        execute multiple objectives in parallel while managing the contexts and prompts.
+        .. deprecated::
+            Use :meth:`execute_attack_async` instead. This method will be removed in a future version.
 
         Args:
-            attack (AttackStrategy[_SingleTurnContextT, AttackStrategyResultT]): The single-turn attack strategy to use,
-                the context must be a SingleTurnAttackContext or a subclass of it.
-            objectives (List[str]): List of attack objectives to test.
-            messages (Optional[List[Message]]): List of messages to use for this execution.
-                If provided, must match the length of objectives. Message will be sent along the objective
-                with the same list index.
-            prepended_conversations (Optional[List[List[Message]]]): Conversations to prepend to each
-                objective. If provided, must match the length of objectives. Conversation will be sent along the
-                objective with the same list index.
-            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
-                The labels will be the same across all executions.
-            return_partial_on_failure (bool): If True, returns AttackExecutorResult with completed results
-                even when some objectives don't complete execution. If False, raises the first exception encountered.
-                Defaults to False (raise on failure).
+            attack: The single-turn attack strategy to use.
+            objectives: List of attack objectives to test.
+            messages: List of messages to use for this execution (per-objective).
+            prepended_conversations: Conversations to prepend to each objective (per-objective).
+            memory_labels: Additional labels that can be applied to the prompts.
+            return_partial_on_failure: If True, returns partial results on failure.
             **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
-            AttackExecutorResult[AttackStrategyResultT]: Result container with completed results and
-                any incomplete objectives. The result is iterable and behaves like a list of completed results.
+            AttackExecutorResult with completed results and any incomplete objectives.
 
         Raises:
-            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
-            TypeError: If the attack strategy does not use SingleTurnAttackContext.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_single_turn_attacks_async(
-            ...     attack=single_turn_attack,
-            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ...     messages=[Message(...), Message(...)]
-            ... )
+            TypeError: If the attack does not use SingleTurnAttackContext.
         """
+        print_deprecation_message(
+            old_item="execute_single_turn_attacks_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
+        )
+
         # Validate that the attack uses SingleTurnAttackContext
         if hasattr(attack, "_context_type") and not issubclass(attack._context_type, SingleTurnAttackContext):
             raise TypeError(
                 f"Attack strategy {attack.__class__.__name__} must use SingleTurnAttackContext or a subclass of it."
             )
 
-        # Validate input parameters using shared validation logic
-        self._validate_attack_batch_parameters(
+        # Build field_overrides from per-objective parameters
+        field_overrides: Optional[List[Dict[str, Any]]] = None
+        if messages or prepended_conversations:
+            field_overrides = []
+            for i in range(len(objectives)):
+                override: Dict[str, Any] = {}
+                if messages and i < len(messages):
+                    override["next_message"] = messages[i]
+                if prepended_conversations and i < len(prepended_conversations):
+                    override["prepended_conversation"] = prepended_conversations[i]
+                field_overrides.append(override)
+
+        return await self.execute_attack_async(
+            attack=attack,
             objectives=objectives,
-            optional_list=messages,
-            optional_list_name="messages",
-            prepended_conversations=prepended_conversations,
-        )
-
-        # Create semaphore for concurrency control
-        semaphore = asyncio.Semaphore(self._max_concurrency)
-
-        async def execute_with_semaphore(
-            objective: str,
-            message: Optional[Message],
-            prepended_conversation: Optional[List[Message]],
-        ) -> AttackStrategyResultT:
-            async with semaphore:
-                return await attack.execute_async(
-                    objective=objective,
-                    prepended_conversation=prepended_conversation,
-                    next_message=message,
-                    memory_labels=memory_labels or {},
-                    **attack_params,
-                )
-
-        # Create tasks for each objective with its corresponding parameters
-        tasks = []
-        for i, objective in enumerate(objectives):
-            message = messages[i] if messages else None
-            prepended_conversation = prepended_conversations[i] if prepended_conversations else []
-
-            task = execute_with_semaphore(
-                objective=objective, message=message, prepended_conversation=prepended_conversation
-            )
-            tasks.append(task)
-
-        # Execute all tasks in parallel with concurrency control
-        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
-
-        return self._process_execution_results(
-            objectives=objectives,
-            results_or_exceptions=results_or_exceptions,
+            field_overrides=field_overrides,
             return_partial_on_failure=return_partial_on_failure,
+            memory_labels=memory_labels,
+            **attack_params,
         )
 
     async def execute_multi_turn_attacks_async(
         self,
         *,
-        attack: AttackStrategy[_MultiTurnContextT, AttackStrategyResultT],
+        attack: AttackStrategy["_MultiTurnContextT", AttackStrategyResultT],
         objectives: List[str],
         messages: Optional[List[Message]] = None,
         prepended_conversations: Optional[List[List[Message]]] = None,
@@ -316,237 +487,53 @@ class AttackExecutor:
         """
         Execute a batch of multi-turn attacks with multiple objectives.
 
-        This method is specifically designed for multi-turn attacks, allowing you to
-        execute multiple objectives in parallel while managing the contexts and messages.
+        .. deprecated::
+            Use :meth:`execute_attack_async` instead. This method will be removed in a future version.
 
         Args:
-            attack (AttackStrategy[_MultiTurnContextT, AttackStrategyResultT]): The multi-turn attack strategy to use,
-                the context must be a MultiTurnAttackContext or a subclass of it.
-            objectives (List[str]): List of attack objectives to test.
-            messages (Optional[List[Message]]): List of messages to use for this execution.
-                If provided, must match the length of objectives. Messages will be sent along the objective
-                with the same list index.
-            prepended_conversations (Optional[List[List[Message]]]): Conversations to prepend to each
-                objective. If provided, must match the length of objectives. Conversation will be sent along the
-                objective with the same list index.
-            memory_labels (Optional[Dict[str, str]]): Additional labels that can be applied to the prompts.
-                The labels will be the same across all executions.
-            return_partial_on_failure (bool): If True, returns AttackExecutorResult with completed results
-                even when some objectives don't complete execution. If False, raises the first exception encountered.
-                Defaults to False (raise on failure).
+            attack: The multi-turn attack strategy to use.
+            objectives: List of attack objectives to test.
+            messages: List of messages to use for this execution (per-objective).
+            prepended_conversations: Conversations to prepend to each objective (per-objective).
+            memory_labels: Additional labels that can be applied to the prompts.
+            return_partial_on_failure: If True, returns partial results on failure.
             **attack_params: Additional parameters specific to the attack strategy.
 
         Returns:
-            AttackExecutorResult[AttackStrategyResultT]: Result container with completed results and
-                any incomplete objectives. The result is iterable and behaves like a list of completed results.
+            AttackExecutorResult with completed results and any incomplete objectives.
 
         Raises:
-            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
-            TypeError: If the attack strategy does not use MultiTurnAttackContext.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> results = await executor.execute_multi_turn_attacks_async(
-            ...     attack=multi_turn_attack,
-            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"],
-            ...     messages=[Message(...), Message(...)]
-            ... )
+            TypeError: If the attack does not use MultiTurnAttackContext.
         """
+        print_deprecation_message(
+            old_item="execute_multi_turn_attacks_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
+        )
+
         # Validate that the attack uses MultiTurnAttackContext
         if hasattr(attack, "_context_type") and not issubclass(attack._context_type, MultiTurnAttackContext):
             raise TypeError(
                 f"Attack strategy {attack.__class__.__name__} must use MultiTurnAttackContext or a subclass of it."
             )
 
-        # Validate input parameters using shared validation logic
-        self._validate_attack_batch_parameters(
+        # Build field_overrides from per-objective parameters
+        field_overrides: Optional[List[Dict[str, Any]]] = None
+        if messages or prepended_conversations:
+            field_overrides = []
+            for i in range(len(objectives)):
+                override: Dict[str, Any] = {}
+                if messages and i < len(messages):
+                    override["next_message"] = messages[i]
+                if prepended_conversations and i < len(prepended_conversations):
+                    override["prepended_conversation"] = prepended_conversations[i]
+                field_overrides.append(override)
+
+        return await self.execute_attack_async(
+            attack=attack,
             objectives=objectives,
-            optional_list=messages,
-            optional_list_name="messages",
-            prepended_conversations=prepended_conversations,
-        )
-
-        # Create semaphore for concurrency control
-        semaphore = asyncio.Semaphore(self._max_concurrency)
-
-        async def execute_with_semaphore(
-            objective: str, message: Optional[Message], prepended_conversation: Optional[List[Message]]
-        ) -> AttackStrategyResultT:
-            async with semaphore:
-                return await attack.execute_async(
-                    objective=objective,
-                    prepended_conversation=prepended_conversation,
-                    next_message=message,
-                    memory_labels=memory_labels or {},
-                    **attack_params,
-                )
-
-        # Create tasks for each objective with its corresponding parameters
-        tasks = []
-        for i, objective in enumerate(objectives):
-            message = messages[i] if messages else None
-            prepended_conversation = prepended_conversations[i] if prepended_conversations else []
-
-            task = execute_with_semaphore(
-                objective=objective, message=message, prepended_conversation=prepended_conversation
-            )
-            tasks.append(task)
-
-        # Execute all tasks in parallel with concurrency control
-        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
-
-        return self._process_execution_results(
-            objectives=objectives,
-            results_or_exceptions=results_or_exceptions,
+            field_overrides=field_overrides,
             return_partial_on_failure=return_partial_on_failure,
+            memory_labels=memory_labels,
+            **attack_params,
         )
-
-    def _validate_attack_batch_parameters(
-        self,
-        *,
-        objectives: List[str],
-        optional_list: Optional[List[Any]] = None,
-        optional_list_name: str = "optional_list",
-        prepended_conversations: Optional[List[List[Message]]] = None,
-    ) -> None:
-        """
-        Validate common parameters for batch attack execution methods.
-
-        Args:
-            objectives (List[str]): List of attack objectives to test.
-            optional_list (Optional[List[any]]): Optional list parameter to validate length against objectives.
-            optional_list_name (str): Name of the optional list parameter for error messages.
-            prepended_conversations (Optional[List[List[Message]]]): Conversations to prepend.
-
-        Raises:
-            ValueError: If validation fails.
-        """
-        # Validate input parameters
-        if not objectives:
-            raise ValueError("At least one objective must be provided")
-
-        # Validate optional_list length if provided
-        if optional_list is not None and len(optional_list) != len(objectives):
-            raise ValueError(
-                f"Number of {optional_list_name} ({len(optional_list)}) must"
-                f" match number of objectives ({len(objectives)})"
-            )
-
-        # Validate prepended_conversations length if provided
-        if prepended_conversations is not None and len(prepended_conversations) != len(objectives):
-            raise ValueError(
-                f"Number of prepended_conversations ({len(prepended_conversations)}) must match "
-                f"number of objectives ({len(objectives)})"
-            )
-
-    async def execute_multi_objective_attack_with_context_async(
-        self,
-        *,
-        attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
-        context_template: AttackStrategyContextT,
-        objectives: List[str],
-        return_partial_on_failure: bool = False,
-    ) -> AttackExecutorResult[AttackStrategyResultT]:
-        """
-        Execute the same attack strategy with multiple objectives using context objects.
-
-        This method works with context objects directly, duplicating the template context
-        for each objective. Use this when you need fine-grained control over the context
-        or have an existing context template to reuse.
-
-        Args:
-            attack (AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]): The attack strategy to use for
-                all objectives.
-            context_template (AttackStrategyContextT): Template context that will be duplicated for each objective.
-                Must have a 'duplicate()' method and an 'objective' attribute.
-            objectives (List[str]): List of attack objectives to test. Each objective will be
-                executed as a separate attack using a copy of the context template.
-            return_partial_on_failure (bool): If True, returns AttackExecutorResult with completed results
-                even when some objectives don't complete execution. If False, raises the first exception encountered.
-                Defaults to False (raise on failure).
-
-        Returns:
-            AttackExecutorResult[AttackStrategyResultT]: Result container with completed results and
-                any incomplete objectives. The result is iterable and behaves like a list of completed results.
-                Use .has_incomplete or .raise_if_incomplete() to handle failures.
-
-        Raises:
-            AttributeError: If the context_template doesn't have required 'duplicate()' method
-                or 'objective' attribute.
-            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
-
-        Example:
-            >>> executor = AttackExecutor(max_concurrency=3)
-            >>> context = MultiTurnAttackContext(max_turns=5, ...)
-            >>> results = await executor.execute_multi_objective_attack_with_context_async(
-            ...     attack=prompt_injection_attack,
-            ...     context_template=context,
-            ...     objectives=["how to make a Molotov cocktail", "how to escalate privileges"]
-            ... )
-            >>> # Iterate directly over results
-            >>> for result in results:
-            ...     print(result)
-        """
-        semaphore = asyncio.Semaphore(self._max_concurrency)
-
-        async def execute_with_semaphore(ctx: AttackStrategyContextT) -> AttackStrategyResultT:
-            async with semaphore:
-                return await attack.execute_with_context_async(context=ctx)
-
-        contexts = []
-        for objective in objectives:
-            # Create a deep copy of the context using its duplicate method
-            context = context_template.duplicate()
-            # Set the new objective (all attack contexts have objectives)
-            context.objective = objective
-            contexts.append(context)
-
-        # Execute all tasks in parallel with concurrency control
-        tasks = [execute_with_semaphore(ctx) for ctx in contexts]
-        results_or_exceptions = await asyncio.gather(*tasks, return_exceptions=True)
-
-        return self._process_execution_results(
-            objectives=objectives,
-            results_or_exceptions=results_or_exceptions,
-            return_partial_on_failure=return_partial_on_failure,
-        )
-
-    def _process_execution_results(
-        self,
-        *,
-        objectives: List[str],
-        results_or_exceptions: List[Union[AttackStrategyResultT, BaseException]],
-        return_partial_on_failure: bool,
-    ) -> AttackExecutorResult[AttackStrategyResultT]:
-        """
-        Process results from parallel execution, separating completed from incomplete objectives.
-
-        Args:
-            objectives (List[str]): List of objectives that were executed.
-            results_or_exceptions (List[Union[AttackStrategyResultT, BaseException]]): Results from asyncio.gather
-                with return_exceptions=True.
-            return_partial_on_failure (bool): If True, returns AttackExecutorResult even when some objectives
-                don't complete. If False, raises the first exception encountered.
-
-        Returns:
-            AttackExecutorResult[AttackStrategyResultT]: Result container with completed results and
-                any incomplete objectives. Always returns this type regardless of success/failure status.
-
-        Raises:
-            BaseException: If return_partial_on_failure=False and any objective doesn't complete execution.
-        """
-        # Separate completed results from exceptions
-        completed_results: List[AttackStrategyResultT] = []
-        incomplete_objectives: List[tuple[str, BaseException]] = []
-
-        for objective, result_or_exception in zip(objectives, results_or_exceptions):
-            if isinstance(result_or_exception, BaseException):
-                incomplete_objectives.append((objective, result_or_exception))
-            else:
-                completed_results.append(result_or_exception)  # type: ignore[arg-type]
-
-        # If some incomplete and return_partial_on_failure is False, raise the first exception
-        if incomplete_objectives and not return_partial_on_failure:
-            raise incomplete_objectives[0][1]
-
-        return AttackExecutorResult(completed_results=completed_results, incomplete_objectives=incomplete_objectives)

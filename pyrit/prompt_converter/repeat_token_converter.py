@@ -5,7 +5,7 @@ import re
 from typing import Literal, Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class RepeatTokenConverter(PromptConverter):
@@ -26,6 +26,9 @@ class RepeatTokenConverter(PromptConverter):
         - "repeat":
             The prompt text will be ignored, and the result will only contain repeated tokens.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
         self,
@@ -89,9 +92,3 @@ class RepeatTokenConverter(PromptConverter):
             output_text=f"{prompt_parts[0]}{self.token_to_repeat * self.times_to_repeat}{prompt_parts[1]}",
             output_type="text",
         )
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

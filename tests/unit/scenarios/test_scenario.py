@@ -10,8 +10,9 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenario import ScenarioIdentifier, ScenarioResult
+from pyrit.scenario import DatasetConfiguration, ScenarioIdentifier, ScenarioResult
 from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
+from pyrit.score import Scorer
 
 
 def save_attack_results_to_memory(attack_results):
@@ -31,6 +32,14 @@ def create_mock_run_async(attack_results):
     return AsyncMock(side_effect=mock_run_async)
 
 
+def create_mock_scorer():
+    """Create a mock scorer for testing ScenarioResult."""
+    mock_scorer = MagicMock(spec=Scorer)
+    mock_scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test"}
+    mock_scorer.get_scorer_metrics.return_value = None
+    return mock_scorer
+
+
 @pytest.fixture
 def mock_atomic_attacks():
     """Create mock AtomicAttack instances for testing."""
@@ -41,19 +50,16 @@ def mock_atomic_attacks():
 
     run1 = MagicMock(spec=AtomicAttack)
     run1.atomic_attack_name = "attack_run_1"
-    run1._objectives = ["objective1"]
     run1._attack = mock_attack
     type(run1).objectives = PropertyMock(return_value=["objective1"])
 
     run2 = MagicMock(spec=AtomicAttack)
     run2.atomic_attack_name = "attack_run_2"
-    run2._objectives = ["objective2"]
     run2._attack = mock_attack
     type(run2).objectives = PropertyMock(return_value=["objective2"])
 
     run3 = MagicMock(spec=AtomicAttack)
     run3.atomic_attack_name = "attack_run_3"
-    run3._objectives = ["objective3"]
     run3._attack = mock_attack
     type(run3).objectives = PropertyMock(return_value=["objective3"])
 
@@ -102,6 +108,13 @@ class ConcreteScenario(Scenario):
 
         kwargs.setdefault("strategy_class", TestStrategy)
 
+        # Add a mock scorer if not provided
+        if "objective_scorer" not in kwargs:
+            mock_scorer = MagicMock(spec=Scorer)
+            mock_scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test"}
+            mock_scorer.get_scorer_metrics.return_value = None
+            kwargs["objective_scorer"] = mock_scorer
+
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
@@ -128,9 +141,9 @@ class ConcreteScenario(Scenario):
         return cls.get_strategy_class().ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return the list of required datasets for testing."""
-        return []
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """Return the default dataset configuration for testing."""
+        return DatasetConfiguration()
 
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return
@@ -270,7 +283,7 @@ class TestScenarioInitialization2:
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         assert scenario._max_retries == 0
-        assert scenario._max_concurrency == 1
+        assert scenario._max_concurrency == 10
         assert scenario._memory_labels == {}
 
 
@@ -300,7 +313,7 @@ class TestScenarioExecution:
         # Verify all runs were executed with correct concurrency
         assert len(result.attack_results) == 3
         for run in mock_atomic_attacks:
-            run.run_async.assert_called_once_with(max_concurrency=1, return_partial_on_failure=True)
+            run.run_async.assert_called_once_with(max_concurrency=10, return_partial_on_failure=True)
 
         # Verify results are aggregated correctly by atomic attack name
         assert "attack_run_1" in result.attack_results
@@ -459,7 +472,6 @@ class TestScenarioProperties:
 
         single_run_mock = MagicMock(spec=AtomicAttack)
         single_run_mock.atomic_attack_name = "attack_1"
-        single_run_mock._objectives = ["obj1"]
         single_run_mock._attack = mock_attack
         type(single_run_mock).objectives = PropertyMock(return_value=["obj1"])
         single_run = [single_run_mock]
@@ -476,7 +488,6 @@ class TestScenarioProperties:
         for i in range(10):
             run = MagicMock(spec=AtomicAttack)
             run.atomic_attack_name = f"attack_{i}"
-            run._objectives = [f"obj{i}"]
             run._attack = mock_attack
             type(run).objectives = PropertyMock(return_value=[f"obj{i}"])
             many_runs.append(run)
@@ -497,10 +508,12 @@ class TestScenarioResult:
     def test_scenario_result_initialization(self, sample_attack_results):
         """Test ScenarioResult initialization."""
         identifier = ScenarioIdentifier(name="Test", scenario_version=1)
+        mock_scorer = create_mock_scorer()
         result = ScenarioResult(
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": sample_attack_results[:3], "rot13": sample_attack_results[3:]},
+            objective_scorer=mock_scorer,
         )
 
         assert result.scenario_identifier == identifier
@@ -512,10 +525,12 @@ class TestScenarioResult:
     def test_scenario_result_with_empty_results(self):
         """Test ScenarioResult with empty attack results."""
         identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1)
+        mock_scorer = create_mock_scorer()
         result = ScenarioResult(
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": []},
+            objective_scorer=mock_scorer,
         )
 
         assert len(result.attack_results["base64"]) == 0
@@ -524,12 +539,14 @@ class TestScenarioResult:
     def test_scenario_result_objective_achieved_rate(self, sample_attack_results):
         """Test objective_achieved_rate calculation."""
         identifier = ScenarioIdentifier(name="Test", scenario_version=1)
+        mock_scorer = create_mock_scorer()
 
         # All successful
         result = ScenarioResult(
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": sample_attack_results},
+            objective_scorer=mock_scorer,
         )
         assert result.objective_achieved_rate() == 100
 
@@ -554,6 +571,7 @@ class TestScenarioResult:
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": mixed_results},
+            objective_scorer=mock_scorer,
         )
         assert result2.objective_achieved_rate() == 60  # 3 out of 5
 

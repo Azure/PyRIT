@@ -6,7 +6,7 @@ import logging
 import base2048
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,9 @@ class Base2048Converter(PromptConverter):
     This can be useful for obfuscating text or testing how systems
     handle encoded Unicode content.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(self) -> None:
         """Initialize the Base2048Converter."""
@@ -46,9 +49,3 @@ class Base2048Converter(PromptConverter):
         encoded_bytes = base2048.encode(string_bytes)
 
         return ConverterResult(output_text=encoded_bytes, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

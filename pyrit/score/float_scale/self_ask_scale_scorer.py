@@ -87,6 +87,7 @@ class SelfAskScaleScorer(FloatScaleScorer):
         """Build the scorer evaluation identifier for this scorer."""
         self._set_scorer_identifier(
             system_prompt_template=self._system_prompt,
+            user_prompt_template="objective: {objective}\nresponse: {response}",
             prompt_target=self._prompt_target,
         )
 
@@ -127,7 +128,6 @@ class SelfAskScaleScorer(FloatScaleScorer):
         return [score]
 
     def _validate_scale_arguments_set(self, scale_args: dict):
-
         try:
             minimum_value = scale_args["minimum_value"]
             maximum_value = scale_args["maximum_value"]

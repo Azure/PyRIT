@@ -5,6 +5,9 @@ dbdata/
 eval/
 default_memory.json.memory
 
+# Frontend build artifacts copied to backend for packaging
+pyrit/backend/frontend/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -174,6 +177,9 @@ cython_debug/
 # Cache for generating docs
 doc/generate_docs/cache/*
 !doc/generate_docs/cache/.gitkeep
+
+# nbstrip output
+*_nbqa_ipynb.py
 
 # Jupyterbook build files
 doc/_build/

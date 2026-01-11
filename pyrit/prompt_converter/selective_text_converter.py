@@ -3,8 +3,7 @@
 
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_converter.prompt_converter import ConverterResult
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.text_selection_strategy import (
     AllWordsSelectionStrategy,
     TextSelectionStrategy,
@@ -26,7 +25,7 @@ class SelectiveTextConverter(PromptConverter):
     Most use cases will use word-level strategies for more intuitive selection.
 
     Example:
-        >>> from pyrit.prompt_converter import Base64Converter, SelectiveTextConverter
+        >>> from pyrit.prompt_converter.prompt_converter import Base64Converter, SelectiveTextConverter
         >>> from pyrit.prompt_converter.text_selection_strategy import WordRegexSelectionStrategy
         >>>
         >>> # Convert only words matching a pattern
@@ -41,6 +40,9 @@ class SelectiveTextConverter(PromptConverter):
         ... )
         >>> # Result: "The code is ⟪MTIzNDU=⟫ here"
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
         self,
@@ -208,27 +210,3 @@ class SelectiveTextConverter(PromptConverter):
 
         final_text = f"{before_text}{converted_text}{after_text}"
         return ConverterResult(output_text=final_text, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        """
-        Checks if the input type is supported.
-
-        Args:
-            input_type (PromptDataType): The input type to check.
-
-        Returns:
-            bool: True if the input type is "text", False otherwise.
-        """
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        """
-        Checks if the output type is supported.
-
-        Args:
-            output_type (PromptDataType): The output type to check.
-
-        Returns:
-            bool: True if the output type is "text", False otherwise.
-        """
-        return output_type == "text"

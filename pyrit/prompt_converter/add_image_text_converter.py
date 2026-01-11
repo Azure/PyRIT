@@ -10,7 +10,7 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
 from pyrit.models import PromptDataType, data_serializer_factory
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,9 @@ class AddImageTextConverter(PromptConverter):
     This class is similar to :class:`AddTextImageConverter` except
     we pass in an image file path as an argument to the constructor as opposed to text.
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("image_path",)
 
     def __init__(
         self,
@@ -148,9 +151,3 @@ class AddImageTextConverter(PromptConverter):
         # Save image as generated UUID filename
         await img_serializer.save_b64_image(data=image_str)
         return ConverterResult(output_text=str(img_serializer.value), output_type="image_path")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "image_path"

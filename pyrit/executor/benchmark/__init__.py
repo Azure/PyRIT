@@ -3,8 +3,8 @@
 
 """Benchmark modules."""
 
-from pyrit.executor.benchmark.fairness_bias import FairnessBiasBenchmarkContext, FairnessBiasBenchmark
-from pyrit.executor.benchmark.question_answering import QuestionAnsweringBenchmarkContext, QuestionAnsweringBenchmark
+from pyrit.executor.benchmark.fairness_bias import FairnessBiasBenchmark, FairnessBiasBenchmarkContext
+from pyrit.executor.benchmark.question_answering import QuestionAnsweringBenchmark, QuestionAnsweringBenchmarkContext
 
 __all__ = [
     "FairnessBiasBenchmarkContext",
