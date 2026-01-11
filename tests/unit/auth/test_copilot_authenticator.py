@@ -756,7 +756,7 @@ class TestCopilotAuthenticatorPlaywrightIntegration:
         """Test that password is sanitized in error messages."""
 
         mock_playwright = AsyncMock()
-        error_with_password = Exception(f"Login failed with password: test_password_123")
+        error_with_password = Exception("Login failed with password: test_password_123")
         mock_playwright.chromium.launch = AsyncMock(side_effect=error_with_password)
 
         mock_async_playwright = AsyncMock()

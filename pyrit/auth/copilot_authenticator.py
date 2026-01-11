@@ -92,7 +92,7 @@ class CopilotAuthenticator(Authenticator):
             raise ValueError("COPILOT_USERNAME and COPILOT_PASSWORD environment variables must be set.")
 
         self._token_cache = self._create_persistent_cache(self._cache_file, self._fallback_to_plaintext)
-        self._current_claims = {}  # for easy access to claims without re-decoding token
+        self._current_claims: dict = {}  # for easy access to claims without re-decoding token
 
         # Lock to prevent concurrent token fetches from launching multiple browsers
         self._token_fetch_lock = asyncio.Lock()

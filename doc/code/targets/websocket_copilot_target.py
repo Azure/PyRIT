@@ -34,6 +34,7 @@
 # The simplest way to interact with the `WebSocketCopilotTarget` is through the `PromptSendingAttack` class.
 
 # %%
+# type: ignore
 import asyncio
 import sys
 

@@ -153,7 +153,10 @@ class WebSocketCopilotTarget(PromptTarget):
 
             try:
                 data = json.loads(message)
-                msg_type = CopilotMessageType._value2member_map_.get(data.get("type", -1), CopilotMessageType.UNKNOWN)
+                try:
+                    msg_type = CopilotMessageType(data.get("type", -1))
+                except ValueError:
+                    msg_type = CopilotMessageType.UNKNOWN
 
                 if msg_type in (
                     CopilotMessageType.PING,
@@ -380,7 +383,8 @@ class WebSocketCopilotTarget(PromptTarget):
                             "WebSocket connection closed unexpectedly: received None from websocket.recv()"
                         )
 
-                    parsed_messages = self._parse_raw_message(raw_message)
+                    message_str = raw_message if isinstance(raw_message, str) else raw_message.decode("utf-8")
+                    parsed_messages = self._parse_raw_message(message_str)
 
                     for msg_type, content in parsed_messages:
                         if msg_type in (
