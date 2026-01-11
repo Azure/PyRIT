@@ -11,11 +11,14 @@ from pyrit.score.float_scale.float_scale_score_aggregator import (
 )
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+from pyrit.score.score_utils import ORIGINAL_FLOAT_VALUE_KEY
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class FloatScaleThresholdScorer(TrueFalseScorer):
     """A scorer that applies a threshold to a float scale score to make it a true/false score."""
+
+    ORIGINAL_FLOAT_VALUE_KEY: str = ORIGINAL_FLOAT_VALUE_KEY
 
     def __init__(
         self,
@@ -45,6 +48,11 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
 
         if threshold <= 0 or threshold > 1:
             raise ValueError("The threshold must be between 0 and 1")
+
+    @property
+    def threshold(self) -> float:
+        """Get the threshold value used for score comparison."""
+        return self._threshold
 
     def _build_scorer_identifier(self) -> None:
         """Build the scorer evaluation identifier for this scorer."""
@@ -111,6 +119,10 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
             score.score_value_description = aggregate_score.description
             score.id = uuid.uuid4()
             score.scorer_class_identifier = self.get_identifier()
+            # Store the original float value in metadata for granular comparison
+            if score.score_metadata is None:
+                score.score_metadata = {}
+            score.score_metadata[ORIGINAL_FLOAT_VALUE_KEY] = aggregate_value
         else:
             # Create new score from aggregator result (all pieces were filtered out)
             # Use the first message piece's id if available, otherwise generate a new UUID
@@ -130,7 +142,11 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
                     f"{aggregate_score.rationale}"
                 ),
                 score_category=aggregate_score.category,
-                score_metadata=aggregate_score.metadata,
+                # Include original float value in metadata for granular comparison
+                score_metadata={
+                    **aggregate_score.metadata,
+                    ORIGINAL_FLOAT_VALUE_KEY: aggregate_value,
+                },
                 scorer_class_identifier=self.get_identifier(),
                 message_piece_id=piece_id,
                 objective=objective,

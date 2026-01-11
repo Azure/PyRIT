@@ -49,6 +49,7 @@ from pyrit.score import (
     SelfAskRefusalScorer,
     SelfAskScaleScorer,
 )
+from pyrit.score.score_utils import normalize_score_to_float
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +65,20 @@ class CrescendoAttackContext(MultiTurnAttackContext):
     backtrack_count: int = 0
 
 
-@dataclass
 class CrescendoAttackResult(AttackResult):
     """Result of the Crescendo attack strategy execution."""
+
+    def __init__(self, *, backtrack_count: int = 0, **kwargs) -> None:
+        """
+        Initialize a CrescendoAttackResult.
+
+        Args:
+            backtrack_count: Number of backtracks performed during the attack.
+            **kwargs: All other arguments passed to AttackResult.
+        """
+        super().__init__(**kwargs)
+        # Store in metadata for database serialization
+        self.metadata["backtrack_count"] = backtrack_count
 
     @property
     def backtrack_count(self) -> int:
@@ -84,7 +96,7 @@ class CrescendoAttackResult(AttackResult):
         Set the number of backtracks performed during the attack.
 
         Args:
-            value (int): The number of backtracks to set.
+            value: The number of backtracks to set.
         """
         self.metadata["backtrack_count"] = value
 
@@ -387,20 +399,21 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             else f"Max turns ({self._max_turns}) reached without achieving objective"
         )
 
+        # Build common metadata for the attack result
+        metadata = self._get_attack_result_metadata(context=context, request_converters=self._request_converters)
+
         # Prepare the result
         result = CrescendoAttackResult(
-            attack_identifier=self.get_identifier(),
             conversation_id=context.session.conversation_id,
             objective=context.objective,
             outcome=(AttackOutcome.SUCCESS if achieved_objective else AttackOutcome.FAILURE),
             outcome_reason=outcome_reason,
             executed_turns=context.executed_turns,
-            last_response=context.last_response.get_piece() if context.last_response else None,
-            last_score=context.last_score,
-            related_conversations=context.related_conversations,  # Use related_conversations here
+            automated_objective_score=context.last_score,
+            related_conversations=context.related_conversations,
+            backtrack_count=context.backtrack_count,
+            **metadata,
         )
-        # setting metadata for backtrack count
-        result.backtrack_count = context.backtrack_count
         return result
 
     async def _teardown_async(self, *, context: CrescendoAttackContext) -> None:
@@ -478,7 +491,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             last_message_value = context.last_response.get_value()
 
             if last_message_value:
-                score_value = context.last_score.get_value()
+                score_value = normalize_score_to_float(context.last_score)
                 prompt_parts.extend(
                     [
                         f"\nThe target responded to the last question with: {last_message_value}",

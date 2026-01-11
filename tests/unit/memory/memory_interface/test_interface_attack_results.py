@@ -420,40 +420,39 @@ def test_get_attack_results_nonexistent_ids(sqlite_instance: MemoryInterface):
     assert len(retrieved_results) == 0
 
 
-def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInterface):
-    """Test attack result with last_response and last_score relationships."""
+def test_attack_result_with_objective_score_and_conversation(sqlite_instance: MemoryInterface):
+    """Test attack result with automated_objective_score and conversation retrieval."""
     # Create a message piece first
     message_piece = MessagePiece(
-        role="user",
-        original_value="Test prompt",
-        converted_value="Test prompt",
+        role="assistant",
+        original_value="Test response",
+        converted_value="Test response",
         conversation_id="conv_1",
     )
     assert message_piece.id is not None, "Message piece ID should not be None"
 
-    # Create a score
-    score = Score(
-        score_value="1.0",
-        score_type="float_scale",
-        score_category=["test_category"],
+    # Create a true_false score (required for objective scores)
+    objective_score = Score(
+        score_value="true",
+        score_type="true_false",
+        score_category=["objective"],
         scorer_class_identifier={"name": "test_scorer"},
         message_piece_id=message_piece.id,
-        score_value_description="Test score description",
+        score_value_description="Objective achieved",
         score_rationale="Test score rationale",
         score_metadata={"test": "metadata"},
     )
 
     # Add message piece and score to memory
     sqlite_instance.add_message_pieces_to_memory(message_pieces=[message_piece])
-    sqlite_instance.add_scores_to_memory(scores=[score])
+    sqlite_instance.add_scores_to_memory(scores=[objective_score])
 
-    # Create attack result with last_response and last_score
+    # Create attack result with automated_objective_score
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective="Test objective with relationships",
         attack_identifier={"name": "test_attack"},
-        last_response=message_piece,
-        last_score=score,
+        automated_objective_score=objective_score,
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -462,14 +461,18 @@ def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInter
     # Add attack result to memory
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
 
-    # Retrieve and verify relationships
+    # Retrieve and verify
     all_entries: Sequence[AttackResult] = sqlite_instance.get_attack_results()
     assert len(all_entries) == 1
     assert all_entries[0].conversation_id == "conv_1"
-    assert all_entries[0].last_response is not None
-    assert all_entries[0].last_response.id == message_piece.id
-    assert all_entries[0].last_score is not None
-    assert all_entries[0].last_score.id == score.id
+
+    # Verify objective_score is retrievable
+    assert all_entries[0].objective_score is not None
+    assert all_entries[0].objective_score.get_value() is True
+
+    # Verify conversation can be retrieved
+    conversation = all_entries[0].get_conversation()
+    assert len(conversation) == 1
 
 
 def test_attack_result_all_outcomes(sqlite_instance: MemoryInterface):
@@ -587,10 +590,10 @@ def test_attack_result_with_attack_generation_conversation_ids(sqlite_instance: 
 
     retrieved_result = entry.get_attack_result()
     assert {
-        r.conversation_id for r in retrieved_result.get_conversations_by_type(ConversationType.PRUNED)
+        r.conversation_id for r in retrieved_result.get_conversation_ids_by_type(ConversationType.PRUNED)
     } == pruned_ids
     assert {
-        r.conversation_id for r in retrieved_result.get_conversations_by_type(ConversationType.ADVERSARIAL)
+        r.conversation_id for r in retrieved_result.get_conversation_ids_by_type(ConversationType.ADVERSARIAL)
     } == adversarial_ids
 
 
@@ -612,8 +615,8 @@ def test_attack_result_without_attack_generation_conversation_ids(sqlite_instanc
     assert not entry.adversarial_chat_conversation_ids
 
     retrieved_result = entry.get_attack_result()
-    assert not retrieved_result.get_conversations_by_type(ConversationType.PRUNED)
-    assert not retrieved_result.get_conversations_by_type(ConversationType.ADVERSARIAL)
+    assert not retrieved_result.get_conversation_ids_by_type(ConversationType.PRUNED)
+    assert not retrieved_result.get_conversation_ids_by_type(ConversationType.ADVERSARIAL)
 
 
 def test_get_attack_results_by_harm_category_single(sqlite_instance: MemoryInterface):

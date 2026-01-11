@@ -402,7 +402,8 @@ class TestAttackExecution:
         # Should have called send_prompt_async for each message in sequence
         assert mock_prompt_normalizer.send_prompt_async.call_count == len(basic_context.params.user_messages)
         assert result.executed_turns == len(basic_context.params.user_messages)
-        assert result.last_response is not None
+        # Verify the last response was recorded in context
+        assert basic_context.last_response is not None
 
     @pytest.mark.asyncio
     async def test_perform_async_stops_on_failed_prompt(self, mock_target, mock_prompt_normalizer, basic_context):
@@ -661,7 +662,8 @@ class TestEdgeCasesAndErrorHandling:
         result = await attack._perform_async(context=context)
 
         assert result.executed_turns == 1
-        assert result.last_response is not None
+        # Verify the last response was recorded in context
+        assert context.last_response is not None
         assert mock_prompt_normalizer.send_prompt_async.call_count == 1
 
     def test_attack_has_unique_identifier(self, mock_target):

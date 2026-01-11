@@ -205,10 +205,11 @@ class PromptMemoryEntry(Base):
         self.timestamp = entry.timestamp
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
-        self.targeted_harm_categories = entry.targeted_harm_categories
-        self.converter_identifiers = entry.converter_identifiers
+        # Access private attributes to avoid deprecation warnings during DB operations
+        self.targeted_harm_categories = entry._targeted_harm_categories
+        self.converter_identifiers = entry._converter_identifiers
         self.prompt_target_identifier = entry.prompt_target_identifier
-        self.attack_identifier = entry.attack_identifier
+        self.attack_identifier = entry._attack_identifier
 
         self.original_value = entry.original_value
         self.original_value_data_type = entry.original_value_data_type  # type: ignore
@@ -309,7 +310,7 @@ class ScoreEntry(Base):
     score_type: Mapped[Literal["true_false", "float_scale"]] = mapped_column(String, nullable=False)
     score_category: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     score_rationale = mapped_column(String, nullable=True)
-    score_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
+    score_metadata: Mapped[dict[str, Union[str, int, float]]] = mapped_column(JSON)
     scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_request_response_id = mapped_column(CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = mapped_column(DateTime, nullable=False)
@@ -669,8 +670,14 @@ class AttackResultEntry(Base):
         objective (str): Natural-language description of the attacker's objective.
         attack_identifier (dict[str, str]): Identifier of the attack (e.g., name, module).
         objective_sha256 (str): The SHA256 hash of the objective.
-        last_response_id (Uuid): Foreign key to the last response MessagePiece.
-        last_score_id (Uuid): Foreign key to the last score ScoreEntry.
+        targeted_harm_categories (List[str]): Harm categories associated with this attack.
+        converter_identifiers (List[dict[str, str]]): Converter identifiers used during the attack.
+        prompt_target_identifier (dict[str, str]): Target identifier for the attack.
+        labels (dict[str, str]): Labels associated with this attack.
+        last_response_id (Uuid): Deprecated. Foreign key to the last response MessagePiece.
+        objective_score_id (Uuid): Foreign key to the objective score ScoreEntry.
+        human_score_id (Uuid): Foreign key to the human-set score ScoreEntry.
+        auxiliary_score_ids (List[str]): List of score IDs for auxiliary scores.
         executed_turns (int): Total number of turns that were executed.
         execution_time_ms (int): Total execution time of the attack in milliseconds.
         outcome (AttackOutcome): The outcome of the attack, indicating success, failure, or undetermined.
@@ -679,8 +686,9 @@ class AttackResultEntry(Base):
         pruned_conversation_ids (List[str]): List of conversation IDs that were pruned from the attack.
         adversarial_chat_conversation_ids (List[str]): List of conversation IDs used for adversarial chat.
         timestamp (DateTime): The timestamp of the attack result entry.
-        last_response (PromptMemoryEntry): Relationship to the last response prompt memory entry.
-        last_score (ScoreEntry): Relationship to the last score entry.
+        last_response (PromptMemoryEntry): Deprecated. Relationship to the last response prompt memory entry.
+        objective_score (ScoreEntry): Relationship to the objective score entry.
+        human_score (ScoreEntry): Relationship to the human score entry.
 
     Methods:
         __str__(): Returns a string representation of the attack result entry.
@@ -693,12 +701,29 @@ class AttackResultEntry(Base):
     objective = mapped_column(Unicode, nullable=False)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
     objective_sha256 = mapped_column(String, nullable=True)
+
+    targeted_harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    request_converter_identifiers: Mapped[Optional[List[dict[str, str]]]] = mapped_column(JSON, nullable=True)
+    objective_target_identifier: Mapped[Optional[dict[str, str]]] = mapped_column(JSON, nullable=True)
+    labels: Mapped[Optional[dict[str, str]]] = mapped_column(JSON, nullable=True)
+
+    # Deprecated: last_response_id - will be removed in 0.13.0
     last_response_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), nullable=True
     )
+    # Deprecated: last_score_id - use objective_score_id instead
     last_score_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         CustomUUID, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
     )
+
+    objective_score_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        CustomUUID, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
+    )
+    human_score_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        CustomUUID, ForeignKey(f"{ScoreEntry.__tablename__}.id"), nullable=True
+    )
+    auxiliary_score_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+
     executed_turns = mapped_column(INTEGER, nullable=False, default=0)
     execution_time_ms = mapped_column(INTEGER, nullable=False, default=0)
     outcome: Mapped[Literal["success", "failure", "undetermined"]] = mapped_column(
@@ -710,6 +735,7 @@ class AttackResultEntry(Base):
     adversarial_chat_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
 
+    # Deprecated relationship last_response and last_score - will be removed in 0.13.0
     last_response: Mapped[Optional["PromptMemoryEntry"]] = relationship(
         "PromptMemoryEntry",
         foreign_keys=[last_response_id],
@@ -717,6 +743,15 @@ class AttackResultEntry(Base):
     last_score: Mapped[Optional["ScoreEntry"]] = relationship(
         "ScoreEntry",
         foreign_keys=[last_score_id],
+    )
+
+    objective_score: Mapped[Optional["ScoreEntry"]] = relationship(
+        "ScoreEntry",
+        foreign_keys=[objective_score_id],
+    )
+    human_score: Mapped[Optional["ScoreEntry"]] = relationship(
+        "ScoreEntry",
+        foreign_keys=[human_score_id],
     )
 
     def __init__(self, *, entry: AttackResult):
@@ -732,9 +767,22 @@ class AttackResultEntry(Base):
         self.attack_identifier = entry.attack_identifier
         self.objective_sha256 = to_sha256(entry.objective)
 
-        # Use helper method for UUID conversions
-        self.last_response_id = self._get_id_as_uuid(entry.last_response)
-        self.last_score_id = self._get_id_as_uuid(entry.last_score)
+        self.targeted_harm_categories = entry.targeted_harm_categories
+        self.request_converter_identifiers = entry.request_converter_identifiers
+        self.objective_target_identifier = entry.objective_target_identifier
+        self.labels = entry.labels
+
+        # Deprecated: last_response_id - no longer stored, kept for backward compatibility
+        # The last response can be retrieved via conversation_id
+        self.last_response_id = None
+
+        # Scoring fields
+        self.objective_score_id = self._get_id_as_uuid(entry.automated_objective_score)
+        self.human_score_id = self._get_id_as_uuid(entry.human_objective_score)
+        self.auxiliary_score_ids = entry.auxiliary_score_ids if entry.auxiliary_score_ids else None
+
+        # Deprecated: last_score_id - kept for backward compatibility
+        self.last_score_id = self.objective_score_id
 
         self.executed_turns = entry.executed_turns
         self.execution_time_ms = entry.execution_time_ms
@@ -744,11 +792,11 @@ class AttackResultEntry(Base):
 
         # Persist conversation references by type
         self.pruned_conversation_ids = [
-            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.PRUNED)
+            ref.conversation_id for ref in entry.get_conversation_ids_by_type(ConversationType.PRUNED)
         ] or None
 
         self.adversarial_chat_conversation_ids = [
-            ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.ADVERSARIAL)
+            ref.conversation_id for ref in entry.get_conversation_ids_by_type(ConversationType.ADVERSARIAL)
         ] or None
 
         self.timestamp = datetime.now()
@@ -826,12 +874,17 @@ class AttackResultEntry(Base):
                 )
             )
 
-        return AttackResult(
+        result = AttackResult(
             conversation_id=self.conversation_id,
             objective=self.objective,
             attack_identifier=self.attack_identifier,
-            last_response=self.last_response.get_message_piece() if self.last_response else None,
-            last_score=self.last_score.get_score() if self.last_score else None,
+            targeted_harm_categories=self.targeted_harm_categories,
+            request_converter_identifiers=self.request_converter_identifiers,
+            objective_target_identifier=self.objective_target_identifier,
+            labels=self.labels,
+            automated_objective_score=self.objective_score.get_score() if self.objective_score else None,
+            human_objective_score=self.human_score.get_score() if self.human_score else None,
+            auxiliary_score_ids=self.auxiliary_score_ids or [],
             executed_turns=self.executed_turns,
             execution_time_ms=self.execution_time_ms,
             outcome=AttackOutcome(self.outcome),
@@ -839,6 +892,8 @@ class AttackResultEntry(Base):
             related_conversations=related_conversations,
             metadata=self.attack_metadata or {},
         )
+
+        return result
 
 
 class ScenarioResultEntry(Base):

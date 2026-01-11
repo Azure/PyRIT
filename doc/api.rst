@@ -198,6 +198,7 @@ API Reference
     TAPAttack
     TAPAttackContext
     TAPAttackResult
+    TAPAttackScoringConfig
     TreeOfAttacksWithPruningAttack
 
 :py:mod:`pyrit.executor.promptgen`

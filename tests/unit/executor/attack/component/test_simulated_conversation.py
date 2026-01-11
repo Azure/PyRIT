@@ -263,7 +263,16 @@ class TestGenerateSimulatedConversationAsync:
     ):
         """Test that the function returns a list of SeedPrompts."""
         conversation_id = str(uuid.uuid4())
-        mock_score = MagicMock(spec=Score)
+        # Create a proper true_false score for automated_objective_score
+        mock_score = Score(
+            score_type="true_false",
+            score_value="true",
+            score_category=["objective"],
+            score_value_description="Objective achieved",
+            score_rationale="Test rationale",
+            scorer_class_identifier={"__type__": "TrueFalseScorer"},
+            message_piece_id=str(uuid.uuid4()),
+        )
 
         with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
@@ -275,7 +284,7 @@ class TestGenerateSimulatedConversationAsync:
                     objective="Test objective",
                     outcome=AttackOutcome.SUCCESS,
                     executed_turns=3,
-                    last_score=mock_score,
+                    automated_objective_score=mock_score,
                 )
             )
             mock_attack_class.return_value = mock_attack

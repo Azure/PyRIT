@@ -136,7 +136,7 @@ class MemoryInterface(abc.ABC):
 
     @abc.abstractmethod
     def _get_message_pieces_prompt_metadata_conditions(
-        self, *, prompt_metadata: dict[str, Union[str, int]]
+        self, *, prompt_metadata: dict[str, Union[str, int, float]]
     ) -> list[Any]:
         """
         Return a list of conditions for filtering memory entries based on prompt metadata.
@@ -156,7 +156,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
+    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int, float]]) -> Any:
         """
         Return a condition for filtering seed prompt entries based on prompt metadata.
 
@@ -388,7 +388,7 @@ class MemoryInterface(abc.ABC):
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
-        prompt_metadata: Optional[dict[str, Union[str, int]]] = None,
+        prompt_metadata: Optional[dict[str, Union[str, int, float]]] = None,
         sent_after: Optional[datetime] = None,
         sent_before: Optional[datetime] = None,
         original_values: Optional[Sequence[str]] = None,
@@ -407,8 +407,8 @@ class MemoryInterface(abc.ABC):
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
                 Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
-            prompt_metadata (Optional[dict[str, Union[str, int]]], optional): The metadata associated with the prompt.
-                Defaults to None.
+            prompt_metadata (Optional[dict[str, Union[str, int, float]]], optional): The metadata associated with the
+                prompt. Defaults to None.
             sent_after (Optional[datetime], optional): Filter for prompts sent after this datetime. Defaults to None.
             sent_before (Optional[datetime], optional): Filter for prompts sent before this datetime. Defaults to None.
             original_values (Optional[Sequence[str]], optional): A list of original values. Defaults to None.
@@ -495,7 +495,7 @@ class MemoryInterface(abc.ABC):
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[Sequence[str | uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
-        prompt_metadata: Optional[dict[str, Union[str, int]]] = None,
+        prompt_metadata: Optional[dict[str, Union[str, int, float]]] = None,
         sent_after: Optional[datetime] = None,
         sent_before: Optional[datetime] = None,
         original_values: Optional[Sequence[str]] = None,
@@ -514,7 +514,7 @@ class MemoryInterface(abc.ABC):
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
                 Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
-            prompt_metadata (Optional[dict[str, Union[str, int]]], optional): The metadata associated with the prompt.
+            prompt_metadata (Optional[dict[str, Union[str, int, float]]], optional): The metadata associated with the prompt.
                 Defaults to None.
             sent_after (Optional[datetime], optional): Filter for prompts sent after this datetime. Defaults to None.
             sent_before (Optional[datetime], optional): Filter for prompts sent before this datetime. Defaults to None.
@@ -743,7 +743,7 @@ class MemoryInterface(abc.ABC):
         )
 
     def update_prompt_metadata_by_conversation_id(
-        self, *, conversation_id: str, prompt_metadata: dict[str, Union[str, int]]
+        self, *, conversation_id: str, prompt_metadata: dict[str, Union[str, int, float]]
     ) -> bool:
         """
         Update the metadata of prompt entries in memory for a given conversation ID.
@@ -791,7 +791,7 @@ class MemoryInterface(abc.ABC):
         seed_type: Optional[SeedType] = None,
         is_objective: Optional[bool] = None,  # Deprecated in 0.13.0: Use seed_type instead
         parameters: Optional[Sequence[str]] = None,
-        metadata: Optional[dict[str, Union[str, int]]] = None,
+        metadata: Optional[dict[str, Union[str, int, float]]] = None,
         prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
     ) -> Sequence[Seed]:
         """
@@ -1060,7 +1060,7 @@ class MemoryInterface(abc.ABC):
         seed_type: Optional[SeedType] = None,
         is_objective: Optional[bool] = None,  # Deprecated in 0.13.0: Use seed_type instead
         parameters: Optional[Sequence[str]] = None,
-        metadata: Optional[dict[str, Union[str, int]]] = None,
+        metadata: Optional[dict[str, Union[str, int, float]]] = None,
         prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
         group_length: Optional[Sequence[int]] = None,
     ) -> Sequence[SeedGroup]:
@@ -1086,7 +1086,7 @@ class MemoryInterface(abc.ABC):
                 "simulated_conversation").
             is_objective (bool): Deprecated in 0.13.0. Use seed_type="objective" instead.
             parameters (Optional[Sequence[str]], Optional): List of parameters to filter by.
-            metadata (Optional[dict[str, Union[str, int]]], Optional): A free-form dictionary for tagging
+            metadata (Optional[dict[str, Union[str, int, float]]], Optional): A free-form dictionary for tagging
                 prompts with custom metadata.
             prompt_group_ids (Optional[Sequence[uuid.UUID]], Optional): List of prompt group IDs to filter by.
             group_length (Optional[Sequence[int]], Optional): The number of seeds in the group to filter by.

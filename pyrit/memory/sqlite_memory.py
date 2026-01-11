@@ -140,7 +140,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         return [condition]
 
     def _get_message_pieces_prompt_metadata_conditions(
-        self, *, prompt_metadata: dict[str, Union[str, int]]
+        self, *, prompt_metadata: dict[str, Union[str, int, float]]
     ) -> list[TextClause]:
         """
         Generate SQLAlchemy filter conditions for filtering conversation pieces by prompt metadata.
@@ -165,7 +165,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         """
         return text("JSON_EXTRACT(attack_identifier, '$.id') = :attack_id").bindparams(attack_id=str(attack_id))
 
-    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
+    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int, float]]) -> Any:
         """
         Generate SQLAlchemy filter conditions for filtering seed prompts by metadata.
 
@@ -232,6 +232,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                     query = query.options(
                         joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
                         joinedload(AttackResultEntry.last_score),
+                        joinedload(AttackResultEntry.objective_score),
+                        joinedload(AttackResultEntry.human_score),
                     )
                 if conditions is not None:
                     query = query.filter(conditions)

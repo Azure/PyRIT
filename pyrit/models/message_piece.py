@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from datetime import datetime
 from typing import Dict, List, Literal, Optional, Union, cast, get_args
 from uuid import uuid4
@@ -104,10 +105,14 @@ class MessagePiece:
         self.labels = labels or {}
         self.prompt_metadata = prompt_metadata or {}
 
-        self.converter_identifiers = converter_identifiers if converter_identifiers else []
-
         self.prompt_target_identifier = prompt_target_identifier or {}
-        self.attack_identifier = attack_identifier or {}
+
+        # Private backing fields for deprecated properties
+        # These are moving to AttackResult in 0.13.0
+        self._converter_identifiers = converter_identifiers if converter_identifiers else []
+        self._attack_identifier = attack_identifier or {}
+        self._targeted_harm_categories = targeted_harm_categories if targeted_harm_categories else []
+
         self.scorer_identifier = scorer_identifier or {}
 
         self.original_value = original_value
@@ -138,7 +143,72 @@ class MessagePiece:
         self.original_prompt_id = original_prompt_id or self.id
 
         self.scores = scores if scores else []
-        self.targeted_harm_categories = targeted_harm_categories if targeted_harm_categories else []
+
+    # Deprecated properties - converter_identifiers, attack_identifier, targeted_harm_categories
+    # are moving to AttackResult in 0.13.0.
+
+    @property
+    def converter_identifiers(self) -> List[Dict[str, str]]:
+        """
+        Deprecated: The converter identifiers for the prompt.
+
+        This attribute is deprecated and will be removed in 0.13.0.
+        Use AttackResult.request_converter_identifiers instead.
+        """
+        warnings.warn(
+            "MessagePiece.converter_identifiers is deprecated and will be removed in 0.13.0. "
+            "Use AttackResult.request_converter_identifiers instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._converter_identifiers
+
+    @converter_identifiers.setter
+    def converter_identifiers(self, value: Optional[List[Dict[str, str]]]) -> None:
+        """Set the converter identifiers."""
+        self._converter_identifiers = value if value else []
+
+    @property
+    def attack_identifier(self) -> Dict[str, str]:
+        """
+        Deprecated: The attack identifier for the prompt.
+
+        This attribute is deprecated and will be removed in 0.13.0.
+        Use AttackResult.attack_identifier instead.
+        """
+        warnings.warn(
+            "MessagePiece.attack_identifier is deprecated and will be removed in 0.13.0. "
+            "Use AttackResult.attack_identifier instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._attack_identifier
+
+    @attack_identifier.setter
+    def attack_identifier(self, value: Optional[Dict[str, str]]) -> None:
+        """Set the attack identifier."""
+        self._attack_identifier = value or {}
+
+    @property
+    def targeted_harm_categories(self) -> List[str]:
+        """
+        Deprecated: The harm categories associated with the prompt.
+
+        This attribute is deprecated and will be removed in 0.13.0.
+        Use AttackResult.targeted_harm_categories instead.
+        """
+        warnings.warn(
+            "MessagePiece.targeted_harm_categories is deprecated and will be removed in 0.13.0. "
+            "Use AttackResult.targeted_harm_categories instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._targeted_harm_categories
+
+    @targeted_harm_categories.setter
+    def targeted_harm_categories(self, value: Optional[List[str]]) -> None:
+        """Set the targeted harm categories."""
+        self._targeted_harm_categories = value if value else []
 
     async def set_sha256_values_async(self) -> None:
         """
@@ -255,6 +325,7 @@ class MessagePiece:
         self.id = None
 
     def to_dict(self) -> dict:
+        # Use private attributes to avoid deprecation warnings
         return {
             "id": str(self.id),
             "role": self._role,
@@ -262,11 +333,11 @@ class MessagePiece:
             "sequence": self.sequence,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "labels": self.labels,
-            "targeted_harm_categories": self.targeted_harm_categories if self.targeted_harm_categories else None,
+            "targeted_harm_categories": self._targeted_harm_categories if self._targeted_harm_categories else None,
             "prompt_metadata": self.prompt_metadata,
-            "converter_identifiers": self.converter_identifiers,
+            "converter_identifiers": self._converter_identifiers,
             "prompt_target_identifier": self.prompt_target_identifier,
-            "attack_identifier": self.attack_identifier,
+            "attack_identifier": self._attack_identifier,
             "scorer_identifier": self.scorer_identifier,
             "original_value_data_type": self.original_value_data_type,
             "original_value": self.original_value,

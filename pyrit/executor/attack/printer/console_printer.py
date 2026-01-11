@@ -222,7 +222,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
             result (AttackResult): The attack result to summarize. Must contain
                 objective, attack_identifier, conversation_id, executed_turns,
                 execution_time_ms, outcome, and optionally outcome_reason and
-                last_score attributes.
+                objective_score attributes.
         """
         self._print_section_header("Attack Summary")
 
@@ -259,10 +259,10 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
             self._print_colored(f"{self._indent * 2}• Reason: {result.outcome_reason}", Fore.WHITE)
 
         # Final score
-        if result.last_score:
+        if result.objective_score:
             print()
-            self._print_colored(f"{self._indent} Final Score", Style.BRIGHT)
-            self._print_score(result.last_score, indent_level=2)
+            self._print_colored(f"{self._indent}📊 Objective Score", Style.BRIGHT)
+            self._print_score(result.objective_score, indent_level=2)
 
     def _print_header(self, result: AttackResult) -> None:
         """

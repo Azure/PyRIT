@@ -226,16 +226,18 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)
 
+        # Build common metadata for the attack result
+        metadata = self._get_attack_result_metadata(context=context, request_converters=self._request_converters)
+
         result = AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
-            attack_identifier=self.get_identifier(),
-            last_response=response.get_piece() if response else None,
-            last_score=score,
+            automated_objective_score=score,
             related_conversations=context.related_conversations,
             outcome=outcome,
             outcome_reason=outcome_reason,
             executed_turns=1,
+            **metadata,
         )
 
         return result

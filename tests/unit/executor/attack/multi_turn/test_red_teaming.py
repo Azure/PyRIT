@@ -1285,17 +1285,14 @@ class TestAttackExecution:
         assert mock_prompt_normalizer.send_prompt_async.call_count == 1
 
     @pytest.mark.parametrize(
-        "scorer_type,score_value,threshold,expected_achieved",
+        "scorer_type,score_value,expected_achieved",
         [
-            ("true_false", "true", 0.8, True),
-            ("true_false", "false", 0.8, False),
-            ("float_scale", "0.9", 0.8, True),
-            ("float_scale", "0.7", 0.8, False),
-            ("float_scale", "0.8", 0.8, True),  # Edge case: equal to threshold
+            ("true_false", "true", True),
+            ("true_false", "false", False),
         ],
     )
     @pytest.mark.asyncio
-    async def test_perform_attack_with_different_scoring_thresholds(
+    async def test_perform_attack_with_different_score_values(
         self,
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
@@ -1305,15 +1302,12 @@ class TestAttackExecution:
         sample_response: Message,
         scorer_type: ScoreType,
         score_value: str,
-        threshold: float,
         expected_achieved: bool,
     ):
-        """Test attack execution with different scoring thresholds."""
+        """Test attack execution with different score values."""
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(
-            objective_scorer=mock_objective_scorer, successful_objective_threshold=threshold
-        )
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
         attack = RedTeamingAttack(
             objective_target=mock_objective_target,
@@ -1428,8 +1422,7 @@ class TestAttackLifecycle:
                             attack_identifier=attack.get_identifier(),
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
-                            last_response=sample_response.get_piece(),
-                            last_score=success_score,
+                            automated_objective_score=success_score,
                         )
 
                         # Execute using execute_async
@@ -1510,8 +1503,7 @@ class TestAttackLifecycle:
                             attack_identifier=attack.get_identifier(),
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
-                            last_response=sample_response.get_piece(),
-                            last_score=success_score,
+                            automated_objective_score=success_score,
                         )
 
                         # Execute using execute_with_context_async

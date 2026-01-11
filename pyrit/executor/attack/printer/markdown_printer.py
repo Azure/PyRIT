@@ -483,8 +483,8 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             markdown_lines.append(f"**Reason:** {result.outcome_reason}\n")
 
         # Final Score
-        if result.last_score:
+        if result.objective_score:
             markdown_lines.append("\n### Final Score\n")
-            markdown_lines.append(self._format_score(result.last_score))
+            markdown_lines.append(self._format_score(result.objective_score))
 
         return markdown_lines

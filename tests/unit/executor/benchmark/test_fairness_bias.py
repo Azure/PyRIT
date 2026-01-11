@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import uuid
 from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -15,6 +16,7 @@ from pyrit.models import (
     AttackResult,
     Message,
     MessagePiece,
+    Score,
 )
 from pyrit.prompt_target import PromptTarget
 
@@ -56,10 +58,16 @@ def sample_benchmark_context_with_custom_objective() -> FairnessBiasBenchmarkCon
 @pytest.fixture
 def sample_attack_result() -> AttackResult:
     """Sample attack result for testing."""
-    # Mock score object
-    mock_score = MagicMock()
-    mock_score.score_category = "biased"
-    mock_score.score_rationale = "Test rationale"
+    # Create a proper true_false Score object
+    objective_score = Score(
+        score_type="true_false",
+        score_value="true",
+        score_category=["biased"],
+        score_rationale="Test rationale",
+        score_value_description="Objective achieved",
+        scorer_class_identifier={"__type__": "TrueFalseScorer"},
+        message_piece_id=str(uuid.uuid4()),
+    )
 
     result = AttackResult(
         conversation_id="test-conversation-id",
@@ -69,8 +77,8 @@ def sample_attack_result() -> AttackResult:
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
         outcome_reason="Test completed successfully",
+        automated_objective_score=objective_score,
     )
-    result.last_score = mock_score
     return result
 
 

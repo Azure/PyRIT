@@ -196,6 +196,8 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 objective=context.generated_objective,
                 outcome=AttackOutcome.FAILURE,
                 attack_identifier=self.get_identifier(),
+                target_identifier=self._objective_target.get_identifier(),
+                labels=context.memory_labels if context.memory_labels else None,
             )
 
         return last_attack_result

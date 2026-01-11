@@ -17,9 +17,9 @@ from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackParameters,
-    AttackScoringConfig,
     TAPAttackContext,
     TAPAttackResult,
+    TAPAttackScoringConfig,
     TreeOfAttacksWithPruningAttack,
 )
 from pyrit.executor.attack.multi_turn.tree_of_attacks import _TreeOfAttacksNode
@@ -34,7 +34,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import Scorer, TrueFalseScorer
+from pyrit.score import FloatScaleThresholdScorer, Scorer, TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,11 @@ class MockNodeFactory:
 
         # Set up objective score
         if config.objective_score_value is not None:
-            node.objective_score = MagicMock(get_value=MagicMock(return_value=config.objective_score_value))
+            mock_score = MagicMock()
+            mock_score.get_value = MagicMock(return_value=config.objective_score_value)
+            mock_score.score_metadata = None  # Ensure _normalize_score_to_float falls back to get_value()
+            mock_score.score_type = "true_false"  # Required for AttackResult validation
+            node.objective_score = mock_score
         else:
             node.objective_score = None
 
@@ -152,7 +156,7 @@ class AttackBuilder:
         """Set up default mocks for all required components."""
         self.objective_target = self._create_mock_target()
         self.adversarial_chat = self._create_mock_chat()
-        self.objective_scorer = self._create_mock_scorer("MockScorer")
+        self.objective_scorer = self._create_mock_scorer("MockScorer", self.successful_threshold)
         return self
 
     def with_tree_params(self, **kwargs) -> "AttackBuilder":
@@ -181,10 +185,9 @@ class AttackBuilder:
         """Build the attack instance."""
         assert self.adversarial_chat is not None, "Adversarial chat target must be set."
         adversarial_config = AttackAdversarialConfig(target=self.adversarial_chat)
-        scoring_config = AttackScoringConfig(
-            objective_scorer=cast(TrueFalseScorer, self.objective_scorer),
+        scoring_config = TAPAttackScoringConfig(
+            objective_scorer=cast(FloatScaleThresholdScorer, self.objective_scorer),
             auxiliary_scorers=self.auxiliary_scorers,
-            successful_objective_threshold=self.successful_threshold,
         )
 
         kwargs = {
@@ -215,12 +218,13 @@ class AttackBuilder:
         return cast(PromptChatTarget, chat)
 
     @staticmethod
-    def _create_mock_scorer(name: str) -> TrueFalseScorer:
-        scorer = MagicMock(spec=TrueFalseScorer)
+    def _create_mock_scorer(name: str, threshold: float = 0.8) -> FloatScaleThresholdScorer:
+        scorer = MagicMock(spec=FloatScaleThresholdScorer)
         scorer.scorer_type = "true_false"
         scorer.score_async = AsyncMock(return_value=[])
         scorer.get_identifier.return_value = {"__type__": name, "__module__": "test_module"}
-        return cast(TrueFalseScorer, scorer)
+        scorer.threshold = threshold
+        return cast(FloatScaleThresholdScorer, scorer)
 
     @staticmethod
     def _create_mock_aux_scorer(name: str) -> Scorer:
@@ -245,12 +249,12 @@ class TestHelpers:
         return context
 
     @staticmethod
-    def create_score(value: float = 0.9) -> Score:
+    def create_score(value: bool = True) -> Score:
         """Create a mock Score object."""
         return Score(
             id=None,
-            score_type="float_scale",
-            score_value=str(value),
+            score_type="true_false",
+            score_value="true" if value else "false",
             score_category=["test"],
             score_value_description="Test score",
             score_rationale="Test rationale",
@@ -361,14 +365,14 @@ class TestTreeOfAttacksInitialization:
 
     def test_get_attack_scoring_config_returns_config(self, attack_builder):
         """Test that get_attack_scoring_config returns the scoring configuration"""
-        attack = attack_builder.with_default_mocks().with_auxiliary_scorers(1).with_threshold(0.75).build()
+        attack = attack_builder.with_threshold(0.75).with_default_mocks().with_auxiliary_scorers(1).build()
 
         result = attack.get_attack_scoring_config()
 
         assert result is not None
         assert result.objective_scorer == attack_builder.objective_scorer
         assert len(result.auxiliary_scorers) == 1
-        assert result.successful_objective_threshold == 0.75
+        assert result.threshold == 0.75  # TAPAttackScoringConfig.threshold gets it from the scorer
 
     @pytest.mark.asyncio
     async def test_tree_depth_validation_with_prepended_conversation(self, attack_builder, helpers):
@@ -522,7 +526,7 @@ class TestPruningLogic:
         context = helpers.create_basic_context()
 
         # Set existing best
-        existing_score = helpers.create_score(0.8)
+        existing_score = helpers.create_score(True)
         context.best_objective_score = existing_score
         context.best_conversation_id = "existing_conv_id"
 
@@ -675,23 +679,30 @@ class TestHelperMethods:
 
     def test_is_objective_achieved(self, attack_builder, helpers):
         """Test _is_objective_achieved logic."""
-        attack = attack_builder.with_default_mocks().with_threshold(0.8).build()
+        attack = attack_builder.with_threshold(0.8).with_default_mocks().build()
         context = helpers.create_basic_context()
+
+        def create_mock_score(value: float) -> MagicMock:
+            """Create a mock score with score_metadata set to None."""
+            score = MagicMock()
+            score.get_value = MagicMock(return_value=value)
+            score.score_metadata = None
+            return score
 
         # Test 1: No score available
         context.best_objective_score = None
         assert attack._is_objective_achieved(context=context) is False
 
         # Test 2: Score below threshold
-        context.best_objective_score = MagicMock(get_value=MagicMock(return_value=0.5))
+        context.best_objective_score = create_mock_score(0.5)
         assert attack._is_objective_achieved(context=context) is False
 
         # Test 3: Score at threshold
-        context.best_objective_score = MagicMock(get_value=MagicMock(return_value=0.8))
+        context.best_objective_score = create_mock_score(0.8)
         assert attack._is_objective_achieved(context=context) is True
 
         # Test 4: Score above threshold
-        context.best_objective_score = MagicMock(get_value=MagicMock(return_value=0.9))
+        context.best_objective_score = create_mock_score(0.9)
         assert attack._is_objective_achieved(context=context) is True
 
 
@@ -720,8 +731,7 @@ class TestEndToEndExecution:
             conversation_id="test_conv_id",
             objective="Test objective",
             attack_identifier=attack.get_identifier(),
-            last_response=None,
-            last_score=helpers.create_score(0.5),
+            automated_objective_score=helpers.create_score(False),
             executed_turns=1,
             execution_time_ms=100,
             outcome=AttackOutcome.FAILURE,
@@ -767,8 +777,7 @@ class TestEndToEndExecution:
             conversation_id="success_conv_id",
             objective="Test objective",
             attack_identifier=attack.get_identifier(),
-            last_response=None,
-            last_score=helpers.create_score(0.9),
+            automated_objective_score=helpers.create_score(True),
             executed_turns=1,
             execution_time_ms=100,
             outcome=AttackOutcome.SUCCESS,
@@ -1189,7 +1198,10 @@ class TestTreeOfAttacksVisualization:
         node = MagicMock()
         node.off_topic = False
         node.completed = True
-        node.objective_score = MagicMock(get_value=MagicMock(return_value=0.7))
+        mock_score = MagicMock()
+        mock_score.get_value = MagicMock(return_value=0.7)
+        mock_score.score_metadata = None  # Ensure _normalize_score_to_float uses get_value()
+        node.objective_score = mock_score
 
         result = basic_attack._format_node_result(node)
 
@@ -1349,7 +1361,7 @@ class TestTreeOfAttacksConversationTracking:
             ConversationReference(conversation_id="adv_conv_2", conversation_type=ConversationType.ADVERSARIAL),
         }
         context.best_conversation_id = "best_conv"
-        context.best_objective_score = helpers.create_score(0.9)
+        context.best_objective_score = helpers.create_score(True)
 
         # Create the result
         result = attack._create_attack_result(

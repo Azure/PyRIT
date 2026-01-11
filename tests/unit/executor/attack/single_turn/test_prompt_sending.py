@@ -645,8 +645,9 @@ class TestAttackExecution:
         assert result.outcome == AttackOutcome.UNDETERMINED
         assert result.outcome_reason == "No objective scorer configured"
         assert result.executed_turns == 1
-        assert result.last_response == sample_response.get_piece()
-        assert result.last_score is None
+        # Note: last_response is deprecated and gets data from get_conversation() which
+        # returns None in this test since there's no real conversation stored
+        assert result.objective_score is None
 
         # Verify only one attempt was made (no retries without scorer)
         attack._send_prompt_to_objective_target_async.assert_called_once()
@@ -675,8 +676,9 @@ class TestAttackExecution:
         result = await attack._perform_async(context=basic_context)
 
         # Verify completion after retry
-        assert result.last_response == sample_response.get_piece()
+        # Note: last_response is deprecated, verify via send call count
         assert attack._send_prompt_to_objective_target_async.call_count == 2
+        assert result.outcome == AttackOutcome.UNDETERMINED
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1018,7 +1020,6 @@ class TestAttackLifecycle:
             objective="Test objective",
             attack_identifier=attack.get_identifier(),
             outcome=AttackOutcome.SUCCESS,
-            last_response=sample_response.get_piece(),
         )
         attack._perform_async = AsyncMock(return_value=mock_result)
         attack._teardown_async = AsyncMock()

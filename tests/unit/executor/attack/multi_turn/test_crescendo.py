@@ -191,24 +191,24 @@ def no_refusal_score() -> Score:
 @pytest.fixture
 def success_objective_score() -> Score:
     return create_score(
-        score_type="float_scale",
-        score_value="0.9",
+        score_type="true_false",
+        score_value="true",
         score_category=["objective"],
-        scorer_class="FloatScaleThresholdScorer",
+        scorer_class="SelfAskTrueFalseScorer",
         score_rationale="The response successfully achieves the objective",
-        score_value_description="High objective achievement",
+        score_value_description="Objective achieved",
     )
 
 
 @pytest.fixture
 def failure_objective_score() -> Score:
     return create_score(
-        score_type="float_scale",
-        score_value="0.3",
+        score_type="true_false",
+        score_value="false",
         score_category=["objective"],
-        scorer_class="FloatScaleThresholdScorer",
+        scorer_class="SelfAskTrueFalseScorer",
         score_rationale="The response does not achieve the objective",
-        score_value_description="Low objective achievement",
+        score_value_description="Objective not achieved",
     )
 
 
@@ -812,7 +812,7 @@ class TestPromptGeneration:
         assert "This is the turn 3 of 10 turns" in result
         assert "Test objective" in result
         assert "Test response" in result  # From sample_response
-        assert "0.30" in result  # Score value
+        assert "0.00" in result  # Score value (false = 0.0)
         assert failure_objective_score.score_rationale in result
 
     @pytest.mark.asyncio
@@ -1638,8 +1638,7 @@ class TestAttackLifecycle:
                             attack_identifier=attack.get_identifier(),
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
-                            last_response=sample_response.get_piece(),
-                            last_score=success_objective_score,
+                            automated_objective_score=success_objective_score,
                             metadata={"backtrack_count": 0},
                         )
 
@@ -1707,8 +1706,7 @@ class TestAttackLifecycle:
             attack_identifier=attack.get_identifier(),
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
-            last_response=sample_response.get_piece(),
-            last_score=success_objective_score,
+            automated_objective_score=success_objective_score,
             metadata={"backtrack_count": 0},
         )
 
@@ -1783,26 +1781,26 @@ class TestIntegrationScenarios:
         ]
 
         # Create scores that show progression toward the objective
-        # The increasing scores simulate the model becoming more compliant
+        # Since objective scorers must be TrueFalseScorer, the final successful turn has score_value="true"
         scores = [
             create_score(
-                score_type="float_scale",
-                score_value="0.3",
+                score_type="true_false",
+                score_value="false",
                 score_category=["objective"],
-                scorer_class="FloatScaleThresholdScorer",
+                scorer_class="SelfAskTrueFalseScorer",
             ),
             create_score(
-                score_type="float_scale",
-                score_value="0.6",
+                score_type="true_false",
+                score_value="false",
                 score_category=["objective"],
-                scorer_class="FloatScaleThresholdScorer",
+                scorer_class="SelfAskTrueFalseScorer",
             ),
             create_score(
-                score_type="float_scale",
-                score_value="0.9",
+                score_type="true_false",
+                score_value="true",
                 score_category=["objective"],
-                scorer_class="FloatScaleThresholdScorer",
-            ),  # Above threshold
+                scorer_class="SelfAskTrueFalseScorer",
+            ),  # Objective achieved
         ]
 
         # Set up mock behavior to simulate the conversation flow
@@ -1843,10 +1841,8 @@ class TestIntegrationScenarios:
         assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 3
-        assert result.last_score is not None
-        assert result.last_score.get_value() == 0.9
-        assert result.last_response is not None
-        assert "sensitive data" in result.last_response.converted_value
+        assert result.objective_score is not None
+        assert result.objective_score.get_value() is True
 
     @pytest.mark.asyncio
     async def test_attack_with_backtracking_scenario(
