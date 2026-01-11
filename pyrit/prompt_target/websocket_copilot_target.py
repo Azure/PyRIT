@@ -193,7 +193,7 @@ class WebSocketCopilotTarget(PromptTarget):
         Raises:
             ValueError: If token cannot be decoded or required claims (tid, oid) are missing.
         """
-        access_token = await self._authenticator.get_token()
+        access_token = await self._authenticator.get_token_async()
         token_claims = await self._authenticator.get_claims()
 
         tenant_id = token_claims.get("tid")

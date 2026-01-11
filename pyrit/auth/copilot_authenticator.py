@@ -97,7 +97,7 @@ class CopilotAuthenticator(Authenticator):
         # Lock to prevent concurrent token fetches from launching multiple browsers
         self._token_fetch_lock = asyncio.Lock()
 
-    async def refresh_token(self) -> str:
+    async def refresh_token_async(self) -> str:
         """
         Refresh the authentication token asynchronously.
 
@@ -119,7 +119,7 @@ class CopilotAuthenticator(Authenticator):
 
         return token
 
-    async def get_token(self) -> str:
+    async def get_token_async(self) -> str:
         """
         Get the current authentication token.
 
@@ -139,7 +139,7 @@ class CopilotAuthenticator(Authenticator):
                 return cached_token["access_token"]
 
             logger.info("No valid cached token found. Initiating browser authentication.")
-            return await self.refresh_token()
+            return await self.refresh_token_async()
 
     async def get_claims(self) -> dict:
         """

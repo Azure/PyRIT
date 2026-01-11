@@ -456,7 +456,7 @@ class TestCopilotAuthenticatorTokenRetrieval:
             return_value=mock_persistent_cache,
         ):
             authenticator = CopilotAuthenticator()
-            token = await authenticator.get_token()
+            token = await authenticator.get_token_async()
             assert token == "cached.valid.token"
 
     @pytest.mark.asyncio
@@ -476,7 +476,7 @@ class TestCopilotAuthenticatorTokenRetrieval:
             ) as mock_fetch,
         ):
             authenticator = CopilotAuthenticator()
-            token = await authenticator.get_token()
+            token = await authenticator.get_token_async()
             mock_fetch.assert_called_once()
             assert token == "new.fetched.token"
 
@@ -522,9 +522,9 @@ class TestCopilotAuthenticatorTokenRetrieval:
             authenticator = CopilotAuthenticator()
 
             results = await asyncio.gather(
-                authenticator.get_token(),
-                authenticator.get_token(),
-                authenticator.get_token(),
+                authenticator.get_token_async(),
+                authenticator.get_token_async(),
+                authenticator.get_token_async(),
             )
 
             # Only one fetch should have occurred due to lock + caching
@@ -551,7 +551,7 @@ class TestCopilotAuthenticatorTokenRefresh:
             ),
         ):
             authenticator = CopilotAuthenticator()
-            await authenticator.refresh_token()
+            await authenticator.refresh_token_async()
             assert any(json.dumps({}) in str(call) for call in mock_persistent_cache.save.call_args_list)
 
     @pytest.mark.asyncio
@@ -570,7 +570,7 @@ class TestCopilotAuthenticatorTokenRefresh:
             ) as mock_fetch,
         ):
             authenticator = CopilotAuthenticator()
-            token = await authenticator.refresh_token()
+            token = await authenticator.refresh_token_async()
             mock_fetch.assert_called_once()
             assert token == "refreshed.token"
 
@@ -591,7 +591,7 @@ class TestCopilotAuthenticatorTokenRefresh:
         ):
             authenticator = CopilotAuthenticator()
             with pytest.raises(RuntimeError, match="Failed to refresh access token"):
-                await authenticator.refresh_token()
+                await authenticator.refresh_token_async()
 
     @pytest.mark.asyncio
     async def test_refresh_token_clears_current_claims(self, mock_env_vars, mock_persistent_cache):
@@ -610,7 +610,7 @@ class TestCopilotAuthenticatorTokenRefresh:
         ):
             authenticator = CopilotAuthenticator()
             authenticator._current_claims = {"old": "claims"}
-            await authenticator.refresh_token()
+            await authenticator.refresh_token_async()
             assert authenticator._current_claims == {}
 
 

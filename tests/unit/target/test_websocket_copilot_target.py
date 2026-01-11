@@ -152,7 +152,7 @@ class TestBuildWebsocketUrl:
         url = await target._build_websocket_url_async(
             session_id=session_id, copilot_conversation_id=copilot_conversation_id
         )
-        expected_token = await mock_authenticator.get_token()
+        expected_token = await mock_authenticator.get_token_async()
 
         assert url.startswith(f"{WebSocketCopilotTarget.WEBSOCKET_BASE_URL}/test_object_id@test_tenant_id?")
         assert f"X-SessionId={session_id}" in url
