@@ -35,15 +35,9 @@
 
 # %%
 # type: ignore
-import asyncio
-import sys
-
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import WebSocketCopilotTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
-
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)
 

@@ -295,6 +295,8 @@ class CopilotAuthenticator(Authenticator):
         Raises:
             RuntimeError: If Playwright is not installed or browser launch fails.
         """
+        import sys
+
         try:
             from playwright.async_api import async_playwright  # noqa: F401
         except ImportError:
@@ -302,6 +304,52 @@ class CopilotAuthenticator(Authenticator):
                 "Playwright is not installed. Please install it with: "
                 "'pip install playwright && playwright install chromium'"
             )
+
+        # On Windows, when using SelectorEventLoop (common in Jupyter), we need to run
+        # Playwright in a separate thread with ProactorEventLoop to support subprocesses
+        # https://playwright.dev/python/docs/library#incompatible-with-selectoreventloop-of-asyncio-on-windows
+        if sys.platform == "win32":
+            try:
+                loop = asyncio.get_running_loop()
+                if isinstance(loop, asyncio.SelectorEventLoop):
+                    logger.info(
+                        "Running on Windows with SelectorEventLoop. "
+                        "Will run Playwright in a separate thread with ProactorEventLoop."
+                    )
+                    return await self._run_playwright_in_thread()
+            except RuntimeError:
+                pass
+
+        # If not on Windows or using the right loop already, proceed normally
+        return await self._run_playwright_browser_automation()
+
+    async def _run_playwright_in_thread(self) -> Optional[str]:
+        """
+        Run Playwright browser automation in a separate thread with ProactorEventLoop.
+        This is needed on Windows when the main loop is SelectorEventLoop (e.g., in Jupyter).
+
+        Returns:
+            Optional[str]: The bearer token if successfully retrieved, None otherwise.
+        """
+
+        def run_in_new_loop():
+            new_loop = asyncio.ProactorEventLoop()
+            asyncio.set_event_loop(new_loop)
+            try:
+                return new_loop.run_until_complete(self._run_playwright_browser_automation())
+            finally:
+                new_loop.close()
+
+        return await asyncio.get_running_loop().run_in_executor(None, run_in_new_loop)
+
+    async def _run_playwright_browser_automation(self) -> Optional[str]:
+        """
+        Execute the actual Playwright browser automation to fetch the access token.
+
+        Returns:
+            Optional[str]: The bearer token if successfully retrieved, None otherwise.
+        """
+        from playwright.async_api import async_playwright
 
         bearer_token = None
         token_expires_in = None
@@ -414,6 +462,8 @@ class CopilotAuthenticator(Authenticator):
             finally:
                 logger.info("Gracefully closing Playwright browser instance...")
 
+                if page:
+                    await page.close()
                 if context:
                     await context.close()
                 if browser:
