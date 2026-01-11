@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# ## Listing Available Classes
+# # Listing Available Classes
 #
 # Use `get_names()` to see what's available, or `list_metadata()` for detailed information.
 

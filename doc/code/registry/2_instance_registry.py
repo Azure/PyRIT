@@ -19,7 +19,7 @@
 # Instance registries let initializers register fully-configured instances that are ready to use.
 
 # %% [markdown]
-# ## Listing Available Instances
+# # Listing Available Instances
 #
 # Use `get_names()` to see registered instances, or `list_metadata()` for details.
 
