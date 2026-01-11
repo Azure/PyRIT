@@ -64,7 +64,7 @@ encoding_class = registry.get_class("garak.encoding")
 scenario = encoding_class()  # type: ignore
 
 # Pass dataset configuration to initialize_async
-await scenario.initialize_async(objective_target=target) # type: ignore
+await scenario.initialize_async(objective_target=target)  # type: ignore
 
 # Option 2: Use create_instance() shortcut
 # scenario = registry.create_instance("encoding", objective_target=my_target, ...)
@@ -99,12 +99,11 @@ from pyrit.registry import InitializerRegistry
 initializer_registry = InitializerRegistry.get_registry_singleton()
 
 # Get all registered names
-names = initializer_registry.get_names()
-print(f"Available initializers: {names[:5]}...")  # Show first 5
+initializer_names = initializer_registry.get_names()
+print(f"Available initializers: {initializer_names[:5]}...")  # Show first 5
 
 # Get detailed metadata
-metadata = initializer_registry.list_metadata()
-for item in metadata[:2]:  # Show first 2
-    print(f"\n{item.name}:")
-    print(f"  Class: {item.class_name}")
-    print(f"  Description: {item.description[:80]}...")
+for init_item in initializer_registry.list_metadata()[:2]:  # Show first 2
+    print(f"\n{init_item.name}:")
+    print(f"  Class: {init_item.class_name}")
+    print(f"  Description: {init_item.description[:80]}...")

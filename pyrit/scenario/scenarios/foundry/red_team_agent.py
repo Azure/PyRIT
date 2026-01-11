@@ -2,11 +2,11 @@
 # Licensed under the MIT license.
 
 """
-Foundry scenario factory implementation.
+RedTeamAgent scenario factory implementation.
 
-This module provides a factory for creating Foundry-specific attack scenarios.
-The FoundryFactory creates a comprehensive test scenario that includes all
-Foundry attacks against specified datasets.
+This module provides a factory for creating RedTeamAgent attack scenarios.
+The RedTeamAgent creates a comprehensive test scenario that includes all
+available attacks against specified datasets.
 """
 
 import logging

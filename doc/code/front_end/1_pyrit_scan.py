@@ -160,11 +160,7 @@ class MyCustomScenario(Scenario):
         super().__init__(
             name="My Custom Scenario",
             version=1,
-            objective_scorer=TrueFalseInverterScorer(
-                scorer=SelfAskRefusalScorer(
-                    chat_target=OpenAIChatTarget()
-                )
-            ),
+            objective_scorer=TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=OpenAIChatTarget())),
             strategy_class=MyCustomStrategy,
             scenario_result_id=scenario_result_id,
         )
