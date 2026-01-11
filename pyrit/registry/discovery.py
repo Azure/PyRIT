@@ -89,6 +89,7 @@ def discover_in_package(
     base_class: Type[T],
     recursive: bool = True,
     name_builder: Optional[Callable[[str, str], str]] = None,
+    _prefix: str = "",
 ) -> Iterator[Tuple[str, Type[T]]]:
     """
     Discover all subclasses using pkgutil.iter_modules on a package.
@@ -103,6 +104,7 @@ def discover_in_package(
         recursive: Whether to recursively search subpackages. Defaults to True.
         name_builder: Optional callable to build the registry name from (prefix, module_name).
             Defaults to returning just the module_name.
+        _prefix: Internal parameter to track the current subdirectory prefix.
 
     Yields:
         Tuples of (registry_name, class) for each discovered subclass.
@@ -124,17 +126,22 @@ def discover_in_package(
                 for name, obj in inspect.getmembers(module, inspect.isclass):
                     if issubclass(obj, base_class) and obj is not base_class:
                         if not inspect.isabstract(obj):
-                            yield (module_name, obj)
+                            # Build the registry name including any prefix
+                            registry_name = name_builder(_prefix, module_name)
+                            yield (registry_name, obj)
 
             # Recursively discover in subpackages
             if recursive and is_pkg:
                 sub_path = package_path / module_name
+                # Pass the current module_name as part of the prefix for nested discoveries
+                new_prefix = name_builder(_prefix, module_name)
                 yield from discover_in_package(
                     package_path=sub_path,
                     package_name=full_module_name,
                     base_class=base_class,
                     recursive=True,
                     name_builder=name_builder,
+                    _prefix=new_prefix,
                 )
 
         except Exception as e:

@@ -41,7 +41,7 @@ for item in metadata[:2]:  # Show first 2
 # %%
 # Get a scenario class
 
-scenario_class = registry.get_class("encoding")
+scenario_class = registry.get_class("garak.encoding")
 
 print(f"Got class: {scenario_class}")
 print(f"Class name: {scenario_class.__name__}")
@@ -60,11 +60,11 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY, initializers=[LoadDefault
 target = OpenAIChatTarget()
 
 # Option 1: Get class then instantiate
-encoding_class = registry.get_class("encoding")
+encoding_class = registry.get_class("garak.encoding")
 scenario = encoding_class()  # type: ignore
 
 # Pass dataset configuration to initialize_async
-await scenario.initialize_async(objective_target=target)
+await scenario.initialize_async(objective_target=target) # type: ignore
 
 # Option 2: Use create_instance() shortcut
 # scenario = registry.create_instance("encoding", objective_target=my_target, ...)
@@ -78,7 +78,7 @@ print("Scenarios can be instantiated with your target and parameters")
 
 # %%
 # Check if a name is registered
-print(f"'encoding' registered: {'encoding' in registry}")
+print(f"'garak.encoding' registered: {'garak.encoding' in registry}")
 print(f"'nonexistent' registered: {'nonexistent' in registry}")
 
 # Get count of registered classes
@@ -96,14 +96,14 @@ for name in list(registry)[:3]:
 # %%
 from pyrit.registry import InitializerRegistry
 
-registry = InitializerRegistry.get_registry_singleton()
+initializer_registry = InitializerRegistry.get_registry_singleton()
 
 # Get all registered names
-names = registry.get_names()
+names = initializer_registry.get_names()
 print(f"Available initializers: {names[:5]}...")  # Show first 5
 
 # Get detailed metadata
-metadata = registry.list_metadata()
+metadata = initializer_registry.list_metadata()
 for item in metadata[:2]:  # Show first 2
     print(f"\n{item.name}:")
     print(f"  Class: {item.class_name}")
