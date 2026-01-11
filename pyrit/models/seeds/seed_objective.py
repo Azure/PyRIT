@@ -1,6 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""
+SeedObjective class for representing seed objectives.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -9,7 +13,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from pyrit.common.path import PATHS_DICT
-from pyrit.models.seed import Seed
+from pyrit.models.seeds.seed import Seed
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +25,6 @@ class SeedObjective(Seed):
     def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values."""
         self.value = super().render_template_value_silent(**PATHS_DICT)
-        self.data_type = "text"
-
-    def set_encoding_metadata(self):
-        """
-        This method sets the encoding data for the prompt within metadata dictionary.
-        """
-        return  # No encoding metadata for text
 
     @classmethod
     def from_yaml_with_required_parameters(

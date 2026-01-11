@@ -352,8 +352,8 @@ class TestRolePlayAttackSetup:
         # Verify prepended conversation was created with 2 messages (user and assistant start turns)
         assert basic_context.prepended_conversation is not None
         assert len(basic_context.prepended_conversation) == 2
-        assert basic_context.prepended_conversation[0].role == "user"
-        assert basic_context.prepended_conversation[1].role == "assistant"
+        assert basic_context.prepended_conversation[0].api_role == "user"
+        assert basic_context.prepended_conversation[1].api_role == "assistant"
 
     @pytest.mark.asyncio
     async def test_setup_rephrases_objective(self, role_play_attack, basic_context):

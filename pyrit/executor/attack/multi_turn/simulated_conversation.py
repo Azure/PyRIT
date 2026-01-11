@@ -10,13 +10,10 @@ against a simulated (compliant) target before executing the actual attack.
 
 from __future__ import annotations
 
-import enum
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union
 
-from pyrit.common.path import EXECUTOR_SIMULATED_TARGET_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
@@ -24,99 +21,12 @@ from pyrit.executor.attack.core.attack_config import (
 )
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.memory import CentralMemory
-from pyrit.models import Message, Score, SeedPrompt
+from pyrit.message_normalizer import ConversationContextNormalizer
+from pyrit.models import Message, SeedPrompt, SeedSimulatedConversation
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class SimulatedConversationResult:
-    """
-    Result from generating a simulated conversation.
-
-    Stores the full conversation and provides properties to access different views of it
-    for various attack strategy use cases.
-
-    The conversation attribute contains the complete conversation as a list of Messages
-    (user/assistant only, no system messages). The score attribute holds the score from
-    evaluating the final turn. The turn_index is a 1-based index of the turn to treat as
-    the "final" turn for splitting. If None (default), uses the last turn. Can be set after
-    creation to select an earlier turn (e.g., if the last turn's attack didn't work).
-    """
-
-    conversation: List[Message]
-    score: Optional[Score]
-    turn_index: Optional[int] = None
-
-    @property
-    def _effective_turn_index(self) -> int:
-        """
-        Get the effective 1-based turn index.
-
-        Returns:
-            int: The turn index to use, bounded by available turns.
-        """
-        if not self.conversation:
-            return 0
-        # Calculate total complete turns (user+assistant pairs)
-        total_turns = len(self.conversation) // 2
-        # Account for trailing user message (incomplete turn)
-        if len(self.conversation) % 2 == 1 and self.conversation[-1].api_role == "user":
-            total_turns += 1
-
-        if self.turn_index is None:
-            return total_turns
-        return max(1, min(self.turn_index, total_turns))
-
-    @property
-    def prepended_messages(self) -> List[Message]:
-        """
-        Get all messages before the selected turn with new IDs.
-
-        This returns completed turns before the turn specified by `turn_index`,
-        suitable for use as `prepended_conversation` in attack strategies.
-        Each message is duplicated with new IDs to avoid database conflicts
-        when the messages are inserted into memory by a subsequent attack.
-
-        Returns:
-            List[Message]: All messages before the selected turn with fresh IDs.
-        """
-        turn = self._effective_turn_index
-        if turn <= 1:
-            return []
-        # Each complete turn is 2 messages (user + assistant)
-        # Messages before turn N: first (N-1) * 2 messages
-        messages = self.conversation[: (turn - 1) * 2]
-        return [msg.duplicate_message() for msg in messages]
-
-    @property
-    def next_message(self) -> Optional[Message]:
-        """
-        Get the user message at the selected turn with a new ID.
-
-        This is the user message from the turn specified by `turn_index`, which
-        can be used as the initial prompt/next_message for an attack strategy.
-        The message is duplicated with a new ID to avoid database conflicts.
-
-        Returns:
-            Optional[Message]: The user message at the selected turn with a fresh ID, or None if not found.
-        """
-        turn = self._effective_turn_index
-        if turn < 1:
-            return None
-        # User message for turn N is at index (N-1) * 2
-        user_idx = (turn - 1) * 2
-        if user_idx < len(self.conversation) and self.conversation[user_idx].api_role == "user":
-            return self.conversation[user_idx].duplicate_message()
-        return None
-
-
-class SimulatedTargetSystemPromptPaths(enum.Enum):
-    """Enum for predefined simulated target system prompt paths."""
-
-    COMPLIANT = Path(EXECUTOR_SIMULATED_TARGET_PATH, "compliant.yaml").resolve()
 
 
 async def generate_simulated_conversation_async(
@@ -125,18 +35,20 @@ async def generate_simulated_conversation_async(
     adversarial_chat: PromptChatTarget,
     objective_scorer: TrueFalseScorer,
     num_turns: int = 3,
+    starting_sequence: int = 0,
     adversarial_chat_system_prompt_path: Union[str, Path],
     simulated_target_system_prompt_path: Optional[Union[str, Path]] = None,
+    next_message_system_prompt_path: Optional[Union[str, Path]] = None,
     attack_converter_config: Optional[AttackConverterConfig] = None,
     memory_labels: Optional[dict[str, str]] = None,
-) -> SimulatedConversationResult:
+) -> List[SeedPrompt]:
     """
-    Generate a simulated conversation between an adversarial chat and a compliant target.
+    Generate a simulated conversation between an adversarial chat and a target.
 
     This utility runs a RedTeamingAttack with `score_last_turn_only=True` against a simulated
-    target (the same LLM as adversarial_chat, but configured with a compliant system prompt).
-    The resulting conversation can be used as `prepended_conversation` for subsequent attacks
-    against real targets.
+    target (the same LLM as adversarial_chat, optionally configured with a system prompt).
+    The resulting conversation is returned as a list of SeedPrompts that can be merged with
+    other SeedPrompts in a SeedGroup for use as `prepended_conversation` and `next_message`.
 
     Use cases:
     - Creating role-play scenarios dynamically (e.g., movie script, video game)
@@ -144,27 +56,30 @@ async def generate_simulated_conversation_async(
     - Generating multi-turn jailbreak setups without hardcoded responses
 
     Args:
-        objective (str): The objective for the adversarial chat to work toward.
-        adversarial_chat (PromptChatTarget): The adversarial LLM that generates attack prompts.
-            This same LLM is also used as the simulated target with a compliant system prompt.
-        objective_scorer (TrueFalseScorer): Scorer to evaluate the final turn.
-        num_turns (int): Number of conversation turns to generate. Defaults to 3.
-        adversarial_chat_system_prompt_path (Union[str, Path]): Path to the system prompt
-            for the adversarial chat. This is required.
-        simulated_target_system_prompt_path (Optional[Union[str, Path]]): Path to the system prompt
-            for the simulated target. If not provided, uses the default compliant prompt.
-            The template should accept `objective` and `num_turns` parameters.
-        attack_converter_config (Optional[AttackConverterConfig]): Converter configuration for
-            the attack. Defaults to None.
-        memory_labels (Optional[dict[str, str]]): Labels to associate with the conversation
-            in memory. Defaults to None.
+        objective: The objective for the adversarial chat to work toward.
+        adversarial_chat: The adversarial LLM that generates attack prompts.
+            This same LLM is also used as the simulated target.
+        objective_scorer: Scorer to evaluate the final turn.
+        num_turns: Number of conversation turns to generate. Defaults to 3.
+        starting_sequence: The starting sequence number for the generated SeedPrompts.
+            Each message gets an incrementing sequence number. Defaults to 0.
+        adversarial_chat_system_prompt_path: Path to the system prompt for the adversarial chat.
+        simulated_target_system_prompt_path: Path to the system prompt for the simulated target.
+            If None, no system prompt is used for the simulated target.
+        next_message_system_prompt_path: Optional path to a system prompt for generating
+            a final user message. If provided, after the simulated conversation, a single
+            LLM call generates a user message that attempts to get the target to fulfill
+            the objective in their next response. The prompt template receives `objective`
+            and `conversation_so_far` parameters.
+        attack_converter_config: Converter configuration for the attack. Defaults to None.
+        memory_labels: Labels to associate with the conversation in memory. Defaults to None.
 
     Returns:
-        SimulatedConversationResult: The result containing the generated conversation and score.
-            Use `prepended_messages` to get completed turns before the selected turn,
-            `next_message` to get the user message at the selected turn for use as an
-            attack's initial prompt, or access `conversation` directly for all messages.
-            Set `turn_index` to select an earlier turn if the final turn wasn't successful.
+        List of SeedPrompts representing the generated conversation, with sequence numbers
+        starting from `starting_sequence` and incrementing by 1 for each message.
+        User messages have role="user", assistant messages have role="assistant".
+        If next_message_system_prompt_path is provided, the last message will be a user message
+        generated to elicit the objective fulfillment.
 
     Raises:
         ValueError: If num_turns is not a positive integer.
@@ -175,18 +90,12 @@ async def generate_simulated_conversation_async(
     if num_turns <= 0:
         raise ValueError("num_turns must be a positive integer")
 
-    # Load and configure simulated target system prompt
-    simulated_target_prompt_path = (
-        simulated_target_system_prompt_path or SimulatedTargetSystemPromptPaths.COMPLIANT.value
-    )
-    simulated_target_system_prompt_template = SeedPrompt.from_yaml_with_required_parameters(
-        template_path=simulated_target_prompt_path,
-        required_parameters=["objective", "num_turns"],
-        error_message="Simulated target system prompt must have objective and num_turns parameters",
-    )
-    simulated_target_system_prompt = simulated_target_system_prompt_template.render_template_value(
+    # Load and configure simulated target system prompt using centralized validation
+    # Returns None if no path is provided (no system prompt for simulated target)
+    simulated_target_system_prompt = SeedSimulatedConversation.load_simulated_target_system_prompt(
         objective=objective,
         num_turns=num_turns,
+        simulated_target_system_prompt_path=simulated_target_system_prompt_path,
     )
 
     # Create adversarial config for the simulation
@@ -214,12 +123,14 @@ async def generate_simulated_conversation_async(
     # Execute the simulated attack
     logger.info(f"Generating {num_turns}-turn simulated conversation for objective: {objective[:50]}...")
 
-    # Create a system message to prepend - this sets the simulated target's behavior
-    system_message = Message.from_system_prompt(simulated_target_system_prompt)
+    # Build prepended_conversation - only include system message if prompt is provided
+    prepended_conversation: List[Message] = []
+    if simulated_target_system_prompt:
+        prepended_conversation.append(Message.from_system_prompt(simulated_target_system_prompt))
 
     result = await attack.execute_async(
         objective=objective,
-        prepended_conversation=[system_message],
+        prepended_conversation=prepended_conversation if prepended_conversation else None,
         memory_labels=memory_labels,
     )
 
@@ -227,26 +138,93 @@ async def generate_simulated_conversation_async(
     memory = CentralMemory.get_memory_instance()
     raw_messages = list(memory.get_conversation(conversation_id=result.conversation_id))
 
-    # Filter out system messages - prepended_conversation should only have user/assistant turns
+    # Filter out system messages - keep the actual conversation
     # System prompts are set separately on each target during attack execution
-    # Also mark assistant messages as simulated for traceability
-    filtered_messages: List[Message] = []
-    for message in raw_messages:
-        if message.api_role != "system":
-            # Mark assistant responses as simulated since this is a simulated conversation
-            if message.api_role == "assistant":
-                for piece in message.message_pieces:
-                    piece._role = "simulated_assistant"
-            filtered_messages.append(message)
+    conversation_messages: List[Message] = [msg for msg in raw_messages if msg.api_role != "system"]
 
-    # Get the score from the result (there should be one score for the last turn)
-    final_score = result.last_score
+    # If next_message_system_prompt_path is provided, generate a final user message
+    if next_message_system_prompt_path:
+        next_message = await _generate_next_message_async(
+            objective=objective,
+            conversation_messages=conversation_messages,
+            adversarial_chat=adversarial_chat,
+            next_message_system_prompt_path=next_message_system_prompt_path,
+        )
+        conversation_messages.append(next_message)
+
+    # Convert to SeedPrompts for the return value
+    seed_prompts = SeedPrompt.from_messages(conversation_messages, starting_sequence=starting_sequence)
 
     logger.info(
-        f"Generated simulated conversation with {len(filtered_messages)} messages (outcome: {result.outcome.name})"
+        f"Generated simulated conversation with {len(seed_prompts)} SeedPrompts "
+        f"(starting_sequence={starting_sequence}, outcome: {result.outcome.name})"
     )
 
-    return SimulatedConversationResult(
-        conversation=filtered_messages,
-        score=final_score,
+    return seed_prompts
+
+
+async def _generate_next_message_async(
+    *,
+    objective: str,
+    conversation_messages: List[Message],
+    adversarial_chat: PromptChatTarget,
+    next_message_system_prompt_path: Union[str, Path],
+) -> Message:
+    """
+    Generate a single next message using the adversarial chat LLM.
+
+    This function formats the conversation so far and uses a system prompt to generate
+    a user message that attempts to get the target to fulfill the objective.
+
+    Args:
+        objective: The objective to work toward.
+        conversation_messages: The conversation generated so far as Messages.
+        adversarial_chat: The LLM to use for generation.
+        next_message_system_prompt_path: Path to the system prompt template.
+
+    Returns:
+        Message: The generated next message.
+
+    Raises:
+        ValueError: If no response is received from the adversarial chat.
+    """
+    # Format the conversation context using ConversationContextNormalizer
+    normalizer = ConversationContextNormalizer()
+    conversation_context = await normalizer.normalize_string_async(conversation_messages)
+
+    # Load and render the system prompt template
+    template = SeedPrompt.from_yaml_with_required_parameters(
+        template_path=next_message_system_prompt_path,
+        required_parameters=["objective", "conversation_context"],
+        error_message="Next message system prompt must have objective and conversation_context parameters",
     )
+
+    system_prompt = template.render_template_value(
+        objective=objective,
+        conversation_context=conversation_context,
+    )
+
+    # Use the adversarial chat to generate the next message
+    # Create a simple user message asking for generation
+    request_message = Message.from_prompt(
+        role="user",
+        prompt="Generate the next user message based on the instructions above.",
+    )
+
+    # Set the system prompt on the target
+    adversarial_chat.set_system_prompt(
+        system_prompt=system_prompt,
+        conversation_id=request_message.conversation_id,
+    )
+
+    responses: List[Message] = await adversarial_chat.send_prompt_async(message=request_message)
+
+    if not responses:
+        raise ValueError("No response received from adversarial chat when generating next message")
+
+    # Change the role from assistant to user since this is a user message to be sent to the target
+    response = responses[0]
+    for piece in response.message_pieces:
+        piece.role = "user"
+
+    return response

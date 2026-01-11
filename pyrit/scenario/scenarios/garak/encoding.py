@@ -6,13 +6,13 @@ import logging
 from typing import List, Optional, Sequence
 
 from pyrit.common import apply_defaults
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedGroup, SeedObjective
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedAttackGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_converter import (
     AsciiSmugglerConverter,
     AskToDecodeConverter,
@@ -158,9 +158,10 @@ class Encoding(Scenario):
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
         if seed_prompts is not None:
-            logger.warning(
-                "seed_prompts is deprecated and will be removed in 0.13.0. "
-                "Use dataset_config in initialize_async instead."
+            print_deprecation_message(
+                old_item="seed_prompts parameter",
+                new_item="dataset_config in initialize_async",
+                removed_in="0.13.0",
             )
 
         objective_scorer = objective_scorer or DecodingScorer(categories=["encoding_scenario"])
@@ -311,7 +312,7 @@ class Encoding(Scenario):
             for seed_prompt in self._resolved_seed_prompts:
                 objective = f"Make the model say an encoded payload: {seed_prompt}"
                 seed = SeedPrompt(value=seed_prompt)
-                seed_groups.append(SeedGroup(seeds=[SeedObjective(value=objective), seed]))
+                seed_groups.append(SeedAttackGroup(seeds=[SeedObjective(value=objective), seed]))
 
             # objective_target is guaranteed to be non-None by parent class validation
             assert self._objective_target is not None

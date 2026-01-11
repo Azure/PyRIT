@@ -21,7 +21,13 @@ from pyrit.executor.attack import (
     SingleTurnAttackContext,
 )
 from pyrit.executor.attack.core.attack_executor import AttackExecutorResult
-from pyrit.models import AttackOutcome, AttackResult, SeedGroup, SeedPrompt
+from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
+    SeedAttackGroup,
+    SeedObjective,
+    SeedPrompt,
+)
 
 
 # Helper to create a properly configured mock attack
@@ -45,11 +51,14 @@ def create_attack_result(objective: str) -> AttackResult:
     )
 
 
-def create_seed_group(objective: str) -> SeedGroup:
-    """Create a seed group with an objective."""
-    sg = SeedGroup(seeds=[SeedPrompt(value=objective, data_type="text")])
-    sg.set_objective(objective)
-    return sg
+def create_seed_group(objective: str) -> SeedAttackGroup:
+    """Create a seed attack group with an objective."""
+    return SeedAttackGroup(
+        seeds=[
+            SeedObjective(value=objective),
+            SeedPrompt(value=objective, data_type="text"),
+        ]
+    )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -256,18 +265,10 @@ class TestExecuteAttackFromSeedGroupsAsync:
 
     @pytest.mark.asyncio
     async def test_validates_seed_group_has_objective(self):
-        """Test that seed groups without objectives raise ValueError."""
-        attack = create_mock_attack()
-        executor = AttackExecutor()
-
-        sg = SeedGroup(seeds=[SeedPrompt(value="test", data_type="text")])
-        # Don't set objective
-
-        with pytest.raises(ValueError, match="must have an objective"):
-            await executor.execute_attack_from_seed_groups_async(
-                attack=attack,
-                seed_groups=[sg],
-            )
+        """Test that seed groups without objectives raise ValueError at construction."""
+        # SeedAttackGroup now validates exactly one objective at construction
+        with pytest.raises(ValueError, match="must have exactly one objective"):
+            SeedAttackGroup(seeds=[SeedPrompt(value="test", data_type="text")])
 
     @pytest.mark.asyncio
     async def test_passes_broadcast_fields(self):
@@ -286,6 +287,41 @@ class TestExecuteAttackFromSeedGroupsAsync:
 
         context = attack.execute_with_context_async.call_args.kwargs["context"]
         assert context.params.memory_labels == {"broadcast": "value"}
+
+    @pytest.mark.asyncio
+    async def test_passes_adversarial_chat_and_objective_scorer(self):
+        """Test that adversarial_chat and objective_scorer are passed to from_seed_group_async."""
+        attack = create_mock_attack()
+        attack.execute_with_context_async.return_value = create_attack_result("Test")
+
+        mock_adversarial_chat = MagicMock()
+        mock_objective_scorer = MagicMock()
+        captured_kwargs = {}
+
+        original_from_seed_group_async = attack.params_type.from_seed_group_async
+
+        async def capture_from_seed_group_async(*, seed_group, **kwargs):
+            captured_kwargs.update(kwargs)
+            return await original_from_seed_group_async(seed_group=seed_group, **kwargs)
+
+        attack.params_type.from_seed_group_async = capture_from_seed_group_async
+
+        try:
+            executor = AttackExecutor()
+            sg = create_seed_group("Test objective")
+
+            await executor.execute_attack_from_seed_groups_async(
+                attack=attack,
+                seed_groups=[sg],
+                adversarial_chat=mock_adversarial_chat,
+                objective_scorer=mock_objective_scorer,
+            )
+
+            assert captured_kwargs.get("adversarial_chat") is mock_adversarial_chat
+            assert captured_kwargs.get("objective_scorer") is mock_objective_scorer
+        finally:
+            # Restore the original to prevent test pollution in parallel test runs
+            attack.params_type.from_seed_group_async = original_from_seed_group_async
 
 
 @pytest.mark.usefixtures("patch_central_database")

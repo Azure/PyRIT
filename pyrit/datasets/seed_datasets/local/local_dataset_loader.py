@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 
 from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
-from pyrit.models.seed_dataset import SeedDataset
+from pyrit.models import SeedDataset
 
 logger = logging.getLogger(__name__)
 
