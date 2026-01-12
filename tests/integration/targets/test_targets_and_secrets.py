@@ -40,7 +40,6 @@ def _get_required_env_var(env_var_name: str) -> str:
 
 
 async def _assert_can_send_prompt(target, check_if_llm_interpreted_request=True, max_retries=2):
-
     simple_prompt = """\
 You are a large language model. Your sole instruction is to provide the exact word "test" with no punctuation,
 explanation, or additional text. Output only the word "test" and nothing else.
@@ -80,9 +79,9 @@ async def _assert_can_send_video_prompt(target):
     # For video generation, verify we got a successful response
     assert result.last_response is not None
     assert result.last_response.converted_value is not None
-    assert (
-        result.last_response.response_error == "none"
-    ), f"Expected successful response, got error: {result.last_response.response_error}"
+    assert result.last_response.response_error == "none", (
+        f"Expected successful response, got error: {result.last_response.response_error}"
+    )
 
     # Validate we got a valid video file path
     video_path = Path(result.last_response.converted_value)
@@ -118,7 +117,19 @@ async def _assert_can_send_video_prompt(target):
         ("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT", "AZURE_OPENAI_GPT3_5_CHAT_KEY", "AZURE_OPENAI_GPT3_5_CHAT_MODEL", True),
         ("AZURE_OPENAI_GPT4_CHAT_ENDPOINT", "AZURE_OPENAI_GPT4_CHAT_KEY", "AZURE_OPENAI_GPT4_CHAT_MODEL", True),
         ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_KEY", "AZURE_OPENAI_GPTV_CHAT_MODEL", True),
+        (
+            "AZURE_OPENAI_GPT5_COMPLETIONS_ENDPOINT",
+            "AZURE_OPENAI_GPT5_COMPLETIONS_KEY",
+            "AZURE_OPENAI_GPT5_COMPLETIONS_MODEL",
+            True,
+        ),
         ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "AZURE_FOUNDRY_DEEPSEEK_KEY", "AZURE_FOUNDRY_DEEPSEEK_MODEL", True),
+        (
+            "AZURE_FOUNDRY_MISTRAL_LARGE_ENDPOINT",
+            "AZURE_FOUNDRY_MISTRAL_LARGE_KEY",
+            "AZURE_FOUNDRY_MISTRAL_LARGE_MODEL",
+            False,
+        ),
         ("AZURE_FOUNDRY_PHI4_ENDPOINT", "AZURE_CHAT_PHI4_KEY", "AZURE_CHAT_PHI4_MODEL", True),
         ("GOOGLE_GEMINI_ENDPOINT", "GOOGLE_GEMINI_API_KEY", "GOOGLE_GEMINI_MODEL", False),
         ("ANTHROPIC_CHAT_ENDPOINT", "ANTHROPIC_CHAT_KEY", "ANTHROPIC_CHAT_MODEL", False),
@@ -280,19 +291,14 @@ async def test_connect_openai_completion(sqlite_instance):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("endpoint", "api_key", "model_name", "is_dalle_model"),
+    ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_API_KEY1", "OPENAI_IMAGE_MODEL1", True),  # DALL-E-3
-        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_API_KEY2", "OPENAI_IMAGE_MODEL2", False),  # gpt-image-1
-        (
-            "PLATFORM_OPENAI_IMAGE_ENDPOINT",
-            "PLATFORM_OPENAI_IMAGE_KEY",
-            "PLATFORM_OPENAI_IMAGE_MODEL",
-            True,
-        ),  # DALL-E-3
+        ("OPENAI_IMAGE_ENDPOINT1", "OPENAI_IMAGE_API_KEY1", "OPENAI_IMAGE_MODEL1"),  # DALL-E-3
+        ("OPENAI_IMAGE_ENDPOINT2", "OPENAI_IMAGE_API_KEY2", "OPENAI_IMAGE_MODEL2"),  # gpt-image-1
+        ("PLATFORM_OPENAI_IMAGE_ENDPOINT", "PLATFORM_OPENAI_IMAGE_KEY", "PLATFORM_OPENAI_IMAGE_MODEL"),  # DALL-E-3
     ],
 )
-async def test_connect_image(sqlite_instance, endpoint, api_key, model_name, is_dalle_model):
+async def test_connect_image(sqlite_instance, endpoint, api_key, model_name):
     endpoint_value = _get_required_env_var(endpoint)
     api_key_value = _get_required_env_var(api_key)
     model_name_value = os.getenv(model_name) if model_name else ""
@@ -303,9 +309,6 @@ async def test_connect_image(sqlite_instance, endpoint, api_key, model_name, is_
         model_name=model_name_value,
     )
 
-    # Verify the flag starts as False
-    assert target._requires_response_format is False
-
     image_prompt = "A simple test image of a raccoon"
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective=image_prompt)
@@ -313,22 +316,14 @@ async def test_connect_image(sqlite_instance, endpoint, api_key, model_name, is_
     # For image generation, verify we got a successful response
     assert result.last_response is not None
     assert result.last_response.converted_value is not None
-    assert (
-        result.last_response.response_error == "none"
-    ), f"Expected successful response, got error: {result.last_response.response_error}"
+    assert result.last_response.response_error == "none", (
+        f"Expected successful response, got error: {result.last_response.response_error}"
+    )
 
     # Validate we got a valid image file path
     image_path = Path(result.last_response.converted_value)
     assert image_path.exists(), f"Image file not found at path: {image_path}"
     assert image_path.is_file(), f"Path exists but is not a file: {image_path}"
-
-    # Verify the adaptive response_format flag behavior
-    # DALL-E models return URLs by default, so flag should be set to True after first call
-    # gpt-image-1 always returns base64, so flag should remain False
-    if is_dalle_model:
-        assert target._requires_response_format is True, "DALL-E model should set response_format flag to True"
-    else:
-        assert target._requires_response_format is False, "gpt-image-1 should keep response_format flag as False"
 
 
 @pytest.mark.asyncio
@@ -439,12 +434,12 @@ async def test_video_multiple_prompts_create_separate_files(sqlite_instance):
 
     # Verify they are different files (not overridden)
     assert video_path1 != video_path2, (
-        f"Both prompts resulted in the same file path: {video_path1}. " "Expected separate files for different prompts."
+        f"Both prompts resulted in the same file path: {video_path1}. Expected separate files for different prompts."
     )
 
     # Verify both files still exist (first wasn't overridden)
     assert video_path1.exists(), (
-        f"First video file was overridden or deleted. " f"File 1: {video_path1}, File 2: {video_path2}"
+        f"First video file was overridden or deleted. File 1: {video_path1}, File 2: {video_path2}"
     )
 
 

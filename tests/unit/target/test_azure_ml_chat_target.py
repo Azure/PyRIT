@@ -8,15 +8,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import HTTPStatusError
 from openai import RateLimitError
-from unit.mocks import get_image_message_piece, get_sample_conversations
+from unit.mocks import get_sample_conversations
 
-from pyrit.chat_message_normalizer import (
-    ChatMessageNop,
-    ChatMessageNormalizer,
-    GenericSystemSquash,
-)
 from pyrit.exceptions import EmptyResponseException, RateLimitException
-from pyrit.models import ChatMessage, Message, MessagePiece
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import AzureMLChatTarget
 
 
@@ -48,51 +43,6 @@ def test_initialization_with_extra_model_parameters(aml_online_chat: AzureMLChat
     assert aml_online_chat._extra_parameters == {"extra_param1": "sample", "extra_param2": 1.0}
 
 
-def test_set_env_configuration_vars_with_default_env_vars(aml_online_chat: AzureMLChatTarget):
-    with patch("pyrit.prompt_target.azure_ml_chat_target.AzureMLChatTarget._initialize_vars") as mock_initialize_vars:
-        aml_online_chat._set_env_configuration_vars()
-        assert aml_online_chat.endpoint_uri_environment_variable == "AZURE_ML_MANAGED_ENDPOINT"
-        assert aml_online_chat.api_key_environment_variable == "AZURE_ML_KEY"
-        mock_initialize_vars.assert_called_once_with()
-
-
-def test_set_env_configuration_vars_initializes_vars(aml_online_chat: AzureMLChatTarget):
-    with patch("pyrit.prompt_target.azure_ml_chat_target.AzureMLChatTarget._initialize_vars") as mock_initialize_vars:
-        aml_online_chat._set_env_configuration_vars(
-            endpoint_uri_environment_variable="CUSTOM_ENDPOINT_ENV_VAR",
-            api_key_environment_variable="CUSTOM_API_KEY_ENV_VAR",
-        )
-        mock_initialize_vars.assert_called_once_with()
-
-
-def test_set_model_parameters_with_defaults(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat._set_model_parameters()
-    assert aml_online_chat._max_new_tokens == 400
-    assert aml_online_chat._temperature == 1.0
-    assert aml_online_chat._top_p == 1.0
-    assert aml_online_chat._repetition_penalty == 1.0
-
-
-def test_set_model_parameters_with_custom_values(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat._set_model_parameters(
-        max_new_tokens=500, temperature=0.8, top_p=0.9, repetition_penalty=1.2, custom_param="custom_value"
-    )
-    assert aml_online_chat._max_new_tokens == 500
-    assert aml_online_chat._temperature == 0.8
-    assert aml_online_chat._top_p == 0.9
-    assert aml_online_chat._repetition_penalty == 1.2
-    assert aml_online_chat._extra_parameters == {"custom_param": "custom_value"}
-
-
-def test_set_model_parameters_partial_update(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat._set_model_parameters(temperature=0.5, custom_param="custom_value")
-    assert aml_online_chat._max_new_tokens == 400
-    assert aml_online_chat._temperature == 0.5
-    assert aml_online_chat._top_p == 1.0
-    assert aml_online_chat._repetition_penalty == 1.0
-    assert aml_online_chat._extra_parameters == {"custom_param": "custom_value"}
-
-
 def test_initialization_with_no_key_raises():
     os.environ[AzureMLChatTarget.api_key_environment_variable] = ""
     with pytest.raises(ValueError):
@@ -116,7 +66,7 @@ def test_get_headers_with_valid_api_key(aml_online_chat: AzureMLChatTarget):
 @pytest.mark.asyncio
 async def test_complete_chat_async(aml_online_chat: AzureMLChatTarget):
     messages = [
-        ChatMessage(role="user", content="user content"),
+        Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="user content")]),
     ]
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock:
@@ -128,18 +78,14 @@ async def test_complete_chat_async(aml_online_chat: AzureMLChatTarget):
         mock.assert_called_once()
 
 
-# The None parameter checks the default is the same as ChatMessageNop
+# Test that ChatMessageNormalizer (the default) passes messages through correctly
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message_normalizer", [None, ChatMessageNop()])
-async def test_complete_chat_async_with_nop_normalizer(
-    aml_online_chat: AzureMLChatTarget, message_normalizer: ChatMessageNormalizer
+async def test_complete_chat_async_with_default_normalizer(
+    aml_online_chat: AzureMLChatTarget,
 ):
-    if message_normalizer:
-        aml_online_chat.chat_message_normalizer = message_normalizer
-
     messages = [
-        ChatMessage(role="system", content="system content"),
-        ChatMessage(role="user", content="user content"),
+        Message(message_pieces=[MessagePiece(role="system", conversation_id="123", original_value="system content")]),
+        Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="user content")]),
     ]
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
@@ -158,33 +104,9 @@ async def test_complete_chat_async_with_nop_normalizer(
 
 
 @pytest.mark.asyncio
-async def test_complete_chat_async_with_squashnormalizer(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat.chat_message_normalizer = GenericSystemSquash()
-
-    messages = [
-        ChatMessage(role="system", content="system content"),
-        ChatMessage(role="user", content="user content"),
-    ]
-
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"output": "extracted response"}
-        mock.return_value = mock_response
-        response = await aml_online_chat._complete_chat_async(messages)
-        assert response == "extracted response"
-
-        args, kwargs = mock.call_args
-        body = kwargs["request_body"]
-
-        assert body
-        assert len(body["input_data"]["input_string"]) == 1
-        assert body["input_data"]["input_string"][0]["role"] == "user"
-
-
-@pytest.mark.asyncio
 async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLChatTarget):
     messages = [
-        ChatMessage(role="user", content="user content"),
+        Message(message_pieces=[MessagePiece(role="user", conversation_id="123", original_value="user content")]),
     ]
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
@@ -193,26 +115,6 @@ async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLCha
         mock.return_value = mock_response
         with pytest.raises(TypeError):
             await aml_online_chat._complete_chat_async(messages)
-
-
-@pytest.mark.asyncio
-async def test_azure_ml_validate_request_length(aml_online_chat: AzureMLChatTarget):
-    request = Message(
-        message_pieces=[
-            MessagePiece(role="user", conversation_id="123", original_value="test"),
-            MessagePiece(role="user", conversation_id="123", original_value="test2"),
-        ]
-    )
-
-    with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await aml_online_chat.send_prompt_async(message=request)
-
-
-@pytest.mark.asyncio
-async def test_azure_ml_validate_prompt_type(aml_online_chat: AzureMLChatTarget):
-    request = Message(message_pieces=[get_image_message_piece()])
-    with pytest.raises(ValueError, match="This target only supports text prompt input."):
-        await aml_online_chat.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
@@ -266,7 +168,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(aml_online_
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: AzureMLChatTarget):
-
     response = MagicMock()
     response.status_code = 429
     mock_complete_chat_async = AsyncMock(
@@ -283,7 +184,6 @@ async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: A
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureMLChatTarget):
-
     response = MagicMock()
     response.status_code = 429
     mock_complete_chat_async = AsyncMock()

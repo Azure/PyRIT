@@ -13,6 +13,7 @@ from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
+from sqlalchemy.sql.expression import TextClause
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.singleton import Singleton
@@ -69,7 +70,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
 
-    def _init_storage_io(self):
+    def _init_storage_io(self) -> None:
         # Handles disk-based storage for SQLite local memory.
         self.results_storage_io = DiskStorageIO()
 
@@ -98,7 +99,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Error creating the engine for the database: {e}")
             raise
 
-    def _create_tables_if_not_exist(self):
+    def _create_tables_if_not_exist(self) -> None:
         """
         Create all tables defined in the Base metadata, if they don't already exist in the database.
 
@@ -122,7 +123,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         result: Sequence[EmbeddingDataEntry] = self._query_entries(EmbeddingDataEntry)
         return result
 
-    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list[TextClause]:
         """
         Generate SQLAlchemy filter conditions for filtering conversation pieces by memory labels.
         For SQLite, we use JSON_EXTRACT function to handle JSON fields.
@@ -138,7 +139,9 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         condition = text(json_conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
         return [condition]
 
-    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(
+        self, *, prompt_metadata: dict[str, Union[str, int]]
+    ) -> list[TextClause]:
         """
         Generate SQLAlchemy filter conditions for filtering conversation pieces by prompt metadata.
 
@@ -187,7 +190,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def get_all_table_models(self) -> list[type[Base]]:  # type: ignore
+    def get_all_table_models(self) -> list[type[Base]]:
         """
         Return a list of all table models used in the database by inspecting the Base registry.
 
@@ -198,13 +201,18 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         return Base.__subclasses__()
 
     def _query_entries(
-        self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
+        self,
+        model_class: type[Model],
+        *,
+        conditions: Optional[Any] = None,
+        distinct: bool = False,
+        join_scores: bool = False,
     ) -> MutableSequence[Model]:
         """
         Fetch data from the specified table model with optional conditions.
 
         Args:
-            Model: The SQLAlchemy model class corresponding to the table you want to query.
+            model_class: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (default is False).
             join_scores: Flag to join the scores table (default is False).
@@ -217,10 +225,10 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         """
         with closing(self.get_session()) as session:
             try:
-                query = session.query(Model)
-                if join_scores and Model == PromptMemoryEntry:
+                query = session.query(model_class)
+                if join_scores and model_class == PromptMemoryEntry:
                     query = query.options(joinedload(PromptMemoryEntry.scores))
-                elif Model == AttackResultEntry:
+                elif model_class == AttackResultEntry:
                     query = query.options(
                         joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
                         joinedload(AttackResultEntry.last_score),
@@ -231,10 +239,10 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                     return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
-                logger.exception(f"Error fetching data from table {Model.__tablename__}: {e}")
+                logger.exception(f"Error fetching data from table {model_class.__tablename__}: {e}")  # type: ignore
                 raise
 
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:
         """
         Insert an entry into the Table.
 
@@ -253,7 +261,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting entry into the table: {e}")
                 raise
 
-    def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: Sequence[Base]) -> None:
         """
         Insert multiple entries into the database.
 
@@ -269,7 +277,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
 
-    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict[str, Any]) -> bool:
         """
         Update the given entries with the specified field values.
 
@@ -411,7 +419,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             json.dump(merged_data, f, indent=4)
         return file_path
 
-    def print_schema(self):
+    def print_schema(self) -> None:
         """
         Print the schema of all tables in the SQLite database.
         """
@@ -425,7 +433,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 default = f" DEFAULT {column.default}" if column.default else ""
                 print(f"  {column.name}: {column.type} {nullable}{default}")
 
-    def export_all_tables(self, *, export_type: str = "json"):
+    def export_all_tables(self, *, export_type: str = "json") -> None:
         """
         Export all table data using the specified exporter.
 
@@ -437,12 +445,12 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         table_models = self.get_all_table_models()
 
         for model in table_models:
-            data = self._query_entries(model)  # type: ignore
+            data = self._query_entries(model)
             table_name = model.__tablename__
             file_extension = f".{export_type}"
             file_path = DB_DATA_PATH / f"{table_name}{file_extension}"
             # Convert to list for exporter compatibility
-            self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)
+            self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)  # type: ignore
 
     def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
         """

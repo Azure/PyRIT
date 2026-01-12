@@ -21,7 +21,6 @@ criteria_system_prompt_path = SelfAskScaleScorer.SystemPaths.CRITERIA_SYSTEM_PRO
 
 @pytest.fixture
 def scorer_scale_response() -> Message:
-
     json_response = (
         dedent(
             """
@@ -134,7 +133,6 @@ def test_validate_scale_arguments_missing_args_raises_value_error(scale_args, sc
 
 @pytest.mark.asyncio
 async def test_scale_scorer_score(scorer_scale_response: Message, patch_central_database):
-
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=[scorer_scale_response])
@@ -161,7 +159,6 @@ async def test_scale_scorer_score(scorer_scale_response: Message, patch_central_
 
 @pytest.mark.asyncio
 async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, patch_central_database):
-
     chat_target = MagicMock()
 
     # set a higher score to test the scaling
@@ -198,7 +195,6 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, p
 
 @pytest.mark.asyncio
 async def test_scale_scorer_score_calls_send_chat(patch_central_database):
-
     chat_target = MagicMock()
 
     scorer = SelfAskScaleScorer(

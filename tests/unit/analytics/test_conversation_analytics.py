@@ -5,11 +5,11 @@ from typing import Sequence
 from unittest.mock import MagicMock
 
 import pytest
-from unit.mocks import get_sample_conversation_entries
 
 from pyrit.analytics.conversation_analytics import ConversationAnalytics
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
+from unit.mocks import get_sample_conversation_entries
 
 
 @pytest.fixture
@@ -24,7 +24,6 @@ def sample_conversations_entries() -> Sequence[PromptMemoryEntry]:
 
 
 def test_get_similar_chat_messages_by_content(mock_memory_interface, sample_conversations_entries):
-
     sample_conversations_entries[0].converted_value = "Hello, how are you?"
     sample_conversations_entries[2].converted_value = "Hello, how are you?"
 

@@ -82,14 +82,12 @@ class IntegrationRpcClient:
 
 @pytest.mark.skipif(not if_gradio_installed(), reason="Gradio is not installed")
 class TestHiTLGradioIntegration:
-
     @patch("pyrit.ui.rpc.is_app_running")
     @pytest.mark.asyncio
     @pytest.mark.timeout(30)
     async def test_scorer_can_start(self, mock_is_app_running, promptOriginal: MessagePiece):
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-
             disconnected_event = Event()
 
             def disconnected():
@@ -124,7 +122,6 @@ class TestHiTLGradioIntegration:
     async def test_scorer_receive_multiple(self, mock_is_app_running, promptOriginal: MessagePiece):
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-
             disconnected_event = Event()
 
             def disconnected():
@@ -174,7 +171,6 @@ class TestHiTLGradioIntegration:
     async def test_scorer_handle_client_disconnect(self, mock_is_app_running):
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-
             disconnected_event = Event()
 
             def disconnected():
@@ -205,7 +201,6 @@ class TestHiTLGradioIntegration:
     async def test_scorer_handle_server_disconnect(self, mock_is_app_running):
         memory = MagicMock(MemoryInterface)
         with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-
             disconnected_event = Event()
 
             def disconnected():

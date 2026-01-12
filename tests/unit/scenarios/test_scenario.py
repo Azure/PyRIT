@@ -10,8 +10,9 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenario import ScenarioIdentifier, ScenarioResult
+from pyrit.scenario import DatasetConfiguration, ScenarioIdentifier, ScenarioResult
 from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
+from pyrit.score import Scorer
 
 
 def save_attack_results_to_memory(attack_results):
@@ -29,6 +30,14 @@ def create_mock_run_async(attack_results):
         return AttackExecutorResult(completed_results=attack_results, incomplete_objectives=[])
 
     return AsyncMock(side_effect=mock_run_async)
+
+
+def create_mock_scorer():
+    """Create a mock scorer for testing ScenarioResult."""
+    mock_scorer = MagicMock(spec=Scorer)
+    mock_scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test"}
+    mock_scorer.get_scorer_metrics.return_value = None
+    return mock_scorer
 
 
 @pytest.fixture
@@ -99,6 +108,13 @@ class ConcreteScenario(Scenario):
 
         kwargs.setdefault("strategy_class", TestStrategy)
 
+        # Add a mock scorer if not provided
+        if "objective_scorer" not in kwargs:
+            mock_scorer = MagicMock(spec=Scorer)
+            mock_scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test"}
+            mock_scorer.get_scorer_metrics.return_value = None
+            kwargs["objective_scorer"] = mock_scorer
+
         super().__init__(**kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
@@ -125,9 +141,9 @@ class ConcreteScenario(Scenario):
         return cls.get_strategy_class().ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return the list of required datasets for testing."""
-        return []
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """Return the default dataset configuration for testing."""
+        return DatasetConfiguration()
 
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return
@@ -492,10 +508,12 @@ class TestScenarioResult:
     def test_scenario_result_initialization(self, sample_attack_results):
         """Test ScenarioResult initialization."""
         identifier = ScenarioIdentifier(name="Test", scenario_version=1)
+        mock_scorer = create_mock_scorer()
         result = ScenarioResult(
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": sample_attack_results[:3], "rot13": sample_attack_results[3:]},
+            objective_scorer=mock_scorer,
         )
 
         assert result.scenario_identifier == identifier
@@ -507,10 +525,12 @@ class TestScenarioResult:
     def test_scenario_result_with_empty_results(self):
         """Test ScenarioResult with empty attack results."""
         identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1)
+        mock_scorer = create_mock_scorer()
         result = ScenarioResult(
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": []},
+            objective_scorer=mock_scorer,
         )
 
         assert len(result.attack_results["base64"]) == 0
@@ -519,12 +539,14 @@ class TestScenarioResult:
     def test_scenario_result_objective_achieved_rate(self, sample_attack_results):
         """Test objective_achieved_rate calculation."""
         identifier = ScenarioIdentifier(name="Test", scenario_version=1)
+        mock_scorer = create_mock_scorer()
 
         # All successful
         result = ScenarioResult(
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": sample_attack_results},
+            objective_scorer=mock_scorer,
         )
         assert result.objective_achieved_rate() == 100
 
@@ -549,6 +571,7 @@ class TestScenarioResult:
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": mixed_results},
+            objective_scorer=mock_scorer,
         )
         assert result2.objective_achieved_rate() == 60  # 3 out of 5
 

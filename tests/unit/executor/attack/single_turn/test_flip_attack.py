@@ -65,7 +65,7 @@ class TestFlipAttackInitialization:
 
         assert attack._system_prompt is not None
         assert len(attack._system_prompt.message_pieces) == 1
-        assert attack._system_prompt.message_pieces[0].role == "system"
+        assert attack._system_prompt.message_pieces[0].api_role == "system"
         assert "flipping each word" in attack._system_prompt.message_pieces[0].original_value
 
     def test_init_adds_flip_converter_to_request_converters(self, mock_objective_target):
@@ -152,7 +152,7 @@ class TestFlipAttackSetup:
     async def test_setup_adds_system_prompt_to_context(self, flip_attack, basic_context):
         """Test that setup adds the system prompt to prepended conversation"""
         flip_attack._conversation_manager = MagicMock()
-        flip_attack._conversation_manager.update_conversation_state_async = AsyncMock()
+        flip_attack._conversation_manager.initialize_context_async = AsyncMock()
 
         await flip_attack._setup_async(context=basic_context)
 
@@ -164,15 +164,20 @@ class TestFlipAttackSetup:
     async def test_setup_updates_conversation_without_converters(self, flip_attack, basic_context):
         """Test that conversation state is updated without converters for system prompt"""
         flip_attack._conversation_manager = MagicMock()
-        flip_attack._conversation_manager.update_conversation_state_async = AsyncMock()
+        flip_attack._conversation_manager.initialize_context_async = AsyncMock()
 
         await flip_attack._setup_async(context=basic_context)
 
-        # Verify conversation manager was called with empty converter list
-        flip_attack._conversation_manager.update_conversation_state_async.assert_called_once_with(
+        # Verify prepended_conversation was set on context (system prompt)
+        assert len(basic_context.prepended_conversation) == 1
+        assert basic_context.prepended_conversation[0] == flip_attack._system_prompt
+
+        # Verify conversation manager was called with correct parameters
+        flip_attack._conversation_manager.initialize_context_async.assert_called_once_with(
+            context=basic_context,
             target=flip_attack._objective_target,
             conversation_id=basic_context.conversation_id,
-            prepended_conversation=[flip_attack._system_prompt],
+            memory_labels={},
         )
 
 
@@ -188,7 +193,9 @@ class TestFlipAttackExecution:
 
         # Mock the parent's perform_attack_async
         with patch.object(
-            FlipAttack.__bases__[0], "_perform_async", new_callable=AsyncMock  # PromptSendingAttack
+            FlipAttack.__bases__[0],
+            "_perform_async",
+            new_callable=AsyncMock,  # PromptSendingAttack
         ) as mock_perform:
             mock_result = AttackResult(
                 conversation_id=basic_context.conversation_id,

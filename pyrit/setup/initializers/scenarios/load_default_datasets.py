@@ -12,9 +12,9 @@ import logging
 import textwrap
 from typing import List
 
-from pyrit.cli.scenario_registry import ScenarioRegistry
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory import CentralMemory
+from pyrit.registry import ScenarioRegistry
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 logger = logging.getLogger(__name__)
@@ -54,27 +54,27 @@ class LoadDefaultDatasets(PyRITInitializer):
     async def initialize_async(self) -> None:
         """Load default datasets from all registered scenarios."""
         # Get ScenarioRegistry to discover all scenarios
-        registry = ScenarioRegistry()
+        registry = ScenarioRegistry.get_registry_singleton()
 
-        # Collect all required datasets from all scenarios
-        all_required_datasets: List[str] = []
+        # Collect all default datasets from all scenarios
+        all_default_datasets: List[str] = []
 
         # Get all scenario names from registry
-        scenario_names = registry.get_scenario_names()
+        scenario_names = registry.get_names()
 
         for scenario_name in scenario_names:
-            scenario_class = registry.get_scenario(scenario_name)
+            scenario_class = registry.get_class(scenario_name)
             if scenario_class:
-                # Get required_datasets from the scenario class
+                # Get default_dataset_config from the scenario class
                 try:
-                    datasets = scenario_class.required_datasets()
-                    all_required_datasets.extend(datasets)
-                    logger.info(f"Scenario '{scenario_name}' requires datasets: {datasets}")
+                    datasets = scenario_class.default_dataset_config().get_default_dataset_names()
+                    all_default_datasets.extend(datasets)
+                    logger.info(f"Scenario '{scenario_name}' uses datasets: {datasets}")
                 except Exception as e:
-                    logger.warning(f"Could not get required datasets from scenario '{scenario_name}': {e}")
+                    logger.warning(f"Could not get default datasets from scenario '{scenario_name}': {e}")
 
         # Remove duplicates
-        unique_datasets = list(dict.fromkeys(all_required_datasets))
+        unique_datasets = list(dict.fromkeys(all_default_datasets))
 
         if not unique_datasets:
             logger.warning("No datasets required by any scenario")

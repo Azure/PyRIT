@@ -12,8 +12,8 @@ services:
       - data:/app/data
       - ../assets:/app/assets
     env_file:
-      - ../.env
-      - ../.env.local
+      - ~/.pyrit/.env
+      - ~/.pyrit/.env.local
       - .env.container.settings
     restart: unless-stopped
     healthcheck:

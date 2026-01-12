@@ -209,7 +209,7 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
         """
         if not message or not message.message_pieces:
             raise ValueError(
-                f"{field_name}: Message must be provided with at least one message piece. " f"Received: {message}"
+                f"{field_name}: Message must be provided with at least one message piece. Received: {message}"
             )
 
         if len(message.message_pieces) != 1:
