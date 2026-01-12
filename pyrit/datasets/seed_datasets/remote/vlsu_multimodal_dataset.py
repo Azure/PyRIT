@@ -162,87 +162,65 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
                 if combined_category not in category_values:
                     continue
 
-            # Create text prompt if text_grade is unsafe or borderline
-            if text_grade in self.unsafe_grades:
+            # Only create prompts if combined_grade is unsafe or borderline
+            if combined_grade not in self.unsafe_grades:
+                continue
+
+            # Generate a shared group_id for the text+image pair
+            group_id = uuid.uuid4()
+
+            try:
+                local_image_path = await self._fetch_and_save_image_async(
+                    image_url, str(group_id)
+                )
+
+                # Create text prompt (sequence=0, sent first)
                 text_prompt = SeedPrompt(
                     value=text,
                     data_type="text",
                     name="ML-VLSU Text",
                     dataset_name=self.dataset_name,
-                    harm_categories=[text_category],
-                    description="Unsafe/borderline text from ML-VLSU dataset.",
+                    harm_categories=[combined_category],
+                    description="Text component of ML-VLSU multimodal prompt.",
                     source=self.source,
-                    prompt_group_id=uuid.uuid4(),
+                    prompt_group_id=group_id,
                     sequence=0,
                     metadata={
-                        "category": text_category,
+                        "category": combined_category,
                         "text_grade": text_grade,
-                        "prompt_type": "text_only",
+                        "image_grade": image_grade,
+                        "combined_grade": combined_grade,
                     },
                 )
+
+                # Create image prompt (sequence=1, sent second)
+                image_prompt = SeedPrompt(
+                    value=local_image_path,
+                    data_type="image_path",
+                    name="ML-VLSU Image",
+                    dataset_name=self.dataset_name,
+                    harm_categories=[combined_category],
+                    description="Image component of ML-VLSU multimodal prompt.",
+                    source=self.source,
+                    prompt_group_id=group_id,
+                    sequence=1,
+                    metadata={
+                        "category": combined_category,
+                        "text_grade": text_grade,
+                        "image_grade": image_grade,
+                        "combined_grade": combined_grade,
+                        "original_image_url": image_url,
+                    },
+                )
+
                 prompts.append(text_prompt)
+                prompts.append(image_prompt)
 
-            # Create image prompt if image_grade is unsafe or borderline
-            if image_grade in self.unsafe_grades:
-                try:
-                    local_image_path = await self._fetch_and_save_image_async(
-                        image_url, str(group_id)
-                    )
-                    image_prompt = SeedPrompt(
-                        value=local_image_path,
-                        data_type="image_path",
-                        name="ML-VLSU Image",
-                        dataset_name=self.dataset_name,
-                        harm_categories=[image_category],
-                        description="Unsafe/borderline image from ML-VLSU dataset.",
-                        source=self.source,
-                        prompt_group_id=uuid.uuid4(),
-                        sequence=0,
-                        metadata={
-                            "category": image_category,
-                            "image_grade": image_grade,
-                            "original_image_url": image_url,
-                            "prompt_type": "image_only",
-                        },
-                    )
-                    prompts.append(image_prompt)
-                except Exception as e:
-                    failed_image_count += 1
-                    logger.warning(f"Failed to fetch image for {group_id}: {e}")
-
-            # Create combined prompt if combined_grade is unsafe or borderline
-            if combined_grade in self.unsafe_grades:
-                try:
-                    local_image_path = await self._fetch_and_save_image_async(
-                        image_url, str(group_id)
-                    )
-                    combined_prompt = SeedPrompt(
-                        value=local_image_path,
-                        prompt_text=text,
-                        data_type="image_path",
-                        name="ML-VLSU Combined",
-                        dataset_name=self.dataset_name,
-                        harm_categories=[combined_category],
-                        description="Combined text+image prompt from ML-VLSU dataset.",
-                        source=self.source,
-                        prompt_group_id=uuid.uuid4(),
-                        sequence=1,
-                        metadata={
-                            "category": combined_category,
-                            "combined_grade": combined_grade,
-                            "text_grade": text_grade,
-                            "image_grade": image_grade,
-                            "image_path": local_image_path,
-                            "original_image_url": image_url,
-                            "prompt_type": "combined",
-                        },
-                    )
-                    prompts.append(combined_prompt)
-                except Exception as e:
-                    failed_image_count += 1
-                    logger.warning(
-                        f"Failed to fetch image for combined prompt {group_id}: {e}"
-                    )
+            except Exception as e:
+                failed_image_count += 1
+                logger.warning(
+                    f"Failed to fetch image for combined prompt {group_id}: {e}"
+                )
 
         if failed_image_count > 0:
             logger.warning(

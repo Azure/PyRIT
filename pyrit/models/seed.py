@@ -91,10 +91,6 @@ class Seed(YamlLoadable):
     # Alias for the prompt group
     prompt_group_alias: Optional[str] = None
 
-    # Secondary value for multimodal prompts (e.g., image path for text prompt)
-    # Added to support multimodal prompts
-    prompt_text: Optional[str] = None
-
     def render_template_value(self, **kwargs) -> str:
         """
         Renders self.value as a template, applying provided parameters in kwargs.
@@ -136,7 +132,9 @@ class Seed(YamlLoadable):
         # Check if the template contains Jinja2 control structures (for loops, if statements, etc.)
         # If it does, and we don't have all required parameters, don't render it to preserve the structure
 
-        has_control_structures = bool(re.search(r"\{%[-\s]*(for|if|block|macro|call)", self.value))
+        has_control_structures = bool(
+            re.search(r"\{%[-\s]*(for|if|block|macro|call)", self.value)
+        )
 
         if has_control_structures:
             # Check if all parameters in control structures are provided
