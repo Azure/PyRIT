@@ -634,9 +634,9 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    Foundry
     FoundryScenario
     FoundryStrategy
+    RedTeamAgent
 
 :py:mod:`pyrit.scenario.garak`
 ==============================
