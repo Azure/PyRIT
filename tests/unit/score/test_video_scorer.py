@@ -124,9 +124,9 @@ async def test_extract_frames_true_false(video_converter_sample_video):
     video_path = video_converter_sample_video.converted_value
     frame_paths = scorer._extract_frames(video_path=video_path)
 
-    assert (
-        len(frame_paths) == scorer.num_sampled_frames
-    ), f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+    assert len(frame_paths) == scorer.num_sampled_frames, (
+        f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+    )
 
     # Verify frames are valid images and cleanup
     for path in frame_paths:
@@ -148,9 +148,9 @@ async def test_extract_frames_float_scale(video_converter_sample_video):
     video_path = video_converter_sample_video.converted_value
     frame_paths = scorer._extract_frames(video_path=video_path)
 
-    assert (
-        len(frame_paths) == scorer.num_sampled_frames
-    ), f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+    assert len(frame_paths) == scorer.num_sampled_frames, (
+        f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+    )
 
     # Verify frames are valid images and cleanup
     for path in frame_paths:

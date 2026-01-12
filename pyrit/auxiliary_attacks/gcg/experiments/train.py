@@ -70,7 +70,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         logfile: str = "",
         random_seed: int = 42,
     ):
-
         params = config_dict.ConfigDict()
         params.result_prefix = result_prefix
         params.train_data = train_data

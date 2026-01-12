@@ -8,7 +8,8 @@ from pyrit.exceptions.exception_classes import (
     pyrit_target_retry,
 )
 from pyrit.models import Message, construct_response_from_request
-from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
+from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
 

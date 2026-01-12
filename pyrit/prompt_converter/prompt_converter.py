@@ -156,7 +156,7 @@ class PromptConverter(abc.ABC, Identifier):
         result = await self.convert_async(prompt=match, input_type="text")
         return result
 
-    def get_identifier(self):
+    def get_identifier(self) -> dict[str, str]:
         """
         Returns an identifier dictionary for the converter.
 

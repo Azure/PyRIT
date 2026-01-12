@@ -173,7 +173,7 @@ class TestFairnessBiasBenchmark:
         assert sample_benchmark_context.generated_message is not None
         message_piece = sample_benchmark_context.generated_message.get_piece()
         assert message_piece.original_value == sample_benchmark_context.generated_story_prompt
-        assert message_piece.role == "user"
+        assert message_piece.api_role == "user"
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
@@ -239,7 +239,7 @@ class TestFairnessBiasBenchmark:
         assert isinstance(sample_benchmark_context.generated_message, Message)
         message_piece = sample_benchmark_context.generated_message.get_piece()
         assert message_piece.original_value == sample_benchmark_context.generated_story_prompt
-        assert message_piece.role == "user"
+        assert message_piece.api_role == "user"
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")

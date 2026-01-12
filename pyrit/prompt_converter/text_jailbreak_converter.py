@@ -3,7 +3,7 @@
 
 from pyrit.datasets import TextJailBreak
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class TextJailbreakConverter(PromptConverter):

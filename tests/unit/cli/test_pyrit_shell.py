@@ -145,6 +145,8 @@ class TestPyRITShell:
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         mock_result = MagicMock()
@@ -205,6 +207,8 @@ class TestPyRITShell:
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         mock_resolve_scripts.return_value = [Path("/test/script.py")]
@@ -240,6 +244,8 @@ class TestPyRITShell:
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         mock_resolve_scripts.side_effect = FileNotFoundError("Script not found")
@@ -276,6 +282,8 @@ class TestPyRITShell:
             "memory_labels": None,
             "database": "InMemory",
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         # First call is background init, second call is the actual test
@@ -317,6 +325,8 @@ class TestPyRITShell:
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         # First call succeeds (background init), second call raises error (the actual test)
@@ -695,6 +705,8 @@ class TestPyRITShellRunCommand:
             "memory_labels": {"key": "value"},
             "database": "InMemory",
             "log_level": "DEBUG",
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         # First call is background init, second call is the actual test
@@ -736,6 +748,8 @@ class TestPyRITShellRunCommand:
             "memory_labels": None,
             "database": None,
             "log_level": None,
+            "dataset_names": None,
+            "max_dataset_size": None,
         }
 
         mock_result1 = MagicMock()

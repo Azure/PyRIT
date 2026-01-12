@@ -8,7 +8,7 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
-def get_required_value(*, env_var_name: str, passed_value: Any) -> Any:
+def get_required_value(*, env_var_name: str, passed_value: Any) -> Optional[str]:
     """
     Get a required value from an environment variable or a passed value,
     preferring the passed value.

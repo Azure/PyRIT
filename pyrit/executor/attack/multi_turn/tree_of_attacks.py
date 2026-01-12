@@ -19,16 +19,20 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.executor.attack.component import ConversationManager
-from pyrit.executor.attack.component.conversation_manager import (
-    format_conversation_context,
+from pyrit.executor.attack.component import (
+    ConversationManager,
+    PrependedConversationConfig,
+    get_prepended_turn_count,
 )
-from pyrit.executor.attack.core import (
+from pyrit.executor.attack.component.conversation_manager import (
+    build_conversation_context_string_async,
+)
+from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
-    AttackStrategy,
 )
+from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
 from pyrit.memory import CentralMemory
 from pyrit.models import (
@@ -73,10 +77,6 @@ class TAPAttackContext(MultiTurnAttackContext):
     # Best conversation ID and score found during the attack
     best_conversation_id: Optional[str] = None
     best_objective_score: Optional[Score] = None
-
-    # Current iteration number
-    # This tracks the depth of the tree exploration
-    current_iteration: int = 0
 
 
 @dataclass
@@ -187,6 +187,7 @@ class _TreeOfAttacksNode:
         memory_labels: Optional[dict[str, str]] = None,
         parent_id: Optional[str] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        initial_prompt: Optional[Message] = None,
     ) -> None:
         """
         Initialize a tree node.
@@ -207,6 +208,8 @@ class _TreeOfAttacksNode:
             memory_labels (Optional[dict[str, str]]): Labels for memory storage.
             parent_id (Optional[str]): ID of the parent node, if this is a child node
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts and responses.
+            initial_prompt (Optional[Message]): Initial message to send for the first turn,
+                bypassing adversarial chat generation. Supports multimodal messages.
         """
         # Store configuration
         self._objective_target = objective_target
@@ -247,26 +250,35 @@ class _TreeOfAttacksNode:
         # Context from prepended conversation (for adversarial chat system prompt)
         self._conversation_context: Optional[str] = None
 
+        # Initial prompt for first turn (bypasses adversarial chat generation)
+        # This supports multimodal messages
+        self._initial_prompt: Optional[Message] = initial_prompt
+
     async def initialize_with_prepended_conversation_async(
         self,
         *,
         prepended_conversation: List[Message],
+        prepended_conversation_config: Optional["PrependedConversationConfig"] = None,
     ) -> None:
         """
         Initialize the node with a prepended conversation history.
 
-        This method replays an existing conversation to both the objective target and
-        adversarial chat conversations. This is useful when starting an attack from
-        an established context (e.g., role-play scenarios, simulated conversations).
+        This method sets up both the objective target and adversarial chat with the
+        prepended conversation context, similar to how Crescendo handles it.
 
-        For the objective target: Messages are replayed as-is to establish context.
-        For the adversarial chat: Roles are swapped (user↔assistant) since from the
-        adversarial chat's perspective, "user" messages are what it generated and
-        "assistant" messages are responses it received.
+        For the objective target:
+            - Uses ConversationManager.add_prepended_conversation_to_memory_async
+            - Messages are added to memory with simulated_assistant role
+            - Converters are applied based on config
+
+        For the adversarial chat:
+            - Builds a context string for the system prompt (not added to memory)
+            - The context is used in _generate_first_turn_prompt_async
 
         Args:
             prepended_conversation (List[Message]): The conversation history to replay.
-                System messages are handled separately for each target.
+            prepended_conversation_config (Optional[PrependedConversationConfig]):
+                Configuration for how to process the prepended conversation.
 
         Note:
             - This should be called before `send_prompt_async` for first-level nodes
@@ -275,26 +287,22 @@ class _TreeOfAttacksNode:
         if not prepended_conversation:
             return
 
-        conversation_manager = ConversationManager(attack_identifier=self._attack_id)
+        # Use ConversationManager to add messages to memory
+        conversation_manager = ConversationManager(
+            attack_identifier=self._attack_id,
+            prompt_normalizer=self._prompt_normalizer,
+        )
 
-        # Add to objective target conversation (handles system prompts and memory)
-        await conversation_manager.update_conversation_state_async(
-            target=self._objective_target,
+        await conversation_manager.add_prepended_conversation_to_memory_async(
+            prepended_conversation=prepended_conversation,
             conversation_id=self.objective_target_conversation_id,
-            prepended_conversation=prepended_conversation,
+            request_converters=self._request_converters,
+            prepended_conversation_config=prepended_conversation_config,
         )
 
-        # Add to adversarial chat conversation (role-swapped)
-        # Note: adversarial chat gets its own system prompt later in _generate_first_turn_prompt_async
-        await conversation_manager.prepend_to_adversarial_chat_async(
-            adversarial_chat=self._adversarial_chat,
-            adversarial_chat_conversation_id=self.adversarial_chat_conversation_id,
-            prepended_conversation=prepended_conversation,
-            labels=self._memory_labels,
-        )
-
-        # Generate formatted context for adversarial chat system prompt
-        self._conversation_context = format_conversation_context(prepended_conversation)
+        # Build context string for adversarial chat system prompt (like Crescendo)
+        # The adversarial chat uses this in its system prompt rather than in conversation history
+        self._conversation_context = await build_conversation_context_string_async(prepended_conversation)
 
         logger.debug(f"Node {self.node_id}: Initialized with {len(prepended_conversation)} prepended messages")
 
@@ -330,15 +338,19 @@ class _TreeOfAttacksNode:
             - `error_message`: Set if an error occurred during execution
         """
         try:
-            # Generate adversarial prompt
-            prompt = await self._generate_adversarial_prompt_async(objective)
+            # Check if we have an initial prompt to use (bypasses adversarial generation)
+            if self._initial_prompt and self._is_first_turn():
+                response = await self._send_initial_prompt_to_target_async()
+            else:
+                # Generate adversarial prompt
+                prompt = await self._generate_adversarial_prompt_async(objective)
 
-            # Validate prompt is on-topic
-            if await self._is_prompt_off_topic_async(prompt):
-                return
+                # Validate prompt is on-topic
+                if await self._is_prompt_off_topic_async(prompt):
+                    return
 
-            # Send prompt to objective target
-            response = await self._send_prompt_to_target_async(prompt)
+                # Send prompt to objective target
+                response = await self._send_prompt_to_target_async(prompt)
 
             # Score the response
             await self._score_response_async(response=response, objective=objective)
@@ -456,6 +468,54 @@ class _TreeOfAttacksNode:
         """
         # Create message from the generated prompt
         message = Message.from_prompt(prompt=prompt, role="user")
+
+        # Send prompt with configured converters
+        response = await self._prompt_normalizer.send_prompt_async(
+            message=message,
+            request_converter_configurations=self._request_converters,
+            response_converter_configurations=self._response_converters,
+            conversation_id=self.objective_target_conversation_id,
+            target=self._objective_target,
+            labels=self._memory_labels,
+            attack_identifier=self._attack_id,
+        )
+
+        # Store the last response text for reference
+        response_piece = response.get_piece()
+        self.last_response = response_piece.converted_value
+        logger.debug(f"Node {self.node_id}: Received response from target")
+
+        return response
+
+    async def _send_initial_prompt_to_target_async(self) -> Message:
+        """
+        Send the initial prompt (from next_message) directly to the objective target.
+
+        This method bypasses adversarial chat generation and sends the user-provided
+        initial prompt directly. It supports multimodal messages. The initial prompt
+        is cleared after use to ensure subsequent turns use normal generation.
+
+        Returns:
+            Message: The response from the objective target.
+
+        Side Effects:
+            - Clears self._initial_prompt after use
+            - Sets self.last_prompt_sent to the initial prompt text value
+            - Sets self.last_response to the target's response text
+
+        Raises:
+            ValueError: If _initial_prompt is None when this method is called
+        """
+        if self._initial_prompt is None:
+            raise ValueError("_initial_prompt must be set before calling this method")
+
+        # Duplicate to ensure fresh IDs (avoids conflicts if message was already in memory)
+        message = self._initial_prompt.duplicate_message()
+        self._initial_prompt = None  # Clear for future turns
+
+        # Store the prompt text for reference
+        self.last_prompt_sent = message.get_value()
+        logger.debug(f"Node {self.node_id}: Using initial prompt, bypassing adversarial chat")
 
         # Send prompt with configured converters
         response = await self._prompt_normalizer.send_prompt_async(
@@ -777,7 +837,7 @@ class _TreeOfAttacksNode:
         target_messages = self._memory.get_conversation(conversation_id=self.objective_target_conversation_id)
 
         # Extract the last assistant response
-        assistant_responses = [r for r in target_messages if r.get_piece().role == "assistant"]
+        assistant_responses = [r for r in target_messages if r.get_piece().api_role == "assistant"]
         if not assistant_responses:
             logger.error(f"No assistant responses found in the conversation {self.objective_target_conversation_id}.")
             raise RuntimeError("Cannot proceed without an assistant response.")
@@ -1008,6 +1068,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         on_topic_checking_enabled: bool = True,
         desired_response_prefix: str = "Sure, here is",
         batch_size: int = 10,
+        prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ):
         """
         Initialize the Tree of Attacks with Pruning attack strategy.
@@ -1026,6 +1087,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             on_topic_checking_enabled (bool): Whether to check if prompts are on-topic. Defaults to True.
             desired_response_prefix (str): Expected prefix for successful responses. Defaults to "Sure, here is".
             batch_size (int): Number of nodes to process in parallel per batch. Defaults to 10.
+            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
+                Configuration for how to process prepended conversations. Controls converter
+                application by role, message normalization, and non-chat target behavior.
 
         Raises:
             ValueError: If objective_scorer is not provided, if target is not PromptChatTarget, or
@@ -1102,6 +1166,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
 
+        # Store the prepended conversation configuration
+        self._prepended_conversation_config = prepended_conversation_config
+
     def _load_adversarial_prompts(self) -> None:
         """Load the adversarial chat prompts from the configured paths."""
         # Load system prompt
@@ -1165,6 +1232,9 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         Args:
             context (TAPAttackContext): The attack context containing configuration.
+
+        Raises:
+            ValueError: If the prepended conversation turns equal or exceed tree_depth.
         """
         # Update memory labels for this execution
         context.memory_labels = combine_dict(existing_dict=self._memory_labels, new_dict=context.memory_labels)
@@ -1175,7 +1245,26 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         context.nodes = []
         context.best_conversation_id = None
         context.best_objective_score = None
-        context.current_iteration = 0
+
+        # Initialize executed_turns with prepended conversation turn count
+        # Note: We don't call initialize_context_async here because TAP handles
+        # prepended conversation differently - each node gets its own copy of the
+        # prepended conversation in _initialize_first_level_nodes_async, since
+        # nodes have independent conversation IDs for parallel exploration.
+        context.executed_turns = get_prepended_turn_count(context.prepended_conversation)
+
+        # Validate that prepended conversation doesn't exceed tree_depth
+        if context.executed_turns >= self._tree_depth:
+            raise ValueError(
+                f"Prepended conversation has {context.executed_turns} turns, "
+                f"which equals or exceeds tree_depth={self._tree_depth}. "
+                f"Reduce prepended turns or increase tree_depth."
+            )
+
+        # Add visualization nodes for prepended conversation turns
+        # These are shown as "1: (prepended)", "2: (prepended)", etc.
+        for turn in range(1, context.executed_turns + 1):
+            context.tree_visualization.create_node(f"{turn}: (prepended)", f"prepended_{turn}", parent="root")
 
     async def _perform_async(self, *, context: TAPAttackContext) -> TAPAttackResult:
         """
@@ -1207,8 +1296,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             f"Branching factor: {self._branching_factor}"
         )
         self._logger.info(
-            f"Execution settings - Batch size: {self._batch_size}, "
-            f"On-topic checking: {self._on_topic_checking_enabled}"
+            f"Execution settings - Batch size: {self._batch_size}, On-topic checking: {self._on_topic_checking_enabled}"
         )
 
         # TAP Attack Execution Algorithm:
@@ -1229,9 +1317,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         # 9) Return success result if objective achieved, otherwise failure result
 
         # Execute tree exploration iterations
-        for iteration in range(1, self._tree_depth + 1):
-            context.current_iteration = iteration
-            self._logger.info(f"Starting TAP iteration {iteration}/{self._tree_depth}")
+        # Note: executed_turns is initialized in _setup_async with prepended conversation count
+        # Start from executed_turns + 1 so prepended turns count toward tree_depth
+        for turn in range(context.executed_turns + 1, self._tree_depth + 1):
+            context.executed_turns = turn
+            self._logger.info(f"Starting TAP turn {turn}/{self._tree_depth}")
 
             # Prepare nodes for current iteration
             await self._prepare_nodes_for_iteration_async(context)
@@ -1272,15 +1362,14 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         """
         Prepare nodes for the current iteration by either initializing or branching.
 
-        This method sets up the nodes for tree exploration based on the current
-        iteration number. For the first iteration, it creates initial nodes up
-        to the tree width. For subsequent iterations, it branches existing nodes
-        according to the branching factor.
+        This method sets up the nodes for tree exploration. If no nodes exist yet,
+        it creates initial nodes up to the tree width. Otherwise, it branches
+        existing nodes according to the branching factor.
 
         Args:
             context (TAPAttackContext): The attack context containing configuration and state.
         """
-        if context.current_iteration == 1:
+        if not context.nodes:
             await self._initialize_first_level_nodes_async(context)
         else:
             self._branch_existing_nodes(context)
@@ -1359,16 +1448,22 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         context.nodes = []
 
         for i in range(self._tree_width):
-            node = self._create_attack_node(context=context, parent_id=None)
+            # Only pass next_message to the first node (all nodes explore from the same start)
+            initial_prompt = context.next_message if i == 0 else None
+            node = self._create_attack_node(context=context, parent_id=None, initial_prompt=initial_prompt)
 
             # Initialize node with prepended conversation if provided
             if context.prepended_conversation:
                 await node.initialize_with_prepended_conversation_async(
                     prepended_conversation=context.prepended_conversation,
+                    prepended_conversation_config=self._prepended_conversation_config,
                 )
 
             context.nodes.append(node)
-            context.tree_visualization.create_node("1: ", node.node_id, parent="root")
+            context.tree_visualization.create_node(f"{context.executed_turns}: ", node.node_id, parent="root")
+
+        # Clear next_message after initialization (it's been used by the first node)
+        context.next_message = None
 
     def _branch_existing_nodes(self, context: TAPAttackContext) -> None:
         """
@@ -1388,7 +1483,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             for _ in range(self._branching_factor - 1):
                 cloned_node = node.duplicate()
                 context.tree_visualization.create_node(
-                    f"{context.current_iteration}: ", cloned_node.node_id, parent=cloned_node.parent_id
+                    f"{context.executed_turns}: ", cloned_node.node_id, parent=cloned_node.parent_id
                 )
                 # Add the adversarial chat conversation ID of the duplicated node to the context's tracking
                 context.related_conversations.add(
@@ -1424,7 +1519,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             batch_nodes = context.nodes[batch_start:batch_end]
 
             self._logger.debug(
-                f"Processing batch {batch_start//self._batch_size + 1} "
+                f"Processing batch {batch_start // self._batch_size + 1} "
                 f"(nodes {batch_start + 1}-{batch_end} of {len(context.nodes)})"
             )
 
@@ -1508,7 +1603,13 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             context.best_conversation_id = best_node.objective_target_conversation_id
             context.best_objective_score = best_node.objective_score
 
-    def _create_attack_node(self, *, context: TAPAttackContext, parent_id: Optional[str] = None) -> _TreeOfAttacksNode:
+    def _create_attack_node(
+        self,
+        *,
+        context: TAPAttackContext,
+        parent_id: Optional[str] = None,
+        initial_prompt: Optional[Message] = None,
+    ) -> _TreeOfAttacksNode:
         """
         Create a new attack node with the configured settings.
 
@@ -1520,6 +1621,8 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             context (TAPAttackContext): The attack context containing the objective and other configuration.
             parent_id (Optional[str]): The ID of the parent node in the tree, if any. If None,
                 the node will be a root-level node.
+            initial_prompt (Optional[Message]): Initial message for first turn, bypassing
+                adversarial chat generation. Supports multimodal messages. "next_message" in multiturncontext
 
         Returns:
             _TreeOfAttacksNode: A new node configured for the TAP attack, ready to
@@ -1541,6 +1644,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             desired_response_prefix=self._desired_response_prefix,
             parent_id=parent_id,
             prompt_normalizer=self._prompt_normalizer,
+            initial_prompt=initial_prompt,
         )
 
         # Add the adversarial chat conversation ID to the context's tracking (ensuring uniqueness)
@@ -1689,7 +1793,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             TAPAttackResult: The success result indicating the attack achieved its objective.
         """
         score_value = context.best_objective_score.get_value() if context.best_objective_score else 0
-        outcome_reason = f"Achieved score {score_value:.2f} >= " f"threshold {self._successful_objective_threshold}"
+        outcome_reason = f"Achieved score {score_value:.2f} >= threshold {self._successful_objective_threshold}"
 
         return self._create_attack_result(
             context=context,
@@ -1764,7 +1868,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             objective=context.objective,
             outcome=outcome,
             outcome_reason=outcome_reason,
-            executed_turns=context.current_iteration,
+            executed_turns=context.executed_turns,
             last_response=last_response,
             last_score=context.best_objective_score,
             related_conversations=context.related_conversations,  # Use related_conversations here
@@ -1774,7 +1878,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         result.tree_visualization = context.tree_visualization
         result.nodes_explored = stats["nodes_explored"]
         result.nodes_pruned = stats["nodes_pruned"]
-        result.max_depth_reached = context.current_iteration
+        result.max_depth_reached = context.executed_turns
         result.auxiliary_scores_summary = auxiliary_scores_summary
 
         return result

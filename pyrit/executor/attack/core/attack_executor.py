@@ -9,22 +9,36 @@ This is the new, cleaner design that leverages the params_type architecture.
 
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    cast,
+)
 
-from pyrit.common.logger import logger
-from pyrit.executor.attack.core import (
+from pyrit.common.deprecation import print_deprecation_message
+from pyrit.executor.attack.core.attack_parameters import AttackParameters
+from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategy,
     AttackStrategyContextT,
     AttackStrategyResultT,
 )
-from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     MultiTurnAttackContext,
 )
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
 )
-from pyrit.models import Message, SeedGroup
+from pyrit.models import Message, SeedAttackGroup
+
+if TYPE_CHECKING:
+    from pyrit.prompt_target import PromptChatTarget
+    from pyrit.score import TrueFalseScorer
 
 AttackResultT = TypeVar("AttackResultT")
 
@@ -126,20 +140,27 @@ class AttackExecutor:
         self,
         *,
         attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
-        seed_groups: Sequence[SeedGroup],
+        seed_groups: Sequence[SeedAttackGroup],
+        adversarial_chat: Optional["PromptChatTarget"] = None,
+        objective_scorer: Optional["TrueFalseScorer"] = None,
         field_overrides: Optional[Sequence[Dict[str, Any]]] = None,
         return_partial_on_failure: bool = False,
         **broadcast_fields,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
-        Execute attacks in parallel, extracting parameters from SeedGroups.
+        Execute attacks in parallel, extracting parameters from SeedAttackGroups.
 
         Uses the attack's params_type.from_seed_group() to extract parameters,
         automatically handling which fields the attack accepts.
 
         Args:
             attack: The attack strategy to execute.
-            seed_groups: SeedGroups containing objectives and optional prompts.
+            seed_groups: SeedAttackGroups containing objectives and optional prompts.
+            adversarial_chat: Optional chat target for generating adversarial prompts
+                or simulated conversations. Required when seed groups contain
+                SeedSimulatedConversation configurations.
+            objective_scorer: Optional scorer for evaluating simulated conversations.
+                Required when seed groups contain SeedSimulatedConversation configurations.
             field_overrides: Optional per-seed-group field overrides. If provided,
                 must match the length of seed_groups. Each dict is passed to
                 from_seed_group() as overrides.
@@ -160,21 +181,28 @@ class AttackExecutor:
 
         if field_overrides and len(field_overrides) != len(seed_groups):
             raise ValueError(
-                f"field_overrides length ({len(field_overrides)}) must match "
-                f"seed_groups length ({len(seed_groups)})"
+                f"field_overrides length ({len(field_overrides)}) must match seed_groups length ({len(seed_groups)})"
             )
 
         params_type = attack.params_type
 
-        # Build params list using from_seed_group
-        params_list: List[AttackParameters] = []
-        for i, sg in enumerate(seed_groups):
-            # Start with broadcast fields, then layer on per-seed-group overrides
-            combined_overrides = dict(broadcast_fields)
-            if field_overrides:
-                combined_overrides.update(field_overrides[i])
-            params = params_type.from_seed_group(sg, **combined_overrides)
-            params_list.append(params)
+        # Build params list using from_seed_group_async with concurrency control
+        # This can take time if the SeedSimulatedConversation generation is included
+        semaphore = asyncio.Semaphore(self._max_concurrency)
+
+        async def build_params(i: int, sg: SeedAttackGroup) -> AttackParameters:
+            async with semaphore:
+                combined_overrides = dict(broadcast_fields)
+                if field_overrides:
+                    combined_overrides.update(field_overrides[i])
+                return await params_type.from_seed_group_async(
+                    seed_group=sg,
+                    adversarial_chat=adversarial_chat,
+                    objective_scorer=objective_scorer,
+                    **combined_overrides,
+                )
+
+        params_list = list(await asyncio.gather(*[build_params(i, sg) for i, sg in enumerate(seed_groups)]))
 
         return await self._execute_with_params_list_async(
             attack=attack,
@@ -218,7 +246,7 @@ class AttackExecutor:
 
         if field_overrides and len(field_overrides) != len(objectives):
             raise ValueError(
-                f"field_overrides length ({len(field_overrides)}) must match " f"objectives length ({len(objectives)})"
+                f"field_overrides length ({len(field_overrides)}) must match objectives length ({len(objectives)})"
             )
 
         params_type = attack.params_type
@@ -360,9 +388,10 @@ class AttackExecutor:
         Returns:
             AttackExecutorResult with completed results and any incomplete objectives.
         """
-        logger.warning(
-            "execute_multi_objective_attack_async is deprecated and will disappear in 0.13.0. "
-            "Use execute_attack_async instead."
+        print_deprecation_message(
+            old_item="execute_multi_objective_attack_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
         )
 
         # Build field_overrides if prepended_conversation is provided (broadcast to all)
@@ -411,9 +440,10 @@ class AttackExecutor:
         Raises:
             TypeError: If the attack does not use SingleTurnAttackContext.
         """
-        logger.warning(
-            "execute_single_turn_attacks_async is deprecated and will disappear in 0.13.0. "
-            "Use execute_attack_async instead."
+        print_deprecation_message(
+            old_item="execute_single_turn_attacks_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
         )
 
         # Validate that the attack uses SingleTurnAttackContext
@@ -475,9 +505,10 @@ class AttackExecutor:
         Raises:
             TypeError: If the attack does not use MultiTurnAttackContext.
         """
-        logger.warning(
-            "execute_multi_turn_attacks_async is deprecated and will disappear in 0.13.0. "
-            "Use execute_attack_async instead."
+        print_deprecation_message(
+            old_item="execute_multi_turn_attacks_async",
+            new_item="execute_attack_async",
+            removed_in="0.13.0",
         )
 
         # Validate that the attack uses MultiTurnAttackContext

@@ -8,12 +8,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.executor.attack import AttackConverterConfig, RTASystemPromptPaths
-from pyrit.executor.attack.component.simulated_conversation import (
-    SimulatedConversationResult,
-    SimulatedTargetSystemPromptPaths,
+from pyrit.executor.attack.multi_turn.simulated_conversation import (
     generate_simulated_conversation_async,
 )
-from pyrit.models import AttackOutcome, AttackResult, Message, MessagePiece, Score
+from pyrit.models import (
+    AttackOutcome,
+    AttackResult,
+    Message,
+    MessagePiece,
+    NextMessageSystemPromptPaths,
+    Score,
+    SeedPrompt,
+    SimulatedTargetSystemPromptPaths,
+)
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import TrueFalseScorer
 
@@ -133,7 +140,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that the same adversarial_chat is used as simulated target."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             # Configure the mock attack
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
@@ -148,7 +155,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -175,7 +182,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that the attack is created with score_last_turn_only=True."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -189,7 +196,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -215,7 +222,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that the attack is created with the specified num_turns as max_turns."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -229,7 +236,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -254,11 +261,11 @@ class TestGenerateSimulatedConversationAsync:
         adversarial_system_prompt_path: Path,
         sample_conversation: list[Message],
     ):
-        """Test that the function returns a SimulatedConversationResult."""
+        """Test that the function returns a list of SeedPrompts."""
         conversation_id = str(uuid.uuid4())
         mock_score = MagicMock(spec=Score)
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -273,7 +280,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -289,10 +296,11 @@ class TestGenerateSimulatedConversationAsync:
                 # Verify get_conversation was called with the correct conversation_id
                 mock_memory.get_conversation.assert_called_once_with(conversation_id=conversation_id)
 
-                # Verify the result is a SimulatedConversationResult
-                assert isinstance(result, SimulatedConversationResult)
-                assert result.conversation == sample_conversation
-                assert result.score == mock_score
+                # Verify the result is a list of SeedPrompts
+                assert isinstance(result, list)
+                assert len(result) == len(sample_conversation)
+                for seed_prompt in result:
+                    assert isinstance(seed_prompt, SeedPrompt)
 
     @pytest.mark.asyncio
     async def test_passes_system_prompt_via_prepended_conversation(
@@ -303,7 +311,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that the simulated target system prompt is passed via prepended_conversation."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -317,16 +325,18 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
 
+                # Pass a simulated_target_system_prompt_path to test prepending behavior
                 await generate_simulated_conversation_async(
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
                     adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
+                    simulated_target_system_prompt_path=SimulatedTargetSystemPromptPaths.COMPLIANT.value,
                     num_turns=3,
                 )
 
@@ -336,7 +346,7 @@ class TestGenerateSimulatedConversationAsync:
                 assert "prepended_conversation" in call_kwargs
                 prepended = call_kwargs["prepended_conversation"]
                 assert len(prepended) == 1
-                assert prepended[0].role == "system"
+                assert prepended[0].api_role == "system"
 
     @pytest.mark.asyncio
     async def test_passes_memory_labels_to_execute(
@@ -349,7 +359,7 @@ class TestGenerateSimulatedConversationAsync:
         """Test that memory_labels are passed to attack.execute_async."""
         memory_labels = {"source": "test", "type": "simulated"}
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -363,7 +373,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -392,7 +402,7 @@ class TestGenerateSimulatedConversationAsync:
         """Test that attack_converter_config is passed to RedTeamingAttack."""
         converter_config = AttackConverterConfig()
 
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -406,7 +416,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -433,7 +443,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that a system message is prepended when executing the attack."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -447,16 +457,18 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
 
+                # Pass a simulated_target_system_prompt_path to test prepending behavior
                 await generate_simulated_conversation_async(
                     objective="Test objective",
                     adversarial_chat=mock_adversarial_chat,
                     objective_scorer=mock_objective_scorer,
                     adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
+                    simulated_target_system_prompt_path=SimulatedTargetSystemPromptPaths.COMPLIANT.value,
                     num_turns=3,
                 )
 
@@ -465,7 +477,7 @@ class TestGenerateSimulatedConversationAsync:
                 assert "prepended_conversation" in execute_kwargs
                 prepended = execute_kwargs["prepended_conversation"]
                 assert len(prepended) == 1
-                assert prepended[0].message_pieces[0].role == "system"
+                assert prepended[0].message_pieces[0].api_role == "system"
 
     @pytest.mark.asyncio
     async def test_uses_default_num_turns_of_3(
@@ -476,7 +488,7 @@ class TestGenerateSimulatedConversationAsync:
         sample_conversation: list[Message],
     ):
         """Test that default num_turns is 3."""
-        with patch("pyrit.executor.attack.component.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
             mock_attack = MagicMock()
             mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
             mock_attack.execute_async = AsyncMock(
@@ -490,7 +502,7 @@ class TestGenerateSimulatedConversationAsync:
             )
             mock_attack_class.return_value = mock_attack
 
-            with patch("pyrit.executor.attack.component.simulated_conversation.CentralMemory") as mock_memory_class:
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
                 mock_memory = MagicMock()
                 mock_memory.get_conversation.return_value = iter(sample_conversation)
                 mock_memory_class.get_memory_instance.return_value = mock_memory
@@ -507,179 +519,168 @@ class TestGenerateSimulatedConversationAsync:
                 call_kwargs = mock_attack_class.call_args.kwargs
                 assert call_kwargs["max_turns"] == 3
 
+    @pytest.mark.asyncio
+    async def test_next_message_system_prompt_path_generates_final_user_message(
+        self,
+        mock_adversarial_chat: MagicMock,
+        mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
+        sample_conversation: list[Message],
+    ):
+        """Test that next_message_system_prompt_path generates a final user message via LLM call."""
 
-@pytest.mark.usefixtures("patch_central_database")
-class TestSimulatedConversationResult:
-    """Tests for SimulatedConversationResult dataclass."""
+        conversation_id = str(uuid.uuid4())
 
-    def _create_message(self, role: str, content: str) -> Message:
-        """Helper to create a Message with the given role and content."""
-        return Message(
+        # Create the expected response from the adversarial chat for generating next message
+        next_message_response = Message(
             message_pieces=[
                 MessagePiece(
-                    role=role,  # type: ignore[arg-type]
-                    original_value=content,
+                    role="assistant",  # LLM responds as assistant, we convert to user
+                    original_value="Generated next user message",
                     original_value_data_type="text",
                     conversation_id=str(uuid.uuid4()),
                 )
             ]
         )
 
-    def _create_conversation(self, num_turns: int) -> list[Message]:
-        """Helper to create a conversation with the specified number of turns."""
-        messages = []
-        for i in range(1, num_turns + 1):
-            messages.append(self._create_message("user", f"Turn {i} user"))
-            messages.append(self._create_message("assistant", f"Turn {i} assistant"))
-        return messages
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+            mock_attack = MagicMock()
+            mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
+            mock_attack.execute_async = AsyncMock(
+                return_value=AttackResult(
+                    attack_identifier={"__type__": "RedTeamingAttack"},
+                    conversation_id=conversation_id,
+                    objective="Test objective",
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=3,
+                )
+            )
+            mock_attack_class.return_value = mock_attack
 
-    def test_prepended_messages_default_excludes_last_turn(self):
-        """Test prepended_messages excludes last turn when turn_index is None (default)."""
-        messages = self._create_conversation(3)  # 6 messages
-        result = SimulatedConversationResult(conversation=messages, score=None)
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
+                mock_memory = MagicMock()
+                mock_memory.get_conversation.return_value = iter(sample_conversation)
+                mock_memory_class.get_memory_instance.return_value = mock_memory
 
-        prepended = result.prepended_messages
-        # Should exclude last turn (2 messages)
-        assert len(prepended) == 4
-        assert prepended[-1].role == "assistant"
-        assert prepended[-1].get_value() == "Turn 2 assistant"
+                # Configure adversarial_chat to return next message response
+                mock_adversarial_chat.send_prompt_async = AsyncMock(return_value=[next_message_response])
 
-    def test_prepended_messages_with_turn_index_2(self):
-        """Test prepended_messages with turn_index=2 returns only turn 1."""
-        messages = self._create_conversation(3)
-        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=2)
+                result = await generate_simulated_conversation_async(
+                    objective="Test objective",
+                    adversarial_chat=mock_adversarial_chat,
+                    objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
+                    num_turns=3,
+                    next_message_system_prompt_path=NextMessageSystemPromptPaths.DIRECT.value,
+                )
 
-        prepended = result.prepended_messages
-        # Should return only turn 1 (2 messages)
-        assert len(prepended) == 2
-        assert prepended[0].get_value() == "Turn 1 user"
-        assert prepended[1].get_value() == "Turn 1 assistant"
+                # Verify adversarial_chat was called to generate the next message
+                mock_adversarial_chat.send_prompt_async.assert_called_once()
 
-    def test_prepended_messages_with_turn_index_1_returns_empty(self):
-        """Test prepended_messages with turn_index=1 returns empty list."""
-        messages = self._create_conversation(3)
-        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=1)
+                # Verify the result includes the generated next message
+                # sample_conversation has 2 messages, plus 1 generated next message = 3
+                assert len(result) == 3
 
-        prepended = result.prepended_messages
-        assert len(prepended) == 0
+                # Verify the last message is the generated one with role="user"
+                assert result[-1].value == "Generated next user message"
+                assert result[-1].role == "user"
 
-    def test_prepended_messages_with_empty_conversation(self):
-        """Test prepended_messages returns empty list for empty conversation."""
-        result = SimulatedConversationResult(conversation=[], score=None)
-        assert result.prepended_messages == []
+    @pytest.mark.asyncio
+    async def test_next_message_system_prompt_path_sets_system_prompt(
+        self,
+        mock_adversarial_chat: MagicMock,
+        mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
+        sample_conversation: list[Message],
+    ):
+        """Test that next_message_system_prompt_path sets a system prompt on adversarial_chat."""
+        from pyrit.models.seeds import NextMessageSystemPromptPaths
 
-    def test_prepended_messages_with_single_turn(self):
-        """Test prepended_messages returns empty when only one turn."""
-        messages = self._create_conversation(1)
-        result = SimulatedConversationResult(conversation=messages, score=None)
+        conversation_id = str(uuid.uuid4())
 
-        prepended = result.prepended_messages
-        assert len(prepended) == 0
+        next_message_response = Message(
+            message_pieces=[
+                MessagePiece(
+                    role="assistant",
+                    original_value="Generated message",
+                    original_value_data_type="text",
+                    conversation_id=str(uuid.uuid4()),
+                )
+            ]
+        )
 
-    def test_next_message_default_returns_last_user(self):
-        """Test next_message returns last turn's user message when turn_index is None."""
-        messages = self._create_conversation(3)
-        result = SimulatedConversationResult(conversation=messages, score=None)
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+            mock_attack = MagicMock()
+            mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
+            mock_attack.execute_async = AsyncMock(
+                return_value=AttackResult(
+                    attack_identifier={"__type__": "RedTeamingAttack"},
+                    conversation_id=conversation_id,
+                    objective="Test objective",
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=3,
+                )
+            )
+            mock_attack_class.return_value = mock_attack
 
-        next_msg = result.next_message
-        assert next_msg is not None
-        assert next_msg.role == "user"
-        assert next_msg.get_value() == "Turn 3 user"
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
+                mock_memory = MagicMock()
+                mock_memory.get_conversation.return_value = iter(sample_conversation)
+                mock_memory_class.get_memory_instance.return_value = mock_memory
 
-    def test_next_message_with_turn_index_2(self):
-        """Test next_message with turn_index=2 returns turn 2's user message."""
-        messages = self._create_conversation(3)
-        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=2)
+                mock_adversarial_chat.send_prompt_async = AsyncMock(return_value=[next_message_response])
 
-        next_msg = result.next_message
-        assert next_msg is not None
-        assert next_msg.role == "user"
-        assert next_msg.get_value() == "Turn 2 user"
+                await generate_simulated_conversation_async(
+                    objective="Test objective",
+                    adversarial_chat=mock_adversarial_chat,
+                    objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
+                    num_turns=3,
+                    next_message_system_prompt_path=NextMessageSystemPromptPaths.DIRECT.value,
+                )
 
-    def test_next_message_with_turn_index_1(self):
-        """Test next_message with turn_index=1 returns first user message."""
-        messages = self._create_conversation(3)
-        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=1)
+                # Verify set_system_prompt was called on adversarial_chat
+                mock_adversarial_chat.set_system_prompt.assert_called()
 
-        next_msg = result.next_message
-        assert next_msg is not None
-        assert next_msg.get_value() == "Turn 1 user"
+    @pytest.mark.asyncio
+    async def test_starting_sequence_sets_first_sequence_number(
+        self,
+        mock_adversarial_chat: MagicMock,
+        mock_objective_scorer: MagicMock,
+        adversarial_system_prompt_path: Path,
+        sample_conversation: list[Message],
+    ):
+        """Test that starting_sequence sets the sequence number of the first prompt."""
+        conversation_id = str(uuid.uuid4())
 
-    def test_next_message_with_empty_conversation(self):
-        """Test next_message returns None for empty conversation."""
-        result = SimulatedConversationResult(conversation=[], score=None)
-        assert result.next_message is None
+        with patch("pyrit.executor.attack.multi_turn.simulated_conversation.RedTeamingAttack") as mock_attack_class:
+            mock_attack = MagicMock()
+            mock_attack.get_identifier.return_value = {"__type__": "RedTeamingAttack", "__module__": "pyrit"}
+            mock_attack.execute_async = AsyncMock(
+                return_value=AttackResult(
+                    attack_identifier={"__type__": "RedTeamingAttack"},
+                    conversation_id=conversation_id,
+                    objective="Test objective",
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=3,
+                )
+            )
+            mock_attack_class.return_value = mock_attack
 
-    def test_turn_index_can_be_set_after_creation(self):
-        """Test that turn_index can be modified after creation."""
-        messages = self._create_conversation(3)
-        result = SimulatedConversationResult(conversation=messages, score=None)
+            with patch("pyrit.executor.attack.multi_turn.simulated_conversation.CentralMemory") as mock_memory_class:
+                mock_memory = MagicMock()
+                mock_memory.get_conversation.return_value = iter(sample_conversation)
+                mock_memory_class.get_memory_instance.return_value = mock_memory
 
-        # Default: last turn (3)
-        assert result.next_message is not None
-        assert result.next_message.get_value() == "Turn 3 user"
-        assert len(result.prepended_messages) == 4
+                result = await generate_simulated_conversation_async(
+                    objective="Test objective",
+                    adversarial_chat=mock_adversarial_chat,
+                    objective_scorer=mock_objective_scorer,
+                    adversarial_chat_system_prompt_path=adversarial_system_prompt_path,
+                    num_turns=3,
+                    starting_sequence=5,
+                )
 
-        # Set to turn 2
-        result.turn_index = 2
-        assert result.next_message is not None
-        assert result.next_message.get_value() == "Turn 2 user"
-        assert len(result.prepended_messages) == 2
-
-        # Set to turn 1
-        result.turn_index = 1
-        assert result.next_message is not None
-        assert result.next_message.get_value() == "Turn 1 user"
-        assert len(result.prepended_messages) == 0
-
-    def test_turn_index_bounded_by_conversation_length(self):
-        """Test that turn_index is bounded by available turns."""
-        messages = self._create_conversation(2)  # Only 2 turns
-        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=10)
-
-        # Should clamp to last available turn (2)
-        next_msg = result.next_message
-        assert next_msg is not None
-        assert next_msg.get_value() == "Turn 2 user"
-
-    def test_turn_index_minimum_is_1(self):
-        """Test that turn_index minimum is 1."""
-        messages = self._create_conversation(3)
-        result = SimulatedConversationResult(conversation=messages, score=None, turn_index=0)
-
-        # Should treat as turn 1
-        assert result.next_message is not None
-        assert result.next_message.get_value() == "Turn 1 user"
-        assert len(result.prepended_messages) == 0
-
-    def test_conversation_with_trailing_user_message(self):
-        """Test handling conversation that ends with user message (incomplete turn)."""
-        messages = self._create_conversation(2)
-        messages.append(self._create_message("user", "Turn 3 user"))  # No assistant response
-        result = SimulatedConversationResult(conversation=messages, score=None)
-
-        # The trailing user message should be treated as a turn
-        next_msg = result.next_message
-        assert next_msg is not None
-        assert next_msg.get_value() == "Turn 3 user"
-        # prepended should have turns 1 and 2
-        assert len(result.prepended_messages) == 4
-
-    def test_conversation_property_returns_full_list(self):
-        """Test that conversation property returns the full message list."""
-        messages = self._create_conversation(2)
-        result = SimulatedConversationResult(conversation=messages, score=None)
-
-        assert result.conversation == messages
-        assert len(result.conversation) == 4
-
-    def test_score_property(self):
-        """Test that score property returns the stored score."""
-        mock_score = MagicMock(spec=Score)
-        result = SimulatedConversationResult(conversation=[], score=mock_score)
-        assert result.score == mock_score
-
-    def test_score_property_none(self):
-        """Test that score property can be None."""
-        result = SimulatedConversationResult(conversation=[], score=None)
-        assert result.score is None
+                # Verify the first prompt starts at sequence 5
+                assert result[0].sequence == 5
+                assert result[1].sequence == 6

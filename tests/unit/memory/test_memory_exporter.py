@@ -7,11 +7,11 @@ from typing import Sequence
 
 import pytest
 from sqlalchemy.inspection import inspect
-from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import Message
+from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 
 @pytest.fixture

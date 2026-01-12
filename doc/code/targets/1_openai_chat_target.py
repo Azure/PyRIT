@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit (3.13.5)
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -43,6 +47,64 @@ attack = PromptSendingAttack(objective_target=target)
 
 result = await attack.execute_async(objective=jailbreak_prompt)  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
+
+# %% [markdown]
+# ## JSON Output
+#
+# You can also get the output in JSON format for further processing or storage. In this example, we define a simple JSON schema that describes a person with `name` and `age` properties.
+#
+# For more information about structured outputs with OpenAI, see [the OpenAI documentation](https://platform.openai.com/docs/guides/structured-outputs).
+
+# %%
+import json
+import os
+
+import jsonschema
+
+from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+
+# Define a simple JSON schema for a person
+person_schema = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "integer", "minimum": 0, "maximum": 150},
+    },
+    "required": ["name", "age"],
+    "additionalProperties": False,
+}
+
+prompt = "Create a JSON object describing a person named Bob who is 32 years old."
+# Create the message piece and message
+message_piece = MessagePiece(
+    role="user",
+    original_value=prompt,
+    original_value_data_type="text",
+    prompt_metadata={
+        "response_format": "json",
+        "json_schema": json.dumps(person_schema),
+    },
+)
+message = Message(message_pieces=[message_piece])
+
+# Create the OpenAI Chat target
+target = OpenAIChatTarget(
+    endpoint=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_ENDPOINT"),
+    api_key=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_KEY"),
+    model_name=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_MODEL"),
+)
+
+# Send the prompt, requesting JSON output
+response = await target.send_prompt_async(message=message)  # type: ignore
+
+# Validate and print the response
+response_json = json.loads(response[0].message_pieces[0].converted_value)
+print(json.dumps(response_json, indent=2))
+jsonschema.validate(instance=response_json, schema=person_schema)
 
 # %% [markdown]
 # ## OpenAI Configuration

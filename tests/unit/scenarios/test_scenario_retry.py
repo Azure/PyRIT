@@ -10,7 +10,7 @@ import pytest
 from pyrit.executor.attack.core import AttackExecutorResult
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenario import ScenarioResult
+from pyrit.scenario import DatasetConfiguration, ScenarioResult
 from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
 
 # Test constants
@@ -19,6 +19,14 @@ TEST_MODULE = "test"
 CONV_ID_PREFIX = "conv-"
 OBJECTIVE_PREFIX = "objective"
 ATTACK_NAME_PREFIX = "attack_"
+
+
+@pytest.fixture
+def mock_objective_scorer():
+    """Create a mock objective scorer for testing."""
+    scorer = MagicMock()
+    scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": TEST_MODULE}
+    return scorer
 
 
 # Helper functions
@@ -119,14 +127,19 @@ def create_mock_atomic_attack(name: str, objectives: list[str], run_async_mock: 
 class ConcreteScenario(Scenario):
     """Concrete implementation of Scenario for testing."""
 
-    def __init__(self, atomic_attacks_to_return=None, **kwargs):
+    def __init__(self, atomic_attacks_to_return=None, objective_scorer=None, **kwargs):
         # Default include_default_baseline=False for tests unless explicitly specified
         kwargs.setdefault("include_default_baseline", False)
 
         # Get strategy_class from kwargs or use default
         strategy_class = kwargs.pop("strategy_class", None) or self.get_strategy_class()
 
-        super().__init__(strategy_class=strategy_class, **kwargs)
+        # Create a default mock scorer if not provided
+        if objective_scorer is None:
+            objective_scorer = MagicMock()
+            objective_scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test"}
+
+        super().__init__(strategy_class=strategy_class, objective_scorer=objective_scorer, **kwargs)
         self._atomic_attacks_to_return = atomic_attacks_to_return or []
 
     @classmethod
@@ -150,9 +163,9 @@ class ConcreteScenario(Scenario):
         return cls.get_strategy_class().ALL
 
     @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return the list of required datasets for testing."""
-        return []
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """Return the default dataset configuration for testing."""
+        return DatasetConfiguration()
 
     async def _get_atomic_attacks_async(self):
         return self._atomic_attacks_to_return

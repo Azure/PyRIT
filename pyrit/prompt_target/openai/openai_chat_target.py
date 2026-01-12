@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, MutableSequence, Optional
+from typing import Any, Dict, MutableSequence, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -12,17 +12,14 @@ from pyrit.exceptions import (
 )
 from pyrit.models import (
     ChatMessage,
-    ChatMessageListDictContent,
     Message,
     MessagePiece,
     construct_response_from_request,
 )
-from pyrit.prompt_target import (
-    OpenAITarget,
-    PromptChatTarget,
-    limit_requests_per_minute,
-)
-from pyrit.prompt_target.common.utils import validate_temperature, validate_top_p
+from pyrit.models.json_response_config import _JsonResponseConfig
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute, validate_temperature, validate_top_p
+from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
 
@@ -186,8 +183,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         self._validate_request(message=message)
 
         message_piece: MessagePiece = message.message_pieces[0]
-
-        is_json_response = self.is_response_format_json(message_piece)
+        json_config = self._get_json_response_config(message_piece=message_piece)
 
         # Get conversation from memory and append the current message
         conversation = self._memory.get_conversation(conversation_id=message_piece.conversation_id)
@@ -195,7 +191,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {message}")
 
-        body = await self._construct_request_body(conversation=conversation, is_json_response=is_json_response)
+        body = await self._construct_request_body(conversation=conversation, json_config=json_config)
 
         # Use unified error handling - automatically detects ChatCompletion and validates
         response = await self._handle_openai_request(
@@ -242,7 +238,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             EmptyResponseException: When the API returns an empty response.
         """
         # Check for missing choices
-        if not response.choices:
+        if not hasattr(response, "choices") or not response.choices:
             raise PyritException(message="No choices returned in the completion response.")
 
         choice = response.choices[0]
@@ -346,7 +342,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             if message_piece.converted_value_data_type != "text":
                 raise ValueError("_build_chat_messages_for_text only supports text.")
 
-            chat_message = ChatMessage(role=message_piece.role, content=message_piece.converted_value)
+            chat_message = ChatMessage(role=message_piece.api_role, content=message_piece.converted_value)
             chat_messages.append(chat_message.model_dump(exclude_none=True))
 
         return chat_messages
@@ -372,7 +368,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             content = []
             role = None
             for message_piece in message_pieces:
-                role = message_piece.role
+                role = message_piece.api_role
                 if message_piece.converted_value_data_type == "text":
                     entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)
@@ -389,12 +385,15 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             if not role:
                 raise ValueError("No role could be determined from the message pieces.")
 
-            chat_message = ChatMessageListDictContent(role=role, content=content)  # type: ignore
+            chat_message = ChatMessage(role=role, content=content)  # type: ignore
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 
-    async def _construct_request_body(self, conversation: MutableSequence[Message], is_json_response: bool) -> dict:
+    async def _construct_request_body(
+        self, *, conversation: MutableSequence[Message], json_config: _JsonResponseConfig
+    ) -> dict:
         messages = await self._build_chat_messages_async(conversation)
+        response_format = self._build_response_format(json_config)
 
         body_parameters = {
             "model": self._model_name,
@@ -408,7 +407,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             "seed": self._seed,
             "n": self._n,
             "messages": messages,
-            "response_format": {"type": "json_object"} if is_json_response else None,
+            "response_format": response_format,
         }
 
         if self._extra_body_parameters:
@@ -436,3 +435,19 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError(f"This target only supports text and image_path. Received: {prompt_data_type}.")
+
+    def _build_response_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
+        if not json_config.enabled:
+            return None
+
+        if json_config.schema:
+            return {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": json_config.schema_name,
+                    "schema": json_config.schema,
+                    "strict": json_config.strict,
+                },
+            }
+
+        return {"type": "json_object"}
