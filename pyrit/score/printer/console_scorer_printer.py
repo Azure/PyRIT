@@ -56,7 +56,9 @@ class ConsoleScorerPrinter(ScorerPrinter):
         else:
             print(text)
 
-    def _get_quality_color(self, value: float, *, higher_is_better: bool, good_threshold: float, bad_threshold: float) -> str:
+    def _get_quality_color(
+        self, value: float, *, higher_is_better: bool, good_threshold: float, bad_threshold: float
+    ) -> str:
         """
         Determine the color based on metric quality thresholds.
 

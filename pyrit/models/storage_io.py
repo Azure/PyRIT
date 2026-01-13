@@ -6,10 +6,10 @@ import os
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union, cast
+from typing import Optional, Union
 from urllib.parse import urlparse
 
-import aiofiles  # type: ignore[import-untyped]
+import aiofiles
 from azure.core.exceptions import ClientAuthenticationError, ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
@@ -82,7 +82,7 @@ class DiskStorageIO(StorageIO):
         """
         path = self._convert_to_path(path)
         async with aiofiles.open(path, "rb") as file:
-            return cast(bytes, await file.read())
+            return await file.read()
 
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
         """

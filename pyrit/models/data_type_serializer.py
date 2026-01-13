@@ -11,10 +11,10 @@ import time
 import wave
 from mimetypes import guess_type
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional, Union, cast, get_args
+from typing import TYPE_CHECKING, Literal, Optional, Union, get_args
 from urllib.parse import urlparse
 
-import aiofiles  # type: ignore[import-untyped]
+import aiofiles
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.models.literals import PromptDataType
@@ -179,7 +179,7 @@ class DataTypeSerializer(abc.ABC):
                 wav_file.writeframes(data)
 
             async with aiofiles.open(local_temp_path, "rb") as f:
-                audio_data = cast(bytes, await f.read())
+                audio_data = await f.read()
                 await self._memory.results_storage_io.write_file(file_path, audio_data)
             os.remove(local_temp_path)
 

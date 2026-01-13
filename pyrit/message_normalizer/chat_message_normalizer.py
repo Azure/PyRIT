@@ -4,10 +4,9 @@
 import base64
 import json
 import os
-from typing import Any, List, Union, cast
+from typing import Any, List, Union
 
 from pyrit.common import convert_local_image_to_data_url
-from pyrit.models.literals import ChatMessageRole
 from pyrit.message_normalizer.message_normalizer import (
     MessageListNormalizer,
     MessageStringNormalizer,
@@ -15,6 +14,7 @@ from pyrit.message_normalizer.message_normalizer import (
     apply_system_message_behavior,
 )
 from pyrit.models import ChatMessage, DataTypeSerializer, Message
+from pyrit.models.literals import ChatMessageRole
 from pyrit.models.message_piece import MessagePiece
 
 # Supported audio formats for OpenAI input_audio
