@@ -16,9 +16,9 @@ class FirstLetterConverter(WordLevelConverter):
     def __init__(
         self,
         *,
-        letter_separator=" ",
+        letter_separator: str = " ",
         word_selection_strategy: Optional[WordSelectionStrategy] = None,
-    ):
+    ) -> None:
         """
         Initializes the converter with the specified letter separator and selection strategy.
 

@@ -32,7 +32,7 @@ class AsciiSmugglerConverter(SmugglerConverter):
         self.unicode_tags = unicode_tags
         super().__init__(action=action)
 
-    def encode_message(self, *, message: str):
+    def encode_message(self, *, message: str) -> tuple[str, str]:
         """
         Encodes the message using Unicode Tags.
 
@@ -66,7 +66,7 @@ class AsciiSmugglerConverter(SmugglerConverter):
             logger.error(f"Invalid characters detected: {invalid_chars}")
         return code_points, encoded
 
-    def decode_message(self, *, message: str):
+    def decode_message(self, *, message: str) -> str:
         """
         Decodes a message encoded with Unicode Tags.
 

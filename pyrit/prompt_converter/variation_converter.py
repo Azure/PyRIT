@@ -119,7 +119,7 @@ class VariationConverter(PromptConverter):
         return ConverterResult(output_text=response_msg, output_type="text")
 
     @pyrit_json_retry
-    async def send_variation_prompt_async(self, request):
+    async def send_variation_prompt_async(self, request: Message) -> str:
         """Sends the message to the converter target and retrieves the response."""
         response = await self.converter_target.send_prompt_async(message=request)
 
@@ -132,6 +132,6 @@ class VariationConverter(PromptConverter):
             raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}")
 
         try:
-            return response[0]
+            return str(response[0])
         except KeyError:
             raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}")

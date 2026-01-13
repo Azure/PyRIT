@@ -13,7 +13,7 @@ class UnicodeSubstitutionConverter(PromptConverter):
     SUPPORTED_INPUT_TYPES = ("text",)
     SUPPORTED_OUTPUT_TYPES = ("text",)
 
-    def __init__(self, *, start_value=0xE0000):
+    def __init__(self, *, start_value: int = 0xE0000) -> None:
         self.startValue = start_value
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
