@@ -103,7 +103,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
         if discovery_path.is_file():
-            self._process_file(file_path=discovery_path, base_class=PyRITInitializer)  # type: ignore[type-abstract]
+            self._process_file(file_path=discovery_path, base_class=PyRITInitializer)
         else:
             for file_stem, file_path, initializer_class in discover_in_directory(
                 directory=discovery_path,
