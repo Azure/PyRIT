@@ -387,7 +387,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             if not role:
                 raise ValueError("No role could be determined from the message pieces.")
 
-            chat_message = ChatMessage(role=role, content=content)  # type: ignore
+            chat_message = ChatMessage(role=role, content=content)
             chat_messages.append(chat_message.model_dump(exclude_none=True))
         return chat_messages
 

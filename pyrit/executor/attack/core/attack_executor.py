@@ -14,6 +14,7 @@ from typing import (
     Any,
     Dict,
     Generic,
+    Iterator,
     List,
     Optional,
     Sequence,

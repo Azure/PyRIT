@@ -4,14 +4,14 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, List, Literal, Optional
 
 import pyrit
 from pyrit.models import AttackOutcome, AttackResult
 
 if TYPE_CHECKING:
     from pyrit.score import Scorer
-    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
+    from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
     from pyrit.score.scorer_identifier import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ class ScenarioResult:
         objective_target_identifier: dict[str, str],
         attack_results: dict[str, List[AttackResult]],
         objective_scorer: Optional["Scorer"] = None,
-        objective_scorer_identifier: Optional[dict] = None,
+        objective_scorer_identifier: Optional[dict[str, str]] = None,
         scenario_run_state: ScenarioRunState = "CREATED",
         labels: Optional[dict[str, str]] = None,
         completion_time: Optional[datetime] = None,

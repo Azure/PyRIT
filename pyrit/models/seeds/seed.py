@@ -104,7 +104,7 @@ class Seed(YamlLoadable):
         """
         return "text"
 
-    def render_template_value(self, **kwargs) -> str:
+    def render_template_value(self, **kwargs: Any) -> str:
         """
         Renders self.value as a template, applying provided parameters in kwargs.
 

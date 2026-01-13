@@ -347,7 +347,7 @@ class SeedDataset(YamlLoadable):
             the seeds, if available.
         """
         # Group seeds by `prompt_group_id`
-        grouped_seeds: Dict[uuid.UUID, list] = defaultdict(list)
+        grouped_seeds: Dict[uuid.UUID, list[Seed]] = defaultdict(list)
         for seed in seeds:
             if seed.prompt_group_id:
                 grouped_seeds[seed.prompt_group_id].append(seed)

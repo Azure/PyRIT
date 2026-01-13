@@ -4,9 +4,10 @@
 import base64
 import json
 import os
-from typing import Any, List, Union
+from typing import Any, List, Union, cast
 
 from pyrit.common import convert_local_image_to_data_url
+from pyrit.models.literals import ChatMessageRole
 from pyrit.message_normalizer.message_normalizer import (
     MessageListNormalizer,
     MessageStringNormalizer,
@@ -80,7 +81,7 @@ class ChatMessageNormalizer(MessageListNormalizer[ChatMessage], MessageStringNor
         chat_messages: List[ChatMessage] = []
         for message in processed_messages:
             pieces = message.message_pieces
-            role = cast(ChatMessageRole, pieces[0].api_role)
+            role: ChatMessageRole = pieces[0].api_role
 
             # Translate system -> developer for newer OpenAI models
             if self.use_developer_role and role == "system":

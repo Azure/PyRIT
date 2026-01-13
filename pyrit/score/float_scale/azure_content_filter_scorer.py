@@ -159,7 +159,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         file_mapping: Optional["ScorerEvalDatasetFiles"] = None,
         *,
         num_scorer_trials: int = 3,
-        update_registry_behavior: "RegistryUpdateBehavior" = None,  # type: ignore[assignment]
+        update_registry_behavior: "RegistryUpdateBehavior" = None,
         max_concurrency: int = 10,
     ) -> Optional["ScorerMetrics"]:
         """

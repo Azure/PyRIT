@@ -42,7 +42,7 @@ from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 if TYPE_CHECKING:
-    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerMetrics
+    from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +50,8 @@ if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
     from pyrit.score.scorer_evaluation.scorer_evaluator import (
         ScorerEvalDatasetFiles,
-        ScorerMetrics,
     )
+    from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
 
 class Scorer(abc.ABC):
@@ -273,7 +273,7 @@ class Scorer(abc.ABC):
         file_mapping: Optional["ScorerEvalDatasetFiles"] = None,
         *,
         num_scorer_trials: int = 3,
-        update_registry_behavior: "RegistryUpdateBehavior" = None,  # type: ignore[assignment]
+        update_registry_behavior: "RegistryUpdateBehavior" = None,
         max_concurrency: int = 10,
     ) -> Optional["ScorerMetrics"]:
         """
