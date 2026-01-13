@@ -26,6 +26,7 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
@@ -105,6 +106,19 @@ class PsychosocialHarmsScenario(Scenario):
             ScenarioStrategy: PsychosocialHarmsStrategy.ALL
         """
         return PsychosocialHarmsStrategy.ALL
+
+    @classmethod
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """
+        Return the default dataset configuration for this scenario.
+
+        Returns:
+            DatasetConfiguration: Configuration with psychosocial harm datasets.
+        """
+        return DatasetConfiguration(
+            dataset_names=["airt_psychosocial_therapist_boundaries"],
+            max_dataset_size=None
+        )
 
     @classmethod
     def required_datasets(cls) -> list[str]:
