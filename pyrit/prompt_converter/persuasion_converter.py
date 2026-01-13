@@ -148,7 +148,7 @@ class PersuasionConverter(PromptConverter):
                 raise InvalidJsonException(
                     message=f"Invalid JSON encountered; missing 'mutated_text' key: {response_msg}"
                 )
-            return parsed_response["mutated_text"]
+            return str(parsed_response["mutated_text"])
 
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")

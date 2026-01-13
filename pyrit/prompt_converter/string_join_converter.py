@@ -15,9 +15,9 @@ class StringJoinConverter(WordLevelConverter):
     def __init__(
         self,
         *,
-        join_value="-",
+        join_value: str = "-",
         word_selection_strategy: Optional[WordSelectionStrategy] = None,
-    ):
+    ) -> None:
         """
         Initialize the converter with the specified join value and selection strategy.
 

@@ -13,7 +13,7 @@ class UnicodeSubstitutionConverter(PromptConverter):
     SUPPORTED_INPUT_TYPES = ("text",)
     SUPPORTED_OUTPUT_TYPES = ("text",)
 
-    def __init__(self, *, start_value=0xE0000):
+    def __init__(self, *, start_value: int = 0xE0000) -> None:
         """
         Initialize the converter with a specified unicode starting point.
 

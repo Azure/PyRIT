@@ -57,7 +57,7 @@ class TrueFalseScorer(Scorer):
 
         super().__init__(validator=validator)
 
-    def validate_return_scores(self, scores: list[Score]):
+    def validate_return_scores(self, scores: list[Score]) -> None:
         """
         Validate the scores returned by the scorer.
 

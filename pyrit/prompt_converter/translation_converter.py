@@ -130,7 +130,7 @@ class TranslationConverter(PromptConverter):
         translation = await self._send_translation_prompt_async(request)
         return ConverterResult(output_text=translation, output_type="text")
 
-    async def _send_translation_prompt_async(self, request) -> str:
+    async def _send_translation_prompt_async(self, request: Message) -> str:
         async for attempt in AsyncRetrying(
             stop=stop_after_attempt(self._max_retries),
             wait=wait_exponential(multiplier=1, min=1, max=self._max_wait_time_in_seconds),

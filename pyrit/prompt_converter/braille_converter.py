@@ -46,7 +46,7 @@ class BrailleConverter(PromptConverter):
 
         return ConverterResult(output_text=brail_text, output_type="text")
 
-    def _get_braile(self, text) -> str:
+    def _get_braile(self, text: str) -> str:
         """
         Retrieve the braille representation of the input text.
 

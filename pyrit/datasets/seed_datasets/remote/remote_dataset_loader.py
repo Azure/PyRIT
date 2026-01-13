@@ -8,7 +8,7 @@ import logging
 import tempfile
 from abc import ABC
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal, Optional, TextIO
+from typing import Any, Callable, Dict, List, Literal, Optional, TextIO, cast
 
 import requests
 from datasets import DownloadMode, disable_progress_bars, load_dataset
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 FileHandlerRead = Callable[[TextIO], List[Dict[str, str]]]
 FileHandlerWrite = Callable[[TextIO, List[Dict[str, str]]], None]
 
-FILE_TYPE_HANDLERS: Dict[str, Dict[str, Callable]] = {
+FILE_TYPE_HANDLERS: Dict[str, Dict[str, Callable[..., Any]]] = {
     "json": {"read": read_json, "write": write_json},
     "jsonl": {"read": read_jsonl, "write": write_jsonl},
     "csv": {"read": read_csv, "write": write_csv},
@@ -91,7 +91,7 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         """
         self._validate_file_type(file_type)
         with cache_file.open("r", encoding="utf-8") as file:
-            return FILE_TYPE_HANDLERS[file_type]["read"](file)
+            return cast(List[Dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](file))
 
     def _write_cache(self, *, cache_file: Path, examples: List[Dict[str, str]], file_type: str) -> None:
         """
@@ -129,9 +129,12 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         if response.status_code == 200:
             if file_type in FILE_TYPE_HANDLERS:
                 if file_type == "json":
-                    return FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text))
+                    return cast(List[Dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text)))
                 else:
-                    return FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines())))
+                    return cast(
+                        List[Dict[str, str]],
+                        FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines()))),
+                    )
             else:
                 valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
                 raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
@@ -154,7 +157,7 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         """
         with open(source, "r", encoding="utf-8") as file:
             if file_type in FILE_TYPE_HANDLERS:
-                return FILE_TYPE_HANDLERS[file_type]["read"](file)
+                return cast(List[Dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](file))
             else:
                 valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
                 raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
@@ -257,7 +260,7 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         """
         disable_progress_bars()
 
-        def _load_dataset_sync():
+        def _load_dataset_sync() -> Any:
             """
             Run dataset loading synchronously in thread pool.
 

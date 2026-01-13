@@ -144,6 +144,6 @@ class VariationConverter(PromptConverter):
             raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}")
 
         try:
-            return response[0]
+            return str(response[0])
         except KeyError:
             raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}")

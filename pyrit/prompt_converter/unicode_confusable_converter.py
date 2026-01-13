@@ -9,6 +9,7 @@ from typing import Literal
 from confusable_homoglyphs.confusables import is_confusable
 from confusables import confusable_characters
 
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ class UnicodeConfusableConverter(PromptConverter):
         self._source_package = source_package
         self._deterministic = deterministic
 
-    async def convert_async(self, *, prompt: str, input_type="text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Convert the given prompt by applying confusable substitutions. This leads to a prompt that looks similar,
         but is actually different (e.g., replacing a Latin 'a' with a Cyrillic 'а').
@@ -82,7 +83,7 @@ class UnicodeConfusableConverter(PromptConverter):
 
         return ConverterResult(output_text=converted_prompt, output_type="text")
 
-    def _get_homoglyph_variants(self, word: str) -> list:
+    def _get_homoglyph_variants(self, word: str) -> list[str]:
         """
         Retrieve homoglyph variants for a given word using the "confusable_homoglyphs" package.
 
@@ -154,6 +155,6 @@ class UnicodeConfusableConverter(PromptConverter):
         if not confusable_options or char == " ":
             return char
         elif self._deterministic or len(confusable_options) == 1:
-            return confusable_options[-1]
+            return str(confusable_options[-1])
         else:
-            return random.choice(confusable_options)
+            return str(random.choice(confusable_options))

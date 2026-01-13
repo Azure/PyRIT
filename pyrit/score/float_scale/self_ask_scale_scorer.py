@@ -3,7 +3,7 @@
 
 import enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import yaml
 
@@ -127,7 +127,7 @@ class SelfAskScaleScorer(FloatScaleScorer):
 
         return [score]
 
-    def _validate_scale_arguments_set(self, scale_args: dict):
+    def _validate_scale_arguments_set(self, scale_args: dict[str, Any]) -> None:
         try:
             minimum_value = scale_args["minimum_value"]
             maximum_value = scale_args["maximum_value"]

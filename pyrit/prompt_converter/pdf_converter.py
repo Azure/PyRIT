@@ -4,7 +4,7 @@
 import ast
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pypdf import PageObject, PdfReader, PdfWriter
 from reportlab.lib.units import mm
@@ -13,6 +13,7 @@ from reportlab.pdfgen import canvas
 
 from pyrit.common.logger import logger
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
+from pyrit.models.data_type_serializer import DataTypeSerializer
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
@@ -39,13 +40,13 @@ class PDFConverter(PromptConverter):
         prompt_template: Optional[SeedPrompt] = None,
         font_type: str = "Helvetica",
         font_size: int = 12,
-        font_color: tuple = (255, 255, 255),
+        font_color: tuple[int, int, int] = (255, 255, 255),
         page_width: int = 210,
         page_height: int = 297,
         column_width: int = 0,
         row_height: int = 10,
         existing_pdf: Optional[Path] = None,
-        injection_items: Optional[List[Dict]] = None,
+        injection_items: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         """
         Initialize the converter with the specified parameters.
@@ -321,7 +322,14 @@ class PDFConverter(PromptConverter):
         return output_pdf.getvalue()
 
     def _inject_text_into_page(
-        self, page: PageObject, x: float, y: float, text: str, font: str, font_size: int, font_color: tuple
+        self,
+        page: PageObject,
+        x: float,
+        y: float,
+        text: str,
+        font: str,
+        font_size: int,
+        font_color: tuple[int, int, int],
     ) -> tuple[PageObject, BytesIO]:
         """
         Generate an overlay PDF with the given text using ReportLab.
@@ -392,7 +400,7 @@ class PDFConverter(PromptConverter):
 
         return overlay_page, overlay_buffer
 
-    async def _serialize_pdf(self, pdf_bytes: bytes, content: str):
+    async def _serialize_pdf(self, pdf_bytes: bytes, content: str) -> DataTypeSerializer:
         """
         Serialize the generated PDF using a data serializer.
 

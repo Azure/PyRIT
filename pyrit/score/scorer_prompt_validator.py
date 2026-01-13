@@ -24,8 +24,8 @@ class ScorerPromptValidator:
         max_text_length: Optional[int] = None,
         enforce_all_pieces_valid: Optional[bool] = False,
         raise_on_no_valid_pieces: Optional[bool] = True,
-        is_objective_required=False,
-    ):
+        is_objective_required: bool = False,
+    ) -> None:
         """
         Initialize the ScorerPromptValidator.
 

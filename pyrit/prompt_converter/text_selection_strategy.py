@@ -166,12 +166,12 @@ class RegexSelectionStrategy(TextSelectionStrategy):
     Selects text based on the first regex match.
     """
 
-    def __init__(self, *, pattern: Union[str, Pattern]) -> None:
+    def __init__(self, *, pattern: Union[str, Pattern[str]]) -> None:
         """
         Initialize the regex selection strategy.
 
         Args:
-            pattern (Union[str, Pattern]): The regex pattern to match.
+            pattern (Union[str, Pattern[str]]): The regex pattern to match.
         """
         self._pattern = re.compile(pattern) if isinstance(pattern, str) else pattern
 
@@ -517,12 +517,12 @@ class WordRegexSelectionStrategy(WordSelectionStrategy):
     Selects words that match a regex pattern.
     """
 
-    def __init__(self, *, pattern: Union[str, Pattern]) -> None:
+    def __init__(self, *, pattern: Union[str, Pattern[str]]) -> None:
         """
         Initialize the word regex selection strategy.
 
         Args:
-            pattern (Union[str, Pattern]): The regex pattern to match against words.
+            pattern (Union[str, Pattern[str]]): The regex pattern to match against words.
         """
         self._pattern = re.compile(pattern) if isinstance(pattern, str) else pattern
 

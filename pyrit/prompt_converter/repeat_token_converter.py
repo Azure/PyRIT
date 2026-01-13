@@ -54,7 +54,7 @@ class RepeatTokenConverter(PromptConverter):
         match token_insert_mode:
             case "split":
                 # function to split prompt on first punctuation (.?! only), preserve punctuation, 2 parts max.
-                def insert(text: str) -> list:
+                def insert(text: str) -> list[str]:
                     parts = re.split(r"(\?|\.|\!)", text, maxsplit=1)
                     if len(parts) == 3:  # if split mode with no punctuation
                         return [parts[0] + parts[1], parts[2]]
@@ -63,19 +63,19 @@ class RepeatTokenConverter(PromptConverter):
                 self.insert = insert
             case "prepend":
 
-                def insert(text: str) -> list:
+                def insert(text: str) -> list[str]:
                     return ["", text]
 
                 self.insert = insert
             case "append":
 
-                def insert(text: str) -> list:
+                def insert(text: str) -> list[str]:
                     return [text, ""]
 
                 self.insert = insert
             case "repeat":
 
-                def insert(text: str) -> list:
+                def insert(text: str) -> list[str]:
                     return ["", ""]
 
                 self.insert = insert
