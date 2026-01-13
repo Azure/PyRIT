@@ -8,6 +8,8 @@ This module provides the Scenario class that orchestrates the execution of multi
 AtomicAttack instances sequentially, enabling comprehensive security testing campaigns.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import textwrap

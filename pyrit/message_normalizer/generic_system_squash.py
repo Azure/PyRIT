@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 from typing import List
 
 from pyrit.message_normalizer.message_normalizer import MessageListNormalizer

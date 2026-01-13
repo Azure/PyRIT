@@ -8,6 +8,8 @@ This module provides tools for normalizing prompts before sending them to target
 including converter configurations and request handling.
 """
 
+from __future__ import annotations
+
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
 from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer

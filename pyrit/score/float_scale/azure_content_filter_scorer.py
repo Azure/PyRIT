@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import base64
 from typing import TYPE_CHECKING, Awaitable, Callable, Optional
 

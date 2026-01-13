@@ -10,6 +10,8 @@ It will likely need to be modified based on the target you are testing. But this
 with OpenAI targets if you set OPENAI_CLI_ENDPOINT
 """
 
+from __future__ import annotations
+
 import os
 from typing import List
 

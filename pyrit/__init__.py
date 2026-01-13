@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 from .common import turn_off_transformers_warning  # noqa: F401
 from .show_versions import show_versions  # noqa: F401
 

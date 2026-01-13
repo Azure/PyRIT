@@ -3,6 +3,8 @@
 
 """Core attack strategy module."""
 
+from __future__ import annotations
+
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackConverterConfig,

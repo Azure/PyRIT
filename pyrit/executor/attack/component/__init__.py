@@ -3,6 +3,8 @@
 
 """Attack components module."""
 
+from __future__ import annotations
+
 from pyrit.executor.attack.component.conversation_manager import (
     ConversationManager,
     ConversationState,

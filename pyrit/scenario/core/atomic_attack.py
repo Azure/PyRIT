@@ -13,6 +13,8 @@ times when that may not be possible or make sense. So this class exists to
 have a common interface for scenarios.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 

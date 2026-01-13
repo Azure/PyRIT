@@ -11,6 +11,8 @@ initialized with their required parameters (e.g., chat_target).
 For registries that store classes (Type[T]), see class_registries/.
 """
 
+from __future__ import annotations
+
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )

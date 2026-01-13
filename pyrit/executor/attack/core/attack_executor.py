@@ -7,6 +7,8 @@ Simplified AttackExecutor that uses AttackParameters directly.
 This is the new, cleaner design that leverages the params_type architecture.
 """
 
+from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass
 from typing import (

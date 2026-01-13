@@ -2,6 +2,8 @@
 # Licensed under the MIT license.
 
 
+from __future__ import annotations
+
 import logging
 from typing import List, Optional, Sequence
 

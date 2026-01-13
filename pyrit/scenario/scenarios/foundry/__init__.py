@@ -3,6 +3,8 @@
 
 """Foundry scenario classes."""
 
+from __future__ import annotations
+
 from pyrit.scenario.scenarios.foundry.red_team_agent import (
     FoundryScenario,
     FoundryStrategy,

@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import codecs
 
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter

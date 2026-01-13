@@ -3,6 +3,8 @@
 
 """Printer components for scenarios."""
 
+from __future__ import annotations
+
 from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
 from pyrit.scenario.printer.scenario_result_printer import ScenarioResultPrinter
 

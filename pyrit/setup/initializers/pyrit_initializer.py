@@ -8,6 +8,8 @@ This module provides the abstract base class for all PyRIT initializers,
 which are class-based alternatives to initialization scripts.
 """
 
+from __future__ import annotations
+
 import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager

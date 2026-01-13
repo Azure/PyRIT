@@ -3,6 +3,8 @@
 
 """Common utilities and helpers for PyRIT."""
 
+from __future__ import annotations
+
 from pyrit.common.apply_defaults import (
     REQUIRED_VALUE,
     DefaultValueScope,

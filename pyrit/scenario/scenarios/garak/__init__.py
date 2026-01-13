@@ -3,6 +3,8 @@
 
 """Garak-based attack scenarios."""
 
+from __future__ import annotations
+
 from pyrit.scenario.scenarios.garak.encoding import Encoding, EncodingStrategy
 
 __all__ = [

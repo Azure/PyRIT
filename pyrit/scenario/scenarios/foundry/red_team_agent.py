@@ -9,6 +9,8 @@ The RedTeamAgent creates a comprehensive test scenario that includes all
 available attacks against specified datasets.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 from inspect import signature

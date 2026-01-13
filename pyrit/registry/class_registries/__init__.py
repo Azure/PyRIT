@@ -10,6 +10,8 @@ instantiated on demand. Examples include ScenarioRegistry and InitializerRegistr
 For registries that store pre-configured instances, see instance_registries/.
 """
 
+from __future__ import annotations
+
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,

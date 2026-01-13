@@ -8,6 +8,8 @@ This module provides defensive error parsing, request ID extraction, and retry-a
 hint extraction for consistent error handling across OpenAI-based prompt targets.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from typing import Optional, Tuple, Union

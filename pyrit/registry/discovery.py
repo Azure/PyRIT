@@ -8,6 +8,8 @@ This module provides functions for discovering classes in directories and packag
 used by registries to find and register items automatically.
 """
 
+from __future__ import annotations
+
 import importlib
 import importlib.util
 import inspect

@@ -8,6 +8,8 @@ This module provides the SimpleInitializer class that sets up a complete
 simple configuration including converters, scorers, and targets using basic OpenAI.
 """
 
+from __future__ import annotations
+
 from typing import List
 
 from pyrit.common.apply_defaults import set_default_value, set_global_variable

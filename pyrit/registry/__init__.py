@@ -3,6 +3,8 @@
 
 """Registry module for PyRIT class and instance registries."""
 
+from __future__ import annotations
+
 from pyrit.registry.base import RegistryItemMetadata, RegistryProtocol
 from pyrit.registry.class_registries import (
     BaseClassRegistry,

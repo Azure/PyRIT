@@ -13,6 +13,8 @@ Specific scenarios should be imported from their subpackages:
     from pyrit.scenario.foundry import RedTeamAgent
 """
 
+from __future__ import annotations
+
 import sys
 
 from pyrit.models.scenario_result import ScenarioIdentifier, ScenarioResult

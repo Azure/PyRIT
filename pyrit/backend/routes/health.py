@@ -5,6 +5,8 @@
 Health check endpoints.
 """
 
+from __future__ import annotations
+
 from datetime import datetime, timezone
 
 from fastapi import APIRouter

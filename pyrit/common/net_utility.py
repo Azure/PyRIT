@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 from typing import Any, Literal, Optional, overload
 from urllib.parse import parse_qs, urlparse, urlunparse
 

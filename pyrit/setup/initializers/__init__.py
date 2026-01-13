@@ -3,6 +3,8 @@
 
 """PyRIT initializers package."""
 
+from __future__ import annotations
+
 from pyrit.setup.initializers.airt import AIRTInitializer
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 from pyrit.setup.initializers.scenarios.load_default_datasets import LoadDefaultDatasets

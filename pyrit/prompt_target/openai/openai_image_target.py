@@ -1,5 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
+from __future__ import annotations
+
 import base64
 import logging
 from typing import Any, Dict, Literal, Optional

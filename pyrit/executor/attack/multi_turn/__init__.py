@@ -3,6 +3,8 @@
 
 """Multi-turn attack strategies module."""
 
+from __future__ import annotations
+
 from pyrit.executor.attack.multi_turn.chunked_request import ChunkedRequestAttack, ChunkedRequestAttackContext
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack, CrescendoAttackContext, CrescendoAttackResult
 from pyrit.executor.attack.multi_turn.multi_prompt_sending import (

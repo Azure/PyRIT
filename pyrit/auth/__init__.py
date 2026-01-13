@@ -5,6 +5,8 @@
 Authentication functionality for a variety of services.
 """
 
+from __future__ import annotations
+
 from pyrit.auth.authenticator import Authenticator
 from pyrit.auth.azure_auth import (
     AzureAuth,

@@ -3,6 +3,8 @@
 
 """Core executor module."""
 
+from __future__ import annotations
+
 from pyrit.executor.core.config import StrategyConverterConfig
 from pyrit.executor.core.strategy import (
     Strategy,

@@ -7,6 +7,8 @@ PyRIT CLI - Command-line interface for running security scenarios.
 This module provides the main entry point for the pyrit_scan command.
 """
 
+from __future__ import annotations
+
 import asyncio
 import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter

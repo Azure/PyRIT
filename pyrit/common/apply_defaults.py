@@ -8,6 +8,8 @@ This module provides decorators and utilities for applying default values to cla
 It's designed to work with PyRIT's initialization system but is kept in common to avoid circular imports.
 """
 
+from __future__ import annotations
+
 import functools
 import inspect
 import logging

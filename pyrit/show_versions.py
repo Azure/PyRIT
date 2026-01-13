@@ -7,6 +7,8 @@ Utility methods to print system info for debugging.
 Adapted from :py:func:`pandas.show_versions` and :py:func:`sklearn.show_versions`.
 """
 
+from __future__ import annotations
+
 import platform
 import sys
 

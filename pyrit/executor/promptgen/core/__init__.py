@@ -3,6 +3,8 @@
 
 """Core prompt generator strategy imports."""
 
+from __future__ import annotations
+
 from pyrit.executor.promptgen.core.prompt_generator_strategy import (
     PromptGeneratorStrategy,
     PromptGeneratorStrategyContext,

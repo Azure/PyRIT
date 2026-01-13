@@ -7,6 +7,8 @@ Local dataset loaders with automatic discovery.
 Automatically discovers and registers all YAML dataset files from the seed_datasets directory.
 """
 
+from __future__ import annotations
+
 from pyrit.datasets.seed_datasets.local.local_dataset_loader import _LocalDatasetLoader
 
 __all__ = [

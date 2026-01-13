@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import logging
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (

@@ -3,6 +3,8 @@
 
 """Prompt generator strategy imports."""
 
+from __future__ import annotations
+
 from pyrit.executor.promptgen.anecdoctor import AnecdoctorContext, AnecdoctorGenerator, AnecdoctorResult
 from pyrit.executor.promptgen.core import (
     PromptGeneratorStrategy,

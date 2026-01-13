@@ -5,6 +5,8 @@
 # https://github.com/leondz/garacc/blob/07c4e2f94311cfc546ee8c83d83ce42a2da87c15/garak/probes/ansiescape.py
 
 
+from __future__ import annotations
+
 LIVE_PAYLOADS = [
     "\x1b[",
     "\x1b]",

@@ -3,6 +3,8 @@
 
 """AIRT scenario classes."""
 
+from __future__ import annotations
+
 from pyrit.scenario.scenarios.airt.content_harms import (
     ContentHarms,
     ContentHarmsStrategy,

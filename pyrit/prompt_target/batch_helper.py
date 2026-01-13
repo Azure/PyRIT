@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import asyncio
 from typing import Any, Callable, Generator, List, Optional, Sequence
 
