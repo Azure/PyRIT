@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import pytest
 
 from pyrit.analytics.result_analysis import AttackStats, analyze_results

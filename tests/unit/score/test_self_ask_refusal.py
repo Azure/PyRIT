@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import tempfile
 from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch

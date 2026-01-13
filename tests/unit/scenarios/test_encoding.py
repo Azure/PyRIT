@@ -3,6 +3,8 @@
 
 """Tests for the Encoding class."""
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock
 
 import pytest

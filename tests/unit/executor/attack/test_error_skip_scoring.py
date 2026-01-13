@@ -6,6 +6,8 @@ Unit tests to verify that all attack executors skip scoring when error responses
 This ensures consistent error handling across all attack strategies.
 """
 
+from __future__ import annotations
+
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 

@@ -6,6 +6,8 @@ Integration test for retry timing mechanism.
 Verifies that exponential backoff retry delays work correctly with real timing.
 """
 
+from __future__ import annotations
+
 import time
 from unittest.mock import AsyncMock, patch
 

@@ -3,6 +3,8 @@
 
 """Additional tests for Scenario retry with AttackExecutorResult functionality."""
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest

@@ -8,6 +8,8 @@ These tests ensure all CSV files in the scorer_evals directory follow the
 standardized column naming conventions defined in scorer_evaluator.py.
 """
 
+from __future__ import annotations
+
 import csv
 from pathlib import Path
 from typing import List

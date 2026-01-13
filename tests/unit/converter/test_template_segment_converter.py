@@ -2,6 +2,8 @@
 # Licensed under the MIT license.
 
 
+from __future__ import annotations
+
 import pytest
 
 from pyrit.models import SeedPrompt

@@ -3,6 +3,8 @@
 
 """Unit tests for strategy composition validation."""
 
+from __future__ import annotations
+
 import pytest
 
 from pyrit.scenario import ScenarioCompositeStrategy

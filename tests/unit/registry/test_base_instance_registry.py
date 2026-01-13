@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from pyrit.registry.base import RegistryItemMetadata

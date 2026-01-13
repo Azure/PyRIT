@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 from pyrit.executor.attack import RTASystemPromptPaths
 from pyrit.models import SeedPrompt
 

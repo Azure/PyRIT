@@ -3,6 +3,8 @@
 
 """Tests for the Cyber class."""
 
+from __future__ import annotations
+
 import pathlib
 from typing import List
 from unittest.mock import MagicMock, patch

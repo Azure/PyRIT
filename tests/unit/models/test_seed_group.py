@@ -3,6 +3,8 @@
 
 """Tests for the SeedGroup and SeedAttackGroup classes."""
 
+from __future__ import annotations
+
 import uuid
 
 import pytest

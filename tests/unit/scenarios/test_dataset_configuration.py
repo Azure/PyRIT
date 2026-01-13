@@ -3,6 +3,8 @@
 
 """Tests for the DatasetConfiguration class."""
 
+from __future__ import annotations
+
 import random
 from unittest.mock import MagicMock, patch
 

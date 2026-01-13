@@ -8,6 +8,8 @@ This converter was developed based on techniques discovered and validated
 during Crucible CTF red teaming exercises using PyRIT.
 """
 
+from __future__ import annotations
+
 import pytest
 
 from pyrit.prompt_converter import NegationTrapConverter

@@ -8,6 +8,8 @@ These tests verify that all public classes and functions exported by PyRIT modul
 are documented in doc/api.rst to prevent accidentally missing items in the documentation.
 """
 
+from __future__ import annotations
+
 import importlib
 import re
 from pathlib import Path

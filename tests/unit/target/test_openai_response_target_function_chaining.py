@@ -7,6 +7,8 @@ These tests verify that conversation history is correctly maintained across
 multiple function calls, which is critical for the Responses API.
 """
 
+from __future__ import annotations
+
 import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch

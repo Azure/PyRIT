@@ -1,5 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
+from __future__ import annotations
+
 from typing import MutableSequence, Sequence
 
 import pytest

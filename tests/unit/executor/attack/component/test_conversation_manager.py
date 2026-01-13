@@ -17,6 +17,8 @@ Helper functions include:
 - get_prepended_turn_count: Counts assistant messages in a conversation
 """
 
+from __future__ import annotations
+
 import uuid
 from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock

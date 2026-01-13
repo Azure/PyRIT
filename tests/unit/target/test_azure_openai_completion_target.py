@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import os
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch

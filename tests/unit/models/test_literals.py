@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 from typing import Literal, get_args, get_origin
 
 from pyrit.models import ChatMessageRole, PromptDataType, PromptResponseError
