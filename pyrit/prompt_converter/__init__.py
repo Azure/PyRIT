@@ -4,10 +4,10 @@
 """
 Prompt converters for transforming prompts before sending them to targets in red teaming workflows.
 
-Converters are organized into categories: Text-to-Text (encoding, obfuscation, translation, variation), 
-Audio (text-to-audio, audio-to-text, audio-to-audio), Image (text-to-image, image-to-image), 
-Video (image-to-video), File (text-to-PDF/URL), Selective Converting (partial prompt transformation), 
-and Human-in-the-Loop (interactive review). Converters can be stacked together to create complex 
+Converters are organized into categories: Text-to-Text (encoding, obfuscation, translation, variation),
+Audio (text-to-audio, audio-to-text, audio-to-audio), Image (text-to-image, image-to-image),
+Video (image-to-video), File (text-to-PDF/URL), Selective Converting (partial prompt transformation),
+and Human-in-the-Loop (interactive review). Converters can be stacked together to create complex
 transformation pipelines for testing AI system robustness.
 """
 
