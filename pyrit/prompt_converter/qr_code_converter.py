@@ -28,7 +28,7 @@ class QRCodeConverter(PromptConverter):
         border_color: Optional[tuple] = None,
     ):
         """
-        Initializes the converter with specified parameters for QR code generation.
+        Initialize the converter with specified parameters for QR code generation.
 
         Args:
             scale (int, Optional): Scaling factor that determines the width/height in pixels of each
@@ -62,7 +62,7 @@ class QRCodeConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt to a QR code image.
+        Convert the given prompt to a QR code image.
 
         Args:
             prompt (str): The prompt to be converted.

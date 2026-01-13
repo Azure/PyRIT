@@ -50,6 +50,15 @@ class CharSwapConverter(WordLevelConverter):
         self.max_iterations = max_iterations
 
     async def convert_word_async(self, word: str) -> str:
+        """
+        Convert a single word into the target format supported by the converter.
+
+        Args:
+            word (str): The word to be converted.
+
+        Returns:
+            str: The converted word.
+        """
         return self._perturb_word(word)
 
     def _perturb_word(self, word: str) -> str:

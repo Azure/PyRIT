@@ -40,7 +40,7 @@ class AskToDecodeConverter(PromptConverter):
 
     def __init__(self, template=None, encoding_name: str = "cipher") -> None:
         """
-        Initializes the converter with a specified encoding name and template.
+        Initialize the converter with a specified encoding name and template.
 
         By default, if no template is provided, a random template from basic_templates
         will be used. If an encoding_name is provided, both basic_templates and
@@ -59,14 +59,14 @@ class AskToDecodeConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given encoded text by wrapping it with a decoding request prompt.
+        Convert the given encoded text by wrapping it with a decoding request prompt.
 
         Args:
             prompt (str): The encoded text to be wrapped with a decoding request.
             input_type (PromptDataType, optional): Type of input data. Defaults to "text".
 
         Returns:
-            ConverterResult: The encoded text wrapped in a decoding prompt.
+            ConverterResult: The result containing the converted prompt.
 
         Raises:
             ValueError: If the input type is not supported (only "text" is supported).

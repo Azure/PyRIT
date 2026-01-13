@@ -36,7 +36,7 @@ class LLMGenericTextConverter(PromptConverter):
         **kwargs,
     ):
         """
-        Initializes the converter with a target and optional prompt templates.
+        Initialize the converter with a target and optional prompt templates.
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
@@ -63,7 +63,7 @@ class LLMGenericTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt using an LLM via the specified converter target.
+        Convert the given prompt using an LLM via the specified converter target.
 
         Args:
             prompt (str): The prompt to be converted.
@@ -71,6 +71,9 @@ class LLMGenericTextConverter(PromptConverter):
 
         Returns:
             ConverterResult: The result containing the converted output and its type.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         conversation_id = str(uuid.uuid4())
 

@@ -42,7 +42,7 @@ class AddImageVideoConverter(PromptConverter):
         img_resize_size: tuple = (500, 500),
     ):
         """
-        Initializes the converter with the video path and image properties.
+        Initialize the converter with the video path and image properties.
 
         Args:
             video_path (str): File path of video to add image to.
@@ -63,7 +63,7 @@ class AddImageVideoConverter(PromptConverter):
 
     async def _add_image_to_video(self, image_path: str, output_path: str) -> str:
         """
-        Adds an image to video.
+        Add an image to video.
 
         Args:
             image_path (str): The image path to add to video.
@@ -71,6 +71,10 @@ class AddImageVideoConverter(PromptConverter):
 
         Returns:
             str: The output video path.
+
+        Raises:
+            ModuleNotFoundError: If OpenCV is not installed.
+            ValueError: If the image path is invalid or unsupported video format.
         """
         try:
             import cv2  # noqa: F401
@@ -167,7 +171,7 @@ class AddImageVideoConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
-        Converts the given prompt (image) by adding it to a video.
+        Convert the given prompt (image) by adding it to a video.
 
         Args:
             prompt (str): The image path to be added to the video.
