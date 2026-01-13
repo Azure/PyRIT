@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import json
 from typing import IO, Any, Dict, List, cast
 

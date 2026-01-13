@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import base64
 import logging
 from io import BytesIO
@@ -46,11 +44,11 @@ class _AdamOptimizer:
         self.beta_1 = beta_1
         self.beta_2 = beta_2
         self.epsilon = epsilon
-        self.m: numpy.ndarray  # first moment vector
-        self.v: numpy.ndarray  # second moment vector
+        self.m: numpy.ndarray  # type: ignore[type-arg, unused-ignore]  # first moment vector
+        self.v: numpy.ndarray  # type: ignore[type-arg, unused-ignore]  # second moment vector
         self.t = 0  # initialize timestep
 
-    def update(self, *, params: numpy.ndarray, grads: numpy.ndarray) -> numpy.ndarray:
+    def update(self, *, params: numpy.ndarray, grads: numpy.ndarray) -> numpy.ndarray:  # type: ignore[type-arg, unused-ignore]
         """
         Performs a single update step using the Adam optimization algorithm.
 
@@ -177,7 +175,7 @@ class TransparencyAttackConverter(PromptConverter):
 
         self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
 
-    def _load_and_preprocess_image(self, path: str) -> numpy.ndarray:
+    def _load_and_preprocess_image(self, path: str) -> numpy.ndarray:  # type: ignore[type-arg, unused-ignore]
         """Loads image, converts to grayscale, resizes, and normalizes for optimization."""
         try:
             with Image.open(path) as img:
@@ -187,11 +185,11 @@ class TransparencyAttackConverter(PromptConverter):
         except Exception as e:
             raise ValueError(f"Failed to load and preprocess image from {path}: {e}")
 
-    def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> float:
+    def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> float:  # type: ignore[type-arg, unused-ignore]
         """Computes Mean Squared Error (MSE) loss between blended and target images."""
         return float(numpy.mean(numpy.square(blended_image - target_tensor)))
 
-    def _create_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> numpy.ndarray:
+    def _create_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> numpy.ndarray:  # type: ignore[type-arg, unused-ignore]
         """Creates a blended image using the attack image and alpha transparency."""
         attack_image_uint8 = (attack_image * 255).astype(numpy.uint8)
         transparency_uint8 = (alpha * 255).astype(numpy.uint8)
@@ -204,7 +202,7 @@ class TransparencyAttackConverter(PromptConverter):
 
         return la_image
 
-    async def _save_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> str:
+    async def _save_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> str:  # type: ignore[type-arg, unused-ignore]
         """Saves the blended image with transparency as a PNG file."""
         try:
             img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")

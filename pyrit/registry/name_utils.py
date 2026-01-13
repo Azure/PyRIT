@@ -8,8 +8,6 @@ This module provides functions for converting between different naming conventio
 used in registries (e.g., CamelCase class names to snake_case registry names).
 """
 
-from __future__ import annotations
-
 import re
 
 

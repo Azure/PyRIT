@@ -3,8 +3,6 @@
 
 """Tests for Scenario retry functionality."""
 
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest

@@ -14,8 +14,6 @@ This module provides the core seed types used throughout PyRIT:
 - SeedDataset: Container for managing collections of seeds
 """
 
-from __future__ import annotations
-
 from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_attack_group import SeedAttackGroup
 from pyrit.models.seeds.seed_dataset import SeedDataset

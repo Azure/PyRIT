@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict

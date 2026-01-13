@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 

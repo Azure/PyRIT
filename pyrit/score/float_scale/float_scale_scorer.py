@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 

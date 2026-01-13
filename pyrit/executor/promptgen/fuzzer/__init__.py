@@ -3,8 +3,6 @@
 
 """Fuzzer module for generating adversarial prompts through mutation and crossover operations."""
 
-from __future__ import annotations
-
 from pyrit.executor.promptgen.fuzzer.fuzzer import (
     FuzzerContext,
     FuzzerGenerator,

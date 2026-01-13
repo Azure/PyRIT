@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 from pyrit.models.attack_result import AttackOutcome, AttackResult, AttackResultT
 from pyrit.models.chat_message import (
     ALLOWED_CHAT_MESSAGE_ROLES,

@@ -8,8 +8,6 @@ These tests dynamically discover all available scenarios and run each one
 using the pyrit_scan command with standard initializers.
 """
 
-from __future__ import annotations
-
 import pytest
 
 from pyrit.cli.pyrit_scan import main as pyrit_scan_main

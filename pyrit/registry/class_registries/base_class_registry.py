@@ -16,8 +16,6 @@ Terminology:
 - **ClassEntry**: Internal wrapper holding a class plus optional factory/defaults
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import Callable, Dict, Generic, Iterator, List, Optional, Type, TypeVar
 

@@ -5,8 +5,6 @@
 Unit tests for the pyrit_scan CLI module.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 

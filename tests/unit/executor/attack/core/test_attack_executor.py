@@ -7,8 +7,6 @@ Tests for the simplified AttackExecutor.
 These tests verify the new API that uses AttackParameters and params_type.
 """
 
-from __future__ import annotations
-
 import asyncio
 import dataclasses
 import uuid

@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import uuid
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch

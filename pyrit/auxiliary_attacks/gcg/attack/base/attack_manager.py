@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import gc
 import json
 import logging
@@ -71,7 +69,7 @@ def get_embedding_matrix(model: Any) -> Any:
     elif isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens.weight
     elif isinstance(model, GPTNeoXForCausalLM):
-        return model.base_model.embed_in.weight  # type: ignore[union-attr]
+        return model.base_model.embed_in.weight  # type: ignore[union-attr, unused-ignore]
     elif isinstance(model, MixtralForCausalLM) or isinstance(model, MistralForCausalLM):
         return model.model.embed_tokens.weight
     elif isinstance(model, Phi3ForCausalLM):
@@ -86,7 +84,7 @@ def get_embeddings(model: Any, input_ids: torch.Tensor) -> Any:
     elif isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens(input_ids)
     elif isinstance(model, GPTNeoXForCausalLM):
-        return model.base_model.embed_in(input_ids).half()  # type: ignore[operator]
+        return model.base_model.embed_in(input_ids).half()  # type: ignore[operator, unused-ignore]
     elif isinstance(model, MixtralForCausalLM) or isinstance(model, MistralForCausalLM):
         return model.model.embed_tokens(input_ids)
     elif isinstance(model, Phi3ForCausalLM):
@@ -273,7 +271,7 @@ class AttackPrompt(object):
         self.input_ids = torch.tensor(toks[: self._target_slice.stop], device="cpu")
         self.conv_template.messages = []
 
-    @torch.no_grad()
+    @torch.no_grad()  # type: ignore[misc, untyped-decorator, unused-ignore]
     def generate(self, model: Any, gen_config: Any = None) -> torch.Tensor:
         if gen_config is None:
             gen_config = model.generation_config
@@ -287,7 +285,7 @@ class AttackPrompt(object):
             input_ids, attention_mask=attn_masks, generation_config=gen_config, pad_token_id=self.tokenizer.pad_token_id
         )[0]
 
-        return output_ids[self._assistant_role_slice.stop :]  # type: ignore[no-any-return]
+        return output_ids[self._assistant_role_slice.stop :]  # type: ignore[no-any-return, unused-ignore]
 
     def generate_str(self, model: Any, gen_config: Any = None) -> Any:
         return self.tokenizer.decode(self.generate(model, gen_config))
@@ -302,15 +300,15 @@ class AttackPrompt(object):
         em = self.target in gen_str
         return jailbroken, int(em)
 
-    @torch.no_grad()
+    @torch.no_grad()  # type: ignore[misc, untyped-decorator, unused-ignore]
     def test_loss(self, model: Any) -> float:
         logits, ids = self.logits(model, return_ids=True)
-        return self.target_loss(logits, ids).mean().item()
+        return self.target_loss(logits, ids).mean().item()  # type: ignore[no-any-return, unused-ignore]
 
     def grad(self, model: Any) -> torch.Tensor:
         raise NotImplementedError("Gradient function not yet implemented")
 
-    @torch.no_grad()
+    @torch.no_grad()  # type: ignore[misc, untyped-decorator, unused-ignore]
     def logits(self, model: Any, test_controls: Any = None, return_ids: bool = False) -> Any:
         pad_tok = -1
         if test_controls is None:
@@ -374,13 +372,13 @@ class AttackPrompt(object):
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._target_slice.start - 1, self._target_slice.stop - 1)
         loss = crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])
-        return loss  # type: ignore[no-any-return]
+        return loss  # type: ignore[no-any-return, unused-ignore]
 
     def control_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._control_slice.start - 1, self._control_slice.stop - 1)
         loss = crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])
-        return loss  # type: ignore[no-any-return]
+        return loss  # type: ignore[no-any-return, unused-ignore]
 
     @property
     def assistant_str(self) -> Any:
@@ -448,7 +446,7 @@ class AttackPrompt(object):
 
     @property
     def eval_str(self) -> str:
-        return (  # type: ignore[no-any-return]
+        return (  # type: ignore[no-any-return, unused-ignore]
             self.tokenizer.decode(self.input_ids[: self._assistant_role_slice.stop])
             .replace("<s>", "")
             .replace("</s>", "")
@@ -530,7 +528,7 @@ class PromptManager(object):
         return [prompt.test_loss(model) for prompt in self._prompts]
 
     def grad(self, model: Any) -> torch.Tensor:
-        return sum([prompt.grad(model) for prompt in self._prompts])  # type: ignore[return-value]
+        return sum([prompt.grad(model) for prompt in self._prompts])  # type: ignore[return-value, unused-ignore]
 
     def logits(self, model: Any, test_controls: Any = None, return_ids: bool = False) -> Any:
         vals = [prompt.logits(model, test_controls, return_ids) for prompt in self._prompts]
@@ -580,7 +578,7 @@ class PromptManager(object):
 
     @property
     def control_str(self) -> str:
-        return self._prompts[0].control_str  # type: ignore[no-any-return]
+        return self._prompts[0].control_str  # type: ignore[no-any-return, unused-ignore]
 
     @control_str.setter
     def control_str(self, control: str) -> None:
@@ -888,7 +886,7 @@ class MultiPromptAttack(object):
         n_em = self.parse_results(prompt_tests_mb)
         n_loss = self.parse_results(model_tests_loss)
         total_tests = self.parse_results(np.ones(prompt_tests_jb.shape, dtype=int))
-        n_loss = [lo / t if t > 0 else 0 for lo, t in zip(n_loss, total_tests)]  # type: ignore[assignment]
+        n_loss = [lo / t if t > 0 else 0 for lo, t in zip(n_loss, total_tests)]  # type: ignore[assignment, unused-ignore]
 
         tests["n_passed"] = n_passed
         tests["n_em"] = n_em
@@ -1512,7 +1510,7 @@ class EvaluateAttack(object):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs
 
-    @torch.no_grad()
+    @torch.no_grad()  # type: ignore[misc, untyped-decorator, unused-ignore]
     def run(
         self,
         steps: int,
@@ -1628,7 +1626,7 @@ class ModelWorker(object):
             AutoModelForCausalLM.from_pretrained(
                 model_path, token=token, torch_dtype=torch.float16, trust_remote_code=False, **model_kwargs
             )
-            .to(device)  # type: ignore[arg-type]
+            .to(device)  # type: ignore[arg-type, unused-ignore]
             .eval()
         )
         self.tokenizer = tokenizer
@@ -1645,7 +1643,7 @@ class ModelWorker(object):
                 break
             ob, fn, args, kwargs = task
             if fn == "grad":
-                with torch.enable_grad():  # type: ignore[no-untyped-call]
+                with torch.enable_grad():  # type: ignore[no-untyped-call, unused-ignore]
                     results.put(ob.grad(*args, **kwargs))
             else:
                 with torch.no_grad():
@@ -1682,7 +1680,7 @@ class ModelWorker(object):
 def get_workers(params: Any, eval: bool = False) -> tuple[list[ModelWorker], list[ModelWorker]]:
     tokenizers = []
     for i in range(len(params.tokenizer_paths)):
-        tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+        tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call, unused-ignore]
             params.tokenizer_paths[i], token=params.token, trust_remote_code=False, **params.tokenizer_kwargs[i]
         )
         if "oasst-sft-6-llama-30b" in params.tokenizer_paths[i]:

@@ -3,8 +3,6 @@
 
 """Core scenario classes for running attack configurations."""
 
-from __future__ import annotations
-
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import EXPLICIT_SEED_GROUPS_KEY, DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario

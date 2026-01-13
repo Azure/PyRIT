@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import hashlib
 
 from pyrit.score.scorer_identifier import ScorerIdentifier

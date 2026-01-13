@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import gradio as gr
 import webview
 from connection_status import ConnectionStatusHandler

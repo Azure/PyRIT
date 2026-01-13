@@ -98,7 +98,7 @@ class StrategyEventHandler(ABC, Generic[StrategyContextT, StrategyResultT]):
         pass
 
 
-class StrategyLogAdapter(logging.LoggerAdapter[logging.Logger]):
+class StrategyLogAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
     """
     Custom logger adapter that adds strategy information to log messages.
     """

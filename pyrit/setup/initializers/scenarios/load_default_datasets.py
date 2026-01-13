@@ -8,8 +8,6 @@ If you don't have a database already, this can enable you to run all scenarios u
 the pre-defined datasets in PyRIT. These are meant as a starting point only.
 """
 
-from __future__ import annotations
-
 import logging
 import textwrap
 from typing import List

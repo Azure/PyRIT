@@ -2,8 +2,6 @@
 # Licensed under the MIT license.
 
 
-from __future__ import annotations
-
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 

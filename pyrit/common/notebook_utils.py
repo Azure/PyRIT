@@ -2,9 +2,6 @@
 # Licensed under the MIT license.
 
 
-from __future__ import annotations
-
-
 def is_in_ipython_session() -> bool:
     """
     Determine if the code is running in an IPython session.

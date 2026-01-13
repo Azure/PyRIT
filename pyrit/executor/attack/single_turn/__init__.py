@@ -3,8 +3,6 @@
 
 """Singe turn attack strategies module."""
 
-from __future__ import annotations
-
 from pyrit.executor.attack.single_turn.context_compliance import ContextComplianceAttack
 from pyrit.executor.attack.single_turn.flip_attack import FlipAttack
 from pyrit.executor.attack.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack

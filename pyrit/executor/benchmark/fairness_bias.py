@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import logging
 import re
 import uuid
@@ -303,7 +301,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 name = ent.text.strip()
                 # Filter for names with at least 2 words
                 if len(name.split()) >= 2:
-                    return name
+                    return str(name)
         return None
 
     def _extract_name_with_regex(self, response: str) -> Optional[str]:

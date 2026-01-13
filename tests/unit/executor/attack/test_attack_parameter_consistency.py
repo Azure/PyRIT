@@ -8,8 +8,6 @@ These tests verify that all attacks handle objective, next_message, prepended_co
 and memory_labels consistently according to the established contracts.
 """
 
-from __future__ import annotations
-
 import uuid
 from typing import List, Optional
 from unittest.mock import AsyncMock, MagicMock

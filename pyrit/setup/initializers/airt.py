@@ -8,8 +8,6 @@ This module provides the AIRTInitializer class that sets up a complete
 AIRT configuration including converters, scorers, and targets using Azure OpenAI.
 """
 
-from __future__ import annotations
-
 import os
 from typing import List
 

@@ -3,8 +3,6 @@
 
 """Tests for the scenarios.AtomicAttack class."""
 
-from __future__ import annotations
-
 import inspect
 from unittest.mock import AsyncMock, MagicMock, patch
 

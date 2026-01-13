@@ -3,8 +3,6 @@
 
 """Attack result printers module."""
 
-from __future__ import annotations
-
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.executor.attack.printer.console_printer import ConsoleAttackResultPrinter
 from pyrit.executor.attack.printer.markdown_printer import MarkdownAttackResultPrinter

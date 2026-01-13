@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 from pyrit.prompt_target.openai.openai_error_handling import (
     _is_content_filter_error,
 )

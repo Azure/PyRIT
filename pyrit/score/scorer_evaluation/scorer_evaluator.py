@@ -441,8 +441,8 @@ class ScorerEvaluator(abc.ABC):
     def _compute_metrics(
         self,
         *,
-        all_human_scores: np.ndarray,
-        all_model_scores: np.ndarray,
+        all_human_scores: np.ndarray,  # type: ignore[type-arg, unused-ignore]
+        all_model_scores: np.ndarray,  # type: ignore[type-arg, unused-ignore]
         num_scorer_trials: int,
         dataset_name: Optional[str] = None,
         dataset_version: Optional[str] = None,
@@ -535,8 +535,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
     def _compute_metrics(
         self,
         *,
-        all_human_scores: np.ndarray,
-        all_model_scores: np.ndarray,
+        all_human_scores: np.ndarray,  # type: ignore[type-arg, unused-ignore]
+        all_model_scores: np.ndarray,  # type: ignore[type-arg, unused-ignore]
         num_scorer_trials: int,
         dataset_name: Optional[str] = None,
         dataset_version: Optional[str] = None,
@@ -637,8 +637,8 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     def _compute_metrics(
         self,
         *,
-        all_human_scores: np.ndarray,
-        all_model_scores: np.ndarray,
+        all_human_scores: np.ndarray,  # type: ignore[type-arg, unused-ignore]
+        all_model_scores: np.ndarray,  # type: ignore[type-arg, unused-ignore]
         num_scorer_trials: int,
         dataset_name: Optional[str] = None,
         dataset_version: Optional[str] = None,

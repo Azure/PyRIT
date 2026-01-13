@@ -3,8 +3,6 @@
 
 """Tests for the ContentHarms class."""
 
-from __future__ import annotations
-
 import pathlib
 from unittest.mock import MagicMock, patch
 

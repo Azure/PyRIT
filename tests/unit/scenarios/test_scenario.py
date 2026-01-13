@@ -3,8 +3,6 @@
 
 """Tests for the scenarios.Scenario class."""
 
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest

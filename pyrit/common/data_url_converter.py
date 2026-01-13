@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 from pyrit.models import DataTypeSerializer, data_serializer_factory
 
 # Supported image formats for Azure OpenAI GPT-4o,

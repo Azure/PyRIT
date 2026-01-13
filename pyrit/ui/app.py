@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import os
 import subprocess
 import sys
@@ -17,8 +15,14 @@ def launch_app(open_browser: bool = False) -> None:
     current_path = os.path.abspath(__file__)
     python_path = sys.executable
 
-    # Start a new process to run the gradio UI
-    subprocess.Popen([python_path, current_path, str(open_browser)])
+    # Start a new process to run it
+    if sys.platform == "win32":
+        subprocess.Popen(
+            [python_path, current_path, str(open_browser)],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,  # type: ignore[attr-defined, unused-ignore]
+        )
+    else:
+        subprocess.Popen([python_path, current_path, str(open_browser)])
 
 
 def is_app_running() -> bool:

@@ -5,8 +5,6 @@
 PyRIT FastAPI Backend.
 """
 
-from __future__ import annotations
-
 # Don't import app here - it triggers full FastAPI setup
 # Users should import directly: from pyrit.backend.main import app
 

@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import logging
 from enum import Enum
 from typing import Optional
@@ -110,7 +108,7 @@ class AzureBlobStorageTarget(PromptTarget):
             data (bytes): Byte representation of content to upload to container.
             content_type (str): Content type to upload.
         """
-        content_settings = ContentSettings(content_type=f"{content_type}")  # type: ignore[no-untyped-call]
+        content_settings = ContentSettings(content_type=f"{content_type}")  # type: ignore[no-untyped-call, unused-ignore]
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
         if not self._client_async:

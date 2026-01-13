@@ -8,8 +8,6 @@ This module contains types shared between class registries (which store Type[T])
 and instance registries (which store T instances).
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, List, Optional, Protocol, TypeVar, runtime_checkable
 

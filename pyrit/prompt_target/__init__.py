@@ -8,8 +8,6 @@ Target implementations for interacting with different services and APIs,
 for example sending prompts or transferring content (uploads).
 """
 
-from __future__ import annotations
-
 from pyrit.prompt_target.azure_blob_storage_target import AzureBlobStorageTarget
 from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget

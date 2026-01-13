@@ -2,8 +2,6 @@
 # Licensed under the MIT license.
 
 
-from __future__ import annotations
-
 from typing import Callable
 from unittest.mock import MagicMock
 

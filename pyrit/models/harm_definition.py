@@ -7,8 +7,6 @@ Module for loading and validating harm definition YAML files.
 Harm definitions provide the scale descriptions used for evaluating harm categories.
 """
 
-from __future__ import annotations
-
 import logging
 import re
 from dataclasses import dataclass, field

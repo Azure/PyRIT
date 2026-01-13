@@ -8,8 +8,6 @@ This module provides various text matching algorithms including exact substring 
 and n-gram based approximate matching through a unified TextMatching interface.
 """
 
-from __future__ import annotations
-
 from typing import Protocol
 
 

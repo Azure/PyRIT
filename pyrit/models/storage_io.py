@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 import logging
 import os
 from abc import ABC, abstractmethod
@@ -187,7 +185,7 @@ class AzureBlobStorageIO(StorageIO):
             data (bytes): Byte representation of content to upload to container.
             content_type (str): Content type to upload.
         """
-        content_settings = ContentSettings(content_type=f"{content_type}")  # type: ignore[no-untyped-call]
+        content_settings = ContentSettings(content_type=f"{content_type}")  # type: ignore[no-untyped-call, unused-ignore]
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
         try:
@@ -264,7 +262,7 @@ class AzureBlobStorageIO(StorageIO):
             logger.exception(f"Failed to read file at {blob_name}: {exc}")
             raise
         finally:
-            await self._client_async.close()  # type: ignore[no-untyped-call]
+            await self._client_async.close()  # type: ignore[no-untyped-call, unused-ignore]
             self._client_async = None
 
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
@@ -284,7 +282,7 @@ class AzureBlobStorageIO(StorageIO):
             logger.exception(f"Failed to write file at {blob_name}: {exc}")
             raise
         finally:
-            await self._client_async.close()  # type: ignore[no-untyped-call]
+            await self._client_async.close()  # type: ignore[no-untyped-call, unused-ignore]
             self._client_async = None
 
     async def path_exists(self, path: Union[Path, str]) -> bool:
@@ -299,7 +297,7 @@ class AzureBlobStorageIO(StorageIO):
         except ResourceNotFoundError:
             return False
         finally:
-            await self._client_async.close()  # type: ignore[no-untyped-call]
+            await self._client_async.close()  # type: ignore[no-untyped-call, unused-ignore]
             self._client_async = None
 
     async def is_file(self, path: Union[Path, str]) -> bool:
@@ -314,7 +312,7 @@ class AzureBlobStorageIO(StorageIO):
         except ResourceNotFoundError:
             return False
         finally:
-            await self._client_async.close()  # type: ignore[no-untyped-call]
+            await self._client_async.close()  # type: ignore[no-untyped-call, unused-ignore]
             self._client_async = None
 
     async def create_directory_if_not_exists(self, directory_path: Union[Path, str]) -> None:

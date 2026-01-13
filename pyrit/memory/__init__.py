@@ -7,8 +7,6 @@ Provide functionality for storing and retrieving conversation history and embedd
 This package defines the core `MemoryInterface` and concrete implementations for different storage backends.
 """
 
-from __future__ import annotations
-
 from pyrit.memory.azure_sql_memory import AzureSQLMemory
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_embedding import MemoryEmbedding

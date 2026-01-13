@@ -5,8 +5,6 @@ Toxic Sentence Generator Converter module for generating potentially harmful con
 to test AI safety mechanisms.
 """
 
-from __future__ import annotations
-
 import logging
 import pathlib
 from typing import Optional

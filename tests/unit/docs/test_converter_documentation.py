@@ -5,8 +5,6 @@
 Unit tests to verify all converters are documented in the converter notebooks.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import pytest

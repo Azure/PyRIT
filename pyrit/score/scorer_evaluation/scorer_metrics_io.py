@@ -6,8 +6,6 @@ Utility functions for reading/writing scorer evaluation metrics to JSONL files.
 Thread-safe operations for appending entries.
 """
 
-from __future__ import annotations
-
 import json
 import logging
 import threading
