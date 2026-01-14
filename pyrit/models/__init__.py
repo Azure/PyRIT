@@ -12,7 +12,7 @@ from pyrit.models.conversation_reference import ConversationReference, Conversat
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
     AudioPathDataTypeSerializer,
-    BlobPathDataTypeSerializer,
+    BinaryPathDataTypeSerializer,
     DataTypeSerializer,
     ErrorDataTypeSerializer,
     ImagePathDataTypeSerializer,
@@ -62,7 +62,7 @@ __all__ = [
     "AttackOutcome",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
-    "BlobPathDataTypeSerializer",
+    "BinaryPathDataTypeSerializer",
     "ChatMessage",
     "ChatMessagesDataset",
     "ChatMessageRole",

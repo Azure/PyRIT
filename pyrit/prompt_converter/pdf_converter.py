@@ -33,7 +33,7 @@ class PDFConverter(PromptConverter):
     """
 
     SUPPORTED_INPUT_TYPES = ("text",)
-    SUPPORTED_OUTPUT_TYPES = ("blob_path",)
+    SUPPORTED_OUTPUT_TYPES = ("binary_path",)
 
     def __init__(
         self,
@@ -131,7 +131,7 @@ class PDFConverter(PromptConverter):
         pdf_serializer = await self._serialize_pdf(pdf_bytes, content)
 
         # Return the result
-        return ConverterResult(output_text=pdf_serializer.value, output_type="blob_path")
+        return ConverterResult(output_text=pdf_serializer.value, output_type="binary_path")
 
     def _prepare_content(self, prompt: str) -> str:
         """
@@ -408,7 +408,7 @@ class PDFConverter(PromptConverter):
 
         pdf_serializer = data_serializer_factory(
             category="prompt-memory-entries",
-            data_type="blob_path",
+            data_type="binary_path",
             extension=extension,
         )
         await pdf_serializer.save_data(pdf_bytes)

@@ -13,7 +13,7 @@ from PIL import Image
 
 from pyrit.models import (
     AllowedCategories,
-    BlobPathDataTypeSerializer,
+    BinaryPathDataTypeSerializer,
     DataTypeSerializer,
     ErrorDataTypeSerializer,
     ImagePathDataTypeSerializer,
@@ -301,30 +301,30 @@ async def test_get_data_filename(sqlite_instance):
     assert not os.path.exists(filename)  # File should not exist yet
 
 
-def test_blob_path_normalizer_factory(sqlite_instance):
-    """Test factory creates BlobPathDataTypeSerializer correctly."""
-    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="blob_path")
+def test_binary_path_normalizer_factory(sqlite_instance):
+    """Test factory creates BinaryPathDataTypeSerializer correctly."""
+    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="binary_path")
     assert isinstance(serializer, DataTypeSerializer)
-    assert isinstance(serializer, BlobPathDataTypeSerializer)
-    assert serializer.data_type == "blob_path"
+    assert isinstance(serializer, BinaryPathDataTypeSerializer)
+    assert serializer.data_type == "binary_path"
     assert serializer.data_on_disk()
 
 
-def test_blob_path_normalizer_factory_with_value(sqlite_instance):
-    """Test factory creates BlobPathDataTypeSerializer with value."""
+def test_binary_path_normalizer_factory_with_value(sqlite_instance):
+    """Test factory creates BinaryPathDataTypeSerializer with value."""
     serializer = data_serializer_factory(
-        category="prompt-memory-entries", data_type="blob_path", value="/path/to/blob.bin"
+        category="prompt-memory-entries", data_type="binary_path", value="/path/to/file.bin"
     )
-    assert isinstance(serializer, BlobPathDataTypeSerializer)
-    assert serializer.data_type == "blob_path"
-    assert serializer.value == "/path/to/blob.bin"
+    assert isinstance(serializer, BinaryPathDataTypeSerializer)
+    assert serializer.data_type == "binary_path"
+    assert serializer.value == "/path/to/file.bin"
     assert serializer.data_on_disk()
 
 
 @pytest.mark.asyncio
-async def test_blob_path_save_data(sqlite_instance):
-    """Test saving blob data to disk."""
-    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="blob_path")
+async def test_binary_path_save_data(sqlite_instance):
+    """Test saving binary data to disk."""
+    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="binary_path")
     await serializer.save_data(b"\x00\x01\x02\x03")
     serializer_value = serializer.value
     assert serializer_value
@@ -335,36 +335,36 @@ async def test_blob_path_save_data(sqlite_instance):
 
 
 @pytest.mark.asyncio
-async def test_blob_path_read_data(sqlite_instance):
-    """Test reading blob data from disk."""
+async def test_binary_path_read_data(sqlite_instance):
+    """Test reading binary data from disk."""
     data = b"\x00\x11\x22\x33\x44\x55"
-    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="blob_path")
+    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="binary_path")
     await serializer.save_data(data)
     assert await serializer.read_data() == data
     # Test reading with a new serializer initialized with the saved path
     read_serializer = data_serializer_factory(
-        category="prompt-memory-entries", data_type="blob_path", value=serializer.value
+        category="prompt-memory-entries", data_type="binary_path", value=serializer.value
     )
     assert await read_serializer.read_data() == data
 
 
 @pytest.mark.asyncio
-async def test_blob_path_save_with_custom_extension(sqlite_instance):
-    """Test saving blob data with a custom file extension."""
+async def test_binary_path_save_with_custom_extension(sqlite_instance):
+    """Test saving binary data with a custom file extension."""
     custom_extension = "pdf"
     serializer = data_serializer_factory(
-        category="prompt-memory-entries", data_type="blob_path", extension=custom_extension
+        category="prompt-memory-entries", data_type="binary_path", extension=custom_extension
     )
-    blob_data = b"PDF binary content"
-    await serializer.save_data(blob_data)
+    binary_data = b"PDF binary content"
+    await serializer.save_data(binary_data)
     assert serializer.value.endswith(f".{custom_extension}")
     assert os.path.exists(serializer.value)
     assert os.path.isfile(serializer.value)
 
 
 @pytest.mark.asyncio
-async def test_blob_path_subdirectory(sqlite_instance):
-    """Test that blob data is stored in the correct subdirectory."""
-    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="blob_path")
+async def test_binary_path_subdirectory(sqlite_instance):
+    """Test that binary data is stored in the correct subdirectory."""
+    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="binary_path")
     await serializer.save_data(b"test data")
-    assert "/blobs/" in serializer.value or "\\blobs\\" in serializer.value
+    assert "/binaries/" in serializer.value or "\\binaries\\" in serializer.value

@@ -62,8 +62,8 @@ def data_serializer_factory(
             return AudioPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "video_path":
             return VideoPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
-        elif data_type == "blob_path":
-            return BlobPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
+        elif data_type == "binary_path":
+            return BinaryPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value)
         elif data_type == "url":
@@ -77,8 +77,8 @@ def data_serializer_factory(
             return AudioPathDataTypeSerializer(category=category, extension=extension)
         elif data_type == "video_path":
             return VideoPathDataTypeSerializer(category=category, extension=extension)
-        elif data_type == "blob_path":
-            return BlobPathDataTypeSerializer(category=category, extension=extension)
+        elif data_type == "binary_path":
+            return BinaryPathDataTypeSerializer(category=category, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text="")
         else:
@@ -391,7 +391,7 @@ class VideoPathDataTypeSerializer(DataTypeSerializer):
         return True
 
 
-class BlobPathDataTypeSerializer(DataTypeSerializer):
+class BinaryPathDataTypeSerializer(DataTypeSerializer):
     def __init__(
         self,
         *,
@@ -400,7 +400,7 @@ class BlobPathDataTypeSerializer(DataTypeSerializer):
         extension: Optional[str] = None,
     ):
         """
-        Serializer for arbitrary binary blob data paths.
+        Serializer for arbitrary binary data paths.
 
         This serializer handles generic binary data that doesn't fit into specific
         categories like images, audio, or video. Useful for XPIA attacks and
@@ -408,11 +408,11 @@ class BlobPathDataTypeSerializer(DataTypeSerializer):
 
         Args:
             category (str): The category or context for the data.
-            prompt_text (Optional[str]): The blob path or identifier.
+            prompt_text (Optional[str]): The binary file path or identifier.
             extension (Optional[str]): The file extension, defaults to 'bin'.
         """
-        self.data_type = "blob_path"
-        self.data_sub_directory = f"/{category}/blobs"
+        self.data_type = "binary_path"
+        self.data_sub_directory = f"/{category}/binaries"
         self.file_extension = extension if extension else "bin"
 
         if prompt_text:

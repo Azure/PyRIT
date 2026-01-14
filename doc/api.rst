@@ -313,7 +313,7 @@ API Reference
     ALLOWED_CHAT_MESSAGE_ROLES
     AudioPathDataTypeSerializer
     AzureBlobStorageIO
-    BlobPathDataTypeSerializer
+    BinaryPathDataTypeSerializer
     ChatMessage
     ChatMessagesDataset
     ChatMessageRole
