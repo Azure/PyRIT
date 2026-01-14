@@ -3,6 +3,7 @@
 
 import textwrap
 from datetime import datetime
+from typing import Any
 
 from colorama import Back, Fore, Style
 
@@ -119,7 +120,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
     async def print_messages_async(
         self,
-        messages: list,
+        messages: list[Any],
         *,
         include_scores: bool = False,
         include_reasoning_trace: bool = False,
@@ -312,7 +313,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
         self._print_colored(f" {title} ", Style.BRIGHT, Back.BLUE, Fore.WHITE)
         self._print_colored("─" * self._width, Fore.BLUE)
 
-    def _print_metadata(self, metadata: dict) -> None:
+    def _print_metadata(self, metadata: dict[str, Any]) -> None:
         """
         Print metadata in a formatted way.
 
@@ -320,7 +321,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
         consistent bullet-point format.
 
         Args:
-            metadata (dict): Dictionary containing metadata key-value pairs.
+            metadata (dict[str, Any]): Dictionary containing metadata key-value pairs.
                 Keys and values should be convertible to strings.
         """
         self._print_section_header("Additional Metadata")
@@ -420,8 +421,10 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
             str: Colorama color constant (Fore.GREEN, Fore.RED, Fore.YELLOW,
                 or Fore.WHITE for unknown outcomes).
         """
-        return {
-            AttackOutcome.SUCCESS: Fore.GREEN,
-            AttackOutcome.FAILURE: Fore.RED,
-            AttackOutcome.UNDETERMINED: Fore.YELLOW,
-        }.get(outcome, Fore.WHITE)
+        return str(
+            {
+                AttackOutcome.SUCCESS: Fore.GREEN,
+                AttackOutcome.FAILURE: Fore.RED,
+                AttackOutcome.UNDETERMINED: Fore.YELLOW,
+            }.get(outcome, Fore.WHITE)
+        )

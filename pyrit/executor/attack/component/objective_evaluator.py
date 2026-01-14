@@ -96,4 +96,4 @@ class ObjectiveEvaluator:
         Returns:
             str: The type identifier of the scorer.
         """
-        return self._scorer.get_identifier()["__type__"]
+        return str(self._scorer.get_identifier()["__type__"])

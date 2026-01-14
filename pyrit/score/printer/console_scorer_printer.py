@@ -56,7 +56,9 @@ class ConsoleScorerPrinter(ScorerPrinter):
         else:
             print(text)
 
-    def _get_quality_color(self, value: float, *, higher_is_better: bool, good_threshold: float, bad_threshold: float):
+    def _get_quality_color(
+        self, value: float, *, higher_is_better: bool, good_threshold: float, bad_threshold: float
+    ) -> str:
         """
         Determine the color based on metric quality thresholds.
 
@@ -72,17 +74,17 @@ class ConsoleScorerPrinter(ScorerPrinter):
         """
         if higher_is_better:
             if value >= good_threshold:
-                return Fore.GREEN
+                return Fore.GREEN  # type: ignore[no-any-return]
             elif value < bad_threshold:
-                return Fore.RED
-            return Fore.CYAN
+                return Fore.RED  # type: ignore[no-any-return]
+            return Fore.CYAN  # type: ignore[no-any-return]
         else:
             # Lower is better (e.g., MAE, score time)
             if value <= good_threshold:
-                return Fore.GREEN
+                return Fore.GREEN  # type: ignore[no-any-return]
             elif value > bad_threshold:
-                return Fore.RED
-            return Fore.CYAN
+                return Fore.RED  # type: ignore[no-any-return]
+            return Fore.CYAN  # type: ignore[no-any-return]
 
     def print_objective_scorer(self, *, scorer_identifier: ScorerIdentifier) -> None:
         """
