@@ -43,7 +43,7 @@ class VariationConverter(PromptConverter):
         prompt_template: Optional[SeedPrompt] = None,
     ):
         """
-        Initializes the converter with the specified target and prompt template.
+        Initialize the converter with the specified target and prompt template.
 
         Args:
             converter_target (PromptChatTarget): The target to which the prompt will be sent for conversion.
@@ -69,10 +69,11 @@ class VariationConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by generating variations of it using the converter target.
+        Convert the given prompt by generating variations of it using the converter target.
 
         Args:
             prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
             ConverterResult: The result containing the generated variations.
@@ -120,7 +121,18 @@ class VariationConverter(PromptConverter):
 
     @pyrit_json_retry
     async def send_variation_prompt_async(self, request: Message) -> str:
-        """Sends the message to the converter target and retrieves the response."""
+        """
+        Send the message to the converter target and retrieve the response.
+
+        Args:
+            request (Message): The message to be sent to the converter target.
+
+        Returns:
+            str: The response message from the converter target.
+
+        Raises:
+            InvalidJsonException: If the response is not valid JSON or does not contain the expected keys.
+        """
         response = await self.converter_target.send_prompt_async(message=request)
 
         response_msg = response[0].get_value()

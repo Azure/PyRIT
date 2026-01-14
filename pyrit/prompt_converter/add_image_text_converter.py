@@ -38,7 +38,7 @@ class AddImageTextConverter(PromptConverter):
         y_pos: int = 10,
     ):
         """
-        Initializes the converter with the image file path and text properties.
+        Initialize the converter with the image file path and text properties.
 
         Args:
             img_to_add (str): File path of image to add text to.
@@ -65,7 +65,7 @@ class AddImageTextConverter(PromptConverter):
 
     def _load_font(self) -> FreeTypeFont:
         """
-        Loads the font for a given font name and font size.
+        Load the font for a given font name and font size.
 
         Returns:
             ImageFont.FreeTypeFont or ImageFont.ImageFont: The loaded font object. If the specified font
@@ -84,13 +84,16 @@ class AddImageTextConverter(PromptConverter):
 
     def _add_text_to_image(self, text: str) -> Image.Image:
         """
-        Adds wrapped text to the image at `self._img_to_add`.
+        Add wrapped text to the image at `self._img_to_add`.
 
         Args:
             text (str): The text to add to the image.
 
         Returns:
             Image.Image: The image with added text.
+
+        Raises:
+            ValueError: If ``text`` is empty.
         """
         if not text:
             raise ValueError("Please provide valid text value")
@@ -123,7 +126,7 @@ class AddImageTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by adding it as text to the image.
+        Convert the given prompt by adding it as text to the image.
 
         Args:
             prompt (str): The text to be added to the image.

@@ -55,7 +55,7 @@ class CodeChameleonConverter(PromptConverter):
         decrypt_function: Optional[Callable[..., Any] | list[Callable[..., Any] | str]] = None,
     ) -> None:
         """
-        Initializes the converter with the specified encryption type and optional functions.
+        Initialize the converter with the specified encryption type and optional functions.
 
         Args:
             encrypt_type (str): Must be one of "custom", "reverse", "binary_tree", "odd_even" or "length".
@@ -99,7 +99,19 @@ class CodeChameleonConverter(PromptConverter):
                 )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """Converts the given prompt by applying the specified encryption function."""
+        """
+        Convert the given prompt by applying the specified encryption function.
+
+        Args:
+            prompt (str): The input prompt to be converted.
+            input_type (PromptDataType): The type of input data.
+
+        Returns:
+            ConverterResult: The result containing the converted prompt.
+
+        Raises:
+            ValueError: If the input type is not supported.
+        """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
@@ -142,7 +154,17 @@ class CodeChameleonConverter(PromptConverter):
                 self.right: Optional[TreeNode] = None
 
         def build_tree(words: list[str], start: int, end: int) -> Optional[TreeNode]:
-            """Builds the binary tree from the list of words."""
+            """
+            Recursively build a balanced binary tree from a sublist of words.
+
+            Args:
+                words (list): List of words to build the tree from.
+                start (int): Starting index (inclusive) of the current sublist.
+                end (int): Ending index (inclusive) of the current sublist.
+
+            Returns:
+                TreeNode or None: The root node of the subtree, or None if start > end.
+            """
             if start > end:
                 return None
 
@@ -155,7 +177,15 @@ class CodeChameleonConverter(PromptConverter):
             return node
 
         def tree_to_json(node: Optional[TreeNode]) -> Optional[dict[str, Any]]:
-            """Converts a tree to a JSON representation."""
+            """
+            Convert a tree to a JSON representation.
+
+            Args:
+                node (TreeNode): The root node of the tree.
+
+            Returns:
+                dict or None: JSON representation of the tree, or None if the node is None.
+            """
             if node is None:
                 return None
             return {"value": node.value, "left": tree_to_json(node.left), "right": tree_to_json(node.right)}

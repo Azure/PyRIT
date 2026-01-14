@@ -18,7 +18,7 @@ class SearchReplaceConverter(PromptConverter):
 
     def __init__(self, pattern: str, replace: str | list[str], regex_flags: int = 0) -> None:
         """
-        Initializes the converter with the specified regex pattern and replacement phrase(s).
+        Initialize the converter with the specified regex pattern and replacement phrase(s).
 
         Args:
             pattern (str): The regex pattern to replace.
@@ -33,7 +33,7 @@ class SearchReplaceConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by replacing the specified pattern with a random choice from the replacement list.
+        Convert the given prompt by replacing the specified pattern with a random choice from the replacement list.
 
         Args:
             prompt (str): The prompt to be converted.

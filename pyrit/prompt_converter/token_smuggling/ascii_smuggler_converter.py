@@ -23,7 +23,7 @@ class AsciiSmugglerConverter(SmugglerConverter):
 
     def __init__(self, action: Literal["encode", "decode"] = "encode", unicode_tags: bool = False):
         """
-        Initializes the converter with options for encoding/decoding.
+        Initialize the converter with options for encoding/decoding.
 
         Args:
             action (Literal["encode", "decode"]): The action to perform.
@@ -34,7 +34,7 @@ class AsciiSmugglerConverter(SmugglerConverter):
 
     def encode_message(self, *, message: str) -> tuple[str, str]:
         """
-        Encodes the message using Unicode Tags.
+        Encode the message using Unicode Tags.
 
         Each ASCII printable character (0x20-0x7E) is mapped to a corresponding
         Unicode Tag (by adding 0xE0000). If control mode is enabled, wraps the output.
@@ -68,7 +68,7 @@ class AsciiSmugglerConverter(SmugglerConverter):
 
     def decode_message(self, *, message: str) -> str:
         """
-        Decodes a message encoded with Unicode Tags.
+        Decode a message encoded with Unicode Tags.
 
         For each character in the Unicode Tags range, subtracts 0xE0000.
         Skips control tags if present.
