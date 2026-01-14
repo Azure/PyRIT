@@ -42,9 +42,8 @@ def test_get_scores_by_attack_id_and_label(
 
     sqlite_instance.add_scores_to_memory(scores=[score])
 
-    # Fetch the score we just added
-    db_score = sqlite_instance.get_prompt_scores(attack_id=sample_conversations[0].attack_identifier["id"])
-
+    # Test get_scores with score_ids filter
+    db_score = sqlite_instance.get_scores(score_ids=[str(score.id)])
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
     assert db_score[0].score_value_description == score.score_value_description
@@ -55,25 +54,13 @@ def test_get_scores_by_attack_id_and_label(
     assert db_score[0].scorer_class_identifier == score.scorer_class_identifier
     assert db_score[0].message_piece_id == score.message_piece_id
 
-    db_score = sqlite_instance.get_prompt_scores(labels=sample_conversations[0].labels)
-    assert len(db_score) == 1
-    assert db_score[0].score_value == score.score_value
+    # Test get_message_pieces returns scores attached to pieces
+    pieces = sqlite_instance.get_message_pieces(prompt_ids=[prompt_id])
+    assert len(pieces) == 1
+    assert len(pieces[0].scores) == 1
+    assert pieces[0].scores[0].score_value == score.score_value
 
-    db_score = sqlite_instance.get_scores(score_ids=[str(score.id)])
-    assert len(db_score) == 1
-    assert db_score[0].score_value == score.score_value
-
-    db_score = sqlite_instance.get_prompt_scores(
-        attack_id=sample_conversations[0].attack_identifier["id"],
-        labels={"x": "y"},
-    )
-    assert len(db_score) == 0
-
-    db_score = sqlite_instance.get_prompt_scores(
-        attack_id=str(uuid.uuid4()),
-    )
-    assert len(db_score) == 0
-
+    # Test get_scores with no filters returns empty
     db_score = sqlite_instance.get_scores()
     assert len(db_score) == 0
 
@@ -104,8 +91,11 @@ def test_add_score_get_score(
 
     sqlite_instance.add_scores_to_memory(scores=[score])
 
-    # Fetch the score we just added
-    db_score = sqlite_instance.get_prompt_scores(prompt_ids=[prompt_id])
+    # Fetch the score via get_message_pieces which joins scores
+    pieces = sqlite_instance.get_message_pieces(prompt_ids=[prompt_id])
+    assert pieces
+    assert len(pieces) == 1
+    db_score = pieces[0].scores
     assert db_score
     assert len(db_score) == 1
     assert db_score[0].score_value == score_value
@@ -157,9 +147,19 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
 
+    # Score should be linked to original_id
     assert score.message_piece_id == original_id
-    assert sqlite_instance.get_prompt_scores(prompt_ids=[str(dupe_id)])[0].id == score_id
-    assert sqlite_instance.get_prompt_scores(prompt_ids=[str(original_id)])[0].id == score_id
+
+    # Both dupe and original should retrieve the same score via get_message_pieces
+    dupe_pieces = sqlite_instance.get_message_pieces(prompt_ids=[dupe_id])
+    assert len(dupe_pieces) == 1
+    assert len(dupe_pieces[0].scores) == 1
+    assert dupe_pieces[0].scores[0].id == score_id
+
+    original_pieces = sqlite_instance.get_message_pieces(prompt_ids=[original_id])
+    assert len(original_pieces) == 1
+    assert len(original_pieces[0].scores) == 1
+    assert original_pieces[0].scores[0].id == score_id
 
 
 def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
@@ -188,9 +188,10 @@ def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
 
-    # Fetch the score we just added
-    db_score = sqlite_instance.get_prompt_scores(labels={"sample": "label"})
-
+    # Fetch pieces by label and check scores are attached
+    pieces_with_label = sqlite_instance.get_message_pieces(labels={"sample": "label"})
+    assert len(pieces_with_label) == 1
+    db_score = pieces_with_label[0].scores
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
     assert db_score[0].score_value_description == score.score_value_description
@@ -214,3 +215,24 @@ async def test_get_seeds_no_filters(sqlite_instance: MemoryInterface):
     assert len(result) == 2
     assert result[0].value == "prompt1"
     assert result[1].value == "prompt2"
+
+
+# ===========================================================================================
+# DEPRECATED METHOD TESTS - Remove in 0.13.0
+# These tests verify deprecated methods still exist and emit warnings.
+# Do not add new functionality tests here - use the new methods above instead.
+# ===========================================================================================
+
+
+def test_get_prompt_scores_deprecated_exists(sqlite_instance: MemoryInterface):
+    """Verify get_prompt_scores exists and emits deprecation warning. Remove in 0.13.0."""
+    import warnings
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        # Call with no matching data - just verify it exists and warns
+        result = sqlite_instance.get_prompt_scores(prompt_ids=["00000000-0000-0000-0000-000000000000"])
+        assert len(result) == 0
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "get_prompt_scores is deprecated" in str(w[0].message)

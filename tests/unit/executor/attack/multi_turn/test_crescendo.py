@@ -1340,7 +1340,7 @@ class TestAttackExecution:
         assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 1
-        assert result.last_score == success_objective_score
+        assert result.objective_score == success_objective_score
         assert result.outcome_reason is not None
         assert "Objective achieved in 1 turns" in result.outcome_reason
 
@@ -1396,7 +1396,7 @@ class TestAttackExecution:
         assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.FAILURE
         assert result.executed_turns == 2
-        assert result.last_score == failure_objective_score
+        assert result.objective_score == failure_objective_score
         assert result.outcome_reason is not None
         assert "Max turns (2) reached" in result.outcome_reason
 

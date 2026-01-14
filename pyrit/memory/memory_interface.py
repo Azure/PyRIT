@@ -398,29 +398,15 @@ class MemoryInterface(abc.ABC):
         converted_value_sha256: Optional[Sequence[str]] = None,
     ) -> Sequence[Score]:
         """
+        Deprecated: Use get_scores() or get_message_pieces (scores are attached)
+
         Retrieve scores attached to message pieces based on the specified filters.
-
-        Args:
-            attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
-            role (Optional[str], optional): The role of the prompt. Defaults to None.
-            conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
-            prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
-                Defaults to None.
-            labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
-            prompt_metadata (Optional[dict[str, Union[str, int, float]]], optional): The metadata associated with the
-                prompt. Defaults to None.
-            sent_after (Optional[datetime], optional): Filter for prompts sent after this datetime. Defaults to None.
-            sent_before (Optional[datetime], optional): Filter for prompts sent before this datetime. Defaults to None.
-            original_values (Optional[Sequence[str]], optional): A list of original values. Defaults to None.
-            converted_values (Optional[Sequence[str]], optional): A list of converted values. Defaults to None.
-            data_type (Optional[str], optional): The data type to filter by. Defaults to None.
-            not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
-            converted_value_sha256 (Optional[Sequence[str]], optional): A list of SHA256 hashes of converted values.
-                Defaults to None.
-
-        Returns:
-            Sequence[Score]: A list of scores extracted from the message pieces.
         """
+        warnings.warn(
+            "get_prompt_scores is deprecated and will be removed in 0.13.0. Use get_scores() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         message_pieces = self.get_message_pieces(
             attack_id=attack_id,
             role=role,

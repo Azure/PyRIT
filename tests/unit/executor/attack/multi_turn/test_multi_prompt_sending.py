@@ -447,7 +447,7 @@ class TestAttackExecution:
             result = await attack._perform_async(context=basic_context)
 
             mock_evaluate.assert_called_once_with(response=sample_response, objective=basic_context.objective)
-            assert result.last_score == success_score
+            assert result.objective_score == success_score
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -642,7 +642,6 @@ class TestEdgeCasesAndErrorHandling:
         result = await attack._perform_async(context=basic_context)
 
         assert result.executed_turns == 0
-        assert result.last_response is None
         assert result.outcome == AttackOutcome.FAILURE
 
     @pytest.mark.asyncio

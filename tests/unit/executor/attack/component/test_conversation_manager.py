@@ -1396,26 +1396,6 @@ class TestAddPrependedConversationToMemory:
                 assert piece.conversation_id == conversation_id
 
     @pytest.mark.asyncio
-    async def test_assigns_attack_identifier_to_all_pieces(
-        self,
-        attack_identifier: Dict[str, str],
-        sample_conversation: List[Message],
-    ) -> None:
-        """Test that attack_identifier is assigned to all message pieces."""
-        manager = ConversationManager(attack_identifier=attack_identifier)
-        conversation_id = str(uuid.uuid4())
-
-        await manager.add_prepended_conversation_to_memory_async(
-            prepended_conversation=sample_conversation,
-            conversation_id=conversation_id,
-        )
-
-        stored = manager.get_conversation(conversation_id)
-        for msg in stored:
-            for piece in msg.message_pieces:
-                assert piece.attack_identifier == attack_identifier
-
-    @pytest.mark.asyncio
     async def test_raises_error_when_exceeds_max_turns(
         self,
         attack_identifier: Dict[str, str],

@@ -398,20 +398,12 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 file_name = f"all_conversations.{export_type}"
             file_path = Path(DB_DATA_PATH, file_name)
 
-        # Get scores for the message pieces
-        if message_pieces:
-            message_piece_ids = [str(piece.id) for piece in message_pieces]
-            scores = self.get_prompt_scores(prompt_ids=message_piece_ids)
-        else:
-            scores = []
-
         # Merge conversations and scores - create the data structure manually
         merged_data = []
         for piece in message_pieces:
             piece_data = piece.to_dict()
-            # Find associated scores
-            piece_scores = [score for score in scores if score.message_piece_id == piece.id]
-            piece_data["scores"] = [score.to_dict() for score in piece_scores]
+            # Get associated scores directly from piece (already populated by get_message_pieces)
+            piece_data["scores"] = [score.to_dict() for score in (piece.scores or [])]
             merged_data.append(piece_data)
 
         # Export to JSON manually since the exporter expects objects but we have dicts

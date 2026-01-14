@@ -313,8 +313,7 @@ class TestSkeletonKeyFailureResult:
         assert result.outcome == AttackOutcome.FAILURE
         assert result.outcome_reason == "Skeleton key prompt was filtered or failed"
         assert result.executed_turns == 1
-        assert result.last_response is None
-        assert result.last_score is None
+        assert result.objective_score is None
         assert result.attack_identifier == attack.get_identifier()
 
 

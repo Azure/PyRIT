@@ -724,10 +724,10 @@ metadata:
 
 
 def test_seed_group_dict_with_is_objective_true():
-    """Test that a dictionary with is_objective=True creates an objective."""
+    """Test that a dictionary with seed_type='objective' creates an objective."""
     prompt_dict = {
         "value": "Test objective from dict",
-        "is_objective": True,
+        "seed_type": "objective",
     }
 
     group = SeedGroup(seeds=[prompt_dict])
@@ -777,9 +777,9 @@ def test_seed_group_dict_without_is_objective():
 
 
 def test_seed_group_mixed_objective_types():
-    """Test that mixing SeedObjective and dict with is_objective=True raises ValueError."""
+    """Test that mixing SeedObjective and dict with seed_type='objective' raises ValueError."""
     objective = SeedObjective(value="Seed objective")
-    dict_objective = {"value": "Dict objective", "data_type": "text", "is_objective": True}
+    dict_objective = {"value": "Dict objective", "data_type": "text", "seed_type": "objective"}
 
     with pytest.raises(ValueError, match="SeedGroup can only have one objective."):
         SeedGroup(seeds=[objective, dict_objective])

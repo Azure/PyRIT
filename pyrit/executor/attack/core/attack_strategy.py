@@ -315,7 +315,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
 
         return {
             "attack_identifier": self.get_identifier(),
-            "objective_target_identifier": self._objective_target.get_identifier(),
+            "objective_target_identifier": self.get_objective_target().get_identifier(),
             "request_converter_identifiers": request_converter_identifiers,
             "labels": context.memory_labels if context.memory_labels else None,
         }

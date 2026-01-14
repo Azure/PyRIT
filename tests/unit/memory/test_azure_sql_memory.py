@@ -10,7 +10,6 @@ import pytest
 from pyrit.memory import AzureSQLMemory, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_models import Base
 from pyrit.models import MessagePiece
-from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
 from unit.mocks import get_azure_sql_memory, get_sample_conversation_entries
 
@@ -167,7 +166,6 @@ def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
     # Define a specific conversation_id
     specific_conversation_id = "test_conversation_id"
 
-    converter_identifiers = [Base64Converter().get_identifier()]
     target = TextTarget()
 
     # Start a session
@@ -181,7 +179,7 @@ def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
                 original_value="Test content",
                 converted_value="Test content",
                 labels={"normalizer_id": "id1"},
-                converter_identifiers=converter_identifiers,
+                prompt_metadata={"encoding": "utf-8", "max_tokens": 100},
                 prompt_target_identifier=target.get_identifier(),
             )
         )
@@ -202,9 +200,9 @@ def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
         assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 10  # Assuming the test runs quickly
 
-        converter_identifiers = retrieved_entry.converter_identifiers
-        assert len(converter_identifiers) == 1
-        assert converter_identifiers[0]["__type__"] == "Base64Converter"
+        prompt_metadata = retrieved_entry.prompt_metadata
+        assert prompt_metadata["encoding"] == "utf-8"
+        assert prompt_metadata["max_tokens"] == 100
 
         prompt_target = retrieved_entry.prompt_target_identifier
         assert prompt_target["__type__"] == "TextTarget"

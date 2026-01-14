@@ -15,7 +15,6 @@ from sqlalchemy.sql.sqltypes import NullType
 
 from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.models import MessagePiece
-from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
 from unit.mocks import get_sample_conversation_entries
 
@@ -336,7 +335,6 @@ def test_get_memories_with_json_properties(sqlite_instance):
     # Define a specific conversation_id
     specific_conversation_id = "test_conversation_id"
 
-    converter_identifiers = [Base64Converter().get_identifier()]
     target = TextTarget()
 
     # Start a session
@@ -349,7 +347,7 @@ def test_get_memories_with_json_properties(sqlite_instance):
             original_value="Test content",
             converted_value="Test content",
             labels={"normalizer_id": "id1"},
-            converter_identifiers=converter_identifiers,
+            prompt_metadata={"encoding": "utf-8", "max_tokens": 100},
             prompt_target_identifier=target.get_identifier(),
         )
         entry = PromptMemoryEntry(entry=piece)
@@ -371,9 +369,9 @@ def test_get_memories_with_json_properties(sqlite_instance):
         assert abs((retrieved_entry.timestamp - piece.timestamp).total_seconds()) < 0.1
         assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 0.1
 
-        converter_identifiers = retrieved_entry.converter_identifiers
-        assert len(converter_identifiers) == 1
-        assert converter_identifiers[0]["__type__"] == "Base64Converter"
+        prompt_metadata = retrieved_entry.prompt_metadata
+        assert prompt_metadata["encoding"] == "utf-8"
+        assert prompt_metadata["max_tokens"] == 100
 
         prompt_target = retrieved_entry.prompt_target_identifier
         assert prompt_target["__type__"] == "TextTarget"

@@ -1866,7 +1866,7 @@ class TestScoreLastTurnOnly:
                     result = await attack._perform_async(context=context)
 
                     # The final result should have a score
-                    assert result.last_score == failure_score
+                    assert result.objective_score == failure_score
 
     @pytest.mark.asyncio
     async def test_score_last_turn_only_can_still_succeed_on_last_turn(
@@ -1905,4 +1905,4 @@ class TestScoreLastTurnOnly:
 
                     # Should succeed based on final score
                     assert result.outcome == AttackOutcome.SUCCESS
-                    assert result.last_score == success_score
+                    assert result.objective_score == success_score

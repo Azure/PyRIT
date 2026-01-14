@@ -624,13 +624,14 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         if not piece_value:
             raise EmptyResponseException(message="The chat returned an empty response.")
 
+        # attack identifier is deprecated and will be removed in 0.13.0
         return MessagePiece(
             role="assistant",
             original_value=piece_value,
             conversation_id=message_piece.conversation_id,
             labels=message_piece.labels,
             prompt_target_identifier=message_piece.prompt_target_identifier,
-            attack_identifier=message_piece.attack_identifier,
+            attack_identifier=message_piece._attack_identifier,
             original_value_data_type=piece_type,
             response_error=error or "none",
         )
@@ -755,5 +756,5 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             conversation_id=reference_piece.conversation_id,
             labels={"call_id": call_id},
             prompt_target_identifier=reference_piece.prompt_target_identifier,
-            attack_identifier=reference_piece.attack_identifier,
+            attack_identifier=reference_piece._attack_identifier,
         )

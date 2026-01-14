@@ -87,7 +87,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
             scored_prompt_id=message_piece.id,
             category=self._score_category,
             objective=objective,
-            attack_identifier=message_piece.attack_identifier,
+            attack_identifier=message_piece._attack_identifier,
         )
 
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")

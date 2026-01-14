@@ -372,6 +372,7 @@ def construct_response_from_request(
     if request.prompt_metadata:
         prompt_metadata = combine_dict(request.prompt_metadata, prompt_metadata or {})
 
+    # Attack Identifier is deprecated and needs to be removed in 0.13.0
     return Message(
         message_pieces=[
             MessagePiece(
@@ -380,7 +381,7 @@ def construct_response_from_request(
                 conversation_id=request.conversation_id,
                 labels=request.labels,
                 prompt_target_identifier=request.prompt_target_identifier,
-                attack_identifier=request.attack_identifier,
+                attack_identifier=request._attack_identifier,
                 original_value_data_type=response_type,
                 converted_value_data_type=response_type,
                 prompt_metadata=prompt_metadata,

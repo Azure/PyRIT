@@ -968,8 +968,10 @@ class _TreeOfAttacksNode:
             list. It takes the first score if multiple scores are associated with the response,
             which is typically the objective score in the TAP algorithm context.
         """
-        scores = self._memory.get_prompt_scores(prompt_ids=[str(response_id)])
-        return str(scores[0].get_value()) if scores else "unavailable"
+        pieces = self._memory.get_message_pieces(prompt_ids=[str(response_id)])
+        if pieces and pieces[0].scores:
+            return str(pieces[0].scores[0].get_value())
+        return "unavailable"
 
     async def _send_to_adversarial_chat_async(self, prompt_text: str) -> str:
         """
