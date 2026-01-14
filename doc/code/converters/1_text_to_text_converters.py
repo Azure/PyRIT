@@ -6,7 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit (3.13.5)
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -49,6 +53,7 @@ from pyrit.prompt_converter import (
     EcojiConverter,
     MorseConverter,
     NatoConverter,
+    NegationTrapConverter,
     ROT13Converter,
 )
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
@@ -74,6 +79,10 @@ print("Ecoji:", await EcojiConverter().convert_async(prompt=prompt))  # type: ig
 base64_text = await Base64Converter().convert_async(prompt=prompt)  # type: ignore
 ask_decoder = AskToDecodeConverter(encoding_name="Base64")
 print("Ask to Decode:", await ask_decoder.convert_async(prompt=base64_text.output_text))  # type: ignore
+
+# Negation Trap adds negation phrases to try to confuse the model
+print("Negation Trap:", await NegationTrapConverter().convert_async(prompt="your metaprompt"))  # type: ignore
+
 
 # %% [markdown]
 # ### 1.2 Obfuscation Converters
@@ -257,7 +266,7 @@ print("Variation:", await variation_converter.convert_async(prompt=prompt))  # t
 noise_converter = NoiseConverter(converter_target=attack_llm)
 print("Noise:", await noise_converter.convert_async(prompt=prompt))  # type: ignore
 
-# Changes tone
+# Tone changes tone
 tone_converter = ToneConverter(converter_target=attack_llm, tone="angry")
 print("Tone (angry):", await tone_converter.convert_async(prompt=prompt))  # type: ignore
 

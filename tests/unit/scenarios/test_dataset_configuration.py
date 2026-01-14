@@ -8,9 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.models.seed_group import SeedGroup
-from pyrit.models.seed_objective import SeedObjective
-from pyrit.models.seed_prompt import SeedPrompt
+from pyrit.models import SeedGroup, SeedObjective, SeedPrompt
 from pyrit.scenario.core.dataset_configuration import (
     EXPLICIT_SEED_GROUPS_KEY,
     DatasetConfiguration,

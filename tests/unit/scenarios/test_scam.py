@@ -28,7 +28,7 @@ SEED_PROMPT_LIST = list(SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "scams.p
 @pytest.fixture
 def mock_memory_seed_groups() -> List[SeedGroup]:
     """Create mock seed groups that _get_default_seed_groups() would return."""
-    return [SeedGroup(seeds=[SeedObjective(value=prompt, data_type="text")]) for prompt in SEED_PROMPT_LIST]
+    return [SeedGroup(seeds=[SeedObjective(value=prompt)]) for prompt in SEED_PROMPT_LIST]
 
 
 @pytest.fixture

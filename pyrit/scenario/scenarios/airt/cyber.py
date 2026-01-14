@@ -6,6 +6,7 @@ import os
 from typing import List, Optional
 
 from pyrit.common import apply_defaults
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
@@ -14,7 +15,7 @@ from pyrit.executor.attack.core.attack_config import (
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.models import SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
@@ -118,9 +119,10 @@ class Cyber(Scenario):
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
         """
         if objectives is not None:
-            logger.warning(
-                "objectives is deprecated and will be removed in 0.13.0. "
-                "Use dataset_config in initialize_async instead."
+            print_deprecation_message(
+                old_item="objectives parameter",
+                new_item="dataset_config in initialize_async",
+                removed_in="0.13.0",
             )
 
         # Cyber uses a "take object, make config" pattern to expose a more ergonomic interface. Helper
@@ -141,7 +143,7 @@ class Cyber(Scenario):
             name="Cyber",
             version=self.version,
             strategy_class=CyberStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
@@ -149,7 +151,7 @@ class Cyber(Scenario):
         # Store deprecated objectives for later resolution in _resolve_seed_groups
         self._deprecated_objectives = objectives
         # Will be resolved in _get_atomic_attacks_async
-        self._seed_groups: Optional[List[SeedGroup]] = None
+        self._seed_groups: Optional[List[SeedAttackGroup]] = None
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
@@ -199,12 +201,12 @@ class Cyber(Scenario):
             temperature=1.2,
         )
 
-    def _resolve_seed_groups(self) -> List[SeedGroup]:
+    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
         """
         Resolve seed groups from deprecated objectives or dataset configuration.
 
         Returns:
-            List[SeedGroup]: List of seed groups with objectives to be tested.
+            List[SeedAttackGroup]: List of seed attack groups with objectives to be tested.
 
         Raises:
             ValueError: If both 'objectives' parameter and 'dataset_config' are specified.
@@ -218,10 +220,10 @@ class Cyber(Scenario):
 
         # Use deprecated objectives if provided
         if self._deprecated_objectives is not None:
-            return [SeedGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives]
+            return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives]
 
         # Use dataset_config (guaranteed to be set by initialize_async)
-        seed_groups = self._dataset_config.get_all_seed_groups()
+        seed_groups = self._dataset_config.get_all_seed_attack_groups()
 
         if not seed_groups:
             self._raise_dataset_exception()
@@ -258,10 +260,15 @@ class Cyber(Scenario):
         else:
             raise ValueError(f"Unknown CyberStrategy: {strategy}")
 
+        # _seed_groups is guaranteed to be set by _get_atomic_attacks_async before this method is called
+        assert self._seed_groups is not None, "_seed_groups must be resolved before creating atomic attacks"
+
         return AtomicAttack(
             atomic_attack_name=f"cyber_{strategy}",
             attack=attack_strategy,
             seed_groups=self._seed_groups,
+            adversarial_chat=self._adversarial_chat,
+            objective_scorer=self._scorer_config.objective_scorer,
             memory_labels=self._memory_labels,
         )
 

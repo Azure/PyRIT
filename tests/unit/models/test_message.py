@@ -39,16 +39,16 @@ def test_get_piece_returns_correct_piece(message: Message) -> None:
     # Test getting first piece (default)
     first_piece = message.get_piece()
     assert first_piece.original_value == "First piece"
-    assert first_piece.role == "user"
+    assert first_piece.api_role == "user"
 
     # Test getting specific pieces by index
     second_piece = message.get_piece(1)
     assert second_piece.original_value == "Second piece"
-    assert second_piece.role == "user"
+    assert second_piece.api_role == "user"
 
     third_piece = message.get_piece(2)
     assert third_piece.original_value == "Third piece"
-    assert third_piece.role == "user"
+    assert third_piece.api_role == "user"
 
 
 def test_get_piece_raises_index_error_for_invalid_index(message: Message) -> None:
@@ -95,7 +95,8 @@ class TestMessageDuplication:
         for orig_piece, dup_piece in zip(message.message_pieces, duplicated.message_pieces):
             assert orig_piece.original_value == dup_piece.original_value
             assert orig_piece.converted_value == dup_piece.converted_value
-            assert orig_piece.role == dup_piece.role
+            assert orig_piece.api_role == dup_piece.api_role
+            assert orig_piece.is_simulated == dup_piece.is_simulated
             assert orig_piece.conversation_id == dup_piece.conversation_id
             assert orig_piece.sequence == dup_piece.sequence
 
@@ -152,21 +153,21 @@ class TestMessageFromPrompt:
         assert len(message.message_pieces) == 1
         assert message.message_pieces[0].original_value == "Hello world"
         assert message.message_pieces[0].converted_value == "Hello world"
-        assert message.message_pieces[0].role == "user"
+        assert message.message_pieces[0].api_role == "user"
 
     def test_from_prompt_creates_assistant_message(self) -> None:
         """Test that from_prompt creates a valid assistant message."""
         message = Message.from_prompt(prompt="Response text", role="assistant")
 
         assert len(message.message_pieces) == 1
-        assert message.message_pieces[0].role == "assistant"
+        assert message.message_pieces[0].api_role == "assistant"
 
     def test_from_system_prompt_creates_system_message(self) -> None:
         """Test that from_system_prompt creates a valid system message."""
         message = Message.from_system_prompt(system_prompt="You are a helpful assistant")
 
         assert len(message.message_pieces) == 1
-        assert message.message_pieces[0].role == "system"
+        assert message.message_pieces[0].api_role == "system"
         assert message.message_pieces[0].original_value == "You are a helpful assistant"
 
     def test_from_prompt_with_empty_string(self) -> None:

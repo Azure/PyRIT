@@ -20,6 +20,8 @@ from pyrit.executor.attack.core import (
     AttackStrategy,
 )
 from pyrit.executor.attack.multi_turn import (
+    ChunkedRequestAttack,
+    ChunkedRequestAttackContext,
     ConversationSession,
     CrescendoAttack,
     CrescendoAttackContext,
@@ -30,8 +32,6 @@ from pyrit.executor.attack.multi_turn import (
     MultiTurnAttackStrategy,
     RedTeamingAttack,
     RTASystemPromptPaths,
-    SimulatedConversationResult,
-    SimulatedTargetSystemPromptPaths,
     TAPAttack,
     TAPAttackContext,
     TAPAttackResult,
@@ -57,6 +57,8 @@ __all__ = [
     "AttackStrategy",
     "AttackContext",
     "AttackParameters",
+    "ChunkedRequestAttack",
+    "ChunkedRequestAttackContext",
     "CrescendoAttack",
     "CrescendoAttackContext",
     "CrescendoAttackResult",
@@ -93,6 +95,4 @@ __all__ = [
     "AttackExecutorResult",
     "PrependedConversationConfig",
     "generate_simulated_conversation_async",
-    "SimulatedConversationResult",
-    "SimulatedTargetSystemPromptPaths",
 ]

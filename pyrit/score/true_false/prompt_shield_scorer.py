@@ -24,7 +24,6 @@ class PromptShieldScorer(TrueFalseScorer):
     """
 
     scorer_type: ScoreType
-    _conversation_id: str
     _prompt_shield_target: PromptShieldTarget
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
@@ -57,7 +56,7 @@ class PromptShieldScorer(TrueFalseScorer):
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        self._conversation_id = str(uuid.uuid4())
+        conversation_id = str(uuid.uuid4())
 
         body = message_piece.original_value
 
@@ -67,7 +66,7 @@ class PromptShieldScorer(TrueFalseScorer):
                     role="user",
                     original_value=body,
                     prompt_metadata=message_piece.prompt_metadata,
-                    conversation_id=self._conversation_id,
+                    conversation_id=conversation_id,
                     prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
             ]

@@ -75,7 +75,7 @@ target = OpenAIChatTarget()
 
 # Set up the Azure Content Filter Scorer
 acf = AzureContentFilterScorer(harm_categories=[TextCategory.HATE])  # Options: HATE, SELF_HARM, SEXUAL, VIOLENCE
-bias_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.FAIRNESS_BIAS_SCALE.value, chat_target=target)
+bias_scorer = SelfAskLikertScorer(likert_scale=LikertScalePaths.FAIRNESS_BIAS_SCALE, chat_target=target)
 
 scoring_config = AttackScoringConfig(
     auxiliary_scorers=[acf, bias_scorer],

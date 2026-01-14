@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -13,6 +14,7 @@ from pyrit.models import (
     ScenarioIdentifier,
     ScenarioResult,
 )
+from pyrit.score import Scorer
 
 
 @pytest.fixture
@@ -52,10 +54,16 @@ def create_scenario_result(
     if attack_results is None:
         attack_results = {}
 
+    # Create a mock scorer for testing
+    mock_scorer = MagicMock(spec=Scorer)
+    mock_scorer.get_identifier.return_value = {"scorer": "test_scorer"}
+    mock_scorer.get_scorer_metrics.return_value = None
+
     return ScenarioResult(
         scenario_identifier=scenario_identifier,
         objective_target_identifier={"target": "test_target"},
         attack_results=attack_results,
+        objective_scorer=mock_scorer,
         objective_scorer_identifier={"scorer": "test_scorer"},
     )
 
@@ -393,7 +401,7 @@ def test_filter_by_completion_time(sqlite_instance: MemoryInterface):
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
     # Create scenarios with different completion times
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     yesterday = now - timedelta(days=1)
     last_week = now - timedelta(days=7)
 
@@ -563,7 +571,7 @@ def test_combined_filters(sqlite_instance: MemoryInterface):
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
 
     # Create scenarios with various properties
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     yesterday = now - timedelta(days=1)
 
     scenario1_identifier = ScenarioIdentifier(name="Test Scenario", scenario_version=1, pyrit_version="0.5.0")

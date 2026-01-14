@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import warnings
 from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.models.literals import ChatMessageRole
 
 ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "simulated_assistant", "tool", "developer"]
@@ -74,10 +74,10 @@ class ChatMessageListDictContent(ChatMessage):
     """
 
     def __init__(self, **data: Any) -> None:
-        warnings.warn(
-            "ChatMessageListDictContent is deprecated and will be removed in 0.13.0. Use ChatMessage instead.",
-            DeprecationWarning,
-            stacklevel=2,
+        print_deprecation_message(
+            old_item="ChatMessageListDictContent",
+            new_item="ChatMessage",
+            removed_in="0.13.0",
         )
         super().__init__(**data)
 

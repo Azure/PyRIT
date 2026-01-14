@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pyrit.models import Message, Score
 from pyrit.score.scorer import Scorer
@@ -10,6 +10,10 @@ from pyrit.score.true_false.true_false_score_aggregator import (
     TrueFalseAggregatorFunc,
     TrueFalseScoreAggregator,
 )
+
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.scorer_evaluator import ScorerEvalDatasetFiles
+    from pyrit.score.scorer_evaluation.scorer_metrics import ObjectiveScorerMetrics
 
 
 class TrueFalseScorer(Scorer):
@@ -20,6 +24,9 @@ class TrueFalseScorer(Scorer):
     whether the response meets a specific criterion. Multiple pieces in a request response
     are aggregated using a TrueFalseAggregatorFunc function (default: TrueFalseScoreAggregator.OR).
     """
+
+    # Default evaluation configuration - evaluates against all objective CSVs
+    evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
 
     def __init__(
         self,
@@ -35,8 +42,20 @@ class TrueFalseScorer(Scorer):
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
         """
-        super().__init__(validator=validator)
         self._score_aggregator = score_aggregator
+
+        # Set default evaluation file mapping if not already set by subclass
+        if self.evaluation_file_mapping is None:
+            from pyrit.score.scorer_evaluation.scorer_evaluator import (
+                ScorerEvalDatasetFiles,
+            )
+
+            self.evaluation_file_mapping = ScorerEvalDatasetFiles(
+                human_labeled_datasets_files=["objective/*.csv"],
+                result_file="objective/objective_achieved_metrics.jsonl",
+            )
+
+        super().__init__(validator=validator)
 
     def validate_return_scores(self, scores: list[Score]):
         """
@@ -54,6 +73,29 @@ class TrueFalseScorer(Scorer):
 
         if scores[0].score_value.lower() not in ["true", "false"]:
             raise ValueError("TrueFalseScorer score value must be True or False.")
+
+    def get_scorer_metrics(self) -> Optional["ObjectiveScorerMetrics"]:
+        """
+        Get evaluation metrics for this scorer from the configured evaluation result file.
+
+        Returns:
+            ObjectiveScorerMetrics: The metrics for this scorer, or None if not found or not configured.
+        """
+        from pyrit.common.path import SCORER_EVALS_PATH
+        from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+            find_objective_metrics_by_hash,
+        )
+
+        if self.evaluation_file_mapping is None:
+            return None
+
+        scorer_hash = self.scorer_identifier.compute_hash()
+        result_file = SCORER_EVALS_PATH / self.evaluation_file_mapping.result_file
+
+        if not result_file.exists():
+            return None
+
+        return find_objective_metrics_by_hash(hash=scorer_hash, file_path=result_file)
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """
