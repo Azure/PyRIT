@@ -55,7 +55,7 @@ class PersuasionConverter(PromptConverter):
         persuasion_technique: str,
     ):
         """
-        Initializes the converter with the specified target and prompt template.
+        Initialize the converter with the specified target and prompt template.
 
         Args:
             converter_target (PromptChatTarget): The chat target used to perform rewriting on user prompts.
@@ -80,7 +80,17 @@ class PersuasionConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt using the persuasion technique specified during initialization.
+        Convert the given prompt using the persuasion technique specified during initialization.
+
+        Args:
+            prompt (str): The input prompt to be converted.
+            input_type (PromptDataType): The type of input data.
+
+        Returns:
+            ConverterResult: The result containing the converted prompt text.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -115,7 +125,18 @@ class PersuasionConverter(PromptConverter):
 
     @pyrit_json_retry
     async def send_persuasion_prompt_async(self, request: Message) -> str:
-        """Sends the prompt to the converter target and processes the response."""
+        """
+        Send the prompt to the converter target and process the response.
+
+        Args:
+            request (Message): The message containing the prompt to be converted.
+
+        Returns:
+            str: The converted prompt text extracted from the response.
+
+        Raises:
+            InvalidJsonException: If the response is not valid JSON or missing expected keys.
+        """
         response = await self.converter_target.send_prompt_async(message=request)
 
         response_msg = response[0].get_value()

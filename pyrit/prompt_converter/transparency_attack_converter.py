@@ -32,12 +32,12 @@ class _AdamOptimizer:
         self, *, learning_rate: float = 0.001, beta_1: float = 0.9, beta_2: float = 0.999, epsilon: float = 1e-8
     ):
         """
-        Initializes the Adam optimizer with specified hyperparameters.
+        Initialize the Adam optimizer with specified hyperparameters.
 
         Args:
             learning_rate (float): The step size for each update/iteration. Default is 0.001
-            beta1 (float): The exponential decay rate for the first moment estimates. Default is 0.9
-            beta2 (float): The exponential decay rate for the second moment estimates. Default is 0.999
+            beta_1 (float): The exponential decay rate for the first moment estimates. Default is 0.9
+            beta_2 (float): The exponential decay rate for the second moment estimates. Default is 0.999
             epsilon (float): A small constant for numerical stability (to prevent division by zero).
         """
         self.learning_rate = learning_rate
@@ -50,7 +50,7 @@ class _AdamOptimizer:
 
     def update(self, *, params: numpy.ndarray, grads: numpy.ndarray) -> numpy.ndarray:  # type: ignore[type-arg, unused-ignore]
         """
-        Performs a single update step using the Adam optimization algorithm.
+        Perform a single update step using the Adam optimization algorithm.
 
         Args:
             params (numpy.ndarray): Current parameter values to be optimized.
@@ -107,7 +107,16 @@ class TransparencyAttackConverter(PromptConverter):
 
     @staticmethod
     def _validate_input_image(path: str) -> None:
-        """Validates input image to ensure it is a valid JPEG file."""
+        """
+        Validate input image to ensure it is a valid JPEG file.
+
+        Args:
+            path (str): The file path to validate.
+
+        Raises:
+            ValueError: If the path is empty or the file is not a JPEG.
+            FileNotFoundError: If the file does not exist at the specified path.
+        """
         if not path:
             raise ValueError("The image path cannot be empty.")
         if not path.lower().endswith((".jpg", ".jpeg")):
@@ -126,7 +135,7 @@ class TransparencyAttackConverter(PromptConverter):
         convergence_patience: int = 10,
     ):
         """
-        Initializes the converter with the path to a benign image and parameters for blending.
+        Initialize the converter with the path to a benign image and parameters for blending.
 
         Args:
             benign_image_path (Path): Path to the benign image file. Must be a JPEG file (.jpg or .jpeg).
@@ -176,7 +185,18 @@ class TransparencyAttackConverter(PromptConverter):
         self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
 
     def _load_and_preprocess_image(self, path: str) -> numpy.ndarray:  # type: ignore[type-arg, unused-ignore]
-        """Loads image, converts to grayscale, resizes, and normalizes for optimization."""
+        """
+        Load image, convert to grayscale, resize, and normalize for optimization.
+
+        Args:
+            path (str): The file path to the image.
+
+        Returns:
+            numpy.ndarray: Preprocessed image as a normalized NumPy array.
+
+        Raises:
+            ValueError: If the image cannot be loaded or processed.
+        """
         try:
             with Image.open(path) as img:
                 img_gray = img.convert("L") if img.mode != "L" else img  # read as grayscale
@@ -186,11 +206,29 @@ class TransparencyAttackConverter(PromptConverter):
             raise ValueError(f"Failed to load and preprocess image from {path}: {e}")
 
     def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> float:  # type: ignore[type-arg, unused-ignore]
-        """Computes Mean Squared Error (MSE) loss between blended and target images."""
+        """
+        Compute Mean Squared Error (MSE) loss between blended and target images.
+
+        Args:
+            blended_image (numpy.ndarray): The blended image array.
+            target_tensor (numpy.ndarray): The target benign image array.
+
+        Returns:
+            float: The computed MSE loss value.
+        """
         return float(numpy.mean(numpy.square(blended_image - target_tensor)))
 
     def _create_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> numpy.ndarray:  # type: ignore[type-arg, unused-ignore]
-        """Creates a blended image using the attack image and alpha transparency."""
+        """
+        Create a blended image using the attack image and alpha transparency.
+
+        Args:
+            attack_image (numpy.ndarray): The attack image array.
+            alpha (numpy.ndarray): The alpha transparency array.
+
+        Returns:
+            numpy.ndarray: The blended image in LA mode.
+        """
         attack_image_uint8 = (attack_image * 255).astype(numpy.uint8)
         transparency_uint8 = (alpha * 255).astype(numpy.uint8)
 
@@ -203,7 +241,19 @@ class TransparencyAttackConverter(PromptConverter):
         return la_image
 
     async def _save_blended_image(self, attack_image: numpy.ndarray, alpha: numpy.ndarray) -> str:  # type: ignore[type-arg, unused-ignore]
-        """Saves the blended image with transparency as a PNG file."""
+        """
+        Save the blended image with transparency as a PNG file.
+
+        Args:
+            attack_image (numpy.ndarray): The attack image array.
+            alpha (numpy.ndarray): The alpha transparency array.
+
+        Returns:
+            str: The file path to the saved blended image.
+
+        Raises:
+            ValueError: If saving the blended image fails.
+        """
         try:
             img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
             img_serializer.file_extension = "png"
@@ -222,7 +272,7 @@ class TransparencyAttackConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
-        Converts the given prompt by blending an attack image (potentially harmful) with a benign image.
+        Convert the given prompt by blending an attack image (potentially harmful) with a benign image.
         Uses the Novel Image Blending Algorithm from: https://arxiv.org/abs/2401.15817.
 
         Args:

@@ -38,7 +38,7 @@ class RepeatTokenConverter(PromptConverter):
         token_insert_mode: Optional[Literal["split", "prepend", "append", "repeat"]] = None,
     ) -> None:
         """
-        Initializes the converter with the specified token, number of repetitions, and insertion mode.
+        Initialize the converter with the specified token, number of repetitions, and insertion mode.
 
         Args:
             token_to_repeat (str): The string to be repeated.
@@ -82,7 +82,17 @@ class RepeatTokenConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by repeating the specified token a specified number of times.
+        Convert the given prompt by repeating the specified token a specified number of times.
+
+        Args:
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of the input prompt.
+
+        Returns:
+            ConverterResult: The result containing the modified prompt with repeated tokens.
+
+        Raises:
+            ValueError: If the input type is not supported.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
