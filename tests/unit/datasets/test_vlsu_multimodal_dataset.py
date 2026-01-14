@@ -94,9 +94,7 @@ class TestVLSUMultimodalDataset:
             # Verify text prompt
             assert text_prompt.value == "Text that becomes unsafe with image"
             assert text_prompt.name == "ML-VLSU Text"
-            assert text_prompt.harm_categories == [
-                "C1: Slurs, Hate Speech, Hate Symbols"
-            ]
+            assert text_prompt.harm_categories == ["C1: Slurs, Hate Speech, Hate Symbols"]
             assert text_prompt.metadata["text_grade"] == "safe"
             assert text_prompt.metadata["image_grade"] == "safe"
             assert text_prompt.metadata["combined_grade"] == "unsafe"
@@ -104,13 +102,8 @@ class TestVLSUMultimodalDataset:
             # Verify image prompt
             assert image_prompt.value == "/fake/path/image.png"
             assert image_prompt.name == "ML-VLSU Image"
-            assert image_prompt.harm_categories == [
-                "C1: Slurs, Hate Speech, Hate Symbols"
-            ]
-            assert (
-                image_prompt.metadata["original_image_url"]
-                == "https://example.com/image.jpg"
-            )
+            assert image_prompt.harm_categories == ["C1: Slurs, Hate Speech, Hate Symbols"]
+            assert image_prompt.metadata["original_image_url"] == "https://example.com/image.jpg"
 
     @pytest.mark.asyncio
     async def test_fetch_dataset_combined_borderline_creates_pair(self):
@@ -253,9 +246,7 @@ class TestVLSUMultimodalDataset:
             },
         ]
 
-        dataset_loader = _VLSUMultimodalDataset(
-            categories=[VLSUCategory.SLURS_HATE_SPEECH]
-        )
+        dataset_loader = _VLSUMultimodalDataset(categories=[VLSUCategory.SLURS_HATE_SPEECH])
 
         with (
             patch.object(dataset_loader, "_fetch_from_url", return_value=mock_data),
