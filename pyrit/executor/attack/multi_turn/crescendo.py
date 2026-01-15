@@ -16,8 +16,6 @@ from pyrit.exceptions import (
 )
 from pyrit.executor.attack.component import (
     ConversationManager,
-    ConversationState,
-    ObjectiveEvaluator,
     PrependedConversationConfig,
 )
 from pyrit.executor.attack.core import (
@@ -182,12 +180,11 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
                     scale_arguments_path=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
                     system_prompt_path=SelfAskScaleScorer.SystemPaths.RED_TEAMER_SYSTEM_PROMPT.value,
                 ),
-                threshold=attack_scoring_config.successful_objective_threshold,
+                threshold=0.8,
             )
 
         self._objective_scorer = objective_scorer
         self._use_score_as_feedback = attack_scoring_config.use_score_as_feedback
-        self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
 
         # Initialize refusal scorer - use the one from config if provided, otherwise create default
@@ -212,11 +209,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._conversation_manager = ConversationManager(
             attack_identifier=self.get_identifier(),
             prompt_normalizer=self._prompt_normalizer,
-        )
-        self._score_evaluator = ObjectiveEvaluator(
-            use_score_as_feedback=self._use_score_as_feedback,
-            scorer=self._objective_scorer,
-            successful_objective_threshold=self._successful_objective_threshold,
         )
 
         # Set the maximum number of backtracks and turns
@@ -245,7 +237,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             auxiliary_scorers=self._auxiliary_scorers,
             refusal_scorer=self._refusal_scorer,
             use_score_as_feedback=self._use_score_as_feedback,
-            successful_objective_threshold=self._successful_objective_threshold,
         )
 
     def _validate_context(self, *, context: CrescendoAttackContext) -> None:
@@ -287,8 +278,8 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         self._logger.debug(f"Conversation session ID: {context.session.conversation_id}")
         self._logger.debug(f"Adversarial chat conversation ID: {context.session.adversarial_chat_conversation_id}")
 
-        # Initialize context with prepended conversation (handles memory labels, turns, next_message)
-        conversation_state = await self._conversation_manager.initialize_context_async(
+        # Initialize context with prepended conversation (handles memory labels, turns, next_message, last_score)
+        await self._conversation_manager.initialize_context_async(
             context=context,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
@@ -297,9 +288,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             max_turns=self._max_turns,
             memory_labels=self._memory_labels,
         )
-
-        # Extract Crescendo-specific state from scores (refusal detection, objective score)
-        context.refused_text, context.last_score = self._extract_scores_from_state(conversation_state, context)
 
         # Set up adversarial chat with prepended conversation
         adversarial_chat_context: Optional[str] = None
@@ -387,7 +375,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             context.last_score = await self._score_response_async(context=context)
 
             # Check if objective achieved
-            achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
+            achieved_objective = bool(context.last_score.get_value()) if context.last_score else False
 
             # Increment the executed turns
             context.executed_turns += 1
@@ -693,44 +681,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         )
         self._logger.debug(f"Backtracked conversation from {conversation_id} to {new_conversation_id}")
         return new_conversation_id
-
-    def _extract_scores_from_state(
-        self, state: ConversationState, context: CrescendoAttackContext
-    ) -> tuple[str, Optional[Score]]:
-        """
-        Extract refusal text and objective score from the conversation state.
-
-        This is Crescendo-specific logic that interprets the scores from the last
-        assistant message to determine if a refusal occurred and get the objective score.
-
-        Args:
-            state (ConversationState): The conversation state with scores.
-            context (CrescendoAttackContext): The attack context.
-
-        Returns:
-            tuple: (refused_text, objective_score)
-                - refused_text: The text that was refused (from context.next_message if
-                  there's a refusal), empty string if no refusal
-                - objective_score: The objective score if found, None otherwise
-        """
-        refused_text = ""
-        objective_score = None
-
-        for score in state.last_assistant_message_scores:
-            scorer_type = score.scorer_class_identifier["__type__"]
-
-            if scorer_type == self._refusal_scorer.get_identifier()["__type__"]:
-                self._logger.debug(f"Prepended response refusal score: {score.get_value()}")
-                # If there was a refusal and we have a next_message (unanswered user message),
-                # use that as the refused text
-                if score.get_value() and context.next_message:
-                    refused_text = context.next_message.get_value() or ""
-
-            elif scorer_type == self._objective_scorer.get_identifier()["__type__"]:
-                self._logger.debug(f"Prepended response objective score: {score.get_value()}")
-                objective_score = score
-
-        return refused_text, objective_score
 
     def _set_adversarial_chat_system_prompt_template(self, *, system_prompt_template_path: Union[Path, str]) -> None:
         """

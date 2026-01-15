@@ -249,7 +249,7 @@ class CrescendoTestHelper:
             scoring_config = AttackScoringConfig(
                 objective_scorer=objective_scorer,
                 refusal_scorer=refusal_scorer,
-                **{k: v for k, v in kwargs.items() if k in ["use_score_as_feedback", "successful_objective_threshold"]},
+                **{k: v for k, v in kwargs.items() if k in ["use_score_as_feedback"]},
             )
 
         attack = CrescendoAttack(
@@ -302,7 +302,6 @@ class TestCrescendoAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             refusal_scorer=mock_refusal_scorer,
-            successful_objective_threshold=0.7,
             use_score_as_feedback=False,
         )
 
@@ -314,7 +313,6 @@ class TestCrescendoAttackInitialization:
 
         assert attack._objective_scorer == mock_objective_scorer
         assert attack._refusal_scorer == mock_refusal_scorer
-        assert attack._successful_objective_threshold == 0.7
         assert attack._use_score_as_feedback is False
 
     def test_init_creates_default_scorers_with_adversarial_chat(
@@ -460,7 +458,6 @@ class TestCrescendoAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             refusal_scorer=mock_refusal_scorer,
-            successful_objective_threshold=0.85,
             use_score_as_feedback=True,
         )
 
@@ -475,7 +472,6 @@ class TestCrescendoAttackInitialization:
         assert result is not None
         assert result.objective_scorer == mock_objective_scorer
         assert result.refusal_scorer == mock_refusal_scorer
-        assert result.successful_objective_threshold == 0.85
         assert result.use_score_as_feedback is True
 
 
@@ -663,7 +659,11 @@ class TestSetupPhase:
         basic_context: CrescendoAttackContext,
         refusal_score: Score,
     ):
-        """Test that setup handles prepended conversation with refusal score."""
+        """Test that setup does NOT set refused_text for prepended conversations.
+
+        Prepended conversations are historical context and don't require backtracking,
+        so refused_text should always remain None after setup.
+        """
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(refusal_scorer=mock_refusal_scorer)
 
@@ -673,9 +673,8 @@ class TestSetupPhase:
             attack_scoring_config=scoring_config,
         )
 
-        # Set next_message on context - this is how refused text is determined
-        # (when a refusal score is detected, refused_text comes from context.next_message)
-        basic_context._next_message_override = Message.from_prompt(prompt="Refused prompt", role="user")
+        # Set next_message on context - even with a message set, refused_text should NOT be populated
+        basic_context._next_message_override = Message.from_prompt(prompt="Some prompt", role="user")
 
         # Mock that simulates initialize_context_async setting executed_turns
         async def mock_initialize(*, context, **kwargs):
@@ -685,7 +684,8 @@ class TestSetupPhase:
         with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
             await attack._setup_async(context=basic_context)
 
-        assert basic_context.refused_text == "Refused prompt"
+        # Prepended conversations don't trigger backtracking, so refused_text should remain None
+        assert basic_context.refused_text is None
         assert basic_context.executed_turns == 1
 
 

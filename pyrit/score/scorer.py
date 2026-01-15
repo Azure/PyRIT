@@ -59,13 +59,12 @@ class Scorer(abc.ABC):
     Abstract base class for scorers.
     """
 
-    scorer_type: ScoreType
-
     # Evaluation configuration - maps input dataset files to a result file
     # Specifies glob patterns for datasets and a result file name
     evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
 
     _scorer_identifier: Optional[ScorerIdentifier] = None
+
 
     def __init__(self, *, validator: ScorerPromptValidator):
         """
@@ -75,6 +74,27 @@ class Scorer(abc.ABC):
             validator (ScorerPromptValidator): Validator for message pieces and scorer configuration.
         """
         self._validator = validator
+
+    @property
+    def scorer_type(self) -> ScoreType:
+        """
+        Get the scorer type based on class hierarchy.
+
+        Returns:
+            ScoreType: "true_false" for TrueFalseScorer subclasses,
+                      "float_scale" for FloatScaleScorer subclasses,
+                      "unknown" for other scorers.
+        """
+        # Import here to avoid circular imports
+        from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+        from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+
+        if isinstance(self, TrueFalseScorer):
+            return "true_false"
+        elif isinstance(self, FloatScaleScorer):
+            return "float_scale"
+        else:
+            return "unknown"
 
     @abstractmethod
     def _build_scorer_identifier(self) -> None:

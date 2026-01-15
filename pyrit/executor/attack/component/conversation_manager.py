@@ -550,6 +550,14 @@ class ConversationManager:
                         scores.extend(piece.scores)
                 state.last_assistant_message_scores = scores
 
+                # Set context.last_score to first true_false score found (for feedback rationale)
+                # This helps attacks use the score rationale without re-scoring
+                if hasattr(context, "last_score"):
+                    for score in scores:
+                        if score.score_type == "true_false":
+                            context.last_score = score
+                            break
+
         return state
 
     async def _apply_converters_async(

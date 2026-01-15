@@ -65,8 +65,6 @@ class MockFloatScaleScorer(FloatScaleScorer):
 class MockGenericScorer(Scorer):
     """Mock generic Scorer (not TrueFalse or FloatScale) for testing."""
 
-    scorer_type = "true_false"  # type: ignore[assignment]
-
     def __init__(self):
         super().__init__(validator=DummyValidator())
 

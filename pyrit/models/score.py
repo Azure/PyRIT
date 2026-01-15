@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union, get_args
 
-ScoreType = Literal["true_false", "float_scale"]
+ScoreType = Literal["true_false", "float_scale", "unknown"]
 
 
 class Score:

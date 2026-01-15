@@ -13,8 +13,6 @@ from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
 from pyrit.common.utils import warn_if_set
 from pyrit.executor.attack.component import (
     ConversationManager,
-    ConversationState,
-    ObjectiveEvaluator,
     get_adversarial_chat_messages,
 )
 from pyrit.executor.attack.core.attack_config import (
@@ -132,7 +130,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
 
         self._objective_scorer = attack_scoring_config.objective_scorer
         self._use_score_as_feedback = attack_scoring_config.use_score_as_feedback
-        self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold
 
         # Initialize adversarial configuration
         self._adversarial_chat = attack_adversarial_config.target
@@ -150,11 +147,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
 
         self._conversation_manager = ConversationManager(attack_identifier=self.get_identifier())
-        self._score_evaluator = ObjectiveEvaluator(
-            use_score_as_feedback=self._use_score_as_feedback,
-            scorer=self._objective_scorer,
-            successful_objective_threshold=self._successful_objective_threshold,
-        )
 
         # set the maximum number of turns for the attack
         if max_turns <= 0:
@@ -168,13 +160,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         Get the attack scoring configuration used by this strategy.
 
         Returns:
-            Optional[AttackScoringConfig]: The scoring configuration with objective scorer,
-                use_score_as_feedback, and threshold.
+            Optional[AttackScoringConfig]: The scoring configuration with objective scorer
+                and use_score_as_feedback.
         """
         return AttackScoringConfig(
             objective_scorer=self._objective_scorer,
             use_score_as_feedback=self._use_score_as_feedback,
-            successful_objective_threshold=self._successful_objective_threshold,
         )
 
     def _validate_context(self, *, context: MultiTurnAttackContext[Any]) -> None:
@@ -226,8 +217,8 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             )
         )
 
-        # Initialize context with prepended conversation (handles memory labels, turns, next_message)
-        conversation_state: ConversationState = await self._conversation_manager.initialize_context_async(
+        # Initialize context with prepended conversation (handles memory labels, turns, next_message, last_score)
+        await self._conversation_manager.initialize_context_async(
             context=context,
             target=self._objective_target,
             conversation_id=context.session.conversation_id,
@@ -235,10 +226,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             max_turns=self._max_turns,
             memory_labels=self._memory_labels,
         )
-
-        # Get the last assistant message evaluation score if available
-        score = self._retrieve_last_assistant_message_evaluation_score(state=conversation_state)
-        context.last_score = score
 
         # Set up adversarial chat with prepended conversation
         if context.prepended_conversation:
@@ -313,7 +300,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             if not self._score_last_turn_only or is_last_turn:
                 context.last_score = await self._score_response_async(context=context)
                 # Check if objective achieved
-                achieved_objective = self._score_evaluator.is_objective_achieved(score=context.last_score)
+                achieved_objective = bool(context.last_score.get_value()) if context.last_score else False
             else:
                 # Skip scoring on intermediate turns when score_last_turn_only is True
                 context.last_score = None
@@ -437,7 +424,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             return "No response available. Please continue."
 
         response_piece = context.last_response.get_piece()
-        feedback = self._score_evaluator.get_feedback(context.last_score) if context.last_score else None
 
         if not response_piece.has_error():
             # if response has no error, we can use the converted value
@@ -448,8 +434,8 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
 
             # if we have feedback, append it to the prompt
             # to provide more context to the adversarial chat
-            if feedback:
-                prompt_text += f"\n\n{feedback}"
+            if self._use_score_as_feedback and context.last_score:
+                prompt_text += f"\n\n{context.last_score.score_rationale}"
             return prompt_text
 
         elif response_piece.is_blocked():
@@ -494,7 +480,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
                 "However, the use_score_as_feedback flag is set to False so it cannot be utilized."
             )
 
-        feedback = self._score_evaluator.get_feedback(context.last_score) if context.last_score else None
+        feedback = context.last_score.score_rationale if context.last_score else None
         if not feedback:
             raise ValueError(
                 f"{RedTeamingAttack.DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE}"
@@ -587,33 +573,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         )
         objective_scores = scoring_results["objective_scores"]
         return objective_scores[0] if objective_scores else None
-
-    def _retrieve_last_assistant_message_evaluation_score(self, state: ConversationState) -> Optional[Score]:
-        """
-        Retrieve the last assistant message evaluation score.
-
-        Searches through the last assistant message scores to find one that matches
-        the objective scorer type (based on the scorer class identifier).
-
-        Args:
-            state (ConversationState): The conversation state.
-
-        Returns:
-            Optional[Score]: The score of the last assistant message that matches
-                           the objective scorer type, or None if not found.
-        """
-        if not state.last_assistant_message_scores:
-            return None
-
-        objective_score: Optional[Score] = None
-        # Find the score that matches the objective scorer type
-        # This is necessary to ensure we are using the correct score for evaluation
-        for score in state.last_assistant_message_scores:
-            if score.scorer_class_identifier["__type__"] == self._score_evaluator.scorer_type:
-                objective_score = score
-                break
-
-        return objective_score
 
     def _set_adversarial_chat_seed_prompt(self, *, seed_prompt: Union[str, SeedPrompt]) -> None:
         """

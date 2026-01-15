@@ -297,7 +297,6 @@ class TestRedTeamingAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             use_score_as_feedback=True,
-            successful_objective_threshold=0.9,
         )
 
         attack = RedTeamingAttack(
@@ -310,7 +309,6 @@ class TestRedTeamingAttackInitialization:
 
         assert result.objective_scorer == mock_objective_scorer
         assert result.use_score_as_feedback is True
-        assert result.successful_objective_threshold == 0.9
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -718,7 +716,13 @@ class TestSetupPhase:
             turn_count=1,
             last_assistant_message_scores=[other_score, success_score],
         )
-        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
+
+        # The initialize_context_async method sets context.last_score to the first true_false score
+        async def mock_initialize(*, context, **kwargs):
+            context.last_score = success_score  # Simulates finding the first true_false score
+            return mock_state
+
+        with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.last_score == success_score

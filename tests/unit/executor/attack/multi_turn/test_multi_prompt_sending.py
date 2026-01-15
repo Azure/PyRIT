@@ -174,7 +174,6 @@ class TestMultiPromptSendingAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_true_false_scorer,
             auxiliary_scorers=[MagicMock(spec=Scorer)],
-            successful_objective_threshold=0.85,
         )
 
         attack = MultiPromptSendingAttack(objective_target=mock_target, attack_scoring_config=scoring_config)
@@ -183,7 +182,6 @@ class TestMultiPromptSendingAttackInitialization:
 
         assert result.objective_scorer == mock_true_false_scorer
         assert len(result.auxiliary_scorers) == 1
-        assert result.successful_objective_threshold == 0.85
 
 
 @pytest.mark.usefixtures("patch_central_database")

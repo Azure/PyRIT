@@ -59,7 +59,6 @@ from pyrit.score.score_utils import normalize_score_to_float
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class TAPAttackScoringConfig(AttackScoringConfig):
     """
     Scoring configuration specifically for Tree of Attacks with Pruning (TAP).
@@ -72,37 +71,48 @@ class TAPAttackScoringConfig(AttackScoringConfig):
     a threshold to produce true/false results, while storing the original float value
     in score metadata for granular comparison.
 
-    The successful_objective_threshold is derived from the scorer's threshold property,
-    so it should not be set separately.
+    The threshold is derived from the scorer's threshold property.
     """
 
-    # Override to require FloatScaleThresholdScorer for TAP
-    objective_scorer: Optional[FloatScaleThresholdScorer] = None
-
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        objective_scorer: FloatScaleThresholdScorer,
+        refusal_scorer: Optional[TrueFalseScorer] = None,
+        auxiliary_scorers: Optional[List[Scorer]] = None,
+        use_score_as_feedback: bool = True,
+    ) -> None:
         """
-        Validate TAP-specific configuration.
+        Initialize TAP scoring configuration.
+
+        Args:
+            objective_scorer (FloatScaleThresholdScorer): The scorer for evaluating attack success.
+                Must be a FloatScaleThresholdScorer to provide both granular float scores
+                for node comparison and a threshold for success determination.
+            refusal_scorer (Optional[TrueFalseScorer]): Optional scorer for detecting refusals.
+            auxiliary_scorers (Optional[List[Scorer]]): Additional scorers for auxiliary metrics.
+            use_score_as_feedback (bool): Whether to use scoring results as feedback. Defaults to True.
 
         Raises:
-            ValueError: If objective_scorer is provided but is not a FloatScaleThresholdScorer.
+            ValueError: If objective_scorer is not a FloatScaleThresholdScorer or
+                if refusal_scorer is not a TrueFalseScorer.
         """
-        # Skip parent validation for objective_scorer type since we have stricter requirements
-        if not 0.0 <= self.successful_objective_threshold <= 1.0:
-            raise ValueError(
-                f"successful_objective_threshold must be between 0.0 and 1.0, got {self.successful_objective_threshold}"
-            )
-
-        # Enforce TAP-specific objective scorer type
-        if self.objective_scorer is not None and not isinstance(self.objective_scorer, FloatScaleThresholdScorer):
+        # Validate TAP-specific objective scorer type
+        if not isinstance(objective_scorer, FloatScaleThresholdScorer):
             raise ValueError(
                 "TAP requires a FloatScaleThresholdScorer as the objective scorer. "
                 "This scorer provides both granular float scores for node comparison "
                 "and a threshold for success determination."
             )
 
-        # Enforce refusal scorer type: must be a TrueFalseScorer if provided
-        if self.refusal_scorer and not isinstance(self.refusal_scorer, TrueFalseScorer):
+        # Validate refusal scorer type
+        if refusal_scorer is not None and not isinstance(refusal_scorer, TrueFalseScorer):
             raise ValueError("Refusal scorer must be a TrueFalseScorer")
+
+        self.objective_scorer: FloatScaleThresholdScorer = objective_scorer
+        self.refusal_scorer = refusal_scorer
+        self.auxiliary_scorers = auxiliary_scorers or []
+        self.use_score_as_feedback = use_score_as_feedback
 
     @property
     def threshold(self) -> float:
@@ -110,12 +120,9 @@ class TAPAttackScoringConfig(AttackScoringConfig):
         Get the threshold from the objective scorer.
 
         Returns:
-            float: The threshold value from the FloatScaleThresholdScorer,
-                or successful_objective_threshold if no scorer is set.
+            float: The threshold value from the FloatScaleThresholdScorer.
         """
-        if self.objective_scorer is not None:
-            return self.objective_scorer.threshold
-        return self.successful_objective_threshold
+        return self.objective_scorer.threshold
 
 
 @dataclass
