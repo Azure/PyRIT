@@ -314,6 +314,7 @@ API Reference
     ALLOWED_CHAT_MESSAGE_ROLES
     AudioPathDataTypeSerializer
     AzureBlobStorageIO
+    BinaryPathDataTypeSerializer
     ChatMessage
     ChatMessagesDataset
     ChatMessageRole
@@ -365,6 +366,7 @@ API Reference
     StrategyResult
     TextDataTypeSerializer
     UnvalidatedScore
+    VideoPathDataTypeSerializer
 
 
 :py:mod:`pyrit.prompt_converter`
