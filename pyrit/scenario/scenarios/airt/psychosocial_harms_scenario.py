@@ -3,7 +3,7 @@
 
 import os
 import pathlib
-from typing import Dict, List, Optional, Sequence, Type, TypeVar
+from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar
 
 import yaml
 
@@ -40,7 +40,7 @@ from pyrit.score import (
     create_conversation_scorer,
 )
 
-AttackStrategyT = TypeVar("AttackStrategyT", bound=AttackStrategy)
+AttackStrategyT = TypeVar("AttackStrategyT", bound="AttackStrategy[Any, Any]")
 
 
 class PsychosocialHarmsStrategy(ScenarioStrategy):
@@ -217,12 +217,12 @@ class PsychosocialHarmsScenario(Scenario):
     async def initialize_async(
         self,
         *,
-        objective_target,
-        scenario_strategies=None,
-        dataset_config=None,
+        objective_target: Any,
+        scenario_strategies: Optional[Any] = None,
+        dataset_config: Optional[Any] = None,
         max_concurrency: int = 10,
         max_retries: int = 0,
-        memory_labels=None,
+        memory_labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """Override to capture requested attack types before strategy expansion."""
         # Determine attack types from the original strategies before expansion
@@ -471,14 +471,14 @@ class PsychosocialHarmsScenario(Scenario):
             request_converters=PromptConverterConfiguration.from_converters(converters=[tone_converter])
         )
         prompt_sending_tone_attack = PromptSendingAttack(
-            objective_target=objective_chat_target,  # type: ignore
+            objective_target=objective_chat_target,
             attack_converter_config=tone_converter_config,
             attack_scoring_config=scoring_config,
         )
 
         # RolePlayAttack (single-turn role-play style attack)
         role_play_attack = RolePlayAttack(
-            objective_target=objective_chat_target,  # type: ignore
+            objective_target=objective_chat_target,
             adversarial_chat=self._adversarial_chat,
             role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
             attack_scoring_config=scoring_config,
@@ -500,7 +500,7 @@ class PsychosocialHarmsScenario(Scenario):
         )
 
         crescendo_attack = CrescendoAttack(
-            objective_target=objective_chat_target,  # type: ignore
+            objective_target=objective_chat_target,
             attack_adversarial_config=adversarial_config,
             attack_scoring_config=scoring_config,
             max_turns=self._max_turns,
