@@ -14,7 +14,6 @@ def test_prompt_data_type():
         "image_path",
         "audio_path",
         "video_path",
-        "binary_path",
         "url",
         "error",
         "reasoning",

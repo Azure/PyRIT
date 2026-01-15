@@ -41,6 +41,7 @@ from pyrit.models import (
     ConversationReference,
     ConversationType,
     Message,
+    MessagePiece,
     Score,
     SeedPrompt,
 )
@@ -147,6 +148,7 @@ class TAPAttackContext(MultiTurnAttackContext[Any]):
     best_objective_score: Optional[Score] = None
 
 
+@dataclass
 class TAPAttackResult(AttackResult):
     """
     Result of the Tree of Attacks with Pruning (TAP) attack strategy execution.
@@ -154,36 +156,6 @@ class TAPAttackResult(AttackResult):
     This result includes the standard attack result information with
     attack-specific data stored in the metadata dictionary.
     """
-
-    def __init__(
-        self,
-        *,
-        tree_visualization: Optional[Tree] = None,
-        nodes_explored: int = 0,
-        nodes_pruned: int = 0,
-        max_depth_reached: int = 0,
-        auxiliary_scores_summary: Optional[dict[str, float]] = None,
-        **kwargs: Any,
-    ) -> None:
-        """
-        Initialize a TAPAttackResult.
-
-        Args:
-            tree_visualization: Visual representation of the attack tree.
-            nodes_explored: Total number of nodes explored during the attack.
-            nodes_pruned: Number of nodes pruned during the attack.
-            max_depth_reached: Maximum depth reached in the attack tree.
-            auxiliary_scores_summary: Summary of auxiliary scores from the best node.
-            **kwargs: All other arguments passed to AttackResult.
-        """
-        super().__init__(**kwargs)
-        # Store in metadata for database serialization
-        if tree_visualization is not None:
-            self.metadata["tree_visualization"] = tree_visualization
-        self.metadata["nodes_explored"] = nodes_explored
-        self.metadata["nodes_pruned"] = nodes_pruned
-        self.metadata["max_depth_reached"] = max_depth_reached
-        self.metadata["auxiliary_scores_summary"] = auxiliary_scores_summary if auxiliary_scores_summary else {}
 
     @property
     def tree_visualization(self) -> Optional[Tree]:
@@ -1886,7 +1858,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Returns:
             TAPAttackResult: The failure result indicating the attack did not achieve its objective.
         """
-        best_score = context.best_objective_score.get_value() if context.best_objective_score else 0
+        best_score = normalize_score_to_float(context.best_objective_score)
         outcome_reason = f"Did not achieve threshold score. Best score: {best_score:.2f}"
 
         return self._create_attack_result(
@@ -1919,35 +1891,60 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         Returns:
             TAPAttackResult: The constructed result containing all relevant information
                 about the attack execution, including conversation ID, objective, outcome,
-                outcome reason, executed turns, objective score, and additional metadata.
+                outcome reason, executed turns, last response, last score, and additional metadata.
         """
+        # Get the last response from the best conversation if available
+        last_response = self._get_last_response_from_conversation(context.best_conversation_id)
+
         # Get auxiliary scores from the best node if available
         auxiliary_scores_summary = self._get_auxiliary_scores_summary(context.nodes)
 
         # Calculate statistics from tree visualization
         stats = self._calculate_tree_statistics(context.tree_visualization)
 
-        # Build common metadata for the attack result
-        metadata = self._get_attack_result_metadata(context=context, request_converters=self._request_converters)
-
-        # Create the result with all information
+        # Create the result with basic information
         result = TAPAttackResult(
+            attack_identifier=self.get_identifier(),
             conversation_id=context.best_conversation_id or "",
             objective=context.objective,
             outcome=outcome,
             outcome_reason=outcome_reason,
             executed_turns=context.executed_turns,
-            automated_objective_score=context.best_objective_score,
+            last_response=last_response,
+            last_score=context.best_objective_score,
             related_conversations=context.related_conversations,
-            tree_visualization=context.tree_visualization,
-            nodes_explored=stats["nodes_explored"],
-            nodes_pruned=stats["nodes_pruned"],
-            max_depth_reached=context.executed_turns,
-            auxiliary_scores_summary=auxiliary_scores_summary,
-            **metadata,
         )
 
+        # Set attack-specific metadata using properties
+        result.tree_visualization = context.tree_visualization
+        result.nodes_explored = stats["nodes_explored"]
+        result.nodes_pruned = stats["nodes_pruned"]
+        result.max_depth_reached = context.executed_turns
+        result.auxiliary_scores_summary = auxiliary_scores_summary
+
         return result
+
+    def _get_last_response_from_conversation(self, conversation_id: Optional[str]) -> Optional[MessagePiece]:
+        """
+        Retrieve the last response from a conversation.
+
+        Fetches all message pieces from memory for the given conversation ID
+        and returns the most recent one. This is typically used to extract the final
+        response from the best performing conversation for inclusion in the attack result.
+
+        Args:
+            conversation_id (Optional[str]): The conversation ID to retrieve from. May be
+                None if no successful conversations were found during the attack.
+
+        Returns:
+            Optional[MessagePiece]: The last response piece from the conversation,
+                or None if no conversation ID was provided or no responses exist.
+        """
+        if not conversation_id:
+            return None
+
+        responses = self._memory.get_message_pieces(conversation_id=conversation_id)
+        return responses[-1] if responses else None
 
     def _get_auxiliary_scores_summary(self, nodes: List[_TreeOfAttacksNode]) -> Dict[str, float]:
         """

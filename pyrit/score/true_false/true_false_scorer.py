@@ -117,7 +117,7 @@ class TrueFalseScorer(Scorer):
         score_list = await super()._score_async(message, objective=objective)
 
         if not score_list:
-            # If no pieces matched (e.g., due to role filter), return False
+            # If no pieces matched (e.g., due to role filter or if all pieces filtered), return False
             # Use the first message piece's ID (or original_prompt_id as fallback)
             first_piece = message.message_pieces[0]
             piece_id = first_piece.id or first_piece.original_prompt_id
@@ -130,7 +130,7 @@ class TrueFalseScorer(Scorer):
                 score_type="true_false",
                 score_category=None,
                 score_metadata=None,
-                score_rationale="No supported pieces (possibly filtered by role).",
+                score_rationale="No supported pieces (filltered or error response).",
                 scorer_class_identifier=self.get_identifier(),
                 message_piece_id=piece_id,
                 objective=objective,

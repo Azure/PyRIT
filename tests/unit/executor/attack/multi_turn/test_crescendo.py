@@ -191,24 +191,24 @@ def no_refusal_score() -> Score:
 @pytest.fixture
 def success_objective_score() -> Score:
     return create_score(
-        score_type="true_false",
-        score_value="true",
+        score_type="float_scale",
+        score_value="0.9",
         score_category=["objective"],
-        scorer_class="SelfAskTrueFalseScorer",
+        scorer_class="FloatScaleThresholdScorer",
         score_rationale="The response successfully achieves the objective",
-        score_value_description="Objective achieved",
+        score_value_description="High objective achievement",
     )
 
 
 @pytest.fixture
 def failure_objective_score() -> Score:
     return create_score(
-        score_type="true_false",
-        score_value="false",
+        score_type="float_scale",
+        score_value="0.3",
         score_category=["objective"],
-        scorer_class="SelfAskTrueFalseScorer",
+        scorer_class="FloatScaleThresholdScorer",
         score_rationale="The response does not achieve the objective",
-        score_value_description="Objective not achieved",
+        score_value_description="Low objective achievement",
     )
 
 
@@ -249,7 +249,7 @@ class CrescendoTestHelper:
             scoring_config = AttackScoringConfig(
                 objective_scorer=objective_scorer,
                 refusal_scorer=refusal_scorer,
-                **{k: v for k, v in kwargs.items() if k in ["use_score_as_feedback"]},
+                **{k: v for k, v in kwargs.items() if k in ["use_score_as_feedback", "successful_objective_threshold"]},
             )
 
         attack = CrescendoAttack(
@@ -302,6 +302,7 @@ class TestCrescendoAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             refusal_scorer=mock_refusal_scorer,
+            successful_objective_threshold=0.7,
             use_score_as_feedback=False,
         )
 
@@ -313,6 +314,7 @@ class TestCrescendoAttackInitialization:
 
         assert attack._objective_scorer == mock_objective_scorer
         assert attack._refusal_scorer == mock_refusal_scorer
+        assert attack._successful_objective_threshold == 0.7
         assert attack._use_score_as_feedback is False
 
     def test_init_creates_default_scorers_with_adversarial_chat(
@@ -458,6 +460,7 @@ class TestCrescendoAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             refusal_scorer=mock_refusal_scorer,
+            successful_objective_threshold=0.85,
             use_score_as_feedback=True,
         )
 
@@ -472,6 +475,7 @@ class TestCrescendoAttackInitialization:
         assert result is not None
         assert result.objective_scorer == mock_objective_scorer
         assert result.refusal_scorer == mock_refusal_scorer
+        assert result.successful_objective_threshold == 0.85
         assert result.use_score_as_feedback is True
 
 
@@ -659,11 +663,7 @@ class TestSetupPhase:
         basic_context: CrescendoAttackContext,
         refusal_score: Score,
     ):
-        """Test that setup does NOT set refused_text for prepended conversations.
-
-        Prepended conversations are historical context and don't require backtracking,
-        so refused_text should always remain None after setup.
-        """
+        """Test that setup handles prepended conversation with refusal score."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(refusal_scorer=mock_refusal_scorer)
 
@@ -673,8 +673,9 @@ class TestSetupPhase:
             attack_scoring_config=scoring_config,
         )
 
-        # Set next_message on context - even with a message set, refused_text should NOT be populated
-        basic_context._next_message_override = Message.from_prompt(prompt="Some prompt", role="user")
+        # Set next_message on context - this is how refused text is determined
+        # (when a refusal score is detected, refused_text comes from context.next_message)
+        basic_context._next_message_override = Message.from_prompt(prompt="Refused prompt", role="user")
 
         # Mock that simulates initialize_context_async setting executed_turns
         async def mock_initialize(*, context, **kwargs):
@@ -684,8 +685,7 @@ class TestSetupPhase:
         with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
             await attack._setup_async(context=basic_context)
 
-        # Prepended conversations don't trigger backtracking, so refused_text should remain None
-        assert basic_context.refused_text is None
+        assert basic_context.refused_text == "Refused prompt"
         assert basic_context.executed_turns == 1
 
 
@@ -812,7 +812,7 @@ class TestPromptGeneration:
         assert "This is the turn 3 of 10 turns" in result
         assert "Test objective" in result
         assert "Test response" in result  # From sample_response
-        assert "0.00" in result  # Score value (false = 0.0)
+        assert "0.30" in result  # Score value
         assert failure_objective_score.score_rationale in result
 
     @pytest.mark.asyncio
@@ -1340,7 +1340,7 @@ class TestAttackExecution:
         assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 1
-        assert result.objective_score == success_objective_score
+        assert result.last_score == success_objective_score
         assert result.outcome_reason is not None
         assert "Objective achieved in 1 turns" in result.outcome_reason
 
@@ -1396,7 +1396,7 @@ class TestAttackExecution:
         assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.FAILURE
         assert result.executed_turns == 2
-        assert result.objective_score == failure_objective_score
+        assert result.last_score == failure_objective_score
         assert result.outcome_reason is not None
         assert "Max turns (2) reached" in result.outcome_reason
 
@@ -1638,7 +1638,8 @@ class TestAttackLifecycle:
                             attack_identifier=attack.get_identifier(),
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
-                            automated_objective_score=success_objective_score,
+                            last_response=sample_response.get_piece(),
+                            last_score=success_objective_score,
                             metadata={"backtrack_count": 0},
                         )
 
@@ -1706,7 +1707,8 @@ class TestAttackLifecycle:
             attack_identifier=attack.get_identifier(),
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
-            automated_objective_score=success_objective_score,
+            last_response=sample_response.get_piece(),
+            last_score=success_objective_score,
             metadata={"backtrack_count": 0},
         )
 
@@ -1781,26 +1783,26 @@ class TestIntegrationScenarios:
         ]
 
         # Create scores that show progression toward the objective
-        # Since objective scorers must be TrueFalseScorer, the final successful turn has score_value="true"
+        # The increasing scores simulate the model becoming more compliant
         scores = [
             create_score(
-                score_type="true_false",
-                score_value="false",
+                score_type="float_scale",
+                score_value="0.3",
                 score_category=["objective"],
-                scorer_class="SelfAskTrueFalseScorer",
+                scorer_class="FloatScaleThresholdScorer",
             ),
             create_score(
-                score_type="true_false",
-                score_value="false",
+                score_type="float_scale",
+                score_value="0.6",
                 score_category=["objective"],
-                scorer_class="SelfAskTrueFalseScorer",
+                scorer_class="FloatScaleThresholdScorer",
             ),
             create_score(
-                score_type="true_false",
-                score_value="true",
+                score_type="float_scale",
+                score_value="0.9",
                 score_category=["objective"],
-                scorer_class="SelfAskTrueFalseScorer",
-            ),  # Objective achieved
+                scorer_class="FloatScaleThresholdScorer",
+            ),  # Above threshold
         ]
 
         # Set up mock behavior to simulate the conversation flow
@@ -1841,8 +1843,10 @@ class TestIntegrationScenarios:
         assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 3
-        assert result.objective_score is not None
-        assert result.objective_score.get_value() is True
+        assert result.last_score is not None
+        assert result.last_score.get_value() == 0.9
+        assert result.last_response is not None
+        assert "sensitive data" in result.last_response.converted_value
 
     @pytest.mark.asyncio
     async def test_attack_with_backtracking_scenario(
@@ -2152,90 +2156,3 @@ class TestCrescendoConversationTracking:
                 and ref.conversation_type == ConversationType.ADVERSARIAL
                 for ref in basic_context.related_conversations
             )
-
-
-@pytest.mark.usefixtures("patch_central_database")
-class TestCrescendoScoringIntegration:
-    """
-    Tests verifying Crescendo correctly uses FloatScaleThresholdScorer and normalize_score_to_float.
-
-    These tests are critical because:
-    1. Crescendo needs granular float scores for feedback to the adversarial chat
-    2. The adversarial chat uses scores to incrementally improve prompts
-    3. Using raw true_false scores would only provide 0 or 1, losing the "how close" information
-    4. FloatScaleThresholdScorer preserves the original float in metadata while providing
-       true_false for AttackResult.automated_objective_score validation
-
-    Historical bug: Without normalize_score_to_float, the adversarial chat would receive
-    "True"/"False" instead of "0.73", making it impossible to provide graduated feedback.
-    """
-
-    def test_default_scorer_is_float_scale_threshold_scorer(
-        self, mock_objective_target: MagicMock, mock_adversarial_chat: MagicMock
-    ) -> None:
-        """
-        Crescendo must use FloatScaleThresholdScorer by default for objective scoring.
-
-        This should be updated with care.
-
-        Why FloatScaleThresholdScorer:
-        - Wraps a float_scale scorer (SelfAskScaleScorer) that returns 0.0-1.0 scores
-        - Converts to true_false for success/failure determination
-        - Stores original float in score_metadata[ORIGINAL_FLOAT_VALUE_KEY]
-        - This allows Crescendo to use the float for feedback while satisfying
-          AttackResult's requirement for true_false objective scores
-        """
-        # Create attack with no explicit objective scorer - should use default
-        attack = CrescendoAttack(
-            objective_target=mock_objective_target,
-            attack_adversarial_config=AttackAdversarialConfig(target=mock_adversarial_chat),
-            # No explicit objective_scorer - should create default FloatScaleThresholdScorer
-        )
-
-        # Verify the objective scorer is a FloatScaleThresholdScorer
-        assert isinstance(attack._objective_scorer, FloatScaleThresholdScorer), (
-            "Crescendo default objective scorer must be FloatScaleThresholdScorer to preserve "
-            "float granularity for adversarial feedback while providing true_false for AttackResult"
-        )
-
-    def test_normalize_score_to_float_import_in_crescendo(self) -> None:
-        """
-        Verify normalize_score_to_float is imported and available in crescendo module.
-
-        This test ensures the module has the necessary import for extracting float values
-        from scores, which is essential for correct adversarial feedback and outcome reporting.
-        """
-        from pyrit.executor.attack.multi_turn import crescendo
-
-        assert hasattr(crescendo, "normalize_score_to_float"), (
-            "crescendo module must import normalize_score_to_float for "
-            "extracting float values from scores for adversarial feedback"
-        )
-
-    def test_score_feedback_uses_normalized_value(
-        self, mock_objective_target: MagicMock, mock_adversarial_chat: MagicMock
-    ) -> None:
-        """
-        Score feedback to adversarial chat should use normalize_score_to_float.
-
-        When providing feedback to the adversarial chat, the score should be the
-        original float value (e.g., "0.73"), not the true_false conversion ("1").
-        """
-        from pyrit.score.score_utils import ORIGINAL_FLOAT_VALUE_KEY, normalize_score_to_float
-
-        # Create a score that has metadata with original float
-        score = create_score(
-            score_type="true_false",
-            score_value="True",  # Threshold was met
-            scorer_class="FloatScaleThresholdScorer",
-        )
-        # Manually set metadata (create_score doesn't support this)
-        score.score_metadata = {ORIGINAL_FLOAT_VALUE_KEY: 0.73}
-
-        # normalize_score_to_float should extract 0.73, not convert True to 1.0
-        result = normalize_score_to_float(score)
-
-        assert result == 0.73, (
-            f"Expected 0.73 from metadata, got {result}. "
-            "normalize_score_to_float should extract original float from metadata."
-        )

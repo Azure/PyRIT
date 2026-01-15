@@ -62,8 +62,6 @@ def data_serializer_factory(
             return AudioPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "video_path":
             return VideoPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
-        elif data_type == "binary_path":
-            return BinaryPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value)
         elif data_type == "url":
@@ -77,8 +75,6 @@ def data_serializer_factory(
             return AudioPathDataTypeSerializer(category=category, extension=extension)
         elif data_type == "video_path":
             return VideoPathDataTypeSerializer(category=category, extension=extension)
-        elif data_type == "binary_path":
-            return BinaryPathDataTypeSerializer(category=category, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text="")
         else:
@@ -383,37 +379,6 @@ class VideoPathDataTypeSerializer(DataTypeSerializer):
         self.data_type = "video_path"
         self.data_sub_directory = f"/{category}/videos"
         self.file_extension = extension if extension else "mp4"
-
-        if prompt_text:
-            self.value = prompt_text
-
-    def data_on_disk(self) -> bool:
-        return True
-
-
-class BinaryPathDataTypeSerializer(DataTypeSerializer):
-    def __init__(
-        self,
-        *,
-        category: str,
-        prompt_text: Optional[str] = None,
-        extension: Optional[str] = None,
-    ):
-        """
-        Serializer for arbitrary binary data paths.
-
-        This serializer handles generic binary data that doesn't fit into specific
-        categories like images, audio, or video. Useful for XPIA attacks and
-        storing files like PDFs, documents, or other binary formats.
-
-        Args:
-            category (str): The category or context for the data.
-            prompt_text (Optional[str]): The binary file path or identifier.
-            extension (Optional[str]): The file extension, defaults to 'bin'.
-        """
-        self.data_type = "binary_path"
-        self.data_sub_directory = f"/{category}/binaries"
-        self.file_extension = extension if extension else "bin"
 
         if prompt_text:
             self.value = prompt_text

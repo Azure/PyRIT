@@ -8,7 +8,6 @@ PromptDataType = Literal[
     "image_path",
     "audio_path",
     "video_path",
-    "binary_path",
     "url",
     "reasoning",
     "error",

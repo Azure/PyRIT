@@ -20,7 +20,6 @@ from pyrit.executor.attack import (
     CrescendoAttack,
     PromptSendingAttack,
     RedTeamingAttack,
-    TAPAttackScoringConfig,
     TreeOfAttacksWithPruningAttack,
 )
 from pyrit.memory import CentralMemory
@@ -33,7 +32,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, TrueFalseScorer
+from pyrit.score import TrueFalseScorer
 
 # =============================================================================
 # Multi-Modal Message Fixtures
@@ -154,16 +153,6 @@ def mock_objective_scorer() -> MagicMock:
     scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_async = AsyncMock()
     scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test_module"}
-    return scorer
-
-
-@pytest.fixture
-def mock_tap_objective_scorer() -> MagicMock:
-    """Create a mock FloatScaleThresholdScorer for TAP attacks."""
-    scorer = MagicMock(spec=FloatScaleThresholdScorer)
-    scorer.score_async = AsyncMock()
-    scorer.get_identifier.return_value = {"__type__": "MockFloatScaleThresholdScorer", "__module__": "test_module"}
-    scorer.threshold = 0.7
     return scorer
 
 
@@ -299,15 +288,15 @@ def crescendo_attack(
 def tap_attack(
     mock_chat_target: MagicMock,
     mock_adversarial_chat: MagicMock,
-    mock_tap_objective_scorer: MagicMock,
+    mock_objective_scorer: MagicMock,
     sample_response: Message,
     success_score: Score,
 ) -> TreeOfAttacksWithPruningAttack:
     """Create a pre-configured TreeOfAttacksWithPruningAttack with mocked normalizer."""
-    mock_tap_objective_scorer.score_async.return_value = [success_score]
+    mock_objective_scorer.score_async.return_value = [success_score]
 
     adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-    scoring_config = TAPAttackScoringConfig(objective_scorer=mock_tap_objective_scorer)
+    scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
     attack = TreeOfAttacksWithPruningAttack(
         objective_target=mock_chat_target,
@@ -484,16 +473,16 @@ class TestNextMessageSentFirst:
         self,
         mock_chat_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        mock_tap_objective_scorer: MagicMock,
+        mock_objective_scorer: MagicMock,
         sample_response: Message,
         success_score: Score,
         multimodal_image_message: Message,
     ) -> None:
         """Test that TreeOfAttacksWithPruningAttack uses next_message for the first turn on all nodes."""
-        mock_tap_objective_scorer.score_async.return_value = [success_score]
+        mock_objective_scorer.score_async.return_value = [success_score]
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = TAPAttackScoringConfig(objective_scorer=mock_tap_objective_scorer)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
         attack = TreeOfAttacksWithPruningAttack(
             objective_target=mock_chat_target,
@@ -701,7 +690,7 @@ class TestPrependedConversationInMemory:
         self,
         mock_chat_target: MagicMock,
         mock_adversarial_chat: MagicMock,
-        mock_tap_objective_scorer: MagicMock,
+        mock_objective_scorer: MagicMock,
         sample_response: Message,
         success_score: Score,
         prepended_conversation_multimodal: List[Message],
@@ -709,10 +698,10 @@ class TestPrependedConversationInMemory:
         sqlite_instance,
     ) -> None:
         """Test that TreeOfAttacksWithPruningAttack preserves prepended conversation in memory."""
-        mock_tap_objective_scorer.score_async.return_value = [success_score]
+        mock_objective_scorer.score_async.return_value = [success_score]
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = TAPAttackScoringConfig(objective_scorer=mock_tap_objective_scorer)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
         attack = TreeOfAttacksWithPruningAttack(
             objective_target=mock_chat_target,

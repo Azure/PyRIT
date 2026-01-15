@@ -313,7 +313,8 @@ class TestSkeletonKeyFailureResult:
         assert result.outcome == AttackOutcome.FAILURE
         assert result.outcome_reason == "Skeleton key prompt was filtered or failed"
         assert result.executed_turns == 1
-        assert result.objective_score is None
+        assert result.last_response is None
+        assert result.last_score is None
         assert result.attack_identifier == attack.get_identifier()
 
 
@@ -343,7 +344,8 @@ class TestSkeletonKeyAttackExecution:
                     conversation_id=basic_context.conversation_id,
                     objective=basic_context.objective,
                     attack_identifier=attack.get_identifier(),
-                    automated_objective_score=success_score,
+                    last_response=sample_response,
+                    last_score=success_score,
                     outcome=AttackOutcome.SUCCESS,
                     executed_turns=1,
                 )
@@ -359,7 +361,8 @@ class TestSkeletonKeyAttackExecution:
                 # Verify result properties
                 assert result.outcome == AttackOutcome.SUCCESS
                 assert result.executed_turns == 2  # Should be updated to 2 turns
-                assert result.objective_score == success_score
+                assert result.last_response == sample_response
+                assert result.last_score == success_score
 
     @pytest.mark.asyncio
     async def test_perform_attack_skeleton_key_failure(self, mock_target, basic_context):
@@ -410,7 +413,8 @@ class TestSkeletonKeyAttackExecution:
                     conversation_id=basic_context.conversation_id,
                     objective=basic_context.objective,
                     attack_identifier=attack.get_identifier(),
-                    automated_objective_score=failure_score,
+                    last_response=sample_response,
+                    last_score=failure_score,
                     outcome=AttackOutcome.FAILURE,
                     executed_turns=1,
                 )
@@ -420,7 +424,7 @@ class TestSkeletonKeyAttackExecution:
                 # Verify result shows overall failure but 2 turns were executed
                 assert result.outcome == AttackOutcome.FAILURE
                 assert result.executed_turns == 2
-                assert result.objective_score == failure_score
+                assert result.last_score == failure_score
 
 
 @pytest.mark.usefixtures("patch_central_database")

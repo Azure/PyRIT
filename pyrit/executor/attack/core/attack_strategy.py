@@ -278,48 +278,6 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         """
         return self._objective_target
 
-    def _get_attack_result_metadata(
-        self,
-        *,
-        context: AttackStrategyContextT,
-        request_converters: Optional[list[Any]] = None,
-    ) -> dict[str, Any]:
-        """
-        Build common metadata fields for AttackResult.
-
-        This helper method extracts metadata and consolidates it for per-attack storage.
-
-        Args:
-            context: The attack context containing memory labels and other state.
-            request_converters: Optional list of PromptConverterConfiguration objects
-                used in the attack.
-
-        Returns:
-            Dict: A dictionary containing attack_identifier, objective_target_identifier,
-                  request_converter_identifiers, and labels that can be unpacked into
-                  AttackResult constructor.
-        """
-        request_converter_identifiers = None
-        if request_converters:
-            # request_converters is a list of PromptConverterConfiguration objects
-            # Each config has a 'converters' list of actual PromptConverter instances
-            all_converters = []
-            for config in request_converters:
-                if hasattr(config, "converters"):
-                    all_converters.extend(config.converters)
-                elif hasattr(config, "get_identifier"):
-                    # Direct converter object
-                    all_converters.append(config)
-            if all_converters:
-                request_converter_identifiers = [converter.get_identifier() for converter in all_converters]
-
-        return {
-            "attack_identifier": self.get_identifier(),
-            "objective_target_identifier": self.get_objective_target().get_identifier(),
-            "request_converter_identifiers": request_converter_identifiers,
-            "labels": context.memory_labels if context.memory_labels else None,
-        }
-
     def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
         """
         Get the attack scoring configuration used by this strategy.

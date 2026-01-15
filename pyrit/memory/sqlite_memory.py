@@ -140,7 +140,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         return [condition]
 
     def _get_message_pieces_prompt_metadata_conditions(
-        self, *, prompt_metadata: dict[str, Union[str, int, float]]
+        self, *, prompt_metadata: dict[str, Union[str, int]]
     ) -> list[TextClause]:
         """
         Generate SQLAlchemy filter conditions for filtering conversation pieces by prompt metadata.
@@ -165,7 +165,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         """
         return text("JSON_EXTRACT(attack_identifier, '$.id') = :attack_id").bindparams(attack_id=str(attack_id))
 
-    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int, float]]) -> Any:
+    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
         Generate SQLAlchemy filter conditions for filtering seed prompts by metadata.
 
@@ -232,8 +232,6 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                     query = query.options(
                         joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
                         joinedload(AttackResultEntry.last_score),
-                        joinedload(AttackResultEntry.objective_score),
-                        joinedload(AttackResultEntry.human_score),
                     )
                 if conditions is not None:
                     query = query.filter(conditions)
@@ -398,12 +396,20 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 file_name = f"all_conversations.{export_type}"
             file_path = Path(DB_DATA_PATH, file_name)
 
+        # Get scores for the message pieces
+        if message_pieces:
+            message_piece_ids = [str(piece.id) for piece in message_pieces]
+            scores = self.get_prompt_scores(prompt_ids=message_piece_ids)
+        else:
+            scores = []
+
         # Merge conversations and scores - create the data structure manually
         merged_data = []
         for piece in message_pieces:
             piece_data = piece.to_dict()
-            # Get associated scores directly from piece (already populated by get_message_pieces)
-            piece_data["scores"] = [score.to_dict() for score in (piece.scores or [])]
+            # Find associated scores
+            piece_scores = [score for score in scores if score.message_piece_id == piece.id]
+            piece_data["scores"] = [score.to_dict() for score in piece_scores]
             merged_data.append(piece_data)
 
         # Export to JSON manually since the exporter expects objects but we have dicts

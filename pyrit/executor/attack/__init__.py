@@ -34,7 +34,6 @@ from pyrit.executor.attack.multi_turn import (
     TAPAttack,
     TAPAttackContext,
     TAPAttackResult,
-    TAPAttackScoringConfig,
     TreeOfAttacksWithPruningAttack,
     generate_simulated_conversation_async,
 )
@@ -68,7 +67,6 @@ __all__ = [
     "TreeOfAttacksWithPruningAttack",
     "TAPAttackContext",
     "TAPAttackResult",
-    "TAPAttackScoringConfig",
     "SingleTurnAttackStrategy",
     "SingleTurnAttackContext",
     "PromptSendingAttack",

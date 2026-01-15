@@ -261,14 +261,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             json_id=str(attack_id)
         )
 
-    def _get_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int, float]]) -> list[TextClause]:
+    def _get_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list[TextClause]:
         """
         Generate SQL conditions for filtering by prompt metadata.
 
         Uses JSON_VALUE() function specific to SQL Azure to query metadata fields in JSON format.
 
         Args:
-            prompt_metadata (dict[str, Union[str, int, float]]): Dictionary of metadata key-value pairs to filter by.
+            prompt_metadata (dict[str, Union[str, int]]): Dictionary of metadata key-value pairs to filter by.
 
         Returns:
             list: List containing a single SQLAlchemy text condition with bound parameters.
@@ -286,7 +286,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         return [condition]
 
     def _get_message_pieces_prompt_metadata_conditions(
-        self, *, prompt_metadata: dict[str, Union[str, int, float]]
+        self, *, prompt_metadata: dict[str, Union[str, int]]
     ) -> list[TextClause]:
         """
         Generate SQL conditions for filtering message pieces by prompt metadata.
@@ -294,14 +294,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         This is a convenience wrapper around _get_metadata_conditions.
 
         Args:
-            prompt_metadata (dict[str, Union[str, int, float]]): Dictionary of metadata key-value pairs to filter by.
+            prompt_metadata (dict[str, Union[str, int]]): Dictionary of metadata key-value pairs to filter by.
 
         Returns:
             list: List containing SQLAlchemy text conditions with bound parameters.
         """
         return self._get_metadata_conditions(prompt_metadata=prompt_metadata)
 
-    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int, float]]) -> TextClause:
+    def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> TextClause:
         """
         Generate SQL condition for filtering seed prompts by metadata.
 
@@ -309,7 +309,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         the first (and only) condition.
 
         Args:
-            metadata (dict[str, Union[str, int, float]]): Dictionary of metadata key-value pairs to filter by.
+            metadata (dict[str, Union[str, int]]): Dictionary of metadata key-value pairs to filter by.
 
         Returns:
             Any: SQLAlchemy text condition with bound parameters.
@@ -547,8 +547,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                     query = query.options(
                         joinedload(AttackResultEntry.last_response).joinedload(PromptMemoryEntry.scores),
                         joinedload(AttackResultEntry.last_score),
-                        joinedload(AttackResultEntry.objective_score),
-                        joinedload(AttackResultEntry.human_score),
                     )
                 if conditions is not None:
                     query = query.filter(conditions)

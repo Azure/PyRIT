@@ -271,7 +271,7 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
     assert called_piece.conversation_id == message_piece.conversation_id
     assert called_piece.labels == message_piece.labels
     assert called_piece.prompt_target_identifier == message_piece.prompt_target_identifier
-    assert called_piece._attack_identifier == message_piece._attack_identifier
+    assert called_piece.attack_identifier == message_piece.attack_identifier
 
 
 @pytest.mark.asyncio

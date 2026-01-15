@@ -185,6 +185,7 @@ API Reference
     MultiPromptSendingAttackParameters
     MultiTurnAttackContext
     MultiTurnAttackStrategy
+    ObjectiveEvaluator
     PrependedConversationConfig
     PromptSendingAttack
     RTASystemPromptPaths
@@ -197,7 +198,6 @@ API Reference
     TAPAttack
     TAPAttackContext
     TAPAttackResult
-    TAPAttackScoringConfig
     TreeOfAttacksWithPruningAttack
 
 :py:mod:`pyrit.executor.promptgen`
@@ -313,7 +313,6 @@ API Reference
     ALLOWED_CHAT_MESSAGE_ROLES
     AudioPathDataTypeSerializer
     AzureBlobStorageIO
-    BinaryPathDataTypeSerializer
     ChatMessage
     ChatMessagesDataset
     ChatMessageRole
@@ -365,7 +364,6 @@ API Reference
     StrategyResult
     TextDataTypeSerializer
     UnvalidatedScore
-    VideoPathDataTypeSerializer
 
 
 :py:mod:`pyrit.prompt_converter`

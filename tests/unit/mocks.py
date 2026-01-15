@@ -91,7 +91,7 @@ class MockPromptTarget(PromptChatTarget):
                 role="assistant",
                 original_value="default",
                 conversation_id=message.message_pieces[0].conversation_id,
-                attack_identifier=message.message_pieces[0]._attack_identifier,
+                attack_identifier=message.message_pieces[0].attack_identifier,
                 labels=message.message_pieces[0].labels,
             ).to_message()
         ]

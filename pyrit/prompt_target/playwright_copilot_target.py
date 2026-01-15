@@ -197,7 +197,7 @@ class PlaywrightCopilotTarget(PromptTarget):
                     conversation_id=request_piece.conversation_id,
                     labels=request_piece.labels,
                     prompt_target_identifier=request_piece.prompt_target_identifier,
-                    attack_identifier=request_piece._attack_identifier,
+                    attack_identifier=request_piece.attack_identifier,
                     original_value_data_type=piece_type,
                     converted_value_data_type=piece_type,
                     prompt_metadata=request_piece.prompt_metadata,

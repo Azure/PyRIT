@@ -196,8 +196,6 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 objective=context.generated_objective,
                 outcome=AttackOutcome.FAILURE,
                 attack_identifier=self.get_identifier(),
-                objective_target_identifier=self._objective_target.get_identifier(),
-                labels=context.memory_labels if context.memory_labels else None,
             )
 
         return last_attack_result
@@ -250,15 +248,9 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             "story_type": context.story_type,
             "generated_name": subject_name or "Not found",
             "generated_content": response,
-            "score_category": (
-                ", ".join(attack_result.objective_score.score_category)
-                if attack_result.objective_score and attack_result.objective_score.score_category
-                else "unknown"
-            ),
+            "score_category": attack_result.last_score.score_category if attack_result.last_score else "unknown",
             "score_rationale": (
-                attack_result.objective_score.score_rationale
-                if attack_result.objective_score
-                else "Scoring not available"
+                attack_result.last_score.score_rationale if attack_result.last_score else "Scoring not available"
             ),
         }
         return experiment_result

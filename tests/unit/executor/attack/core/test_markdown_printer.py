@@ -64,15 +64,15 @@ def sample_attack_result():
         execution_time_ms=1500,
         outcome=AttackOutcome.SUCCESS,
         outcome_reason="Test successful",
-        automated_objective_score=Score(
-            score_type="true_false",
-            score_value="true",
-            score_category="objective",
-            score_value_description="Objective achieved",
-            score_rationale="Test rationale",
+        last_score=Score(
+            score_type="float_scale",
+            score_value="0.5",
+            score_category=["other"],
+            score_value_description="Other score",
+            score_rationale="Other rationale",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "TrueFalseScorer", "__module__": "test_module"},
+            scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
         ),
     )
 

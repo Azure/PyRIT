@@ -59,12 +59,9 @@ def test_converters_serialize():
         converter_identifiers=converter_identifiers,
     )
 
-    # converter_identifiers getter is deprecated - use pytest.warns to acknowledge
-    with pytest.warns(DeprecationWarning, match="converter_identifiers is deprecated"):
-        assert len(entry.converter_identifiers) == 1
+    assert len(entry.converter_identifiers) == 1
 
-    with pytest.warns(DeprecationWarning, match="converter_identifiers is deprecated"):
-        converter = entry.converter_identifiers[0]
+    converter = entry.converter_identifiers[0]
 
     assert converter["__type__"] == "Base64Converter"
     assert converter["__module__"] == "pyrit.prompt_converter.base64_converter"
@@ -93,13 +90,9 @@ def test_executors_serialize():
         attack_identifier=attack.get_identifier(),
     )
 
-    # attack_identifier getter is deprecated - use pytest.warns to acknowledge
-    with pytest.warns(DeprecationWarning, match="attack_identifier is deprecated"):
-        assert entry.attack_identifier["id"] is not None
-    with pytest.warns(DeprecationWarning, match="attack_identifier is deprecated"):
-        assert entry.attack_identifier["__type__"] == "PromptSendingAttack"
-    with pytest.warns(DeprecationWarning, match="attack_identifier is deprecated"):
-        assert entry.attack_identifier["__module__"] == "pyrit.executor.attack.single_turn.prompt_sending"
+    assert entry.attack_identifier["id"] is not None
+    assert entry.attack_identifier["__type__"] == "PromptSendingAttack"
+    assert entry.attack_identifier["__module__"] == "pyrit.executor.attack.single_turn.prompt_sending"
 
 
 @pytest.mark.asyncio
@@ -737,11 +730,11 @@ def test_message_piece_to_dict():
     assert result["sequence"] == entry.sequence
     assert result["timestamp"] == entry.timestamp.isoformat()
     assert result["labels"] == entry.labels
-    assert result["targeted_harm_categories"] == entry._targeted_harm_categories
+    assert result["targeted_harm_categories"] == entry.targeted_harm_categories
     assert result["prompt_metadata"] == entry.prompt_metadata
-    assert result["converter_identifiers"] == entry._converter_identifiers
+    assert result["converter_identifiers"] == entry.converter_identifiers
     assert result["prompt_target_identifier"] == entry.prompt_target_identifier
-    assert result["attack_identifier"] == entry._attack_identifier
+    assert result["attack_identifier"] == entry.attack_identifier
     assert result["scorer_identifier"] == entry.scorer_identifier
     assert result["original_value_data_type"] == entry.original_value_data_type
     assert result["original_value"] == entry.original_value
@@ -874,7 +867,7 @@ def test_message_piece_harm_categories_none():
         original_value="Hello",
         converted_value="Hello",
     )
-    assert entry._targeted_harm_categories == []
+    assert entry.targeted_harm_categories == []
 
 
 def test_message_piece_harm_categories_single():
@@ -882,7 +875,7 @@ def test_message_piece_harm_categories_single():
     entry = MessagePiece(
         role="user", original_value="Hello", converted_value="Hello", targeted_harm_categories=["violence"]
     )
-    assert entry._targeted_harm_categories == ["violence"]
+    assert entry.targeted_harm_categories == ["violence"]
 
 
 def test_message_piece_harm_categories_multiple():
@@ -891,7 +884,7 @@ def test_message_piece_harm_categories_multiple():
     entry = MessagePiece(
         role="user", original_value="Hello", converted_value="Hello", targeted_harm_categories=harm_categories
     )
-    assert entry._targeted_harm_categories == harm_categories
+    assert entry.targeted_harm_categories == harm_categories
 
 
 def test_message_piece_harm_categories_serialization():
@@ -919,7 +912,7 @@ def test_message_piece_harm_categories_with_labels():
         labels=labels,
     )
 
-    assert entry._targeted_harm_categories == harm_categories
+    assert entry.targeted_harm_categories == harm_categories
     assert entry.labels == labels
 
     result = entry.to_dict()

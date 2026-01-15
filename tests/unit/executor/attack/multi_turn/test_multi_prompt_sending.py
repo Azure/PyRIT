@@ -174,6 +174,7 @@ class TestMultiPromptSendingAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_true_false_scorer,
             auxiliary_scorers=[MagicMock(spec=Scorer)],
+            successful_objective_threshold=0.85,
         )
 
         attack = MultiPromptSendingAttack(objective_target=mock_target, attack_scoring_config=scoring_config)
@@ -182,6 +183,7 @@ class TestMultiPromptSendingAttackInitialization:
 
         assert result.objective_scorer == mock_true_false_scorer
         assert len(result.auxiliary_scorers) == 1
+        assert result.successful_objective_threshold == 0.85
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -400,8 +402,7 @@ class TestAttackExecution:
         # Should have called send_prompt_async for each message in sequence
         assert mock_prompt_normalizer.send_prompt_async.call_count == len(basic_context.params.user_messages)
         assert result.executed_turns == len(basic_context.params.user_messages)
-        # Verify the last response was recorded in context
-        assert basic_context.last_response is not None
+        assert result.last_response is not None
 
     @pytest.mark.asyncio
     async def test_perform_async_stops_on_failed_prompt(self, mock_target, mock_prompt_normalizer, basic_context):
@@ -445,7 +446,7 @@ class TestAttackExecution:
             result = await attack._perform_async(context=basic_context)
 
             mock_evaluate.assert_called_once_with(response=sample_response, objective=basic_context.objective)
-            assert result.objective_score == success_score
+            assert result.last_score == success_score
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -640,6 +641,7 @@ class TestEdgeCasesAndErrorHandling:
         result = await attack._perform_async(context=basic_context)
 
         assert result.executed_turns == 0
+        assert result.last_response is None
         assert result.outcome == AttackOutcome.FAILURE
 
     @pytest.mark.asyncio
@@ -659,8 +661,7 @@ class TestEdgeCasesAndErrorHandling:
         result = await attack._perform_async(context=context)
 
         assert result.executed_turns == 1
-        # Verify the last response was recorded in context
-        assert context.last_response is not None
+        assert result.last_response is not None
         assert mock_prompt_normalizer.send_prompt_async.call_count == 1
 
     def test_attack_has_unique_identifier(self, mock_target):

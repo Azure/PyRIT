@@ -12,12 +12,10 @@ from pyrit.models.conversation_reference import ConversationReference, Conversat
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
     AudioPathDataTypeSerializer,
-    BinaryPathDataTypeSerializer,
     DataTypeSerializer,
     ErrorDataTypeSerializer,
     ImagePathDataTypeSerializer,
     TextDataTypeSerializer,
-    VideoPathDataTypeSerializer,
     data_serializer_factory,
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
@@ -62,7 +60,6 @@ __all__ = [
     "AttackOutcome",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
-    "BinaryPathDataTypeSerializer",
     "ChatMessage",
     "ChatMessagesDataset",
     "ChatMessageRole",
@@ -112,5 +109,4 @@ __all__ = [
     "StrategyResultT",
     "TextDataTypeSerializer",
     "UnvalidatedScore",
-    "VideoPathDataTypeSerializer",
 ]

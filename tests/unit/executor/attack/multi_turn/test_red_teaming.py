@@ -297,6 +297,7 @@ class TestRedTeamingAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             use_score_as_feedback=True,
+            successful_objective_threshold=0.9,
         )
 
         attack = RedTeamingAttack(
@@ -309,6 +310,7 @@ class TestRedTeamingAttackInitialization:
 
         assert result.objective_scorer == mock_objective_scorer
         assert result.use_score_as_feedback is True
+        assert result.successful_objective_threshold == 0.9
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -716,13 +718,7 @@ class TestSetupPhase:
             turn_count=1,
             last_assistant_message_scores=[other_score, success_score],
         )
-
-        # The initialize_context_async method sets context.last_score to the first true_false score
-        async def mock_initialize(*, context, **kwargs):
-            context.last_score = success_score  # Simulates finding the first true_false score
-            return mock_state
-
-        with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
+        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
             await attack._setup_async(context=basic_context)
 
         assert basic_context.last_score == success_score
@@ -1289,14 +1285,17 @@ class TestAttackExecution:
         assert mock_prompt_normalizer.send_prompt_async.call_count == 1
 
     @pytest.mark.parametrize(
-        "scorer_type,score_value,expected_achieved",
+        "scorer_type,score_value,threshold,expected_achieved",
         [
-            ("true_false", "true", True),
-            ("true_false", "false", False),
+            ("true_false", "true", 0.8, True),
+            ("true_false", "false", 0.8, False),
+            ("float_scale", "0.9", 0.8, True),
+            ("float_scale", "0.7", 0.8, False),
+            ("float_scale", "0.8", 0.8, True),  # Edge case: equal to threshold
         ],
     )
     @pytest.mark.asyncio
-    async def test_perform_attack_with_different_score_values(
+    async def test_perform_attack_with_different_scoring_thresholds(
         self,
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
@@ -1306,12 +1305,15 @@ class TestAttackExecution:
         sample_response: Message,
         scorer_type: ScoreType,
         score_value: str,
+        threshold: float,
         expected_achieved: bool,
     ):
-        """Test attack execution with different score values."""
+        """Test attack execution with different scoring thresholds."""
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_objective_scorer, successful_objective_threshold=threshold
+        )
 
         attack = RedTeamingAttack(
             objective_target=mock_objective_target,
@@ -1426,7 +1428,8 @@ class TestAttackLifecycle:
                             attack_identifier=attack.get_identifier(),
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
-                            automated_objective_score=success_score,
+                            last_response=sample_response.get_piece(),
+                            last_score=success_score,
                         )
 
                         # Execute using execute_async
@@ -1507,7 +1510,8 @@ class TestAttackLifecycle:
                             attack_identifier=attack.get_identifier(),
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
-                            automated_objective_score=success_score,
+                            last_response=sample_response.get_piece(),
+                            last_score=success_score,
                         )
 
                         # Execute using execute_with_context_async
@@ -1870,7 +1874,7 @@ class TestScoreLastTurnOnly:
                     result = await attack._perform_async(context=context)
 
                     # The final result should have a score
-                    assert result.objective_score == failure_score
+                    assert result.last_score == failure_score
 
     @pytest.mark.asyncio
     async def test_score_last_turn_only_can_still_succeed_on_last_turn(
@@ -1909,4 +1913,4 @@ class TestScoreLastTurnOnly:
 
                     # Should succeed based on final score
                     assert result.outcome == AttackOutcome.SUCCESS
-                    assert result.objective_score == success_score
+                    assert result.last_score == success_score
