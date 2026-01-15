@@ -12,8 +12,6 @@ to provide numerical feedback to adversarial chats regardless of score type.
 import uuid
 from unittest.mock import MagicMock
 
-import pytest
-
 from pyrit.models import Score
 from pyrit.score.score_utils import (
     ORIGINAL_FLOAT_VALUE_KEY,

@@ -68,7 +68,7 @@ class CrescendoAttackContext(MultiTurnAttackContext[Any]):
 class CrescendoAttackResult(AttackResult):
     """Result of the Crescendo attack strategy execution."""
 
-    def __init__(self, *, backtrack_count: int = 0, **kwargs) -> None:
+    def __init__(self, *, backtrack_count: int = 0, **kwargs: Any) -> None:
         """
         Initialize a CrescendoAttackResult.
 

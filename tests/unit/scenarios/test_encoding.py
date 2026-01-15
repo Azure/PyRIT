@@ -53,7 +53,7 @@ class TestEncodingInitialization:
     """Tests for Encoding initialization."""
 
     def test_init_with_custom_seed_prompts(self, mock_objective_target, mock_objective_scorer, sample_seeds):
-        """Test initialization with custom seed prompts."""
+        """Test initialization with custom seed prompts (deprecated parameter)."""
         scenario = Encoding(
             seed_prompts=sample_seeds,
             objective_scorer=mock_objective_scorer,

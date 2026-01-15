@@ -77,7 +77,7 @@ class TAPAttackScoringConfig(AttackScoringConfig):
     """
 
     # Override to require FloatScaleThresholdScorer for TAP
-    objective_scorer: Optional[FloatScaleThresholdScorer] = None  # type: ignore[assignment]
+    objective_scorer: Optional[FloatScaleThresholdScorer] = None
 
     def __post_init__(self) -> None:
         """
@@ -155,8 +155,8 @@ class TAPAttackResult(AttackResult):
         nodes_explored: int = 0,
         nodes_pruned: int = 0,
         max_depth_reached: int = 0,
-        auxiliary_scores_summary: Optional[Dict[str, float]] = None,
-        **kwargs,
+        auxiliary_scores_summary: Optional[dict[str, float]] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Initialize a TAPAttackResult.

@@ -282,8 +282,8 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         self,
         *,
         context: AttackStrategyContextT,
-        request_converters: Optional[List] = None,
-    ) -> Dict:
+        request_converters: Optional[list[Any]] = None,
+    ) -> dict[str, Any]:
         """
         Build common metadata fields for AttackResult.
 

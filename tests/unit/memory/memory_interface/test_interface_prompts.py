@@ -156,7 +156,7 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
     all_pieces = sqlite_instance.get_message_pieces()
     assert len(all_pieces) == 9
     # Attack IDs are preserved (not changed) when duplicating
-   
+
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_2]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
@@ -233,13 +233,22 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
         assert piece.id not in (prompt_id_1, prompt_id_2)
 
     # Verify scores are attached to pieces retrieved by label
+    # Original pieces have scores, and duplicated pieces also get scores via original_prompt_id join
     pieces_with_label = sqlite_instance.get_message_pieces(labels=memory_labels)
+    assert len(pieces_with_label) == 4  # 2 original + 2 duplicated
     total_scores = sum(len(p.scores) for p in pieces_with_label)
-    assert total_scores == 2
+    assert total_scores == 4  # Each of the 4 pieces has 1 score via original_prompt_id
 
     # The duplicate pieces should also have scores via their original_prompt_id link
     for new_piece in new_pieces:
         assert len(new_piece.scores) == 1  # Each duplicated piece should get the score from its original
+
+    # Verify that the scores on duplicated pieces are the SAME score objects (same IDs) as the originals
+    # This proves scores aren't duplicated, just linked via original_prompt_id
+    original_pieces = [p for p in pieces_with_label if p.id in (prompt_id_1, prompt_id_2)]
+    original_score_ids = {s.id for p in original_pieces for s in p.scores}
+    duplicate_score_ids = {s.id for p in new_pieces for s in p.scores}
+    assert original_score_ids == duplicate_score_ids  # Same score objects, different piece IDs
 
 
 def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInterface):
@@ -390,13 +399,24 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
     assert new_pieces[1].id != prompt_id_2
 
     # Verify scores are attached to pieces retrieved by label
+    # Original pieces: 4 total (2 with scores on seq 0,1; 2 without scores on seq 2,3)
+    # Duplicated pieces: 2 (both get scores via original_prompt_id)
+    # Total pieces: 6, Total scores: 4 (2 original + 2 via original_prompt_id join)
     pieces_with_label = sqlite_instance.get_message_pieces(labels=memory_labels)
+    assert len(pieces_with_label) == 6  # 4 original + 2 duplicated
     total_scores = sum(len(p.scores) for p in pieces_with_label)
-    assert total_scores == 2
+    assert total_scores == 4
 
     # The duplicate pieces should also have scores via their original_prompt_id link
     for new_piece in new_pieces:
         assert len(new_piece.scores) == 1  # Each duplicated piece should get the score from its original
+
+    # Verify that the scores on duplicated pieces are the SAME score objects (same IDs) as the originals
+    # This proves scores aren't duplicated, just linked via original_prompt_id
+    original_pieces = [p for p in pieces_with_label if p.id in (prompt_id_1, prompt_id_2)]
+    original_score_ids = {s.id for p in original_pieces for s in p.scores}
+    duplicate_score_ids = {s.id for p in new_pieces for s in p.scores}
+    assert original_score_ids == duplicate_score_ids  # Same score objects, different piece IDs
 
 
 def test_duplicate_conversation_excluding_last_turn_same_attack(sqlite_instance: MemoryInterface):
@@ -447,8 +467,6 @@ def test_duplicate_conversation_excluding_last_turn_same_attack(sqlite_instance:
 
     for piece in duplicate_conversation:
         assert piece.sequence < 2
-
-
 
 
 def test_duplicate_conversation_creates_new_ids(sqlite_instance: MemoryInterface):

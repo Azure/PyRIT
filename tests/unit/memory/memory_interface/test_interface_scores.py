@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 
-import uuid
 from typing import Literal, Sequence
 from unittest.mock import MagicMock
 from uuid import uuid4

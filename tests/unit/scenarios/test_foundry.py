@@ -129,7 +129,7 @@ class TestFoundryInitialization:
         },
     )
     def test_init_with_custom_objectives(self, mock_objective_target, mock_objective_scorer, sample_objectives):
-        """Test initialization with custom objectives."""
+        """Test initialization with custom objectives (deprecated parameter)."""
         scenario = RedTeamAgent(
             objectives=sample_objectives,
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
