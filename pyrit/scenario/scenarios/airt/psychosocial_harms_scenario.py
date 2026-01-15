@@ -19,7 +19,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     RolePlayPaths,
 )
-from pyrit.models import SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedGroup, SeedObjective
 from pyrit.prompt_converter import ToneConverter
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -36,6 +36,7 @@ from pyrit.score import (
     FloatScaleScorer,
     FloatScaleThresholdScorer,
     SelfAskGeneralFloatScaleScorer,
+    TrueFalseScorer,
     create_conversation_scorer,
 )
 
@@ -55,19 +56,27 @@ class PsychosocialHarmsStrategy(ScenarioStrategy):
     provided with PyRIT.
 
     For each harm category, the scenario will run multiple attack strategies including:
-    - PromptSendingAttack (multi-turn, 3 turns for context building)
-    - RolePlayAttack (multi-turn, 3 turns for scenario-based attacks)
-    - MultiPromptSendingAttack (multi-turn sequences)
-    - CrescendoAttack (multi-turn, 5 turns with escalation-based crisis attacks)
+    - PromptSendingAttack (single-turn)
+    - RolePlayAttack (single-turn)
+    - CrescendoAttack (multi-turn, with escalation-based crisis attacks)
     """
 
     ALL = ("all", {"all"})
     SINGLE_TURN = ("single_turn", {"single_turn"})
     MULTI_TURN = ("multi_turn", {"multi_turn"})
 
-    # Vulnerability = ("psychosocial_vulnerability", set[str]())
-    Dependency = ("psychosocial_dependency", set[str]())
-    Imminent_Crisis = ("psychosocial_imminent_crisis", set[str]())
+    IMMINENT_CRISIS = ("psychosocial_imminent_crisis", {"single_turn", "multi_turn"})
+
+    @classmethod
+    def get_aggregate_tags(cls) -> set[str]:
+        """
+        Get the set of tags that represent aggregate categories.
+
+        Returns:
+            set[str]: Set of tags that are aggregate markers.
+        """
+        # Include base class aggregates ("all") and add scenario-specific ones
+        return super().get_aggregate_tags() | {"single_turn", "multi_turn"}
 
 
 class PsychosocialHarmsScenario(Scenario):
@@ -115,21 +124,7 @@ class PsychosocialHarmsScenario(Scenario):
         Returns:
             DatasetConfiguration: Configuration with psychosocial harm datasets.
         """
-        return DatasetConfiguration(
-            dataset_names=["airt_psychosocial_therapist_boundaries"],
-            max_dataset_size=None
-        )
-
-    @classmethod
-    def required_datasets(cls) -> list[str]:
-        """Return a list of dataset names required by this scenario."""
-        return [
-            # "airt_psychosocial_vulnerability",
-            # "airt_psychosocial_dependency_therapist",
-            # "airt_psychosocial_dependency_boyfriend",
-            # "psychosocial_imminent_crisis",
-            "airt_psychosocial_therapist_boundaries",
-        ]
+        return DatasetConfiguration(dataset_names=["airt_psychosocial_imminent_crisis"], max_dataset_size=4)
 
     @apply_defaults
     def __init__(
@@ -142,7 +137,7 @@ class PsychosocialHarmsScenario(Scenario):
         crescendo_system_prompt_path: Optional[str] = None,
         crescendo_system_prompt_paths_by_harm: Optional[Dict[str, str]] = None,
         scoring_rubric_paths_by_harm: Optional[Dict[str, str]] = None,
-        max_turns: int = 3,
+        max_turns: int = 5,
     ):
         """
         Initialize the Psychosocial Harms Scenario.
@@ -187,12 +182,6 @@ class PsychosocialHarmsScenario(Scenario):
             "psychosocial_imminent_crisis": str(
                 pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"
             ),
-            "psychosocial_dependency": str(
-                pathlib.Path(DATASETS_PATH) / "score" / "likert" / "dependency_management.yaml"
-            ),
-            "psychosocial_therapist_boundaries": str(
-                pathlib.Path(DATASETS_PATH) / "score" / "likert" / "dependency_management.yaml"
-            ),
         }
         # Merge user-provided rubrics with defaults (user-provided takes precedence)
         self._scoring_rubric_paths_by_harm = {**default_scoring_rubrics, **(scoring_rubric_paths_by_harm or {})}
@@ -204,10 +193,6 @@ class PsychosocialHarmsScenario(Scenario):
         default_crescendo_strategies = {
             "psychosocial_imminent_crisis": str(
                 pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
-            ),
-            "psychosocial_dependency": str(pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "dependency.yaml"),
-            "psychosocial_therapist_boundaries": str(
-                pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "therapist.yaml"
             ),
         }
         # Merge user-provided strategies with defaults (user-provided takes precedence)
@@ -221,20 +206,62 @@ class PsychosocialHarmsScenario(Scenario):
         super().__init__(
             name="Psychosocial Harms Scenario",
             version=self.version,
-            objective_scorer_identifier=self._objective_scorer.get_identifier(),
             strategy_class=PsychosocialHarmsStrategy,
+            objective_scorer=self._objective_scorer,
             scenario_result_id=scenario_result_id,
+            include_default_baseline=False,
         )
         self._objectives_by_harm = objectives_by_harm
+        self._requested_attack_types: Optional[set[str]] = None
 
-    def _get_objectives_by_harm(self) -> Dict[str, Sequence[SeedGroup]]:
+    async def initialize_async(
+        self,
+        *,
+        objective_target,
+        scenario_strategies=None,
+        dataset_config=None,
+        max_concurrency: int = 10,
+        max_retries: int = 0,
+        memory_labels=None,
+    ) -> None:
+        """Override to capture requested attack types before strategy expansion."""
+        # Determine attack types from the original strategies before expansion
+        self._requested_attack_types = set()
+        if scenario_strategies:
+            for strategy in scenario_strategies:
+                # Handle both bare strategies and composite strategies
+                if isinstance(strategy, PsychosocialHarmsStrategy):
+                    if strategy.value == "single_turn":
+                        self._requested_attack_types.add("single_turn")
+                    elif strategy.value == "multi_turn":
+                        self._requested_attack_types.add("multi_turn")
+                elif hasattr(strategy, "strategies"):
+                    # It's a composite - check its strategies
+                    for s in strategy.strategies:
+                        if isinstance(s, PsychosocialHarmsStrategy):
+                            if s.value == "single_turn":
+                                self._requested_attack_types.add("single_turn")
+                            elif s.value == "multi_turn":
+                                self._requested_attack_types.add("multi_turn")
+
+        # Call parent initialization
+        await super().initialize_async(
+            objective_target=objective_target,
+            scenario_strategies=scenario_strategies,
+            dataset_config=dataset_config,
+            max_concurrency=max_concurrency,
+            max_retries=max_retries,
+            memory_labels=memory_labels,
+        )
+
+    def _get_objectives_by_harm(self) -> Dict[tuple[str, str | None], Sequence[SeedGroup]]:
         """
         Retrieve SeedGroups for each harm strategy. If objectives_by_harm is provided for a given
         harm strategy, use that directly. Otherwise, load the default seed groups from datasets.
 
         Returns:
-            Dict[str, Sequence[SeedGroup]]: A dictionary mapping harm strategies to their
-                corresponding SeedGroups.
+            Dict[tuple[str, str | None], Sequence[SeedGroup]]: A dictionary mapping (harm_category, attack_type)
+                tuples to their corresponding SeedGroups. attack_type can be None to use all attacks.
         """
         seeds_by_strategy = {}
 
@@ -242,12 +269,25 @@ class PsychosocialHarmsScenario(Scenario):
             self._scenario_composites, strategy_type=PsychosocialHarmsStrategy
         )
 
+        # If objectives_by_harm was provided, use it but respect the requested attack types
+        if self._objectives_by_harm is not None:
+            for harm_category, seed_groups in self._objectives_by_harm.items():
+                # If specific attack types were requested, create entries for each
+                if self._requested_attack_types:
+                    for attack_type in self._requested_attack_types:
+                        seeds_by_strategy[(harm_category, attack_type)] = seed_groups
+                else:
+                    # No specific attack type, use all attacks (None)
+                    seeds_by_strategy[(harm_category, None)] = seed_groups
+            return seeds_by_strategy
+
+        # Otherwise, load from memory
         for harm_strategy in selected_harms:
             # For attack-type filters (single_turn, multi_turn), load all available harm datasets
             # BUT split them by harm category so each gets its own scorer/crescendo config
             if harm_strategy in ["single_turn", "multi_turn"]:
                 all_seeds = self._memory.get_seed_groups(
-                    is_objective=True,
+                    seed_type="objective",
                     dataset_name_pattern="airt_psychosocial_%",
                 )
 
@@ -279,7 +319,7 @@ class PsychosocialHarmsScenario(Scenario):
             else:
                 # For specific harm categories, load their specific dataset
                 seeds = self._memory.get_seed_groups(
-                    is_objective=True,
+                    seed_type="objective",
                     harm_categories=harm_strategy,
                     dataset_name_pattern="airt_%",
                 )
@@ -416,10 +456,11 @@ class PsychosocialHarmsScenario(Scenario):
         objective_chat_target = self._objective_target if isinstance(self._objective_target, PromptChatTarget) else None
 
         # Create harm-specific scorer if available, otherwise use default
+        strategy_scorer: TrueFalseScorer
         if strategy in self._scoring_rubric_paths_by_harm:
             strategy_scorer = self._get_default_scorer(harm_category=strategy)
         else:
-            strategy_scorer = self._objective_scorer
+            strategy_scorer = self._objective_scorer  # type: ignore
 
         # Create scoring config for attacks (uses threshold scorer for true/false evaluation)
         scoring_config = AttackScoringConfig(objective_scorer=strategy_scorer)
@@ -467,16 +508,16 @@ class PsychosocialHarmsScenario(Scenario):
         )
 
         # Convert seed_groups to have objectives for AtomicAttack
-        # Each objective becomes a separate SeedGroup with that objective
+        # Each objective becomes a separate SeedAttackGroup with that objective
         strategy_seed_groups_with_objectives = []
 
         for seed_group in seed_groups:
-            # Each seed that is a SeedObjective becomes its own SeedGroup
+            # Each seed that is a SeedObjective becomes its own SeedAttackGroup
             for seed in seed_group.seeds:
                 if isinstance(seed, SeedObjective):
-                    # Create a new SeedGroup with this objective
-                    new_group = SeedGroup(seeds=[seed])
-                    new_group.set_objective(seed.value)
+                    # Create a new SeedAttackGroup with this objective
+                    # The SeedObjective is already in the seeds list, so no need to set it separately
+                    new_group = SeedAttackGroup(seeds=[seed])
                     strategy_seed_groups_with_objectives.append(new_group)
 
         # Determine which attacks to create based on attack_type
