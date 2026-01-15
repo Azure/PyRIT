@@ -25,7 +25,7 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     def __init__(
         self,
         *,
-        open_browser=False,
+        open_browser: bool = False,
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
@@ -90,6 +90,6 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         score.scorer_class_identifier = self.get_identifier()
         return [score]
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Stop the RPC server when the scorer is deleted."""
         self._rpc_server.stop()

@@ -79,7 +79,7 @@ class Score:
         self.message_piece_id = message_piece_id
         self.objective = objective
 
-    def get_value(self):
+    def get_value(self) -> bool | float:
         """
         Returns the value of the score based on its type.
 
@@ -101,7 +101,7 @@ class Score:
 
         raise ValueError(f"Unknown scorer type: {self.score_type}")
 
-    def validate(self, scorer_type, score_value):
+    def validate(self, scorer_type: str, score_value: str) -> None:
         if scorer_type == "true_false" and str(score_value).lower() not in ["true", "false"]:
             raise ValueError(f"True False scorers must have a score value of 'true' or 'false' not {score_value}")
         elif scorer_type == "float_scale":
@@ -127,7 +127,7 @@ class Score:
             "objective": self.objective,
         }
 
-    def __str__(self):
+    def __str__(self) -> str:
         category_str = f": {', '.join(self.score_category) if self.score_category else ''}"
         if self.scorer_class_identifier:
             return f"{self.scorer_class_identifier['__type__']}{category_str}: {self.score_value}"
@@ -156,7 +156,7 @@ class UnvalidatedScore:
     id: Optional[uuid.UUID | str] = None
     timestamp: Optional[datetime] = None
 
-    def to_score(self, *, score_value: str, score_type: ScoreType):
+    def to_score(self, *, score_value: str, score_type: ScoreType) -> Score:
         return Score(
             id=self.id,
             score_value=score_value,

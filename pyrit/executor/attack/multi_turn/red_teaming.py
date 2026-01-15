@@ -6,7 +6,7 @@ from __future__ import annotations
 import enum
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
@@ -54,7 +54,7 @@ class RTASystemPromptPaths(enum.Enum):
     CRUCIBLE = Path(EXECUTOR_RED_TEAM_PATH, "crucible.yaml").resolve()
 
 
-class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackResult]):
+class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], AttackResult]):
     """
     Implementation of multi-turn red teaming attack strategy.
 
@@ -177,7 +177,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             successful_objective_threshold=self._successful_objective_threshold,
         )
 
-    def _validate_context(self, *, context: MultiTurnAttackContext) -> None:
+    def _validate_context(self, *, context: MultiTurnAttackContext[Any]) -> None:
         """
         Validate the context before executing the attack.
 
@@ -187,7 +187,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
         Raises:
             ValueError: If the context is invalid.
         """
-        validators = [
+        validators: list[tuple[Callable[[], bool], str]] = [
             # conditions that must be met for the attack to proceed
             (lambda: bool(context.objective), "Attack objective must be provided"),
             (lambda: context.executed_turns < self._max_turns, "Already exceeded max turns"),
@@ -197,7 +197,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             if not validator():
                 raise ValueError(error_msg)
 
-    async def _setup_async(self, *, context: MultiTurnAttackContext) -> None:
+    async def _setup_async(self, *, context: MultiTurnAttackContext[Any]) -> None:
         """
         Prepare the strategy for execution.
 
@@ -268,7 +268,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             labels=context.memory_labels,
         )
 
-    async def _perform_async(self, *, context: MultiTurnAttackContext) -> AttackResult:
+    async def _perform_async(self, *, context: MultiTurnAttackContext[Any]) -> AttackResult:
         """
         Execute the red teaming attack by iteratively generating prompts,
         sending them to the target, and scoring the responses in a loop
@@ -333,12 +333,12 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
             related_conversations=context.related_conversations,
         )
 
-    async def _teardown_async(self, *, context: MultiTurnAttackContext) -> None:
+    async def _teardown_async(self, *, context: MultiTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 
-    async def _generate_next_prompt_async(self, context: MultiTurnAttackContext) -> Message:
+    async def _generate_next_prompt_async(self, context: MultiTurnAttackContext[Any]) -> Message:
         """
         Generate the next prompt to be sent to the target during the red teaming attack.
 
@@ -392,7 +392,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
     async def _build_adversarial_prompt(
         self,
-        context: MultiTurnAttackContext,
+        context: MultiTurnAttackContext[Any],
     ) -> str:
         """
         Build a prompt for the adversarial chat based on the last response.
@@ -420,7 +420,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         return handler(context=context)
 
-    def _handle_adversarial_text_response(self, *, context: MultiTurnAttackContext) -> str:
+    def _handle_adversarial_text_response(self, *, context: MultiTurnAttackContext[Any]) -> str:
         """
         Handle the text response from the target by appending any
         available scoring feedback to the returned text. If the response
@@ -456,7 +456,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         return f"Request to target failed: {response_piece.response_error}"
 
-    def _handle_adversarial_file_response(self, *, context: MultiTurnAttackContext) -> str:
+    def _handle_adversarial_file_response(self, *, context: MultiTurnAttackContext[Any]) -> str:
         """
         Handle the file response from the target.
 
@@ -505,7 +505,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
     async def _send_prompt_to_objective_target_async(
         self,
         *,
-        context: MultiTurnAttackContext,
+        context: MultiTurnAttackContext[Any],
         message: Message,
     ) -> Message:
         """
@@ -550,7 +550,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext, AttackRes
 
         return response
 
-    async def _score_response_async(self, *, context: MultiTurnAttackContext) -> Optional[Score]:
+    async def _score_response_async(self, *, context: MultiTurnAttackContext[Any]) -> Optional[Score]:
         """
         Evaluate the target's response with the objective scorer.
 
