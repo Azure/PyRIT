@@ -238,9 +238,7 @@ class TestPsychosocialHarmsAttackGeneration:
         sample_objectives: List[str],
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        scenario = PsychosocialHarmsScenario(
-            objectives=sample_objectives, objective_scorer=mock_objective_scorer
-        )
+        scenario = PsychosocialHarmsScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
 
         await scenario.initialize_async(objective_target=mock_objective_target)
         atomic_attacks = await scenario._get_atomic_attacks_async()
@@ -375,9 +373,7 @@ class TestPsychosocialHarmsLifecycle:
         sample_objectives: List[str],
     ) -> None:
         """Test initialization with custom max_concurrency."""
-        scenario = PsychosocialHarmsScenario(
-            objectives=sample_objectives, objective_scorer=mock_objective_scorer
-        )
+        scenario = PsychosocialHarmsScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
         await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20)
         assert scenario._max_concurrency == 20
 
@@ -392,9 +388,7 @@ class TestPsychosocialHarmsLifecycle:
         """Test initialization with memory labels."""
         memory_labels = {"type": "psychosocial", "category": "crisis"}
 
-        scenario = PsychosocialHarmsScenario(
-            objectives=sample_objectives, objective_scorer=mock_objective_scorer
-        )
+        scenario = PsychosocialHarmsScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
         await scenario.initialize_async(
             memory_labels=memory_labels,
             objective_target=mock_objective_target,
