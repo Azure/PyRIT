@@ -646,7 +646,7 @@ class _TreeOfAttacksNode:
         objective_scores = scoring_results["objective_scores"]
         if objective_scores:
             self.objective_score = objective_scores[0]
-            logger.debug(f"Node {self.node_id}: Objective score: {self.objective_score.get_value()}")
+            logger.debug(f"Node {self.node_id}: Objective score: {normalize_score_to_float(self.objective_score)}")
 
         # Extract auxiliary scores
         auxiliary_scores = scoring_results["auxiliary_scores"]
@@ -673,7 +673,7 @@ class _TreeOfAttacksNode:
             remains incomplete and may be pruned from further exploration.
         """
         self.completed = True
-        score_str = self.objective_score.get_value() if self.objective_score else "N/A"
+        score_str = normalize_score_to_float(self.objective_score) if self.objective_score else "N/A"
         logger.info(f"Node {self.node_id}: Completed with objective score {score_str}")
 
     def _handle_json_error(self, error: InvalidJsonException) -> None:
@@ -949,7 +949,7 @@ class _TreeOfAttacksNode:
         """
         pieces = self._memory.get_message_pieces(prompt_ids=[str(response_id)])
         if pieces and pieces[0].scores:
-            return str(pieces[0].scores[0].get_value())
+            return str(normalize_score_to_float(pieces[0].scores[0]))
         return "unavailable"
 
     async def _send_to_adversarial_chat_async(self, prompt_text: str) -> str:
@@ -1042,7 +1042,7 @@ class _TreeOfAttacksNode:
         return (
             "TreeOfAttackNode("
             f"completed={self.completed}, "
-            f"objective_score={self.objective_score.get_value() if self.objective_score else None}, "
+            f"objective_score={normalize_score_to_float(self.objective_score) if self.objective_score else None}, "
             f"node_id={self.node_id}, "
             f"objective_target_conversation_id={self.objective_target_conversation_id})"
         )
