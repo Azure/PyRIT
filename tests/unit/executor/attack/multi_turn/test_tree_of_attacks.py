@@ -22,7 +22,7 @@ from pyrit.executor.attack import (
     TAPAttackResult,
     TreeOfAttacksWithPruningAttack,
 )
-from pyrit.executor.attack.multi_turn.tree_of_attacks import _TreeOfAttacksNode
+from pyrit.executor.attack.multi_turn.tree_of_attacks import TAPAttackScoringConfig, _TreeOfAttacksNode
 from pyrit.models import (
     AttackOutcome,
     ConversationReference,
@@ -34,7 +34,9 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import Scorer, TrueFalseScorer
+from pyrit.score import FloatScaleThresholdScorer, Scorer, TrueFalseScorer
+from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+from pyrit.score.score_utils import ORIGINAL_FLOAT_VALUE_KEY, normalize_score_to_float
 
 logger = logging.getLogger(__name__)
 
@@ -183,8 +185,19 @@ class AttackBuilder:
         """Build the attack instance."""
         assert self.adversarial_chat is not None, "Adversarial chat target must be set."
         adversarial_config = AttackAdversarialConfig(target=self.adversarial_chat)
-        scoring_config = AttackScoringConfig(
-            objective_scorer=cast(TrueFalseScorer, self.objective_scorer),
+
+        # Create a mock FloatScaleThresholdScorer with the specified threshold
+        mock_threshold_scorer = MagicMock(spec=FloatScaleThresholdScorer)
+        mock_threshold_scorer.threshold = self.successful_threshold
+        mock_threshold_scorer.scorer_type = "true_false"
+        mock_threshold_scorer.score_async = AsyncMock(return_value=[])
+        mock_threshold_scorer.get_identifier.return_value = {
+            "__type__": "FloatScaleThresholdScorer",
+            "__module__": "pyrit.score",
+        }
+
+        scoring_config = TAPAttackScoringConfig(
+            objective_scorer=mock_threshold_scorer,
             auxiliary_scorers=self.auxiliary_scorers,
         )
 
@@ -258,6 +271,89 @@ class TestHelpers:
             score_metadata={"test": "metadata"},
             message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
+        )
+
+    @staticmethod
+    async def create_threshold_score_async(*, original_float_value: float, threshold: float = 0.8) -> Score:
+        """
+        Create a TrueFalse Score using actual FloatScaleThresholdScorer.
+
+        This uses the real FloatScaleThresholdScorer with a mock underlying FloatScaleScorer,
+        ensuring tests will catch any changes to how FloatScaleThresholdScorer produces scores.
+
+        Args:
+            original_float_value: The original float score (0.0-1.0).
+            threshold: The threshold used for true/false determination.
+
+        Returns:
+            Score with TrueFalse type and original_float_value in metadata.
+        """
+        # Create a mock FloatScaleScorer that returns the desired float value
+        mock_float_scorer = MagicMock(spec=FloatScaleScorer)
+        # Set up a proper identifier dict that can be JSON serialized
+        mock_float_scorer.get_identifier.return_value = {
+            "__type__": "MockFloatScaleScorer",
+            "__module__": "test_module",
+        }
+
+        # Create the float scale score that the mock scorer will return
+        float_score = Score(
+            id=None,
+            score_type="float_scale",
+            score_value=str(original_float_value),
+            score_category=["objective"],
+            score_value_description="Mock float score",
+            score_rationale="Mock rationale",
+            score_metadata={},
+            message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier={"__type__": "MockFloatScaleScorer", "__module__": "test_module"},
+        )
+        mock_float_scorer.score_async = AsyncMock(return_value=[float_score])
+
+        # Create the actual FloatScaleThresholdScorer
+        threshold_scorer = FloatScaleThresholdScorer(scorer=mock_float_scorer, threshold=threshold)
+
+        # Patch get_identifier to avoid MagicMock serialization issues
+        threshold_scorer.get_identifier = lambda: {
+            "__type__": "FloatScaleThresholdScorer",
+            "__module__": "pyrit.score",
+            "threshold": threshold,
+        }
+
+        # Create a dummy message to score
+        dummy_message = Message(
+            message_pieces=[
+                MessagePiece(
+                    role="assistant",
+                    original_value="test response",
+                    converted_value="test response",
+                    conversation_id=str(uuid.uuid4()),
+                    id=str(uuid.uuid4()),
+                )
+            ]
+        )
+
+        # Score using the actual FloatScaleThresholdScorer
+        scores = await threshold_scorer.score_async(dummy_message)
+        return scores[0]
+
+    @staticmethod
+    def create_threshold_score(*, original_float_value: float, threshold: float = 0.8) -> Score:
+        """
+        Create a TrueFalse Score using actual FloatScaleThresholdScorer (sync wrapper).
+
+        This is a synchronous wrapper around create_threshold_score_async for use in
+        non-async test methods. Uses asyncio.run() for proper event loop handling.
+
+        Args:
+            original_float_value: The original float score (0.0-1.0).
+            threshold: The threshold used for true/false determination.
+
+        Returns:
+            Score with TrueFalse type and original_float_value in metadata.
+        """
+        return asyncio.run(
+            TestHelpers.create_threshold_score_async(original_float_value=original_float_value, threshold=threshold)
         )
 
     @staticmethod
@@ -367,9 +463,12 @@ class TestTreeOfAttacksInitialization:
         result = attack.get_attack_scoring_config()
 
         assert result is not None
-        assert result.objective_scorer == attack_builder.objective_scorer
+        assert isinstance(result, TAPAttackScoringConfig)
+        # The objective_scorer should be a FloatScaleThresholdScorer (or mock of one)
+        assert result.objective_scorer is not None
         assert len(result.auxiliary_scorers) == 1
-        assert result.successful_objective_threshold == 0.75
+        # TAPAttackScoringConfig exposes threshold property
+        assert result.threshold == 0.75
 
     @pytest.mark.asyncio
     async def test_tree_depth_validation_with_prepended_conversation(self, attack_builder, helpers):
@@ -675,7 +774,7 @@ class TestHelperMethods:
         assert "/10" in result
 
     def test_is_objective_achieved(self, attack_builder, helpers):
-        """Test _is_objective_achieved logic."""
+        """Test _is_objective_achieved logic with mock scores."""
         attack = attack_builder.with_default_mocks().with_threshold(0.8).build()
         context = helpers.create_basic_context()
 
@@ -694,6 +793,66 @@ class TestHelperMethods:
         # Test 4: Score above threshold
         context.best_objective_score = MagicMock(get_value=MagicMock(return_value=0.9), score_metadata=None)
         assert attack._is_objective_achieved(context=context) is True
+
+    def test_is_objective_achieved_with_threshold_scores(self, attack_builder, helpers):
+        """Test _is_objective_achieved with realistic FloatScaleThresholdScorer output.
+
+        This test verifies that threshold comparison correctly extracts float values
+        from score_metadata when using TrueFalse scores produced by FloatScaleThresholdScorer.
+        """
+        attack = attack_builder.with_default_mocks().with_threshold(0.8).build()
+        context = helpers.create_basic_context()
+
+        # Test 1: TrueFalse score with original_float_value below threshold
+        # Even though score_value is "False", we verify the float extraction works
+        context.best_objective_score = helpers.create_threshold_score(original_float_value=0.5, threshold=0.8)
+        assert attack._is_objective_achieved(context=context) is False
+        # Verify normalize_score_to_float extracts the float correctly
+        assert normalize_score_to_float(context.best_objective_score) == 0.5
+
+        # Test 2: TrueFalse score with original_float_value at threshold
+        context.best_objective_score = helpers.create_threshold_score(original_float_value=0.8, threshold=0.8)
+        assert attack._is_objective_achieved(context=context) is True
+        assert normalize_score_to_float(context.best_objective_score) == 0.8
+
+        # Test 3: TrueFalse score with original_float_value above threshold
+        context.best_objective_score = helpers.create_threshold_score(original_float_value=0.95, threshold=0.8)
+        assert attack._is_objective_achieved(context=context) is True
+        assert normalize_score_to_float(context.best_objective_score) == 0.95
+
+        # Test 4: Edge case - float value just below threshold
+        context.best_objective_score = helpers.create_threshold_score(original_float_value=0.79, threshold=0.8)
+        assert attack._is_objective_achieved(context=context) is False
+        assert normalize_score_to_float(context.best_objective_score) == 0.79
+
+    def test_create_success_result_with_threshold_score(self, attack_builder, helpers):
+        """Test that _create_success_result correctly formats score in outcome_reason."""
+        attack = attack_builder.with_default_mocks().with_threshold(0.8).build()
+        context = helpers.create_basic_context()
+
+        # Set up context with a threshold score
+        context.best_objective_score = helpers.create_threshold_score(original_float_value=0.92, threshold=0.8)
+        context.successful_objective_conversation_id = "conv_123"
+
+        result = attack._create_success_result(context=context)
+
+        # Verify the outcome reason contains the float score, not "True"
+        assert "0.92" in result.outcome_reason
+        assert result.outcome == AttackOutcome.SUCCESS
+
+    def test_create_failure_result_with_threshold_score(self, attack_builder, helpers):
+        """Test that _create_failure_result correctly formats score in outcome_reason."""
+        attack = attack_builder.with_default_mocks().with_threshold(0.8).build()
+        context = helpers.create_basic_context()
+
+        # Set up context with a threshold score below the threshold
+        context.best_objective_score = helpers.create_threshold_score(original_float_value=0.65, threshold=0.8)
+
+        result = attack._create_failure_result(context=context)
+
+        # Verify the outcome reason contains the float score, not "False"
+        assert "0.65" in result.outcome_reason
+        assert result.outcome == AttackOutcome.FAILURE
 
 
 @pytest.mark.usefixtures("patch_central_database")

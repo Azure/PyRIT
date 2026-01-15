@@ -553,24 +553,13 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             logger.warning("No response available in context to score")
             return None
 
-        # Get the first assistant piece to check for blocked status
-        response_piece = context.last_response.get_piece()
-
-        # Special handling for blocked responses
-        if response_piece.is_blocked():
-            return None
-
-        # Use the built-in scorer method for objective scoring
-        # This method already handles error responses internally via skip_on_error_result=True
-        scoring_results = await Scorer.score_response_async(
-            response=context.last_response,
-            objective_scorer=self._objective_scorer,
-            auxiliary_scorers=None,  # No auxiliary scorers for red teaming by default
+        # score_async handles blocked, filtered, other errors
+        scoring_results = await self._objective_scorer.score_async(
+            message=context.last_response,
             role_filter="assistant",
             objective=context.objective,
-            skip_on_error_result=True,
         )
-        objective_scores = scoring_results["objective_scores"]
+        objective_scores = scoring_results
         return objective_scores[0] if objective_scores else None
 
     def _set_adversarial_chat_seed_prompt(self, *, seed_prompt: Union[str, SeedPrompt]) -> None:

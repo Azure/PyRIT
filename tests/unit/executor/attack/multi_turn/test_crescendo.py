@@ -36,6 +36,7 @@ from pyrit.models import (
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer, TrueFalseScorer
+from pyrit.score.score_utils import ORIGINAL_FLOAT_VALUE_KEY
 
 
 def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
@@ -71,6 +72,7 @@ def create_score(
     scorer_class: str,
     score_rationale: str = "Test rationale",
     score_value_description: str = "Test description",
+    score_metadata: Optional[dict] = None,
 ) -> Score:
     """Create a score with common defaults.
 
@@ -83,7 +85,7 @@ def create_score(
         score_category=score_category,
         score_value_description=score_value_description,
         score_rationale=score_rationale,
-        score_metadata={},
+        score_metadata=score_metadata or {},
         message_piece_id=str(uuid.uuid4()),
         scorer_class_identifier={"__type__": scorer_class, "__module__": "test_module"},
     )
@@ -190,25 +192,31 @@ def no_refusal_score() -> Score:
 
 @pytest.fixture
 def success_objective_score() -> Score:
+    # FloatScaleThresholdScorer is a TrueFalseScorer, so it returns true_false scores
+    # with the original float value preserved in metadata
     return create_score(
-        score_type="float_scale",
-        score_value="0.9",
+        score_type="true_false",
+        score_value="true",
         score_category=["objective"],
         scorer_class="FloatScaleThresholdScorer",
         score_rationale="The response successfully achieves the objective",
-        score_value_description="High objective achievement",
+        score_value_description="Threshold met",
+        score_metadata={ORIGINAL_FLOAT_VALUE_KEY: 0.9},
     )
 
 
 @pytest.fixture
 def failure_objective_score() -> Score:
+    # FloatScaleThresholdScorer is a TrueFalseScorer, so it returns true_false scores
+    # with the original float value preserved in metadata
     return create_score(
-        score_type="float_scale",
-        score_value="0.3",
+        score_type="true_false",
+        score_value="false",
         score_category=["objective"],
         scorer_class="FloatScaleThresholdScorer",
         score_rationale="The response does not achieve the objective",
-        score_value_description="Low objective achievement",
+        score_value_description="Threshold not met",
+        score_metadata={ORIGINAL_FLOAT_VALUE_KEY: 0.3},
     )
 
 
@@ -249,7 +257,7 @@ class CrescendoTestHelper:
             scoring_config = AttackScoringConfig(
                 objective_scorer=objective_scorer,
                 refusal_scorer=refusal_scorer,
-                **{k: v for k, v in kwargs.items() if k in ["use_score_as_feedback", "successful_objective_threshold"]},
+                **{k: v for k, v in kwargs.items() if k in ["use_score_as_feedback"]},
             )
 
         attack = CrescendoAttack(
@@ -302,7 +310,6 @@ class TestCrescendoAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             refusal_scorer=mock_refusal_scorer,
-            successful_objective_threshold=0.7,
             use_score_as_feedback=False,
         )
 
@@ -314,7 +321,6 @@ class TestCrescendoAttackInitialization:
 
         assert attack._objective_scorer == mock_objective_scorer
         assert attack._refusal_scorer == mock_refusal_scorer
-        assert attack._successful_objective_threshold == 0.7
         assert attack._use_score_as_feedback is False
 
     def test_init_creates_default_scorers_with_adversarial_chat(
@@ -460,7 +466,6 @@ class TestCrescendoAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             refusal_scorer=mock_refusal_scorer,
-            successful_objective_threshold=0.85,
             use_score_as_feedback=True,
         )
 
@@ -475,7 +480,6 @@ class TestCrescendoAttackInitialization:
         assert result is not None
         assert result.objective_scorer == mock_objective_scorer
         assert result.refusal_scorer == mock_refusal_scorer
-        assert result.successful_objective_threshold == 0.85
         assert result.use_score_as_feedback is True
 
 
@@ -663,7 +667,12 @@ class TestSetupPhase:
         basic_context: CrescendoAttackContext,
         refusal_score: Score,
     ):
-        """Test that setup handles prepended conversation with refusal score."""
+        """Test that setup handles prepended conversation with refusal score.
+
+        When a refusal score is present from the prepended conversation, the setup
+        should set the context's last_score. Note: refused_text is NOT set during setup;
+        it is only set during the attack execution loop when backtracking occurs.
+        """
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(refusal_scorer=mock_refusal_scorer)
 
@@ -673,20 +682,21 @@ class TestSetupPhase:
             attack_scoring_config=scoring_config,
         )
 
-        # Set next_message on context - this is how refused text is determined
-        # (when a refusal score is detected, refused_text comes from context.next_message)
-        basic_context._next_message_override = Message.from_prompt(prompt="Refused prompt", role="user")
-
-        # Mock that simulates initialize_context_async setting executed_turns
+        # Mock that simulates initialize_context_async setting executed_turns and last_score
         async def mock_initialize(*, context, **kwargs):
             context.executed_turns = 1
+            # The conversation manager sets last_score from prepended conversation scores
+            context.last_score = refusal_score
             return ConversationState(turn_count=1, last_assistant_message_scores=[refusal_score])
 
         with patch.object(attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize):
             await attack._setup_async(context=basic_context)
 
-        assert basic_context.refused_text == "Refused prompt"
+        # Verify setup captured the refusal score
+        assert basic_context.last_score == refusal_score
         assert basic_context.executed_turns == 1
+        # refused_text is NOT set during setup - it's set during _backtrack_async in _perform_async
+        assert basic_context.refused_text is None
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1783,26 +1793,27 @@ class TestIntegrationScenarios:
         ]
 
         # Create scores that show progression toward the objective
-        # The increasing scores simulate the model becoming more compliant
+        # FloatScaleThresholdScorer returns true_false scores based on threshold comparison
+        # First two attempts fail (below threshold), third succeeds (above threshold)
         scores = [
             create_score(
-                score_type="float_scale",
-                score_value="0.3",
+                score_type="true_false",
+                score_value="false",
                 score_category=["objective"],
                 scorer_class="FloatScaleThresholdScorer",
             ),
             create_score(
-                score_type="float_scale",
-                score_value="0.6",
+                score_type="true_false",
+                score_value="false",
                 score_category=["objective"],
                 scorer_class="FloatScaleThresholdScorer",
             ),
             create_score(
-                score_type="float_scale",
-                score_value="0.9",
+                score_type="true_false",
+                score_value="true",
                 score_category=["objective"],
                 scorer_class="FloatScaleThresholdScorer",
-            ),  # Above threshold
+            ),  # Above threshold - objective achieved
         ]
 
         # Set up mock behavior to simulate the conversation flow
@@ -1844,7 +1855,7 @@ class TestIntegrationScenarios:
         assert result.outcome == AttackOutcome.SUCCESS
         assert result.executed_turns == 3
         assert result.last_score is not None
-        assert result.last_score.get_value() == 0.9
+        assert result.last_score.get_value() is True  # Threshold met on final turn
         assert result.last_response is not None
         assert "sensitive data" in result.last_response.converted_value
 

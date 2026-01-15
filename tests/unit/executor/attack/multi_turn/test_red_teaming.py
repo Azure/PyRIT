@@ -297,7 +297,6 @@ class TestRedTeamingAttackInitialization:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_objective_scorer,
             use_score_as_feedback=True,
-            successful_objective_threshold=0.9,
         )
 
         attack = RedTeamingAttack(
@@ -310,7 +309,6 @@ class TestRedTeamingAttackInitialization:
 
         assert result.objective_scorer == mock_objective_scorer
         assert result.use_score_as_feedback is True
-        assert result.successful_objective_threshold == 0.9
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -718,7 +716,19 @@ class TestSetupPhase:
             turn_count=1,
             last_assistant_message_scores=[other_score, success_score],
         )
-        with patch.object(attack._conversation_manager, "initialize_context_async", return_value=mock_state):
+
+        # The mock needs to also set context.last_score as a side effect (simulating what the real method does)
+        async def mock_initialize(context, **kwargs):
+            # Simulate the side effect of initialize_context_async setting the first true_false score
+            for score in mock_state.last_assistant_message_scores:
+                if score.score_type == "true_false":
+                    context.last_score = score
+                    break
+            return mock_state
+
+        with patch.object(
+            attack._conversation_manager, "initialize_context_async", side_effect=mock_initialize
+        ) as mock_init:
             await attack._setup_async(context=basic_context)
 
         assert basic_context.last_score == success_score
@@ -1285,17 +1295,14 @@ class TestAttackExecution:
         assert mock_prompt_normalizer.send_prompt_async.call_count == 1
 
     @pytest.mark.parametrize(
-        "scorer_type,score_value,threshold,expected_achieved",
+        "score_value,expected_achieved",
         [
-            ("true_false", "true", 0.8, True),
-            ("true_false", "false", 0.8, False),
-            ("float_scale", "0.9", 0.8, True),
-            ("float_scale", "0.7", 0.8, False),
-            ("float_scale", "0.8", 0.8, True),  # Edge case: equal to threshold
+            ("true", True),
+            ("false", False),
         ],
     )
     @pytest.mark.asyncio
-    async def test_perform_attack_with_different_scoring_thresholds(
+    async def test_perform_attack_with_different_score_outcomes(
         self,
         mock_objective_target: MagicMock,
         mock_objective_scorer: MagicMock,
@@ -1303,17 +1310,17 @@ class TestAttackExecution:
         mock_prompt_normalizer: MagicMock,
         basic_context: MultiTurnAttackContext,
         sample_response: Message,
-        scorer_type: ScoreType,
         score_value: str,
-        threshold: float,
         expected_achieved: bool,
     ):
-        """Test attack execution with different scoring thresholds."""
+        """Test attack execution with different score outcomes.
+
+        The threshold logic is now handled by the scorer (e.g., FloatScaleThresholdScorer),
+        which returns true_false scores. The attack checks the score value directly.
+        """
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(
-            objective_scorer=mock_objective_scorer, successful_objective_threshold=threshold
-        )
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
 
         attack = RedTeamingAttack(
             objective_target=mock_objective_target,
@@ -1322,9 +1329,9 @@ class TestAttackExecution:
             prompt_normalizer=mock_prompt_normalizer,
         )
 
-        # Create appropriate score
+        # Create true_false score (threshold comparison is done by the scorer)
         score = Score(
-            score_type=scorer_type,
+            score_type="true_false",
             score_value=score_value,
             score_category=["test"],
             score_value_description=f"Score: {score_value}",

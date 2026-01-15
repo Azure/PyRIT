@@ -842,57 +842,60 @@ class TestInitializeContext:
         # Create a multi-part assistant response (e.g., text + image)
         # All pieces in a Message must share the same conversation_id
         piece_conversation_id = str(uuid.uuid4())
+
+        # Create score for first piece
+        score1 = Score(
+            score_type="true_false",
+            score_value="true",
+            score_category=["test"],
+            score_value_description="Score for text piece",
+            score_rationale="Test rationale for text",
+            score_metadata={},
+            message_piece_id=str(uuid.uuid4()),
+        )
         piece1 = MessagePiece(
             role="assistant",
             original_value="Here is the analysis:",
             original_value_data_type="text",
             conversation_id=piece_conversation_id,
+            scores=[score1],  # Attach score directly to piece
+        )
+
+        # Create score for second piece
+        score2 = Score(
+            score_type="true_false",
+            score_value="true",
+            score_category=["test"],
+            score_value_description="Score for image piece",
+            score_rationale="Test rationale for image",
+            score_metadata={},
+            message_piece_id=str(uuid.uuid4()),
         )
         piece2 = MessagePiece(
             role="assistant",
             original_value="chart_image.png",
             original_value_data_type="image_path",
             conversation_id=piece_conversation_id,
+            scores=[score2],  # Attach score directly to piece
         )
+
         multipart_response = Message(message_pieces=[piece1, piece2])
         context.prepended_conversation = [
             Message.from_prompt(prompt="Analyze data", role="user"),
             multipart_response,
         ]
 
-        # Mock get_prompt_scores to verify it's called with all piece IDs
-        score2 = Score(
-            score_type="true_false",
-            score_value="true",
-            score_category=["test"],
-            score_value_description="Score for image piece",
-            score_rationale="Test rationale",
-            score_metadata={},
-            message_piece_id=str(piece2.id),
+        state = await manager.initialize_context_async(
+            context=context,
+            target=mock_chat_target,
+            conversation_id=conversation_id,
+            max_turns=10,
         )
-        original_get_prompt_scores = manager._memory.get_prompt_scores
-        captured_prompt_ids: List[str] = []
 
-        def mock_get_prompt_scores(prompt_ids: List[str]) -> List[Score]:
-            captured_prompt_ids.extend(prompt_ids)
-            return [sample_score, score2]
-
-        manager._memory.get_prompt_scores = mock_get_prompt_scores  # type: ignore[assignment, method-assign]
-
-        try:
-            state = await manager.initialize_context_async(
-                context=context,
-                target=mock_chat_target,
-                conversation_id=conversation_id,
-                max_turns=10,
-            )
-
-            # Verify all piece IDs were passed to get_prompt_scores
-            assert len(captured_prompt_ids) == 2
-            # Verify scores from both pieces are returned
-            assert len(state.last_assistant_message_scores) == 2
-        finally:
-            manager._memory.get_prompt_scores = original_get_prompt_scores  # type: ignore[assignment, method-assign]
+        # Verify scores from both pieces are returned
+        assert len(state.last_assistant_message_scores) == 2
+        assert score1 in state.last_assistant_message_scores
+        assert score2 in state.last_assistant_message_scores
 
 
 # =============================================================================
