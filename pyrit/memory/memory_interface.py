@@ -398,9 +398,13 @@ class MemoryInterface(abc.ABC):
         converted_value_sha256: Optional[Sequence[str]] = None,
     ) -> Sequence[Score]:
         """
-        Deprecated: Use get_scores() or get_message_pieces (scores are attached)
-
         Retrieve scores attached to message pieces based on the specified filters.
+
+        .. deprecated::
+            Use get_scores() or get_message_pieces() instead (scores are attached to pieces).
+
+        Returns:
+            Sequence of Score objects matching the filters.
         """
         warnings.warn(
             "get_prompt_scores is deprecated and will be removed in 0.13.0. Use get_scores() instead.",
