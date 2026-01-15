@@ -85,7 +85,7 @@ class ConversationScorer(Scorer, ABC):
                     conversation_id=original_piece.conversation_id,
                     labels=original_piece.labels,
                     prompt_target_identifier=original_piece.prompt_target_identifier,
-                    attack_identifier=original_piece.attack_identifier,
+                    attack_identifier=original_piece._attack_identifier,
                     original_value_data_type=original_piece.original_value_data_type,
                     converted_value_data_type=original_piece.converted_value_data_type,
                     response_error=original_piece.response_error,

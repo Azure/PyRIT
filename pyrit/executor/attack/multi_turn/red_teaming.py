@@ -322,15 +322,16 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             context.executed_turns += 1
 
         # Prepare the result
+        metadata = self._get_attack_result_metadata(context=context, request_converters=self._request_converters)
+
         return AttackResult(
-            attack_identifier=self.get_identifier(),
             conversation_id=context.session.conversation_id,
             objective=context.objective,
             outcome=(AttackOutcome.SUCCESS if achieved_objective else AttackOutcome.FAILURE),
             executed_turns=context.executed_turns,
-            last_response=context.last_response.get_piece() if context.last_response else None,
-            last_score=context.last_score,
+            automated_objective_score=context.last_score,
             related_conversations=context.related_conversations,
+            **metadata,
         )
 
     async def _teardown_async(self, *, context: MultiTurnAttackContext[Any]) -> None:

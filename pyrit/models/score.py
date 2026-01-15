@@ -28,7 +28,7 @@ class Score:
     score_rationale: str
 
     # Custom metadata a scorer might use. This can vary by scorer.
-    score_metadata: Optional[Dict[str, Union[str, int]]]
+    score_metadata: Optional[Dict[str, Union[str, int, float]]]
 
     # The identifier of the scorer class, including relevant information
     # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
@@ -48,14 +48,14 @@ class Score:
     def __init__(
         self,
         *,
-        id: Optional[uuid.UUID | str] = None,
         score_value: str,
         score_value_description: str,
         score_type: ScoreType,
-        score_category: Optional[List[str]] = None,
         score_rationale: str,
-        score_metadata: Optional[Dict[str, Union[str, int]]],
         message_piece_id: str | uuid.UUID,
+        id: Optional[uuid.UUID | str] = None,
+        score_category: Optional[List[str]] = None,
+        score_metadata: Optional[Dict[str, Union[str, int, float]]] = None,
         scorer_class_identifier: Optional[Dict[str, str]] = None,
         timestamp: Optional[datetime] = None,
         objective: Optional[str] = None,
@@ -74,7 +74,7 @@ class Score:
         self.score_type = score_type
         self.score_category = score_category
         self.score_rationale = score_rationale
-        self.score_metadata = score_metadata
+        self.score_metadata = score_metadata or {}
         self.scorer_class_identifier = scorer_class_identifier or {}
         self.message_piece_id = message_piece_id
         self.objective = objective
@@ -149,7 +149,7 @@ class UnvalidatedScore:
     score_value_description: str
     score_category: Optional[List[str]]
     score_rationale: str
-    score_metadata: Optional[Dict[str, Union[str, int]]]
+    score_metadata: Optional[Dict[str, Union[str, int, float]]]
     scorer_class_identifier: Dict[str, str]
     message_piece_id: uuid.UUID | str
     objective: Optional[str]

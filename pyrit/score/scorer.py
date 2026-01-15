@@ -646,16 +646,16 @@ class Scorer(abc.ABC):
                 # JSON must yield either a string or a list of strings
                 raise ValueError("'category' must be a string or a list of strings")
 
-            # Normalize metadata to a dictionary with string keys and string/int values
+            # Normalize metadata to a dictionary with string keys and string/int/float values
             raw_md = parsed_response.get(metadata_output_key)
-            normalized_md: Optional[Dict[str, Union[str, int]]]
+            normalized_md: Optional[Dict[str, Union[str, int, float]]]
             if raw_md is None:
                 normalized_md = None
             elif isinstance(raw_md, dict):
-                # Coerce keys to str and filter to str/int values only
-                normalized_md = {str(k): v for k, v in raw_md.items() if isinstance(v, (str, int))}
+                # Coerce keys to str and filter to str/int/float values only
+                normalized_md = {str(k): v for k, v in raw_md.items() if isinstance(v, (str, int, float))}
                 # If dictionary becomes empty after filtering, keep as empty dict
-            elif isinstance(raw_md, (str, int)):
+            elif isinstance(raw_md, (str, int, float)):
                 # Wrap primitive metadata into a namespaced field
                 normalized_md = {"metadata": raw_md}
             else:

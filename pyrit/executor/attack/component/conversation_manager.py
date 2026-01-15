@@ -544,8 +544,11 @@ class ConversationManager:
             # Multi-part messages (e.g., text + image) may have scores on multiple pieces
             last_message = valid_messages[-1]
             if last_message.api_role == "assistant":
-                prompt_ids = [str(piece.original_prompt_id) for piece in last_message.message_pieces]
-                state.last_assistant_message_scores = list(self._memory.get_prompt_scores(prompt_ids=prompt_ids))
+                scores = []
+                for piece in last_message.message_pieces:
+                    if piece.scores:
+                        scores.extend(piece.scores)
+                state.last_assistant_message_scores = scores
 
         return state
 

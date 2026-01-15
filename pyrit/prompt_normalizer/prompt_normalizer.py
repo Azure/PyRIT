@@ -224,7 +224,9 @@ class PromptNormalizer:
                 if data_types and piece.converted_value_data_type not in data_types:
                     continue
 
-                piece.converter_identifiers.extend(
+                # converter_identifiers as part of piece is deprecated and will be removed
+                # as part of message in 0.13.0
+                piece._converter_identifiers.extend(
                     [converter.get_identifier() for converter in converter_configuration.converters]
                 )
 

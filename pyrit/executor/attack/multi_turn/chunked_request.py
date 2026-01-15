@@ -291,18 +291,20 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(score=score)
 
+        # Build common metadata for the attack result
+        metadata = self._get_attack_result_metadata(context=context, request_converters=self._request_converters)
+
         # Create attack result
         return AttackResult(
             conversation_id=context.session.conversation_id,
             objective=context.objective,
-            attack_identifier=self.get_identifier(),
-            last_response=response.get_piece() if response else None,
-            last_score=score,
+            automated_objective_score=score,
             related_conversations=context.related_conversations,
             outcome=outcome,
             outcome_reason=outcome_reason,
             executed_turns=context.executed_turns,
             metadata={"combined_chunks": combined_value, "chunk_count": len(context.chunk_responses)},
+            **metadata,
         )
 
     def _determine_attack_outcome(

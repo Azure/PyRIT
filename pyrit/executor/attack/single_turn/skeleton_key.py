@@ -172,13 +172,15 @@ class SkeletonKeyAttack(PromptSendingAttack):
         Returns:
             AttackResult: The failure result.
         """
+        # Build common metadata for the attack result
+        metadata = self._get_attack_result_metadata(context=context, request_converters=self._request_converters)
+
         return AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
-            attack_identifier=self.get_identifier(),
-            last_response=None,
-            last_score=None,
+            automated_objective_score=None,
             outcome=AttackOutcome.FAILURE,
             outcome_reason="Skeleton key prompt was filtered or failed",
             executed_turns=1,
+            **metadata,
         )
