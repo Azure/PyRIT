@@ -127,19 +127,19 @@ FIXTURES = ["patch_central_database", "mock_runtime_env"]
 class TestPsychosocialHarmsInitialization:
     """Tests for PsychosocialHarmsScenario initialization."""
 
-    def test_init_with_custom_objectives_by_harm(
+    def test_init_with_custom_objectives(
         self,
         *,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ) -> None:
-        """Test initialization with custom objectives_by_harm."""
+        """Test initialization with custom objectives (deprecated parameter)."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm,
+            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario._objectives_by_harm == sample_objectives_by_harm
+        assert scenario._deprecated_objectives == sample_objectives
         assert scenario.name == "Psychosocial Harms Scenario"
         assert scenario.version == 1
 
@@ -151,8 +151,8 @@ class TestPsychosocialHarmsInitialization:
         """Test initialization with default objectives."""
         scenario = PsychosocialHarmsScenario(objective_scorer=mock_objective_scorer)
 
-        # objectives_by_harm should be None when not provided
-        assert scenario._objectives_by_harm is None
+        # _deprecated_objectives should be None when not provided
+        assert scenario._deprecated_objectives is None
         assert scenario.name == "Psychosocial Harms Scenario"
         assert scenario.version == 1
 
@@ -218,11 +218,11 @@ class TestPsychosocialHarmsInitialization:
         self, mock_objective_target, mock_objective_scorer
     ):
         """Test that initialization raises ValueError when datasets are not available in memory."""
-        # Don't provide objectives_by_harm, let it try to load from empty memory
+        # Don't provide objectives, let it try to load from empty memory
         scenario = PsychosocialHarmsScenario(objective_scorer=mock_objective_scorer)
 
         # Error should occur during initialize_async when _get_atomic_attacks_async resolves seed groups
-        with pytest.raises(ValueError, match="Dataset is not available or failed to load"):
+        with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
             await scenario.initialize_async(objective_target=mock_objective_target)
 
 
@@ -235,11 +235,11 @@ class TestPsychosocialHarmsAttackGeneration:
         self,
         mock_objective_target,
         mock_objective_scorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm, objective_scorer=mock_objective_scorer
+            objectives=sample_objectives, objective_scorer=mock_objective_scorer
         )
 
         await scenario.initialize_async(objective_target=mock_objective_target)
@@ -255,11 +255,11 @@ class TestPsychosocialHarmsAttackGeneration:
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
         single_turn_strategy: PsychosocialHarmsStrategy,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ) -> None:
         """Test that the single turn strategy attack generation works."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm,
+            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
@@ -277,12 +277,12 @@ class TestPsychosocialHarmsAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
         multi_turn_strategy: PsychosocialHarmsStrategy,
     ) -> None:
         """Test that the multi turn attack generation works."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm,
+            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
@@ -300,12 +300,12 @@ class TestPsychosocialHarmsAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
         imminent_crisis_strategy: PsychosocialHarmsStrategy,
     ) -> None:
         """Test that the imminent crisis strategy generates both single and multi-turn attacks."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm,
+            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
@@ -325,29 +325,22 @@ class TestPsychosocialHarmsAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ) -> None:
         """Test that attack runs include objectives for each seed prompt."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm,
+            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
         await scenario.initialize_async(objective_target=mock_objective_target)
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
-        # Get expected number of objectives
-        expected_objectives = []
-        for seed_groups in sample_objectives_by_harm.values():
-            for seed_group in seed_groups:
-                for seed in seed_group.seeds:
-                    expected_objectives.append(seed.value)
-
         for run in atomic_attacks:
             assert len(run.objectives) > 0
-            # Each run should have objectives from the seed groups
+            # Each run should have objectives from the sample objectives
             for objective in run.objectives:
-                assert any(expected_obj in objective for expected_obj in expected_objectives)
+                assert any(expected_obj in objective for expected_obj in sample_objectives)
 
     @pytest.mark.asyncio
     async def test_get_atomic_attacks_async_returns_attacks(
@@ -355,11 +348,11 @@ class TestPsychosocialHarmsAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ) -> None:
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm,
+            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
@@ -379,11 +372,11 @@ class TestPsychosocialHarmsLifecycle:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ) -> None:
         """Test initialization with custom max_concurrency."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm, objective_scorer=mock_objective_scorer
+            objectives=sample_objectives, objective_scorer=mock_objective_scorer
         )
         await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20)
         assert scenario._max_concurrency == 20
@@ -394,13 +387,13 @@ class TestPsychosocialHarmsLifecycle:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ) -> None:
         """Test initialization with memory labels."""
         memory_labels = {"type": "psychosocial", "category": "crisis"}
 
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm, objective_scorer=mock_objective_scorer
+            objectives=sample_objectives, objective_scorer=mock_objective_scorer
         )
         await scenario.initialize_async(
             memory_labels=memory_labels,
@@ -417,11 +410,11 @@ class TestPsychosocialHarmsProperties:
         self,
         *,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ) -> None:
         """Test that scenario version is properly set."""
         scenario = PsychosocialHarmsScenario(
-            objectives_by_harm=sample_objectives_by_harm,
+            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
@@ -440,10 +433,10 @@ class TestPsychosocialHarmsProperties:
         self,
         *,
         mock_objective_target: PromptChatTarget,
-        sample_objectives_by_harm: Dict[str, Sequence[SeedGroup]],
+        sample_objectives: List[str],
     ) -> None:
         """Test that all three targets (adversarial, objective, scorer) are distinct."""
-        scenario = PsychosocialHarmsScenario(objectives_by_harm=sample_objectives_by_harm)
+        scenario = PsychosocialHarmsScenario(objectives=sample_objectives)
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         objective_target = scenario._objective_target
@@ -466,11 +459,12 @@ class TestPsychosocialHarmsStrategy:
         assert PsychosocialHarmsStrategy.IMMINENT_CRISIS.tags == {"single_turn", "multi_turn"}
 
     def test_aggregate_tags(self):
-        """Test that aggregate tags include single_turn and multi_turn."""
+        """Test that only 'all' is an aggregate tag."""
         aggregate_tags = PsychosocialHarmsStrategy.get_aggregate_tags()
         assert "all" in aggregate_tags
-        assert "single_turn" in aggregate_tags
-        assert "multi_turn" in aggregate_tags
+        # single_turn and multi_turn are concrete strategies, not aggregates
+        assert "single_turn" not in aggregate_tags
+        assert "multi_turn" not in aggregate_tags
 
     def test_strategy_values(self):
         """Test that strategy values are correct."""
