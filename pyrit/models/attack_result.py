@@ -284,7 +284,7 @@ class AttackResult(StrategyResult):
         memory = CentralMemory.get_memory_instance()
         return list(memory.get_prompt_scores(prompt_ids=self.auxiliary_score_ids))
 
-    def get_conversation_ids_by_type(self, conversation_type: ConversationType) -> List[ConversationReference]:
+    def get_conversations_by_type(self, conversation_type: ConversationType) -> List[ConversationReference]:
         """
         Return all related conversations of the requested type.
 

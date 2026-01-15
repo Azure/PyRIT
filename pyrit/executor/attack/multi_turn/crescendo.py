@@ -5,7 +5,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class CrescendoAttackContext(MultiTurnAttackContext):
+class CrescendoAttackContext(MultiTurnAttackContext[Any]):
     """Context for the Crescendo attack strategy."""
 
     # Text that was refused by the target in the previous attempt (used for backtracking)
@@ -88,7 +88,7 @@ class CrescendoAttackResult(AttackResult):
         Returns:
             int: The number of backtracks.
         """
-        return self.metadata.get("backtrack_count", 0)
+        return cast(int, self.metadata.get("backtrack_count", 0))
 
     @backtrack_count.setter
     def backtrack_count(self, value: int) -> None:
@@ -258,7 +258,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Raises:
             ValueError: If the context is invalid.
         """
-        validators = [
+        validators: list[tuple[Callable[[], bool], str]] = [
             (lambda: bool(context.objective), "Attack objective must be provided"),
         ]
 
@@ -805,11 +805,11 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         )
 
         # Check for refusal
-        is_refusal = False
+        is_refusal: bool = False
         if not is_content_filter_error:
             refusal_score = await self._check_refusal_async(context, prompt_sent)
             self._logger.debug(f"Refusal check: {refusal_score.get_value()} - {refusal_score.score_rationale[:100]}...")
-            is_refusal = refusal_score.get_value()
+            is_refusal = bool(refusal_score.get_value())
 
         # Determine if backtracking is needed
         should_backtrack = is_content_filter_error or is_refusal

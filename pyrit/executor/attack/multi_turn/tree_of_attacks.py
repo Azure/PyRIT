@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, cast, overload
+from typing import Any, Dict, List, Optional, cast, overload
 
 from treelib.tree import Tree
 
@@ -119,7 +119,7 @@ class TAPAttackScoringConfig(AttackScoringConfig):
 
 
 @dataclass
-class TAPAttackContext(MultiTurnAttackContext):
+class TAPAttackContext(MultiTurnAttackContext[Any]):
     """
     Context for the Tree of Attacks with Pruning (TAP) attack strategy.
 
@@ -181,7 +181,7 @@ class TAPAttackResult(AttackResult):
     @property
     def tree_visualization(self) -> Optional[Tree]:
         """Get the tree visualization from metadata."""
-        return self.metadata.get("tree_visualization", None)
+        return cast(Optional[Tree], self.metadata.get("tree_visualization", None))
 
     @tree_visualization.setter
     def tree_visualization(self, value: Tree) -> None:
@@ -191,7 +191,7 @@ class TAPAttackResult(AttackResult):
     @property
     def nodes_explored(self) -> int:
         """Get the total number of nodes explored during the attack."""
-        return self.metadata.get("nodes_explored", 0)
+        return cast(int, self.metadata.get("nodes_explored", 0))
 
     @nodes_explored.setter
     def nodes_explored(self, value: int) -> None:
@@ -201,7 +201,7 @@ class TAPAttackResult(AttackResult):
     @property
     def nodes_pruned(self) -> int:
         """Get the number of nodes pruned during the attack."""
-        return self.metadata.get("nodes_pruned", 0)
+        return cast(int, self.metadata.get("nodes_pruned", 0))
 
     @nodes_pruned.setter
     def nodes_pruned(self, value: int) -> None:
@@ -211,7 +211,7 @@ class TAPAttackResult(AttackResult):
     @property
     def max_depth_reached(self) -> int:
         """Get the maximum depth reached in the attack tree."""
-        return self.metadata.get("max_depth_reached", 0)
+        return cast(int, self.metadata.get("max_depth_reached", 0))
 
     @max_depth_reached.setter
     def max_depth_reached(self, value: int) -> None:
@@ -221,7 +221,7 @@ class TAPAttackResult(AttackResult):
     @property
     def auxiliary_scores_summary(self) -> Dict[str, float]:
         """Get a summary of auxiliary scores from the best node."""
-        return self.metadata.get("auxiliary_scores_summary", {})
+        return cast(Dict[str, float], self.metadata.get("auxiliary_scores_summary", {}))
 
     @auxiliary_scores_summary.setter
     def auxiliary_scores_summary(self, value: Dict[str, float]) -> None:
@@ -489,7 +489,7 @@ class _TreeOfAttacksNode:
         prompt = await self._generate_red_teaming_prompt_async(objective=objective)
         self.last_prompt_sent = prompt
         logger.debug(f"Node {self.node_id}: Generated adversarial prompt")
-        return prompt
+        return cast(str, prompt)
 
     async def _is_prompt_off_topic_async(self, prompt: str) -> bool:
         """
@@ -1047,7 +1047,7 @@ class _TreeOfAttacksNode:
             raise InvalidJsonException(message="The response from the red teaming chat is not in JSON format.")
 
         try:
-            return red_teaming_response_dict["prompt"]
+            return cast(str, red_teaming_response_dict["prompt"])
         except KeyError:
             logger.error(f"The response from the red teaming chat does not contain a prompt: {red_teaming_response}")
             raise InvalidJsonException(message="The response from the red teaming chat does not contain a prompt.")
@@ -1995,18 +1995,18 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         *,
         objective: str,
         memory_labels: Optional[dict[str, str]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> TAPAttackResult: ...
 
     @overload
     async def execute_async(
         self,
-        **kwargs,
+        **kwargs: Any,
     ) -> TAPAttackResult: ...
 
     async def execute_async(
         self,
-        **kwargs,
+        **kwargs: Any,
     ) -> TAPAttackResult:
         """
         Execute the multi-turn attack strategy asynchronously with the provided parameters.

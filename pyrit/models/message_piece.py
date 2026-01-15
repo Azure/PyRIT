@@ -6,11 +6,10 @@ from __future__ import annotations
 import uuid
 import warnings
 from datetime import datetime
-from typing import Dict, List, Literal, Optional, Union, cast, get_args
+from typing import Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
-from pyrit.models.chat_message import ChatMessageRole
-from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
 Originator = Literal["attack", "converter", "undefined", "scorer"]
@@ -222,14 +221,14 @@ class MessagePiece:
 
         original_serializer = data_serializer_factory(
             category="prompt-memory-entries",
-            data_type=cast(PromptDataType, self.original_value_data_type),
+            data_type=self.original_value_data_type,
             value=self.original_value,
         )
         self.original_value_sha256 = await original_serializer.get_sha256()
 
         converted_serializer = data_serializer_factory(
             category="prompt-memory-entries",
-            data_type=cast(PromptDataType, self.converted_value_data_type),
+            data_type=self.converted_value_data_type,
             value=self.converted_value,
         )
         self.converted_value_sha256 = await converted_serializer.get_sha256()
@@ -316,7 +315,7 @@ class MessagePiece:
         """
         return self.response_error == "blocked"
 
-    def set_piece_not_in_database(self):
+    def set_piece_not_in_database(self) -> None:
         """
         Set that the prompt is not in the database.
 
@@ -324,7 +323,7 @@ class MessagePiece:
         """
         self.id = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         # Use private attributes to avoid deprecation warnings
         return {
             "id": str(self.id),
@@ -351,12 +350,14 @@ class MessagePiece:
             "scores": [score.to_dict() for score in self.scores],
         }
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.prompt_target_identifier}: {self._role}: {self.converted_value}"
 
     __repr__ = __str__
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MessagePiece):
+            return NotImplemented
         return (
             self.id == other.id
             and self._role == other._role

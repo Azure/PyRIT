@@ -42,7 +42,7 @@ class ScorerMetrics:
     num_scorer_trials: int = field(default=1, kw_only=True)
     dataset_name: Optional[str] = field(default=None, kw_only=True)
     dataset_version: Optional[str] = field(default=None, kw_only=True)
-    trial_scores: Optional[np.ndarray] = field(default=None, kw_only=True)
+    trial_scores: Optional[np.ndarray] = field(default=None, kw_only=True)  # type: ignore[type-arg, unused-ignore]
     average_score_time_seconds: float = field(default=0.0, kw_only=True)
 
     def to_json(self) -> str:
