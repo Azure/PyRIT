@@ -615,7 +615,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             raise ValueError("No response available in context to check for refusal")
 
         scores = await self._refusal_scorer.score_async(
-            message=context.last_response, objective=objective, skip_on_error_result=True
+            message=context.last_response, objective=objective, skip_on_error_result=False
         )
         return scores[0]
 
@@ -642,7 +642,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             auxiliary_scorers=self._auxiliary_scorers,
             role_filter="assistant",
             objective=context.objective,
-            skip_on_error_result=True,
+            skip_on_error_result=False,
         )
 
         objective_score = scoring_results["objective_scores"]
@@ -737,43 +737,15 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             self._logger.debug(f"Backtrack limit reached ({self._max_backtracks}), continuing without backtracking")
             return False
 
-        # Check for content filter error (response_error is on the message piece)
-        is_content_filter_error = (
-            context.last_response.is_error() and context.last_response.message_pieces[0].response_error == "blocked"
-        )
+        # Check for refusal using the scorer (handles blocked/error responses internally)
+        refusal_score = await self._check_refusal_async(context, prompt_sent)
+        self._logger.debug(f"Refusal check: {refusal_score.get_value()} - {refusal_score.score_rationale[:100]}...")
+        is_refusal = bool(refusal_score.get_value())
 
-        # Check for refusal
-        is_refusal: bool = False
-        if not is_content_filter_error:
-            refusal_score = await self._check_refusal_async(context, prompt_sent)
-            self._logger.debug(f"Refusal check: {refusal_score.get_value()} - {refusal_score.score_rationale[:100]}...")
-            is_refusal = bool(refusal_score.get_value())
-
-        # Determine if backtracking is needed
-        should_backtrack = is_content_filter_error or is_refusal
-
-        if not should_backtrack:
+        if not is_refusal:
             return False
 
-        # Log appropriate message for backtracking reason
-        if is_content_filter_error:
-            self._logger.info(
-                f"Content filter error detected, backtracking "
-                f"(attempt {context.backtrack_count + 1}/{self._max_backtracks})"
-            )
-            piece = context.last_response.message_pieces[0]
-            self._logger.debug(
-                f"Error details: response_error={piece.response_error}, "
-                f"converted_value={piece.converted_value[:100]}..."
-            )
-        else:
-            self._logger.info(
-                f"Response refused, backtracking (attempt {context.backtrack_count + 1}/{self._max_backtracks})"
-            )
-
-        # Perform backtracking
         context.refused_text = prompt_sent
-
         old_conversation_id = context.session.conversation_id
 
         context.session.conversation_id = await self._backtrack_memory_async(

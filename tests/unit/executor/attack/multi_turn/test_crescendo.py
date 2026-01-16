@@ -998,6 +998,53 @@ class TestResponseScoring:
             await attack._score_response_async(context=basic_context)
 
     @pytest.mark.asyncio
+    async def test_score_response_does_not_skip_on_error_result(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_objective_scorer: MagicMock,
+        basic_context: CrescendoAttackContext,
+        sample_response: Message,
+        success_objective_score: Score,
+    ):
+        """Test that _score_response_async does not skip scoring on error responses.
+
+        When the target returns an error response (e.g., blocked by content filter),
+        the objective scorer should still be called with skip_on_error_result=False
+        so that error responses get scored (as false/not achieved) rather than
+        raising RuntimeError due to empty score list.
+
+        This allows Crescendo to gracefully handle all-rejection scenarios.
+        """
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        basic_context.last_response = sample_response
+
+        # Mock Scorer.score_response_async to capture the call arguments
+        with patch(
+            "pyrit.score.Scorer.score_response_async",
+            new_callable=AsyncMock,
+            return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
+        ) as mock_score_response:
+            await attack._score_response_async(context=basic_context)
+
+            # Verify score_response_async was called with skip_on_error_result=False
+            mock_score_response.assert_called_once()
+            call_kwargs = mock_score_response.call_args.kwargs
+            assert call_kwargs.get("skip_on_error_result") is False, (
+                "Scorer.score_response_async must be called with skip_on_error_result=False "
+                "to ensure error responses are scored rather than skipped, "
+                "allowing Crescendo to handle all-rejection scenarios gracefully"
+            )
+
+    @pytest.mark.asyncio
     async def test_check_refusal_detects_refusal(
         self,
         mock_objective_target: MagicMock,
@@ -1024,6 +1071,46 @@ class TestResponseScoring:
 
         assert result == refusal_score
         mock_refusal_scorer.score_async.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_check_refusal_does_not_skip_on_error_result(
+        self,
+        mock_objective_target: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        mock_refusal_scorer: MagicMock,
+        basic_context: CrescendoAttackContext,
+        sample_response: Message,
+        refusal_score: Score,
+    ):
+        """Test that _check_refusal_async does not skip scoring on error responses.
+
+        When the target returns an error response (e.g., blocked by content filter),
+        the refusal scorer should still be called with skip_on_error_result=False
+        so that error responses are treated as refusals and trigger backtracking.
+
+        This prevents IndexError when accessing scores[0] on an empty list.
+        """
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(refusal_scorer=mock_refusal_scorer)
+
+        attack = CrescendoAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        basic_context.last_response = sample_response
+        mock_refusal_scorer.score_async.return_value = [refusal_score]
+
+        await attack._check_refusal_async(context=basic_context, objective="test task")
+
+        # Verify score_async was called with skip_on_error_result=False
+        mock_refusal_scorer.score_async.assert_called_once()
+        call_kwargs = mock_refusal_scorer.score_async.call_args.kwargs
+        assert call_kwargs.get("skip_on_error_result") is False, (
+            "Refusal scorer must be called with skip_on_error_result=False "
+            "to ensure error responses are scored (treated as refusals) rather than skipped"
+        )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1154,7 +1241,7 @@ class TestBacktrackingLogic:
         """Test that backtracking is performed when content filter error occurs.
 
         When the target returns a content filter error (blocked response), Crescendo should:
-        1. Detect the error without calling the refusal scorer
+        1. Call the refusal scorer which internally handles blocked responses (returns True)
         2. Store the refused text for the adversarial chat to learn from
         3. Revert the conversation to before the blocked prompt
         4. Increment the backtrack counter
@@ -1186,6 +1273,12 @@ class TestBacktrackingLogic:
         basic_context.last_response = blocked_response
         basic_context.backtrack_count = 0
 
+        # Mock the refusal scorer to return True (refusal detected) for blocked content
+        refusal_score = MagicMock(spec=Score)
+        refusal_score.get_value.return_value = True
+        refusal_score.score_rationale = "Content was filtered, constituting a refusal."
+        mock_refusal_scorer.score_async = AsyncMock(return_value=[refusal_score])
+
         # Mock backtrack_memory_async to return a new conversation ID
         with patch.object(attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"):
             result = await attack._perform_backtrack_if_refused_async(
@@ -1198,8 +1291,8 @@ class TestBacktrackingLogic:
         assert basic_context.backtrack_count == 1
         assert basic_context.session.conversation_id == "new_conv_id"  # New conversation branch
 
-        # Critical: Verify refusal scorer was NOT called since we detected the error first
-        mock_refusal_scorer.score_async.assert_not_called()
+        # Refusal scorer IS called - it handles blocked responses internally (fast path, no LLM call)
+        mock_refusal_scorer.score_async.assert_called_once()
 
 
 @pytest.mark.usefixtures("patch_central_database")

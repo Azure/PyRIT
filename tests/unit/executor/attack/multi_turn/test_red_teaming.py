@@ -27,7 +27,6 @@ from pyrit.models import (
     Message,
     MessagePiece,
     Score,
-    ScoreType,
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -1134,13 +1133,10 @@ class TestResponseScoring:
         basic_context.last_response = sample_response
         # basic_context fixture already has objective="Test objective"
 
-        # Mock the Scorer.score_response_async method
-        with patch(
-            "pyrit.score.Scorer.score_response_async",
-            new_callable=AsyncMock,
-            return_value={"objective_scores": [success_score], "auxiliary_scores": []},
-        ):
-            result = await attack._score_response_async(context=basic_context)
+        # Configure the mock scorer to return the success_score
+        mock_objective_scorer.score_async = AsyncMock(return_value=[success_score])
+
+        result = await attack._score_response_async(context=basic_context)
 
         assert result == success_score
 
@@ -1167,6 +1163,9 @@ class TestResponseScoring:
 
         basic_context.last_response = MagicMock(spec=Message)
         basic_context.last_response.get_piece.return_value = response_piece
+
+        # Configure the mock scorer to return empty list for blocked response
+        mock_objective_scorer.score_async = AsyncMock(return_value=[])
 
         result = await attack._score_response_async(context=basic_context)
 

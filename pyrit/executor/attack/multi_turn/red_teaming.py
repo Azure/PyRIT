@@ -37,7 +37,6 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.common.prompt_target import PromptTarget
-from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -538,7 +537,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
 
     async def _score_response_async(self, *, context: MultiTurnAttackContext[Any]) -> Optional[Score]:
         """
-        Evaluate the target's response with the objective scorer.
+        Evaluate the objective target's response with the objective scorer.
 
         Checks if the response is blocked before scoring.
         Returns the resulting Score object or None if the response was blocked.

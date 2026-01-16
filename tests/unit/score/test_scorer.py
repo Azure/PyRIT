@@ -101,10 +101,11 @@ class MockScorer(TrueFalseScorer):
 class SelectiveValidator(ScorerPromptValidator):
     """Validator that only supports text pieces, not images."""
 
-    def __init__(self, *, enforce_all_pieces_valid: bool = False):
+    def __init__(self, *, enforce_all_pieces_valid: bool = False, raise_on_no_valid_pieces: bool = False):
         super().__init__(
             supported_data_types=["text"],
             enforce_all_pieces_valid=enforce_all_pieces_valid,
+            raise_on_no_valid_pieces=raise_on_no_valid_pieces,
         )
 
 
@@ -1077,8 +1078,8 @@ async def test_unsupported_pieces_ignored_when_enforce_all_pieces_valid_false(pa
 
 @pytest.mark.asyncio
 async def test_all_unsupported_pieces_raises_error(patch_central_database):
-    """Test that having no supported pieces raises a clear error."""
-    validator = SelectiveValidator(enforce_all_pieces_valid=False)
+    """Test that having no supported pieces raises a clear error when raise_on_no_valid_pieces=True."""
+    validator = SelectiveValidator(enforce_all_pieces_valid=False, raise_on_no_valid_pieces=True)
     scorer = MockFloatScorer(validator=validator)
 
     # Create a response with only unsupported types

@@ -13,6 +13,7 @@ from pyrit.exceptions.exception_classes import (
     pyrit_json_retry,
     pyrit_placeholder_retry,
     pyrit_target_retry,
+    get_retry_max_num_attempts
 )
 from pyrit.exceptions.exceptions_helpers import remove_markdown_json
 
@@ -29,4 +30,5 @@ __all__ = [
     "pyrit_placeholder_retry",
     "RateLimitException",
     "remove_markdown_json",
+    "get_retry_max_num_attempts"
 ]

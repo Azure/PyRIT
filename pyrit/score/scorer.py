@@ -65,7 +65,6 @@ class Scorer(abc.ABC):
 
     _scorer_identifier: Optional[ScorerIdentifier] = None
 
-
     def __init__(self, *, validator: ScorerPromptValidator):
         """
         Initialize the Scorer.

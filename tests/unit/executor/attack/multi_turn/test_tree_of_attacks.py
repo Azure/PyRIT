@@ -17,7 +17,6 @@ from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackConverterConfig,
     AttackParameters,
-    AttackScoringConfig,
     TAPAttackContext,
     TAPAttackResult,
     TreeOfAttacksWithPruningAttack,
@@ -36,7 +35,7 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import FloatScaleThresholdScorer, Scorer, TrueFalseScorer
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
-from pyrit.score.score_utils import ORIGINAL_FLOAT_VALUE_KEY, normalize_score_to_float
+from pyrit.score.score_utils import normalize_score_to_float
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +52,7 @@ class NodeMockConfig:
     objective_score_value: Optional[float] = None
     auxiliary_scores: Dict[str, float] = field(default_factory=dict)
     objective_target_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    adversarial_chat_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
 
 class MockNodeFactory:
@@ -73,13 +73,13 @@ class MockNodeFactory:
         node.completed = config.completed
         node.off_topic = config.off_topic
         node.objective_target_conversation_id = config.objective_target_conversation_id
+        node.adversarial_chat_conversation_id = config.adversarial_chat_conversation_id
         node.error_message = None
 
         node.send_prompt_async = AsyncMock(return_value=None)
 
         node._generate_adversarial_prompt_async = AsyncMock(return_value="test prompt")
         node._generate_red_teaming_prompt_async = AsyncMock(return_value='{"prompt": "test prompt"}')
-        node._is_prompt_off_topic_async = AsyncMock(return_value=False)
         node._send_prompt_to_target_async = AsyncMock(return_value=MagicMock())
         node._score_response_async = AsyncMock(return_value=None)
         node._send_to_adversarial_chat_async = AsyncMock(return_value='{"prompt": "test prompt"}')
@@ -107,7 +107,6 @@ class MockNodeFactory:
 
         node.last_prompt_sent = None
         node.last_response = None
-        node.adversarial_chat_conversation_id = str(uuid.uuid4())
 
         node._memory = MagicMock()
         node._memory.duplicate_conversation = MagicMock(return_value=str(uuid.uuid4()))
@@ -534,6 +533,74 @@ class TestPruningLogic:
         assert len(completed) == 3
         assert all(not node.off_topic for node in completed)
 
+    @pytest.mark.asyncio
+    async def test_send_prompts_adds_off_topic_and_incomplete_nodes_to_related_conversations(
+        self, attack_builder, node_factory, helpers
+    ):
+        """Test that off-topic and incomplete nodes are added to related_conversations as PRUNED."""
+        attack = attack_builder.with_default_mocks().with_prompt_normalizer().build()
+        context = helpers.create_basic_context()
+
+        # Create mix of off-topic, incomplete, and valid nodes
+        off_topic_node = node_factory.create_node(
+            NodeMockConfig(
+                node_id="off_topic",
+                off_topic=True,
+                objective_score_value=0.9,
+                objective_target_conversation_id="off_topic_conv",
+            )
+        )
+        incomplete_node = node_factory.create_node(
+            NodeMockConfig(
+                node_id="incomplete",
+                completed=False,
+                objective_score_value=None,
+                objective_target_conversation_id="incomplete_conv",
+            )
+        )
+        valid_node = node_factory.create_node(
+            NodeMockConfig(
+                node_id="valid",
+                completed=True,
+                off_topic=False,
+                objective_score_value=0.7,
+                objective_target_conversation_id="valid_conv",
+            )
+        )
+
+        context.nodes = [off_topic_node, incomplete_node, valid_node]
+        helpers.add_nodes_to_tree(context, context.nodes)
+
+        # Execute sending prompts (which updates visualization and tracks pruned nodes)
+        await attack._send_prompts_to_all_nodes_async(context=context)
+
+        # Verify off-topic node's conversation is tracked as PRUNED
+        assert (
+            ConversationReference(
+                conversation_id="off_topic_conv",
+                conversation_type=ConversationType.PRUNED,
+            )
+            in context.related_conversations
+        )
+
+        # Verify incomplete node's conversation is tracked as PRUNED
+        assert (
+            ConversationReference(
+                conversation_id="incomplete_conv",
+                conversation_type=ConversationType.PRUNED,
+            )
+            in context.related_conversations
+        )
+
+        # Verify valid node's conversation is NOT tracked as PRUNED
+        assert (
+            ConversationReference(
+                conversation_id="valid_conv",
+                conversation_type=ConversationType.PRUNED,
+            )
+            not in context.related_conversations
+        )
+
     def test_update_best_performing_node_with_unsorted_nodes(self, basic_attack, node_factory, helpers):
         """Test that _update_best_performing_node correctly finds the best node regardless of input order."""
         context = helpers.create_basic_context()
@@ -553,6 +620,37 @@ class TestPruningLogic:
         assert context.best_objective_score is not None
         assert context.best_objective_score.get_value() == 0.9
         assert context.best_conversation_id is not None
+
+    def test_update_best_performing_node_tracks_adversarial_conversation_id(self, basic_attack, node_factory, helpers):
+        """Test that _update_best_performing_node also tracks the best adversarial conversation ID."""
+        context = helpers.create_basic_context()
+
+        # Create nodes with specific conversation IDs
+        best_node = node_factory.create_node(
+            NodeMockConfig(
+                node_id="best",
+                objective_score_value=0.9,
+                objective_target_conversation_id="best_obj_conv",
+                adversarial_chat_conversation_id="best_adv_conv",
+            )
+        )
+        other_node = node_factory.create_node(
+            NodeMockConfig(
+                node_id="other",
+                objective_score_value=0.5,
+                objective_target_conversation_id="other_obj_conv",
+                adversarial_chat_conversation_id="other_adv_conv",
+            )
+        )
+
+        context.nodes = [other_node, best_node]  # Put best node second to verify sorting works
+
+        # Execute update
+        basic_attack._update_best_performing_node(context)
+
+        # Verify both conversation IDs are tracked for the best node
+        assert context.best_conversation_id == "best_obj_conv"
+        assert context.best_adversarial_conversation_id == "best_adv_conv"
 
     def test_update_best_performing_node_with_empty_nodes(self, basic_attack, helpers):
         """Test that _update_best_performing_node handles empty nodes gracefully."""
@@ -595,7 +693,11 @@ class TestPruningLogic:
         assert context.best_conversation_id == valid_node.objective_target_conversation_id
 
     def test_update_best_performing_node_with_all_invalid_nodes(self, basic_attack, node_factory, helpers):
-        """Test that _update_best_performing_node handles case where no valid nodes exist."""
+        """Test that _update_best_performing_node uses fallback when no valid nodes exist.
+
+        When all nodes are invalid (incomplete or off-topic), the method should use the
+        fallback to pick any node with a conversation_id for result reporting purposes.
+        """
         context = helpers.create_basic_context()
 
         # Create only invalid nodes
@@ -608,12 +710,12 @@ class TestPruningLogic:
 
         context.nodes = [incomplete_node, off_topic_node]
 
-        # Execute update - should not update best scores when no valid nodes
+        # Execute update - should use fallback since no valid completed nodes
         basic_attack._update_best_performing_node(context)
 
-        # Best scores should remain None since no valid nodes exist
-        assert context.best_objective_score is None
-        assert context.best_conversation_id is None
+        # Fallback should pick first node with a conversation_id for reporting
+        assert context.best_conversation_id == incomplete_node.objective_target_conversation_id
+        assert context.best_objective_score == incomplete_node.objective_score
 
     def test_update_best_performing_node_preserves_existing_best_when_no_valid_nodes(
         self, basic_attack, node_factory, helpers
@@ -1059,7 +1161,11 @@ class TestTreeOfAttacksNode:
 
     @pytest.mark.asyncio
     async def test_node_off_topic_detection(self, node_components):
-        """Test off-topic detection in nodes."""
+        """Test off-topic detection in nodes after retry exhaustion.
+
+        The node should retry off-topic prompts with feedback before marking as off-topic.
+        This test verifies that after all retries are exhausted, the node is marked off-topic.
+        """
         # Enable on-topic checking
         on_topic_scorer = MagicMock(spec=Scorer)
 
@@ -1068,6 +1174,7 @@ class TestTreeOfAttacksNode:
         on_topic_score.get_value = MagicMock(return_value=False)  # False = off-topic
         on_topic_score.score_value = "False"
         on_topic_score.score_type = "true_false"
+        on_topic_score.score_rationale = "Prompt is not relevant to the objective"
         on_topic_scorer.score_text_async = AsyncMock(return_value=[on_topic_score])
 
         components_with_scorer = node_components.copy()
@@ -1078,19 +1185,29 @@ class TestTreeOfAttacksNode:
         node = _TreeOfAttacksNode(**components_with_scorer)
 
         test_prompt = "test adversarial prompt"
-        with patch.object(
-            node, "_generate_red_teaming_prompt_async", new_callable=AsyncMock, return_value=test_prompt
-        ) as red_teaming_mock:
+        # Mock the retry attempts to 1 so it exhausts quickly
+        with (
+            patch.object(
+                node, "_generate_single_red_teaming_prompt_async", new_callable=AsyncMock, return_value=test_prompt
+            ) as red_teaming_mock,
+            patch(
+                "pyrit.executor.attack.multi_turn.tree_of_attacks.get_retry_max_num_attempts", return_value=1
+            ),
+            patch.object(
+                node, "_send_to_adversarial_chat_async", new_callable=AsyncMock, return_value="new prompt"
+            ),
+            patch.object(node, "_parse_red_teaming_response", return_value="new prompt"),
+        ):
             await node.send_prompt_async(objective="Test objective")
 
-        # Verify off-topic detection worked
+        # Verify off-topic detection worked after retry exhaustion
         assert node.off_topic is True
         # Node stops execution when off-topic
         assert node.completed is False
 
         red_teaming_mock.assert_called_once()
-        # Verify the on-topic scorer was called with the generated prompt
-        on_topic_scorer.score_text_async.assert_called_once_with(text=test_prompt)
+        # Verify the on-topic scorer was called multiple times (initial + retries + final check)
+        assert on_topic_scorer.score_text_async.call_count >= 2
 
     @pytest.mark.asyncio
     async def test_node_auxiliary_scoring(self, node_components):

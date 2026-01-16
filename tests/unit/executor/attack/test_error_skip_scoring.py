@@ -76,13 +76,13 @@ ATTACK_TEST_PARAMS = [
             "objective": "test objective",
             "seed_group": SeedGroup(seeds=[SeedPrompt(value="test", data_type="text")]),
         },
-        "pyrit.executor.attack.single_turn.prompt_sending.Scorer.score_response_async",
+        "pyrit.score.scorer.Scorer.score_response_async",
     ),
     (
         MultiPromptSendingAttack,
         {},
         lambda: {"objective": "test objective", "prompt_sequence": [SeedPrompt(value="test", data_type="text")]},
-        "pyrit.executor.attack.multi_turn.multi_prompt_sending.Scorer.score_response_async",
+        "pyrit.score.scorer.Scorer.score_response_async",
     ),
     (
         RedTeamingAttack,
@@ -92,7 +92,7 @@ ATTACK_TEST_PARAMS = [
             "seed_prompt": SeedPrompt(value="test", data_type="text"),
             "max_turns": 1,
         },
-        "pyrit.executor.attack.multi_turn.red_teaming.Scorer.score_response_async",
+        "pyrit.score.scorer.Scorer.score_response_async",
     ),
     (
         CrescendoAttack,
@@ -102,7 +102,7 @@ ATTACK_TEST_PARAMS = [
             "seed_prompt": SeedPrompt(value="test", data_type="text"),
             "max_turns": 1,
         },
-        "pyrit.executor.attack.multi_turn.crescendo.Scorer.score_response_async",
+        "pyrit.score.scorer.Scorer.score_response_async",
     ),
     (
         TreeOfAttacksWithPruningAttack,
@@ -112,7 +112,7 @@ ATTACK_TEST_PARAMS = [
             "seed_prompt": SeedPrompt(value="test", data_type="text"),
             "max_iterations": 1,
         },
-        "pyrit.executor.attack.multi_turn.tree_of_attacks.Scorer.score_response_async",
+        "pyrit.score.scorer.Scorer.score_response_async",
     ),
 ]
 
