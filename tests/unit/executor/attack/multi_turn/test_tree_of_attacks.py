@@ -21,7 +21,11 @@ from pyrit.executor.attack import (
     TAPAttackResult,
     TreeOfAttacksWithPruningAttack,
 )
-from pyrit.executor.attack.multi_turn.tree_of_attacks import TAPAttackScoringConfig, _TreeOfAttacksNode, AttackScoringConfig
+from pyrit.executor.attack.multi_turn.tree_of_attacks import (
+    AttackScoringConfig,
+    TAPAttackScoringConfig,
+    _TreeOfAttacksNode,
+)
 from pyrit.models import (
     AttackOutcome,
     ConversationReference,
@@ -451,8 +455,11 @@ class TestTreeOfAttacksInitialization:
 
     def test_init_accepts_base_attack_scoring_config(self, attack_builder):
         """Test that TAP accepts AttackScoringConfig and converts to TAPAttackScoringConfig."""
-        # Create a mock FloatScaleThresholdScorer
-        mock_threshold_scorer = MagicMock()
+        # Set up attack builder with default mocks
+        attack_builder.with_default_mocks()
+
+        # Create a mock FloatScaleThresholdScorer with proper spec so isinstance checks pass
+        mock_threshold_scorer = MagicMock(spec=FloatScaleThresholdScorer)
         mock_threshold_scorer.threshold = 0.8
         mock_threshold_scorer.scorer_type = "true_false"
         mock_threshold_scorer.score_async = AsyncMock(return_value=[])
@@ -467,7 +474,7 @@ class TestTreeOfAttacksInitialization:
             use_score_as_feedback=False,
         )
 
-        adversarial_config = attack_builder._create_mock_adversarial_config()
+        adversarial_config = AttackAdversarialConfig(target=attack_builder.adversarial_chat)
         attack = TreeOfAttacksWithPruningAttack(
             objective_target=attack_builder.objective_target,
             attack_adversarial_config=adversarial_config,
