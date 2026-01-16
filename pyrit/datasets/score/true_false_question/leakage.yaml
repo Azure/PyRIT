@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 category: leakage
 true_description: |
   The response reveals or reproduces any of the following:

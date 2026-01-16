@@ -13,7 +13,7 @@ from pyrit.executor.attack import CrescendoAttack, PromptSendingAttack, RolePlay
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.models import SeedDataset, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
-from pyrit.scenario import LeakageScenario, LeakageStrategy
+from pyrit.scenario.airt import LeakageScenario, LeakageStrategy
 from pyrit.score import TrueFalseCompositeScorer
 
 
@@ -21,7 +21,7 @@ from pyrit.score import TrueFalseCompositeScorer
 def mock_memory_seeds():
     leakage_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
     seed_prompts = list(SeedDataset.from_yaml_file(leakage_path / "leakage.prompt").get_values())
-    return [SeedObjective(value=prompt, data_type="text") for prompt in seed_prompts]
+    return [SeedObjective(value=prompt) for prompt in seed_prompts]
 
 
 @pytest.fixture
@@ -42,6 +42,11 @@ def image_strategy():
 @pytest.fixture
 def role_play_strategy():
     return LeakageStrategy.ROLE_PLAY
+
+
+@pytest.fixture
+def continuation_strategy():
+    return LeakageStrategy.CONTINUATION
 
 
 @pytest.fixture
@@ -282,6 +287,23 @@ class TestLeakageScenarioAttackGeneration:
             assert isinstance(run._attack, RolePlayAttack)
 
     @pytest.mark.asyncio
+    async def test_attack_generation_for_continuation(
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, continuation_strategy
+    ):
+        """Test that the continuation attack generation works."""
+        scenario = LeakageScenario(
+            objectives=sample_objectives,
+            objective_scorer=mock_objective_scorer,
+        )
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target, scenario_strategies=[continuation_strategy]
+        )
+        atomic_attacks = await scenario._get_atomic_attacks_async()
+        for run in atomic_attacks:
+            assert isinstance(run._attack, CrescendoAttack)
+
+    @pytest.mark.asyncio
     async def test_attack_runs_include_objectives(
         self, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
@@ -296,8 +318,8 @@ class TestLeakageScenarioAttackGeneration:
 
         # Check that objectives are created for each seed prompt
         for run in atomic_attacks:
-            assert len(run._objectives) == len(sample_objectives)
-            for i, objective in enumerate(run._objectives):
+            assert len(run.objectives) == len(sample_objectives)
+            for i, objective in enumerate(run.objectives):
                 assert sample_objectives[i] in objective
 
     @pytest.mark.asyncio
@@ -431,29 +453,68 @@ class TestLeakageStrategyEnum:
         """Test that FIRST_LETTER strategy exists."""
         assert LeakageStrategy.FIRST_LETTER is not None
         assert LeakageStrategy.FIRST_LETTER.value == "first_letter"
-        assert "all" in LeakageStrategy.FIRST_LETTER.tags
         assert "single_turn" in LeakageStrategy.FIRST_LETTER.tags
 
     def test_strategy_crescendo_exists(self):
         """Test that CRESCENDO strategy exists."""
         assert LeakageStrategy.CRESCENDO is not None
         assert LeakageStrategy.CRESCENDO.value == "crescendo"
-        assert "all" in LeakageStrategy.CRESCENDO.tags
         assert "multi_turn" in LeakageStrategy.CRESCENDO.tags
 
     def test_strategy_image_exists(self):
         """Test that IMAGE strategy exists."""
         assert LeakageStrategy.IMAGE is not None
         assert LeakageStrategy.IMAGE.value == "image"
-        assert "all" in LeakageStrategy.IMAGE.tags
         assert "single_turn" in LeakageStrategy.IMAGE.tags
+        assert "multi_turn" in LeakageStrategy.IMAGE.tags
 
     def test_strategy_role_play_exists(self):
         """Test that ROLE_PLAY strategy exists."""
         assert LeakageStrategy.ROLE_PLAY is not None
         assert LeakageStrategy.ROLE_PLAY.value == "role_play"
-        assert "all" in LeakageStrategy.ROLE_PLAY.tags
         assert "single_turn" in LeakageStrategy.ROLE_PLAY.tags
+
+    def test_strategy_continuation_exists(self):
+        """Test that CONTINUATION strategy exists."""
+        assert LeakageStrategy.CONTINUATION is not None
+        assert LeakageStrategy.CONTINUATION.value == "continuation"
+        assert "multi_turn" in LeakageStrategy.CONTINUATION.tags
+
+    def test_strategy_single_turn_aggregate_exists(self):
+        """Test that SINGLE_TURN aggregate strategy exists."""
+        assert LeakageStrategy.SINGLE_TURN is not None
+        assert LeakageStrategy.SINGLE_TURN.value == "single_turn"
+        assert "single_turn" in LeakageStrategy.SINGLE_TURN.tags
+
+    def test_strategy_multi_turn_aggregate_exists(self):
+        """Test that MULTI_TURN aggregate strategy exists."""
+        assert LeakageStrategy.MULTI_TURN is not None
+        assert LeakageStrategy.MULTI_TURN.value == "multi_turn"
+        assert "multi_turn" in LeakageStrategy.MULTI_TURN.tags
+
+    def test_strategy_ip_aggregate_exists(self):
+        """Test that IP aggregate strategy exists for intellectual property focused attacks."""
+        assert LeakageStrategy.IP is not None
+        assert LeakageStrategy.IP.value == "ip"
+        assert "ip" in LeakageStrategy.IP.tags
+
+    def test_strategy_sensitive_data_aggregate_exists(self):
+        """Test that SENSITIVE_DATA aggregate strategy exists for credentials/secrets attacks."""
+        assert LeakageStrategy.SENSITIVE_DATA is not None
+        assert LeakageStrategy.SENSITIVE_DATA.value == "sensitive_data"
+        assert "sensitive_data" in LeakageStrategy.SENSITIVE_DATA.tags
+
+    def test_first_letter_has_ip_tag(self):
+        """Test that FIRST_LETTER has ip tag for copyright extraction."""
+        assert "ip" in LeakageStrategy.FIRST_LETTER.tags
+
+    def test_continuation_has_ip_tag(self):
+        """Test that CONTINUATION has ip tag for progressive copyright extraction."""
+        assert "ip" in LeakageStrategy.CONTINUATION.tags
+
+    def test_role_play_has_sensitive_data_tag(self):
+        """Test that ROLE_PLAY has sensitive_data tag for system prompt extraction."""
+        assert "sensitive_data" in LeakageStrategy.ROLE_PLAY.tags
 
 
 @pytest.mark.usefixtures(*FIXTURES)

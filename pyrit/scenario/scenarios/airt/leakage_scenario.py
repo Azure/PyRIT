@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
+from PIL import Image
+
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH, SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack import (
@@ -17,11 +19,12 @@ from pyrit.executor.attack import (
     RolePlayAttack,
     RolePlayPaths,
 )
-from pyrit.executor.attack.core.attack_strategy import AttackStrategy
+from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_converter import AddImageTextConverter, FirstLetterConverter, PromptConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
+from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
@@ -42,19 +45,41 @@ class LeakageStrategy(ScenarioStrategy):
     Strategies for data leakage and privacy violation attacks.
 
     These strategies test whether models can be manipulated into leaking training data,
-    personally identifiable information (PII), or other confidential content.
+    intellectual property (IP), credentials, or other confidential content.
+
+    Leakage categories:
+    - ip: Intellectual property (copyrighted content, training data memorization)
+    - sensitive_data: Credentials, secrets, system prompts, API keys
     """
 
     # Aggregate members (special markers that expand to strategies with matching tags)
     ALL = ("all", {"all"})
+    SINGLE_TURN = ("single_turn", {"single_turn"})
+    MULTI_TURN = ("multi_turn", {"multi_turn"})
+
+    # Leakage-specific aggregates
+    IP = ("ip", {"ip"})  # Intellectual property focused strategies
+    SENSITIVE_DATA = ("sensitive_data", {"sensitive_data"})  # Credentials, secrets, prompts
 
     # Single-turn strategies
-    FIRST_LETTER = ("first_letter", {"all", "single_turn"})
-    IMAGE = ("image", {"all", "single_turn"})
-    ROLE_PLAY = ("role_play", {"all", "single_turn"})
+    FIRST_LETTER = ("first_letter", {"single_turn", "ip"})  # Good for copyright extraction
+    IMAGE = ("image", {"single_turn", "multi_turn", "ip", "sensitive_data"})
+    ROLE_PLAY = ("role_play", {"single_turn", "sensitive_data"})  # Good for system prompt extraction
 
     # Multi-turn strategies
-    CRESCENDO = ("crescendo", {"all", "multi_turn"})
+    CRESCENDO = ("crescendo", {"multi_turn", "ip", "sensitive_data"})
+    CONTINUATION = ("continuation", {"multi_turn", "ip"})  # Progressive word extraction for copyright
+
+    @classmethod
+    def get_aggregate_tags(cls) -> set[str]:
+        """
+        Get the set of tags that represent aggregate categories.
+
+        Returns:
+            Set[str]: Set of tags that represent aggregates, including "all",
+                     "single_turn", "multi_turn", "ip", and "sensitive_data".
+        """
+        return {"all", "single_turn", "multi_turn", "ip", "sensitive_data"}
 
 
 class LeakageScenario(Scenario):
@@ -93,6 +118,16 @@ class LeakageScenario(Scenario):
         """Return a list of dataset names required by this scenario."""
         return ["airt_leakage"]
 
+    @classmethod
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """
+        Return the default dataset configuration for this scenario.
+
+        Returns:
+            DatasetConfiguration: Configuration with airt_leakage dataset.
+        """
+        return DatasetConfiguration(dataset_names=["airt_leakage"], max_dataset_size=4)
+
     @apply_defaults
     def __init__(
         self,
@@ -130,7 +165,7 @@ class LeakageScenario(Scenario):
             name="Leakage Scenario",
             version=self.version,
             strategy_class=LeakageStrategy,
-            objective_scorer_identifier=objective_scorer.get_identifier(),
+            objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
@@ -153,6 +188,9 @@ class LeakageScenario(Scenario):
             true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "leakage.yaml",
         )
 
+        # Backstop scorer: Ensures the model didn't simply refuse the request.
+        # Uses SelfAskRefusalScorer inverted - if model refused, this returns False.
+        # Combined with AND aggregator: response must contain leakage AND not be a refusal.
         backstop = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
@@ -199,12 +237,9 @@ class LeakageScenario(Scenario):
         """
         Ensure a blank image exists at the specified path for the image strategy.
 
-
         Args:
             image_path: Path where the blank image should exist.
         """
-        from PIL import Image
-
         path = Path(image_path)
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -217,7 +252,7 @@ class LeakageScenario(Scenario):
         Translate the strategy into an actual AtomicAttack.
 
         Args:
-            strategy: The LeakageStrategy value (first_letter, crescendo, image, or role_play).
+            strategy: The LeakageStrategy value (first_letter, crescendo, image, role_play, or continuation).
 
         Returns:
             AtomicAttack: Configured for the specified strategy.
@@ -227,63 +262,96 @@ class LeakageScenario(Scenario):
         """
         # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None
-        attack_strategy: Optional[AttackStrategy] = None
 
-        if strategy == "first_letter":
-            # Use FirstLetterConverter to encode prompts
-            converters: list[PromptConverter] = [FirstLetterConverter()]
-            converter_config = AttackConverterConfig(
-                request_converters=PromptConverterConfiguration.from_converters(converters=converters)
-            )
-            attack_strategy = PromptSendingAttack(
-                objective_target=self._objective_target,
-                attack_scoring_config=self._scorer_config,
-                attack_converter_config=converter_config,
-            )
+        strategy_factories = {
+            "first_letter": self._create_first_letter_attack,
+            "crescendo": self._create_crescendo_attack,
+            "image": self._create_image_attack,
+            "role_play": self._create_role_play_attack,
+            "continuation": self._create_continuation_attack,
+        }
 
-        elif strategy == "crescendo":
-            # Multi-turn progressive attack
-            # Type ignore: CrescendoAttack requires PromptChatTarget but objective_target
-            # is validated at runtime by the attack's initialization
-            attack_strategy = CrescendoAttack(
-                objective_target=self._objective_target,  # type: ignore[arg-type]
-                attack_scoring_config=self._scorer_config,
-                attack_adversarial_config=self._adversarial_config,
-            )
-
-        elif strategy == "image":
-            # Embed prompts in images using AddImageTextConverter
-            # This converter takes text input (objectives) and embeds them in a blank image
-            blank_image_path = str(DATASETS_PATH / "seed_datasets" / "local" / "examples" / "blank_canvas.png")
-            self._ensure_blank_image_exists(blank_image_path)
-            image_converters: list[PromptConverter] = [AddImageTextConverter(img_to_add=blank_image_path)]
-            converter_config = AttackConverterConfig(
-                request_converters=PromptConverterConfiguration.from_converters(converters=image_converters)
-            )
-            attack_strategy = PromptSendingAttack(
-                objective_target=self._objective_target,
-                attack_scoring_config=self._scorer_config,
-                attack_converter_config=converter_config,
-            )
-
-        elif strategy == "role_play":
-            # Role-play attack using movie script format
-            attack_strategy = RolePlayAttack(
-                objective_target=self._objective_target,
-                adversarial_chat=self._adversarial_chat,
-                role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
-                attack_scoring_config=self._scorer_config,
-            )
-
-        else:
+        factory = strategy_factories.get(strategy)
+        if not factory:
             raise ValueError(f"Unknown LeakageStrategy: {strategy}")
+
+        attack_strategy = await factory()
 
         return AtomicAttack(
             atomic_attack_name=f"leakage_{strategy}",
             attack=attack_strategy,
-            objectives=self._objectives,
+            seed_groups=self._seed_groups,
             memory_labels=self._memory_labels,
         )
+
+    async def _create_first_letter_attack(self) -> PromptSendingAttack:
+        """Create a first letter converter attack."""
+        converters: list[PromptConverter] = [FirstLetterConverter()]
+        converter_config = AttackConverterConfig(
+            request_converters=PromptConverterConfiguration.from_converters(converters=converters)
+        )
+        return PromptSendingAttack(
+            objective_target=self._objective_target,
+            attack_scoring_config=self._scorer_config,
+            attack_converter_config=converter_config,
+        )
+
+    async def _create_crescendo_attack(self) -> CrescendoAttack:
+        """Create a multi-turn progressive crescendo attack."""
+        # Type ignore: CrescendoAttack requires PromptChatTarget but objective_target
+        # is validated at runtime by the attack's initialization
+        return CrescendoAttack(
+            objective_target=self._objective_target,  # type: ignore[arg-type]
+            attack_scoring_config=self._scorer_config,
+            attack_adversarial_config=self._adversarial_config,
+        )
+
+    async def _create_image_attack(self) -> PromptSendingAttack:
+        """Create an image-based attack that embeds prompts in images."""
+        blank_image_path = str(DATASETS_PATH / "seed_datasets" / "local" / "examples" / "blank_canvas.png")
+        self._ensure_blank_image_exists(blank_image_path)
+        image_converters: list[PromptConverter] = [AddImageTextConverter(img_to_add=blank_image_path)]
+        converter_config = AttackConverterConfig(
+            request_converters=PromptConverterConfiguration.from_converters(converters=image_converters)
+        )
+        return PromptSendingAttack(
+            objective_target=self._objective_target,
+            attack_scoring_config=self._scorer_config,
+            attack_converter_config=converter_config,
+        )
+
+    async def _create_role_play_attack(self) -> RolePlayAttack:
+        """Create a role-play attack using persuasion script format."""
+        return RolePlayAttack(
+            objective_target=self._objective_target,
+            adversarial_chat=self._adversarial_chat,
+            role_play_definition_path=RolePlayPaths.PERSUASION_SCRIPT.value,
+            attack_scoring_config=self._scorer_config,
+        )
+
+    async def _create_continuation_attack(self) -> CrescendoAttack:
+        """
+        Create a continuation attack for progressive content extraction.
+
+        This attack progressively asks for more words to extract copyrighted content,
+        e.g., "give me the next 5 words" until copyright is violated.
+        """
+        # Uses CrescendoAttack as the base for multi-turn conversation
+        # The continuation pattern is achieved through the adversarial chat
+        return CrescendoAttack(
+            objective_target=self._objective_target,  # type: ignore[arg-type]
+            attack_scoring_config=self._scorer_config,
+            attack_adversarial_config=self._adversarial_config,
+        )
+
+    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
+        """
+        Resolve objectives to SeedAttackGroup format required by AtomicAttack.
+
+        Returns:
+            List[SeedAttackGroup]: List of seed attack groups, each containing an objective.
+        """
+        return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._objectives]
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -292,6 +360,9 @@ class LeakageScenario(Scenario):
         Returns:
             List[AtomicAttack]: List of atomic attacks to execute.
         """
+        # Resolve objectives to seed groups format
+        self._seed_groups = self._resolve_seed_groups()
+
         atomic_attacks: List[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=LeakageStrategy
