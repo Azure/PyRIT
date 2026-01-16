@@ -4,7 +4,7 @@
 import json
 import logging
 import uuid
-from typing import Optional
+from typing import Any, Optional
 
 from pyrit.models import Message, MessagePiece, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
@@ -24,7 +24,6 @@ class PromptShieldScorer(TrueFalseScorer):
     """
 
     scorer_type: ScoreType
-    _conversation_id: str
     _prompt_shield_target: PromptShieldTarget
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
@@ -57,7 +56,7 @@ class PromptShieldScorer(TrueFalseScorer):
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        self._conversation_id = str(uuid.uuid4())
+        conversation_id = str(uuid.uuid4())
 
         body = message_piece.original_value
 
@@ -67,7 +66,7 @@ class PromptShieldScorer(TrueFalseScorer):
                     role="user",
                     original_value=body,
                     prompt_metadata=message_piece.prompt_metadata,
-                    conversation_id=self._conversation_id,
+                    conversation_id=conversation_id,
                     prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
             ]
@@ -108,13 +107,13 @@ class PromptShieldScorer(TrueFalseScorer):
         Returns:
             list[bool]: A list of boolean values indicating whether an attack was detected.
         """
-        response_json: dict = json.loads(response)
+        response_json: dict[str, Any] = json.loads(response)
 
         user_detections = []
         document_detections = []
 
         user_prompt_attack: dict[str, bool] = response_json.get("userPromptAnalysis", False)
-        documents_attack: list[dict] = response_json.get("documentsAnalysis", False)
+        documents_attack: list[dict[str, Any]] = response_json.get("documentsAnalysis", False)
 
         if not user_prompt_attack:
             user_detections = [False]
