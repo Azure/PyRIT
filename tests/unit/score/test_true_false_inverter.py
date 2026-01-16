@@ -19,7 +19,9 @@ def image_message_piece() -> MessagePiece:
 
 
 @pytest.mark.asyncio
-async def test_score_async_unsupported_data_type_inverts_false_to_true(patch_central_database, image_message_piece: MessagePiece):
+async def test_score_async_unsupported_data_type_inverts_false_to_true(
+    patch_central_database, image_message_piece: MessagePiece
+):
     sub_scorer = SubStringScorer(substring="test", categories=["new_category"])
     scorer = TrueFalseInverterScorer(scorer=sub_scorer)
 

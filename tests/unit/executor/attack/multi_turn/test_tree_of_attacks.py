@@ -1190,12 +1190,8 @@ class TestTreeOfAttacksNode:
             patch.object(
                 node, "_generate_single_red_teaming_prompt_async", new_callable=AsyncMock, return_value=test_prompt
             ) as red_teaming_mock,
-            patch(
-                "pyrit.executor.attack.multi_turn.tree_of_attacks.get_retry_max_num_attempts", return_value=1
-            ),
-            patch.object(
-                node, "_send_to_adversarial_chat_async", new_callable=AsyncMock, return_value="new prompt"
-            ),
+            patch("pyrit.executor.attack.multi_turn.tree_of_attacks.get_retry_max_num_attempts", return_value=1),
+            patch.object(node, "_send_to_adversarial_chat_async", new_callable=AsyncMock, return_value="new prompt"),
             patch.object(node, "_parse_red_teaming_response", return_value="new prompt"),
         ):
             await node.send_prompt_async(objective="Test objective")

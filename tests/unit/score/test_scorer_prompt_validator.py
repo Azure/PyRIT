@@ -349,7 +349,9 @@ class TestScorerPromptValidatorMaxTextLength:
 
     def test_validate_raises_when_all_pieces_filtered_by_length(self):
         """Test that validate raises error when all pieces are filtered due to length and raise_on_no_valid_pieces=True."""
-        validator = ScorerPromptValidator(supported_data_types=["text"], max_text_length=100, raise_on_no_valid_pieces=True)
+        validator = ScorerPromptValidator(
+            supported_data_types=["text"], max_text_length=100, raise_on_no_valid_pieces=True
+        )
 
         long_piece = MessagePiece(
             role="assistant", original_value="a" * 101, converted_value_data_type="text", conversation_id="test"

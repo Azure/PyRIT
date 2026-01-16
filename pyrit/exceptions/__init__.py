@@ -8,12 +8,12 @@ from pyrit.exceptions.exception_classes import (
     MissingPromptPlaceholderException,
     PyritException,
     RateLimitException,
+    get_retry_max_num_attempts,
     handle_bad_request_exception,
     pyrit_custom_result_retry,
     pyrit_json_retry,
     pyrit_placeholder_retry,
     pyrit_target_retry,
-    get_retry_max_num_attempts
 )
 from pyrit.exceptions.exceptions_helpers import remove_markdown_json
 
@@ -30,5 +30,5 @@ __all__ = [
     "pyrit_placeholder_retry",
     "RateLimitException",
     "remove_markdown_json",
-    "get_retry_max_num_attempts"
+    "get_retry_max_num_attempts",
 ]

@@ -7,7 +7,7 @@ from typing import List
 
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackOutcome, AttackResult, ConversationType, Message, MessagePiece, Score
+from pyrit.models import AttackResult, ConversationType, Message, MessagePiece, Score
 
 
 class MarkdownAttackResultPrinter(AttackResultPrinter):

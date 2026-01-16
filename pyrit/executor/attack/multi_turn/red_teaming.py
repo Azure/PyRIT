@@ -389,9 +389,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         Returns:
             str: The prompt to be sent to the adversarial chat.
         """
-        # If no last response, return the seed prompt
+        # If no last response, return the seed prompt (rendered with objective if template exists)
         if not context.last_response:
-            return self._adversarial_chat_seed_prompt.value
+            return self._adversarial_chat_seed_prompt.render_template_value_silent(objective=context.objective)
 
         # Get the last assistant piece from the response
         response_piece = context.last_response.get_piece()

@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.18.1
 # ---
 
 # %% [markdown]
@@ -295,7 +295,9 @@ red_teaming_attack = RedTeamingAttack(
 )
 
 result = await red_teaming_attack.execute_async(objective=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
-await ConsoleAttackResultPrinter().print_result_async(result=result)  # type: ignore
+await ConsoleAttackResultPrinter().print_result_async(  # type: ignore
+    result=result, include_adversarial_conversation=True
+)
 
 # %% [markdown]
 # ## Displaying Results with Better Formatting

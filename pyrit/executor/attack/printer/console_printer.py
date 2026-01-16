@@ -465,7 +465,9 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
             messages = list(self._memory.get_conversation(conversation_id=ref.conversation_id))
 
             if not messages:
-                self._print_colored(f"{self._indent}No messages found for conversation: {ref.conversation_id}", Fore.YELLOW)
+                self._print_colored(
+                    f"{self._indent}No messages found for conversation: {ref.conversation_id}", Fore.YELLOW
+                )
                 continue
 
             # Get only the last message
