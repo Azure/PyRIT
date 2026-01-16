@@ -1291,9 +1291,14 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             tap_scoring_config = attack_scoring_config
         else:
             # Convert AttackScoringConfig to TAPAttackScoringConfig
-            # TAPAttackScoringConfig.__init__ will validate FloatScaleThresholdScorer requirement
+            objective_scorer = attack_scoring_config.objective_scorer
+            if objective_scorer is not None and not isinstance(objective_scorer, FloatScaleThresholdScorer):
+                raise ValueError(
+                    "TAP attack requires a FloatScaleThresholdScorer for objective_scorer. "
+                    "Please wrap your scorer in FloatScaleThresholdScorer with an appropriate threshold."
+                )
             tap_scoring_config = TAPAttackScoringConfig(
-                objective_scorer=attack_scoring_config.objective_scorer,  # type: ignore[arg-type]
+                objective_scorer=objective_scorer,
                 refusal_scorer=attack_scoring_config.refusal_scorer,
                 auxiliary_scorers=attack_scoring_config.auxiliary_scorers or None,
                 use_score_as_feedback=attack_scoring_config.use_score_as_feedback,
