@@ -304,12 +304,13 @@ await ConsoleAttackResultPrinter().print_result_async(  # type: ignore
 #
 # While `ConsoleAttackResultPrinter` works well for console output, Jupyter notebooks can display rich content more effectively.
 # The `MarkdownAttackResultPrinter` provides enhanced formatting capabilities, including proper inline display of generated images
-# and better visual organization of attack results.
+# and better visual organization of attack results. Note that for documentation builds, `ConsoleAttackResultPrinter` is preferred
+# to avoid broken image references when notebook outputs are committed.
 
 # %%
-from pyrit.executor.attack import MarkdownAttackResultPrinter
-
-await MarkdownAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
+# Note: MarkdownAttackResultPrinter displays images inline using markdown, which looks great in notebooks.
+# However, for documentation builds, use ConsoleAttackResultPrinter to avoid broken image references.
+await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
 # %% [markdown]
 # ## Other Multi-Turn Attacks
