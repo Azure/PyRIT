@@ -534,29 +534,26 @@ class ConversationManager:
             max_turns=max_turns,
         )
 
-        # Update context for multi-turn attacks
-        if is_multi_turn:
+        # Update context for multi-turn attacks to reflect prepended_conversation
+
+        final_prepended_message = valid_messages[-1]
+
+        if is_multi_turn and final_prepended_message.api_role == "assistant":
             # Update executed_turns
             if hasattr(context, "executed_turns"):
                 context.executed_turns = state.turn_count
 
-            # Extract scores for last assistant message if it exists
+            # Extract scores on final prepended assistant message if it exists and are relavent
             # Multi-part messages (e.g., text + image) may have scores on multiple pieces
-            last_message = valid_messages[-1]
-            if last_message.api_role == "assistant":
-                scores = []
-                for piece in last_message.message_pieces:
-                    if piece.scores:
-                        scores.extend(piece.scores)
-                state.last_assistant_message_scores = scores
-
-                # Set context.last_score to first true_false score found (for feedback rationale)
-                # This helps attacks use the score rationale without re-scoring
-                if hasattr(context, "last_score"):
-                    for score in scores:
-                        if score.score_type == "true_false":
+            # only extract true_false scores with score_value=False. This allows attacks
+            # to use the score's rationale for feedback without re-scoring.
+            for piece in final_prepended_message.message_pieces:
+                for score in piece.scores:
+                    if score.score_type == "true_false" and score.get_value() is False:
+                        state.last_assistant_message_scores.append(score)
+                        # context.last_score gets the first matching score for single-score use cases.
+                        if hasattr(context, "last_score") and context.last_score is None:
                             context.last_score = score
-                            break
 
         return state
 
