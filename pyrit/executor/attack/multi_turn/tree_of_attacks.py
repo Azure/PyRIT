@@ -1195,7 +1195,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         objective_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_adversarial_config: AttackAdversarialConfig,
         attack_converter_config: Optional[AttackConverterConfig] = None,
-        attack_scoring_config: Optional[TAPAttackScoringConfig] = None,
+        attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         tree_width: int = 3,
         tree_depth: int = 5,
@@ -1213,11 +1213,11 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             attack_adversarial_config (AttackAdversarialConfig): Configuration for the adversarial chat component.
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for attack converters.
                 Defaults to None.
-            attack_scoring_config (Optional[TAPAttackScoringConfig]): Scoring configuration for TAP.
-                Must use TAPAttackScoringConfig which requires a FloatScaleThresholdScorer for the
-                objective scorer. This provides both granular float scores for node comparison and
-                a threshold for determining success. If not provided, a default configuration with
-                SelfAskScaleScorer and threshold 0.7 is created.
+            attack_scoring_config (Optional[AttackScoringConfig]): Scoring configuration for TAP.
+                The objective_scorer must be a FloatScaleThresholdScorer, which provides both
+                granular float scores for node comparison and a threshold for determining success.
+                Can be either AttackScoringConfig or TAPAttackScoringConfig. If not provided,
+                a default configuration with SelfAskScaleScorer and threshold 0.7 is created.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use. Defaults to None.
             tree_width (int): Number of branches to explore in parallel at each level. Defaults to 3.
             tree_depth (int): Maximum number of iterations to perform. Defaults to 5.
@@ -1284,12 +1284,24 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
                 scorer=SelfAskScaleScorer(chat_target=self._adversarial_chat),
                 threshold=0.7,
             )
-            attack_scoring_config = TAPAttackScoringConfig(objective_scorer=default_scorer)
+            tap_scoring_config = TAPAttackScoringConfig(objective_scorer=default_scorer)
             self._logger.info("No scoring config provided, using default FloatScaleThresholdScorer with threshold 0.7")
+        elif isinstance(attack_scoring_config, TAPAttackScoringConfig):
+            # Already the right type, use as-is
+            tap_scoring_config = attack_scoring_config
+        else:
+            # Convert AttackScoringConfig to TAPAttackScoringConfig
+            # TAPAttackScoringConfig.__init__ will validate FloatScaleThresholdScorer requirement
+            tap_scoring_config = TAPAttackScoringConfig(
+                objective_scorer=attack_scoring_config.objective_scorer,  # type: ignore[arg-type]
+                refusal_scorer=attack_scoring_config.refusal_scorer,
+                auxiliary_scorers=attack_scoring_config.auxiliary_scorers or None,
+                use_score_as_feedback=attack_scoring_config.use_score_as_feedback,
+            )
 
-        self._attack_scoring_config = attack_scoring_config
-        self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
-        self._objective_scorer = attack_scoring_config.objective_scorer
+        self._attack_scoring_config = tap_scoring_config
+        self._auxiliary_scorers = tap_scoring_config.auxiliary_scorers
+        self._objective_scorer = tap_scoring_config.objective_scorer
 
         # Use the adversarial chat target for scoring, as in CrescendoAttack
         self._scoring_target = self._adversarial_chat

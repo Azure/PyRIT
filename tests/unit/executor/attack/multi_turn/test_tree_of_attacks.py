@@ -21,7 +21,7 @@ from pyrit.executor.attack import (
     TAPAttackResult,
     TreeOfAttacksWithPruningAttack,
 )
-from pyrit.executor.attack.multi_turn.tree_of_attacks import TAPAttackScoringConfig, _TreeOfAttacksNode
+from pyrit.executor.attack.multi_turn.tree_of_attacks import TAPAttackScoringConfig, _TreeOfAttacksNode, AttackScoringConfig
 from pyrit.models import (
     AttackOutcome,
     ConversationReference,
@@ -448,6 +448,37 @@ class TestTreeOfAttacksInitialization:
         """Test initialization with auxiliary scorers."""
         attack = attack_builder.with_default_mocks().with_auxiliary_scorers(2).build()
         assert len(attack._auxiliary_scorers) == 2
+
+    def test_init_accepts_base_attack_scoring_config(self, attack_builder):
+        """Test that TAP accepts AttackScoringConfig and converts to TAPAttackScoringConfig."""
+        # Create a mock FloatScaleThresholdScorer
+        mock_threshold_scorer = MagicMock()
+        mock_threshold_scorer.threshold = 0.8
+        mock_threshold_scorer.scorer_type = "true_false"
+        mock_threshold_scorer.score_async = AsyncMock(return_value=[])
+        mock_threshold_scorer.get_identifier.return_value = {
+            "__type__": "FloatScaleThresholdScorer",
+            "__module__": "pyrit.score",
+        }
+
+        # Pass base AttackScoringConfig (not TAPAttackScoringConfig)
+        base_config = AttackScoringConfig(
+            objective_scorer=mock_threshold_scorer,
+            use_score_as_feedback=False,
+        )
+
+        adversarial_config = attack_builder._create_mock_adversarial_config()
+        attack = TreeOfAttacksWithPruningAttack(
+            objective_target=attack_builder.objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=base_config,
+        )
+
+        # Verify it was converted to TAPAttackScoringConfig
+        result = attack.get_attack_scoring_config()
+        assert isinstance(result, TAPAttackScoringConfig)
+        assert result.threshold == 0.8
+        assert result.use_score_as_feedback is False
 
     def test_get_objective_target_returns_correct_target(self, attack_builder):
         """Test that get_objective_target returns the target passed to constructor"""
