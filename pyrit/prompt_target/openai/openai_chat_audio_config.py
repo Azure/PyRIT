@@ -2,16 +2,25 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 # Voices supported by OpenAI Chat Completions API audio output.
-# See: https://platform.openai.com/docs/guides/text-to-speech#voice-options
-CompletionsAudioVoice = Literal["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"]
-CompletionsAudioFormat = Literal["wav", "mp3", "flac", "opus", "pcm16"]
+# OpenAI SDK: openai/types/chat/chat_completion_audio_param.py voice field
+# SDK Literal includes: alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar
+# SDK docstring also lists: fable, nova, onyx (we include these for completeness)
+# Note: SDK uses Union[str, Literal[...]] so any string is accepted by the API.
+ChatAudioVoice = Literal[
+    "alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer", "verse", "marin", "cedar"
+]
+
+# Audio output formats supported by OpenAI Chat Completions API.
+# OpenAI SDK: openai/types/chat/chat_completion_audio_param.py format field
+# defines format: Required[Literal["wav", "aac", "mp3", "flac", "opus", "pcm16"]]
+ChatAudioFormat = Literal["wav", "aac", "mp3", "flac", "opus", "pcm16"]
 
 
 @dataclass
-class OpenAICompletionsAudioConfig:
+class OpenAIChatAudioConfig:
     """
     Configuration for audio output from OpenAI Chat Completions API.
 
@@ -23,19 +32,17 @@ class OpenAICompletionsAudioConfig:
     """
 
     # The voice to use for audio output. Supported voices are:
-    # "alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar".
-    voice: CompletionsAudioVoice
+    voice: ChatAudioVoice
 
     # The audio format for the response. Supported formats are:
-    # "wav", "mp3", "flac", "opus", "pcm16". Defaults to "wav".
-    audio_format: CompletionsAudioFormat = "wav"
+    audio_format: ChatAudioFormat = "wav"
 
     # If True, historical user messages that contain both audio and text will only send
     # the text (transcript) to reduce bandwidth and token usage. The current (last) user
     # message will still include audio. Defaults to True.
     prefer_transcript_for_history: bool = True
 
-    def to_extra_body_parameters(self) -> dict:
+    def to_extra_body_parameters(self) -> dict[str, Any]:
         """
         Convert the config to extra_body_parameters format for OpenAI API.
 

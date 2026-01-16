@@ -17,7 +17,7 @@ import pytest
 
 from pyrit.common.path import HOME_PATH
 from pyrit.models import MessagePiece
-from pyrit.prompt_target import OpenAIChatTarget, OpenAICompletionsAudioConfig
+from pyrit.prompt_target import OpenAIChatAudioConfig, OpenAIChatTarget
 
 # Path to sample audio file for testing
 SAMPLE_AUDIO_FILE = HOME_PATH / "assets" / "converted_audio.wav"
@@ -82,7 +82,7 @@ async def test_openai_chat_target_audio_multi_turn(sqlite_instance, platform_ope
     2. Conversation history is properly maintained
     3. Audio is generated for each assistant response
     """
-    audio_config = OpenAICompletionsAudioConfig(voice="alloy", audio_format="wav")
+    audio_config = OpenAIChatAudioConfig(voice="alloy", audio_format="wav")
 
     target = OpenAIChatTarget(
         **platform_openai_audio_args,

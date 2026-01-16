@@ -23,7 +23,7 @@ from pyrit.models import (
 from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute, validate_temperature, validate_top_p
-from pyrit.prompt_target.openai.completions_audio_config import OpenAICompletionsAudioConfig
+from pyrit.prompt_target.openai.openai_chat_audio_config import OpenAIChatAudioConfig
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         seed: Optional[int] = None,
         n: Optional[int] = None,
         is_json_supported: bool = True,
-        audio_response_config: Optional[OpenAICompletionsAudioConfig] = None,
+        audio_response_config: Optional[OpenAIChatAudioConfig] = None,
         extra_body_parameters: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
@@ -116,7 +116,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 setting the response_format header. Official OpenAI models all support this, but if you are using
                 this target with different models, is_json_supported should be set correctly to avoid issues when
                 using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
-            audio_response_config (OpenAICompletionsAudioConfig, Optional): Configuration for audio output from models
+            audio_response_config (OpenAIChatAudioConfig, Optional): Configuration for audio output from models
                 that support it (e.g., gpt-4o-audio-preview). When provided, enables audio modality in responses.
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
@@ -299,8 +299,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
     def _should_skip_sending_audio(
         self,
         *,
-        data_type: str,
-        role: str,
+        message_piece: MessagePiece,
         is_last_message: bool,
         has_text_piece: bool,
     ) -> bool:
@@ -308,25 +307,26 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         Determine if an audio_path piece should be skipped when building chat messages.
 
         Args:
-            data_type: The converted_value_data_type of the message piece.
-            role: The API role of the message (user, assistant, system).
+            message_piece: The MessagePiece to evaluate.
             is_last_message: Whether this is the last (current) message in the conversation.
             has_text_piece: Whether the message contains a text piece (e.g., transcript).
 
         Returns:
             True if the audio should be skipped, False if it should be included.
         """
-        if data_type != "audio_path":
+        if message_piece.converted_value_data_type != "audio_path":
             return False
+
+        api_role = message_piece.api_role
 
         # Skip audio for assistant messages - OpenAI only allows audio in user messages.
         # For assistant responses, the transcript text piece should already be included.
-        if role == "assistant":
+        if api_role == "assistant":
             return True
 
         # Skip historical user audio if prefer_transcript_for_history is enabled and we have a transcript
         if (
-            role == "user"
+            api_role == "user"
             and not is_last_message
             and has_text_piece
             and self._audio_response_config
@@ -373,13 +373,14 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         if has_audio:
             audio_response = message.audio
 
-            # Add transcript as text piece
+            # Add transcript as text piece with metadata
             audio_transcript: Optional[str] = getattr(audio_response, "transcript", None)
             if audio_transcript:
                 transcript_piece = construct_response_from_request(
                     request=request,
                     response_text_pieces=[audio_transcript],
                     response_type="text",
+                    prompt_metadata={"transcription": "audio"},
                 ).message_pieces[0]
                 pieces.append(transcript_piece)
 
@@ -559,8 +560,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 role = message_piece.api_role
 
                 if self._should_skip_sending_audio(
-                    data_type=message_piece.converted_value_data_type,
-                    role=role,
+                    message_piece=message_piece,
                     is_last_message=is_last_message,
                     has_text_piece=has_text_piece,
                 ):
@@ -576,10 +576,13 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                     content.append(entry)
                 elif message_piece.converted_value_data_type == "audio_path":
                     ext = DataTypeSerializer.get_extension(message_piece.converted_value)
+                    # OpenAI SDK: openai/types/chat/chat_completion_content_part_input_audio_param.py
+                    # defines format: Required[Literal["wav", "mp3"]]
                     if not ext or ext.lower() not in [".wav", ".mp3"]:
                         raise ValueError(
                             f"Unsupported audio format: {ext}. "
-                            "OpenAI Chat Completions API only supports .wav and .mp3 for audio input."
+                            "OpenAI Chat Completions API input_audio only supports .wav and .mp3. "
+                            "Note: This is different from the Whisper Speech-to-Text API which supports more formats."
                         )
                     audio_serializer = data_serializer_factory(
                         category="prompt-memory-entries",
