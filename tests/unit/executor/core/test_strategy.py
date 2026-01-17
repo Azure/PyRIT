@@ -2,15 +2,12 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from pyrit.exceptions import (
     ComponentRole,
     clear_execution_context,
-    get_execution_context,
     with_execution_context,
 )
 from pyrit.executor.core.strategy import Strategy, StrategyContext

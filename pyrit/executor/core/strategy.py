@@ -357,7 +357,7 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
                 error_details = exec_context.get_exception_details()
 
                 # Extract the root cause exception for better diagnostics
-                root_cause = e
+                root_cause: BaseException = e
                 while root_cause.__cause__ is not None:
                     root_cause = root_cause.__cause__
 

@@ -9,7 +9,13 @@ from uuid import uuid4
 import pytest
 from unit.mocks import MockPromptTarget, get_image_message_piece
 
-from pyrit.exceptions import EmptyResponseException
+from pyrit.exceptions import (
+    ComponentRole,
+    EmptyResponseException,
+    clear_execution_context,
+    get_execution_context,
+    with_execution_context,
+)
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -23,12 +29,6 @@ from pyrit.prompt_converter import (
     ConverterResult,
     PromptConverter,
     StringJoinConverter,
-)
-from pyrit.exceptions import (
-    ComponentRole,
-    clear_execution_context,
-    get_execution_context,
-    with_execution_context,
 )
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
@@ -437,6 +437,7 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_gr
 
 
 # Tests for execution context in converter operations (used for error message handling)
+
 
 class ContextCapturingConverter(PromptConverter):
     """A converter that captures the execution context during conversion."""

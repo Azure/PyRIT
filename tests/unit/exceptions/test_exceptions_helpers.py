@@ -1,15 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
+# Tests for log_exception with execution context
+from unittest.mock import MagicMock, patch
 
-from pyrit.exceptions.exceptions_helpers import (
-    extract_json_from_string,
-    remove_end_md_json,
-    remove_markdown_json,
-    remove_start_md_json,
-    log_exception
-)
+import pytest
 
 from pyrit.exceptions import (
     ComponentRole,
@@ -17,10 +12,13 @@ from pyrit.exceptions import (
     clear_execution_context,
     set_execution_context,
 )
-
-# Tests for log_exception with execution context
-from concurrent.futures import Future
-from unittest.mock import MagicMock, patch
+from pyrit.exceptions.exceptions_helpers import (
+    extract_json_from_string,
+    log_exception,
+    remove_end_md_json,
+    remove_markdown_json,
+    remove_start_md_json,
+)
 
 
 @pytest.mark.parametrize(
@@ -81,9 +79,6 @@ def test_extract_json_from_string(input_str, expected_output):
 )
 def test_remove_markdown_json(input_str, expected_output):
     assert remove_markdown_json(input_str) == expected_output
-
-
-
 
 
 class TestLogException:
