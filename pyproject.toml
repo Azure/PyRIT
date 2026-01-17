@@ -165,13 +165,15 @@ pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 
-[tool.mypy]
-plugins = []
-ignore_missing_imports = true
-strict = false
-follow_imports = "silent"
-strict_optional = false
-disable_error_code = ["empty-body"]
+[tool.ty]
+[tool.ty.rules]
+unresolved-import = "ignore"
+possibly-missing-attribute = "ignore"
+empty-body = "ignore"
+unused-ignore-comment = "ignore"
+[tool.ty.analysis]
+respect-type-ignore-comments = true
+[tool.ty.src]
 exclude = ["doc/code/"]
 
 [build-system]
