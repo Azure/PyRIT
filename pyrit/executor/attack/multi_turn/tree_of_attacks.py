@@ -15,10 +15,12 @@ from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
+    ComponentRole,
     InvalidJsonException,
     get_retry_max_num_attempts,
     pyrit_json_retry,
     remove_markdown_json,
+    with_execution_context,
 )
 from pyrit.executor.attack.component import (
     ConversationManager,
@@ -266,6 +268,7 @@ class _TreeOfAttacksNode:
         response_converters: List[PromptConverterConfiguration],
         auxiliary_scorers: Optional[List[Scorer]],
         attack_id: dict[str, str],
+        attack_strategy_name: str,
         memory_labels: Optional[dict[str, str]] = None,
         parent_id: Optional[str] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -287,6 +290,7 @@ class _TreeOfAttacksNode:
             response_converters (List[PromptConverterConfiguration]): Converters for response normalization
             auxiliary_scorers (Optional[List[Scorer]]): Additional scorers for the response
             attack_id (dict[str, str]): Unique identifier for the attack.
+            attack_strategy_name (str): Name of the attack strategy for execution context.
             memory_labels (Optional[dict[str, str]]): Labels for memory storage.
             parent_id (Optional[str]): ID of the parent node, if this is a child node
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts and responses.
@@ -306,6 +310,7 @@ class _TreeOfAttacksNode:
         self._response_converters = response_converters
         self._auxiliary_scorers = auxiliary_scorers or []
         self._attack_id = attack_id
+        self._attack_strategy_name = attack_strategy_name
         self._memory_labels = memory_labels or {}
 
         # Initialize utilities
@@ -514,15 +519,22 @@ class _TreeOfAttacksNode:
         message = Message.from_prompt(prompt=prompt, role="user")
 
         # Send prompt with configured converters
-        response = await self._prompt_normalizer.send_prompt_async(
-            message=message,
-            request_converter_configurations=self._request_converters,
-            response_converter_configurations=self._response_converters,
-            conversation_id=self.objective_target_conversation_id,
-            target=self._objective_target,
-            labels=self._memory_labels,
+        with with_execution_context(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            attack_strategy_name=self._attack_strategy_name,
             attack_identifier=self._attack_id,
-        )
+            component_identifier=self._objective_target.get_identifier(),
+            objective_target_conversation_id=self.objective_target_conversation_id,
+        ):
+            response = await self._prompt_normalizer.send_prompt_async(
+                message=message,
+                request_converter_configurations=self._request_converters,
+                response_converter_configurations=self._response_converters,
+                conversation_id=self.objective_target_conversation_id,
+                target=self._objective_target,
+                labels=self._memory_labels,
+                attack_identifier=self._attack_id,
+            )
 
         # Store the last response text for reference
         response_piece = response.get_piece()
@@ -562,15 +574,22 @@ class _TreeOfAttacksNode:
         logger.debug(f"Node {self.node_id}: Using initial prompt, bypassing adversarial chat")
 
         # Send prompt with configured converters
-        response = await self._prompt_normalizer.send_prompt_async(
-            message=message,
-            request_converter_configurations=self._request_converters,
-            response_converter_configurations=self._response_converters,
-            conversation_id=self.objective_target_conversation_id,
-            target=self._objective_target,
-            labels=self._memory_labels,
+        with with_execution_context(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            attack_strategy_name=self._attack_strategy_name,
             attack_identifier=self._attack_id,
-        )
+            component_identifier=self._objective_target.get_identifier(),
+            objective_target_conversation_id=self.objective_target_conversation_id,
+        ):
+            response = await self._prompt_normalizer.send_prompt_async(
+                message=message,
+                request_converter_configurations=self._request_converters,
+                response_converter_configurations=self._response_converters,
+                conversation_id=self.objective_target_conversation_id,
+                target=self._objective_target,
+                labels=self._memory_labels,
+                attack_identifier=self._attack_id,
+            )
 
         # Store the last response text for reference
         response_piece = response.get_piece()
@@ -608,14 +627,21 @@ class _TreeOfAttacksNode:
             the TAP algorithm explores in subsequent iterations.
         """
         # Use the Scorer utility method to handle all scoring
-        scoring_results = await Scorer.score_response_async(
-            response=response,
-            objective_scorer=self._objective_scorer,
-            auxiliary_scorers=self._auxiliary_scorers,
-            role_filter="assistant",
-            objective=objective,
-            skip_on_error_result=False,
-        )
+        with with_execution_context(
+            component_role=ComponentRole.OBJECTIVE_SCORER,
+            attack_strategy_name=self._attack_strategy_name,
+            attack_identifier=self._attack_id,
+            component_identifier=self._objective_scorer.get_identifier(),
+            objective_target_conversation_id=self.objective_target_conversation_id,
+        ):
+            scoring_results = await Scorer.score_response_async(
+                response=response,
+                objective_scorer=self._objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+                role_filter="assistant",
+                objective=objective,
+                skip_on_error_result=False,
+            )
 
         # Extract objective score
         objective_scores = scoring_results["objective_scores"]
@@ -733,6 +759,7 @@ class _TreeOfAttacksNode:
             response_converters=self._response_converters,
             auxiliary_scorers=self._auxiliary_scorers,
             attack_id=self._attack_id,
+            attack_strategy_name=self._attack_strategy_name,
             memory_labels=self._memory_labels,
             desired_response_prefix=self._desired_response_prefix,
             parent_id=self.node_id,
@@ -1045,13 +1072,20 @@ class _TreeOfAttacksNode:
         message.message_pieces[0].prompt_metadata = {"response_format": "json"}
 
         # Send and get response
-        response = await self._prompt_normalizer.send_prompt_async(
-            message=message,
-            conversation_id=self.adversarial_chat_conversation_id,
-            target=self._adversarial_chat,
-            labels=self._memory_labels,
+        with with_execution_context(
+            component_role=ComponentRole.ADVERSARIAL_CHAT,
+            attack_strategy_name=self._attack_strategy_name,
             attack_identifier=self._attack_id,
-        )
+            component_identifier=self._adversarial_chat.get_identifier(),
+            objective_target_conversation_id=self.objective_target_conversation_id,
+        ):
+            response = await self._prompt_normalizer.send_prompt_async(
+                message=message,
+                conversation_id=self.adversarial_chat_conversation_id,
+                target=self._adversarial_chat,
+                labels=self._memory_labels,
+                attack_identifier=self._attack_id,
+            )
 
         return response.get_value()
 
@@ -1805,6 +1839,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
             response_converters=self._response_converters,
             auxiliary_scorers=self._auxiliary_scorers,
             attack_id=self.get_identifier(),
+            attack_strategy_name=self.__class__.__name__,
             memory_labels=context.memory_labels,
             desired_response_prefix=self._desired_response_prefix,
             parent_id=parent_id,

@@ -16,6 +16,7 @@ from typing import Any, AsyncIterator, Dict, Generic, MutableMapping, Optional, 
 
 from pyrit.common import default_values
 from pyrit.common.logger import logger
+from pyrit.exceptions import clear_execution_context, get_execution_context
 from pyrit.models import StrategyResultT
 
 StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
@@ -348,8 +349,34 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         except Exception as e:
             # Notify error event
             await self._handle_event(event=StrategyEvent.ON_ERROR, context=context, error=e)
-            # Raise a specific execution error
-            raise RuntimeError(f"Strategy execution failed for {self.__class__.__name__}: {str(e)}") from e
+
+            # Build enhanced error message with execution context if available
+            # Note: The context is preserved on exception by ExecutionContextManager
+            exec_context = get_execution_context()
+            if exec_context:
+                error_details = exec_context.get_exception_details()
+
+                # Extract the root cause exception for better diagnostics
+                root_cause = e
+                while root_cause.__cause__ is not None:
+                    root_cause = root_cause.__cause__
+
+                # Include root cause type and message if different from the immediate exception
+                if root_cause is not e:
+                    root_cause_info = f"\n\nRoot cause: {type(root_cause).__name__}: {str(root_cause)}"
+                else:
+                    root_cause_info = ""
+
+                error_message = (
+                    f"Strategy execution failed for {exec_context.component_role.value} "
+                    f"in {self.__class__.__name__}: {str(e)}{root_cause_info}\n\nDetails:\n{error_details}"
+                )
+                # Clear the context now that we've read it
+                clear_execution_context()
+            else:
+                error_message = f"Strategy execution failed for {self.__class__.__name__}: {str(e)}"
+
+            raise RuntimeError(error_message) from e
 
     async def execute_async(self, **kwargs: Any) -> StrategyResultT:
         """

@@ -8,6 +8,7 @@ from string import Formatter
 from typing import Any, List, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
+from pyrit.exceptions import ComponentRole, with_execution_context
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
@@ -260,15 +261,22 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
             message = Message.from_prompt(prompt=chunk_prompt, role="user")
 
             # Send the prompt using the normalizer
-            response = await self._prompt_normalizer.send_prompt_async(
-                message=message,
-                target=self._objective_target,
-                conversation_id=context.session.conversation_id,
-                request_converter_configurations=self._request_converters,
-                response_converter_configurations=self._response_converters,
-                labels=context.memory_labels,
+            with with_execution_context(
+                component_role=ComponentRole.OBJECTIVE_TARGET,
+                attack_strategy_name=self.__class__.__name__,
                 attack_identifier=self.get_identifier(),
-            )
+                component_identifier=self._objective_target.get_identifier(),
+                objective_target_conversation_id=context.session.conversation_id,
+            ):
+                response = await self._prompt_normalizer.send_prompt_async(
+                    message=message,
+                    target=self._objective_target,
+                    conversation_id=context.session.conversation_id,
+                    request_converter_configurations=self._request_converters,
+                    response_converter_configurations=self._response_converters,
+                    labels=context.memory_labels,
+                    attack_identifier=self.get_identifier(),
+                )
 
             # Store the response
             if response:
@@ -349,7 +357,13 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         if not self._objective_scorer:
             return None
 
-        scores = await self._objective_scorer.score_text_async(text=combined_value, objective=objective)
+        with with_execution_context(
+            component_role=ComponentRole.OBJECTIVE_SCORER,
+            attack_strategy_name=self.__class__.__name__,
+            attack_identifier=self.get_identifier(),
+            component_identifier=self._objective_scorer.get_identifier(),
+        ):
+            scores = await self._objective_scorer.score_text_async(text=combined_value, objective=objective)
         return scores[0] if scores else None
 
     async def _teardown_async(self, *, context: ChunkedRequestAttackContext) -> None:

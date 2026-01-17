@@ -8,7 +8,12 @@ import traceback
 from typing import Any, List, Optional
 from uuid import uuid4
 
-from pyrit.exceptions import EmptyResponseException, PyritException
+from pyrit.exceptions import (
+    ComponentRole,
+    EmptyResponseException,
+    get_execution_context,
+    with_execution_context,
+)
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     Message,
@@ -211,8 +216,7 @@ class PromptNormalizer:
             message (Message): The message containing pieces to be converted.
 
         Raises:
-            PyritException: If a converter raises a PyRIT exception (re-raised with enhanced context).
-            RuntimeError: If a converter raises a non-PyRIT exception (wrapped with converter context).
+            Exception: Any exception from converters propagates with execution context for error tracing.
         """
         for converter_configuration in converter_configurations:
             for piece_index, piece in enumerate(message.message_pieces):
@@ -232,23 +236,30 @@ class PromptNormalizer:
                 converted_text_data_type = piece.converted_value_data_type
 
                 for converter in converter_configuration.converters:
+                    # Inherit attack context from outer execution context (set by attack strategy)
+                    outer_context = get_execution_context()
+
                     try:
-                        converter_result = await converter.convert_tokens_async(
-                            prompt=converted_text,
-                            input_type=converted_text_data_type,
-                            start_token=self._start_token,
-                            end_token=self._end_token,
-                        )
+                        with with_execution_context(
+                            component_role=ComponentRole.CONVERTER,
+                            attack_strategy_name=outer_context.attack_strategy_name if outer_context else None,
+                            attack_identifier=outer_context.attack_identifier if outer_context else None,
+                            component_identifier=converter.get_identifier(),
+                            objective_target_conversation_id=(
+                                outer_context.objective_target_conversation_id if outer_context else None
+                            ),
+                        ):
+                            converter_result = await converter.convert_tokens_async(
+                                prompt=converted_text,
+                                input_type=converted_text_data_type,
+                                start_token=self._start_token,
+                                end_token=self._end_token,
+                            )
                         converted_text = converter_result.output_text
                         converted_text_data_type = converter_result.output_type
-                    except PyritException as e:
-                        # Re-raise PyRIT exceptions with enhanced context while preserving type for retry decorators
-                        e.message = f"Error in converter {converter.__class__.__name__}: {e.message}"
-                        e.args = (f"Status Code: {e.status_code}, Message: {e.message}",)
+                    except Exception:
+                        # Let the exception propagate - execution context will add converter details
                         raise
-                    except Exception as e:
-                        # Wrap non-PyRIT exceptions for better error tracing
-                        raise RuntimeError(f"Error in converter {converter.__class__.__name__}: {str(e)}") from e
 
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type
