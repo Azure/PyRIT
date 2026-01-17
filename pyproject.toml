@@ -169,7 +169,6 @@ asyncio_mode = "auto"
 [tool.ty.rules]
 unresolved-import = "ignore"
 possibly-missing-attribute = "ignore"
-empty-body = "ignore"
 unused-ignore-comment = "ignore"
 [tool.ty.analysis]
 respect-type-ignore-comments = true
