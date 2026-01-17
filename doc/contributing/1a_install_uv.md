@@ -185,7 +185,7 @@ uv run ruff check --fix .
 ### Running Type Checker
 
 ```bash
-uv run mypy pyrit/
+uv run ty check pyrit/
 ```
 
 ### Pre-commit Hooks
