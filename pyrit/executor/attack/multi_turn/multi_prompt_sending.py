@@ -160,7 +160,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
-        self._successful_objective_threshold = attack_scoring_config.successful_objective_threshold
 
         # Initialize prompt normalizer and conversation manager
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
@@ -179,7 +178,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
         return AttackScoringConfig(
             objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
-            successful_objective_threshold=self._successful_objective_threshold,
         )
 
     def _validate_context(self, *, context: MultiTurnAttackContext[Any]) -> None:

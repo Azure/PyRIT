@@ -185,7 +185,6 @@ API Reference
     MultiPromptSendingAttackParameters
     MultiTurnAttackContext
     MultiTurnAttackStrategy
-    ObjectiveEvaluator
     PrependedConversationConfig
     PromptSendingAttack
     RTASystemPromptPaths
