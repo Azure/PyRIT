@@ -25,7 +25,10 @@ from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
 
-RealTimeVoice = Literal["alloy", "echo", "shimmer"]
+# Voices supported by the OpenAI Realtime API.
+# See: https://platform.openai.com/docs/guides/realtime-conversations#voice-options
+# For best quality, OpenAI recommends using "marin" or "cedar".
+RealTimeVoice = Literal["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"]
 
 
 @dataclass
