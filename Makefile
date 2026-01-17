@@ -1,4 +1,4 @@
-.PHONY: all pre-commit mypy test test-cov-html test-cov-xml
+.PHONY: all pre-commit ty test test-cov-html test-cov-xml
 
 CMD:=uv run -m
 PYMODULE:=pyrit
@@ -13,8 +13,8 @@ pre-commit:
 	$(CMD) isort --multi-line 3 --recursive $(PYMODULE) $(TESTS)
 	pre-commit run --all-files
 
-mypy:
-	$(CMD) mypy $(PYMODULE) $(UNIT_TESTS)
+ty:
+	$(CMD) ty check $(PYMODULE) $(UNIT_TESTS)
 
 docs-build:
 	uv run jb build -W -v ./doc
