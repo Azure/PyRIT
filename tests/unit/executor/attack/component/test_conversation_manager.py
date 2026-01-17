@@ -18,7 +18,7 @@ Helper functions include:
 """
 
 import uuid
-from typing import Dict, List
+from typing import Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -45,7 +45,8 @@ from pyrit.prompt_target import PromptChatTarget, PromptTarget
 class _TestAttackContext(AttackContext):
     """Concrete AttackContext for testing."""
 
-    pass
+    # Add last_score to match MultiTurnAttackContext behavior for testing
+    last_score: Optional[Score] = None
 
 
 # =============================================================================
@@ -844,9 +845,10 @@ class TestInitializeContext:
         piece_conversation_id = str(uuid.uuid4())
 
         # Create score for first piece
+        # Prepended conversations are simulated, so only false scores are extracted
         score1 = Score(
             score_type="true_false",
-            score_value="true",
+            score_value="false",
             score_category=["test"],
             score_value_description="Score for text piece",
             score_rationale="Test rationale for text",
@@ -862,9 +864,10 @@ class TestInitializeContext:
         )
 
         # Create score for second piece
+        # Also false since prepended conversations only extract false scores
         score2 = Score(
             score_type="true_false",
-            score_value="true",
+            score_value="false",
             score_category=["test"],
             score_value_description="Score for image piece",
             score_rationale="Test rationale for image",
@@ -896,6 +899,94 @@ class TestInitializeContext:
         assert len(state.last_assistant_message_scores) == 2
         assert score1 in state.last_assistant_message_scores
         assert score2 in state.last_assistant_message_scores
+
+    @pytest.mark.asyncio
+    async def test_prepended_conversation_ignores_true_scores(
+        self,
+        attack_identifier: Dict[str, str],
+        mock_chat_target: MagicMock,
+    ) -> None:
+        """Test that prepended conversations only extract false scores, ignoring true scores.
+
+        Prepended conversations are simulated (not real target responses), so true scores
+        would incorrectly indicate the objective was already achieved. Only false scores
+        are extracted to provide feedback rationale for continued attack attempts.
+        """
+        manager = ConversationManager(attack_identifier=attack_identifier)
+        conversation_id = str(uuid.uuid4())
+        context = _TestAttackContext(params=AttackParameters(objective="Test objective"))
+
+        # Create a score with true value - should be ignored
+        true_score = Score(
+            score_type="true_false",
+            score_value="true",
+            score_category=["test"],
+            score_value_description="Should be ignored",
+            score_rationale="This simulated success should not be extracted",
+            score_metadata={},
+            message_piece_id=str(uuid.uuid4()),
+        )
+
+        # Create a score with false value - should be extracted
+        false_score = Score(
+            score_type="true_false",
+            score_value="false",
+            score_category=["test"],
+            score_value_description="Should be extracted",
+            score_rationale="This refusal can provide feedback",
+            score_metadata={},
+            message_piece_id=str(uuid.uuid4()),
+        )
+
+        piece_with_true = MessagePiece(
+            role="assistant",
+            original_value="Simulated success response",
+            original_value_data_type="text",
+            conversation_id=str(uuid.uuid4()),
+            scores=[true_score],
+        )
+
+        piece_with_false = MessagePiece(
+            role="assistant",
+            original_value="Simulated refusal response",
+            original_value_data_type="text",
+            conversation_id=str(uuid.uuid4()),
+            scores=[false_score],
+        )
+
+        # Test with true score only - should get no scores
+        context.prepended_conversation = [
+            Message.from_prompt(prompt="Test prompt", role="user"),
+            Message(message_pieces=[piece_with_true]),
+        ]
+
+        state = await manager.initialize_context_async(
+            context=context,
+            target=mock_chat_target,
+            conversation_id=conversation_id,
+            max_turns=10,
+        )
+
+        assert len(state.last_assistant_message_scores) == 0
+        assert context.last_score is None
+
+        # Test with false score - should extract it
+        context2 = _TestAttackContext(params=AttackParameters(objective="Test objective"))
+        context2.prepended_conversation = [
+            Message.from_prompt(prompt="Test prompt", role="user"),
+            Message(message_pieces=[piece_with_false]),
+        ]
+
+        state2 = await manager.initialize_context_async(
+            context=context2,
+            target=mock_chat_target,
+            conversation_id=str(uuid.uuid4()),
+            max_turns=10,
+        )
+
+        assert len(state2.last_assistant_message_scores) == 1
+        assert false_score in state2.last_assistant_message_scores
+        assert context2.last_score == false_score
 
 
 # =============================================================================
