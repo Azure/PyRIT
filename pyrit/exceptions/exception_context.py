@@ -74,6 +74,9 @@ class ExecutionContext:
     # The component class name (extracted from component_identifier.__type__ for quick access)
     component_name: Optional[str] = None
 
+    # The attack objective if available
+    objective: Optional[str] = None
+
     def get_retry_context_string(self) -> str:
         """
         Generate a concise context string for retry log messages.
@@ -101,6 +104,13 @@ class ExecutionContext:
             lines.append(f"Attack: {self.attack_strategy_name}")
 
         lines.append(f"Component: {self.component_role.value}")
+
+        if self.objective:
+            # Normalize to single line and truncate to 120 characters
+            objective_single_line = " ".join(self.objective.split())
+            if len(objective_single_line) > 120:
+                objective_single_line = objective_single_line[:117] + "..."
+            lines.append(f"Objective: {objective_single_line}")
 
         if self.objective_target_conversation_id:
             lines.append(f"Objective target conversation ID: {self.objective_target_conversation_id}")
@@ -183,6 +193,7 @@ def with_execution_context(
     attack_identifier: Optional[Dict[str, Any]] = None,
     component_identifier: Optional[Dict[str, Any]] = None,
     objective_target_conversation_id: Optional[str] = None,
+    objective: Optional[str] = None,
 ) -> ExecutionContextManager:
     """
     Create an execution context manager with the specified parameters.
@@ -193,6 +204,7 @@ def with_execution_context(
         attack_identifier: The identifier from attack.get_identifier().
         component_identifier: The identifier from component.get_identifier().
         objective_target_conversation_id: The objective target conversation ID if available.
+        objective: The attack objective if available.
 
     Returns:
         ExecutionContextManager: A context manager that sets/clears the context.
@@ -212,5 +224,6 @@ def with_execution_context(
         objective_target_conversation_id=objective_target_conversation_id,
         endpoint=endpoint,
         component_name=component_name,
+        objective=objective,
     )
     return ExecutionContextManager(context=context)

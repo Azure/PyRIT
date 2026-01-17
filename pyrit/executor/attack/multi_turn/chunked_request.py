@@ -267,6 +267,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
                 attack_identifier=self.get_identifier(),
                 component_identifier=self._objective_target.get_identifier(),
                 objective_target_conversation_id=context.session.conversation_id,
+                objective=context.objective,
             ):
                 response = await self._prompt_normalizer.send_prompt_async(
                     message=message,
@@ -362,6 +363,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_scorer.get_identifier(),
+            objective=objective,
         ):
             scores = await self._objective_scorer.score_text_async(text=combined_value, objective=objective)
         return scores[0] if scores else None

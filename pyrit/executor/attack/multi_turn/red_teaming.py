@@ -368,6 +368,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             attack_identifier=self.get_identifier(),
             component_identifier=self._adversarial_chat.get_identifier(),
             objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
         ):
             response = await self._prompt_normalizer.send_prompt_async(
                 message=prompt_message,
@@ -526,6 +527,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_target.get_identifier(),
             objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
         ):
             # Send the message to the target
             response = await self._prompt_normalizer.send_prompt_async(
@@ -573,6 +575,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_scorer.get_identifier(),
             objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
         ):
             # score_async handles blocked, filtered, other errors
             scoring_results = await self._objective_scorer.score_async(

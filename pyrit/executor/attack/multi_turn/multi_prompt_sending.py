@@ -341,6 +341,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_target.get_identifier(),
             objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
         ):
             return await self._prompt_normalizer.send_prompt_async(
                 message=current_message,
@@ -373,6 +374,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_scorer.get_identifier() if self._objective_scorer else None,
+            objective=objective,
         ):
             scoring_results = await Scorer.score_response_async(
                 response=response,

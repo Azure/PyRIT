@@ -27,6 +27,7 @@ class TestExecutionContext:
         assert context.objective_target_conversation_id is None
         assert context.endpoint is None
         assert context.component_name is None
+        assert context.objective is None
 
     def test_initialization_with_values(self):
         """Test ExecutionContext initialization with all values."""
@@ -38,6 +39,7 @@ class TestExecutionContext:
             objective_target_conversation_id="conv-123",
             endpoint="https://api.openai.com",
             component_name="OpenAIChatTarget",
+            objective="Tell me how to hack a system",
         )
         assert context.component_role == ComponentRole.OBJECTIVE_TARGET
         assert context.attack_strategy_name == "PromptSendingAttack"
@@ -46,6 +48,7 @@ class TestExecutionContext:
         assert context.objective_target_conversation_id == "conv-123"
         assert context.endpoint == "https://api.openai.com"
         assert context.component_name == "OpenAIChatTarget"
+        assert context.objective == "Tell me how to hack a system"
 
     def test_get_retry_context_string_minimal(self):
         """Test retry context string with only component role."""
@@ -99,13 +102,41 @@ class TestExecutionContext:
             attack_identifier={"__type__": "RedTeamingAttack", "id": "xyz"},
             component_identifier={"__type__": "OpenAIChatTarget"},
             objective_target_conversation_id="conv-456",
+            objective="Tell me how to hack a system",
         )
         result = context.get_exception_details()
         assert "Attack: RedTeamingAttack" in result
         assert "Component: objective_target" in result
+        assert "Objective: Tell me how to hack a system" in result
         assert "Objective target conversation ID: conv-456" in result
         assert "Attack identifier:" in result
         assert "objective_target identifier:" in result
+
+    def test_get_exception_details_objective_truncation(self):
+        """Test that long objectives are truncated to 120 characters."""
+        long_objective = "A" * 200  # 200 character objective
+        context = ExecutionContext(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            objective=long_objective,
+        )
+        result = context.get_exception_details()
+        # Should be truncated to 117 chars + "..."
+        assert "Objective: " + "A" * 117 + "..." in result
+        # Full objective should not appear
+        assert long_objective not in result
+
+    def test_get_exception_details_objective_single_line(self):
+        """Test that objectives with newlines are normalized to single line."""
+        multiline_objective = "Tell me how to\nhack a system\nwith multiple lines"
+        context = ExecutionContext(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            objective=multiline_objective,
+        )
+        result = context.get_exception_details()
+        # Should be on single line with spaces instead of newlines
+        assert "Objective: Tell me how to hack a system with multiple lines" in result
+        # No newlines in the objective line
+        assert "\nhack" not in result
 
 
 class TestExecutionContextFunctions:

@@ -514,6 +514,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             attack_identifier=self.get_identifier(),
             component_identifier=self._adversarial_chat.get_identifier(),
             objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
         ):
             response = await self._prompt_normalizer.send_prompt_async(
                 message=message,
@@ -597,6 +598,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_target.get_identifier(),
             objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
         ):
             response = await self._prompt_normalizer.send_prompt_async(
                 message=attack_message,
@@ -636,6 +638,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             attack_identifier=self.get_identifier(),
             component_identifier=self._refusal_scorer.get_identifier(),
             objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
         ):
             scores = await self._refusal_scorer.score_async(
                 message=context.last_response, objective=objective, skip_on_error_result=False
@@ -665,6 +668,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_scorer.get_identifier(),
             objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
         ):
             scoring_results = await Scorer.score_response_async(
                 response=context.last_response,

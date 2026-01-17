@@ -318,6 +318,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_target.get_identifier(),
             objective_target_conversation_id=context.conversation_id,
+            objective=context.params.objective,
         ):
             return await self._prompt_normalizer.send_prompt_async(
                 message=message,
@@ -355,6 +356,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
             component_identifier=self._objective_scorer.get_identifier() if self._objective_scorer else None,
+            objective=objective,
         ):
             scoring_results = await Scorer.score_response_async(
                 response=response,

@@ -341,6 +341,9 @@ class _TreeOfAttacksNode:
         # This supports multimodal messages
         self._initial_prompt: Optional[Message] = initial_prompt
 
+        # Current objective (set when send_prompt_async is called)
+        self._objective: Optional[str] = None
+
     async def initialize_with_prepended_conversation_async(
         self,
         *,
@@ -424,6 +427,9 @@ class _TreeOfAttacksNode:
             - `off_topic`: `True` if the prompt was deemed off-topic after all retries
             - `error_message`: Set if an error occurred during execution
         """
+        # Store objective for use in execution context
+        self._objective = objective
+
         try:
             # Check if we have an initial prompt to use (bypasses adversarial generation)
             if self._initial_prompt and self._is_first_turn():
@@ -525,6 +531,7 @@ class _TreeOfAttacksNode:
             attack_identifier=self._attack_id,
             component_identifier=self._objective_target.get_identifier(),
             objective_target_conversation_id=self.objective_target_conversation_id,
+            objective=self._objective,
         ):
             response = await self._prompt_normalizer.send_prompt_async(
                 message=message,
@@ -580,6 +587,7 @@ class _TreeOfAttacksNode:
             attack_identifier=self._attack_id,
             component_identifier=self._objective_target.get_identifier(),
             objective_target_conversation_id=self.objective_target_conversation_id,
+            objective=self._objective,
         ):
             response = await self._prompt_normalizer.send_prompt_async(
                 message=message,
@@ -633,6 +641,7 @@ class _TreeOfAttacksNode:
             attack_identifier=self._attack_id,
             component_identifier=self._objective_scorer.get_identifier(),
             objective_target_conversation_id=self.objective_target_conversation_id,
+            objective=objective,
         ):
             scoring_results = await Scorer.score_response_async(
                 response=response,
@@ -1078,6 +1087,7 @@ class _TreeOfAttacksNode:
             attack_identifier=self._attack_id,
             component_identifier=self._adversarial_chat.get_identifier(),
             objective_target_conversation_id=self.objective_target_conversation_id,
+            objective=self._objective,
         ):
             response = await self._prompt_normalizer.send_prompt_async(
                 message=message,
