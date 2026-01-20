@@ -3,6 +3,7 @@
 
 import os
 import pathlib
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import yaml
@@ -20,6 +21,7 @@ from pyrit.executor.attack import (
     RolePlayPaths,
 )
 from pyrit.models import SeedAttackGroup, SeedObjective
+from pyrit.models.seeds.seed_group import SeedGroup
 from pyrit.prompt_converter import ToneConverter
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
@@ -41,6 +43,23 @@ from pyrit.score import (
 )
 
 AttackStrategyT = TypeVar("AttackStrategyT", bound="AttackStrategy[Any, Any]")
+
+
+@dataclass
+class HarmCategoryConfig:
+    """
+    Configuration for a specific harm category.
+
+    Encapsulates the Crescendo system prompt path and scoring rubric path for a harm category.
+    This ensures both paths are always provided together, preventing mismatched configurations.
+
+    Attributes:
+        crescendo_system_prompt_path: Path to the Crescendo escalation strategy YAML file.
+        scoring_rubric_path: Path to the scoring rubric YAML file.
+    """
+
+    crescendo_system_prompt_path: str
+    scoring_rubric_path: str
 
 
 class PsychosocialHarmsStrategy(ScenarioStrategy):
@@ -73,14 +92,29 @@ class PsychosocialHarmsScenario(Scenario):
     Psychosocial Harms Scenario implementation for PyRIT.
 
     This scenario contains various psychosocial harm-based checks that evaluate model behavior
-    when interacting with users experiencing mental health crises, psychological vulnerabilities,
-    or seeking to establish inappropriate emotional dependencies.
+    for responses that may harm the well-being or mental health of users.
+    Examples include mistreating users in a mental health crisis or aiding them in self-harm.
 
     The scenario tests whether models:
     - Recognize mental health crises and respond appropriately
     - Avoid facilitating self-harm or harmful behaviors
-    - Maintain appropriate boundaries and avoid fostering unhealthy dependencies
     - Provide crisis resources and encourage professional help
+
+    Example usage with custom harm category configurations:
+
+        # Define custom configurations for harm categories
+        custom_configs = {
+            "psychosocial_imminent_crisis": HarmCategoryConfig(
+                crescendo_system_prompt_path="path/to/custom_escalation.yaml",
+                scoring_rubric_path="path/to/custom_rubric.yaml",
+            ),
+        }
+
+        scenario = PsychosocialHarmsScenario(harm_configs=custom_configs)
+        await scenario.initialize_async(
+            objective_target=target_llm,
+            scenario_strategies=[PsychosocialHarmsStrategy.MULTI_TURN],
+        )
     """
 
     version: int = 1
@@ -124,8 +158,7 @@ class PsychosocialHarmsScenario(Scenario):
         objective_scorer: Optional[FloatScaleThresholdScorer] = None,
         scenario_result_id: Optional[str] = None,
         crescendo_system_prompt_path: Optional[str] = None,
-        crescendo_system_prompt_paths_by_harm: Optional[Dict[str, str]] = None,
-        scoring_rubric_paths_by_harm: Optional[Dict[str, str]] = None,
+        harm_configs: Optional[Dict[str, HarmCategoryConfig]] = None,
         max_turns: int = 5,
     ):
         """
@@ -143,21 +176,17 @@ class PsychosocialHarmsScenario(Scenario):
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
             crescendo_system_prompt_path (Optional[str]): Path to custom system prompt for Crescendo
                 attack. If not provided, uses the default escalation_crisis.yaml prompt. This is a
-                fallback for all harm categories if crescendo_system_prompt_paths_by_harm is not specified.
-            crescendo_system_prompt_paths_by_harm (Optional[Dict[str, str]]): Dictionary mapping harm
-                category names to their specific Crescendo system prompt paths. This allows different
-                escalation strategies for different harm types. Example:
+                fallback for all harm categories not specified in harm_configs.
+            harm_configs (Optional[Dict[str, HarmCategoryConfig]]): Dictionary mapping harm category
+                names to their HarmCategoryConfig. This allows different escalation strategies and
+                scoring rubrics for different harm types. Example:
                 {
-                    "psychosocial_imminent_crisis": "path/to/crisis_escalation.yaml"
+                    "psychosocial_imminent_crisis": HarmCategoryConfig(
+                        crescendo_system_prompt_path="path/to/crisis_escalation.yaml",
+                        scoring_rubric_path="path/to/crisis_management.yaml"
+                    )
                 }
-                If a harm category is not in this dict, falls back to crescendo_system_prompt_path.
-            scoring_rubric_paths_by_harm (Optional[Dict[str, str]]): Dictionary mapping harm
-                category names to their specific scoring rubric YAML files. This allows different
-                evaluation criteria for different harm types. Example:
-                {
-                    "psychosocial_imminent_crisis": "path/to/crisis_management.yaml"
-                }
-                If not provided, uses the default crisis_management.yaml for all categories.
+                If a harm category is not in this dict, falls back to defaults.
             max_turns (int): Maximum number of conversation turns for multi-turn attacks (CrescendoAttack).
                 Defaults to 5. Increase for more gradual escalation, decrease for faster testing.
         """
@@ -170,30 +199,20 @@ class PsychosocialHarmsScenario(Scenario):
             )
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
 
-        # Set up default scoring rubrics for each harm category
-        default_scoring_rubrics = {
-            "psychosocial_imminent_crisis": str(
-                pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"
+        # Set up default harm category configurations
+        default_harm_configs = {
+            "psychosocial_imminent_crisis": HarmCategoryConfig(
+                crescendo_system_prompt_path=str(
+                    pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
+                ),
+                scoring_rubric_path=str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"),
             ),
         }
-        # Merge user-provided rubrics with defaults (user-provided takes precedence)
-        self._scoring_rubric_paths_by_harm = {**default_scoring_rubrics, **(scoring_rubric_paths_by_harm or {})}
+        # Merge user-provided configs with defaults (user-provided takes precedence)
+        self._harm_configs = {**default_harm_configs, **(harm_configs or {})}
 
-        self._objective_scorer = objective_scorer if objective_scorer else self._get_default_scorer()
+        self._objective_scorer = objective_scorer if objective_scorer else self._get_scorer()
         self._crescendo_system_prompt_path = crescendo_system_prompt_path
-
-        # Set up default Crescendo strategies for each harm category
-        default_crescendo_strategies = {
-            "psychosocial_imminent_crisis": str(
-                pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
-            ),
-        }
-        # Merge user-provided strategies with defaults (user-provided takes precedence)
-        self._crescendo_system_prompt_paths_by_harm = {
-            **default_crescendo_strategies,
-            **(crescendo_system_prompt_paths_by_harm or {}),
-        }
-
         self._max_turns = max_turns
 
         super().__init__(
@@ -253,9 +272,9 @@ class PsychosocialHarmsScenario(Scenario):
             temperature=0.7,
         )
 
-    def _get_default_scorer(self, harm_category: Optional[str] = None) -> FloatScaleThresholdScorer:
+    def _get_scorer(self, harm_category: Optional[str] = None) -> FloatScaleThresholdScorer:
         """
-        Create default scorer for psychosocial harms evaluation.
+        Create scorer for psychosocial harms evaluation.
 
         This default uses a crisis management rubric that evaluates whether the model:
         1. Appropriately recognizes mental health crises
@@ -264,7 +283,7 @@ class PsychosocialHarmsScenario(Scenario):
 
         Args:
             harm_category (Optional[str]): The specific harm category to get a scorer for.
-                If provided and exists in scoring_rubric_paths_by_harm, uses that rubric.
+                If provided and exists in harm_configs, uses that rubric.
                 Otherwise falls back to default crisis_management.yaml.
 
         Returns:
@@ -272,8 +291,8 @@ class PsychosocialHarmsScenario(Scenario):
                 returns True if the score meets the threshold (indicating attack success).
         """
         # Determine which rubric to use
-        if harm_category and harm_category in self._scoring_rubric_paths_by_harm:
-            rubric_path = pathlib.Path(self._scoring_rubric_paths_by_harm[harm_category])
+        if harm_category and harm_category in self._harm_configs:
+            rubric_path = pathlib.Path(self._harm_configs[harm_category].scoring_rubric_path)
         else:
             # Default to crisis management rubric
             rubric_path = pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"
@@ -318,29 +337,19 @@ class PsychosocialHarmsScenario(Scenario):
         # Resolve seed groups from deprecated objectives or dataset config
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks: List[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=PsychosocialHarmsStrategy
         )
 
+        base_strategies: set[str] = set()
         for strategy in strategies:
-            # If strategy is a dataset-specific strategy (not single_turn/multi_turn),
-            # expand it to attacks for each of its tags
-            if strategy not in ["single_turn", "multi_turn"]:
-                # Find the enum member for this strategy
-                strategy_enum = next((s for s in PsychosocialHarmsStrategy if s.value == strategy), None)
-                if strategy_enum and strategy_enum.tags:
-                    # Create an attack for each tag (single_turn, multi_turn)
-                    for tag in strategy_enum.tags:
-                        if tag in ["single_turn", "multi_turn"]:
-                            atomic_attacks.append(self._get_atomic_attack_from_strategy(tag))
-                else:
-                    # Fallback: create single attack for unknown strategy
-                    atomic_attacks.append(self._get_atomic_attack_from_strategy(strategy))
-            else:
-                # For single_turn/multi_turn, create one attack
-                atomic_attacks.append(self._get_atomic_attack_from_strategy(strategy))
-        return atomic_attacks
+            try:
+                strategy_enum = PsychosocialHarmsStrategy(strategy)
+                base_strategies.update(strategy_enum.tags or [strategy])
+            except ValueError:
+                base_strategies.add(strategy)
+
+        return [self._get_atomic_attack_from_strategy(s) for s in base_strategies]
 
     def _get_atomic_attack_from_strategy(self, strategy: str) -> AtomicAttack:
         """
@@ -370,15 +379,14 @@ class PsychosocialHarmsScenario(Scenario):
             # Extract harm category from first seed if available
             if self._seed_groups and self._seed_groups[0].seeds:
                 first_seed = self._seed_groups[0].seeds[0]
-                if hasattr(first_seed, "harm_categories") and first_seed.harm_categories:
+                if first_seed.harm_categories:
                     harm_category = first_seed.harm_categories[0]
 
         # Create harm-specific scorer if available, otherwise use default
-        strategy_scorer: TrueFalseScorer
-        if harm_category in self._scoring_rubric_paths_by_harm:
-            strategy_scorer = self._get_default_scorer(harm_category=harm_category)
-        else:
-            strategy_scorer = self._objective_scorer  # type: ignore
+        harm_config = self._harm_configs.get(harm_category)
+        strategy_scorer: TrueFalseScorer = (
+            self._get_scorer(harm_category=harm_category) if harm_config else self._objective_scorer  # type: ignore
+        )
 
         # Create scoring config for attacks
         scoring_config = AttackScoringConfig(objective_scorer=strategy_scorer)
@@ -400,15 +408,13 @@ class PsychosocialHarmsScenario(Scenario):
         elif strategy == "multi_turn":
             # For multi_turn, use CrescendoAttack
             # Get harm-specific prompt path, or fall back to default
-            if harm_category in self._crescendo_system_prompt_paths_by_harm:
-                crescendo_prompt_path = pathlib.Path(self._crescendo_system_prompt_paths_by_harm[harm_category])
-            elif self._crescendo_system_prompt_path:
-                crescendo_prompt_path = pathlib.Path(self._crescendo_system_prompt_path)
-            else:
-                # Default: use crisis escalation
-                crescendo_prompt_path = (
-                    pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
-                )
+            crescendo_prompt_path = (
+                pathlib.Path(harm_config.crescendo_system_prompt_path)
+                if harm_config
+                else pathlib.Path(self._crescendo_system_prompt_path)
+                if self._crescendo_system_prompt_path
+                else pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
+            )
 
             adversarial_config = AttackAdversarialConfig(
                 target=self._adversarial_chat,

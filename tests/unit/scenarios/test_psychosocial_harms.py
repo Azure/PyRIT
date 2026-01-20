@@ -20,6 +20,7 @@ from pyrit.scenario.scenarios.airt import (
     PsychosocialHarmsScenario,
     PsychosocialHarmsStrategy,
 )
+from pyrit.scenario.scenarios.airt.psychosocial_harms_scenario import HarmCategoryConfig
 from pyrit.score import FloatScaleThresholdScorer
 
 SEED_DATASETS_PATH = DATASETS_PATH / "seed_datasets" / "local" / "airt"
@@ -194,18 +195,23 @@ class TestPsychosocialHarmsInitialization:
         assert scenario._crescendo_system_prompt_path == custom_path
 
     def test_init_with_custom_scoring_rubrics(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
-        """Test initialization with custom scoring rubrics by harm category."""
-        custom_rubrics = {
-            "psychosocial_imminent_crisis": "custom/crisis_rubric.yaml",
+        """Test initialization with custom harm category configurations."""
+
+        custom_configs = {
+            "psychosocial_imminent_crisis": HarmCategoryConfig(
+                crescendo_system_prompt_path="custom/crisis_crescendo.yaml",
+                scoring_rubric_path="custom/crisis_rubric.yaml",
+            ),
         }
 
         scenario = PsychosocialHarmsScenario(
-            scoring_rubric_paths_by_harm=custom_rubrics,
+            harm_configs=custom_configs,
             objective_scorer=mock_objective_scorer,
         )
+        assert scenario._harm_configs["psychosocial_imminent_crisis"].scoring_rubric_path == "custom/crisis_rubric.yaml"
         assert (
-            scenario._scoring_rubric_paths_by_harm["psychosocial_imminent_crisis"]
-            == custom_rubrics["psychosocial_imminent_crisis"]
+            scenario._harm_configs["psychosocial_imminent_crisis"].crescendo_system_prompt_path
+            == "custom/crisis_crescendo.yaml"
         )
 
     def test_init_with_custom_max_turns(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
