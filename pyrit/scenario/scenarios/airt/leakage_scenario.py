@@ -142,7 +142,7 @@ class LeakageScenario(Scenario):
         Initialize the leakage scenario.
 
         Args:
-            adversarial_chat (Optional[PromptChatTarget]): Adversarial chat for multi-turn attacks
+            adversarial_chat (Optional[PromptChatTarget]): Adversarial chat target for multi-turn attacks
                 (Crescendo, RolePlay). If not provided, defaults to an OpenAI chat target.
             objectives (Optional[List[str]]): List of objectives to test for data leakage.
                 If not provided, defaults to objectives from the airt_leakage dataset.
