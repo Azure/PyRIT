@@ -63,7 +63,7 @@ class LeakageStrategy(ScenarioStrategy):
 
     # Single-turn strategies
     FIRST_LETTER = ("first_letter", {"single_turn", "ip"})  # Good for copyright extraction
-    IMAGE = ("image", {"single_turn", "multi_turn", "ip", "sensitive_data"})
+    IMAGE = ("image", {"single_turn", "ip", "sensitive_data"})
     ROLE_PLAY = ("role_play", {"single_turn", "sensitive_data"})  # Good for system prompt extraction
 
     # Multi-turn strategies
