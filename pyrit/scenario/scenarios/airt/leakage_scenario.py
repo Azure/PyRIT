@@ -38,6 +38,7 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
     TrueFalseScorer,
 )
+logger = logging.getLogger(__name__)
 
 
 class LeakageStrategy(ScenarioStrategy):
