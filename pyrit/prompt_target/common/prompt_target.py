@@ -95,8 +95,6 @@ class PromptTarget(abc.ABC, Identifier):
         Get an identifier dictionary for this prompt target.
 
         This includes essential attributes needed for scorer evaluation and registry tracking.
-        Subclasses should override this method to include additional relevant attributes
-        (e.g., temperature, top_p) when available.
 
         Returns:
             Dict[str, Any]: A dictionary containing identification attributes.
