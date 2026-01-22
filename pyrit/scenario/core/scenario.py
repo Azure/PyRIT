@@ -79,7 +79,9 @@ class Scenario(ABC):
             with whitespace normalized for display.
         """
         # Use the class docstring with normalized whitespace as description
-        description = " ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else ""
+        description = (
+            " ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else ""
+        )
 
         self._identifier = ScenarioIdentifier(
             name=type(self).__name__, scenario_version=version, description=description
@@ -101,7 +103,9 @@ class Scenario(ABC):
         self._name = name
         self._memory = CentralMemory.get_memory_instance()
         self._atomic_attacks: List[AtomicAttack] = []
-        self._scenario_result_id: Optional[str] = str(scenario_result_id) if scenario_result_id else None
+        self._scenario_result_id: Optional[str] = (
+            str(scenario_result_id) if scenario_result_id else None
+        )
         self._result_lock = asyncio.Lock()
 
         self._include_baseline = include_default_baseline
@@ -173,7 +177,9 @@ class Scenario(ABC):
         self,
         *,
         objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore
-        scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
+        scenario_strategies: Optional[
+            Sequence[ScenarioStrategy | ScenarioCompositeStrategy]
+        ] = None,
         dataset_config: Optional[DatasetConfiguration] = None,
         max_concurrency: int = 10,
         max_retries: int = 0,
@@ -222,7 +228,9 @@ class Scenario(ABC):
         self._objective_target = objective_target
         self._objective_target_identifier = objective_target.get_identifier()
         self._dataset_config_provided = dataset_config is not None
-        self._dataset_config = dataset_config if dataset_config else self.default_dataset_config()
+        self._dataset_config = (
+            dataset_config if dataset_config else self.default_dataset_config()
+        )
         self._max_concurrency = max_concurrency
         self._max_retries = max_retries
         self._memory_labels = memory_labels or {}
@@ -248,12 +256,15 @@ class Scenario(ABC):
 
         # Store original objectives for each atomic attack (before any mutations during execution)
         self._original_objectives_map = {
-            atomic_attack.atomic_attack_name: tuple(atomic_attack.objectives) for atomic_attack in self._atomic_attacks
+            atomic_attack.atomic_attack_name: tuple(atomic_attack.objectives)
+            for atomic_attack in self._atomic_attacks
         }
 
         # Check if we're resuming an existing scenario
         if self._scenario_result_id:
-            existing_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
+            existing_results = self._memory.get_scenario_results(
+                scenario_result_ids=[self._scenario_result_id]
+            )
 
             if existing_results:
                 existing_result = existing_results[0]
@@ -272,7 +283,8 @@ class Scenario(ABC):
 
         # Create new scenario result
         attack_results: Dict[str, List[AttackResult]] = {
-            atomic_attack.atomic_attack_name: [] for atomic_attack in self._atomic_attacks
+            atomic_attack.atomic_attack_name: []
+            for atomic_attack in self._atomic_attacks
         }
 
         result = ScenarioResult(
@@ -310,13 +322,17 @@ class Scenario(ABC):
         objective_target = first_attack._attack.get_objective_target()
 
         if not seed_groups or len(seed_groups) == 0:
-            raise ValueError("First atomic attack must have seed_groups to create baseline.")
+            raise ValueError(
+                "First atomic attack must have seed_groups to create baseline."
+            )
 
         if not objective_target:
             raise ValueError("Objective target is required to create baseline attack.")
 
         if not attack_scoring_config:
-            raise ValueError("Attack scoring config is required to create baseline attack.")
+            raise ValueError(
+                "Attack scoring config is required to create baseline attack."
+            )
 
         # Create baseline attack with no converters
         attack = PromptSendingAttack(
@@ -346,13 +362,19 @@ class Scenario(ABC):
             ValueError: If objective_target, dataset_config, or objective_scorer is not set.
         """
         if not self._objective_target:
-            raise ValueError("Objective target is required to create standalone baseline attack.")
+            raise ValueError(
+                "Objective target is required to create standalone baseline attack."
+            )
 
         if not self._dataset_config:
-            raise ValueError("Dataset config is required to create standalone baseline attack.")
+            raise ValueError(
+                "Dataset config is required to create standalone baseline attack."
+            )
 
         if not self._objective_scorer:
-            raise ValueError("Objective scorer is required to create standalone baseline attack.")
+            raise ValueError(
+                "Objective scorer is required to create standalone baseline attack."
+            )
 
         # Get seed groups from the dataset configuration
         seed_groups = self._dataset_config.get_all_seed_attack_groups()
@@ -433,7 +455,9 @@ class Scenario(ABC):
         )
         return True
 
-    def _get_completed_objectives_for_attack(self, *, atomic_attack_name: str) -> Set[str]:
+    def _get_completed_objectives_for_attack(
+        self, *, atomic_attack_name: str
+    ) -> Set[str]:
         """
         Get the set of objectives that have already been completed for a specific atomic attack.
 
@@ -450,14 +474,17 @@ class Scenario(ABC):
 
         try:
             # Retrieve the scenario result from memory
-            scenario_results = self._memory.get_scenario_results(scenario_result_ids=[self._scenario_result_id])
+            scenario_results = self._memory.get_scenario_results(
+                scenario_result_ids=[self._scenario_result_id]
+            )
 
             if scenario_results:
                 scenario_result = scenario_results[0]
                 # Get completed objectives for this atomic attack name
                 if atomic_attack_name in scenario_result.attack_results:
                     completed_objectives = {
-                        result.objective for result in scenario_result.attack_results[atomic_attack_name]
+                        result.objective
+                        for result in scenario_result.attack_results[atomic_attack_name]
                     }
         except Exception as e:
             logger.warning(
@@ -489,10 +516,14 @@ class Scenario(ABC):
             )
 
             # Get ORIGINAL objectives (before any mutations) from stored map
-            original_objectives = self._original_objectives_map.get(atomic_attack.atomic_attack_name, ())
+            original_objectives = self._original_objectives_map.get(
+                atomic_attack.atomic_attack_name, ()
+            )
 
             # Calculate remaining objectives
-            remaining_objectives = [obj for obj in original_objectives if obj not in completed_objectives]
+            remaining_objectives = [
+                obj for obj in original_objectives if obj not in completed_objectives
+            ]
 
             if remaining_objectives:
                 # If there are remaining objectives, update the atomic attack
@@ -502,7 +533,9 @@ class Scenario(ABC):
                         f"{len(remaining_objectives)}/{len(original_objectives)} objectives remaining"
                     )
                 # Update the objectives for this atomic attack to only include remaining ones
-                atomic_attack.filter_seed_groups_by_objectives(remaining_objectives=remaining_objectives)
+                atomic_attack.filter_seed_groups_by_objectives(
+                    remaining_objectives=remaining_objectives
+                )
 
                 remaining_attacks.append(atomic_attack)
             else:
@@ -525,7 +558,9 @@ class Scenario(ABC):
             attack_results (List[AttackResult]): The list of new attack results to add.
         """
         if not self._scenario_result_id:
-            logger.warning("Cannot update scenario result: no scenario result ID available")
+            logger.warning(
+                "Cannot update scenario result: no scenario result ID available"
+            )
             return
 
         async with self._result_lock:
@@ -589,7 +624,9 @@ class Scenario(ABC):
             )
 
         if not self._scenario_result_id:
-            raise ValueError("Scenario not properly initialized. Call await scenario.initialize_async() first.")
+            raise ValueError(
+                "Scenario not properly initialized. Call await scenario.initialize_async() first."
+            )
 
         # Type narrowing: create local variable that type checker knows is non-None
         scenario_result_id: str = self._scenario_result_id
@@ -604,8 +641,14 @@ class Scenario(ABC):
                 last_exception = e
 
                 # Get current scenario to check number of tries
-                scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
-                current_tries = scenario_results[0].number_tries if scenario_results else retry_attempt + 1
+                scenario_results = self._memory.get_scenario_results(
+                    scenario_result_ids=[scenario_result_id]
+                )
+                current_tries = (
+                    scenario_results[0].number_tries
+                    if scenario_results
+                    else retry_attempt + 1
+                )
 
                 # Check if we have more retries available
                 remaining_retries = self._max_retries - retry_attempt
@@ -630,7 +673,9 @@ class Scenario(ABC):
         # This should never be reached, but just in case
         if last_exception:
             raise last_exception
-        raise RuntimeError(f"Scenario '{self._name}' completed unexpectedly without result")
+        raise RuntimeError(
+            f"Scenario '{self._name}' completed unexpectedly without result"
+        )
 
     async def _execute_scenario_async(self) -> ScenarioResult:
         """
@@ -648,7 +693,9 @@ class Scenario(ABC):
             ValueError: If a lookup for a scenario for a given ID fails.
             ValueError: If atomic attack execution fails.
         """
-        logger.info(f"Starting scenario '{self._name}' execution with {len(self._atomic_attacks)} atomic attacks")
+        logger.info(
+            f"Starting scenario '{self._name}' execution with {len(self._atomic_attacks)} atomic attacks"
+        )
 
         # Type narrowing: _scenario_result_id is guaranteed to be non-None at this point
         # (verified in run_async before calling this method)
@@ -656,13 +703,17 @@ class Scenario(ABC):
         scenario_result_id: str = self._scenario_result_id
 
         # Increment number_tries at the start of each run
-        scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
+        scenario_results = self._memory.get_scenario_results(
+            scenario_result_ids=[scenario_result_id]
+        )
         if scenario_results:
             current_scenario = scenario_results[0]
             current_scenario.number_tries += 1
             entry = ScenarioResultEntry(entry=current_scenario)
             self._memory._update_entry(entry)
-            logger.info(f"Scenario '{self._name}' attempt #{current_scenario.number_tries}")
+            logger.info(
+                f"Scenario '{self._name}' attempt #{current_scenario.number_tries}"
+            )
         else:
             raise ValueError(f"Scenario result with ID {scenario_result_id} not found")
 
@@ -670,17 +721,23 @@ class Scenario(ABC):
         remaining_attacks = await self._get_remaining_atomic_attacks_async()
 
         if not remaining_attacks:
-            logger.info(f"Scenario '{self._name}' has no remaining objectives to execute")
+            logger.info(
+                f"Scenario '{self._name}' has no remaining objectives to execute"
+            )
             # Mark scenario as completed
             self._memory.update_scenario_run_state(
                 scenario_result_id=scenario_result_id, scenario_run_state="COMPLETED"
             )
             # Retrieve and return the current scenario result
-            scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
+            scenario_results = self._memory.get_scenario_results(
+                scenario_result_ids=[scenario_result_id]
+            )
             if scenario_results:
                 return scenario_results[0]
             else:
-                raise ValueError(f"Scenario result with ID {scenario_result_id} not found")
+                raise ValueError(
+                    f"Scenario result with ID {scenario_result_id} not found"
+                )
 
         logger.info(
             f"Scenario '{self._name}' has {len(remaining_attacks)} atomic attacks "
@@ -688,7 +745,9 @@ class Scenario(ABC):
         )
 
         # Mark scenario as in progress
-        self._memory.update_scenario_run_state(scenario_result_id=scenario_result_id, scenario_run_state="IN_PROGRESS")
+        self._memory.update_scenario_run_state(
+            scenario_result_id=scenario_result_id, scenario_run_state="IN_PROGRESS"
+        )
 
         # Calculate starting index based on completed attacks
         completed_count = len(self._atomic_attacks) - len(remaining_attacks)
@@ -711,7 +770,8 @@ class Scenario(ABC):
 
                 try:
                     atomic_results = await atomic_attack.run_async(
-                        max_concurrency=self._max_concurrency, return_partial_on_failure=True
+                        max_concurrency=self._max_concurrency,
+                        return_partial_on_failure=True,
                     )
 
                     # Always save completed results, even if some objectives didn't complete
@@ -734,11 +794,14 @@ class Scenario(ABC):
 
                         # Log details of each incomplete objective
                         for obj, exc in atomic_results.incomplete_objectives:
-                            logger.error(f"  Incomplete objective '{obj[:50]}...': {str(exc)}")
+                            logger.error(
+                                f"  Incomplete objective '{obj[:50]}...': {str(exc)}"
+                            )
 
                         # Mark scenario as failed
                         self._memory.update_scenario_run_state(
-                            scenario_result_id=scenario_result_id, scenario_run_state="FAILED"
+                            scenario_result_id=scenario_result_id,
+                            scenario_run_state="FAILED",
                         )
 
                         # Raise exception with detailed information
@@ -761,10 +824,16 @@ class Scenario(ABC):
                     )
 
                     # Mark scenario as failed if not already done
-                    scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
-                    if scenario_results and scenario_results[0].scenario_run_state != "FAILED":
+                    scenario_results = self._memory.get_scenario_results(
+                        scenario_result_ids=[scenario_result_id]
+                    )
+                    if (
+                        scenario_results
+                        and scenario_results[0].scenario_run_state != "FAILED"
+                    ):
                         self._memory.update_scenario_run_state(
-                            scenario_result_id=scenario_result_id, scenario_run_state="FAILED"
+                            scenario_result_id=scenario_result_id,
+                            scenario_run_state="FAILED",
                         )
 
                     raise
@@ -777,9 +846,13 @@ class Scenario(ABC):
             )
 
             # Retrieve and return final scenario result
-            scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
+            scenario_results = self._memory.get_scenario_results(
+                scenario_result_ids=[scenario_result_id]
+            )
             if not scenario_results:
-                raise ValueError(f"Scenario result with ID {self._scenario_result_id} not found")
+                raise ValueError(
+                    f"Scenario result with ID {self._scenario_result_id} not found"
+                )
 
             return scenario_results[0]
 
