@@ -22,11 +22,16 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIImageTarget(OpenAITarget):
-    """A target for image generation using OpenAI's image models."""
+    """A target for image generation or editing using OpenAI's image models."""
+
+    # Maximum number of image inputs supported by the OpenAI image API
+    _MAX_INPUT_IMAGES = 16
 
     def __init__(
         self,
-        image_size: Literal["256x256", "512x512", "1024x1024", "1536x1024", "1024x1536"] = "1024x1024",
+        image_size: Literal[
+            "256x256", "512x512", "1024x1024", "1536x1024", "1024x1536", "1792x1024", "1024x1792"
+        ] = "1024x1024",
         quality: Optional[Literal["standard", "hd", "low", "medium", "high"]] = None,
         style: Optional[Literal["natural", "vivid"]] = None,
         *args: Any,
@@ -47,14 +52,20 @@ class OpenAIImageTarget(OpenAITarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            image_size (Literal["256x256", "512x512", "1024x1024"], Optional): The size of the generated images.
+            image_size (Literal["256x256", "512x512", "1024x1024", "1536x1024", "1024x1536", "1792x1024", "1024x1792"], Optional): The size of the generated image.
+                Different models support different image sizes.
+                GPT image models support "1024x1024", "1536x1024" and "1024x1536".
+                DALL-E-3 supports "1024x1024", "1792x1024" and "1024x1792".
+                DALL-E-2 supports "256x256", "512x512" and "1024x1024".
                 Defaults to "1024x1024".
             quality (Literal["standard", "hd", "low", "medium", "high"], Optional): The quality of the generated images.
                 Different models support different quality settings.
-                For DALL-E-3, there's "standard" and "hd".
-                For newer models, there are "low", "medium", and "high".
+                GPT image models support "high", "medium" and "low".
+                DALL-E-3 supports "hd" and "standard".
+                DALL-E-2 supports "standard" only.
                 Default is to not specify.
             style (Literal["natural", "vivid"], Optional): The style of the generated images.
+                This parameter is only supported for DALL-E-3.
                 Default is to not specify.
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
@@ -76,7 +87,7 @@ class OpenAIImageTarget(OpenAITarget):
 
     def _get_target_api_paths(self) -> list[str]:
         """Return API paths that should not be in the URL."""
-        return ["/images/generations", "/v1/images/generations"]
+        return ["/images/generations", "/v1/images/generations", "/images/edits", "/v1/images/edits"]
 
     def _get_provider_examples(self) -> dict[str, str]:
         """Return provider-specific example URLs."""
@@ -93,7 +104,8 @@ class OpenAIImageTarget(OpenAITarget):
         message: Message,
     ) -> list[Message]:
         """
-        Send a prompt to the DALL-E target and return the response.
+        Send a prompt to the OpenAI image target and return the response.
+        Supports both image generation (text input) and image editing (text + images input).
 
         Args:
             message (Message): The message to send.
@@ -102,9 +114,31 @@ class OpenAIImageTarget(OpenAITarget):
             list[Message]: A list containing the response from the image target.
         """
         self._validate_request(message=message)
-        message_piece = message.message_pieces[0]
 
-        logger.info(f"Sending the following prompt to the prompt target: {message_piece}")
+        logger.info(f"Sending the following prompt to the prompt target: {message}")
+
+        # Generation requests have only one message piece (text)
+        # Editing requests have 2+ message pieces (text + images)
+        is_editing_request = len(message.message_pieces) >= 2
+
+        if is_editing_request:
+            response = await self._send_edit_request_async(message)
+        else:
+            response = await self._send_generate_request_async(message)
+
+        return [response]
+
+    async def _send_generate_request_async(self, message: Message) -> Message:
+        """
+        Send a text-only prompt to generate a new image.
+
+        Args:
+            message (Message): The text message to send.
+
+        Returns:
+            Message: The response from the image target.
+        """
+        message_piece = message.message_pieces[0]
 
         # Construct request parameters
         image_generation_args: Dict[str, Any] = {
@@ -123,7 +157,56 @@ class OpenAIImageTarget(OpenAITarget):
             api_call=lambda: self._async_client.images.generate(**image_generation_args),
             request=message,
         )
-        return [response]
+        return response
+
+    async def _send_edit_request_async(self, message: Message) -> Message:
+        """
+        Send a multimodal prompt (text + images) to edit an existing image.
+
+        Args:
+            message (Message): The text + images message to send.
+
+        Returns:
+            Message: The response from the image target.
+
+        Raises:
+            ValueError: If at least one image file cannot be opened.
+        """
+        # Extract text and images from message pieces
+        text_prompt = message.message_pieces[0].converted_value
+        image_paths = [piece.converted_value for piece in message.message_pieces[1:]]
+        image_files = []
+        for img_path in image_paths:
+            try:
+                image_files.append(open(img_path, "rb"))
+            except OSError as exc:
+                for img_file in image_files:
+                    img_file.close()
+                raise ValueError(f"Unable to open image file '{img_path}': {exc}") from exc
+
+        # Construct request parameters for image editing
+        image_edit_args: Dict[str, Any] = {
+            "model": self._model_name,
+            "image": image_files,
+            "prompt": text_prompt,
+            "size": self.image_size,
+        }
+
+        if self.quality:
+            image_edit_args["quality"] = self.quality
+        if self.style:
+            image_edit_args["style"] = self.style
+
+        try:
+            response = await self._handle_openai_request(
+                api_call=lambda: self._async_client.images.edit(**image_edit_args),
+                request=message,
+            )
+        finally:
+            for img_file in image_files:
+                img_file.close()
+
+        return response
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """
@@ -183,12 +266,22 @@ class OpenAIImageTarget(OpenAITarget):
 
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = message.message_pieces[0].converted_value_data_type
-        if piece_type != "text":
-            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
+        if 1 <= n_pieces <= self._MAX_INPUT_IMAGES + 1:
+            piece_type = message.message_pieces[0].converted_value_data_type
+            if piece_type != "text":
+                raise ValueError(f"The first message piece must be text. Received: {piece_type}.")
+            data_types = [piece.converted_value_data_type for piece in message.message_pieces[1:]]
+            for data_type in data_types:
+                if data_type != "image_path":
+                    raise ValueError(
+                        f"All the message pieces after the first one must be image_path. Received: {data_type}."
+                    )
+        else:
+            raise ValueError(
+                "This target supports exactly one text piece and up to "
+                f"{self._MAX_INPUT_IMAGES} image pieces. Received: {n_pieces} pieces."
+            )
 
     def is_json_response_supported(self) -> bool:
         """
