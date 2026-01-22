@@ -27,7 +27,9 @@ def create_mock_run_async(attack_results):
     async def mock_run_async(*args, **kwargs):
         # Save results to memory (mimics what real attacks do)
         save_attack_results_to_memory(attack_results)
-        return AttackExecutorResult(completed_results=attack_results, incomplete_objectives=[])
+        return AttackExecutorResult(
+            completed_results=attack_results, incomplete_objectives=[]
+        )
 
     return AsyncMock(side_effect=mock_run_async)
 
@@ -209,7 +211,9 @@ class TestScenarioInitialization2:
     """Tests for Scenario initialize_async method."""
 
     @pytest.mark.asyncio
-    async def test_initialize_async_populates_atomic_attacks(self, mock_atomic_attacks, mock_objective_target):
+    async def test_initialize_async_populates_atomic_attacks(
+        self, mock_atomic_attacks, mock_objective_target
+    ):
         """Test that initialize_async populates atomic attacks."""
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -259,7 +263,9 @@ class TestScenarioInitialization2:
             version=1,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target, max_retries=3)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target, max_retries=3
+        )
 
         assert scenario._max_retries == 3
 
@@ -271,7 +277,9 @@ class TestScenarioInitialization2:
             version=1,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=5)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target, max_concurrency=5
+        )
 
         assert scenario._max_concurrency == 5
 
@@ -284,7 +292,9 @@ class TestScenarioInitialization2:
             version=1,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target, memory_labels=labels)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target, memory_labels=labels
+        )
 
         assert scenario._memory_labels == labels
 
@@ -308,7 +318,9 @@ class TestScenarioExecution:
     """Tests for Scenario execution methods."""
 
     @pytest.mark.asyncio
-    async def test_run_async_executes_all_runs(self, mock_atomic_attacks, sample_attack_results, mock_objective_target):
+    async def test_run_async_executes_all_runs(
+        self, mock_atomic_attacks, sample_attack_results, mock_objective_target
+    ):
         """Test that run_async executes all atomic attacks sequentially."""
         # Configure each run to return different results
         for i, run in enumerate(mock_atomic_attacks):
@@ -329,7 +341,9 @@ class TestScenarioExecution:
         # Verify all runs were executed with correct concurrency
         assert len(result.attack_results) == 3
         for run in mock_atomic_attacks:
-            run.run_async.assert_called_once_with(max_concurrency=10, return_partial_on_failure=True)
+            run.run_async.assert_called_once_with(
+                max_concurrency=10, return_partial_on_failure=True
+            )
 
         # Verify results are aggregated correctly by atomic attack name
         assert "attack_run_1" in result.attack_results
@@ -352,13 +366,17 @@ class TestScenarioExecution:
             version=1,
             atomic_attacks_to_return=mock_atomic_attacks,
         )
-        await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=5)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target, max_concurrency=5
+        )
 
         result = await scenario.run_async()
 
         # Verify max_concurrency was passed to each run
         for run in mock_atomic_attacks:
-            run.run_async.assert_called_once_with(max_concurrency=5, return_partial_on_failure=True)
+            run.run_async.assert_called_once_with(
+                max_concurrency=5, return_partial_on_failure=True
+            )
 
         # Verify result structure
         assert isinstance(result, ScenarioResult)
@@ -370,9 +388,15 @@ class TestScenarioExecution:
     ):
         """Test that results from multiple atomic attacks are properly aggregated."""
         # Configure runs to return different numbers of results
-        mock_atomic_attacks[0].run_async = create_mock_run_async(sample_attack_results[0:2])
-        mock_atomic_attacks[1].run_async = create_mock_run_async(sample_attack_results[2:4])
-        mock_atomic_attacks[2].run_async = create_mock_run_async(sample_attack_results[4:5])
+        mock_atomic_attacks[0].run_async = create_mock_run_async(
+            sample_attack_results[0:2]
+        )
+        mock_atomic_attacks[1].run_async = create_mock_run_async(
+            sample_attack_results[2:4]
+        )
+        mock_atomic_attacks[2].run_async = create_mock_run_async(
+            sample_attack_results[4:5]
+        )
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -391,11 +415,19 @@ class TestScenarioExecution:
         assert len(result.attack_results["attack_run_3"]) == 1
 
     @pytest.mark.asyncio
-    async def test_run_async_stops_on_error(self, mock_atomic_attacks, sample_attack_results, mock_objective_target):
+    async def test_run_async_stops_on_error(
+        self, mock_atomic_attacks, sample_attack_results, mock_objective_target
+    ):
         """Test that execution stops when an atomic attack fails."""
-        mock_atomic_attacks[0].run_async = create_mock_run_async([sample_attack_results[0]])
-        mock_atomic_attacks[1].run_async = AsyncMock(side_effect=Exception("Test error"))
-        mock_atomic_attacks[2].run_async = create_mock_run_async([sample_attack_results[2]])
+        mock_atomic_attacks[0].run_async = create_mock_run_async(
+            [sample_attack_results[0]]
+        )
+        mock_atomic_attacks[1].run_async = AsyncMock(
+            side_effect=Exception("Test error")
+        )
+        mock_atomic_attacks[2].run_async = create_mock_run_async(
+            [sample_attack_results[2]]
+        )
 
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -422,7 +454,9 @@ class TestScenarioExecution:
             version=1,
         )
 
-        with pytest.raises(ValueError, match="Cannot run scenario with no atomic attacks"):
+        with pytest.raises(
+            ValueError, match="Cannot run scenario with no atomic attacks"
+        ):
             await scenario.run_async()
 
     @pytest.mark.asyncio
@@ -468,7 +502,9 @@ class TestScenarioProperties:
         assert scenario.name == "My Test Scenario"
 
     @pytest.mark.asyncio
-    async def test_atomic_attack_count_property(self, mock_atomic_attacks, mock_objective_target):
+    async def test_atomic_attack_count_property(
+        self, mock_atomic_attacks, mock_objective_target
+    ):
         """Test that atomic_attack_count returns the correct count."""
         scenario = ConcreteScenario(
             name="Test Scenario",
@@ -483,7 +519,9 @@ class TestScenarioProperties:
         assert scenario.atomic_attack_count == 3
 
     @pytest.mark.asyncio
-    async def test_atomic_attack_count_with_different_sizes(self, mock_objective_target):
+    async def test_atomic_attack_count_with_different_sizes(
+        self, mock_objective_target
+    ):
         """Test atomic_attack_count with different numbers of atomic attacks."""
         # Create mock attack strategy
         mock_attack = MagicMock()
@@ -641,7 +679,9 @@ class TestScenarioIdentifier:
     def test_scenario_identifier_with_init_data(self):
         """Test ScenarioIdentifier with init_data."""
         init_data = {"param1": "value1", "param2": 42}
-        identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1, init_data=init_data)
+        identifier = ScenarioIdentifier(
+            name="TestScenario", scenario_version=1, init_data=init_data
+        )
 
         assert identifier.init_data == init_data
 
@@ -719,7 +759,9 @@ class TestScenarioBaselineOnlyExecution:
     """Tests for baseline-only execution (empty strategies with include_baseline=True)."""
 
     @pytest.mark.asyncio
-    async def test_initialize_async_with_empty_strategies_and_baseline(self, mock_objective_target):
+    async def test_initialize_async_with_empty_strategies_and_baseline(
+        self, mock_objective_target
+    ):
         """Test that baseline-only execution works when include_baseline=True and strategies is empty."""
         from pyrit.models import SeedAttackGroup, SeedObjective
 
@@ -749,7 +791,9 @@ class TestScenarioBaselineOnlyExecution:
         assert scenario._atomic_attacks[0].atomic_attack_name == "baseline"
 
     @pytest.mark.asyncio
-    async def test_baseline_only_execution_runs_successfully(self, mock_objective_target, sample_attack_results):
+    async def test_baseline_only_execution_runs_successfully(
+        self, mock_objective_target, sample_attack_results
+    ):
         """Test that baseline-only scenario can run successfully."""
         from pyrit.models import SeedAttackGroup, SeedObjective
 
@@ -774,7 +818,9 @@ class TestScenarioBaselineOnlyExecution:
         )
 
         # Mock the baseline attack's run_async
-        scenario._atomic_attacks[0].run_async = create_mock_run_async([sample_attack_results[0]])
+        scenario._atomic_attacks[0].run_async = create_mock_run_async(
+            [sample_attack_results[0]]
+        )
 
         # Run the scenario
         result = await scenario.run_async()
@@ -785,8 +831,10 @@ class TestScenarioBaselineOnlyExecution:
         assert len(result.attack_results["baseline"]) == 1
 
     @pytest.mark.asyncio
-    async def test_empty_strategies_without_baseline_raises_error(self, mock_objective_target):
-        """Test that empty strategies without include_baseline raises ValueError."""
+    async def test_empty_strategies_without_baseline_allows_initialization(
+        self, mock_objective_target
+    ):
+        """Test that empty strategies without include_baseline allows initialization but fails at run time."""
         scenario = ConcreteScenario(
             name="No Baseline Test",
             version=1,
@@ -795,16 +843,24 @@ class TestScenarioBaselineOnlyExecution:
 
         mock_dataset_config = MagicMock(spec=DatasetConfiguration)
 
-        # Should raise ValueError because empty strategies without baseline is not allowed
-        with pytest.raises(ValueError, match="No valid .* strategies provided"):
-            await scenario.initialize_async(
-                objective_target=mock_objective_target,
-                scenario_strategies=[],  # Empty list without baseline
-                dataset_config=mock_dataset_config,
-            )
+        # Empty strategies are now always allowed during initialization
+        # (no allow_empty parameter required)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[],  # Empty list without baseline
+            dataset_config=mock_dataset_config,
+        )
+
+        # But running should fail because there are no atomic attacks
+        with pytest.raises(
+            ValueError, match="Cannot run scenario with no atomic attacks"
+        ):
+            await scenario.run_async()
 
     @pytest.mark.asyncio
-    async def test_standalone_baseline_uses_dataset_config_seeds(self, mock_objective_target):
+    async def test_standalone_baseline_uses_dataset_config_seeds(
+        self, mock_objective_target
+    ):
         """Test that standalone baseline uses seed groups from dataset_config."""
         from pyrit.models import SeedAttackGroup, SeedObjective
 

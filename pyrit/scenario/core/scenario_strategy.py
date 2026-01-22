@@ -108,7 +108,11 @@ class ScenarioStrategy(Enum):
                     any aggregate markers.
         """
         aggregate_tags = cls.get_aggregate_tags()
-        return {strategy for strategy in cls if tag in strategy.tags and strategy.value not in aggregate_tags}
+        return {
+            strategy
+            for strategy in cls
+            if tag in strategy.tags and strategy.value not in aggregate_tags
+        }
 
     @classmethod
     def get_all_strategies(cls: type[T]) -> list[T]:
@@ -173,12 +177,17 @@ class ScenarioStrategy(Enum):
         # Find aggregate tags in the input and expand them
         aggregate_tags = cls.get_aggregate_tags()
         aggregates_to_expand = {
-            tag for strategy in strategies if strategy.value in aggregate_tags for tag in strategy.tags
+            tag
+            for strategy in strategies
+            if strategy.value in aggregate_tags
+            for tag in strategy.tags
         }
 
         for aggregate_tag in aggregates_to_expand:
             # Remove the aggregate marker itself
-            aggregate_marker = next((s for s in normalized_strategies if s.value == aggregate_tag), None)
+            aggregate_marker = next(
+                (s for s in normalized_strategies if s.value == aggregate_tag), None
+            )
             if aggregate_marker:
                 normalized_strategies.remove(aggregate_marker)
 
@@ -197,7 +206,6 @@ class ScenarioStrategy(Enum):
         strategies: Sequence[T | "ScenarioCompositeStrategy"] | None = None,
         *,
         default_aggregate: T | None = None,
-        allow_empty: bool = False,
     ) -> List["ScenarioCompositeStrategy"]:
         """
         Prepare and normalize scenario strategies for use in a scenario.
@@ -214,22 +222,18 @@ class ScenarioStrategy(Enum):
             strategies (Sequence[T | ScenarioCompositeStrategy] | None): The strategies to prepare.
                 Can be a mix of bare strategy enums and composite strategies.
                 If None, uses default_aggregate to determine defaults.
-                If an empty sequence, behavior depends on allow_empty parameter.
+                If an empty sequence, returns an empty list (useful for baseline-only execution).
             default_aggregate (T | None): The aggregate strategy to use when strategies is None.
                 Common values: MyStrategy.ALL, MyStrategy.EASY. If None when strategies is None,
                 raises ValueError.
-            allow_empty (bool): If True, allows an empty strategies list to be returned when
-                an empty sequence is explicitly provided. This is useful for baseline-only
-                execution where no attack strategies are needed. Defaults to False.
 
         Returns:
             List[ScenarioCompositeStrategy]: Normalized list of composite strategies ready for use.
-                May be empty if allow_empty=True and an empty sequence was provided.
+                May be empty if an empty sequence was explicitly provided.
 
         Raises:
             ValueError: If strategies is None and default_aggregate is None, or if compositions
-                       are invalid according to validate_composition(), or if strategies is empty
-                       and allow_empty is False.
+                       are invalid according to validate_composition().
         """
         # Handle None input with default aggregate
         if strategies is None:
@@ -242,7 +246,10 @@ class ScenarioStrategy(Enum):
             # Expand the default aggregate into concrete strategies
             expanded = cls.normalize_strategies({default_aggregate})
             # Wrap each in a ScenarioCompositeStrategy
-            composite_strategies = [ScenarioCompositeStrategy(strategies=[strategy]) for strategy in expanded]
+            composite_strategies = [
+                ScenarioCompositeStrategy(strategies=[strategy])
+                for strategy in expanded
+            ]
         else:
             # Process the provided strategies
             composite_strategies = []
@@ -252,15 +259,17 @@ class ScenarioStrategy(Enum):
                     composite_strategies.append(item)
                 elif isinstance(item, cls):
                     # Bare strategy enum - wrap it in a composite
-                    composite_strategies.append(ScenarioCompositeStrategy(strategies=[item]))
+                    composite_strategies.append(
+                        ScenarioCompositeStrategy(strategies=[item])
+                    )
                 else:
                     # Not our strategy type - skip or could raise error
                     # For now, skip to allow flexibility
                     pass
 
-        # Allow empty list if explicitly requested (for baseline-only execution)
+        # Allow empty list if explicitly provided (for baseline-only execution)
         if not composite_strategies:
-            if allow_empty and strategies is not None and len(strategies) == 0:
+            if strategies is not None and len(strategies) == 0:
                 return []
             raise ValueError(
                 f"No valid {cls.__name__} strategies provided. "
@@ -268,7 +277,9 @@ class ScenarioStrategy(Enum):
             )
 
         # Normalize compositions (expands aggregates, validates compositions)
-        normalized = ScenarioCompositeStrategy.normalize_compositions(composite_strategies, strategy_type=cls)
+        normalized = ScenarioCompositeStrategy.normalize_compositions(
+            composite_strategies, strategy_type=cls
+        )
 
         return normalized
 
@@ -425,7 +436,9 @@ class ScenarioCompositeStrategy:
             ValueError: If any composite contains multiple strategies.
         """
         # Check that all composites are single-strategy
-        multi_strategy_composites = [comp for comp in composites if not comp.is_single_strategy]
+        multi_strategy_composites = [
+            comp for comp in composites if not comp.is_single_strategy
+        ]
         if multi_strategy_composites:
             composite_names = [comp.name for comp in multi_strategy_composites]
             raise ValueError(
@@ -528,14 +541,20 @@ class ScenarioCompositeStrategy:
                 raise ValueError("Empty compositions are not allowed")
 
             # Filter to only strategies of the specified type
-            typed_strategies = [s for s in composite.strategies if isinstance(s, strategy_type)]
+            typed_strategies = [
+                s for s in composite.strategies if isinstance(s, strategy_type)
+            ]
             if not typed_strategies:
                 # No strategies of this type - skip
                 continue
 
             # Check if composition contains any aggregates
-            aggregates_in_composition = [s for s in typed_strategies if s.value in aggregate_tags]
-            concretes_in_composition = [s for s in typed_strategies if s.value not in aggregate_tags]
+            aggregates_in_composition = [
+                s for s in typed_strategies if s.value in aggregate_tags
+            ]
+            concretes_in_composition = [
+                s for s in typed_strategies if s.value not in aggregate_tags
+            ]
 
             # Error if mixing aggregates with concrete strategies
             if aggregates_in_composition and concretes_in_composition:
@@ -559,7 +578,9 @@ class ScenarioCompositeStrategy:
                 expanded = strategy_type.normalize_strategies({aggregate})
                 # Each expanded strategy becomes its own composition
                 for strategy in expanded:
-                    normalized_compositions.append(ScenarioCompositeStrategy(strategies=[strategy]))
+                    normalized_compositions.append(
+                        ScenarioCompositeStrategy(strategies=[strategy])
+                    )
             else:
                 # Concrete composition - validate and preserve as-is
                 strategy_type.validate_composition(typed_strategies)
