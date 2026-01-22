@@ -45,11 +45,6 @@ def role_play_strategy():
 
 
 @pytest.fixture
-def continuation_strategy():
-    return LeakageStrategy.CONTINUATION
-
-
-@pytest.fixture
 def leakage_prompts():
     """The default leakage prompts."""
     leakage_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
@@ -287,23 +282,6 @@ class TestLeakageScenarioAttackGeneration:
             assert isinstance(run._attack, RolePlayAttack)
 
     @pytest.mark.asyncio
-    async def test_attack_generation_for_continuation(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, continuation_strategy
-    ):
-        """Test that the continuation attack generation works."""
-        scenario = LeakageScenario(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
-
-        await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[continuation_strategy]
-        )
-        atomic_attacks = await scenario._get_atomic_attacks_async()
-        for run in atomic_attacks:
-            assert isinstance(run._attack, CrescendoAttack)
-
-    @pytest.mark.asyncio
     async def test_attack_runs_include_objectives(
         self, mock_objective_target, mock_objective_scorer, sample_objectives
     ):
@@ -466,19 +444,12 @@ class TestLeakageStrategyEnum:
         assert LeakageStrategy.IMAGE is not None
         assert LeakageStrategy.IMAGE.value == "image"
         assert "single_turn" in LeakageStrategy.IMAGE.tags
-        assert "multi_turn" in LeakageStrategy.IMAGE.tags
 
     def test_strategy_role_play_exists(self):
         """Test that ROLE_PLAY strategy exists."""
         assert LeakageStrategy.ROLE_PLAY is not None
         assert LeakageStrategy.ROLE_PLAY.value == "role_play"
         assert "single_turn" in LeakageStrategy.ROLE_PLAY.tags
-
-    def test_strategy_continuation_exists(self):
-        """Test that CONTINUATION strategy exists."""
-        assert LeakageStrategy.CONTINUATION is not None
-        assert LeakageStrategy.CONTINUATION.value == "continuation"
-        assert "multi_turn" in LeakageStrategy.CONTINUATION.tags
 
     def test_strategy_single_turn_aggregate_exists(self):
         """Test that SINGLE_TURN aggregate strategy exists."""
@@ -507,10 +478,6 @@ class TestLeakageStrategyEnum:
     def test_first_letter_has_ip_tag(self):
         """Test that FIRST_LETTER has ip tag for copyright extraction."""
         assert "ip" in LeakageStrategy.FIRST_LETTER.tags
-
-    def test_continuation_has_ip_tag(self):
-        """Test that CONTINUATION has ip tag for progressive copyright extraction."""
-        assert "ip" in LeakageStrategy.CONTINUATION.tags
 
     def test_role_play_has_sensitive_data_tag(self):
         """Test that ROLE_PLAY has sensitive_data tag for system prompt extraction."""

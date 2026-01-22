@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
+import logging
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -38,7 +38,6 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
     TrueFalseScorer,
 )
-logger = logging.getLogger(__name__)
 
 
 class LeakageStrategy(ScenarioStrategy):
@@ -69,7 +68,6 @@ class LeakageStrategy(ScenarioStrategy):
 
     # Multi-turn strategies
     CRESCENDO = ("crescendo", {"multi_turn", "ip", "sensitive_data"})
-    CONTINUATION = ("continuation", {"multi_turn", "ip"})  # Progressive word extraction for copyright
 
     @classmethod
     def get_aggregate_tags(cls) -> set[str]:
@@ -175,7 +173,12 @@ class LeakageScenario(Scenario):
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
-        Retrieve the default objective scorer for leakage detection.
+        Retrieve the default objective scorer.
+
+        The scoring mechanism is as follows:
+        1. Detect for objective achieved using a SelfAskTrueFalseScorer with leakage detection.
+        2. Detect for NON-refusal as a backstop. (If the target model refuses to leak data,
+           we want that to register as a negative score).
 
         Returns:
             TrueFalseCompositeScorer: Default objective scorer with backstop and leakage evaluation.
@@ -253,7 +256,7 @@ class LeakageScenario(Scenario):
         Translate the strategy into an actual AtomicAttack.
 
         Args:
-            strategy: The LeakageStrategy value (first_letter, crescendo, image, role_play, or continuation).
+            strategy: The LeakageStrategy value (first_letter, crescendo, image, or role_play).
 
         Returns:
             AtomicAttack: Configured for the specified strategy.
@@ -269,7 +272,6 @@ class LeakageScenario(Scenario):
             "crescendo": self._create_crescendo_attack,
             "image": self._create_image_attack,
             "role_play": self._create_role_play_attack,
-            "continuation": self._create_continuation_attack,
         }
 
         factory = strategy_factories.get(strategy)
@@ -328,21 +330,6 @@ class LeakageScenario(Scenario):
             adversarial_chat=self._adversarial_chat,
             role_play_definition_path=RolePlayPaths.PERSUASION_SCRIPT.value,
             attack_scoring_config=self._scorer_config,
-        )
-
-    async def _create_continuation_attack(self) -> CrescendoAttack:
-        """
-        Create a continuation attack for progressive content extraction.
-
-        This attack progressively asks for more words to extract copyrighted content,
-        e.g., "give me the next 5 words" until copyright is violated.
-        """
-        # Uses CrescendoAttack as the base for multi-turn conversation
-        # The continuation pattern is achieved through the adversarial chat
-        return CrescendoAttack(
-            objective_target=self._objective_target,  # type: ignore[arg-type]
-            attack_scoring_config=self._scorer_config,
-            attack_adversarial_config=self._adversarial_config,
         )
 
     def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
