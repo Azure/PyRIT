@@ -361,10 +361,15 @@ class Scenario(ABC):
             raise ValueError("Dataset config must have seed groups to create baseline.")
 
         # Import here to avoid circular imports
+        from typing import cast
         from pyrit.executor.attack.core.attack_config import AttackScoringConfig
+        from pyrit.score import TrueFalseScorer
 
         # Create scoring config from the scenario's objective scorer
-        attack_scoring_config = AttackScoringConfig(objective_scorer=self._objective_scorer)
+        # Note: Scenarios require TrueFalseScorer for attack scoring
+        attack_scoring_config = AttackScoringConfig(
+            objective_scorer=cast(TrueFalseScorer, self._objective_scorer)
+        )
 
         # Create baseline attack with no converters
         attack = PromptSendingAttack(
