@@ -228,14 +228,22 @@ class Scenario(ABC):
         self._memory_labels = memory_labels or {}
 
         # Prepare scenario strategies using the stored configuration
+        # Allow empty strategies when include_baseline is True (baseline-only execution)
         self._scenario_composites = self._strategy_class.prepare_scenario_strategies(
-            scenario_strategies, default_aggregate=self.get_default_strategy()
+            scenario_strategies,
+            default_aggregate=self.get_default_strategy(),
+            allow_empty=self._include_baseline,
         )
 
         self._atomic_attacks = await self._get_atomic_attacks_async()
 
         if self._include_baseline:
-            baseline_attack = self._get_baseline_from_first_attack()
+            if self._atomic_attacks:
+                # Derive baseline from first attack
+                baseline_attack = self._get_baseline_from_first_attack()
+            else:
+                # No atomic attacks - create standalone baseline from dataset
+                baseline_attack = self._create_standalone_baseline()
             self._atomic_attacks.insert(0, baseline_attack)
 
         # Store original objectives for each atomic attack (before any mutations during execution)
@@ -313,6 +321,54 @@ class Scenario(ABC):
         # Create baseline attack with no converters
         attack = PromptSendingAttack(
             objective_target=objective_target,
+            attack_scoring_config=attack_scoring_config,
+        )
+
+        return AtomicAttack(
+            atomic_attack_name="baseline",
+            attack=attack,
+            seed_groups=seed_groups,
+            memory_labels=self._memory_labels,
+        )
+
+    def _create_standalone_baseline(self) -> AtomicAttack:
+        """
+        Create a standalone baseline AtomicAttack when no other atomic attacks exist.
+
+        This method is used for baseline-only execution where no attack strategies are specified
+        but include_baseline=True. It creates the baseline directly from the dataset configuration
+        and scenario-level settings.
+
+        Returns:
+            AtomicAttack: The baseline AtomicAttack instance.
+
+        Raises:
+            ValueError: If objective_target, dataset_config, or objective_scorer is not set.
+        """
+        if not self._objective_target:
+            raise ValueError("Objective target is required to create standalone baseline attack.")
+
+        if not self._dataset_config:
+            raise ValueError("Dataset config is required to create standalone baseline attack.")
+
+        if not self._objective_scorer:
+            raise ValueError("Objective scorer is required to create standalone baseline attack.")
+
+        # Get seed groups from the dataset configuration
+        seed_groups = self._dataset_config.get_all_seed_attack_groups()
+
+        if not seed_groups or len(seed_groups) == 0:
+            raise ValueError("Dataset config must have seed groups to create baseline.")
+
+        # Import here to avoid circular imports
+        from pyrit.executor.attack.core.attack_config import AttackScoringConfig
+
+        # Create scoring config from the scenario's objective scorer
+        attack_scoring_config = AttackScoringConfig(objective_scorer=self._objective_scorer)
+
+        # Create baseline attack with no converters
+        attack = PromptSendingAttack(
+            objective_target=self._objective_target,
             attack_scoring_config=attack_scoring_config,
         )
 

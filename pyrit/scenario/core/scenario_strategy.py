@@ -197,6 +197,7 @@ class ScenarioStrategy(Enum):
         strategies: Sequence[T | "ScenarioCompositeStrategy"] | None = None,
         *,
         default_aggregate: T | None = None,
+        allow_empty: bool = False,
     ) -> List["ScenarioCompositeStrategy"]:
         """
         Prepare and normalize scenario strategies for use in a scenario.
@@ -213,16 +214,22 @@ class ScenarioStrategy(Enum):
             strategies (Sequence[T | ScenarioCompositeStrategy] | None): The strategies to prepare.
                 Can be a mix of bare strategy enums and composite strategies.
                 If None, uses default_aggregate to determine defaults.
+                If an empty sequence, behavior depends on allow_empty parameter.
             default_aggregate (T | None): The aggregate strategy to use when strategies is None.
                 Common values: MyStrategy.ALL, MyStrategy.EASY. If None when strategies is None,
                 raises ValueError.
+            allow_empty (bool): If True, allows an empty strategies list to be returned when
+                an empty sequence is explicitly provided. This is useful for baseline-only
+                execution where no attack strategies are needed. Defaults to False.
 
         Returns:
             List[ScenarioCompositeStrategy]: Normalized list of composite strategies ready for use.
+                May be empty if allow_empty=True and an empty sequence was provided.
 
         Raises:
             ValueError: If strategies is None and default_aggregate is None, or if compositions
-                       are invalid according to validate_composition().
+                       are invalid according to validate_composition(), or if strategies is empty
+                       and allow_empty is False.
         """
         # Handle None input with default aggregate
         if strategies is None:
@@ -251,7 +258,10 @@ class ScenarioStrategy(Enum):
                     # For now, skip to allow flexibility
                     pass
 
+        # Allow empty list if explicitly requested (for baseline-only execution)
         if not composite_strategies:
+            if allow_empty and strategies is not None and len(strategies) == 0:
+                return []
             raise ValueError(
                 f"No valid {cls.__name__} strategies provided. "
                 f"Provide at least one {cls.__name__} enum or ScenarioCompositeStrategy."

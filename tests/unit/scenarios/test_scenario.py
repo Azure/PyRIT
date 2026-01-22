@@ -601,3 +601,190 @@ class TestScenarioIdentifier:
         identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1, init_data=init_data)
 
         assert identifier.init_data == init_data
+
+
+def create_mock_truefalse_scorer():
+    """Create a mock TrueFalseScorer for testing baseline-only execution."""
+    from pyrit.score import TrueFalseScorer
+
+    mock_scorer = MagicMock(spec=TrueFalseScorer)
+    mock_scorer.get_identifier.return_value = {"__type__": "MockTrueFalseScorer", "__module__": "test"}
+    mock_scorer.get_scorer_metrics.return_value = None
+    # Make isinstance check work
+    mock_scorer.__class__ = TrueFalseScorer
+    return mock_scorer
+
+
+class ConcreteScenarioWithTrueFalseScorer(Scenario):
+    """Concrete implementation of Scenario for testing baseline-only execution."""
+
+    def __init__(self, atomic_attacks_to_return=None, **kwargs):
+        # Add required strategy_class if not provided
+
+        class TestStrategy(ScenarioStrategy):
+            TEST = ("test", {"concrete"})
+            ALL = ("all", {"all"})
+
+            @classmethod
+            def get_aggregate_tags(cls) -> set[str]:
+                return {"all"}
+
+        kwargs.setdefault("strategy_class", TestStrategy)
+
+        # Use TrueFalseScorer mock if not provided
+        if "objective_scorer" not in kwargs:
+            kwargs["objective_scorer"] = create_mock_truefalse_scorer()
+
+        super().__init__(**kwargs)
+        self._atomic_attacks_to_return = atomic_attacks_to_return or []
+
+    @classmethod
+    def get_strategy_class(cls):
+        """Return a mock strategy class for testing."""
+
+        from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
+
+        class TestStrategy(ScenarioStrategy):
+            TEST = ("test", {"concrete"})
+            ALL = ("all", {"all"})
+
+            @classmethod
+            def get_aggregate_tags(cls) -> set[str]:
+                return {"all"}
+
+        return TestStrategy
+
+    @classmethod
+    def get_default_strategy(cls):
+        """Return the default strategy for testing."""
+        return cls.get_strategy_class().ALL
+
+    @classmethod
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """Return the default dataset configuration for testing."""
+        return DatasetConfiguration()
+
+    async def _get_atomic_attacks_async(self):
+        return self._atomic_attacks_to_return
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestScenarioBaselineOnlyExecution:
+    """Tests for baseline-only execution (empty strategies with include_baseline=True)."""
+
+    @pytest.mark.asyncio
+    async def test_initialize_async_with_empty_strategies_and_baseline(self, mock_objective_target):
+        """Test that baseline-only execution works when include_baseline=True and strategies is empty."""
+        from pyrit.models import SeedAttackGroup, SeedObjective
+
+        # Create a scenario with include_default_baseline=True and TrueFalseScorer
+        scenario = ConcreteScenarioWithTrueFalseScorer(
+            name="Baseline Only Test",
+            version=1,
+            include_default_baseline=True,
+        )
+
+        # Create a mock dataset config with seed groups
+        mock_dataset_config = MagicMock(spec=DatasetConfiguration)
+        mock_dataset_config.get_all_seed_attack_groups.return_value = [
+            SeedAttackGroup(seeds=[SeedObjective(value="test objective 1")]),
+            SeedAttackGroup(seeds=[SeedObjective(value="test objective 2")]),
+        ]
+
+        # Initialize with empty strategies
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[],  # Empty list - baseline only
+            dataset_config=mock_dataset_config,
+        )
+
+        # Should have exactly one attack - the baseline
+        assert scenario.atomic_attack_count == 1
+        assert scenario._atomic_attacks[0].atomic_attack_name == "baseline"
+
+    @pytest.mark.asyncio
+    async def test_baseline_only_execution_runs_successfully(self, mock_objective_target, sample_attack_results):
+        """Test that baseline-only scenario can run successfully."""
+        from pyrit.models import SeedAttackGroup, SeedObjective
+
+        # Create a scenario with include_default_baseline=True and TrueFalseScorer
+        scenario = ConcreteScenarioWithTrueFalseScorer(
+            name="Baseline Only Test",
+            version=1,
+            include_default_baseline=True,
+        )
+
+        # Create a mock dataset config with seed groups
+        mock_dataset_config = MagicMock(spec=DatasetConfiguration)
+        mock_dataset_config.get_all_seed_attack_groups.return_value = [
+            SeedAttackGroup(seeds=[SeedObjective(value="test objective 1")]),
+        ]
+
+        # Initialize with empty strategies
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[],  # Empty list - baseline only
+            dataset_config=mock_dataset_config,
+        )
+
+        # Mock the baseline attack's run_async
+        scenario._atomic_attacks[0].run_async = create_mock_run_async([sample_attack_results[0]])
+
+        # Run the scenario
+        result = await scenario.run_async()
+
+        # Verify the result
+        assert isinstance(result, ScenarioResult)
+        assert "baseline" in result.attack_results
+        assert len(result.attack_results["baseline"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_empty_strategies_without_baseline_raises_error(self, mock_objective_target):
+        """Test that empty strategies without include_baseline raises ValueError."""
+        scenario = ConcreteScenario(
+            name="No Baseline Test",
+            version=1,
+            include_default_baseline=False,  # No baseline
+        )
+
+        mock_dataset_config = MagicMock(spec=DatasetConfiguration)
+
+        # Should raise ValueError because empty strategies without baseline is not allowed
+        with pytest.raises(ValueError, match="No valid .* strategies provided"):
+            await scenario.initialize_async(
+                objective_target=mock_objective_target,
+                scenario_strategies=[],  # Empty list without baseline
+                dataset_config=mock_dataset_config,
+            )
+
+    @pytest.mark.asyncio
+    async def test_standalone_baseline_uses_dataset_config_seeds(self, mock_objective_target):
+        """Test that standalone baseline uses seed groups from dataset_config."""
+        from pyrit.models import SeedAttackGroup, SeedObjective
+
+        scenario = ConcreteScenarioWithTrueFalseScorer(
+            name="Baseline Seeds Test",
+            version=1,
+            include_default_baseline=True,
+        )
+
+        # Create specific seed groups to verify they're used
+        expected_seeds = [
+            SeedAttackGroup(seeds=[SeedObjective(value="objective_a")]),
+            SeedAttackGroup(seeds=[SeedObjective(value="objective_b")]),
+            SeedAttackGroup(seeds=[SeedObjective(value="objective_c")]),
+        ]
+
+        mock_dataset_config = MagicMock(spec=DatasetConfiguration)
+        mock_dataset_config.get_all_seed_attack_groups.return_value = expected_seeds
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[],
+            dataset_config=mock_dataset_config,
+        )
+
+        # Verify the baseline attack has the expected seed groups
+        baseline_attack = scenario._atomic_attacks[0]
+        assert baseline_attack.atomic_attack_name == "baseline"
+        assert baseline_attack.seed_groups == expected_seeds
