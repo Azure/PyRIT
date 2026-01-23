@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from pyrit.models.identifiers import Identifiable, Identifier, IdentifierType
+from pyrit.models.identifiers import Identifiable, Identifier
 
 
 class TestIdentifiable:
