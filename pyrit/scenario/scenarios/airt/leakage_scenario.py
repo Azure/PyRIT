@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -280,15 +279,22 @@ class LeakageScenario(Scenario):
 
         attack_strategy = await factory()
 
+        # The factory functions return specific AttackStrategy subclasses, but mypy infers ABC
+        # due to the heterogeneous dict values. The types are verified by unit tests.
         return AtomicAttack(
             atomic_attack_name=f"leakage_{strategy}",
-            attack=attack_strategy,
+            attack=attack_strategy,  # type: ignore[arg-type]
             seed_groups=self._seed_groups,
             memory_labels=self._memory_labels,
         )
 
     async def _create_first_letter_attack(self) -> PromptSendingAttack:
-        """Create a first letter converter attack."""
+        """
+        Create a first letter converter attack.
+
+        Returns:
+            PromptSendingAttack: Configured attack using first letter converter.
+        """
         converters: list[PromptConverter] = [FirstLetterConverter()]
         converter_config = AttackConverterConfig(
             request_converters=PromptConverterConfiguration.from_converters(converters=converters)
@@ -300,17 +306,25 @@ class LeakageScenario(Scenario):
         )
 
     async def _create_crescendo_attack(self) -> CrescendoAttack:
-        """Create a multi-turn progressive crescendo attack."""
-        # Type ignore: CrescendoAttack requires PromptChatTarget but objective_target
-        # is validated at runtime by the attack's initialization
+        """
+        Create a multi-turn progressive crescendo attack.
+
+        Returns:
+            CrescendoAttack: Configured multi-turn crescendo attack.
+        """
         return CrescendoAttack(
-            objective_target=self._objective_target,  # type: ignore[arg-type]
+            objective_target=self._objective_target,
             attack_scoring_config=self._scorer_config,
             attack_adversarial_config=self._adversarial_config,
         )
 
     async def _create_image_attack(self) -> PromptSendingAttack:
-        """Create an image-based attack that embeds prompts in images."""
+        """
+        Create an image-based attack that embeds prompts in images.
+
+        Returns:
+            PromptSendingAttack: Configured attack that adds text to images.
+        """
         blank_image_path = str(DATASETS_PATH / "seed_datasets" / "local" / "examples" / "blank_canvas.png")
         self._ensure_blank_image_exists(blank_image_path)
         image_converters: list[PromptConverter] = [AddImageTextConverter(img_to_add=blank_image_path)]
@@ -324,7 +338,12 @@ class LeakageScenario(Scenario):
         )
 
     async def _create_role_play_attack(self) -> RolePlayAttack:
-        """Create a role-play attack using persuasion script format."""
+        """
+        Create a role-play attack using persuasion script format.
+
+        Returns:
+            RolePlayAttack: Configured role-play attack with persuasion script.
+        """
         return RolePlayAttack(
             objective_target=self._objective_target,
             adversarial_chat=self._adversarial_chat,

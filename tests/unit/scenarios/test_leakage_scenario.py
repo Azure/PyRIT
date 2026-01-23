@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 """Tests for the LeakageScenario class."""
+
 import pathlib
 from typing import List
 from unittest.mock import MagicMock, patch
@@ -257,9 +258,7 @@ class TestLeakageScenarioAttackGeneration:
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[image_strategy]
-        )
+        await scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=[image_strategy])
         atomic_attacks = await scenario._get_atomic_attacks_async()
         for run in atomic_attacks:
             assert isinstance(run._attack, PromptSendingAttack)
@@ -488,9 +487,7 @@ class TestLeakageStrategyEnum:
 class TestLeakageScenarioImageStrategy:
     """Tests for LeakageScenario image strategy implementation."""
 
-    def test_ensure_blank_image_exists_creates_image(
-        self, mock_objective_scorer, sample_objectives, tmp_path
-    ):
+    def test_ensure_blank_image_exists_creates_image(self, mock_objective_scorer, sample_objectives, tmp_path):
         """Test that _ensure_blank_image_exists creates a blank image file."""
         scenario = LeakageScenario(
             objectives=sample_objectives,
@@ -512,9 +509,7 @@ class TestLeakageScenarioImageStrategy:
         assert img.size == (800, 600)
         assert img.mode == "RGB"
 
-    def test_ensure_blank_image_exists_does_not_overwrite(
-        self, mock_objective_scorer, sample_objectives, tmp_path
-    ):
+    def test_ensure_blank_image_exists_does_not_overwrite(self, mock_objective_scorer, sample_objectives, tmp_path):
         """Test that _ensure_blank_image_exists doesn't overwrite existing image."""
         from pathlib import Path
 
@@ -569,9 +564,7 @@ class TestLeakageScenarioImageStrategy:
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[image_strategy]
-        )
+        await scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=[image_strategy])
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         # Verify the attack uses AddImageTextConverter
