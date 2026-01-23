@@ -60,9 +60,7 @@ class Identifier:
         Returns:
             A hex string of the SHA256 hash.
         """
-        hashable_dict: dict[str, Any] = {
-            f.name: getattr(self, f.name) for f in fields(self) if f.name != "hash"
-        }
+        hashable_dict: dict[str, Any] = {f.name: getattr(self, f.name) for f in fields(self) if f.name != "hash"}
         config_json = json.dumps(hashable_dict, sort_keys=True, separators=(",", ":"), default=_dataclass_encoder)
         return hashlib.sha256(config_json.encode("utf-8")).hexdigest()
 

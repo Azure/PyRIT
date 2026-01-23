@@ -10,8 +10,6 @@ and instance registries (which store T instances).
 
 from typing import Any, Dict, Iterator, List, Optional, Protocol, TypeVar, runtime_checkable
 
-from pyrit.models.identifiers import Identifier
-
 # Type variable for metadata (invariant for Protocol compatibility)
 MetadataT = TypeVar("MetadataT")
 
@@ -76,8 +74,6 @@ class RegistryProtocol(Protocol[MetadataT]):
     def __iter__(self) -> Iterator[str]:
         """Iterate over registered names."""
         ...
-
-
 
 
 def _matches_filters(
