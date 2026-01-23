@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import get_args
 
 from pyrit import prompt_converter
-from pyrit.models import Identifier, PromptDataType
+from pyrit.models import Identifiable, PromptDataType
 
 
 @dataclass
@@ -31,7 +31,7 @@ class ConverterResult:
         return f"{self.output_type}: {self.output_text}"
 
 
-class PromptConverter(abc.ABC, Identifier):
+class PromptConverter(abc.ABC, Identifiable):
     """
     Base class for converters that transform prompts into a different representation or format.
 

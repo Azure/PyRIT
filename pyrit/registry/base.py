@@ -8,8 +8,9 @@ This module contains types shared between class registries (which store Type[T])
 and instance registries (which store T instances).
 """
 
-from dataclasses import dataclass
 from typing import Any, Dict, Iterator, List, Optional, Protocol, TypeVar, runtime_checkable
+
+from pyrit.models.identifiers import Identifier
 
 # Type variable for metadata (invariant for Protocol compatibility)
 MetadataT = TypeVar("MetadataT")
@@ -77,21 +78,6 @@ class RegistryProtocol(Protocol[MetadataT]):
         ...
 
 
-@dataclass(frozen=True)
-class RegistryItemMetadata:
-    """
-    Base dataclass for registry item metadata.
-
-    This dataclass provides descriptive information about a registered item
-    (either a class or an instance). It is NOT the item itself - it's a
-    structured object describing the item.
-
-    All registry-specific metadata types should extend this with additional fields.
-    """
-
-    name: str  # The snake_case registry name (e.g., "self_ask_refusal")
-    class_name: str  # The actual class name (e.g., "SelfAskRefusalScorer")
-    description: str  # Description from docstring or manual override
 
 
 def _matches_filters(

@@ -330,7 +330,8 @@ class TestPrintFunctions:
             ScenarioMetadata(
                 name="test_scenario",
                 class_name="TestScenario",
-                description="Test description",
+                class_module="test.scenarios",
+                class_description="Test description",
                 default_strategy="default",
                 all_strategies=(),
                 aggregate_strategies=(),
@@ -370,8 +371,9 @@ class TestPrintFunctions:
             InitializerMetadata(
                 name="test_init",
                 class_name="TestInit",
-                description="Test initializer",
-                initializer_name="test",
+                class_module="test.initializers",
+                class_description="Test initializer",
+                display_name="test",
                 execution_order=100,
                 required_env_vars=(),
             )
@@ -410,7 +412,8 @@ class TestFormatFunctions:
         scenario_metadata = ScenarioMetadata(
             name="test_scenario",
             class_name="TestScenario",
-            description="",
+            class_module="test.scenarios",
+            class_description="",
             default_strategy="",
             all_strategies=(),
             aggregate_strategies=(),
@@ -430,7 +433,8 @@ class TestFormatFunctions:
         scenario_metadata = ScenarioMetadata(
             name="test_scenario",
             class_name="TestScenario",
-            description="This is a test scenario",
+            class_module="test.scenarios",
+            class_description="This is a test scenario",
             default_strategy="",
             all_strategies=(),
             aggregate_strategies=(),
@@ -448,7 +452,8 @@ class TestFormatFunctions:
         scenario_metadata = ScenarioMetadata(
             name="test_scenario",
             class_name="TestScenario",
-            description="",
+            class_module="test.scenarios",
+            class_description="",
             default_strategy="strategy1",
             all_strategies=("strategy1", "strategy2"),
             aggregate_strategies=(),
@@ -468,8 +473,9 @@ class TestFormatFunctions:
         initializer_metadata = InitializerMetadata(
             name="test_init",
             class_name="TestInit",
-            description="",
-            initializer_name="test",
+            class_module="test.initializers",
+            class_description="",
+            display_name="test",
             required_env_vars=(),
             execution_order=100,
         )
@@ -486,8 +492,9 @@ class TestFormatFunctions:
         initializer_metadata = InitializerMetadata(
             name="test_init",
             class_name="TestInit",
-            description="",
-            initializer_name="test",
+            class_module="test.initializers",
+            class_description="",
+            display_name="test",
             required_env_vars=("VAR1", "VAR2"),
             execution_order=100,
         )
@@ -503,8 +510,9 @@ class TestFormatFunctions:
         initializer_metadata = InitializerMetadata(
             name="test_init",
             class_name="TestInit",
-            description="Test description",
-            initializer_name="test",
+            class_module="test.initializers",
+            class_description="Test description",
+            display_name="test",
             required_env_vars=(),
             execution_order=100,
         )

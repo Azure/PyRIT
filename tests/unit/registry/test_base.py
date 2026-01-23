@@ -5,11 +5,12 @@ from dataclasses import dataclass
 
 import pytest
 
-from pyrit.registry.base import RegistryItemMetadata, _matches_filters
+from pyrit.models.identifiers import Identifier
+from pyrit.registry.base import _matches_filters
 
 
 @dataclass(frozen=True)
-class MetadataWithTags(RegistryItemMetadata):
+class MetadataWithTags(Identifier):
     """Test metadata with a tags field for list filtering tests."""
 
     tags: tuple[str, ...]
@@ -20,57 +21,63 @@ class TestMatchesFilters:
 
     def test_matches_filters_exact_match_string(self):
         """Test that exact string matches work."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         assert _matches_filters(metadata, include_filters={"name": "test_item"}) is True
         assert _matches_filters(metadata, include_filters={"class_name": "TestClass"}) is True
 
     def test_matches_filters_no_match_string(self):
         """Test that non-matching strings return False."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         assert _matches_filters(metadata, include_filters={"name": "other_item"}) is False
         assert _matches_filters(metadata, include_filters={"class_name": "OtherClass"}) is False
 
     def test_matches_filters_multiple_filters_all_match(self):
         """Test that all filters must match."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         assert _matches_filters(metadata, include_filters={"name": "test_item", "class_name": "TestClass"}) is True
 
     def test_matches_filters_multiple_filters_partial_match(self):
         """Test that partial matches return False when not all filters match."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         assert _matches_filters(metadata, include_filters={"name": "test_item", "class_name": "OtherClass"}) is False
 
     def test_matches_filters_key_not_in_metadata(self):
         """Test that filtering on a non-existent key returns False."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         assert _matches_filters(metadata, include_filters={"nonexistent_key": "value"}) is False
 
     def test_matches_filters_empty_filters(self):
         """Test that empty filters return True."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         assert _matches_filters(metadata) is True
 
@@ -79,7 +86,8 @@ class TestMatchesFilters:
         metadata = MetadataWithTags(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
             tags=("tag1", "tag2", "tag3"),
         )
         assert _matches_filters(metadata, include_filters={"tags": "tag1"}) is True
@@ -90,17 +98,19 @@ class TestMatchesFilters:
         metadata = MetadataWithTags(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
             tags=("tag1", "tag2", "tag3"),
         )
         assert _matches_filters(metadata, include_filters={"tags": "missing_tag"}) is False
 
     def test_matches_filters_exclude_exact_match(self):
         """Test that exclude filters work for exact matches."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         assert _matches_filters(metadata, exclude_filters={"name": "test_item"}) is False
         assert _matches_filters(metadata, exclude_filters={"name": "other_item"}) is True
@@ -110,7 +120,8 @@ class TestMatchesFilters:
         metadata = MetadataWithTags(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
             tags=("tag1", "tag2", "tag3"),
         )
         assert _matches_filters(metadata, exclude_filters={"tags": "tag1"}) is False
@@ -118,20 +129,22 @@ class TestMatchesFilters:
 
     def test_matches_filters_exclude_nonexistent_key(self):
         """Test that exclude filters for non-existent keys don't exclude the item."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         # Non-existent key in exclude filter should not exclude the item
         assert _matches_filters(metadata, exclude_filters={"nonexistent_key": "value"}) is True
 
     def test_matches_filters_combined_include_and_exclude(self):
         """Test combined include and exclude filters."""
-        metadata = RegistryItemMetadata(
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="A test item",
+            class_module="test.module",
+            class_description="A test item",
         )
         # Include matches, exclude doesn't -> should pass
         assert (
@@ -156,27 +169,96 @@ class TestMatchesFilters:
         )
 
 
-class TestRegistryItemMetadata:
-    """Tests for the RegistryItemMetadata dataclass."""
+class TestIdentifier:
+    """Tests for the Identifier dataclass and hash computation."""
 
-    def test_registry_item_metadata_creation(self):
-        """Test creating a RegistryItemMetadata instance."""
-        metadata = RegistryItemMetadata(
+    def test_identifier_creation(self):
+        """Test creating an Identifier instance."""
+        metadata = Identifier(
             name="test_scorer",
             class_name="TestScorer",
-            description="A test scorer for testing",
+            class_module="pyrit.test.scorer",
+            class_description="A test scorer for testing",
         )
         assert metadata.name == "test_scorer"
         assert metadata.class_name == "TestScorer"
-        assert metadata.description == "A test scorer for testing"
+        assert metadata.class_module == "pyrit.test.scorer"
+        assert metadata.class_description == "A test scorer for testing"
 
-    def test_registry_item_metadata_is_frozen(self):
-        """Test that RegistryItemMetadata is immutable."""
-        metadata = RegistryItemMetadata(
+    def test_identifier_is_frozen(self):
+        """Test that Identifier is immutable."""
+        metadata = Identifier(
             name="test_item",
             class_name="TestClass",
-            description="Description here",
+            class_module="test.module",
+            class_description="Description here",
         )
 
         with pytest.raises(AttributeError):
             metadata.name = "new_name"  # type: ignore[misc]
+
+    def test_identifier_hash_computed_at_creation(self):
+        """Test that hash is computed when the Identifier is created."""
+        identifier = Identifier(
+            name="test_item",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+        )
+        assert identifier.hash is not None
+        assert len(identifier.hash) == 64  # SHA256 hex length
+
+    def test_identifier_hash_is_deterministic(self):
+        """Test that the same inputs produce the same hash."""
+        identifier1 = Identifier(
+            name="test_item",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+        )
+        identifier2 = Identifier(
+            name="test_item",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+        )
+        assert identifier1.hash == identifier2.hash
+
+    def test_identifier_hash_differs_for_different_inputs(self):
+        """Test that different inputs produce different hashes."""
+        identifier1 = Identifier(
+            name="test_item",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+        )
+        identifier2 = Identifier(
+            name="different_item",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+        )
+        assert identifier1.hash != identifier2.hash
+
+    def test_identifier_hash_is_immutable(self):
+        """Test that the hash cannot be modified."""
+        identifier = Identifier(
+            name="test_item",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+        )
+        with pytest.raises(AttributeError):
+            identifier.hash = "new_hash"  # type: ignore[misc]
+
+    def test_identifier_subclass_inherits_hash(self):
+        """Test that subclasses of Identifier also get a computed hash."""
+        metadata = MetadataWithTags(
+            name="test_item",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+            tags=("tag1", "tag2"),
+        )
+        assert metadata.hash is not None
+        assert len(metadata.hash) == 64

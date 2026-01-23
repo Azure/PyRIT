@@ -19,7 +19,8 @@ Terminology:
 from abc import ABC, abstractmethod
 from typing import Callable, Dict, Generic, Iterator, List, Optional, Type, TypeVar
 
-from pyrit.registry.base import RegistryItemMetadata, RegistryProtocol
+from pyrit.models.identifiers import Identifier
+from pyrit.registry.base import RegistryProtocol
 from pyrit.registry.name_utils import class_name_to_registry_name
 
 # Type variable for the registered class type
@@ -182,11 +183,11 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         """
         pass
 
-    def _build_base_metadata(self, name: str, entry: ClassEntry[T]) -> RegistryItemMetadata:
+    def _build_base_metadata(self, name: str, entry: ClassEntry[T]) -> Identifier:
         """
         Build the common base metadata for a registered class.
 
-        This helper extracts fields common to all registries: name, class_name, description.
+        This helper extracts fields common to all registries: name, class_name, class_description.
         Subclasses can use this for building common fields if needed.
 
         Args:
@@ -194,7 +195,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
             entry: The ClassEntry containing the registered class.
 
         Returns:
-            A RegistryItemMetadata dataclass with common fields.
+            An Identifier dataclass with common fields.
         """
         registered_class = entry.registered_class
 
@@ -205,10 +206,11 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         else:
             description = entry.description or "No description available"
 
-        return RegistryItemMetadata(
+        return Identifier(
             name=name,
             class_name=registered_class.__name__,
-            description=description,
+            class_module=registered_class.__module__,
+            class_description=description,
         )
 
     def get_class(self, name: str) -> Type[T]:

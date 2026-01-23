@@ -13,7 +13,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.registry.base import RegistryItemMetadata
+from pyrit.models.identifiers import Identifier
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class ScorerMetadata(RegistryItemMetadata):
+class ScorerMetadata(Identifier):
     """
     Metadata describing a registered scorer instance.
 
@@ -132,7 +132,8 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerMetadata]):
         return ScorerMetadata(
             name=name,
             class_name=instance.__class__.__name__,
-            description=description,
+            class_module=instance.__class__.__module__,
+            class_description=description,
             scorer_type=scorer_type,
             scorer_identifier=instance.scorer_identifier,
         )
