@@ -207,6 +207,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
             description = entry.description or "No description available"
 
         return Identifier(
+            identifier_type="class",
             name=name,
             class_name=registered_class.__name__,
             class_module=registered_class.__module__,

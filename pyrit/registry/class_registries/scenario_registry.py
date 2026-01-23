@@ -170,6 +170,7 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
         max_dataset_size = dataset_config.max_dataset_size
 
         return ScenarioMetadata(
+            identifier_type="class",
             name=name,
             class_name=scenario_class.__name__,
             class_module=scenario_class.__module__,

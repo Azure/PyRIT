@@ -334,6 +334,7 @@ API Reference
     HarmDefinition
     Identifiable
     Identifier
+    IdentifierType
     ImagePathDataTypeSerializer
     AllowedCategories
     AttackOutcome

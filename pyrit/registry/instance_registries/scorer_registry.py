@@ -130,6 +130,7 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerMetadata]):
             scorer_type = "unknown"
 
         return ScorerMetadata(
+            identifier_type="instance",
             name=name,
             class_name=instance.__class__.__name__,
             class_module=instance.__class__.__module__,

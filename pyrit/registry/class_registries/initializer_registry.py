@@ -208,6 +208,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         try:
             instance = initializer_class()
             return InitializerMetadata(
+                identifier_type="class",
                 name=name,
                 class_name=initializer_class.__name__,
                 class_module=initializer_class.__module__,
@@ -219,6 +220,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         except Exception as e:
             logger.warning(f"Failed to get metadata for {name}: {e}")
             return InitializerMetadata(
+                identifier_type="class",
                 name=name,
                 class_name=initializer_class.__name__,
                 class_module=initializer_class.__module__,

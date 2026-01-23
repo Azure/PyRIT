@@ -20,6 +20,7 @@ class ConcreteTestRegistry(BaseInstanceRegistry[str, SampleItemMetadata]):
     def _build_metadata(self, name: str, instance: str) -> SampleItemMetadata:
         """Build test metadata from a string instance."""
         return SampleItemMetadata(
+            identifier_type="instance",
             name=name,
             class_name="str",
             class_module="builtins",

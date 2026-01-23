@@ -360,6 +360,7 @@ class TestScorerMetadata:
         mock_identifier = ScorerIdentifier(type="test_type")
 
         metadata = ScorerMetadata(
+            identifier_type="instance",
             name="test_scorer",
             class_name="TestScorer",
             class_module="test.module",
@@ -368,6 +369,7 @@ class TestScorerMetadata:
             scorer_identifier=mock_identifier,
         )
 
+        assert metadata.identifier_type == "instance"
         assert metadata.name == "test_scorer"
         assert metadata.class_name == "TestScorer"
         assert metadata.class_module == "test.module"
