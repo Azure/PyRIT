@@ -3,7 +3,8 @@
 
 """Registry module for PyRIT class and instance registries."""
 
-from pyrit.registry.base import RegistryItemMetadata, RegistryProtocol
+from pyrit.models.identifiers import Identifier
+from pyrit.registry.base import RegistryProtocol
 from pyrit.registry.class_registries import (
     BaseClassRegistry,
     ClassEntry,
@@ -32,9 +33,9 @@ __all__ = [
     "discover_in_directory",
     "discover_in_package",
     "discover_subclasses_in_loaded_modules",
+    "Identifier",
     "InitializerMetadata",
     "InitializerRegistry",
-    "RegistryItemMetadata",
     "RegistryProtocol",
     "registry_name_to_class_name",
     "ScenarioMetadata",
