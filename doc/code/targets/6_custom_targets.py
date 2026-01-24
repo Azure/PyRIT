@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.19.0
 # ---
 
 # %% [markdown]
-# # 2. Creating Custom Targets
+# # 6. Creating Custom Targets
 #
 # Often, to use PyRIT, you need to create custom targets so it can interact with the system you're testing. [Gandalf](https://gandalf.lakera.ai/) and [Crucible](https://crucible.dreadnode.io/) are both platforms designed as playgrounds that emulate AI applications. This demo shows how to use PyRIT to connect with these endpoints. If you're testing your own custom endpoint, a good start is often to build a target, and then you will be able to interact with it similar to this demo.
 #

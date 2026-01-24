@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.0
 # ---
 
 # %% [markdown]
-# # 5.4 OpenAI TTS Target (Text --> Audio)
+# # 5. OpenAI TTS Target
 #
 # This example shows how to use the TTS (audio) target to convert text to speech.
 

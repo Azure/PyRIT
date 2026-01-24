@@ -5,15 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: pyrit (3.13.5)
-#     language: python
-#     name: python3
+#       jupytext_version: 1.19.0
 # ---
 
 # %% [markdown]
-# # 9. MessageNormalizer
+# # 11. MessageNormalizer
 #
 # MessageNormalizers convert PyRIT's `Message` format into other formats that specific targets require. Different LLMs and APIs expect messages in different formats:
 #

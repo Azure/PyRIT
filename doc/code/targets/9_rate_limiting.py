@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.19.0
 # ---
 
 # %% [markdown]
-# # 6. Rate Limit (RPM) Threshold
+# # 9. Rate Limit (RPM) Threshold
 #
 # Some targets have a specific Rate Limit (Requests Per Minute) they can handle. In order to abide by this limitation
 # and avoid exceptions, you can configure `max_requests_per_minute` on the target before using it with an attack.

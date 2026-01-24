@@ -2,13 +2,12 @@
 # Licensed under the MIT license.
 
 import os
-import re
 import uuid
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unit.mocks import get_image_message_piece, get_sample_conversations
+from unit.mocks import get_audio_message_piece, get_image_message_piece, get_sample_conversations
 
 from pyrit.exceptions.exception_classes import (
     EmptyResponseException,
@@ -119,6 +118,45 @@ async def test_send_prompt_async_edit(
 
 
 @pytest.mark.asyncio
+async def test_send_prompt_async_edit_multiple_images(
+    image_target: OpenAIImageTarget,
+):
+    image_piece = get_image_message_piece()
+    image_pieces = [image_piece for _ in range(OpenAIImageTarget._MAX_INPUT_IMAGES - 1)]
+    text_piece = MessagePiece(
+        role="user",
+        conversation_id=image_piece.conversation_id,
+        original_value="edit this image",
+        converted_value="edit this image",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+
+    # Mock SDK response
+    mock_response = MagicMock()
+    mock_image = MagicMock()
+    mock_image.b64_json = "aGVsbG8="  # Base64 encoded "hello"
+    mock_response.data = [mock_image]
+
+    with patch.object(image_target._async_client.images, "edit", new_callable=AsyncMock) as mock_edit:
+        mock_edit.return_value = mock_response
+
+        resp = await image_target.send_prompt_async(message=Message([image_piece, text_piece] + image_pieces))
+        assert len(resp) == 1
+        assert resp
+        path = resp[0].message_pieces[0].original_value
+        assert os.path.isfile(path)
+
+        with open(path, "rb") as file:
+            data = file.read()
+            assert data == b"hello"
+
+        os.remove(path)
+
+    os.remove(image_piece.original_value)
+
+
+@pytest.mark.asyncio
 async def test_send_prompt_async_invalid_image_path(
     image_target: OpenAIImageTarget,
 ):
@@ -140,7 +178,7 @@ async def test_send_prompt_async_invalid_image_path(
         converted_value_data_type="image_path",
     )
 
-    with pytest.raises(ValueError, match=re.escape(invalid_path)):
+    with pytest.raises(FileNotFoundError):
         await image_target.send_prompt_async(message=Message([text_piece, image_piece]))
 
 
@@ -380,14 +418,20 @@ def test_is_json_response_supported(patch_central_database):
 
 
 @pytest.mark.asyncio
-async def test_validate_first_piece_type(image_target: OpenAIImageTarget):
-    request = Message(message_pieces=[get_image_message_piece()])
-    with pytest.raises(ValueError, match="The first message piece must be text."):
-        await image_target.send_prompt_async(message=request)
+async def test_validate_no_text_piece(image_target: OpenAIImageTarget):
+    image_piece = get_image_message_piece()
+
+    try:
+        request = Message(message_pieces=[image_piece])
+        with pytest.raises(ValueError, match="The message must contain exactly one text piece."):
+            await image_target.send_prompt_async(message=request)
+    finally:
+        if os.path.isfile(image_piece.original_value):
+            os.remove(image_piece.original_value)
 
 
 @pytest.mark.asyncio
-async def test_validate_subsequent_piece_type(image_target: OpenAIImageTarget):
+async def test_validate_multiple_text_pieces(image_target: OpenAIImageTarget):
     request = Message(
         message_pieces=[
             MessagePiece(
@@ -409,12 +453,12 @@ async def test_validate_subsequent_piece_type(image_target: OpenAIImageTarget):
         ]
     )
 
-    with pytest.raises(ValueError, match="All the message pieces after the first one must be image_path."):
+    with pytest.raises(ValueError, match="The message must contain exactly one text piece."):
         await image_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
-async def test_validate_max_pieces(image_target: OpenAIImageTarget):
+async def test_validate_image_pieces(image_target: OpenAIImageTarget):
     image_piece = get_image_message_piece()
     image_pieces = [image_piece for _ in range(OpenAIImageTarget._MAX_INPUT_IMAGES + 1)]
     text_piece = MessagePiece(
@@ -427,12 +471,36 @@ async def test_validate_max_pieces(image_target: OpenAIImageTarget):
     )
 
     try:
-        request = Message(message_pieces=[text_piece] + image_pieces)
+        request = Message(message_pieces=image_pieces + [text_piece])
         with pytest.raises(
             ValueError,
-            match=f"This target supports exactly one text piece and up to {OpenAIImageTarget._MAX_INPUT_IMAGES} image pieces.",
+            match=f"The message can contain up to {OpenAIImageTarget._MAX_INPUT_IMAGES} image pieces.",
         ):
             await image_target.send_prompt_async(message=request)
     finally:
         if os.path.isfile(image_piece.original_value):
             os.remove(image_piece.original_value)
+
+
+@pytest.mark.asyncio
+async def test_validate_piece_type(image_target: OpenAIImageTarget):
+    audio_piece = get_audio_message_piece()
+    text_piece = MessagePiece(
+        role="user",
+        conversation_id=audio_piece.conversation_id,
+        original_value="test",
+        converted_value="test",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+
+    try:
+        request = Message(message_pieces=[audio_piece, text_piece])
+        with pytest.raises(
+            ValueError,
+            match=f"The message contains unsupported piece types.",
+        ):
+            await image_target.send_prompt_async(message=request)
+    finally:
+        if os.path.isfile(audio_piece.original_value):
+            os.remove(audio_piece.original_value)

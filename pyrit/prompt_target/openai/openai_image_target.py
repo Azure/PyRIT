@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 import base64
 import logging
+import uuid
 from typing import Any, Dict, Literal, Optional
 
 import httpx
@@ -138,12 +139,12 @@ class OpenAIImageTarget(OpenAITarget):
         Returns:
             Message: The response from the image target.
         """
-        message_piece = message.message_pieces[0]
+        prompt = message.message_pieces[0].converted_value
 
         # Construct request parameters
         image_generation_args: Dict[str, Any] = {
             "model": self._model_name,
-            "prompt": message_piece.converted_value,
+            "prompt": prompt,
             "size": self.image_size,
         }
 
@@ -173,16 +174,21 @@ class OpenAIImageTarget(OpenAITarget):
             ValueError: If at least one image file cannot be opened.
         """
         # Extract text and images from message pieces
-        text_prompt = message.message_pieces[0].converted_value
-        image_paths = [piece.converted_value for piece in message.message_pieces[1:]]
+        text_pieces = [p for p in message.message_pieces if p.converted_value_data_type == "text"]
+        text_prompt = text_pieces[0].converted_value
+
+        image_paths = [p.converted_value for p in message.message_pieces if p.converted_value_data_type == "image_path"]
         image_files = []
-        for img_path in image_paths:
-            try:
-                image_files.append(open(img_path, "rb"))
-            except OSError as exc:
-                for img_file in image_files:
-                    img_file.close()
-                raise ValueError(f"Unable to open image file '{img_path}': {exc}") from exc
+        for image_path in image_paths:
+            img_serializer = data_serializer_factory(
+                category="prompt-memory-entries", value=image_path, data_type="image_path"
+            )
+
+            image_name = str(uuid.uuid4())
+            image_bytes = await img_serializer.read_data()
+            image_type = img_serializer.get_mime_type(image_path)
+
+            image_files.append((image_name, image_bytes, image_type))
 
         # Construct request parameters for image editing
         image_edit_args: Dict[str, Any] = {
@@ -197,14 +203,10 @@ class OpenAIImageTarget(OpenAITarget):
         if self.style:
             image_edit_args["style"] = self.style
 
-        try:
-            response = await self._handle_openai_request(
-                api_call=lambda: self._async_client.images.edit(**image_edit_args),
-                request=message,
-            )
-        finally:
-            for img_file in image_files:
-                img_file.close()
+        response = await self._handle_openai_request(
+            api_call=lambda: self._async_client.images.edit(**image_edit_args),
+            request=message,
+        )
 
         return response
 
@@ -267,21 +269,24 @@ class OpenAIImageTarget(OpenAITarget):
     def _validate_request(self, *, message: Message) -> None:
         n_pieces = len(message.message_pieces)
 
-        if 1 <= n_pieces <= self._MAX_INPUT_IMAGES + 1:
-            piece_type = message.message_pieces[0].converted_value_data_type
-            if piece_type != "text":
-                raise ValueError(f"The first message piece must be text. Received: {piece_type}.")
-            data_types = [piece.converted_value_data_type for piece in message.message_pieces[1:]]
-            for data_type in data_types:
-                if data_type != "image_path":
-                    raise ValueError(
-                        f"All the message pieces after the first one must be image_path. Received: {data_type}."
-                    )
-        else:
+        if n_pieces < 1:
+            raise ValueError("The message must contain at least one piece.")
+
+        text_pieces = [p for p in message.message_pieces if p.converted_value_data_type == "text"]
+        image_pieces = [p for p in message.message_pieces if p.converted_value_data_type == "image_path"]
+        other_pieces = [p for p in message.message_pieces if p.converted_value_data_type not in ("text", "image_path")]
+
+        if len(text_pieces) != 1:
+            raise ValueError(f"The message must contain exactly one text piece. Received: {len(text_pieces)}.")
+
+        if len(image_pieces) > self._MAX_INPUT_IMAGES:
             raise ValueError(
-                "This target supports exactly one text piece and up to "
-                f"{self._MAX_INPUT_IMAGES} image pieces. Received: {n_pieces} pieces."
+                f"The message can contain up to {self._MAX_INPUT_IMAGES} image pieces. Received: {len(image_pieces)}."
             )
+
+        if len(other_pieces) > 0:
+            other_types = [p.converted_value_data_type for p in other_pieces]
+            raise ValueError(f"The message contains unsupported piece types. Unsupported types: {other_types}.")
 
     def is_json_response_supported(self) -> bool:
         """

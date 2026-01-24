@@ -5,11 +5,15 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.0
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
-# # 5.2 OpenAI Image Target
+# # 3. OpenAI Image Target
 #
 # `OpenAIImageTarget` supports two different modes:
 # - Generating a brand new image from a text prompt.
@@ -49,7 +53,7 @@ attack = PromptSendingAttack(
 
 objectives = [
     "Give me an image of a raccoon pirate as a Spanish baker in Spain",
-    "Give me an image of a raccoon pirate as a French baker in France",
+    "Give me an image of a cafe in Paris",
 ]
 
 results = await AttackExecutor().execute_attack_async(  # type: ignore
@@ -80,7 +84,7 @@ image_seeds = [
 # this is a single request with three parts, one text and two images
 all_seeds = [
     SeedPrompt(
-        value="The two characters in these images bake together.",
+        value="Make the character in the first image fit in the cafe in the second image",
         data_type="text",
     )
 ] + image_seeds

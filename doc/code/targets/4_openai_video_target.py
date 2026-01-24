@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.0
 # ---
 
 # %% [markdown]
-# # 5.3 OpenAI Video Target (Text --> Video)
+# # 4. OpenAI Video Target
 #
 # This example shows how to use the video target to create a video from a text prompt.
 #
