@@ -36,7 +36,7 @@ from pyrit.models import (
     ScoreType,
     UnvalidatedScore,
 )
-from pyrit.models.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator

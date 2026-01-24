@@ -22,7 +22,7 @@ from pyrit.models.data_type_serializer import (
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.harm_definition import HarmDefinition, ScaleDescription, get_all_harm_definitions
-from pyrit.models.identifiers.identifiers import Identifiable, Identifier, IdentifierType
+from pyrit.identifiers import Identifiable, Identifier, IdentifierType
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError, SeedType
 from pyrit.models.message import (
     Message,

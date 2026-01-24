@@ -4,7 +4,7 @@
 from typing import Optional
 
 from pyrit.models import Message, MessagePiece, Score
-from pyrit.models.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.registry.instance_registries.scorer_registry import ScorerRegistry
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer import Scorer

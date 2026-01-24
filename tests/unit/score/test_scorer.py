@@ -1249,7 +1249,7 @@ def test_mock_scorer_get_identifier_hash_deterministic():
 
 def test_mock_scorer_identifier_property():
     """Test that identifier property returns a ScorerIdentifier."""
-    from pyrit.models.identifiers import ScorerIdentifier
+    from pyrit.identifiers import ScorerIdentifier
 
     scorer = MockScorer()
     sid = scorer.identifier

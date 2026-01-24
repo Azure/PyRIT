@@ -12,7 +12,7 @@ from pyrit.models import AttackOutcome, AttackResult
 if TYPE_CHECKING:
     from pyrit.score import Scorer
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
-    from pyrit.models.identifiers import ScorerIdentifier
+    from pyrit.identifiers import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class ScenarioResult:
         Returns:
             ScorerIdentifier: The scorer identifier object, or None if no identifier is stored.
         """
-        from pyrit.models.identifiers import ScorerIdentifier
+        from pyrit.identifiers import ScorerIdentifier
 
         if not self.objective_scorer_identifier:
             return None

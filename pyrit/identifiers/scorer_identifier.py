@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from pyrit.models.identifiers.identifiers import Identifier, MAX_STORAGE_LENGTH
+from pyrit.identifiers.identifiers import Identifier, MAX_STORAGE_LENGTH
 from pyrit.models.score import ScoreType
 
 

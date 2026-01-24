@@ -22,7 +22,7 @@ from pyrit.registry.instance_registries import (
     BaseInstanceRegistry,
     ScorerRegistry,
 )
-from pyrit.models.identifiers import class_name_to_snake_case, snake_case_to_class_name
+from pyrit.identifiers import class_name_to_snake_case, snake_case_to_class_name
 
 __all__ = [
     "BaseClassRegistry",

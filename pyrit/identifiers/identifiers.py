@@ -5,12 +5,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-from abc import abstractmethod
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
-from typing import Any, Dict, List, Literal, Optional, Type, TypeVar
+from typing import Any, Literal, Type, TypeVar
 
 from pyrit.common.deprecation import print_deprecation_message
-from pyrit.models.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 
 IdentifierType = Literal["class", "instance"]
 
@@ -19,22 +18,6 @@ EXCLUDE_FROM_STORAGE = "exclude_from_storage"
 MAX_STORAGE_LENGTH = "max_storage_length"
 
 T = TypeVar("T", bound="Identifier")
-
-
-class Identifiable:
-    """
-    Abstract base class for objects that can provide an identifier dictionary.
-
-    This is a legacy interface that will eventually be replaced by Identifier dataclass.
-    Classes implementing this interface should return a dict describing their identity.
-    """
-
-    @abstractmethod
-    def get_identifier(self) -> dict[str, str]:
-        pass
-
-    def __str__(self) -> str:
-        return f"{self.get_identifier}"
 
 
 @dataclass(frozen=True)
@@ -78,9 +61,6 @@ class Identifier:
         # 3. Compute name: full snake_case :: hash prefix
         full_snake = class_name_to_snake_case(self.class_name)
         object.__setattr__(self, "name", f"{full_snake}::{self.hash[:8]}")
-
-    # Legacy alias for backwards compatibility
-    _class_name_to_snake_case = staticmethod(class_name_to_snake_case)
 
     def _compute_hash(self) -> str:
         """

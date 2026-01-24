@@ -5,7 +5,7 @@ import hashlib
 
 import pytest
 
-from pyrit.models.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier
 
 
 class TestScorerIdentifierBasic:

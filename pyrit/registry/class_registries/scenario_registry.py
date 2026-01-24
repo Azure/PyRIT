@@ -24,7 +24,7 @@ from pyrit.registry.discovery import (
     discover_in_package,
     discover_subclasses_in_loaded_modules,
 )
-from pyrit.models.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 
 if TYPE_CHECKING:
     from pyrit.scenario.core import Scenario
