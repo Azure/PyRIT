@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional
 from colorama import Fore, Style
 
 from pyrit.score.printer.scorer_printer import ScorerPrinter
-from pyrit.score.scorer_identifier import ScorerIdentifier
+from pyrit.models.identifiers import ScorerIdentifier
 
 if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.scorer_metrics import (
@@ -108,7 +108,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
         self._print_scorer_info(scorer_identifier, indent_level=3)
 
         # Look up metrics by hash
-        scorer_hash = scorer_identifier.compute_hash()
+        scorer_hash = scorer_identifier.hash
         metrics = find_objective_metrics_by_hash(hash=scorer_hash)
         self._print_objective_metrics(metrics)
 
@@ -135,7 +135,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
         self._print_scorer_info(scorer_identifier, indent_level=3)
 
         # Look up metrics by hash and harm category
-        scorer_hash = scorer_identifier.compute_hash()
+        scorer_hash = scorer_identifier.hash
         metrics = find_harm_metrics_by_hash(hash=scorer_hash, harm_category=harm_category)
         self._print_harm_metrics(metrics)
 
@@ -149,7 +149,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
         """
         indent = self._indent * indent_level
 
-        self._print_colored(f"{indent}• Scorer Type: {scorer_identifier.type}", Fore.CYAN)
+        self._print_colored(f"{indent}• Scorer Type: {scorer_identifier.class_name}", Fore.CYAN)
 
         # Print target info if available
         if scorer_identifier.target_info:

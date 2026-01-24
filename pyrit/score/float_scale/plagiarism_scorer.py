@@ -55,9 +55,9 @@ class PlagiarismScorer(FloatScaleScorer):
         self.metric = metric
         self.n = n
 
-    def _build_scorer_identifier(self) -> None:
+    def _build_identifier(self) -> None:
         """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+        self._set_identifier(
             scorer_specific_params={
                 "reference_text": self.reference_text,
                 "metric": self.metric.value,

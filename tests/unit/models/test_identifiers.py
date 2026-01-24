@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from pyrit.models.identifiers import Identifiable, Identifier
+from pyrit.models import Identifiable, Identifier
 
 
 class TestIdentifiable:
@@ -41,22 +41,22 @@ class TestIdentifier:
         """Test creating an Identifier instance with all required fields."""
         identifier = Identifier(
             identifier_type="class",
-            name="test_scorer",
             class_name="TestScorer",
             class_module="pyrit.test.scorer",
             class_description="A test scorer for testing",
         )
         assert identifier.identifier_type == "class"
-        assert identifier.name == "test_scorer"
         assert identifier.class_name == "TestScorer"
         assert identifier.class_module == "pyrit.test.scorer"
         assert identifier.class_description == "A test scorer for testing"
+        # name is auto-computed from class_name and hash
+        assert identifier.name is not None
+        assert "test_scorer" in identifier.name
 
     def test_identifier_is_frozen(self):
         """Test that Identifier is immutable."""
         identifier = Identifier(
             identifier_type="instance",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description here",
@@ -69,7 +69,6 @@ class TestIdentifier:
         """Test identifier_type with 'class' value."""
         identifier = Identifier(
             identifier_type="class",
-            name="test",
             class_name="Test",
             class_module="test",
             class_description="",
@@ -80,7 +79,6 @@ class TestIdentifier:
         """Test identifier_type with 'instance' value."""
         identifier = Identifier(
             identifier_type="instance",
-            name="test",
             class_name="Test",
             class_module="test",
             class_description="",
@@ -95,7 +93,6 @@ class TestIdentifierHash:
         """Test that hash is computed when the Identifier is created."""
         identifier = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
@@ -107,14 +104,12 @@ class TestIdentifierHash:
         """Test that the same inputs produce the same hash."""
         identifier1 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
         )
         identifier2 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
@@ -125,15 +120,13 @@ class TestIdentifierHash:
         """Test that different storable field values produce different hashes."""
         identifier1 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description",
         )
         identifier2 = Identifier(
             identifier_type="class",
-            name="different_item",
-            class_name="TestClass",
+            class_name="DifferentClass",
             class_module="test.module",
             class_description="Description",
         )
@@ -143,14 +136,12 @@ class TestIdentifierHash:
         """Test that class_description is excluded from hash computation."""
         identifier1 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="First description",
         )
         identifier2 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Completely different description",
@@ -162,14 +153,12 @@ class TestIdentifierHash:
         """Test that identifier_type is excluded from hash computation."""
         identifier1 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description",
         )
         identifier2 = Identifier(
             identifier_type="instance",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description",
@@ -181,7 +170,6 @@ class TestIdentifierHash:
         """Test that the hash cannot be modified."""
         identifier = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
@@ -193,16 +181,15 @@ class TestIdentifierHash:
 class TestIdentifierStorage:
     """Tests for Identifier storage functionality."""
 
-    def test_to_storage_dict_excludes_marked_fields(self):
-        """Test that to_storage_dict excludes fields marked with exclude_from_storage."""
+    def test_to_dict_excludes_marked_fields(self):
+        """Test that to_dict excludes fields marked with exclude_from_storage."""
         identifier = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
         )
-        storage_dict = identifier.to_storage_dict()
+        storage_dict = identifier.to_dict()
 
         # Should include storable fields
         assert "name" in storage_dict
@@ -214,18 +201,18 @@ class TestIdentifierStorage:
         assert "class_description" not in storage_dict
         assert "identifier_type" not in storage_dict
 
-    def test_to_storage_dict_values_match(self):
-        """Test that to_storage_dict values match the original identifier."""
+    def test_to_dict_values_match(self):
+        """Test that to_dict values match the original identifier."""
         identifier = Identifier(
             identifier_type="instance",
-            name="my_scorer",
             class_name="MyScorer",
             class_module="pyrit.score.my_scorer",
             class_description="My custom scorer",
         )
-        storage_dict = identifier.to_storage_dict()
+        storage_dict = identifier.to_dict()
 
-        assert storage_dict["name"] == "my_scorer"
+        # name is auto-computed
+        assert storage_dict["name"] == identifier.name
         assert storage_dict["class_name"] == "MyScorer"
         assert storage_dict["class_module"] == "pyrit.score.my_scorer"
         assert storage_dict["hash"] == identifier.hash
@@ -243,7 +230,6 @@ class TestIdentifierSubclass:
 
         extended = ExtendedIdentifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
@@ -261,7 +247,6 @@ class TestIdentifierSubclass:
 
         extended1 = ExtendedIdentifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description",
@@ -269,7 +254,6 @@ class TestIdentifierSubclass:
         )
         extended2 = ExtendedIdentifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description",
@@ -287,7 +271,6 @@ class TestIdentifierSubclass:
 
         extended1 = ExtendedIdentifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description",
@@ -295,7 +278,6 @@ class TestIdentifierSubclass:
         )
         extended2 = ExtendedIdentifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description",
@@ -304,8 +286,8 @@ class TestIdentifierSubclass:
         # display_only is excluded, so hashes should match
         assert extended1.hash == extended2.hash
 
-    def test_subclass_to_storage_dict_includes_extra_storable_fields(self):
-        """Test that to_storage_dict includes subclass storable fields."""
+    def test_subclass_to_dict_includes_extra_storable_fields(self):
+        """Test that to_dict includes subclass storable fields."""
 
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
@@ -314,14 +296,13 @@ class TestIdentifierSubclass:
 
         extended = ExtendedIdentifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description",
             extra_field="extra_value",
             display_only="display_value",
         )
-        storage_dict = extended.to_storage_dict()
+        storage_dict = extended.to_dict()
 
         # Extra storable field should be included
         assert "extra_field" in storage_dict

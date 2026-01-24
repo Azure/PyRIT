@@ -130,7 +130,11 @@ class Score:
     def __str__(self) -> str:
         category_str = f": {', '.join(self.score_category) if self.score_category else ''}"
         if self.scorer_class_identifier:
-            return f"{self.scorer_class_identifier['__type__']}{category_str}: {self.score_value}"
+            # Support both new 'class_name' and legacy '__type__' keys
+            scorer_type = self.scorer_class_identifier.get(
+                "class_name", self.scorer_class_identifier.get("__type__", "Unknown")
+            )
+            return f"{scorer_type}{category_str}: {self.score_value}"
         return f"{category_str}: {self.score_value}"
 
     __repr__ = __str__

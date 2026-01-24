@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.models.identifiers import Identifier
+from pyrit.models import Identifier
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -24,7 +24,7 @@ from pyrit.registry.discovery import (
     discover_in_package,
     discover_subclasses_in_loaded_modules,
 )
-from pyrit.registry.name_utils import class_name_to_registry_name
+from pyrit.models.identifiers.class_name_utils import class_name_to_snake_case
 
 if TYPE_CHECKING:
     from pyrit.scenario.core import Scenario
@@ -137,7 +137,7 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
                 # Check if this is a user-defined class (not from pyrit.scenario.scenarios)
                 if not scenario_class.__module__.startswith("pyrit.scenario.scenarios"):
                     # Convert class name to snake_case for scenario name
-                    registry_name = class_name_to_registry_name(scenario_class.__name__, suffix="Scenario")
+                    registry_name = class_name_to_snake_case(scenario_class.__name__, suffix="Scenario")
                     entry = ClassEntry(registered_class=scenario_class)
                     self._class_entries[registry_name] = entry
                     logger.info(f"Registered user-defined scenario: {registry_name} ({scenario_class.__name__})")
@@ -171,7 +171,6 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
 
         return ScenarioMetadata(
             identifier_type="class",
-            name=name,
             class_name=scenario_class.__name__,
             class_module=scenario_class.__module__,
             class_description=description,

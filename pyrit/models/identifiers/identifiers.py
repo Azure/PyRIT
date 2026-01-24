@@ -1,0 +1,180 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+from __future__ import annotations
+
+import hashlib
+import json
+from abc import abstractmethod
+from dataclasses import asdict, dataclass, field, fields, is_dataclass
+from typing import Any, Dict, List, Literal, Optional, Type, TypeVar
+
+from pyrit.common.deprecation import print_deprecation_message
+from pyrit.models.identifiers.class_name_utils import class_name_to_snake_case
+
+IdentifierType = Literal["class", "instance"]
+
+# Metadata keys for field configuration
+EXCLUDE_FROM_STORAGE = "exclude_from_storage"
+MAX_STORAGE_LENGTH = "max_storage_length"
+
+T = TypeVar("T", bound="Identifier")
+
+
+class Identifiable:
+    """
+    Abstract base class for objects that can provide an identifier dictionary.
+
+    This is a legacy interface that will eventually be replaced by Identifier dataclass.
+    Classes implementing this interface should return a dict describing their identity.
+    """
+
+    @abstractmethod
+    def get_identifier(self) -> dict[str, str]:
+        pass
+
+    def __str__(self) -> str:
+        return f"{self.get_identifier}"
+
+
+@dataclass(frozen=True)
+class Identifier:
+    """
+    Base dataclass for identifying PyRIT components.
+
+    This frozen dataclass provides a stable identifier for registry items,
+    targets, scorers, attacks, converters, and other components. The hash is computed at creation
+    time from the core fields and remains constant.
+
+    This class serves as:
+    1. Base for registry metadata (replacing RegistryItemMetadata)
+    2. Future replacement for get_identifier() dict patterns
+
+    All component-specific identifier types should extend this with additional fields.
+    """
+
+    class_name: str  # The actual class name, equivalent to __type__ (e.g., "SelfAskRefusalScorer")
+    class_module: str  # The module path, equivalent to __module__ (e.g., "pyrit.score.self_ask_refusal_scorer")
+
+    class_description: str = field(metadata={EXCLUDE_FROM_STORAGE: True})
+
+    #  Whether this identifies a "class" or "instance"
+    identifier_type: IdentifierType = field(metadata={EXCLUDE_FROM_STORAGE: True})
+
+    # Auto-computed fields
+    snake_class_name: str = field(init=False, metadata={EXCLUDE_FROM_STORAGE: True})
+    hash: str = field(init=False, compare=False)
+    name: str = field(init=False)  # Unique identifier: {full_snake_case}::{hash[:8]}
+
+    def __post_init__(self) -> None:
+        """Compute derived fields: snake_class_name, hash, and name."""
+        # Use object.__setattr__ since this is a frozen dataclass
+        # 1. Compute snake_class_name (known suffix stripped)
+        object.__setattr__(
+            self, "snake_class_name", class_name_to_snake_case(self.class_name, strip_known_suffix=True)
+        )
+        # 2. Compute hash (before name, since name depends on hash)
+        object.__setattr__(self, "hash", self._compute_hash())
+        # 3. Compute name: full snake_case :: hash prefix
+        full_snake = class_name_to_snake_case(self.class_name)
+        object.__setattr__(self, "name", f"{full_snake}::{self.hash[:8]}")
+
+    # Legacy alias for backwards compatibility
+    _class_name_to_snake_case = staticmethod(class_name_to_snake_case)
+
+    def _compute_hash(self) -> str:
+        """
+        Compute a stable SHA256 hash from storable identifier fields.
+
+        Fields marked with metadata={"exclude_from_storage": True}, 'hash', and 'name'
+        are excluded from the hash computation. 
+
+        Returns:
+            A hex string of the SHA256 hash.
+        """
+        hashable_dict: dict[str, Any] = {
+            f.name: getattr(self, f.name)
+            for f in fields(self)
+            if f.name not in ("hash", "name") and not f.metadata.get(EXCLUDE_FROM_STORAGE, False)
+        }
+        config_json = json.dumps(hashable_dict, sort_keys=True, separators=(",", ":"), default=_dataclass_encoder)
+        return hashlib.sha256(config_json.encode("utf-8")).hexdigest()
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Return only fields suitable for DB storage.
+
+        Fields with max_storage_length metadata are truncated to show the first
+        N characters followed by the field's hash, formatted as:
+        "<first N chars>... [sha256:<hash[:16]>]"
+        """
+        result: dict[str, Any] = {}
+        for f in fields(self):
+            if f.metadata.get(EXCLUDE_FROM_STORAGE, False):
+                continue
+            value = getattr(self, f.name)
+            max_len = f.metadata.get(MAX_STORAGE_LENGTH)
+            if max_len is not None and isinstance(value, str) and len(value) > max_len:
+                truncated = value[:max_len]
+                field_hash = hashlib.sha256(value.encode()).hexdigest()[:16]
+                value = f"{truncated}... [sha256:{field_hash}]"
+            result[f.name] = value
+        return result
+
+    @classmethod
+    def from_dict(cls: Type[T], data: dict[str, Any]) -> T:
+        """
+        Create an Identifier from a dictionary (e.g., retrieved from database).
+
+        This handles:
+        - Legacy '__type__' key mapping to 'class_name'
+        - Legacy 'type' key mapping to 'class_name' (with deprecation warning)
+        - Ignoring unknown fields not present in the dataclass
+
+        Note:
+            For fields with max_storage_length, stored values may be truncated
+            strings like "<first N chars>... [sha256:<hash>]". The reconstructed
+            object's `.hash` property will be computed from these truncated values
+            and may differ from the original. For identity matching, use the 'hash'
+            key from the original stored dict (returned by to_dict()).
+
+        Args:
+            data: The dictionary representation.
+
+        Returns:
+            A new Identifier instance.
+        """
+        # Create a mutable copy
+        data = dict(data)
+
+        # Handle legacy key mappings for class_name
+        if "class_name" not in data:
+            if "__type__" in data:
+                print_deprecation_message(
+                    old_item="'__type__' key in Identifier dict",
+                    new_item="'class_name' key",
+                    removed_in="0.13.0",
+                )
+                data["class_name"] = data.pop("__type__")
+            elif "type" in data:
+                print_deprecation_message(
+                    old_item="'type' key in Identifier dict",
+                    new_item="'class_name' key",
+                    removed_in="0.13.0",
+                )
+                data["class_name"] = data.pop("type")
+
+        # Get the set of valid field names for this class
+        valid_fields = {f.name for f in fields(cls) if f.init}
+
+        # Filter to only include valid fields, excluding computed fields like 'hash'
+        filtered_data = {k: v for k, v in data.items() if k in valid_fields}
+
+        return cls(**filtered_data)
+
+
+def _dataclass_encoder(obj: Any) -> Any:
+    """JSON encoder that handles dataclasses by converting them to dicts."""
+    if is_dataclass(obj) and not isinstance(obj, type):
+        return asdict(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")

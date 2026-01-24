@@ -36,9 +36,9 @@ from pyrit.models import (
     ScoreType,
     UnvalidatedScore,
 )
+from pyrit.models.identifiers import ScorerIdentifier
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 if TYPE_CHECKING:
@@ -63,7 +63,7 @@ class Scorer(abc.ABC):
     # Specifies glob patterns for datasets and a result file name
     evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
 
-    _scorer_identifier: Optional[ScorerIdentifier] = None
+    _identifier: Optional[ScorerIdentifier] = None
 
     def __init__(self, *, validator: ScorerPromptValidator):
         """
@@ -96,32 +96,32 @@ class Scorer(abc.ABC):
             return "unknown"
 
     @abstractmethod
-    def _build_scorer_identifier(self) -> None:
+    def _build_identifier(self) -> None:
         """
         Build the scorer evaluation identifier for this scorer.
 
-        Subclasses must implement this method to call `_set_scorer_identifier()` with their
+        Subclasses must implement this method to call `_set_identifier()` with their
         specific parameters (system_prompt_template, sub_scorers, scorer_specific_params, prompt_target).
         """
-        raise NotImplementedError("Subclasses must implement _build_scorer_identifier")
+        raise NotImplementedError("Subclasses must implement _build_identifier")
 
     @property
-    def scorer_identifier(self) -> ScorerIdentifier:
+    def identifier(self) -> ScorerIdentifier:
         """
         Get the scorer identifier. Built lazily on first access.
 
         Returns:
             ScorerIdentifier: The identifier containing all configuration parameters.
         """
-        if self._scorer_identifier is None:
-            self._build_scorer_identifier()
-        return self._scorer_identifier
+        if self._identifier is None:
+            self._build_identifier()
+        return self._identifier
 
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def _set_scorer_identifier(
+    def _set_identifier(
         self,
         *,
         system_prompt_template: Optional[str] = None,
@@ -143,10 +143,10 @@ class Scorer(abc.ABC):
                 Defaults to None.
             prompt_target (Optional[PromptTarget]): The prompt target used by this scorer. Defaults to None.
         """
-        # Build sub_identifier from sub_scorers
-        sub_identifier: Optional[List[ScorerIdentifier]] = None
+        # Build sub_identifier from sub_scorers (store as dicts for storage)
+        sub_identifier: Optional[List[Dict[str, Any]]] = None
         if sub_scorers:
-            sub_identifier = [scorer.scorer_identifier for scorer in sub_scorers]
+            sub_identifier = [scorer.identifier.to_dict() for scorer in sub_scorers]
         # Extract target_info from prompt_target
         target_info: Optional[Dict[str, Any]] = None
         if prompt_target:
@@ -157,8 +157,12 @@ class Scorer(abc.ABC):
                 if key in target_id:
                     target_info[key] = target_id[key]
 
-        self._scorer_identifier = ScorerIdentifier(
-            type=self.__class__.__name__,
+        self._identifier = ScorerIdentifier(
+            class_name=self.__class__.__name__,
+            class_module=self.__class__.__module__,
+            class_description=self.__class__.__doc__ or "",
+            identifier_type="instance",
+            scorer_type=self.scorer_type,
             system_prompt_template=system_prompt_template,
             user_prompt_template=user_prompt_template,
             sub_identifier=sub_identifier,
@@ -526,7 +530,7 @@ class Scorer(abc.ABC):
         Returns:
             dict: The identifier dictionary containing configuration details and hash.
         """
-        return self.scorer_identifier.to_compact_dict()
+        return self.identifier.to_dict()
 
     @pyrit_json_retry
     async def _score_value_with_llm(

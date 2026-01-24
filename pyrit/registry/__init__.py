@@ -3,7 +3,7 @@
 
 """Registry module for PyRIT class and instance registries."""
 
-from pyrit.models.identifiers import Identifier
+from pyrit.models import Identifier
 from pyrit.registry.base import RegistryProtocol
 from pyrit.registry.class_registries import (
     BaseClassRegistry,
@@ -20,16 +20,15 @@ from pyrit.registry.discovery import (
 )
 from pyrit.registry.instance_registries import (
     BaseInstanceRegistry,
-    ScorerMetadata,
     ScorerRegistry,
 )
-from pyrit.registry.name_utils import class_name_to_registry_name, registry_name_to_class_name
+from pyrit.models.identifiers import class_name_to_snake_case, snake_case_to_class_name
 
 __all__ = [
     "BaseClassRegistry",
     "BaseInstanceRegistry",
     "ClassEntry",
-    "class_name_to_registry_name",
+    "class_name_to_snake_case",
     "discover_in_directory",
     "discover_in_package",
     "discover_subclasses_in_loaded_modules",
@@ -37,9 +36,8 @@ __all__ = [
     "InitializerMetadata",
     "InitializerRegistry",
     "RegistryProtocol",
-    "registry_name_to_class_name",
+    "snake_case_to_class_name",
     "ScenarioMetadata",
     "ScenarioRegistry",
-    "ScorerMetadata",
     "ScorerRegistry",
 ]

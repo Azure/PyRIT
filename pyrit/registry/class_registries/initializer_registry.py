@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
-from pyrit.models.identifiers import Identifier
+from pyrit.models import Identifier
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -209,7 +209,6 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
             instance = initializer_class()
             return InitializerMetadata(
                 identifier_type="class",
-                name=name,
                 class_name=initializer_class.__name__,
                 class_module=initializer_class.__module__,
                 class_description=instance.description,
@@ -221,7 +220,6 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
             logger.warning(f"Failed to get metadata for {name}: {e}")
             return InitializerMetadata(
                 identifier_type="class",
-                name=name,
                 class_name=initializer_class.__name__,
                 class_module=initializer_class.__module__,
                 class_description="Error loading initializer metadata",

@@ -146,9 +146,9 @@ class AzureContentFilterScorer(FloatScaleScorer):
         """Get the string values of the configured harm categories for API calls."""
         return [category.value for category in self._harm_categories]
 
-    def _build_scorer_identifier(self) -> None:
+    def _build_identifier(self) -> None:
         """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+        self._set_identifier(
             scorer_specific_params={
                 "score_categories": self._category_values,
             }

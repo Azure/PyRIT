@@ -19,9 +19,9 @@ Terminology:
 from abc import ABC, abstractmethod
 from typing import Callable, Dict, Generic, Iterator, List, Optional, Type, TypeVar
 
-from pyrit.models.identifiers import Identifier
+from pyrit.models import Identifier
+from pyrit.models.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.base import RegistryProtocol
-from pyrit.registry.name_utils import class_name_to_registry_name
 
 # Type variable for the registered class type
 T = TypeVar("T")
@@ -208,7 +208,6 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
 
         return Identifier(
             identifier_type="class",
-            name=name,
             class_name=registered_class.__name__,
             class_module=registered_class.__module__,
             class_description=description,
@@ -371,7 +370,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         Returns:
             The registry name (snake_case identifier).
         """
-        return class_name_to_registry_name(cls.__name__)
+        return class_name_to_snake_case(cls.__name__)
 
     def __contains__(self, name: str) -> bool:
         """

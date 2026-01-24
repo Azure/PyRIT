@@ -60,9 +60,9 @@ class MockScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_scorer_identifier(self) -> None:
+    def _build_identifier(self) -> None:
         """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_scorer_identifier()
+        self._set_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -116,9 +116,9 @@ class MockFloatScorer(Scorer):
         self.scored_piece_ids: list[str] = []
         super().__init__(validator=validator)
 
-    def _build_scorer_identifier(self) -> None:
+    def _build_identifier(self) -> None:
         """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_scorer_identifier()
+        self._set_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         # Track which pieces get scored
@@ -1118,9 +1118,9 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
             self.scored_piece_ids = []
             super().__init__(validator=validator)
 
-        def _build_scorer_identifier(self) -> None:
+        def _build_identifier(self) -> None:
             """Build the scorer evaluation identifier for this test scorer."""
-            self._set_scorer_identifier()
+            self._set_identifier()
 
         async def _score_piece_async(
             self, message_piece: MessagePiece, *, objective: Optional[str] = None
@@ -1205,16 +1205,16 @@ async def test_base_scorer_score_async_implementation(patch_central_database):
     assert len(scores) == 2
 
 
-# Tests for get_identifier and scorer_identifier
+# Tests for get_identifier and identifier
 
 
 def test_mock_scorer_get_identifier_returns_type():
-    """Test that get_identifier returns the correct __type__ key."""
+    """Test that get_identifier returns the correct class_name key."""
     scorer = MockScorer()
     identifier = scorer.get_identifier()
 
-    assert "__type__" in identifier
-    assert identifier["__type__"] == "MockScorer"
+    assert "class_name" in identifier
+    assert identifier["class_name"] == "MockScorer"
 
 
 def test_mock_scorer_get_identifier_includes_hash():
@@ -1247,27 +1247,27 @@ def test_mock_scorer_get_identifier_hash_deterministic():
     assert hash1 == hash2
 
 
-def test_mock_scorer_scorer_identifier_property():
-    """Test that scorer_identifier property returns a ScorerIdentifier."""
-    from pyrit.score.scorer_identifier import ScorerIdentifier
+def test_mock_scorer_identifier_property():
+    """Test that identifier property returns a ScorerIdentifier."""
+    from pyrit.models.identifiers import ScorerIdentifier
 
     scorer = MockScorer()
-    sid = scorer.scorer_identifier
+    sid = scorer.identifier
 
     assert isinstance(sid, ScorerIdentifier)
-    assert sid.type == "MockScorer"
+    assert sid.class_name == "MockScorer"
 
 
-def test_mock_scorer_scorer_identifier_lazy_build():
-    """Test that scorer_identifier is built lazily on first access."""
+def test_mock_scorer_identifier_lazy_build():
+    """Test that identifier is built lazily on first access."""
     scorer = MockScorer()
 
-    # Before accessing, _scorer_identifier should be None
-    assert scorer._scorer_identifier is None
+    # Before accessing, _identifier should be None
+    assert scorer._identifier is None
 
     # After accessing, it should be built
-    _ = scorer.scorer_identifier
-    assert scorer._scorer_identifier is not None
+    _ = scorer.identifier
+    assert scorer._identifier is not None
 
 
 def test_mock_float_scorer_get_identifier():
@@ -1277,7 +1277,7 @@ def test_mock_float_scorer_get_identifier():
 
     identifier = scorer.get_identifier()
 
-    assert identifier["__type__"] == "MockFloatScorer"
+    assert identifier["class_name"] == "MockFloatScorer"
     assert "hash" in identifier
 
 
@@ -1306,8 +1306,8 @@ class TestTrueFalseScorerEmptyScoreListRationale:
             def __init__(self, validator):
                 super().__init__(validator=validator)
 
-            def _build_scorer_identifier(self) -> None:
-                self._set_scorer_identifier()
+            def _build_identifier(self) -> None:
+                self._set_identifier()
 
             async def _score_piece_async(
                 self, message_piece: MessagePiece, *, objective: Optional[str] = None
