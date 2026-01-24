@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from pyrit.models import Identifier
+from pyrit.identifiers import Identifier
 from pyrit.registry.base import _matches_filters
 
 

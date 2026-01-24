@@ -14,7 +14,7 @@ from pyrit.common.utils import verify_and_resolve_path
 
 if TYPE_CHECKING:
     from pyrit.models.harm_definition import HarmDefinition
-    from pyrit.models.identifiers import ScorerIdentifier
+    from pyrit.identifiers import ScorerIdentifier
 
 T = TypeVar("T", bound="ScorerMetrics")
 M = TypeVar("M", bound="ScorerMetrics")

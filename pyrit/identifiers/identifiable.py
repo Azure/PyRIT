@@ -3,16 +3,16 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
-from abc import abstractmethod
-from dataclasses import asdict, dataclass, field, fields, is_dataclass
-from typing import Any, Dict, List, Literal, Optional, Type, TypeVar
+from abc import ABC, abstractmethod
+from typing import Any, Generic, TypeVar
 
-from pyrit.common.deprecation import print_deprecation_message
-from pyrit.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.identifiers.identifier import Identifier
 
-class LegacyIdentifiable:
+# TypeVar bound to Identifier, allowing subclasses to specify their identifier type
+IdentifierT = TypeVar("IdentifierT", bound=Identifier)
+
+
+class LegacyIdentifiable(ABC):
     """
     Deprecated legacy interface for objects that can provide an identifier dictionary.
 
@@ -25,21 +25,52 @@ class LegacyIdentifiable:
         pass
 
     def __str__(self) -> str:
-        return f"{self.get_identifier}"
+        return f"{self.get_identifier()}"
 
-class Identifiable(LegacyIdentifiable):
+
+class Identifiable(ABC, Generic[IdentifierT]):
     """
-    Abstract base class for objects that can provide an identifier dictionary.
+    Abstract base class for objects that can provide a typed identifier.
 
-    This is a legacy interface that will eventually be replaced by Identifier dataclass.
-    Classes implementing this interface should return a dict describing their identity.
+    Generic over IdentifierT, allowing subclasses to specify their exact
+    identifier type for strong typing support.
+
+    Subclasses must:
+    1. Implement `_build_identifier()` to construct their specific identifier
+    2. Implement the `identifier` property to return the typed identifier
+    3. Optionally override `get_identifier()` if custom dict serialization is needed
     """
 
     @abstractmethod
-    def get_identifier(self) -> dict[str, str]:
-        pass
+    def _build_identifier(self) -> None:
+        """
+        Build the identifier for this object.
 
-    def __str__(self) -> str:
-        return f"{self.get_identifier}"
-    
+        Subclasses must implement this method to construct their specific identifier type
+        and store it in an instance variable (typically `_identifier`).
+
+        This method is typically called lazily on first access to the `identifier` property.
+        """
+        raise NotImplementedError("Subclasses must implement _build_identifier")
+
+    @property
+    @abstractmethod
+    def identifier(self) -> IdentifierT:
+        """
+        Get the typed identifier for this object.
+
+        Returns:
+            IdentifierT: The identifier for this component.
+        """
+        ...
+
+    def get_identifier(self) -> dict[str, Any]:
+        """
+        Get the identifier as a dictionary for database storage.
+
+        Returns:
+            dict[str, Any]: Dictionary representation of the identifier.
+        """
+        return self.identifier.to_dict()
+
 

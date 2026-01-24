@@ -18,7 +18,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, Iterator, List, Optional, TypeVar
 
-from pyrit.models import Identifier
+from pyrit.identifiers import Identifier
 from pyrit.registry.base import RegistryProtocol
 
 T = TypeVar("T")  # The type of instances stored

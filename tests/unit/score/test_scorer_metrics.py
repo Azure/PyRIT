@@ -15,7 +15,7 @@ from pyrit.score.scorer_evaluation.scorer_metrics_io import (
     get_all_objective_metrics,
     replace_evaluation_results,
 )
-from pyrit.models.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier
 
 
 class TestScorerMetricsSerialization:

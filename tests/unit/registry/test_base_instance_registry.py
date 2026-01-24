@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass
 
-from pyrit.models import Identifier
+from pyrit.identifiers import Identifier
 from pyrit.registry.instance_registries.base_instance_registry import BaseInstanceRegistry
 
 

@@ -36,7 +36,7 @@ from pyrit.models import (
     ScoreType,
     UnvalidatedScore,
 )
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import Identifiable, ScorerIdentifier
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -54,7 +54,7 @@ if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
 
-class Scorer(abc.ABC):
+class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
     """
     Abstract base class for scorers.
     """
@@ -115,6 +115,7 @@ class Scorer(abc.ABC):
         """
         if self._identifier is None:
             self._build_identifier()
+            assert self._identifier is not None, "_build_identifier must set _identifier"
         return self._identifier
 
     @property
@@ -519,18 +520,6 @@ class Scorer(abc.ABC):
 
         normalized_value = (value - min_value) / (max_value - min_value)
         return normalized_value
-
-    def get_identifier(self) -> Dict[str, Any]:
-        """
-        Get an identifier dictionary for the scorer for database storage.
-
-        Large fields (system_prompt_template, user_prompt_template) are shortened for compact storage.
-        Includes the computed hash of the configuration.
-
-        Returns:
-            dict: The identifier dictionary containing configuration details and hash.
-        """
-        return self.identifier.to_dict()
 
     @pyrit_json_retry
     async def _score_value_with_llm(

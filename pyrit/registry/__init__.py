@@ -3,7 +3,7 @@
 
 """Registry module for PyRIT class and instance registries."""
 
-from pyrit.models import Identifier
+from pyrit.identifiers import Identifier
 from pyrit.registry.base import RegistryProtocol
 from pyrit.registry.class_registries import (
     BaseClassRegistry,

@@ -19,7 +19,7 @@ Terminology:
 from abc import ABC, abstractmethod
 from typing import Callable, Dict, Generic, Iterator, List, Optional, Type, TypeVar
 
-from pyrit.models import Identifier
+from pyrit.identifiers import Identifier
 from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.base import RegistryProtocol
 

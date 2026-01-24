@@ -5,33 +5,33 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from pyrit.models import Identifiable, Identifier
+from pyrit.identifiers import Identifier, LegacyIdentifiable
 
 
-class TestIdentifiable:
-    """Tests for the Identifiable abstract base class."""
+class TestLegacyIdentifiable:
+    """Tests for the LegacyIdentifiable abstract base class."""
 
-    def test_identifiable_get_identifier_is_abstract(self):
+    def test_legacy_identifiable_get_identifier_is_abstract(self):
         """Test that get_identifier is an abstract method that must be implemented."""
 
-        class ConcreteIdentifiable(Identifiable):
+        class ConcreteLegacyIdentifiable(LegacyIdentifiable):
             def get_identifier(self) -> dict[str, str]:
                 return {"type": "test", "name": "example"}
 
-        obj = ConcreteIdentifiable()
+        obj = ConcreteLegacyIdentifiable()
         result = obj.get_identifier()
         assert result == {"type": "test", "name": "example"}
 
-    def test_identifiable_str_returns_identifier(self):
-        """Test that __str__ returns the get_identifier method reference."""
+    def test_legacy_identifiable_str_returns_identifier_dict(self):
+        """Test that __str__ returns the get_identifier() result as a string."""
 
-        class ConcreteIdentifiable(Identifiable):
+        class ConcreteLegacyIdentifiable(LegacyIdentifiable):
             def get_identifier(self) -> dict[str, str]:
                 return {"type": "test"}
 
-        obj = ConcreteIdentifiable()
-        # __str__ returns the method reference string
-        assert "get_identifier" in str(obj)
+        obj = ConcreteLegacyIdentifiable()
+        # __str__ returns the identifier dict as a string
+        assert str(obj) == "{'type': 'test'}"
 
 
 class TestIdentifier:

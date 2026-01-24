@@ -22,7 +22,7 @@ from pyrit.score.scorer_evaluation.scorer_metrics import (
     ScorerMetrics,
     ScorerMetricsWithIdentity,
 )
-from pyrit.models.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
 

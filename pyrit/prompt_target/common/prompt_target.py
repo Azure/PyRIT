@@ -6,12 +6,13 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import Identifiable, Message
+from pyrit.models import Message
+from pyrit.identifiers import LegacyIdentifiable
 
 logger = logging.getLogger(__name__)
 
 
-class PromptTarget(abc.ABC, Identifiable):
+class PromptTarget(LegacyIdentifiable):
     """
     Abstract base class for prompt targets.
 
