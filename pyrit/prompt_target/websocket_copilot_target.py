@@ -69,14 +69,13 @@ class WebSocketCopilotTarget(PromptTarget):
     """
 
     SUPPORTED_DATA_TYPES = {"text"}
-
-    WEBSOCKET_BASE_URL: str = "wss://substrate.office.com/m365Copilot/Chathub"
     RESPONSE_TIMEOUT_SECONDS: int = 60
     CONNECTION_TIMEOUT_SECONDS: int = 30
 
     def __init__(
         self,
         *,
+        websocket_base_url: str = "wss://substrate.office.com/m365Copilot/Chathub",
         max_requests_per_minute: Optional[int] = None,
         model_name: str = "copilot",
         response_timeout_seconds: int = RESPONSE_TIMEOUT_SECONDS,
@@ -86,6 +85,8 @@ class WebSocketCopilotTarget(PromptTarget):
         Initialize the WebSocketCopilotTarget.
 
         Args:
+            websocket_base_url (str): Base URL for the Copilot WebSocket endpoint.
+                Defaults to ``wss://substrate.office.com/m365Copilot/Chathub``.
             max_requests_per_minute (Optional[int]): Maximum number of requests per minute.
             model_name (str): The model name. Defaults to "copilot".
             response_timeout_seconds (int): Timeout for receiving responses in seconds. Defaults to 60s.
@@ -94,16 +95,24 @@ class WebSocketCopilotTarget(PromptTarget):
 
         Raises:
             ValueError: If ``response_timeout_seconds`` is not a positive integer.
+            ValueError: If ``websocket_base_url`` does not start with "wss://".
         """
         if response_timeout_seconds <= 0:
             raise ValueError("response_timeout_seconds must be a positive integer.")
 
+        if not websocket_base_url.startswith("wss://"):
+            raise ValueError("websocket_base_url must start with 'wss://'")
+
         self._authenticator = authenticator or CopilotAuthenticator()
         self._response_timeout_seconds = response_timeout_seconds
+        self._websocket_base_url = websocket_base_url
+
+        if self._websocket_base_url.endswith("/"):
+            self._websocket_base_url = self._websocket_base_url[:-1]
 
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
-            endpoint=self.WEBSOCKET_BASE_URL,
+            endpoint=self._websocket_base_url,
             model_name=model_name,
         )
 
@@ -201,7 +210,7 @@ class WebSocketCopilotTarget(PromptTarget):
 
         client_request_id = str(uuid.uuid4())
 
-        base_url = f"{self.WEBSOCKET_BASE_URL}/{object_id}@{tenant_id}"
+        base_url = f"{self._websocket_base_url}/{object_id}@{tenant_id}"
         query_params = [
             f"ClientRequestId={client_request_id}",
             f"X-SessionId={session_id}",
