@@ -38,14 +38,13 @@ class TestWebSocketCopilotTargetInit:
             assert target._authenticator == mock_auth_instance
             assert target._response_timeout_seconds == WebSocketCopilotTarget.RESPONSE_TIMEOUT_SECONDS
             assert target._model_name == "copilot"
-            assert target._endpoint == WebSocketCopilotTarget.WEBSOCKET_BASE_URL
+            assert target._endpoint == "wss://substrate.office.com/m365Copilot/Chathub"
             assert target._verbose is False
             assert target._max_requests_per_minute is None
 
     def test_init_with_custom_parameters(self, mock_authenticator):
         target = WebSocketCopilotTarget(
             authenticator=mock_authenticator,
-            verbose=True,
             max_requests_per_minute=10,
             model_name="custom_copilot",
             response_timeout_seconds=120,
@@ -54,7 +53,6 @@ class TestWebSocketCopilotTargetInit:
         assert target._authenticator == mock_authenticator
         assert target._response_timeout_seconds == 120
         assert target._model_name == "custom_copilot"
-        assert target._verbose is True
         assert target._max_requests_per_minute == 10
 
     def test_init_with_invalid_response_timeout(self, mock_authenticator):
@@ -154,7 +152,7 @@ class TestBuildWebsocketUrl:
         )
         expected_token = await mock_authenticator.get_token_async()
 
-        assert url.startswith(f"{WebSocketCopilotTarget.WEBSOCKET_BASE_URL}/test_object_id@test_tenant_id?")
+        assert url.startswith("wss://substrate.office.com/m365Copilot/Chathub/test_object_id@test_tenant_id?")
         assert f"X-SessionId={session_id}" in url
         assert f"ConversationId={copilot_conversation_id}" in url
         assert f"access_token={expected_token}" in url
