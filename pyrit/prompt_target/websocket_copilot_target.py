@@ -135,20 +135,20 @@ class WebSocketCopilotTarget(PromptTarget):
         return json.dumps(data, separators=(",", ":")) + "\x1e"
 
     @staticmethod
-    def _parse_raw_message(message: str) -> list[tuple[CopilotMessageType, str]]:
+    def _parse_raw_message(raw_websocket_message: str) -> list[tuple[CopilotMessageType, str]]:
         """
         Extract actionable content from a raw WebSocket message.
         Returns more than one JSON message if multiple are found.
 
         Args:
-            message (str): The raw WebSocket message string.
+            raw_websocket_message (str): The raw WebSocket message string.
 
         Returns:
             list[tuple[CopilotMessageType, str]]: A list of tuples where each tuple contains
                 message type and extracted content.
         """
         results: list[tuple[CopilotMessageType, str]] = []
-        messages = message.split("\x1e")  # record separator
+        messages = raw_websocket_message.split("\x1e")  # record separator
 
         for message in messages:
             if not message or not message.strip():
