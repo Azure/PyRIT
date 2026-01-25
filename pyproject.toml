@@ -280,6 +280,8 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 # https://github.com/Azure/PyRIT/issues/1176 is fully resolved
 # TODO: Remove these ignores once the issues are fixed
 "pyrit/{auxiliary_attacks,exceptions,models,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501"]
+# Backend API routes raise HTTPException handled by FastAPI, not true exceptions
+"pyrit/backend/**/*.py" = ["DOC501"]
 "pyrit/__init__.py" = ["D104"]
 
 [tool.ruff.lint.pydocstyle]
