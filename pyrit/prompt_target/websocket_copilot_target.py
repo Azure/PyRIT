@@ -77,7 +77,6 @@ class WebSocketCopilotTarget(PromptTarget):
     def __init__(
         self,
         *,
-        verbose: bool = False,
         max_requests_per_minute: Optional[int] = None,
         model_name: str = "copilot",
         response_timeout_seconds: int = RESPONSE_TIMEOUT_SECONDS,
@@ -87,7 +86,6 @@ class WebSocketCopilotTarget(PromptTarget):
         Initialize the WebSocketCopilotTarget.
 
         Args:
-            verbose (bool): Enable verbose logging. Defaults to False.
             max_requests_per_minute (Optional[int]): Maximum number of requests per minute.
             model_name (str): The model name. Defaults to "copilot".
             response_timeout_seconds (int): Timeout for receiving responses in seconds. Defaults to 60s.
@@ -104,14 +102,10 @@ class WebSocketCopilotTarget(PromptTarget):
         self._response_timeout_seconds = response_timeout_seconds
 
         super().__init__(
-            verbose=verbose,
             max_requests_per_minute=max_requests_per_minute,
             endpoint=self.WEBSOCKET_BASE_URL,
             model_name=model_name,
         )
-
-        if self._verbose:
-            logger.info("WebSocketCopilotTarget initialized")
 
     @staticmethod
     def _dict_to_websocket(data: dict) -> str:
