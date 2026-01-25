@@ -16,13 +16,13 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 from pyrit.common.path import (
     SCORER_EVALS_PATH,
 )
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.score.scorer_evaluation.scorer_metrics import (
     HarmScorerMetrics,
     ObjectiveScorerMetrics,
     ScorerMetrics,
     ScorerMetricsWithIdentity,
 )
-from pyrit.identifiers import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
 

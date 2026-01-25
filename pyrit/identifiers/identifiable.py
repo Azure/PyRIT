@@ -22,9 +22,11 @@ class LegacyIdentifiable(ABC):
 
     @abstractmethod
     def get_identifier(self) -> dict[str, str]:
+        """Return a dictionary describing this object's identity."""
         pass
 
     def __str__(self) -> str:
+        """Return string representation of the identifier."""
         return f"{self.get_identifier()}"
 
 
@@ -72,5 +74,3 @@ class Identifiable(ABC, Generic[IdentifierT]):
             dict[str, Any]: Dictionary representation of the identifier.
         """
         return self.identifier.to_dict()
-
-

@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Optional
 
 from colorama import Fore, Style
 
-from pyrit.score.printer.scorer_printer import ScorerPrinter
 from pyrit.identifiers import ScorerIdentifier
+from pyrit.score.printer.scorer_printer import ScorerPrinter
 
 if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.scorer_metrics import (

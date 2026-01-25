@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field, fields
+from typing import Any, Dict, List, Optional, Type
 
-from pyrit.identifiers.identifier import Identifier, MAX_STORAGE_LENGTH
+from pyrit.identifiers.identifier import MAX_STORAGE_LENGTH, Identifier
 from pyrit.models.score import ScoreType
 
 
@@ -33,7 +33,34 @@ class ScorerIdentifier(Identifier):
     scorer_type: ScoreType = "unknown"
     system_prompt_template: Optional[str] = field(default=None, metadata={MAX_STORAGE_LENGTH: 100})
     user_prompt_template: Optional[str] = field(default=None, metadata={MAX_STORAGE_LENGTH: 100})
-    sub_identifier: Optional[List[Dict[str, Any]]] = None
+    sub_identifier: Optional[List["ScorerIdentifier"]] = None
     target_info: Optional[Dict[str, Any]] = None
     score_aggregator: Optional[str] = None
     scorer_specific_params: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def from_dict(cls: Type["ScorerIdentifier"], data: dict[str, Any]) -> "ScorerIdentifier":
+        """
+        Create a ScorerIdentifier from a dictionary (e.g., retrieved from database).
+
+        Extends the base Identifier.from_dict() to recursively reconstruct
+        nested ScorerIdentifier objects in sub_identifier.
+
+        Args:
+            data: The dictionary representation.
+
+        Returns:
+            ScorerIdentifier: A new ScorerIdentifier instance.
+        """
+        # Create a mutable copy
+        data = dict(data)
+
+        # Recursively reconstruct sub_identifier if present
+        if "sub_identifier" in data and data["sub_identifier"] is not None:
+            data["sub_identifier"] = [
+                ScorerIdentifier.from_dict(sub) if isinstance(sub, dict) else sub
+                for sub in data["sub_identifier"]
+            ]
+
+        # Delegate to parent class for standard processing
+        return Identifier.from_dict.__func__(cls, data)  # type: ignore[attr-defined]

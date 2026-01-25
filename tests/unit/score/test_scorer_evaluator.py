@@ -19,7 +19,6 @@ from pyrit.score import (
     ObjectiveScorerMetrics,
     RegistryUpdateBehavior,
     ScorerEvaluator,
-    ScorerIdentifier,
     TrueFalseScorer,
 )
 

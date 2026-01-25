@@ -3,7 +3,7 @@
 
 """Registry module for PyRIT class and instance registries."""
 
-from pyrit.identifiers import Identifier
+from pyrit.identifiers import Identifier, class_name_to_snake_case, snake_case_to_class_name
 from pyrit.registry.base import RegistryProtocol
 from pyrit.registry.class_registries import (
     BaseClassRegistry,
@@ -22,7 +22,6 @@ from pyrit.registry.instance_registries import (
     BaseInstanceRegistry,
     ScorerRegistry,
 )
-from pyrit.identifiers import class_name_to_snake_case, snake_case_to_class_name
 
 __all__ = [
     "BaseClassRegistry",

@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from typing import get_args
 
 from pyrit import prompt_converter
-from pyrit.models import PromptDataType
 from pyrit.identifiers import LegacyIdentifiable
+from pyrit.models import PromptDataType
 
 
 @dataclass

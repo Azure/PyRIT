@@ -53,9 +53,7 @@ class Identifier:
         """Compute derived fields: snake_class_name, hash, and name."""
         # Use object.__setattr__ since this is a frozen dataclass
         # 1. Compute snake_class_name (known suffix stripped)
-        object.__setattr__(
-            self, "snake_class_name", class_name_to_snake_case(self.class_name, strip_known_suffix=True)
-        )
+        object.__setattr__(self, "snake_class_name", class_name_to_snake_case(self.class_name, strip_known_suffix=True))
         # 2. Compute hash (before name, since name depends on hash)
         object.__setattr__(self, "hash", self._compute_hash())
         # 3. Compute name: full snake_case :: hash prefix
@@ -67,7 +65,7 @@ class Identifier:
         Compute a stable SHA256 hash from storable identifier fields.
 
         Fields marked with metadata={"exclude_from_storage": True}, 'hash', and 'name'
-        are excluded from the hash computation. 
+        are excluded from the hash computation.
 
         Returns:
             A hex string of the SHA256 hash.
@@ -87,6 +85,11 @@ class Identifier:
         Fields with max_storage_length metadata are truncated to show the first
         N characters followed by the field's hash, formatted as:
         "<first N chars>... [sha256:<hash[:16]>]"
+
+        Nested Identifier objects are recursively serialized to dicts.
+
+        Returns:
+            dict[str, Any]: A dictionary containing the storable fields.
         """
         result: dict[str, Any] = {}
         for f in fields(self):
@@ -98,6 +101,11 @@ class Identifier:
                 truncated = value[:max_len]
                 field_hash = hashlib.sha256(value.encode()).hexdigest()[:16]
                 value = f"{truncated}... [sha256:{field_hash}]"
+            # Recursively serialize nested Identifier objects
+            elif isinstance(value, Identifier):
+                value = value.to_dict()
+            elif isinstance(value, list) and value and isinstance(value[0], Identifier):
+                value = [item.to_dict() for item in value]
             result[f.name] = value
         return result
 
@@ -154,7 +162,18 @@ class Identifier:
 
 
 def _dataclass_encoder(obj: Any) -> Any:
-    """JSON encoder that handles dataclasses by converting them to dicts."""
+    """
+    JSON encoder that handles dataclasses by converting them to dicts.
+
+    Args:
+        obj: The object to encode.
+
+    Returns:
+        Any: The dictionary representation of the dataclass.
+
+    Raises:
+        TypeError: If the object is not a dataclass instance.
+    """
     if is_dataclass(obj) and not isinstance(obj, type):
         return asdict(obj)
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")

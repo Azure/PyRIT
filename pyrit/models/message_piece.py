@@ -8,6 +8,8 @@ from datetime import datetime
 from typing import Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
+from pyrit.common.deprecation import print_deprecation_message
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -39,7 +41,7 @@ class MessagePiece:
         converter_identifiers: Optional[List[Dict[str, str]]] = None,
         prompt_target_identifier: Optional[Dict[str, str]] = None,
         attack_identifier: Optional[Dict[str, str]] = None,
-        scorer_identifier: Optional[Dict[str, str]] = None,
+        scorer_identifier: Optional[Union[ScorerIdentifier, Dict[str, str]]] = None,
         original_value_data_type: PromptDataType = "text",
         converted_value_data_type: Optional[PromptDataType] = None,
         response_error: PromptResponseError = "none",
@@ -70,7 +72,8 @@ class MessagePiece:
             converter_identifiers: The converter identifiers for the prompt. Defaults to None.
             prompt_target_identifier: The target identifier for the prompt. Defaults to None.
             attack_identifier: The attack identifier for the prompt. Defaults to None.
-            scorer_identifier: The scorer identifier for the prompt. Defaults to None.
+            scorer_identifier: The scorer identifier for the prompt. Can be a ScorerIdentifier or a
+                dict (deprecated, will be removed in 0.13.0). Defaults to None.
             original_value_data_type: The data type of the original prompt (text, image). Defaults to "text".
             converted_value_data_type: The data type of the converted prompt (text, image). Defaults to "text".
             response_error: The response error type. Defaults to "none".
@@ -107,7 +110,19 @@ class MessagePiece:
 
         self.prompt_target_identifier = prompt_target_identifier or {}
         self.attack_identifier = attack_identifier or {}
-        self.scorer_identifier = scorer_identifier or {}
+
+        # Handle scorer_identifier: convert dict to ScorerIdentifier with deprecation warning
+        if scorer_identifier is None:
+            self.scorer_identifier: Optional[ScorerIdentifier] = None
+        elif isinstance(scorer_identifier, dict):
+            print_deprecation_message(
+                old_item="dict for scorer_identifier",
+                new_item="ScorerIdentifier",
+                removed_in="0.13.0",
+            )
+            self.scorer_identifier = ScorerIdentifier.from_dict(scorer_identifier)
+        else:
+            self.scorer_identifier = scorer_identifier
 
         self.original_value = original_value
 
@@ -266,7 +281,7 @@ class MessagePiece:
             "converter_identifiers": self.converter_identifiers,
             "prompt_target_identifier": self.prompt_target_identifier,
             "attack_identifier": self.attack_identifier,
-            "scorer_identifier": self.scorer_identifier,
+            "scorer_identifier": self.scorer_identifier.to_dict() if self.scorer_identifier else None,
             "original_value_data_type": self.original_value_data_type,
             "original_value": self.original_value,
             "original_value_sha256": self.original_value_sha256,

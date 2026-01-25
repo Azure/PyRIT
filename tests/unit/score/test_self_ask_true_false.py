@@ -169,5 +169,5 @@ def test_self_ask_true_false_get_identifier_long_prompt_hashed(patch_central_dat
     # Format: "<first 100 chars>... [sha256:<hash[:16]>]"
     sys_prompt_in_id = identifier["system_prompt_template"]
     if sys_prompt_in_id:
-        # If it's truncated, it will contain "... [sha256:" 
+        # If it's truncated, it will contain "... [sha256:"
         assert "[sha256:" in sys_prompt_in_id or len(sys_prompt_in_id) <= 100

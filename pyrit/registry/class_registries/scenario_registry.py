@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from pyrit.identifiers import Identifier
+from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -24,7 +25,6 @@ from pyrit.registry.discovery import (
     discover_in_package,
     discover_subclasses_in_loaded_modules,
 )
-from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 
 if TYPE_CHECKING:
     from pyrit.scenario.core import Scenario

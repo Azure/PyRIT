@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pyrit.identifiers import Identifiable, Identifier, IdentifierType
 from pyrit.models.attack_result import AttackOutcome, AttackResult, AttackResultT
 from pyrit.models.chat_message import (
     ALLOWED_CHAT_MESSAGE_ROLES,
@@ -22,7 +23,6 @@ from pyrit.models.data_type_serializer import (
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.harm_definition import HarmDefinition, ScaleDescription, get_all_harm_definitions
-from pyrit.identifiers import Identifiable, Identifier, IdentifierType
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError, SeedType
 from pyrit.models.message import (
     Message,

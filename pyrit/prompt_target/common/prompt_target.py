@@ -5,9 +5,9 @@ import abc
 import logging
 from typing import Any, Dict, List, Optional
 
+from pyrit.identifiers import LegacyIdentifiable
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Message
-from pyrit.identifiers import LegacyIdentifiable
 
 logger = logging.getLogger(__name__)
 

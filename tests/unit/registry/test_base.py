@@ -49,7 +49,10 @@ class TestMatchesFilters:
             class_module="test.module",
             class_description="A test item",
         )
-        assert _matches_filters(metadata, include_filters={"class_name": "TestClass", "class_module": "test.module"}) is True
+        assert (
+            _matches_filters(metadata, include_filters={"class_name": "TestClass", "class_module": "test.module"})
+            is True
+        )
 
     def test_matches_filters_multiple_filters_partial_match(self):
         """Test that partial matches return False when not all filters match."""
@@ -59,7 +62,10 @@ class TestMatchesFilters:
             class_module="test.module",
             class_description="A test item",
         )
-        assert _matches_filters(metadata, include_filters={"class_name": "TestClass", "class_module": "other.module"}) is False
+        assert (
+            _matches_filters(metadata, include_filters={"class_name": "TestClass", "class_module": "other.module"})
+            is False
+        )
 
     def test_matches_filters_key_not_in_metadata(self):
         """Test that filtering on a non-existent key returns False."""

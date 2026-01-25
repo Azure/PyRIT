@@ -10,9 +10,9 @@ import pyrit
 from pyrit.models import AttackOutcome, AttackResult
 
 if TYPE_CHECKING:
+    from pyrit.identifiers import ScorerIdentifier
     from pyrit.score import Scorer
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
-    from pyrit.identifiers import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
 

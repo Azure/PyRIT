@@ -3,8 +3,8 @@
 
 from typing import Optional
 
-from pyrit.models import Message, MessagePiece, Score
 from pyrit.identifiers import ScorerIdentifier
+from pyrit.models import Message, MessagePiece, Score
 from pyrit.registry.instance_registries.scorer_registry import ScorerRegistry
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer import Scorer
@@ -308,17 +308,15 @@ class TestScorerRegistryListMetadataFiltering:
         # Filter to include true_false scorers, exclude float_scale
         # This tests that both filters work together
         metadata = self.registry.list_metadata(
-            include_filters={"scorer_type": "true_false"}, 
-            exclude_filters={"scorer_type": "float_scale"}
+            include_filters={"scorer_type": "true_false"}, exclude_filters={"scorer_type": "float_scale"}
         )
         # Should return both true_false scorers (exclude filter doesn't match any of them)
         assert len(metadata) == 2
         assert all(m.scorer_type == "true_false" for m in metadata)
-        
+
         # Test excluding by class_name
         metadata = self.registry.list_metadata(
-            include_filters={"scorer_type": "true_false"}, 
-            exclude_filters={"class_name": "MockTrueFalseScorer"}
+            include_filters={"scorer_type": "true_false"}, exclude_filters={"class_name": "MockTrueFalseScorer"}
         )
         # Should return 0 since all true_false scorers are MockTrueFalseScorer
         assert len(metadata) == 0
