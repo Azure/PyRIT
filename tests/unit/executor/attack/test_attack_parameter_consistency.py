@@ -22,6 +22,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     TreeOfAttacksWithPruningAttack,
 )
+from pyrit.executor.attack.multi_turn.tree_of_attacks import TAPAttackScoringConfig
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     ChatMessageRole,
@@ -32,7 +33,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import TrueFalseScorer
+from pyrit.score import FloatScaleThresholdScorer, TrueFalseScorer
 
 # =============================================================================
 # Multi-Modal Message Fixtures
@@ -295,8 +296,18 @@ def tap_attack(
     """Create a pre-configured TreeOfAttacksWithPruningAttack with mocked normalizer."""
     mock_objective_scorer.score_async.return_value = [success_score]
 
+    # TAP requires a FloatScaleThresholdScorer for objective_scorer
+    mock_threshold_scorer = MagicMock(spec=FloatScaleThresholdScorer)
+    mock_threshold_scorer.threshold = 0.8
+    mock_threshold_scorer.scorer_type = "true_false"
+    mock_threshold_scorer.score_async = AsyncMock(return_value=[success_score])
+    mock_threshold_scorer.get_identifier.return_value = {
+        "__type__": "FloatScaleThresholdScorer",
+        "__module__": "pyrit.score",
+    }
+
     adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-    scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+    scoring_config = TAPAttackScoringConfig(objective_scorer=mock_threshold_scorer)
 
     attack = TreeOfAttacksWithPruningAttack(
         objective_target=mock_chat_target,
@@ -481,8 +492,18 @@ class TestNextMessageSentFirst:
         """Test that TreeOfAttacksWithPruningAttack uses next_message for the first turn on all nodes."""
         mock_objective_scorer.score_async.return_value = [success_score]
 
+        # TAP requires a FloatScaleThresholdScorer for objective_scorer
+        mock_threshold_scorer = MagicMock(spec=FloatScaleThresholdScorer)
+        mock_threshold_scorer.threshold = 0.8
+        mock_threshold_scorer.scorer_type = "true_false"
+        mock_threshold_scorer.score_async = AsyncMock(return_value=[success_score])
+        mock_threshold_scorer.get_identifier.return_value = {
+            "__type__": "FloatScaleThresholdScorer",
+            "__module__": "pyrit.score",
+        }
+
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+        scoring_config = TAPAttackScoringConfig(objective_scorer=mock_threshold_scorer)
 
         attack = TreeOfAttacksWithPruningAttack(
             objective_target=mock_chat_target,
@@ -700,8 +721,18 @@ class TestPrependedConversationInMemory:
         """Test that TreeOfAttacksWithPruningAttack preserves prepended conversation in memory."""
         mock_objective_scorer.score_async.return_value = [success_score]
 
+        # TAP requires a FloatScaleThresholdScorer for objective_scorer
+        mock_threshold_scorer = MagicMock(spec=FloatScaleThresholdScorer)
+        mock_threshold_scorer.threshold = 0.8
+        mock_threshold_scorer.scorer_type = "true_false"
+        mock_threshold_scorer.score_async = AsyncMock(return_value=[success_score])
+        mock_threshold_scorer.get_identifier.return_value = {
+            "__type__": "FloatScaleThresholdScorer",
+            "__module__": "pyrit.score",
+        }
+
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+        scoring_config = TAPAttackScoringConfig(objective_scorer=mock_threshold_scorer)
 
         attack = TreeOfAttacksWithPruningAttack(
             objective_target=mock_chat_target,

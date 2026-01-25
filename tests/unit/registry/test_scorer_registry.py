@@ -65,8 +65,6 @@ class MockFloatScaleScorer(FloatScaleScorer):
 class MockGenericScorer(Scorer):
     """Mock generic Scorer (not TrueFalse or FloatScale) for testing."""
 
-    scorer_type = "true_false"  # type: ignore[assignment]
-
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
@@ -248,13 +246,13 @@ class TestScorerRegistryBuildMetadata:
         assert isinstance(metadata[0].scorer_identifier, ScorerIdentifier)
 
     def test_build_metadata_description_from_docstring(self):
-        """Test that description is derived from the scorer's docstring."""
+        """Test that class_description is derived from the scorer's docstring."""
         scorer = MockTrueFalseScorer()
         self.registry.register_instance(scorer, name="tf_scorer")
 
         metadata = self.registry.list_metadata()
         # MockTrueFalseScorer has a docstring
-        assert "Mock TrueFalseScorer for testing" in metadata[0].description
+        assert "Mock TrueFalseScorer for testing" in metadata[0].class_description
 
 
 class TestScorerRegistryListMetadataFiltering:
@@ -362,15 +360,19 @@ class TestScorerMetadata:
         mock_identifier = ScorerIdentifier(type="test_type")
 
         metadata = ScorerMetadata(
+            identifier_type="instance",
             name="test_scorer",
             class_name="TestScorer",
-            description="A test scorer",
+            class_module="test.module",
+            class_description="A test scorer",
             scorer_type="true_false",
             scorer_identifier=mock_identifier,
         )
 
+        assert metadata.identifier_type == "instance"
         assert metadata.name == "test_scorer"
         assert metadata.class_name == "TestScorer"
-        assert metadata.description == "A test scorer"
+        assert metadata.class_module == "test.module"
+        assert metadata.class_description == "A test scorer"
         assert metadata.scorer_type == "true_false"
         assert metadata.scorer_identifier == mock_identifier

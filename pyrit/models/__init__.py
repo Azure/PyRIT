@@ -12,15 +12,17 @@ from pyrit.models.conversation_reference import ConversationReference, Conversat
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
     AudioPathDataTypeSerializer,
+    BinaryPathDataTypeSerializer,
     DataTypeSerializer,
     ErrorDataTypeSerializer,
     ImagePathDataTypeSerializer,
     TextDataTypeSerializer,
+    VideoPathDataTypeSerializer,
     data_serializer_factory,
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.harm_definition import HarmDefinition, ScaleDescription, get_all_harm_definitions
-from pyrit.models.identifiers import Identifier
+from pyrit.models.identifiers import Identifiable, Identifier, IdentifierType
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError, SeedType
 from pyrit.models.message import (
     Message,
@@ -60,6 +62,7 @@ __all__ = [
     "AttackOutcome",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
+    "BinaryPathDataTypeSerializer",
     "ChatMessage",
     "ChatMessagesDataset",
     "ChatMessageRole",
@@ -79,7 +82,9 @@ __all__ = [
     "group_conversation_message_pieces_by_sequence",
     "group_message_pieces_into_conversations",
     "HarmDefinition",
+    "Identifiable",
     "Identifier",
+    "IdentifierType",
     "ImagePathDataTypeSerializer",
     "Message",
     "MessagePiece",
@@ -109,4 +114,5 @@ __all__ = [
     "StrategyResultT",
     "TextDataTypeSerializer",
     "UnvalidatedScore",
+    "VideoPathDataTypeSerializer",
 ]

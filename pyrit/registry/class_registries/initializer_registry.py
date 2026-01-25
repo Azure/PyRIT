@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
-from pyrit.registry.base import RegistryItemMetadata
+from pyrit.models.identifiers import Identifier
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -34,14 +34,14 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class InitializerMetadata(RegistryItemMetadata):
+class InitializerMetadata(Identifier):
     """
     Metadata describing a registered PyRITInitializer class.
 
     Use get_class() to get the actual class.
     """
 
-    initializer_name: str
+    display_name: str
     required_env_vars: tuple[str, ...]
     execution_order: int
 
@@ -103,7 +103,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
         if discovery_path.is_file():
-            self._process_file(file_path=discovery_path, base_class=PyRITInitializer)  # type: ignore[type-abstract]
+            self._process_file(file_path=discovery_path, base_class=PyRITInitializer)
         else:
             for file_stem, file_path, initializer_class in discover_in_directory(
                 directory=discovery_path,
@@ -208,20 +208,24 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         try:
             instance = initializer_class()
             return InitializerMetadata(
+                identifier_type="class",
                 name=name,
                 class_name=initializer_class.__name__,
-                description=instance.description,
-                initializer_name=instance.name,
+                class_module=initializer_class.__module__,
+                class_description=instance.description,
+                display_name=instance.name,
                 required_env_vars=tuple(instance.required_env_vars),
                 execution_order=instance.execution_order,
             )
         except Exception as e:
             logger.warning(f"Failed to get metadata for {name}: {e}")
             return InitializerMetadata(
+                identifier_type="class",
                 name=name,
                 class_name=initializer_class.__name__,
-                description="Error loading initializer metadata",
-                initializer_name=name,
+                class_module=initializer_class.__module__,
+                class_description="Error loading initializer metadata",
+                display_name=name,
                 required_env_vars=(),
                 execution_order=100,
             )

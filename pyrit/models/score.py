@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union, get_args
 
-ScoreType = Literal["true_false", "float_scale"]
+ScoreType = Literal["true_false", "float_scale", "unknown"]
 
 
 class Score:
@@ -28,7 +28,7 @@ class Score:
     score_rationale: str
 
     # Custom metadata a scorer might use. This can vary by scorer.
-    score_metadata: Optional[Dict[str, Union[str, int]]]
+    score_metadata: Optional[Dict[str, Union[str, int, float]]]
 
     # The identifier of the scorer class, including relevant information
     # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
@@ -48,14 +48,14 @@ class Score:
     def __init__(
         self,
         *,
-        id: Optional[uuid.UUID | str] = None,
         score_value: str,
         score_value_description: str,
         score_type: ScoreType,
-        score_category: Optional[List[str]] = None,
         score_rationale: str,
-        score_metadata: Optional[Dict[str, Union[str, int]]],
         message_piece_id: str | uuid.UUID,
+        id: Optional[uuid.UUID | str] = None,
+        score_category: Optional[List[str]] = None,
+        score_metadata: Optional[Dict[str, Union[str, int, float]]] = None,
         scorer_class_identifier: Optional[Dict[str, str]] = None,
         timestamp: Optional[datetime] = None,
         objective: Optional[str] = None,
@@ -74,12 +74,12 @@ class Score:
         self.score_type = score_type
         self.score_category = score_category
         self.score_rationale = score_rationale
-        self.score_metadata = score_metadata
+        self.score_metadata = score_metadata or {}
         self.scorer_class_identifier = scorer_class_identifier or {}
         self.message_piece_id = message_piece_id
         self.objective = objective
 
-    def get_value(self):
+    def get_value(self) -> bool | float:
         """
         Returns the value of the score based on its type.
 
@@ -101,7 +101,7 @@ class Score:
 
         raise ValueError(f"Unknown scorer type: {self.score_type}")
 
-    def validate(self, scorer_type, score_value):
+    def validate(self, scorer_type: str, score_value: str) -> None:
         if scorer_type == "true_false" and str(score_value).lower() not in ["true", "false"]:
             raise ValueError(f"True False scorers must have a score value of 'true' or 'false' not {score_value}")
         elif scorer_type == "float_scale":
@@ -127,7 +127,7 @@ class Score:
             "objective": self.objective,
         }
 
-    def __str__(self):
+    def __str__(self) -> str:
         category_str = f": {', '.join(self.score_category) if self.score_category else ''}"
         if self.scorer_class_identifier:
             return f"{self.scorer_class_identifier['__type__']}{category_str}: {self.score_value}"
@@ -149,14 +149,14 @@ class UnvalidatedScore:
     score_value_description: str
     score_category: Optional[List[str]]
     score_rationale: str
-    score_metadata: Optional[Dict[str, Union[str, int]]]
+    score_metadata: Optional[Dict[str, Union[str, int, float]]]
     scorer_class_identifier: Dict[str, str]
     message_piece_id: uuid.UUID | str
     objective: Optional[str]
     id: Optional[uuid.UUID | str] = None
     timestamp: Optional[datetime] = None
 
-    def to_score(self, *, score_value: str, score_type: ScoreType):
+    def to_score(self, *, score_value: str, score_type: ScoreType) -> Score:
         return Score(
             id=self.id,
             score_value=score_value,

@@ -11,7 +11,7 @@ import logging
 import threading
 from dataclasses import asdict
 from pathlib import Path
-from typing import Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from pyrit.common.path import (
     SCORER_EVALS_PATH,
@@ -33,7 +33,7 @@ _file_write_locks: Dict[str, threading.Lock] = {}
 M = TypeVar("M", bound=ScorerMetrics)
 
 
-def _metrics_to_registry_dict(metrics: ScorerMetrics) -> Dict:
+def _metrics_to_registry_dict(metrics: ScorerMetrics) -> Dict[str, Any]:
     """
     Convert metrics to a dictionary suitable for registry storage.
 
@@ -261,7 +261,7 @@ def add_evaluation_results(
     logger.info(f"Added metrics for {scorer_identifier.type} to {file_path.name}")
 
 
-def _load_jsonl(file_path: Path) -> List[Dict]:
+def _load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
     """
     Load entries from a JSONL file.
 
@@ -291,7 +291,7 @@ def _load_jsonl(file_path: Path) -> List[Dict]:
     return entries
 
 
-def _append_jsonl_entry(file_path: Path, lock: threading.Lock, entry: Dict) -> None:
+def _append_jsonl_entry(file_path: Path, lock: threading.Lock, entry: Dict[str, Any]) -> None:
     """
     Append an entry to a JSONL file with thread safety.
 

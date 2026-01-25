@@ -18,10 +18,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, Iterator, List, Optional, TypeVar
 
-from pyrit.registry.base import RegistryItemMetadata, RegistryProtocol
+from pyrit.models.identifiers import Identifier
+from pyrit.registry.base import RegistryProtocol
 
 T = TypeVar("T")  # The type of instances stored
-MetadataT = TypeVar("MetadataT", bound=RegistryItemMetadata)
+MetadataT = TypeVar("MetadataT", bound=Identifier)
 
 
 class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT]):
@@ -54,8 +55,8 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
             The singleton instance of this registry class.
         """
         if cls not in cls._instances:
-            cls._instances[cls] = cls()  # type: ignore[assignment]
-        return cls._instances[cls]  # type: ignore[return-value]
+            cls._instances[cls] = cls()
+        return cls._instances[cls]
 
     @classmethod
     def reset_instance(cls) -> None:

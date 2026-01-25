@@ -101,10 +101,11 @@ class MockScorer(TrueFalseScorer):
 class SelectiveValidator(ScorerPromptValidator):
     """Validator that only supports text pieces, not images."""
 
-    def __init__(self, *, enforce_all_pieces_valid: bool = False):
+    def __init__(self, *, enforce_all_pieces_valid: bool = False, raise_on_no_valid_pieces: bool = False):
         super().__init__(
             supported_data_types=["text"],
             enforce_all_pieces_valid=enforce_all_pieces_valid,
+            raise_on_no_valid_pieces=raise_on_no_valid_pieces,
         )
 
 
@@ -1077,8 +1078,8 @@ async def test_unsupported_pieces_ignored_when_enforce_all_pieces_valid_false(pa
 
 @pytest.mark.asyncio
 async def test_all_unsupported_pieces_raises_error(patch_central_database):
-    """Test that having no supported pieces raises a clear error."""
-    validator = SelectiveValidator(enforce_all_pieces_valid=False)
+    """Test that having no supported pieces raises a clear error when raise_on_no_valid_pieces=True."""
+    validator = SelectiveValidator(enforce_all_pieces_valid=False, raise_on_no_valid_pieces=True)
     scorer = MockFloatScorer(validator=validator)
 
     # Create a response with only unsupported types
@@ -1278,3 +1279,136 @@ def test_mock_float_scorer_get_identifier():
 
     assert identifier["__type__"] == "MockFloatScorer"
     assert "hash" in identifier
+
+
+class TestTrueFalseScorerEmptyScoreListRationale:
+    """Tests for TrueFalseScorer rationale when no pieces are scored (empty score_list).
+
+    The empty score_list scenario occurs when _score_piece_async returns empty lists
+    for all pieces, which triggers special handling in TrueFalseScorer._score_async
+    to provide informative rationales based on the message piece status.
+    """
+
+    @pytest.fixture
+    def no_valid_pieces_validator(self):
+        """Validator that doesn't raise on no valid pieces and only supports text."""
+        return ScorerPromptValidator(
+            supported_data_types=["text"],
+            enforce_all_pieces_valid=False,
+            raise_on_no_valid_pieces=False,
+        )
+
+    @pytest.fixture
+    def true_false_scorer_returns_empty(self, no_valid_pieces_validator):
+        """Create a TrueFalseScorer where _score_piece_async returns empty list."""
+
+        class TestTrueFalseScorer(TrueFalseScorer):
+            def __init__(self, validator):
+                super().__init__(validator=validator)
+
+            def _build_scorer_identifier(self) -> None:
+                self._set_scorer_identifier()
+
+            async def _score_piece_async(
+                self, message_piece: MessagePiece, *, objective: Optional[str] = None
+            ) -> list[Score]:
+                # Return empty list to simulate no scorable pieces
+                return []
+
+        return TestTrueFalseScorer(validator=no_valid_pieces_validator)
+
+    @pytest.mark.asyncio
+    async def test_blocked_response_returns_specific_rationale(
+        self, true_false_scorer_returns_empty, patch_central_database
+    ):
+        """Test that a blocked response returns a rationale mentioning 'blocked'."""
+        blocked_piece = MessagePiece(
+            role="assistant",
+            original_value="",
+            converted_value="",
+            converted_value_data_type="text",
+            id="blocked-piece-id",
+            conversation_id="test-convo",
+            response_error="blocked",
+        )
+        response = Message(message_pieces=[blocked_piece])
+
+        scores = await true_false_scorer_returns_empty.score_async(response)
+
+        assert len(scores) == 1
+        assert scores[0].score_value == "false"
+        assert "blocked" in scores[0].score_rationale.lower()
+        assert "blocked" in scores[0].score_value_description.lower()
+
+    @pytest.mark.asyncio
+    async def test_error_response_returns_specific_rationale(
+        self, true_false_scorer_returns_empty, patch_central_database
+    ):
+        """Test that an error response returns a rationale mentioning the error type."""
+        # response_error must be a valid PromptResponseError: "blocked", "none", "processing", "empty", "unknown"
+        error_piece = MessagePiece(
+            role="assistant",
+            original_value="",
+            converted_value="",
+            converted_value_data_type="text",
+            id="error-piece-id",
+            conversation_id="test-convo",
+            response_error="unknown",
+        )
+        response = Message(message_pieces=[error_piece])
+
+        scores = await true_false_scorer_returns_empty.score_async(response)
+
+        assert len(scores) == 1
+        assert scores[0].score_value == "false"
+        assert "error" in scores[0].score_rationale.lower()
+        assert "unknown" in scores[0].score_rationale
+
+    @pytest.mark.asyncio
+    async def test_filtered_pieces_returns_generic_rationale(
+        self, true_false_scorer_returns_empty, patch_central_database
+    ):
+        """Test that normal pieces (no error) return a generic filtering rationale."""
+        # A normal text piece with no error - _score_piece_async returns empty
+        normal_piece = MessagePiece(
+            role="assistant",
+            original_value="some text",
+            converted_value="some text",
+            converted_value_data_type="text",
+            id="normal-piece-id",
+            conversation_id="test-convo",
+            response_error="none",
+        )
+        response = Message(message_pieces=[normal_piece])
+
+        scores = await true_false_scorer_returns_empty.score_async(response)
+
+        assert len(scores) == 1
+        assert scores[0].score_value == "false"
+        assert "filter" in scores[0].score_rationale.lower()
+        assert "blocked" not in scores[0].score_rationale.lower()
+        assert "error" not in scores[0].score_rationale.lower()
+
+    @pytest.mark.asyncio
+    async def test_blocked_takes_precedence_over_generic_error(
+        self, true_false_scorer_returns_empty, patch_central_database
+    ):
+        """Test that blocked status is checked before generic has_error check."""
+        # response_error="blocked" should mention "blocked" not just "error"
+        blocked_piece = MessagePiece(
+            role="assistant",
+            original_value="",
+            converted_value="",
+            converted_value_data_type="text",
+            id="blocked-piece-id",
+            conversation_id="test-convo",
+            response_error="blocked",
+        )
+        response = Message(message_pieces=[blocked_piece])
+
+        scores = await true_false_scorer_returns_empty.score_async(response)
+
+        # Should specifically mention blocked, not generic error
+        assert "blocked" in scores[0].score_rationale.lower()
+        # The description should also mention blocked, not just "error"
+        assert "blocked" in scores[0].score_value_description.lower()

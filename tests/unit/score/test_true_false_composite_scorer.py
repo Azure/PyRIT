@@ -24,7 +24,6 @@ class MockScorer(TrueFalseScorer):
         return TrueFalseScoreAggregator.AND(score_list)
 
     def __init__(self, score_value: bool, score_rationale: str, aggregator=None):
-        self.scorer_type = "true_false"
         self._score_value = score_value
         self._score_rationale = score_rationale
         self.aggregator = aggregator

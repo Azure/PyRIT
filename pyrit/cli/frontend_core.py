@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 
 try:
-    import termcolor  # type: ignore
+    import termcolor
 
     HAS_TERMCOLOR = True
 except ImportError:
@@ -387,7 +387,7 @@ def format_scenario_metadata(*, scenario_metadata: ScenarioMetadata) -> None:
     _print_header(text=scenario_metadata.name)
     print(f"    Class: {scenario_metadata.class_name}")
 
-    description = scenario_metadata.description
+    description = scenario_metadata.class_description
     if description:
         print("    Description:")
         print(_format_wrapped_text(text=description, indent="      "))
@@ -428,7 +428,7 @@ def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") 
     """
     _print_header(text=initializer_metadata.name)
     print(f"    Class: {initializer_metadata.class_name}")
-    print(f"    Name: {initializer_metadata.initializer_name}")
+    print(f"    Name: {initializer_metadata.display_name}")
     print(f"    Execution Order: {initializer_metadata.execution_order}")
 
     if initializer_metadata.required_env_vars:
@@ -438,9 +438,9 @@ def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") 
     else:
         print("    Required Environment Variables: None")
 
-    if initializer_metadata.description:
+    if initializer_metadata.class_description:
         print("    Description:")
-        print(_format_wrapped_text(text=initializer_metadata.description, indent="      "))
+        print(_format_wrapped_text(text=initializer_metadata.class_description, indent="      "))
 
 
 def validate_database(*, database: str) -> str:
@@ -567,7 +567,7 @@ def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], A
         raise ValueError(f"Validator function {validator_func.__name__} must have at least one parameter")
     first_param = params[0]
 
-    def wrapper(value):
+    def wrapper(value: Any) -> Any:
         import argparse as ap
 
         try:
