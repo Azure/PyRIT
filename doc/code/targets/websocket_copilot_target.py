@@ -74,7 +74,7 @@ multi_turn_attack = MultiPromptSendingAttack(objective_target=target)
 
 result = await multi_turn_attack.execute_async(
     objective="Engage in a multi-turn conversation about a number guessing game",
-    messages=messages,
+    user_messages=messages,
 )
 
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)
