@@ -3,40 +3,25 @@
 
 """Tests for the Jailbreak class."""
 
-import pathlib
-from typing import List
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.executor.attack import (
-    ContextComplianceAttack,
-    RedTeamingAttack,
-    RolePlayAttack,
-)
-from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.models import SeedDataset, SeedGroup, SeedObjective
-from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
-from pyrit.scenario.scenarios.airt.jailbreak import Jailbreak, JailbreakStrategy
-from pyrit.score import TrueFalseCompositeScorer
+from pyrit.scenario.scenarios.airt.jailbreak import JailbreakStrategy
 
 # TODO Fixtures
 
 
 @pytest.fixture
-def mock_jailbreaks():
-    ...
+def mock_jailbreaks(): ...
 
 
 @pytest.fixture
-def mock_objective_target():
-    ...
+def mock_objective_target(): ...
 
 
 @pytest.fixture
-def mock_objective_scorer():
-    ...
+def mock_objective_scorer(): ...
 
 
 @pytest.fixture
@@ -69,15 +54,12 @@ def mock_runtime_env():
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestJailbreakInitialization:
-    ...
+class TestJailbreakInitialization: ...
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestJailbreakAtomicAttacks:
-    ...
+class TestJailbreakAtomicAttacks: ...
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestJailbreakExecution:
-    ...
+class TestJailbreakExecution: ...
