@@ -278,16 +278,17 @@ class TestScorerIdentifierFromDict:
             "class_description": "A test scorer",
             "identifier_type": "instance",
             "unknown_field": "should be ignored",
-            "hash": "stored_hash_ignored_because_recomputed",
+            "hash": "abc123stored_hash_preserved",
             "name": "stored_name_ignored_because_recomputed",
         }
 
         identifier = ScorerIdentifier.from_dict(data)
 
         assert identifier.class_name == "TestScorer"
-        # hash and name are recomputed, not taken from dict
-        assert identifier.hash != "stored_hash_ignored_because_recomputed"
-        assert identifier.name != "stored_name_ignored_because_recomputed"
+        # hash is preserved from dict (not recomputed) to handle truncated fields
+        assert identifier.hash == "abc123stored_hash_preserved"
+        # name is recomputed from hash
+        assert identifier.name == f"test_scorer::{identifier.hash[:8]}"
 
     def test_from_dict_roundtrip(self):
         """Test that to_dict -> from_dict roundtrip works."""

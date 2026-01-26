@@ -45,7 +45,7 @@ class Identifier:
 
     # Auto-computed fields
     snake_class_name: str = field(init=False, metadata={EXCLUDE_FROM_STORAGE: True})
-    hash: str = field(init=False, compare=False)
+    hash: str | None = field(default=None, compare=False, kw_only=True)
     name: str = field(init=False)  # Unique identifier: {full_snake_case}::{hash[:8]}
 
     def __post_init__(self) -> None:
@@ -53,8 +53,9 @@ class Identifier:
         # Use object.__setattr__ since this is a frozen dataclass
         # 1. Compute snake_class_name
         object.__setattr__(self, "snake_class_name", class_name_to_snake_case(self.class_name))
-        # 2. Compute hash (before name, since name depends on hash)
-        object.__setattr__(self, "hash", self._compute_hash())
+        # 2. Compute hash only if not already provided (e.g., from from_dict)
+        if self.hash is None:
+            object.__setattr__(self, "hash", self._compute_hash())
         # 3. Compute name: full snake_case :: hash prefix
         full_snake = class_name_to_snake_case(self.class_name)
         object.__setattr__(self, "name", f"{full_snake}::{self.hash[:8]}")
@@ -124,10 +125,9 @@ class Identifier:
 
         Note:
             For fields with max_storage_length, stored values may be truncated
-            strings like "<first N chars>... [sha256:<hash>]". The reconstructed
-            object's `.hash` property will be computed from these truncated values
-            and may differ from the original. For identity matching, use the 'hash'
-            key from the original stored dict (returned by to_dict()).
+            strings like "<first N chars>... [sha256:<hash>]". If a 'hash' key is
+            present in the input dict, it will be preserved rather than recomputed,
+            ensuring identity matching works correctly.
 
         Args:
             data: The dictionary representation.

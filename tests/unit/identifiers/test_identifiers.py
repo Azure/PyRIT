@@ -339,3 +339,42 @@ class TestIdentifierSubclass:
         # Populated field should be included
         assert "populated_field" in storage_dict
         assert storage_dict["populated_field"] == "has_value"
+
+
+class TestIdentifierFromDict:
+    """Tests for Identifier.from_dict functionality."""
+
+    def test_from_dict_preserves_hash_when_provided(self):
+        """Test that from_dict preserves the hash from the dict rather than recomputing it.
+
+        This is important for roundtripping identifiers with truncated fields
+        (via max_storage_length) where the original hash must be preserved.
+        """
+        stored_hash = "abc123def456789012345678901234567890123456789012345678901234"
+        data = {
+            "class_name": "TestClass",
+            "class_module": "test.module",
+            "hash": stored_hash,
+        }
+
+        identifier = Identifier.from_dict(data)
+
+        # Hash should be preserved from the dict, not recomputed
+        assert identifier.hash == stored_hash
+        # Name should use the preserved hash
+        assert identifier.name == f"test_class::{stored_hash[:8]}"
+
+    def test_from_dict_computes_hash_when_not_provided(self):
+        """Test that from_dict computes the hash when not provided in the dict."""
+        data = {
+            "class_name": "TestClass",
+            "class_module": "test.module",
+        }
+
+        identifier = Identifier.from_dict(data)
+
+        # Hash should be computed (64 char SHA256 hex)
+        assert identifier.hash is not None
+        assert len(identifier.hash) == 64
+        # Name should use the computed hash
+        assert identifier.name == f"test_class::{identifier.hash[:8]}"
