@@ -524,9 +524,7 @@ class WebSocketCopilotTarget(PromptTarget):
 
         except InvalidStatus as e:
             logger.error(
-                f"WebSocket connection failed: {str(e)}\n"
-                "Ensure that COPILOT_USERNAME and COPILOT_PASSWORD environment variables are set correctly."
-                " For more details about authentication, refer to the class documentation."
+                f"WebSocket connection failed: {str(e)}\n For details about authentication, refer to the documentation."
             )
             raise
 

@@ -15,18 +15,13 @@
 # %% [markdown]
 # # WebSocket Copilot Target
 #
-# The `WebSocketCopilotTarget` is an alternative to the `PlaywrightCopilotTarget` that is designed to be more reliable by minimizing dependence on browser automation. Instead of driving the Copilot UI, it communicates directly with Copilot over a WebSocket connection, using Playwright only for authentication.
+# The `WebSocketCopilotTarget` is an alternative to the `PlaywrightCopilotTarget` that is designed to be more reliable by minimizing dependence on browser automation. Instead of driving the Copilot UI, it communicates directly with Copilot over a WebSocket connection.
 #
-# Before using this target, ensure you have:
+# By default, this target uses automated authentication which requires:
+# - `COPILOT_USERNAME` and `COPILOT_PASSWORD` environment variables
+# - Playwright installed: `pip install playwright && playwright install chromium`
 #
-# 1. A licensed Microsoft 365 Copilot account (the free version is not supported)
-# 2. Playwright installed: `pip install playwright && playwright install chromium`
-# 3. Set the following environment variables:
-#    - `COPILOT_USERNAME`: Your Microsoft account username/email
-#    - `COPILOT_PASSWORD`: Your Microsoft account password
-#
-# Note:
-# The `WebSocketCopilotTarget` uses `CopilotAuthenticator` under the hood, which launches a headless browser once to obtain authentication tokens. These tokens are then cached for subsequent requests and refreshed as needed.
+# If you prefer not to use automated authentication, see the [Alternative Authentication](#alternative-authentication-with-manualcopilotauthenticator) section below.
 
 # %% [markdown]
 # ## Basic Usage with `PromptSendingAttack`
@@ -59,8 +54,14 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)
 # Here is a simple multi-turn conversation example:
 
 # %%
-from pyrit.executor.attack import MultiPromptSendingAttack
+from pyrit.executor.attack import ConsoleAttackResultPrinter, MultiPromptSendingAttack
 from pyrit.models import Message
+from pyrit.prompt_target import WebSocketCopilotTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)
+
+target = WebSocketCopilotTarget()
 
 prompts = [
     "I'm thinking of a number between 1 and 10.",
@@ -78,3 +79,40 @@ result = await multi_turn_attack.execute_async(
 )
 
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)
+
+# %% [markdown]
+# ## Alternative Authentication with `ManualCopilotAuthenticator`
+#
+# If browser automation is not suitable for your environment, you can use the `ManualCopilotAuthenticator` instead. This authenticator accepts a pre-obtained access token that you can extract from your browser's DevTools.
+#
+# How to obtain the access token:
+#
+# 1. Open the Copilot webapp (e.g., https://m365.cloud.microsoft/chat) in a browser.
+# 2. Open DevTools (F12 or Ctrl+Shift+I).
+# 3. Go to the Network tab.
+# 4. Filter by "Socket" connections or search for "Chathub".
+# 5. Start typing in the chat to initiate a WebSocket connection.
+# 6. Look for the latest WebSocket connection to `substrate.office.com/m365Copilot/Chathub`.
+# 7. You may find the `access_token` in the request URL or in the request payload.
+#
+# You can either pass the token directly or set the `COPILOT_ACCESS_TOKEN` environment variable.
+
+# %%
+from pyrit.auth import ManualCopilotAuthenticator
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.prompt_target import WebSocketCopilotTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)
+
+# Option 1: Pass the token directly
+# auth = ManualCopilotAuthenticator(access_token="eyJ0eXAi...")
+
+# Option 2: Use COPILOT_ACCESS_TOKEN environment variable
+auth = ManualCopilotAuthenticator()
+
+target = WebSocketCopilotTarget(authenticator=auth)
+attack_manual = PromptSendingAttack(objective_target=target)
+
+result_manual = await attack_manual.execute_async(objective="Hello! Who are you?")
+await ConsoleAttackResultPrinter().print_conversation_async(result=result_manual)
