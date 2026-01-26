@@ -6,12 +6,12 @@ import json
 import logging
 import uuid
 from enum import IntEnum
-from typing import Optional
+from typing import Optional, Union
 
 import websockets
 from websockets.exceptions import InvalidStatus
 
-from pyrit.auth import CopilotAuthenticator
+from pyrit.auth import CopilotAuthenticator, ManualCopilotAuthenticator
 from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
@@ -42,12 +42,18 @@ class WebSocketCopilotTarget(PromptTarget):
     A WebSocket-based prompt target for integrating with Microsoft Copilot.
 
     This class facilitates communication with Microsoft Copilot over a WebSocket connection.
-    Authentication is handled automatically via `CopilotAuthenticator`, which uses Playwright
-    to automate browser login and obtain the required access tokens.
+    Authentication can be handled in two ways:
+
+    1. **Automated (default)**: Via ``CopilotAuthenticator``, which uses Playwright to automate
+       browser login and obtain the required access tokens. Requires ``COPILOT_USERNAME`` and
+       ``COPILOT_PASSWORD`` environment variables as well as Playwright installed.
+
+    2. **Manual**: Via ``ManualCopilotAuthenticator``, which accepts a pre-obtained access token.
+       This is useful for situations where browser automation is not possible.
 
     Once authenticated, the target supports multi-turn conversations through server-side
     state management. For each PyRIT conversation, it automatically generates consistent
-    `session_id` and `conversation_id` values, enabling Copilot to preserve conversational
+    ``session_id`` and ``conversation_id`` values, enabling Copilot to preserve conversational
     context across multiple turns.
 
     Because conversation state is managed entirely on the Copilot server, this target does
@@ -58,14 +64,6 @@ class WebSocketCopilotTarget(PromptTarget):
     Note:
         This integration only works with licensed Microsoft 365 Copilot.
         The free version of Copilot is not compatible.
-
-    Important:
-        - Ensure the following environment variables are set:
-            - ``COPILOT_USERNAME`` - your Microsoft account username (email)
-            - ``COPILOT_PASSWORD`` - your Microsoft account password
-
-        - Install `Playwright` and its browser dependencies:
-            ``pip install playwright && playwright install chromium``
     """
 
     SUPPORTED_DATA_TYPES = {"text"}
@@ -79,7 +77,7 @@ class WebSocketCopilotTarget(PromptTarget):
         max_requests_per_minute: Optional[int] = None,
         model_name: str = "copilot",
         response_timeout_seconds: int = RESPONSE_TIMEOUT_SECONDS,
-        authenticator: Optional[CopilotAuthenticator] = None,
+        authenticator: Optional[Union[CopilotAuthenticator, ManualCopilotAuthenticator]] = None,
     ) -> None:
         """
         Initialize the WebSocketCopilotTarget.
@@ -90,8 +88,9 @@ class WebSocketCopilotTarget(PromptTarget):
             max_requests_per_minute (Optional[int]): Maximum number of requests per minute.
             model_name (str): The model name. Defaults to "copilot".
             response_timeout_seconds (int): Timeout for receiving responses in seconds. Defaults to 60s.
-            authenticator (Optional[CopilotAuthenticator]): Authenticator instance for token management.
-                If None, a new CopilotAuthenticator instance will be created with default settings.
+            authenticator (Optional[Union[CopilotAuthenticator, ManualCopilotAuthenticator]]): Authenticator
+                instance. Supports both ``CopilotAuthenticator`` and ``ManualCopilotAuthenticator``.
+                If None, a new ``CopilotAuthenticator`` instance will be created with default settings.
 
         Raises:
             ValueError: If ``response_timeout_seconds`` is not a positive integer.
