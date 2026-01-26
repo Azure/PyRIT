@@ -31,6 +31,7 @@ API Reference
     AzureAuth
     AzureStorageAuth
     CopilotAuthenticator
+    ManualCopilotAuthenticator
 
 :py:mod:`pyrit.auxiliary_attacks`
 =================================
