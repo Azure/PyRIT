@@ -45,6 +45,24 @@ npm run preview
 - **Vite** - Fast build tool
 - **Axios** - HTTP client
 
+## Testing
+
+```bash
+# Unit & Integration Tests (Jest + React Testing Library)
+npm test              # Run all tests
+npm run test:watch    # Watch mode for development
+npm run test:coverage # Run with coverage report (85%+ threshold)
+
+# End-to-End Tests (Playwright)
+npm run test:e2e          # Run headless (auto-starts frontend + backend via dev.py)
+npm run test:e2e:headed   # Run with visible browser windows (requires display)
+npm run test:e2e:ui       # Interactive UI mode (requires display)
+```
+
+E2E tests use `dev.py` to automatically start both frontend and backend servers. If servers are already running, they will be reused.
+
+> **Note**: `test:e2e:ui` and `test:e2e:headed` require a graphical display and won't work in headless environments like devcontainers. Use `npm run test:e2e` for CI/headless testing.
+
 ## Configuration
 
 The frontend proxies API requests to `http://localhost:8000` in development.
