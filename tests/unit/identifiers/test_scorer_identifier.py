@@ -161,12 +161,13 @@ class TestScorerIdentifierToDict:
 
         assert result["class_name"] == "TestScorer"
         assert result["class_module"] == "pyrit.score.test_scorer"
-        assert result["system_prompt_template"] is None
         assert result["hash"] == identifier.hash
         assert result["name"] == identifier.name
         # class_description and identifier_type should be excluded
         assert "class_description" not in result
         assert "identifier_type" not in result
+        # None values should be excluded
+        assert "system_prompt_template" not in result
 
     def test_to_dict_short_prompt_preserved(self):
         """Test that short prompts (<= 100 chars) are preserved as-is."""
