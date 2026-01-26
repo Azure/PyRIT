@@ -310,3 +310,32 @@ class TestIdentifierSubclass:
 
         # Display-only field should be excluded
         assert "display_only" not in storage_dict
+
+    def test_to_dict_excludes_none_and_empty_values(self):
+        """Test that to_dict excludes None and empty values."""
+
+        @dataclass(frozen=True)
+        class ExtendedIdentifier(Identifier):
+            optional_str: str = ""
+            optional_none: str | None = None
+            optional_list: list = field(default_factory=list)
+            optional_dict: dict = field(default_factory=dict)
+            populated_field: str = "has_value"
+
+        extended = ExtendedIdentifier(
+            class_name="TestClass",
+            class_module="test.module",
+            identifier_type="class",
+            class_description="Description",
+        )
+        storage_dict = extended.to_dict()
+
+        # Empty/None fields should be excluded
+        assert "optional_str" not in storage_dict
+        assert "optional_none" not in storage_dict
+        assert "optional_list" not in storage_dict
+        assert "optional_dict" not in storage_dict
+
+        # Populated field should be included
+        assert "populated_field" in storage_dict
+        assert storage_dict["populated_field"] == "has_value"

@@ -105,6 +105,9 @@ class Identifier:
                 value = value.to_dict()
             elif isinstance(value, list) and value and isinstance(value[0], Identifier):
                 value = [item.to_dict() for item in value]
+            # Exclude None and empty values
+            if value is None or value == "" or value == [] or value == {}:
+                continue
             result[f.name] = value
         return result
 
