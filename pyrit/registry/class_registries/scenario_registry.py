@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.registry.base import RegistryItemMetadata
+from pyrit.models.identifiers import Identifier
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class ScenarioMetadata(RegistryItemMetadata):
+class ScenarioMetadata(Identifier):
     """
     Metadata describing a registered Scenario class.
 
@@ -170,9 +170,11 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
         max_dataset_size = dataset_config.max_dataset_size
 
         return ScenarioMetadata(
+            identifier_type="class",
             name=name,
             class_name=scenario_class.__name__,
-            description=description,
+            class_module=scenario_class.__module__,
+            class_description=description,
             default_strategy=scenario_class.get_default_strategy().value,
             all_strategies=tuple(s.value for s in strategy_class.get_all_strategies()),
             aggregate_strategies=tuple(s.value for s in strategy_class.get_aggregate_strategies()),

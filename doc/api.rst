@@ -332,7 +332,9 @@ API Reference
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
     HarmDefinition
+    Identifiable
     Identifier
+    IdentifierType
     ImagePathDataTypeSerializer
     AllowedCategories
     AttackOutcome

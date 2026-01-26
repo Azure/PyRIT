@@ -3,12 +3,12 @@
 
 from dataclasses import dataclass
 
-from pyrit.registry.base import RegistryItemMetadata
+from pyrit.models.identifiers import Identifier
 from pyrit.registry.instance_registries.base_instance_registry import BaseInstanceRegistry
 
 
 @dataclass(frozen=True)
-class SampleItemMetadata(RegistryItemMetadata):
+class SampleItemMetadata(Identifier):
     """Sample metadata with an extra field."""
 
     category: str
@@ -20,9 +20,11 @@ class ConcreteTestRegistry(BaseInstanceRegistry[str, SampleItemMetadata]):
     def _build_metadata(self, name: str, instance: str) -> SampleItemMetadata:
         """Build test metadata from a string instance."""
         return SampleItemMetadata(
+            identifier_type="instance",
             name=name,
             class_name="str",
-            description=f"Description for {instance}",
+            class_module="builtins",
+            class_description=f"Description for {instance}",
             category="test" if "test" in instance.lower() else "other",
         )
 
