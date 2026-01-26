@@ -182,6 +182,37 @@ class Identifier:
 
         return cls(**filtered_data)
 
+    @classmethod
+    def normalize(cls: Type[T], value: T | dict[str, Any]) -> T:
+        """
+        Normalize a value to an Identifier instance.
+
+        This method handles conversion from legacy dict format to Identifier,
+        emitting a deprecation warning when a dict is passed. Existing Identifier
+        instances are returned as-is.
+
+        Args:
+            value: An Identifier instance or a dict (legacy format).
+
+        Returns:
+            The normalized Identifier instance.
+
+        Raises:
+            TypeError: If value is not an Identifier or dict.
+        """
+        if isinstance(value, cls):
+            return value
+
+        if isinstance(value, dict):
+            print_deprecation_message(
+                old_item=f"dict for {cls.__name__}",
+                new_item=cls.__name__,
+                removed_in="0.14.0",
+            )
+            return cls.from_dict(value)
+
+        raise TypeError(f"Expected {cls.__name__} or dict, got {type(value).__name__}")
+
 
 def _dataclass_encoder(obj: Any) -> Any:
     """

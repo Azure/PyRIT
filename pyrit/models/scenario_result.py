@@ -61,7 +61,7 @@ class ScenarioResult:
         scenario_identifier: ScenarioIdentifier,
         objective_target_identifier: dict[str, str],
         attack_results: dict[str, List[AttackResult]],
-        objective_scorer_identifier: Union[Dict[str, Any], "ScorerIdentifier", None] = None,
+        objective_scorer_identifier: Union[Dict[str, Any], "ScorerIdentifier"],
         scenario_run_state: ScenarioRunState = "CREATED",
         labels: Optional[dict[str, str]] = None,
         completion_time: Optional[datetime] = None,

@@ -1041,6 +1041,7 @@ def test_message_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
         score_rationale="Sample rationale",
         score_metadata={"sample": "metadata"},
         message_piece_id=original_id,
+        scorer_class_identifier=_test_scorer_id(),
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
 

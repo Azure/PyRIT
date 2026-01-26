@@ -26,6 +26,7 @@ from pyrit.executor.attack.multi_turn.tree_of_attacks import (
     TAPAttackScoringConfig,
     _TreeOfAttacksNode,
 )
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import (
     AttackOutcome,
     ConversationReference,
@@ -37,7 +38,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, Scorer, ScorerIdentifier, TrueFalseScorer
+from pyrit.score import FloatScaleThresholdScorer, Scorer, TrueFalseScorer
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.score_utils import normalize_score_to_float
 

@@ -60,7 +60,7 @@ class Score:
         id: Optional[uuid.UUID | str] = None,
         score_category: Optional[List[str]] = None,
         score_metadata: Optional[Dict[str, Union[str, int, float]]] = None,
-        scorer_class_identifier: Optional[Union["ScorerIdentifier", Dict[str, Any]]] = None,
+        scorer_class_identifier: Union["ScorerIdentifier", Dict[str, Any]],
         timestamp: Optional[datetime] = None,
         objective: Optional[str] = None,
     ):
@@ -85,7 +85,7 @@ class Score:
         self.message_piece_id = message_piece_id
         self.objective = objective
 
-        # Normalize to ScorerIdentifier (handles dict with deprecation warning, None -> default)
+        # Normalize to ScorerIdentifier (handles dict with deprecation warning)
         self.scorer_class_identifier = ScorerIdentifier.normalize(scorer_class_identifier)
 
     def get_value(self) -> bool | float:
@@ -160,7 +160,7 @@ class UnvalidatedScore:
     score_category: Optional[List[str]]
     score_rationale: str
     score_metadata: Optional[Dict[str, Union[str, int, float]]]
-    scorer_class_identifier: Optional[ScorerIdentifier]
+    scorer_class_identifier: ScorerIdentifier
     message_piece_id: uuid.UUID | str
     objective: Optional[str]
     id: Optional[uuid.UUID | str] = None

@@ -566,7 +566,6 @@ API Reference
     Scorer
     ScorerEvalDatasetFiles
     ScorerEvaluator
-    ScorerIdentifier
     ScorerMetrics
     ScorerMetricsWithIdentity
     ScorerPrinter
