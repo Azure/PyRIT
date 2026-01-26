@@ -6,7 +6,7 @@ import json
 import logging
 import uuid
 from enum import IntEnum
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import websockets
 from websockets.exceptions import InvalidStatus
@@ -116,7 +116,7 @@ class WebSocketCopilotTarget(PromptTarget):
         )
 
     @staticmethod
-    def _dict_to_websocket(data: dict) -> str:
+    def _dict_to_websocket(data: dict[str, Any]) -> str:
         """
         Convert a dictionary to WebSocket message format.
 
@@ -229,7 +229,7 @@ class WebSocketCopilotTarget(PromptTarget):
 
     def _build_prompt_message(
         self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
         Construct the prompt message payload for Copilot WebSocket API.
 

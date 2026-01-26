@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from msal_extensions import FilePersistence, build_encrypted_persistence
 
@@ -92,7 +92,7 @@ class CopilotAuthenticator(Authenticator):
             raise ValueError("COPILOT_USERNAME and COPILOT_PASSWORD environment variables must be set.")
 
         self._token_cache = self._create_persistent_cache(self._cache_file, self._fallback_to_plaintext)
-        self._current_claims: dict = {}  # for easy access to claims without re-decoding token
+        self._current_claims: dict[str, Any] = {}  # for easy access to claims without re-decoding token
 
         # Lock to prevent concurrent token fetches from launching multiple browsers
         self._token_fetch_lock = asyncio.Lock()
@@ -136,22 +136,22 @@ class CopilotAuthenticator(Authenticator):
                 logger.info("Using cached access token.")
                 if "claims" in cached_token:
                     self._current_claims = cached_token["claims"]
-                return cached_token["access_token"]
+                return str(cached_token["access_token"])
 
             logger.info("No valid cached token found. Initiating browser authentication.")
             return await self.refresh_token_async()
 
-    async def get_claims(self) -> dict:
+    async def get_claims(self) -> dict[str, Any]:
         """
         Get the JWT claims from the current authentication token.
 
         Returns:
-            dict: The JWT claims decoded from the access token.
+            dict[str, Any]: The JWT claims decoded from the access token.
         """
         return self._current_claims or {}
 
     @staticmethod
-    def _create_persistent_cache(cache_file: str, fallback_to_plaintext: bool = False):
+    def _create_persistent_cache(cache_file: str, fallback_to_plaintext: bool = False) -> Any:
         """
         Create a persistent cache for token storage with encryption.
 
@@ -180,7 +180,7 @@ class CopilotAuthenticator(Authenticator):
             logger.error(f"Encryption unavailable ({e}) and fallback_to_plaintext is False. Cannot proceed.")
             raise
 
-    async def _get_cached_token_if_available_and_valid(self) -> Optional[dict]:
+    async def _get_cached_token_if_available_and_valid(self) -> Optional[dict[str, Any]]:
         """
         Retrieve and validate cached token.
 
@@ -232,7 +232,7 @@ class CopilotAuthenticator(Authenticator):
                 minutes_left = (expiry_time - current_time).total_seconds() / 60
                 logger.info(f"Cached token is valid for another {minutes_left:.2f} minutes")
 
-            return token_data
+            return token_data  # type: ignore
 
         except Exception as e:
             error_name = type(e).__name__
@@ -332,7 +332,7 @@ class CopilotAuthenticator(Authenticator):
             Optional[str]: The bearer token if successfully retrieved, None otherwise.
         """
 
-        def run_in_new_loop():
+        def run_in_new_loop() -> Optional[str]:
             new_loop = asyncio.ProactorEventLoop()
             asyncio.set_event_loop(new_loop)
             try:
@@ -368,7 +368,7 @@ class CopilotAuthenticator(Authenticator):
                 page = await context.new_page()
 
                 # response_handler >>>
-                async def response_handler(response):
+                async def response_handler(response: Any) -> None:
                     nonlocal bearer_token, token_expires_in
 
                     try:
@@ -445,7 +445,7 @@ class CopilotAuthenticator(Authenticator):
                 else:
                     logger.error(f"Failed to retrieve bearer token within {self._token_capture_timeout} seconds.")
 
-                return bearer_token
+                return bearer_token  # type: ignore
             except Exception as e:
                 logger.error("Failed to retrieve access token using Playwright.")
 

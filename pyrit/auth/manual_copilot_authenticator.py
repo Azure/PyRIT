@@ -3,7 +3,7 @@
 
 import logging
 import os
-from typing import Optional
+from typing import Any, Optional
 
 import jwt
 
@@ -90,14 +90,14 @@ class ManualCopilotAuthenticator(Authenticator):
         """
         return self._access_token
 
-    async def get_claims(self) -> dict:
+    async def get_claims(self) -> dict[str, Any]:
         """
         Get the JWT claims from the access token.
 
         Returns:
-            dict: The JWT claims decoded from the access token.
+            dict[str, Any]: The JWT claims decoded from the access token.
         """
-        return self._claims
+        return self._claims  # type: ignore
 
     async def refresh_token_async(self) -> str:
         """
