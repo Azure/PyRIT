@@ -34,7 +34,7 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttac
 from pyrit.prompt_target import WebSocketCopilotTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY, silent=True)
 
 target = WebSocketCopilotTarget()
 attack = PromptSendingAttack(objective_target=target)
@@ -59,7 +59,7 @@ from pyrit.models import Message
 from pyrit.prompt_target import WebSocketCopilotTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY, silent=True)
 
 target = WebSocketCopilotTarget()
 
@@ -103,7 +103,7 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttac
 from pyrit.prompt_target import WebSocketCopilotTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY, silent=True)
 
 # Option 1: Pass the token directly
 # auth = ManualCopilotAuthenticator(access_token="eyJ0eXAi...")
