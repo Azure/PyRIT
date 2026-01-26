@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import MessagePiece, Score
 from pyrit.score import (
@@ -14,6 +15,16 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
     TrueFalseScorer,
 )
+
+
+def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="tests.unit.score",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 class MockScorer(TrueFalseScorer):
@@ -43,7 +54,7 @@ class MockScorer(TrueFalseScorer):
                 score_category=[],
                 score_metadata=None,
                 score_rationale=self._score_rationale,
-                scorer_class_identifier={"name": "MockScorer"},
+                scorer_class_identifier=_mock_scorer_id("MockScorer"),
                 message_piece_id=str(message_piece.id),
                 objective=str(objective),
             )

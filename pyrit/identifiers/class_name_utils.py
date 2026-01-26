@@ -9,20 +9,15 @@ This module provides functions for converting between different naming conventio
 """
 
 import re
-from typing import Tuple
-
-# Known suffixes to strip when computing snake_class_name
-KNOWN_SUFFIXES: Tuple[str, ...] = ("Initializer", "Scenario", "Scorer", "Target", "Converter", "Attack")
 
 
-def class_name_to_snake_case(class_name: str, *, suffix: str = "", strip_known_suffix: bool = False) -> str:
+def class_name_to_snake_case(class_name: str, *, suffix: str = "") -> str:
     """
     Convert a PascalCase class name to snake_case, optionally stripping a suffix.
 
     Args:
         class_name: The class name to convert (e.g., "SelfAskRefusalScorer").
         suffix: Optional explicit suffix to strip before conversion (e.g., "Scorer").
-        strip_known_suffix: If True, strips any suffix from KNOWN_SUFFIXES.
 
     Returns:
         The snake_case name (e.g., "self_ask_refusal" if suffix="Scorer").
@@ -30,12 +25,6 @@ def class_name_to_snake_case(class_name: str, *, suffix: str = "", strip_known_s
     # Strip explicit suffix if provided
     if suffix and class_name.endswith(suffix):
         class_name = class_name[: -len(suffix)]
-    # Or strip any known suffix
-    elif strip_known_suffix:
-        for known in KNOWN_SUFFIXES:
-            if class_name.endswith(known):
-                class_name = class_name[: -len(known)]
-                break
     # Handle transitions like "XMLParser" -> "XML_Parser"
     name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", class_name)
     # Handle transitions like "getHTTPResponse" -> "get_HTTP_Response"

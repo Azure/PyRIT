@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from pyrit.identifiers.identifier import Identifier
 
@@ -39,8 +39,7 @@ class Identifiable(ABC, Generic[IdentifierT]):
 
     Subclasses must:
     1. Implement `_build_identifier()` to construct their specific identifier
-    2. Implement the `identifier` property to return the typed identifier
-    3. Optionally override `get_identifier()` if custom dict serialization is needed
+    2. Implement `get_identifier()` to return the typed identifier (can use lazy building)
     """
 
     @abstractmethod
@@ -51,13 +50,12 @@ class Identifiable(ABC, Generic[IdentifierT]):
         Subclasses must implement this method to construct their specific identifier type
         and store it in an instance variable (typically `_identifier`).
 
-        This method is typically called lazily on first access to the `identifier` property.
+        This method is typically called lazily on first access via `get_identifier()`.
         """
         raise NotImplementedError("Subclasses must implement _build_identifier")
 
-    @property
     @abstractmethod
-    def identifier(self) -> IdentifierT:
+    def get_identifier(self) -> IdentifierT:
         """
         Get the typed identifier for this object.
 
@@ -65,12 +63,3 @@ class Identifiable(ABC, Generic[IdentifierT]):
             IdentifierT: The identifier for this component.
         """
         ...
-
-    def get_identifier(self) -> dict[str, Any]:
-        """
-        Get the identifier as a dictionary for database storage.
-
-        Returns:
-            dict[str, Any]: Dictionary representation of the identifier.
-        """
-        return self.identifier.to_dict()

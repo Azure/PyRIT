@@ -39,9 +39,8 @@ class Identifier:
     class_name: str  # The actual class name, equivalent to __type__ (e.g., "SelfAskRefusalScorer")
     class_module: str  # The module path, equivalent to __module__ (e.g., "pyrit.score.self_ask_refusal_scorer")
 
+    # Fields excluded from storage
     class_description: str = field(metadata={EXCLUDE_FROM_STORAGE: True})
-
-    #  Whether this identifies a "class" or "instance"
     identifier_type: IdentifierType = field(metadata={EXCLUDE_FROM_STORAGE: True})
 
     # Auto-computed fields
@@ -52,8 +51,8 @@ class Identifier:
     def __post_init__(self) -> None:
         """Compute derived fields: snake_class_name, hash, and name."""
         # Use object.__setattr__ since this is a frozen dataclass
-        # 1. Compute snake_class_name (known suffix stripped)
-        object.__setattr__(self, "snake_class_name", class_name_to_snake_case(self.class_name, strip_known_suffix=True))
+        # 1. Compute snake_class_name
+        object.__setattr__(self, "snake_class_name", class_name_to_snake_case(self.class_name))
         # 2. Compute hash (before name, since name depends on hash)
         object.__setattr__(self, "hash", self._compute_hash())
         # 3. Compute name: full snake_case :: hash prefix
@@ -117,6 +116,7 @@ class Identifier:
         This handles:
         - Legacy '__type__' key mapping to 'class_name'
         - Legacy 'type' key mapping to 'class_name' (with deprecation warning)
+        - Legacy '__module__' key mapping to 'class_module'
         - Ignoring unknown fields not present in the dataclass
 
         Note:
@@ -151,6 +151,28 @@ class Identifier:
                     removed_in="0.13.0",
                 )
                 data["class_name"] = data.pop("type")
+            else:
+                # Default for truly legacy data without any class identifier
+                data["class_name"] = "Unknown"
+
+        # Handle legacy key mapping for class_module
+        if "class_module" not in data:
+            if "__module__" in data:
+                print_deprecation_message(
+                    old_item="'__module__' key in Identifier dict",
+                    new_item="'class_module' key",
+                    removed_in="0.13.0",
+                )
+                data["class_module"] = data.pop("__module__")
+            else:
+                # Default for truly legacy data without module info
+                data["class_module"] = "unknown"
+
+        # Provide defaults for fields excluded from storage (not in stored dicts)
+        if "class_description" not in data:
+            data["class_description"] = ""
+        if "identifier_type" not in data:
+            data["identifier_type"] = "instance"
 
         # Get the set of valid field names for this class
         valid_fields = {f.name for f in fields(cls) if f.init}

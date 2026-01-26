@@ -693,7 +693,12 @@ def test_message_piece_to_dict():
                 score_category=["Category1"],
                 score_rationale="Rationale text",
                 score_metadata={"key": "value"},
-                scorer_class_identifier={"class": "Scorer1"},
+                scorer_class_identifier=ScorerIdentifier(
+                    class_name="Scorer1",
+                    class_module="pyrit.score",
+                    class_description="",
+                    identifier_type="instance",
+                ),
                 message_piece_id=str(uuid.uuid4()),
                 timestamp=datetime.now(),
                 objective="Task1",

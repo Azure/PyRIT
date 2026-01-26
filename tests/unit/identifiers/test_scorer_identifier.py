@@ -46,7 +46,7 @@ class TestScorerIdentifierBasic:
         assert identifier.name == f"test_scorer::{identifier.hash[:8]}"
 
     def test_scorer_identifier_snake_class_name(self):
-        """Test that snake_class_name strips the Scorer suffix."""
+        """Test that snake_class_name converts to snake_case."""
         identifier = ScorerIdentifier(
             class_name="SelfAskRefusalScorer",
             class_module="pyrit.score.self_ask_refusal_scorer",
@@ -54,9 +54,9 @@ class TestScorerIdentifierBasic:
             identifier_type="instance",
         )
 
-        # snake_class_name strips the known suffix
-        assert identifier.snake_class_name == "self_ask_refusal"
-        # name keeps full snake case
+        # snake_class_name is the full snake_case class name
+        assert identifier.snake_class_name == "self_ask_refusal_scorer"
+        # name uses the same snake case with hash
         assert identifier.name.startswith("self_ask_refusal_scorer::")
 
     def test_scorer_identifier_creation_all_fields(self):

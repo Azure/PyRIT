@@ -10,6 +10,7 @@ import pytest
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
@@ -17,6 +18,16 @@ from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.scenario import AtomicAttack
 from pyrit.scenario.foundry import FoundryStrategy, RedTeamAgent
 from pyrit.score import FloatScaleThresholdScorer, TrueFalseScorer
+
+
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 @pytest.fixture
@@ -51,7 +62,7 @@ def mock_adversarial_target():
 def mock_objective_scorer():
     """Create a mock objective scorer for testing."""
     mock = MagicMock(spec=TrueFalseScorer)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_scorer_id("MockObjectiveScorer")
     return mock
 
 
@@ -59,7 +70,7 @@ def mock_objective_scorer():
 def mock_float_threshold_scorer():
     """Create a mock FloatScaleThresholdScorer for TAP tests."""
     mock = MagicMock(spec=FloatScaleThresholdScorer)
-    mock.get_identifier.return_value = {"__type__": "MockFloatScaleThresholdScorer", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_scorer_id("MockFloatScaleThresholdScorer")
     mock.threshold = 0.7
     return mock
 

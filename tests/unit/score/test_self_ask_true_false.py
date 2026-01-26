@@ -43,7 +43,7 @@ async def test_true_false_scorer_score(patch_central_database, scorer_true_false
     assert score[0].get_value() is True
     assert score[0].score_value_description == "This is true"
     assert score[0].score_rationale == "rationale for true"
-    assert score[0].scorer_class_identifier["class_name"] == "SelfAskTrueFalseScorer"
+    assert score[0].scorer_class_identifier.class_name == "SelfAskTrueFalseScorer"
 
 
 @pytest.mark.asyncio
@@ -132,8 +132,8 @@ def test_self_ask_true_false_scorer_identifier_has_system_prompt_template(patch_
         chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
     )
 
-    # Access identifier to trigger lazy build
-    sid = scorer.identifier
+    # Access identifier via get_identifier() to trigger lazy build
+    sid = scorer.get_identifier()
 
     # Should have system_prompt_template set
     assert sid.system_prompt_template is not None
@@ -150,13 +150,13 @@ def test_self_ask_true_false_get_identifier_type(patch_central_database):
 
     identifier = scorer.get_identifier()
 
-    assert identifier["class_name"] == "SelfAskTrueFalseScorer"
-    assert "hash" in identifier
-    assert "system_prompt_template" in identifier
+    assert identifier.class_name == "SelfAskTrueFalseScorer"
+    assert hasattr(identifier, "hash")
+    assert hasattr(identifier, "system_prompt_template")
 
 
 def test_self_ask_true_false_get_identifier_long_prompt_hashed(patch_central_database):
-    """Test that long system prompts are truncated in get_identifier."""
+    """Test that long system prompts are truncated when serialized via to_dict()."""
     chat_target = MagicMock()
 
     scorer = SelfAskTrueFalseScorer(
@@ -165,9 +165,14 @@ def test_self_ask_true_false_get_identifier_long_prompt_hashed(patch_central_dat
 
     identifier = scorer.get_identifier()
 
-    # The GROUNDED system prompt is long (>100 chars), so it should be truncated
+    # The identifier object itself stores the full prompt
+    assert identifier.system_prompt_template is not None
+    assert len(identifier.system_prompt_template) > 100  # GROUNDED prompt is long
+
+    # But when serialized via to_dict(), long prompts are truncated
     # Format: "<first 100 chars>... [sha256:<hash[:16]>]"
-    sys_prompt_in_id = identifier["system_prompt_template"]
-    if sys_prompt_in_id:
+    id_dict = identifier.to_dict()
+    sys_prompt_in_dict = id_dict.get("system_prompt_template", "")
+    if sys_prompt_in_dict:
         # If it's truncated, it will contain "... [sha256:"
-        assert "[sha256:" in sys_prompt_in_id or len(sys_prompt_in_id) <= 100
+        assert "[sha256:" in sys_prompt_in_dict or len(sys_prompt_in_dict) <= 100

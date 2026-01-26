@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import (
     AttackResultEntry,
@@ -366,6 +367,50 @@ async def test_get_attack_results_by_labels(azuresql_instance: AzureSQLMemory):
         results = azuresql_instance.get_attack_results(labels={"op_id": "nonexistent"})
         results = [r for r in results if test_id in r.conversation_id]
         assert len(results) == 0
+
+
+@pytest.mark.asyncio
+async def test_scenario_result_scorer_identifier_roundtrip(azuresql_instance: AzureSQLMemory):
+    """
+    Integration test for storing and retrieving objective_scorer_identifier in ScenarioResult.
+
+    Verifies that ScorerIdentifier is correctly serialized to JSON when stored
+    and deserialized back to ScorerIdentifier when retrieved from Azure SQL.
+    """
+    test_id = generate_test_id()
+
+    with cleanup_scenario_data(azuresql_instance, test_id):
+        # Create a ScorerIdentifier with various fields
+        scorer_identifier = ScorerIdentifier(
+            scorer_type="TrueFalseScorer",
+            system_prompt_template="Test prompt template for {objective}",
+        )
+
+        # Create scenario with scorer identifier
+        scenario = ScenarioResult(
+            scenario_identifier=ScenarioIdentifier(
+                name=f"Scorer Test Scenario {test_id}",
+                scenario_version=1,
+            ),
+            objective_target_identifier={"endpoint": f"https://test-{test_id}.example.com"},
+            attack_results={},
+            objective_scorer_identifier=scorer_identifier,
+            labels={"test_id": test_id},
+        )
+
+        azuresql_instance.add_scenario_results_to_memory(scenario_results=[scenario])
+
+        # Retrieve and verify
+        results = azuresql_instance.get_scenario_results(labels={"test_id": test_id})
+        assert len(results) == 1
+
+        retrieved = results[0]
+        assert retrieved.objective_scorer_identifier is not None
+        assert isinstance(retrieved.objective_scorer_identifier, ScorerIdentifier)
+        assert retrieved.objective_scorer_identifier.scorer_type == "TrueFalseScorer"
+        assert retrieved.objective_scorer_identifier.system_prompt_template == "Test prompt template for {objective}"
+        assert retrieved.objective_scorer_identifier.class_name == scorer_identifier.class_name
+        assert retrieved.objective_scorer_identifier.hash == scorer_identifier.hash
 
 
 @pytest.mark.asyncio

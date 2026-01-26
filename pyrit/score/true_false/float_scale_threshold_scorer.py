@@ -104,7 +104,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         else:
             comparison_symbol = "="
 
-        scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
+        scorer_type = self._scorer.get_identifier().class_name
 
         # If we have scores, modify the first one; otherwise create a new score
         if scores:

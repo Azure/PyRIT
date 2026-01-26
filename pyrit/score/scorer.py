@@ -95,18 +95,7 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
         else:
             return "unknown"
 
-    @abstractmethod
-    def _build_identifier(self) -> None:
-        """
-        Build the scorer evaluation identifier for this scorer.
-
-        Subclasses must implement this method to call `_set_identifier()` with their
-        specific parameters (system_prompt_template, sub_scorers, scorer_specific_params, prompt_target).
-        """
-        raise NotImplementedError("Subclasses must implement _build_identifier")
-
-    @property
-    def identifier(self) -> ScorerIdentifier:
+    def get_identifier(self) -> ScorerIdentifier:
         """
         Get the scorer identifier. Built lazily on first access.
 
@@ -145,9 +134,9 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
             prompt_target (Optional[PromptTarget]): The prompt target used by this scorer. Defaults to None.
         """
         # Build sub_identifier from sub_scorers (store as dicts for storage)
-        sub_identifier: Optional[List[Dict[str, Any]]] = None
+        sub_identifier: Optional[List[ScorerIdentifier]] = None
         if sub_scorers:
-            sub_identifier = [scorer.identifier.to_dict() for scorer in sub_scorers]
+            sub_identifier = [scorer.get_identifier() for scorer in sub_scorers]
         # Extract target_info from prompt_target
         target_info: Optional[Dict[str, Any]] = None
         if prompt_target:

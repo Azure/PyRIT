@@ -347,8 +347,8 @@ class TestPrintFunctions:
         assert result == 0
         captured = capsys.readouterr()
         assert "Available Scenarios" in captured.out
-        # snake_class_name strips the "Scenario" suffix, so TestScenario -> test
-        assert "test" in captured.out
+        # snake_class_name no longer strips suffix, so TestScenario -> test_scenario
+        assert "test_scenario" in captured.out
 
     async def test_print_scenarios_list_empty(self, capsys):
         """Test print_scenarios_list with no scenarios."""
@@ -425,8 +425,8 @@ class TestFormatFunctions:
         frontend_core.format_scenario_metadata(scenario_metadata=scenario_metadata)
 
         captured = capsys.readouterr()
-        # snake_class_name strips the "Scenario" suffix, so TestScenario -> test
-        assert "test" in captured.out
+        # snake_class_name no longer strips suffix, so TestScenario -> test_scenario
+        assert "test_scenario" in captured.out
         assert "TestScenario" in captured.out
 
     def test_format_scenario_metadata_with_description(self, capsys):

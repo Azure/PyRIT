@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -28,15 +28,14 @@ def create_mock_float_scorer(score_value: float):
             )
         ]
     )
-    scorer.get_identifier = MagicMock(return_value={"class_name": "MockScorer", "class_module": "test.mock"})
-    # Add mock identifier
+    # Add mock identifier - get_identifier() returns a ScorerIdentifier
     mock_identifier = ScorerIdentifier(
         class_name="MockScorer",
         class_module="test.mock",
         class_description="Mock scorer for testing",
         identifier_type="instance",
     )
-    type(scorer).identifier = PropertyMock(return_value=mock_identifier)
+    scorer.get_identifier = MagicMock(return_value=mock_identifier)
     return scorer
 
 
@@ -104,15 +103,14 @@ async def test_float_scale_threshold_scorer_returns_single_score_with_multi_cate
             ),
         ]
     )
-    scorer.get_identifier = MagicMock(return_value={"class_name": "MockScorer", "class_module": "test.mock"})
-    # Add mock identifier
+    # get_identifier() returns a ScorerIdentifier
     mock_identifier = ScorerIdentifier(
         class_name="MockScorer",
         class_module="test.mock",
         class_description="Mock scorer for testing",
         identifier_type="instance",
     )
-    type(scorer).identifier = PropertyMock(return_value=mock_identifier)
+    scorer.get_identifier = MagicMock(return_value=mock_identifier)
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=0.5)
@@ -144,15 +142,14 @@ async def test_float_scale_threshold_scorer_handles_empty_scores():
     # Mock a scorer that returns empty list (all pieces filtered)
     scorer = AsyncMock()
     scorer.score_async = AsyncMock(return_value=[])
-    scorer.get_identifier = MagicMock(return_value={"class_name": "MockScorer", "class_module": "test.mock"})
-    # Add mock identifier
+    # get_identifier() returns a ScorerIdentifier
     mock_identifier = ScorerIdentifier(
         class_name="MockScorer",
         class_module="test.mock",
         class_description="Mock scorer for testing",
         identifier_type="instance",
     )
-    type(scorer).identifier = PropertyMock(return_value=mock_identifier)
+    scorer.get_identifier = MagicMock(return_value=mock_identifier)
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=0.5)
@@ -185,15 +182,14 @@ async def test_float_scale_threshold_scorer_with_raise_on_empty_aggregator():
     # Mock a scorer that returns empty list (all pieces filtered)
     scorer = AsyncMock()
     scorer.score_async = AsyncMock(return_value=[])
-    scorer.get_identifier = MagicMock(return_value={"class_name": "MockScorer", "class_module": "test.mock"})
-    # Add mock identifier
+    # get_identifier() returns a ScorerIdentifier
     mock_identifier = ScorerIdentifier(
         class_name="MockScorer",
         class_module="test.mock",
         class_description="Mock scorer for testing",
         identifier_type="instance",
     )
-    type(scorer).identifier = PropertyMock(return_value=mock_identifier)
+    scorer.get_identifier = MagicMock(return_value=mock_identifier)
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         float_scale_threshold_scorer = FloatScaleThresholdScorer(

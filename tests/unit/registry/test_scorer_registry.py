@@ -244,7 +244,7 @@ class TestScorerRegistryBuildMetadata:
 
         metadata = self.registry.list_metadata()
         assert isinstance(metadata[0], ScorerIdentifier)
-        assert metadata[0] == scorer.identifier
+        assert metadata[0] == scorer.get_identifier()
 
     def test_build_metadata_description_from_docstring(self):
         """Test that class_description is derived from the scorer's docstring."""

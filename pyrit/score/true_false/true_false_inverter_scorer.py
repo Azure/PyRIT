@@ -68,7 +68,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         inv_score.score_value = str(True) if not inv_score.get_value() else str(False)
         inv_score.score_value_description = "Inverted score: " + str(inv_score.score_value_description)
 
-        scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
+        scorer_type = self._scorer.get_identifier().class_name
         inv_score.score_rationale = (
             f"Inverted score from {scorer_type} result: {inv_score.score_value}\n{inv_score.score_rationale}"
         )

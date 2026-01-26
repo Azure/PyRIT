@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
 import pytest
@@ -32,7 +32,7 @@ def mock_harm_scorer():
     mock_identifier = MagicMock()
     mock_identifier.hash = "test_hash_456"
     mock_identifier.system_prompt_template = "test_system_prompt"
-    scorer.identifier = mock_identifier
+    scorer.get_identifier = MagicMock(return_value=mock_identifier)
     return scorer
 
 
@@ -45,7 +45,7 @@ def mock_objective_scorer():
     mock_identifier = MagicMock()
     mock_identifier.hash = "test_hash_123"
     mock_identifier.user_prompt_template = "test_user_prompt"
-    scorer.identifier = mock_identifier
+    scorer.get_identifier = MagicMock(return_value=mock_identifier)
     return scorer
 
 
@@ -119,7 +119,7 @@ async def test__run_evaluation_async_objective_returns_metrics(mock_objective_sc
         name="test_dataset", metrics_type=MetricsType.OBJECTIVE, entries=[entry], version="1.0"
     )
     mock_objective_scorer.score_prompts_batch_async = AsyncMock(return_value=[MagicMock(get_value=lambda: True)])
-    mock_objective_scorer.identifier = MagicMock()
+    mock_objective_scorer.get_identifier = MagicMock(return_value=MagicMock(hash="test_hash"))
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
 
     metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=1)
@@ -410,8 +410,8 @@ def test_should_skip_evaluation_exception_handling(mock_find, mock_objective_sco
     evaluator = ObjectiveScorerEvaluator(scorer=mock_objective_scorer)
     result_file = tmp_path / "test_results.jsonl"
 
-    # Make the hash property raise an exception
-    type(mock_objective_scorer.identifier).hash = PropertyMock(side_effect=Exception("Hash computation failed"))
+    # Make get_identifier() raise an exception
+    mock_objective_scorer.get_identifier = MagicMock(side_effect=Exception("Identifier computation failed"))
 
     should_skip, result = evaluator._should_skip_evaluation(
         dataset_version="1.0",
@@ -424,8 +424,10 @@ def test_should_skip_evaluation_exception_handling(mock_find, mock_objective_sco
     assert result is None
     mock_find.assert_not_called()
 
-    # Restore the hash property for other tests
-    type(mock_objective_scorer.identifier).hash = PropertyMock(return_value="test_hash_123")
+    # Restore get_identifier for other tests
+    mock_identifier = MagicMock()
+    mock_identifier.hash = "test_hash_123"
+    mock_objective_scorer.get_identifier = MagicMock(return_value=mock_identifier)
 
 
 @patch("pyrit.score.scorer_evaluation.scorer_evaluator.find_harm_metrics_by_hash")

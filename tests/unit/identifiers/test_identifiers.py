@@ -229,9 +229,9 @@ class TestIdentifierSubclass:
             extra_field: str
 
         extended = ExtendedIdentifier(
-            identifier_type="class",
             class_name="TestClass",
             class_module="test.module",
+            identifier_type="class",
             class_description="A test description",
             extra_field="extra_value",
         )
@@ -246,16 +246,16 @@ class TestIdentifierSubclass:
             extra_field: str
 
         extended1 = ExtendedIdentifier(
-            identifier_type="class",
             class_name="TestClass",
             class_module="test.module",
+            identifier_type="class",
             class_description="Description",
             extra_field="value1",
         )
         extended2 = ExtendedIdentifier(
-            identifier_type="class",
             class_name="TestClass",
             class_module="test.module",
+            identifier_type="class",
             class_description="Description",
             extra_field="value2",
         )
@@ -267,19 +267,19 @@ class TestIdentifierSubclass:
 
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
-            display_only: str = field(metadata={"exclude_from_storage": True})
+            display_only: str = field(default="", metadata={"exclude_from_storage": True})
 
         extended1 = ExtendedIdentifier(
-            identifier_type="class",
             class_name="TestClass",
             class_module="test.module",
+            identifier_type="class",
             class_description="Description",
             display_only="display1",
         )
         extended2 = ExtendedIdentifier(
-            identifier_type="class",
             class_name="TestClass",
             class_module="test.module",
+            identifier_type="class",
             class_description="Description",
             display_only="display2",
         )
@@ -292,12 +292,12 @@ class TestIdentifierSubclass:
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
             extra_field: str
-            display_only: str = field(metadata={"exclude_from_storage": True})
+            display_only: str = field(default="", metadata={"exclude_from_storage": True})
 
         extended = ExtendedIdentifier(
-            identifier_type="class",
             class_name="TestClass",
             class_module="test.module",
+            identifier_type="class",
             class_description="Description",
             extra_field="extra_value",
             display_only="display_value",

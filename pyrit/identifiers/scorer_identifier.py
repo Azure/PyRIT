@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, fields
-from typing import Any, Dict, List, Optional, Type
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Type, Union, cast
 
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.identifiers.identifier import MAX_STORAGE_LENGTH, Identifier
 from pyrit.models.score import ScoreType
 
@@ -58,9 +59,52 @@ class ScorerIdentifier(Identifier):
         # Recursively reconstruct sub_identifier if present
         if "sub_identifier" in data and data["sub_identifier"] is not None:
             data["sub_identifier"] = [
-                ScorerIdentifier.from_dict(sub) if isinstance(sub, dict) else sub
-                for sub in data["sub_identifier"]
+                ScorerIdentifier.from_dict(sub) if isinstance(sub, dict) else sub for sub in data["sub_identifier"]
             ]
 
         # Delegate to parent class for standard processing
-        return Identifier.from_dict.__func__(cls, data)  # type: ignore[attr-defined]
+        result = Identifier.from_dict.__func__(cls, data)  # type: ignore[attr-defined]
+        return cast(ScorerIdentifier, result)
+
+    @classmethod
+    def normalize(
+        cls,
+        value: Union["ScorerIdentifier", Dict[str, Any], None],
+    ) -> "ScorerIdentifier":
+        """
+        Normalize a value to a ScorerIdentifier.
+
+        This method handles conversion from legacy dict format to ScorerIdentifier,
+        emitting a deprecation warning when a dict is passed.
+
+        Args:
+            value: A ScorerIdentifier, a dict (legacy format), or None.
+
+        Returns:
+            ScorerIdentifier: The normalized ScorerIdentifier. Returns a default
+                ScorerIdentifier with "Unknown" class_name if value is None or empty.
+
+        Raises:
+            TypeError: If value is not a ScorerIdentifier, dict, or None.
+        """
+        if value is None or (isinstance(value, dict) and not value):
+            # Create default ScorerIdentifier for None/empty values
+            return cls(
+                class_name="Unknown",
+                class_module="unknown",
+                class_description="",
+                identifier_type="instance",
+            )
+
+        if isinstance(value, dict):
+            print_deprecation_message(
+                old_item="dict for scorer_class_identifier",
+                new_item="ScorerIdentifier",
+                removed_in="0.13.0",
+            )
+            return cls.from_dict(value)
+
+        if isinstance(value, cls):
+            return value
+
+        raise TypeError(f"Expected ScorerIdentifier, dict, or None, got {type(value).__name__}")

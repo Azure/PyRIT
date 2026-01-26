@@ -626,7 +626,7 @@ class _TreeOfAttacksNode:
         # Extract auxiliary scores
         auxiliary_scores = scoring_results["auxiliary_scores"]
         for score in auxiliary_scores:
-            scorer_name = score.scorer_class_identifier["__type__"]
+            scorer_name = score.scorer_class_identifier.class_name
             self.auxiliary_scores[scorer_name] = score
             logger.debug(f"Node {self.node_id}: {scorer_name} score: {score.get_value()}")
 

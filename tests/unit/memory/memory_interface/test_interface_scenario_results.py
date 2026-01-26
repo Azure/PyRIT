@@ -3,10 +3,10 @@
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from unittest.mock import MagicMock
 
 import pytest
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import MemoryInterface
 from pyrit.models import (
     AttackOutcome,
@@ -14,7 +14,6 @@ from pyrit.models import (
     ScenarioIdentifier,
     ScenarioResult,
 )
-from pyrit.score import Scorer
 
 
 @pytest.fixture
@@ -54,17 +53,19 @@ def create_scenario_result(
     if attack_results is None:
         attack_results = {}
 
-    # Create a mock scorer for testing
-    mock_scorer = MagicMock(spec=Scorer)
-    mock_scorer.get_identifier.return_value = {"scorer": "test_scorer"}
-    mock_scorer.get_scorer_metrics.return_value = None
+    # Use ScorerIdentifier directly instead of deprecated dict/mock_scorer
+    scorer_identifier = ScorerIdentifier(
+        class_name="TestScorer",
+        class_module="tests.unit.memory",
+        class_description="",
+        identifier_type="instance",
+    )
 
     return ScenarioResult(
         scenario_identifier=scenario_identifier,
         objective_target_identifier={"target": "test_target"},
         attack_results=attack_results,
-        objective_scorer=mock_scorer,
-        objective_scorer_identifier={"scorer": "test_scorer"},
+        objective_scorer_identifier=scorer_identifier,
     )
 
 
@@ -259,6 +260,7 @@ def test_handles_empty_attack_results(sqlite_instance: MemoryInterface):
 
 def test_preserves_metadata(sqlite_instance: MemoryInterface):
     """Test that scenario metadata is preserved correctly."""
+
     # Create scenario result with metadata
     scenario_identifier = ScenarioIdentifier(
         name="Metadata Test Scenario",
@@ -267,11 +269,18 @@ def test_preserves_metadata(sqlite_instance: MemoryInterface):
         init_data={"param1": "value1", "param2": 42},
     )
 
+    scorer_identifier = ScorerIdentifier(
+        class_name="TestScorer",
+        class_module="test.module",
+        class_description="",
+        identifier_type="instance",
+    )
+
     scenario_result = ScenarioResult(
         scenario_identifier=scenario_identifier,
         objective_target_identifier={"target": "test_target", "endpoint": "https://example.com"},
         attack_results={},
-        objective_scorer_identifier={"scorer": "test_scorer", "threshold": 0.8},
+        objective_scorer_identifier=scorer_identifier,
     )
     sqlite_instance.add_scenario_results_to_memory(scenario_results=[scenario_result])
 
@@ -285,7 +294,9 @@ def test_preserves_metadata(sqlite_instance: MemoryInterface):
     assert retrieved.scenario_identifier.version == 3
     assert retrieved.scenario_identifier.init_data == {"param1": "value1", "param2": 42}
     assert retrieved.objective_target_identifier == {"target": "test_target", "endpoint": "https://example.com"}
-    assert retrieved.objective_scorer_identifier == {"scorer": "test_scorer", "threshold": 0.8}
+    # objective_scorer_identifier is now a ScorerIdentifier, check its properties
+    assert retrieved.objective_scorer_identifier.class_name == "TestScorer"
+    assert retrieved.objective_scorer_identifier.class_module == "test.module"
 
 
 def test_multiple_scenarios_with_attacks(sqlite_instance: MemoryInterface):

@@ -67,7 +67,7 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
         if name is None:
             base_name = class_name_to_snake_case(scorer.__class__.__name__, suffix="Scorer")
             # Append identifier hash if available for uniqueness
-            identifier_hash = scorer.identifier.hash[:8]
+            identifier_hash = scorer.get_identifier().hash[:8]
             name = f"{base_name}_{identifier_hash}"
 
         self.register(scorer, name=name)
@@ -98,4 +98,4 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
         Returns:
             ScorerIdentifier: The scorer's identifier which includes scorer_type.
         """
-        return instance.identifier
+        return instance.get_identifier()

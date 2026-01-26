@@ -229,7 +229,7 @@ class LeakageScenario(Scenario):
         Returns:
             list[str]: List of objectives to be tested.
         """
-        seed_objectives = self._memory.get_seeds(dataset_name="airt_leakage", is_objective=True)
+        seed_objectives = self._memory.get_seeds(dataset_name="airt_leakage", seed_type="objective")
 
         if not seed_objectives:
             self._raise_dataset_exception()

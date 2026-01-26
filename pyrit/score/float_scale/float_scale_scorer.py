@@ -56,11 +56,9 @@ class FloatScaleScorer(Scorer):
 
         if self.evaluation_file_mapping is None or self.evaluation_file_mapping.harm_category is None:
             return None
-        scorer_hash = self.identifier.hash
+        scorer_hash = self.get_identifier().hash
 
-        return find_harm_metrics_by_hash(
-            hash=self.identifier.hash, harm_category=self.evaluation_file_mapping.harm_category
-        )
+        return find_harm_metrics_by_hash(hash=scorer_hash, harm_category=self.evaluation_file_mapping.harm_category)
 
     async def _score_value_with_llm(
         self,
