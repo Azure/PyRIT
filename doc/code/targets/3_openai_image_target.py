@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.19.0
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -37,7 +33,7 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
-img_prompt_target = OpenAIImageTarget()
+img_prompt_target = OpenAIImageTarget(output_format="jpeg")
 
 image_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
@@ -61,7 +57,7 @@ results = await AttackExecutor().execute_attack_async(  # type: ignore
     objectives=objectives,
 )
 for result in results:
-    await ConsoleAttackResultPrinter().print_summary_async(result=result)  # type: ignore
+    await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
     print(result.last_response.converted_value)
 
 # %% [markdown]
@@ -95,5 +91,5 @@ result = await attack.execute_async(
     objective=seed_group.prompts[0].value,
     next_message=seed_group.next_message,
 )  # type: ignore
-await ConsoleAttackResultPrinter().print_summary_async(result=result)  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 print(result.last_response.converted_value)

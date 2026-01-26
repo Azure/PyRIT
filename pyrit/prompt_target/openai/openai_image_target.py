@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 import base64
 import logging
-import uuid
 from typing import Any, Dict, Literal, Optional
 
 import httpx
@@ -33,6 +32,7 @@ class OpenAIImageTarget(OpenAITarget):
         image_size: Literal[
             "256x256", "512x512", "1024x1024", "1536x1024", "1024x1536", "1792x1024", "1024x1792"
         ] = "1024x1024",
+        output_format: Optional[Literal["png", "jpeg", "webp"]] = None,
         quality: Optional[Literal["standard", "hd", "low", "medium", "high"]] = None,
         style: Optional[Literal["natural", "vivid"]] = None,
         *args: Any,
@@ -59,6 +59,9 @@ class OpenAIImageTarget(OpenAITarget):
                 DALL-E-3 supports "1024x1024", "1792x1024" and "1024x1792".
                 DALL-E-2 supports "256x256", "512x512" and "1024x1024".
                 Defaults to "1024x1024".
+            output_format (Literal["png", "jpeg", "webp"], Optional): The output format of the generated images.
+                This parameter is only supported for GPT image models.
+                Default is to not specify (which will use the model's default format, e.g. PNG for OpenAI image models).
             quality (Literal["standard", "hd", "low", "medium", "high"], Optional): The quality of the generated images.
                 Different models support different quality settings.
                 GPT image models support "high", "medium" and "low".
@@ -74,6 +77,7 @@ class OpenAIImageTarget(OpenAITarget):
                 `httpx.AsyncClient()` constructor.
                 For example, to specify a 3 minutes timeout: httpx_client_kwargs={"timeout": 180}
         """
+        self.output_format = output_format
         self.quality = quality
         self.style = style
         self.image_size = image_size
@@ -148,6 +152,8 @@ class OpenAIImageTarget(OpenAITarget):
             "size": self.image_size,
         }
 
+        if self.output_format:
+            image_generation_args["output_format"] = self.output_format
         if self.quality:
             image_generation_args["quality"] = self.quality
         if self.style:
@@ -184,7 +190,7 @@ class OpenAIImageTarget(OpenAITarget):
                 category="prompt-memory-entries", value=image_path, data_type="image_path"
             )
 
-            image_name = str(uuid.uuid4())
+            image_name = str(await img_serializer.get_data_filename())
             image_bytes = await img_serializer.read_data()
             image_type = img_serializer.get_mime_type(image_path)
 
@@ -198,6 +204,8 @@ class OpenAIImageTarget(OpenAITarget):
             "size": self.image_size,
         }
 
+        if self.output_format:
+            image_edit_args["output_format"] = self.output_format
         if self.quality:
             image_edit_args["quality"] = self.quality
         if self.style:
@@ -227,7 +235,12 @@ class OpenAIImageTarget(OpenAITarget):
         image_data = response.data[0]
         image_bytes = await self._get_image_bytes(image_data)
 
-        data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
+        extension = self.output_format or "png"
+        data = data_serializer_factory(
+            category="prompt-memory-entries",
+            data_type="image_path",
+            extension=extension,
+        )
         await data.save_data(data=image_bytes)
 
         return construct_response_from_request(
