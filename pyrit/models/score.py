@@ -1,10 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Union, get_args
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union, get_args
+
+if TYPE_CHECKING:
+    from pyrit.identifiers import ScorerIdentifier
 
 ScoreType = Literal["true_false", "float_scale", "unknown"]
 
@@ -31,8 +36,7 @@ class Score:
     score_metadata: Optional[Dict[str, Union[str, int, float]]]
 
     # The identifier of the scorer class, including relevant information
-    # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
-    scorer_class_identifier: Dict[str, str]
+    scorer_class_identifier: ScorerIdentifier
 
     # This is the ID of the MessagePiece that the score is scoring
     # Note a scorer can generate an additional request. This is NOT that, but
@@ -56,10 +60,13 @@ class Score:
         id: Optional[uuid.UUID | str] = None,
         score_category: Optional[List[str]] = None,
         score_metadata: Optional[Dict[str, Union[str, int, float]]] = None,
-        scorer_class_identifier: Optional[Dict[str, str]] = None,
+        scorer_class_identifier: Union["ScorerIdentifier", Dict[str, Any]],
         timestamp: Optional[datetime] = None,
         objective: Optional[str] = None,
     ):
+        # Import at runtime to avoid circular import
+        from pyrit.identifiers import ScorerIdentifier
+
         self.id = id if id else uuid.uuid4()
         self.timestamp = timestamp if timestamp else datetime.now()
 
@@ -75,9 +82,11 @@ class Score:
         self.score_category = score_category
         self.score_rationale = score_rationale
         self.score_metadata = score_metadata or {}
-        self.scorer_class_identifier = scorer_class_identifier or {}
         self.message_piece_id = message_piece_id
         self.objective = objective
+
+        # Normalize to ScorerIdentifier (handles dict with deprecation warning)
+        self.scorer_class_identifier = ScorerIdentifier.normalize(scorer_class_identifier)
 
     def get_value(self) -> bool | float:
         """
@@ -121,7 +130,7 @@ class Score:
             "score_category": self.score_category,
             "score_rationale": self.score_rationale,
             "score_metadata": self.score_metadata,
-            "scorer_class_identifier": self.scorer_class_identifier,
+            "scorer_class_identifier": self.scorer_class_identifier.to_dict() if self.scorer_class_identifier else None,
             "message_piece_id": str(self.message_piece_id),
             "timestamp": self.timestamp.isoformat(),
             "objective": self.objective,
@@ -130,7 +139,8 @@ class Score:
     def __str__(self) -> str:
         category_str = f": {', '.join(self.score_category) if self.score_category else ''}"
         if self.scorer_class_identifier:
-            return f"{self.scorer_class_identifier['__type__']}{category_str}: {self.score_value}"
+            scorer_type = self.scorer_class_identifier.class_name or "Unknown"
+            return f"{scorer_type}{category_str}: {self.score_value}"
         return f"{category_str}: {self.score_value}"
 
     __repr__ = __str__
@@ -150,7 +160,7 @@ class UnvalidatedScore:
     score_category: Optional[List[str]]
     score_rationale: str
     score_metadata: Optional[Dict[str, Union[str, int, float]]]
-    scorer_class_identifier: Dict[str, str]
+    scorer_class_identifier: ScorerIdentifier
     message_piece_id: uuid.UUID | str
     objective: Optional[str]
     id: Optional[uuid.UUID | str] = None

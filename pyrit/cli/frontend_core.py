@@ -384,10 +384,10 @@ def format_scenario_metadata(*, scenario_metadata: ScenarioMetadata) -> None:
     Args:
         scenario_metadata: Dataclass containing scenario metadata.
     """
-    _print_header(text=scenario_metadata.name)
+    _print_header(text=scenario_metadata.snake_class_name)
     print(f"    Class: {scenario_metadata.class_name}")
 
-    description = scenario_metadata.description
+    description = scenario_metadata.class_description
     if description:
         print("    Description:")
         print(_format_wrapped_text(text=description, indent="      "))
@@ -426,9 +426,9 @@ def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") 
     Args:
         initializer_metadata: Dataclass containing initializer metadata.
     """
-    _print_header(text=initializer_metadata.name)
+    _print_header(text=initializer_metadata.snake_class_name)
     print(f"    Class: {initializer_metadata.class_name}")
-    print(f"    Name: {initializer_metadata.initializer_name}")
+    print(f"    Name: {initializer_metadata.display_name}")
     print(f"    Execution Order: {initializer_metadata.execution_order}")
 
     if initializer_metadata.required_env_vars:
@@ -438,9 +438,9 @@ def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") 
     else:
         print("    Required Environment Variables: None")
 
-    if initializer_metadata.description:
+    if initializer_metadata.class_description:
         print("    Description:")
-        print(_format_wrapped_text(text=initializer_metadata.description, indent="      "))
+        print(_format_wrapped_text(text=initializer_metadata.class_description, indent="      "))
 
 
 def validate_database(*, database: str) -> str:

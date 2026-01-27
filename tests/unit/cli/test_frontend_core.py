@@ -328,9 +328,10 @@ class TestPrintFunctions:
         mock_registry = MagicMock()
         mock_registry.list_metadata.return_value = [
             ScenarioMetadata(
-                name="test_scenario",
+                identifier_type="class",
                 class_name="TestScenario",
-                description="Test description",
+                class_module="test.scenarios",
+                class_description="Test description",
                 default_strategy="default",
                 all_strategies=(),
                 aggregate_strategies=(),
@@ -346,6 +347,7 @@ class TestPrintFunctions:
         assert result == 0
         captured = capsys.readouterr()
         assert "Available Scenarios" in captured.out
+        # snake_class_name no longer strips suffix, so TestScenario -> test_scenario
         assert "test_scenario" in captured.out
 
     async def test_print_scenarios_list_empty(self, capsys):
@@ -368,10 +370,11 @@ class TestPrintFunctions:
         mock_registry = MagicMock()
         mock_registry.list_metadata.return_value = [
             InitializerMetadata(
-                name="test_init",
+                identifier_type="class",
                 class_name="TestInit",
-                description="Test initializer",
-                initializer_name="test",
+                class_module="test.initializers",
+                class_description="Test initializer",
+                display_name="test",
                 execution_order=100,
                 required_env_vars=(),
             )
@@ -408,9 +411,10 @@ class TestFormatFunctions:
         """Test format_scenario_metadata with basic metadata."""
 
         scenario_metadata = ScenarioMetadata(
-            name="test_scenario",
+            identifier_type="class",
             class_name="TestScenario",
-            description="",
+            class_module="test.scenarios",
+            class_description="",
             default_strategy="",
             all_strategies=(),
             aggregate_strategies=(),
@@ -421,6 +425,7 @@ class TestFormatFunctions:
         frontend_core.format_scenario_metadata(scenario_metadata=scenario_metadata)
 
         captured = capsys.readouterr()
+        # snake_class_name no longer strips suffix, so TestScenario -> test_scenario
         assert "test_scenario" in captured.out
         assert "TestScenario" in captured.out
 
@@ -428,9 +433,10 @@ class TestFormatFunctions:
         """Test format_scenario_metadata with description."""
 
         scenario_metadata = ScenarioMetadata(
-            name="test_scenario",
+            identifier_type="class",
             class_name="TestScenario",
-            description="This is a test scenario",
+            class_module="test.scenarios",
+            class_description="This is a test scenario",
             default_strategy="",
             all_strategies=(),
             aggregate_strategies=(),
@@ -446,9 +452,10 @@ class TestFormatFunctions:
     def test_format_scenario_metadata_with_strategies(self, capsys):
         """Test format_scenario_metadata with strategies."""
         scenario_metadata = ScenarioMetadata(
-            name="test_scenario",
+            identifier_type="class",
             class_name="TestScenario",
-            description="",
+            class_module="test.scenarios",
+            class_description="",
             default_strategy="strategy1",
             all_strategies=("strategy1", "strategy2"),
             aggregate_strategies=(),
@@ -466,10 +473,11 @@ class TestFormatFunctions:
     def test_format_initializer_metadata_basic(self, capsys) -> None:
         """Test format_initializer_metadata with basic metadata."""
         initializer_metadata = InitializerMetadata(
-            name="test_init",
+            identifier_type="class",
             class_name="TestInit",
-            description="",
-            initializer_name="test",
+            class_module="test.initializers",
+            class_description="",
+            display_name="test",
             required_env_vars=(),
             execution_order=100,
         )
@@ -484,10 +492,11 @@ class TestFormatFunctions:
     def test_format_initializer_metadata_with_env_vars(self, capsys) -> None:
         """Test format_initializer_metadata with environment variables."""
         initializer_metadata = InitializerMetadata(
-            name="test_init",
+            identifier_type="class",
             class_name="TestInit",
-            description="",
-            initializer_name="test",
+            class_module="test.initializers",
+            class_description="",
+            display_name="test",
             required_env_vars=("VAR1", "VAR2"),
             execution_order=100,
         )
@@ -501,10 +510,11 @@ class TestFormatFunctions:
     def test_format_initializer_metadata_with_description(self, capsys) -> None:
         """Test format_initializer_metadata with description."""
         initializer_metadata = InitializerMetadata(
-            name="test_init",
+            identifier_type="class",
             class_name="TestInit",
-            description="Test description",
-            initializer_name="test",
+            class_module="test.initializers",
+            class_description="Test description",
+            display_name="test",
             required_env_vars=(),
             execution_order=100,
         )

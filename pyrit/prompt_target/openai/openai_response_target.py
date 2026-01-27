@@ -648,7 +648,14 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         """
         # Some models may not support all of these; we accept them at the transport layer
         # so the Responses API can decide. We include reasoning and function_call_output now.
-        allowed_types = {"text", "image_path", "function_call", "tool_call", "function_call_output", "reasoning"}
+        allowed_types = {
+            "text",
+            "image_path",
+            "function_call",
+            "tool_call",
+            "function_call_output",
+            "reasoning",
+        }
         for message_piece in message.message_pieces:
             if message_piece.converted_value_data_type not in allowed_types:
                 raise ValueError(f"Unsupported data type: {message_piece.converted_value_data_type}")

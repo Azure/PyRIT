@@ -18,10 +18,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, Iterator, List, Optional, TypeVar
 
-from pyrit.registry.base import RegistryItemMetadata, RegistryProtocol
+from pyrit.identifiers import Identifier
+from pyrit.registry.base import RegistryProtocol
 
 T = TypeVar("T")  # The type of instances stored
-MetadataT = TypeVar("MetadataT", bound=RegistryItemMetadata)
+MetadataT = TypeVar("MetadataT", bound=Identifier)
 
 
 class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT]):
