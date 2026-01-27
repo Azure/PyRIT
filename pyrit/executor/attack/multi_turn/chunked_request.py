@@ -362,7 +362,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
             component_role=ComponentRole.OBJECTIVE_SCORER,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
-            component_identifier=self._objective_scorer.get_identifier(),
+            component_identifier=self._objective_scorer.get_identifier().to_dict(),
             objective=objective,
         ):
             scores = await self._objective_scorer.score_text_async(text=combined_value, objective=objective)
