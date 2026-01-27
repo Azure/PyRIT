@@ -17,26 +17,28 @@ class ScorerIdentifier(Identifier):
 
     This frozen dataclass extends Identifier with scorer-specific fields.
     Long prompt templates are automatically truncated for storage display.
-
-    Attributes:
-        scorer_type: The type of scorer ("true_false", "float_scale", or "unknown").
-        system_prompt_template: The system prompt template used by the scorer.
-            Truncated for storage if > 100 characters.
-        user_prompt_template: The user prompt template used by the scorer.
-            Truncated for storage if > 100 characters.
-        sub_identifier: List of sub-scorer identifiers for composite scorers.
-        target_info: Information about the prompt target used by the scorer.
-        score_aggregator: The name of the score aggregator function.
-        scorer_specific_params: Additional scorer-specific parameters.
     """
 
     scorer_type: ScoreType = "unknown"
+    """The type of scorer ("true_false", "float_scale", or "unknown")."""
+
     system_prompt_template: Optional[str] = field(default=None, metadata={MAX_STORAGE_LENGTH: 100})
+    """The system prompt template used by the scorer. Truncated for storage if > 100 characters."""
+
     user_prompt_template: Optional[str] = field(default=None, metadata={MAX_STORAGE_LENGTH: 100})
+    """The user prompt template used by the scorer. Truncated for storage if > 100 characters."""
+
     sub_identifier: Optional[List["ScorerIdentifier"]] = None
+    """List of sub-scorer identifiers for composite scorers."""
+
     target_info: Optional[Dict[str, Any]] = None
+    """Information about the prompt target used by the scorer."""
+
     score_aggregator: Optional[str] = None
+    """The name of the score aggregator function."""
+
     scorer_specific_params: Optional[Dict[str, Any]] = None
+    """Additional scorer-specific parameters."""
 
     @classmethod
     def from_dict(cls: Type["ScorerIdentifier"], data: dict[str, Any]) -> "ScorerIdentifier":
