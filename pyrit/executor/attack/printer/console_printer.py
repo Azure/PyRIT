@@ -205,8 +205,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
                 if piece.original_value_data_type == "reasoning" and not include_reasoning_trace:
                     continue
 
-                # Handle converted values for user messages
-                if piece.api_role == "user" and piece.converted_value != piece.original_value:
+                # Handle converted values for user and assistant messages
+                if piece.converted_value != piece.original_value:
                     self._print_colored(f"{self._indent} Original:", Fore.CYAN)
                     self._print_wrapped_text(piece.original_value, Fore.WHITE)
                     print()

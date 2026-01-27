@@ -121,13 +121,15 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.memory.central_memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
-scenario_result_from_memory = memory.get_scenario_results(scenario_name="red_team_agent")[0]
+scenario_results_from_memory = memory.get_scenario_results(scenario_name="RedTeamAgent")
+last_scenario_result = scenario_results_from_memory[-1]
+print(f"Retrieved {len(scenario_results_from_memory)} scenario results from memory.")
 
 # Flatten all attack results from all strategies
-all_results = [result for results in scenario_result_from_memory.attack_results.values() for result in results]
+all_results = [result for results in last_scenario_result.attack_results.values() for result in results]
 
-successful_attacks = [r for r in all_results if r.outcome == "success"]
-non_successful_attacks = [r for r in all_results if r.outcome != "success"]
+successful_attacks = [r for r in all_results if r.outcome.value == "success"]
+non_successful_attacks = [r for r in all_results if r.outcome.value != "success"]
 
 if len(successful_attacks) > 0:
     print("\nSuccessful Attacks:")
