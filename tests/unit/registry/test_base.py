@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from pyrit.models.identifiers import Identifier
+from pyrit.identifiers import Identifier
 from pyrit.registry.base import _matches_filters
 
 
@@ -23,53 +23,54 @@ class TestMatchesFilters:
         """Test that exact string matches work."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
         )
-        assert _matches_filters(metadata, include_filters={"name": "test_item"}) is True
         assert _matches_filters(metadata, include_filters={"class_name": "TestClass"}) is True
+        assert _matches_filters(metadata, include_filters={"class_module": "test.module"}) is True
 
     def test_matches_filters_no_match_string(self):
         """Test that non-matching strings return False."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
         )
-        assert _matches_filters(metadata, include_filters={"name": "other_item"}) is False
         assert _matches_filters(metadata, include_filters={"class_name": "OtherClass"}) is False
+        assert _matches_filters(metadata, include_filters={"class_module": "other.module"}) is False
 
     def test_matches_filters_multiple_filters_all_match(self):
         """Test that all filters must match."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
         )
-        assert _matches_filters(metadata, include_filters={"name": "test_item", "class_name": "TestClass"}) is True
+        assert (
+            _matches_filters(metadata, include_filters={"class_name": "TestClass", "class_module": "test.module"})
+            is True
+        )
 
     def test_matches_filters_multiple_filters_partial_match(self):
         """Test that partial matches return False when not all filters match."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
         )
-        assert _matches_filters(metadata, include_filters={"name": "test_item", "class_name": "OtherClass"}) is False
+        assert (
+            _matches_filters(metadata, include_filters={"class_name": "TestClass", "class_module": "other.module"})
+            is False
+        )
 
     def test_matches_filters_key_not_in_metadata(self):
         """Test that filtering on a non-existent key returns False."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -80,7 +81,6 @@ class TestMatchesFilters:
         """Test that empty filters return True."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -91,7 +91,6 @@ class TestMatchesFilters:
         """Test filtering when metadata value is a list and filter value is in the list."""
         metadata = MetadataWithTags(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -104,7 +103,6 @@ class TestMatchesFilters:
         """Test filtering when metadata value is a list and filter value is not in the list."""
         metadata = MetadataWithTags(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -116,19 +114,17 @@ class TestMatchesFilters:
         """Test that exclude filters work for exact matches."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
         )
-        assert _matches_filters(metadata, exclude_filters={"name": "test_item"}) is False
-        assert _matches_filters(metadata, exclude_filters={"name": "other_item"}) is True
+        assert _matches_filters(metadata, exclude_filters={"class_name": "TestClass"}) is False
+        assert _matches_filters(metadata, exclude_filters={"class_name": "OtherClass"}) is True
 
     def test_matches_filters_exclude_list_value(self):
         """Test exclude filters work for list values."""
         metadata = MetadataWithTags(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -141,7 +137,6 @@ class TestMatchesFilters:
         """Test that exclude filters for non-existent keys don't exclude the item."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -153,7 +148,6 @@ class TestMatchesFilters:
         """Test combined include and exclude filters."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -161,21 +155,21 @@ class TestMatchesFilters:
         # Include matches, exclude doesn't -> should pass
         assert (
             _matches_filters(
-                metadata, include_filters={"name": "test_item"}, exclude_filters={"class_name": "OtherClass"}
+                metadata, include_filters={"class_name": "TestClass"}, exclude_filters={"class_module": "other.module"}
             )
             is True
         )
         # Include matches, exclude also matches -> should fail
         assert (
             _matches_filters(
-                metadata, include_filters={"name": "test_item"}, exclude_filters={"class_name": "TestClass"}
+                metadata, include_filters={"class_name": "TestClass"}, exclude_filters={"class_module": "test.module"}
             )
             is False
         )
         # Include doesn't match, exclude doesn't match -> should fail (include takes precedence)
         assert (
             _matches_filters(
-                metadata, include_filters={"name": "other_item"}, exclude_filters={"class_name": "OtherClass"}
+                metadata, include_filters={"class_name": "OtherClass"}, exclude_filters={"class_module": "other.module"}
             )
             is False
         )
@@ -188,35 +182,34 @@ class TestIdentifier:
         """Test creating an Identifier instance."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_scorer",
             class_name="TestScorer",
             class_module="pyrit.test.scorer",
             class_description="A test scorer for testing",
         )
         assert metadata.identifier_type == "class"
-        assert metadata.name == "test_scorer"
         assert metadata.class_name == "TestScorer"
         assert metadata.class_module == "pyrit.test.scorer"
         assert metadata.class_description == "A test scorer for testing"
+        # unique_name is auto-computed
+        assert metadata.unique_name is not None
+        assert "test_scorer" in metadata.unique_name
 
     def test_identifier_is_frozen(self):
         """Test that Identifier is immutable."""
         metadata = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="Description here",
         )
 
         with pytest.raises(AttributeError):
-            metadata.name = "new_name"  # type: ignore[misc]
+            metadata.unique_name = "new_name"  # type: ignore[misc]
 
     def test_identifier_hash_computed_at_creation(self):
         """Test that hash is computed when the Identifier is created."""
         identifier = Identifier(
             identifier_type="instance",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
@@ -228,14 +221,12 @@ class TestIdentifier:
         """Test that the same inputs produce the same hash."""
         identifier1 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
         )
         identifier2 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
@@ -246,15 +237,13 @@ class TestIdentifier:
         """Test that different inputs produce different hashes."""
         identifier1 = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
         )
         identifier2 = Identifier(
             identifier_type="class",
-            name="different_item",
-            class_name="TestClass",
+            class_name="DifferentClass",
             class_module="test.module",
             class_description="A test description",
         )
@@ -264,7 +253,6 @@ class TestIdentifier:
         """Test that the hash cannot be modified."""
         identifier = Identifier(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
@@ -276,7 +264,6 @@ class TestIdentifier:
         """Test that subclasses of Identifier also get a computed hash."""
         metadata = MetadataWithTags(
             identifier_type="class",
-            name="test_item",
             class_name="TestClass",
             class_module="test.module",
             class_description="A test description",
